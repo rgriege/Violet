@@ -10,20 +10,11 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\plugins\graphics\Color.cpp" />
-    <ClCompile Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\plugins\graphics\Color.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\graphics\component\RenderComponent.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DA7CE037-B8ED-4FFF-A064-D60810487384}</ProjectGuid>
+    <ProjectGuid>{BBA986C9-F129-4B3D-8D52-4FF41256BCA6}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>graphics</RootNamespace>
-    <ProjectName>VioletGraphics</ProjectName>
+    <RootNamespace>violet</RootNamespace>
+    <ProjectName>VioletCore</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -64,14 +55,18 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;VIOLET_GRAPHICS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freeglut\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;VIOLET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\boost_1_51_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>VioletCore.lib;OpenGL32.lib;freeglut.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>E:\Libraries\freeglut\lib\x86\Debug;E:\Documents\alottabit\violet\bin\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -82,18 +77,39 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;VIOLET_GRAPHICS_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freeglut\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;VIOLET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>E:\Libraries\freeglut\lib\x86\Debug;E:\Documents\alottabit\violet\bin\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>VioletCore.lib;OpenGL32.lib;freeglut.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\core\Defines.h" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Constants.h" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Circle.h" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Interval.h" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Matrix2.h" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\Time.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\core\math\Matrix2.ipp" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Vec2.ipp">
+      <FileType>CppCode</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\src\violet\core\math\Interval.ipp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

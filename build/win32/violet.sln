@@ -8,7 +8,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "test\test.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VioletCore", "core\VioletCore.vcxproj", "{BBA986C9-F129-4B3D-8D52-4FF41256BCA6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "graphics", "graphics\graphics.vcxproj", "{DA7CE037-B8ED-4FFF-A064-D60810487384}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VioletGraphics", "graphics\graphics.vcxproj", "{DA7CE037-B8ED-4FFF-A064-D60810487384}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VioletPhysics", "physics\physics.vcxproj", "{FCE6D540-D42A-471A-9E53-66835FC1CDC6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,6 +30,10 @@ Global
 		{DA7CE037-B8ED-4FFF-A064-D60810487384}.Debug|Win32.Build.0 = Debug|Win32
 		{DA7CE037-B8ED-4FFF-A064-D60810487384}.Release|Win32.ActiveCfg = Release|Win32
 		{DA7CE037-B8ED-4FFF-A064-D60810487384}.Release|Win32.Build.0 = Release|Win32
+		{FCE6D540-D42A-471A-9E53-66835FC1CDC6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FCE6D540-D42A-471A-9E53-66835FC1CDC6}.Debug|Win32.Build.0 = Debug|Win32
+		{FCE6D540-D42A-471A-9E53-66835FC1CDC6}.Release|Win32.ActiveCfg = Release|Win32
+		{FCE6D540-D42A-471A-9E53-66835FC1CDC6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
