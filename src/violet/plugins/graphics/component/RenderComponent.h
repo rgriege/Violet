@@ -8,8 +8,14 @@
 
 namespace Violet
 {
+	class Deserializer;
+
 	class RenderComponent
 	{
+	public:
+
+		RenderComponent(Deserializer & deserializer);
+
 	public:
 
 		Polygon m_mesh;

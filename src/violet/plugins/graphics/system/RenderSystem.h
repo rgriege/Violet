@@ -2,12 +2,15 @@
 #define RENDER_SYSTEM_H
 
 #include <vector>
+#include <map>
 
-#include "violet/core/entity/Entity.h"
 #include "violet/plugins/graphics/component/RenderComponent.h"
 
 namespace Violet
 {
+	class Deserializer;
+	class Entity;
+
 	class RenderSystem
 	{
 	public:
@@ -25,13 +28,13 @@ namespace Violet
 
 	public:
 
-		static RenderSystem * init(Settings & settings);
+		static bool init(Settings & settings);
 
 	public:
 
-		void update(float dt);
+		static void update(float dt);
 
-		//void create(Entity & entity, Deserializer & deserializer);
+		static void create(Entity & entity, Deserializer & deserializer);
 
 	private:
 
@@ -40,6 +43,7 @@ namespace Violet
 	private:
 
 		std::vector<RenderComponent> m_components;
+		std::map<uint32, uint32> m_entityComponentMap;
 		int m_window;
 	};
 }

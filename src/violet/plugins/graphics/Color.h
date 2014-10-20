@@ -1,8 +1,12 @@
 #ifndef COLOR_H
 #define COLOR_H
 
+#include "violet/core/Defines.h"
+
 namespace Violet
 {
+	class Deserializer;
+
 	class Color
 	{
 	public:
@@ -22,12 +26,34 @@ namespace Violet
 
 	public:
 
-		Color();
-		Color(float _r, float _g, float _b);
+		class Component
+		{
+		public:
+
+			Component();
+			Component(uint8 value);
+			Component(float value);
+
+			Component & operator=(uint8 value);
+			Component & operator=(float value);
+
+			operator uint8() const;
+			operator float() const;
+
+		private:
+
+			uint8 m_value;
+		};
 
 	public:
 
-		const float r, g, b;
+		Color();
+		Color(uint8 _r, uint8 _g, uint8 _b, uint8 _a = 255);
+		Color(Deserializer & deserializer);
+
+	public:
+
+		Component r, g, b, a;
 	};
 }
 

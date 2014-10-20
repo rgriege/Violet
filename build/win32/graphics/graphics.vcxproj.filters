@@ -5,6 +5,9 @@
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.cpp">
       <Filter>system</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\component\RenderComponent.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\Color.h" />
