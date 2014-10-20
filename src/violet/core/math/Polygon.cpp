@@ -6,6 +6,10 @@ using namespace Violet;
 
 namespace PolygonNamespace
 {
+	const char * const ms_segmentLabel("poly");
+	const char * const ms_sizeLabel("n");
+	const char * const ms_verticesLabel("vertices");
+
 	std::vector<Vec2f> deserializeVertices(Violet::Deserializer & deserializer);
 	Vec2f findCenter(const std::vector<Vec2f> & vertices);
 }
@@ -70,12 +74,19 @@ const Vec2f & Polygon::getClosestVertex(const Vec2f & target) const {
 
 std::vector<Vec2f> PolygonNamespace::deserializeVertices(Deserializer & deserializer)
 {
-	uint32 n = 0;
-	deserializer >> n;
+	deserializer.enterSegment(ms_segmentLabel);
+	uint32 n = deserializer.getUint(ms_sizeLabel);
 	std::vector<Vec2f> vertices;
 	vertices.reserve(n);
+	deserializer.enterSegment(ms_verticesLabel);
 	for (uint32 i = 0; i < n; ++i)
+	{
+		deserializer.enterSegment(nullptr);
 		vertices.emplace_back(deserializer);
+		deserializer.leaveSegment();
+	}
+	deserializer.leaveSegment();
+	deserializer.leaveSegment();
 	return vertices;
 }
 

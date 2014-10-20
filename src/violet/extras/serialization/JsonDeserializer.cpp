@@ -8,164 +8,59 @@ using namespace Violet;
 
 JsonDeserializer::JsonDeserializer(std::istream & stream) :
 	m_root(),
-	m_valueIterators()
+	m_valid(),
+	m_stack()
 {
 	Json::Reader reader;
-	if (reader.parse(stream, m_root, false))
-	{
-		const Json::Value * rootPtr = &m_root;
-		m_valueIterators.push_front(std::make_pair(rootPtr->begin(), rootPtr->end()));
-		moveToNextValue();
-	}
+	m_valid = reader.parse(stream, m_root, false);
+	if (m_valid)
+		m_stack.push_front(std::make_pair(&m_root, 0));
 }
 
 JsonDeserializer::operator bool() const
 {
-	return !m_valueIterators.empty();
+	return m_valid && !m_stack.empty();
 }
 
-JsonDeserializer & JsonDeserializer::operator>>(bool & value)
+void JsonDeserializer::enterSegment(const char * label)
 {
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = (*it).asBool();
-		++it;
-		moveToNextValue();
-	}
-	return *this;
+	if (label != nullptr)
+		m_stack.emplace_front(&m_stack.front().first->operator[](label), 0);
+	else
+		m_stack.emplace_front(&m_stack.front().first->operator[](m_stack.front().second++), 0);
 }
 
-JsonDeserializer & JsonDeserializer::operator>>(uint8 & value)
+void JsonDeserializer::leaveSegment()
 {
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = static_cast<uint8>((*it).asUInt());
-		++it;
-		moveToNextValue();
-	}
-	return *this;
+	m_stack.pop_front();
 }
 
-JsonDeserializer & JsonDeserializer::operator>>(int8 & value)
+bool JsonDeserializer::getBoolean(const char * label)
 {
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = static_cast<int8>((*it).asInt());
-		++it;
-		moveToNextValue();
-	}
-	return *this;
+	return m_stack.front().first->get(label, false).asBool();
 }
 
-JsonDeserializer & JsonDeserializer::operator>>(uint16 & value)
+uint32 JsonDeserializer::getUint(const char * label)
 {
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = static_cast<uint16>((*it).asUInt());
-		++it;
-		moveToNextValue();
-	}
-	return *this;
+	return m_stack.front().first->get(label, 0).asUInt();
 }
 
-JsonDeserializer & JsonDeserializer::operator>>(int16 & value)
+int JsonDeserializer::getInt(const char * label)
 {
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = static_cast<int16>((*it).asInt());
-		++it;
-		moveToNextValue();
-	}
-	return *this;
+	return m_stack.front().first->get(label, 0).asInt();
 }
 
-JsonDeserializer & JsonDeserializer::operator>>(uint32 & value)
+float JsonDeserializer::getFloat(const char * label)
 {
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = (*it).asUInt();
-		++it;
-		moveToNextValue();
-	}
-	return *this;
+	return static_cast<float>(getDouble(label));
 }
 
-JsonDeserializer & JsonDeserializer::operator>>(int32 & value)
+double JsonDeserializer::getDouble(const char * label)
 {
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = (*it).asInt();
-		++it;
-		moveToNextValue();
-	}
-	return *this;
+	return m_stack.front().first->get(label, 0).asDouble();
 }
 
-JsonDeserializer & JsonDeserializer::operator>>(float & value)
+const char * JsonDeserializer::getString(const char * label)
 {
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = static_cast<float>((*it).asDouble());
-		++it;
-		moveToNextValue();
-	}
-	return *this;
-}
-
-JsonDeserializer & JsonDeserializer::operator>>(double & value)
-{
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = (*it).asDouble();
-		++it;
-		moveToNextValue();
-	}
-	return *this;
-}
-
-JsonDeserializer & JsonDeserializer::operator>>(std::string & value)
-{
-	if (*this)
-	{
-		Json::ValueConstIterator & it = m_valueIterators.front().first;
-		value = (*it).asString();
-		++it;
-		moveToNextValue();
-	}
-	return *this;
-}
-
-void JsonDeserializer::moveToNextValue()
-{
-	bool found = false;
-
-	while (!found && !m_valueIterators.empty())
-	{
-		if (m_valueIterators.front().first == m_valueIterators.front().second)
-			m_valueIterators.pop_front();
-		else
-		{
-			Json::ValueConstIterator & it = m_valueIterators.front().first;
-			const Json::Value * nextValue = &*it;
-			if (nextValue->isObject())
-			{
-				if (!nextValue->empty())
-				{
-					++it;
-					m_valueIterators.push_front(std::make_pair(nextValue->begin(), nextValue->end()));
-				}
-			}
-			else
-				found = true;
-		}
-	}
+	return m_stack.front().first->get(label, "").asCString();
 }

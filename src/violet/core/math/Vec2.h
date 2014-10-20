@@ -48,6 +48,10 @@ namespace Violet
 
 		T x, y;
 	};
+	
+	static const char * ms_segmentLabel = "vec";
+	static const char * ms_xLabel = "x";
+	static const char * ms_yLabel = "y";
 
 	template<typename T>
 	Vec2<T> operator+(Vec2<T> lhs, const Vec2<T> & rhs);
@@ -101,7 +105,10 @@ namespace Violet
 		x(),
 		y()
 	{
-		deserializer >> x >> y;
+		deserializer.enterSegment(ms_segmentLabel);
+		x = deserializer.getFloat(ms_xLabel);
+		y = deserializer.getFloat(ms_yLabel);
+		deserializer.leaveSegment();
 	}
 
 	template<typename T>

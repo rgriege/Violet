@@ -114,7 +114,7 @@
     <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
-    <ClCompile Include="..\..\..\src\violet\core\serialization\BinarySerializer.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeerializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

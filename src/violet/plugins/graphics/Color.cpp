@@ -6,6 +6,9 @@ using namespace Violet;
 
 namespace ColorNamespace
 {
+	const char * const ms_segmentLabel = "color";
+	const char * const ms_valueLabel = "value";
+
 	float convert(uint8 value);
 	uint8 convert(float value);
 }
@@ -80,12 +83,13 @@ Color::Color(const uint8 _r, const uint8 _g, const uint8 _b, const uint8 _a) :
 
 Color::Color(Deserializer & deserializer)
 {
-	uint32 rgba = 0;
-	deserializer >> rgba;
+	deserializer.enterSegment(ms_segmentLabel);
+	uint32 rgba = deserializer.getUint(ms_valueLabel);
 	r = static_cast<uint8>(rgba & 0xff000000);
 	g = static_cast<uint8>(rgba & 0x00ff0000);
 	b = static_cast<uint8>(rgba & 0x0000ff00);
 	a = static_cast<uint8>(rgba & 0x000000ff);
+	deserializer.leaveSegment();
 }
 
 float ColorNamespace::convert(const uint8 value)

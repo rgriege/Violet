@@ -49,11 +49,11 @@
     <ClInclude Include="..\..\..\src\violet\core\entity\Entity.h">
       <Filter>entity</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h">
-      <Filter>serialization</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h">
       <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h">
+      <Filter>serialization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -74,7 +74,7 @@
     <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp">
       <Filter>entity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\core\serialization\BinarySerializer.cpp">
+    <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeerializer.cpp">
       <Filter>serialization</Filter>
     </ClCompile>
   </ItemGroup>

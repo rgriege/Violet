@@ -16,20 +16,20 @@ namespace Violet
 
 		virtual operator bool() const override;
 
-		virtual BinaryDeserializer & operator>>(bool & value) override;
-		virtual BinaryDeserializer & operator>>(uint8 & value) override;
-		virtual BinaryDeserializer & operator>>(int8 & value) override;
-		virtual BinaryDeserializer & operator>>(uint16 & value) override;
-		virtual BinaryDeserializer & operator>>(int16 & value) override;
-		virtual BinaryDeserializer & operator>>(uint32 & value) override;
-		virtual BinaryDeserializer & operator>>(int32 & value) override;
-		virtual BinaryDeserializer & operator>>(float & value) override;
-		virtual BinaryDeserializer & operator>>(double & value) override;
-		virtual BinaryDeserializer & operator>>(std::string & value) override;
+		virtual void enterSegment(const char * label) override;
+		virtual void leaveSegment() override;
+		
+		virtual bool getBoolean(const char * label) override;
+		virtual uint32 getUint(const char * label) override;
+		virtual int32 getInt(const char * label) override;
+		virtual float getFloat(const char * label) override;
+		virtual double getDouble(const char * label) override;
+		virtual const char * getString(const char * label) override;
 
 	private:
 
 		std::istream & m_stream;
+		std::string m_stringBuffer;
 	};
 }
 

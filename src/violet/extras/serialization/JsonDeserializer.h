@@ -16,27 +16,21 @@ namespace Violet
 
 		virtual operator bool() const override;
 
-	public:
+		virtual void enterSegment(const char * label) override;
+		virtual void leaveSegment() override;
 		
-		virtual JsonDeserializer & operator>>(bool & value) override;
-		virtual JsonDeserializer & operator>>(uint8 & value) override;
-		virtual JsonDeserializer & operator>>(int8 & value) override;
-		virtual JsonDeserializer & operator>>(uint16 & value) override;
-		virtual JsonDeserializer & operator>>(int16 & value) override;
-		virtual JsonDeserializer & operator>>(uint32 & value) override;
-		virtual JsonDeserializer & operator>>(int32 & value) override;
-		virtual JsonDeserializer & operator>>(float & value) override;
-		virtual JsonDeserializer & operator>>(double & value) override;
-		virtual JsonDeserializer & operator>>(std::string & value) override;
-
-	private:
-
-		void moveToNextValue();
+		virtual bool getBoolean(const char * label) override;
+		virtual uint32 getUint(const char * label) override;
+		virtual int32 getInt(const char * label) override;
+		virtual float getFloat(const char * label) override;
+		virtual double getDouble(const char * label) override;
+		virtual const char * getString(const char * label) override;
 
 	private:
 
 		Json::Value m_root;
-		std::deque<std::pair<Json::ValueConstIterator, Json::ValueConstIterator>> m_valueIterators;
+		std::deque<std::pair<Json::Value *, uint32>> m_stack;
+		bool m_valid;
 	};
 }
 
