@@ -1,9 +1,12 @@
 #include "violet/core/math/Polygon.h"
 
+#include "violet/core/serialization/Deserializer.h"
+
 using namespace Violet;
 
 namespace PolygonNamespace
 {
+	std::vector<Vec2f> deserializeVertices(Violet::Deserializer & deserializer);
 	Vec2f findCenter(const std::vector<Vec2f> & vertices);
 }
 
@@ -11,6 +14,12 @@ using namespace PolygonNamespace;
 
 Polygon::Polygon(std::vector<Vec2f> _vertices) :
 	vertices(_vertices),
+	center(findCenter(vertices))
+{
+}
+
+Polygon::Polygon(Deserializer & deserializer) :
+	vertices(deserializeVertices(deserializer)),
 	center(findCenter(vertices))
 {
 }
@@ -57,6 +66,17 @@ const Vec2f & Polygon::getClosestVertex(const Vec2f & target) const {
 		}
 	}
 	return result+center;
+}
+
+std::vector<Vec2f> PolygonNamespace::deserializeVertices(Deserializer & deserializer)
+{
+	uint32 n = 0;
+	deserializer >> n;
+	std::vector<Vec2f> vertices;
+	vertices.reserve(n);
+	for (uint32 i = 0; i < n; ++i)
+		vertices.emplace_back(deserializer);
+	return vertices;
 }
 
 Vec2f PolygonNamespace::findCenter(const std::vector<Vec2f> & vertices)

@@ -1,12 +1,12 @@
 #ifndef VEC2_H
 #define VEC2_H
 
+#include "violet/core/serialization/Deserializer.h"
+
 #include <string>
 
 namespace Violet
 {
-	//class Matrix2;
-
 	template<typename T>
 	class Vec2
 	{
@@ -15,6 +15,7 @@ namespace Violet
 		Vec2();
 		Vec2(const Vec2<T> &other);
 		Vec2(T _x, T _y);
+		Vec2(Deserializer & deserializer);
 
 		T magnitude() const;
 		T magSquared() const;
@@ -93,6 +94,14 @@ namespace Violet
 		x(_x),
 		y(_y)
 	{
+	}
+
+	template<typename T>
+	Vec2<T>::Vec2(Deserializer & deserializer) :
+		x(),
+		y()
+	{
+		deserializer >> x >> y;
 	}
 
 	template<typename T>

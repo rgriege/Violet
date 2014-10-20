@@ -2,5 +2,22 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\test\main.cpp" />
+    <ClCompile Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.cpp">
+      <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\test\Test.cpp" />
+    <ClCompile Include="..\..\..\src\violet\test\TestSuite.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="serialization">
+      <UniqueIdentifier>{6e1e9c91-0ff7-477d-bcc2-765b98e41b8e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\TestSuite.h" />
+    <ClInclude Include="..\..\..\src\violet\test\Test.h" />
   </ItemGroup>
 </Project>

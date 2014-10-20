@@ -51,15 +51,16 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;VIOLET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\boost_1_51_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -88,12 +89,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\Defines.h" />
+    <ClInclude Include="..\..\..\src\violet\core\entity\Entity.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Constants.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Circle.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Matrix2.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Time.h" />
   </ItemGroup>
   <ItemGroup>
@@ -106,8 +111,10 @@
     <None Include="..\..\..\src\violet\core\math\Interval.ipp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\serialization\BinarySerializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

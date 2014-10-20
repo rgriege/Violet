@@ -7,6 +7,12 @@
     <Filter Include="utility">
       <UniqueIdentifier>{4e2a84a8-3936-457a-bfe0-4b35cec40a3c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="serialization">
+      <UniqueIdentifier>{fda7cfc0-3d20-43a3-b632-59f02934ceef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="entity">
+      <UniqueIdentifier>{77e61554-8728-48a6-a170-924d0a0ad45d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h">
@@ -37,6 +43,18 @@
       <Filter>utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\Defines.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\entity\Entity.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\violet\core\math\Interval.ipp">
@@ -52,6 +70,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp">
       <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp">
+      <Filter>entity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\serialization\BinarySerializer.cpp">
+      <Filter>serialization</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -14,6 +14,7 @@ namespace Violet
 	public:
 
 		explicit Polygon(std::vector<Vec2f> _vertices);
+		explicit Polygon(Deserializer & deserializer);
 
 		FloatInterval project(const Vec2f & vec) const;
 		std::vector<Vec2f> getEdgePerps() const;
@@ -21,8 +22,11 @@ namespace Violet
 
 	public:
 
-		const std::vector<Vec2f> vertices;
-		const Vec2f center;
+		std::vector<Vec2f> vertices;
+
+	private:
+
+		Vec2f center;
 	};
 }
 
