@@ -1,15 +1,25 @@
 #ifndef VEC2_IPP
 #define VEC2_IPP
 
-#include <string>
+#include "violet/core/serialization/Deserializer.h"
+
 #include <sstream>
 #include <cmath>
+	
+static const char * ms_segmentLabel = "vec";
+static const char * ms_xLabel = "x";
+static const char * ms_yLabel = "y";
+
+using namespace Violet;
 
 template<typename T>
 const Vec2<T> Vec2<T>::X_AXIS(1, 0);
 
 template<typename T>
 const Vec2<T> Vec2<T>::Y_AXIS(0, 1);
+
+template<typename T>
+const Vec2<T> Vec2<T>::ZERO;
 
 template<typename T>
 Vec2<T>::Vec2() :
@@ -30,6 +40,17 @@ Vec2<T>::Vec2(T const _x, T const _y) :
 	x(_x),
 	y(_y)
 {
+}
+
+template<typename T>
+Vec2<T>::Vec2(Deserializer & deserializer) :
+	x(),
+	y()
+{
+	deserializer.enterSegment(ms_segmentLabel);
+	x = deserializer.getFloat(ms_xLabel);
+	y = deserializer.getFloat(ms_yLabel);
+	deserializer.leaveSegment();
 }
 
 template<typename T>
@@ -105,14 +126,14 @@ Vec2<T> & Vec2<T>::operator=(const Vec2<T> & other)
 	return *this;
 }
 
-/*template<typename T>
+template<typename T>
 void Vec2<T>::rotate(T radians) {
-	Matrix2 mat(radians);
-	//*this = mat*(*this);
-	T old_x = x;
-	x = x*mat.get_ul() + y*mat.get_ur();
-	y = old_x*mat.get_dl() + y*mat.get_dr();
-}*/
+	T oldX = x;
+	T c = cos(radians);
+	T s = sin(radians);
+	x = x * c - y * s;
+	y = oldX * s + y * c;
+}
 
 template<typename T>
 T Vec2<T>::dot(const Vec2<T> & other) const
@@ -121,10 +142,15 @@ T Vec2<T>::dot(const Vec2<T> & other) const
 }
 
 template<typename T>
+T Vec2<T>::cross(const Vec2<T> & other) const
+{
+	return x*other.y - y*other.x;
+}
+
+template<typename T>
 Vec2<T> Vec2<T>::project(const Vec2<T> & other) const
 {
-	Vec2 axis = other.get_unit_vector();
-	return axis.scale(dot(other));
+	return other.getUnit() * dot(other);
 }
 
 template<typename T>
@@ -153,6 +179,12 @@ bool Vec2<T>::isZero() const
 }
 
 template<typename T>
+void Vec2<T>::zero()
+{
+	x = y = 0;
+}
+
+template<typename T>
 bool Vec2<T>::sharesQuadrant(const Vec2 & other) const
 {
 	return dot(other) >= 0;
@@ -165,52 +197,56 @@ Vec2<T> Vec2<T>::copy() const
 }
 
 template<typename T>
-std::string Vec2<T>::toString() const
-{
-	stringstream ss;
-	ss << "(" << x << "," << y << ")";
-	return ss.str();
-}
-
-template<typename T>
-Vec2<T> operator+(Vec2<T> lhs, const Vec2<T> & rhs)
+Vec2<T> Violet::operator+(Vec2<T> lhs, const Vec2<T> & rhs)
 {
 	lhs += rhs;
 	return lhs;
 }
 
 template<typename T>
-Vec2<T> operator-(Vec2<T> lhs, const Vec2<T> & rhs)
+Vec2<T> Violet::operator-(Vec2<T> lhs, const Vec2<T> & rhs)
 {
 	lhs -= rhs;
 	return rhs;
 }
 
 template<typename T>
-Vec2<T> operator*(T scale, Vec2<T> rhs)
+Vec2<T> Violet::operator*(T scale, Vec2<T> rhs)
 {
 	rhs *= scale;
 	return rhs;
 }
 
 template<typename T>
-Vec2<T> operator*(Vec2<T> lhs, T scale)
+Vec2<T> Violet::operator*(Vec2<T> lhs, T scale)
 {
 	lhs *= scale;
-	return rhs;
+	return lhs;
 }
 
 template<typename T>
-Vec2<T> operator/(Vec2<T> vec, const T scale)
+Vec2<T> Violet::operator/(Vec2<T> vec, const T scale)
 {
 	vec /= scale;
 	return vec;
 }
 
 template<typename T>
-bool operator==(const Vec2<T> & lhs, const Vec2<T> & rhs)
+bool Violet::operator==(const Vec2<T> & lhs, const Vec2<T> & rhs)
 {
 	return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
+template<typename T>
+bool Violet::operator!=(const Vec2<T> & lhs, const Vec2<T> & rhs)
+{
+	return lhs.x != rhs.x && lhs.y != rhs.y;
+}
+
+template<typename T>
+std::ostream & Violet::operator<<(std::ostream & os, const Vec2<T> & vec)
+{
+	return os << "<" << vec.x << "," << vec.y << ">";
 }
 
 #endif

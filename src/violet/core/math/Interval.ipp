@@ -2,8 +2,9 @@
 #define INTERVAL_IPP
 
 #include <sstream>
-#include <string>
 #include <cmath>
+
+using namespace Violet;
 
 template<typename T>
 Interval<T>::Interval() :
@@ -52,12 +53,11 @@ T Interval<T>::overlap(const Interval &  other) const
 	return diff1 < 0 || diff2 < 0 ? 0 : std::min(std::min(diff1, diff2), std::min(length(), other.length()));
 }
 
+
 template<typename T>
-std::string Interval<T>::toString() const
+std::ostream & Violet::operator<<(std::ostream & os, const Interval<T> & interval)
 {
-	stringstream ss;
-	ss << "(" << left << "," << right << ")";
-	return ss.str();
+	return os << "[" << interval.left << "," << interval.right << "]";
 }
 
 #endif
