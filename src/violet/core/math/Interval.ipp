@@ -47,17 +47,9 @@ bool Interval<T>::overlaps(const Interval & other) const
 template<typename T>
 T Interval<T>::overlap(const Interval &  other) const
 {
-	T maxDiff = (length() > other.length()) ? length() : other.length();
 	T diff1 = right - other.left;
-	if (diff1 < 0 || diff1 > maxDiff) diff1 = 0;
 	T diff2 = other.right - left;
-	if (diff2 < 0 || diff2 > maxDiff) diff2 = 0;
-	// return the smallest nonzero if one exists
-	return diff1 == 0 || diff2 == 0 ?
-		diff1 + diff2 :
-		diff1 < diff2 ?
-			diff1 :
-			diff2;
+	return diff1 < 0 || diff2 < 0 ? 0 : std::min(std::min(diff1, diff2), std::min(length(), other.length()));
 }
 
 template<typename T>
