@@ -8,6 +8,7 @@
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\component\RenderComponent.cpp">
       <Filter>component</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\Mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\Color.h" />
@@ -17,6 +18,7 @@
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.h">
       <Filter>system</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\Mesh.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="system">

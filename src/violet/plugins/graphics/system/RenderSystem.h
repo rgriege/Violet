@@ -30,8 +30,6 @@ namespace Violet
 
 		static bool init(Settings & settings);
 
-	public:
-
 		static void update(float dt);
 
 		static void create(Entity & entity, Deserializer & deserializer);

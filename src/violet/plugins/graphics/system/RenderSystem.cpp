@@ -3,8 +3,8 @@
 #include "violet/core/entity/Entity.h"
 #include "violet/core/math/Circle.h"
 #include "violet/core/math/Constants.h"
-#include "violet/core/math/Polygon.h"
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/plugins/graphics/Mesh.h"
 
 #include <GL/glut.h>
 
@@ -12,6 +12,8 @@ using namespace Violet;
 
 namespace RenderSystemNamespace
 {
+	const char * const ms_componentLabel = "rndr";
+
 	RenderSystem * ms_renderSystem;
 
 	void draw(const RenderComponent & renderComponent);
@@ -49,8 +51,10 @@ void RenderSystem::update(float const /*dt*/)
 
 void RenderSystem::create(Entity & entity, Deserializer & deserializer)
 {
+	deserializer.enterSegment(ms_componentLabel);
 	ms_renderSystem->m_components.emplace_back(deserializer);
 	ms_renderSystem->m_entityComponentMap.emplace(entity.id, ms_renderSystem->m_components.size());
+	deserializer.leaveSegment();
 }
 
 void RenderSystem::display()
@@ -66,8 +70,8 @@ void RenderSystemNamespace::draw(const RenderComponent & renderComponent)
 	glColor4f(renderComponent.m_color.r, renderComponent.m_color.g, renderComponent.m_color.b, renderComponent.m_color.a);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glBegin(GL_POLYGON);
-	const size_t len = renderComponent.m_mesh.vertices.size();
+	const size_t len = renderComponent.m_mesh.m_vertices.size();
 	for (size_t i = 0; i < len; i++)
-		glVertex2f(renderComponent.m_mesh.vertices[i].x, renderComponent.m_mesh.vertices[i].y);
+		glVertex2f(renderComponent.m_mesh.m_vertices[i].x, renderComponent.m_mesh.m_vertices[i].y);
 	glEnd();
 }

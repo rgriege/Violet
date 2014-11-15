@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -20,13 +20,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -94,7 +94,6 @@
     <ClInclude Include="..\..\..\src\violet\core\math\Circle.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Matrix2.h" />
-    <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h" />
@@ -108,13 +107,14 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\violet\core\math\Interval.ipp" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Interval.ipp">
+      <FileType>Document</FileType>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
-    <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
-    <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeerializer.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
