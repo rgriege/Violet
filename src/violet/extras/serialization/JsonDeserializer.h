@@ -13,6 +13,7 @@ namespace Violet
 	public:
 
 		JsonDeserializer(std::istream & stream);
+		JsonDeserializer(const JsonDeserializer & other);
 
 		virtual operator bool() const override;
 

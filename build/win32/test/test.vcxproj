@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -12,14 +12,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\test\main.cpp" />
+    <ClCompile Include="..\..\..\src\violet\test\math\MathTest.cpp" />
     <ClCompile Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\Test.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\TestSuite.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\test\core\StatefulTest.h" />
+    <ClInclude Include="..\..\..\src\violet\test\core\StatefulTestSuite.h" />
+    <ClInclude Include="..\..\..\src\violet\test\core\StatelessTest.h" />
+    <ClInclude Include="..\..\..\src\violet\test\core\StatelessTestSuite.h" />
+    <ClInclude Include="..\..\..\src\violet\test\core\TestEvaluator.h" />
+    <ClInclude Include="..\..\..\src\violet\test\core\TestFactory.h" />
+    <ClInclude Include="..\..\..\src\violet\test\math\MathTest.h" />
     <ClInclude Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.h" />
-    <ClInclude Include="..\..\..\src\violet\test\Test.h" />
-    <ClInclude Include="..\..\..\src\violet\test\TestSuite.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{18A356F7-AADB-4567-A8CB-5D7E3A9BFFA7}</ProjectGuid>
@@ -30,13 +34,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

@@ -1,11 +1,11 @@
-#ifndef JSON_SERIALIZATION_TEST_H
-#define JSON_SERIALIZATION_TEST_H
+#ifndef MATH_TEST_H
+#define MATH_TEST_H
 
 namespace Violet
 {
 	class TestEvaluator;
 
-	class JsonSerializationTests
+	class MathTests
 	{
 	public:
 

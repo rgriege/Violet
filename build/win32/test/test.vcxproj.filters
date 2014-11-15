@@ -5,19 +5,45 @@
     <ClCompile Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.cpp">
       <Filter>serialization</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\test\Test.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\TestSuite.cpp" />
+    <ClCompile Include="..\..\..\src\violet\test\math\MathTest.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="serialization">
       <UniqueIdentifier>{6e1e9c91-0ff7-477d-bcc2-765b98e41b8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="math">
+      <UniqueIdentifier>{fb1b3b10-174f-4985-b745-58ef03a17b0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core">
+      <UniqueIdentifier>{de08f983-8e4d-4e36-b2dc-61d2bf35d30d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.h">
       <Filter>serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\test\TestSuite.h" />
-    <ClInclude Include="..\..\..\src\violet\test\Test.h" />
+    <ClInclude Include="..\..\..\src\violet\test\math\MathTest.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\core\TestEvaluator.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\core\StatelessTest.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\core\StatefulTest.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\core\TestFactory.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\core\StatefulTestSuite.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\core\StatelessTestSuite.h">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

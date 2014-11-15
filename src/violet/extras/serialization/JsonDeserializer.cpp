@@ -17,6 +17,32 @@ JsonDeserializer::JsonDeserializer(std::istream & stream) :
 		m_stack.push_front(std::make_pair(&m_root, 0));
 }
 
+JsonDeserializer::JsonDeserializer(const JsonDeserializer & other) :
+	m_root(other.m_root),
+	m_valid(other.m_valid),
+	m_stack()
+{
+	if (m_valid)
+		m_stack.push_front(std::make_pair(&m_root, 0));
+
+	const Json::Value * otherCurrent = &other.m_root;
+	Json::Value * current = &m_root;
+	for (auto it = std::begin(other.m_stack) + 1, end = std::end(other.m_stack); it != end; ++it)
+	{
+		const auto & otherLevel = *it;
+		for (uint32 i = 0, end = otherCurrent->size(); i < end; ++i)
+		{
+			if (otherLevel.first == &otherCurrent->operator[](i))
+			{
+				otherCurrent = &otherCurrent->operator[](i);
+				current = &current->operator[](i);
+				m_stack.emplace_front(current, otherLevel.second);
+				break;
+			}
+		}
+	}
+}
+
 JsonDeserializer::operator bool() const
 {
 	return m_valid && !m_stack.empty();

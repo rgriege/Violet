@@ -1,128 +1,105 @@
 #include "violet/test/serialization/JsonSerializationTest.h"
 
-#include "violet/core/utility/FormattedString.h"
 #include "violet/extras/serialization/JsonDeserializer.h"
-#include "violet/test/TestSuite.h"
+#include "violet/test/core/TestEvaluator.h"
+#include "violet/test/core/TestFactory.h"
 
 #include <string>
+#include <tuple>
 
 using namespace Violet;
 
 namespace JsonSerializationTestNamespace
 {
-	std::string const ms_emptyObject = "{}";
-	std::string const ms_objectWrapper = "{%s}";
-	std::string const ms_indexedInt = "\"int%d\":%d";
-	std::string const ms_indexedFloat = "\"float%d\":%d";
+	const std::string ms_emptyObject = "{}";
+	const std::string ms_objectWrapper = "{%s}";
+	const std::string ms_indexedInt = "\"int%d\":%d";
+	const int ms_firstNum = 42;
+	const int ms_secondNum = 14;
 
-	std::string testEmpty();
-	std::string testInt();
-	std::string testTwo();
-	std::string testNested();
+	bool testEmpty();
+	JsonDeserializer createForInt(int num);
+	JsonDeserializer createForTwoInts(int firstNum, int secondNum);
+	JsonDeserializer createForNested(int num);
 
-	Test ms_tests[] =
-	{
-		Test(&testEmpty, "empty"),
-		Test(&testInt, "int"),
-		Test(&testTwo, "two values"),
-		Test(&testNested, "nested"),
-	};
+	bool isValid(JsonDeserializer & deserializer);
+	int deserializeInt(JsonDeserializer & deserializer);
+	int deserializeSecondInt(JsonDeserializer & deserializer);
 }
 
 using namespace JsonSerializationTestNamespace;
 
-void Violet::runJsonSerializationTests()
+void JsonSerializationTests::run(TestEvaluator & evaluator)
 {
-	TestSuite suite(std::vector<Test>(std::begin(ms_tests), std::end(ms_tests)), "Json Serialization");
-	suite.run();
+	TestFactory::makeStatelessSuite("json serialization", std::make_tuple(
+		TestFactory::makeStateless("empty object", false, &JsonSerializationTestNamespace::testEmpty),
+		TestFactory::makeStatefulSuite("single int", createForInt(ms_firstNum), std::make_tuple(
+			TestFactory::makeStateful<JsonDeserializer>("valid pre-parse", true, &JsonSerializationTestNamespace::isValid),
+			TestFactory::makeStateful<JsonDeserializer>("correct", ms_firstNum, &JsonSerializationTestNamespace::deserializeInt),
+			TestFactory::makeStateful<JsonDeserializer>("finished", false, &JsonSerializationTestNamespace::isValid)
+		)),
+		TestFactory::makeStatefulSuite("two ints", createForTwoInts(ms_firstNum, ms_secondNum), std::make_tuple(
+			TestFactory::makeStateful<JsonDeserializer>("valid pre-parse", true, &JsonSerializationTestNamespace::isValid),
+			TestFactory::makeStateful<JsonDeserializer>("first value correct", ms_firstNum, &JsonSerializationTestNamespace::deserializeInt),
+			TestFactory::makeStateful<JsonDeserializer>("second value correct", ms_secondNum, &JsonSerializationTestNamespace::deserializeSecondInt),
+			TestFactory::makeStateful<JsonDeserializer>("finished", false, &JsonSerializationTestNamespace::isValid)
+		)),
+		TestFactory::makeStatefulSuite("nested int", createForNested(ms_firstNum), std::make_tuple(
+			TestFactory::makeStateful<JsonDeserializer>("valid pre-parse", true, &JsonSerializationTestNamespace::isValid),
+			TestFactory::makeStateful<JsonDeserializer>("correct", ms_firstNum, &JsonSerializationTestNamespace::deserializeInt),
+			TestFactory::makeStateful<JsonDeserializer>("finished", false, &JsonSerializationTestNamespace::isValid)
+		))
+	)).evaluate(evaluator);
 }
 
-std::string JsonSerializationTestNamespace::testEmpty()
+bool JsonSerializationTestNamespace::testEmpty()
 {
 	std::stringstream ss;
 	ss << ms_emptyObject;
-	JsonDeserializer deserializer(ss);
-	return deserializer ? "has a value" : "";
+	return JsonDeserializer(ss);
 }
 
-std::string JsonSerializationTestNamespace::testInt()
+JsonDeserializer JsonSerializationTestNamespace::createForInt(const int num)
 {
-	int const num = 42;
-
 	Json::Value root(Json::objectValue);
 	root["int"] = num;
 	std::stringstream ss;
 	ss << root;
-
-	JsonDeserializer deserializer(ss);
-	if (!deserializer)
-		return "has no values";
-	else
-	{
-		int result = 0;
-		deserializer >> result;
-		if (result != num)
-			return FormattedString<256>().sprintf("input %d doesn't match output %d", num, result);
-		else if (deserializer)
-			return "has too many values";
-		else
-			return "";
-	}
+	return JsonDeserializer(ss);
 }
 
-std::string JsonSerializationTestNamespace::testTwo()
+JsonDeserializer JsonSerializationTestNamespace::createForTwoInts(const int firstNum, const int secondNum)
 {
-	int const num = 42;
-
 	Json::Value root(Json::objectValue);
-	root["int"] = num;
-	root["int2"] = num + 1;
+	root["int"] = firstNum;
+	root["int2"] = secondNum;
 	std::stringstream ss;
 	ss << root;
-
-	JsonDeserializer deserializer(ss);
-	if (!deserializer)
-		return "has no values";
-	else
-	{
-		int result = 0;
-		deserializer >> result;
-		if (result != num)
-			return FormattedString<256>().sprintf("first input %d doesn't match output %d", num, result);
-
-		deserializer >> result;
-		if (result != num + 1)
-			return FormattedString<256>().sprintf("second input %d doesn't match output %d", num, result);
-		else if (deserializer)
-			return "has too many values";
-		else
-			return "";
-	}
+	return JsonDeserializer(ss);
 }
 
-std::string JsonSerializationTestNamespace::testNested()
+JsonDeserializer JsonSerializationTestNamespace::createForNested(const int num)
 {
-	int const num = 42;
-
 	Json::Value root(Json::objectValue);
 	Json::Value nested(Json::objectValue);
 	nested["int"] = num;
 	root["object"] = nested;
 	std::stringstream ss;
 	ss << root;
+	return JsonDeserializer(ss);
+}
 
-	JsonDeserializer deserializer(ss);
-	if (!deserializer)
-		return "has no values";
-	else
-	{
-		int result = 0;
-		deserializer >> result;
-		if (result != num)
-			return FormattedString<256>().sprintf("input %d doesn't match output %d", num, result);
-		else if (deserializer)
-			return "has too many values";
-		else
-			return "";
-	}
+bool JsonSerializationTestNamespace::isValid(JsonDeserializer & deserializer)
+{
+	return deserializer;
+}
+
+int JsonSerializationTestNamespace::deserializeInt(JsonDeserializer & deserializer)
+{
+	return deserializer.getInt("int");
+}
+
+int JsonSerializationTestNamespace::deserializeSecondInt(JsonDeserializer & deserializer)
+{
+	return deserializer.getInt("int2");
 }
