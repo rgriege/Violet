@@ -73,7 +73,7 @@ T Vec2<T>::magSquared() const
 template<typename T>
 void Vec2<T>::normalize()
 {
-	scale_equals(1/magnitude());
+	*this /= magnitude();
 }
 
 template<typename T>
@@ -82,7 +82,7 @@ Vec2<T> Vec2<T>::getUnit() const
 	if (isUnit())
 		return copy();
 	else
-		return *this/magnitude();
+		return *this / magnitude();
 }
 
 template<typename T>

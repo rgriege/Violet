@@ -9,7 +9,7 @@ using namespace Violet;
 template<typename T>
 Interval<T>::Interval() :
 	left(0),
-	right(0),
+	right(0)
 {
 }
 
