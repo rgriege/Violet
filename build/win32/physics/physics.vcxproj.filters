@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\RigidBody.cpp" />
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\system\PhysicsSystem.cpp">
+      <Filter>system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\shape\Disk.cpp">
+      <Filter>shape</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\shape\Shape.cpp">
+      <Filter>shape</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\shape\Polygon.cpp">
+      <Filter>shape</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\collision\Intersection.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\collision\CollisionResolver.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\component\RigidBodyComponent.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\RigidBody.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\system\PhysicsSystem.h">
+      <Filter>system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\component\RigidBodyComponent.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\shape\Disk.h">
+      <Filter>shape</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\shape\Shape.h">
+      <Filter>shape</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\shape\Polygon.h">
+      <Filter>shape</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\collision\Intersection.h">
+      <Filter>collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\collision\CollisionResolver.h">
+      <Filter>collision</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="system">
+      <UniqueIdentifier>{881f20ad-afbf-4a8a-833d-ddcee8bde1bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="component">
+      <UniqueIdentifier>{66ac05b2-95ef-4444-a7d1-f655d34d4256}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shape">
+      <UniqueIdentifier>{3558db09-d916-45d6-8ec4-4055c1e1cccd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="collision">
+      <UniqueIdentifier>{bf30fcd6-99ed-49da-872a-5e37267b1de8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -8,6 +8,9 @@
     <ClCompile Include="..\..\..\src\violet\test\math\MathTest.cpp">
       <Filter>math</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\test\physics\PhysicsTest.cpp">
+      <Filter>physics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="serialization">
@@ -18,6 +21,9 @@
     </Filter>
     <Filter Include="core">
       <UniqueIdentifier>{de08f983-8e4d-4e36-b2dc-61d2bf35d30d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="physics">
+      <UniqueIdentifier>{44c622c7-c6f7-49a2-848e-0dc899588056}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -44,6 +50,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\test\core\StatelessTestSuite.h">
       <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\physics\PhysicsTest.h">
+      <Filter>physics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

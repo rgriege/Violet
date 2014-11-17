@@ -2,6 +2,7 @@
 #include <tuple>
 
 #include "violet/test/math/MathTest.h"
+#include "violet/test/physics/PhysicsTest.h"
 #include "violet/test/serialization/JsonSerializationTest.h"
 
 using namespace Violet;
@@ -17,6 +18,7 @@ int main(int argc, char** argv) {
 		TestEvaluator evaluator(std::cout);
 
 		MathTests::run(evaluator);
+		PhysicsTest::run(evaluator);
 		JsonSerializationTests::run(evaluator);
 	}
 
