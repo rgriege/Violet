@@ -16,6 +16,8 @@ namespace Violet
 		{
 		}
 
+		StatelessTestSuite(const StatelessTestSuite &) = delete;
+
 		template <typename Evaluator>
 		bool evaluate(Evaluator & evaluator) const
 		{

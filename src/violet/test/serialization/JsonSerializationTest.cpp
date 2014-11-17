@@ -31,20 +31,20 @@ using namespace JsonSerializationTestNamespace;
 
 void JsonSerializationTests::run(TestEvaluator & evaluator)
 {
-	TestFactory::makeStatelessSuite("json serialization", std::make_tuple(
+	TestFactory::makeStatelessSuite("json serialization", std::forward_as_tuple(
 		TestFactory::makeStateless("empty object", false, &JsonSerializationTestNamespace::testEmpty),
-		TestFactory::makeStatefulSuite("single int", createForInt(ms_firstNum), std::make_tuple(
+		TestFactory::makeStatefulSuite("single int", std::move(createForInt(ms_firstNum)), std::forward_as_tuple(
 			TestFactory::makeStateful<JsonDeserializer>("valid pre-parse", true, &JsonSerializationTestNamespace::isValid),
 			TestFactory::makeStateful<JsonDeserializer>("correct", ms_firstNum, &JsonSerializationTestNamespace::deserializeInt),
 			TestFactory::makeStateful<JsonDeserializer>("finished", false, &JsonSerializationTestNamespace::isValid)
 		)),
-		TestFactory::makeStatefulSuite("two ints", createForTwoInts(ms_firstNum, ms_secondNum), std::make_tuple(
+		TestFactory::makeStatefulSuite("two ints", std::move(createForTwoInts(ms_firstNum, ms_secondNum)), std::forward_as_tuple(
 			TestFactory::makeStateful<JsonDeserializer>("valid pre-parse", true, &JsonSerializationTestNamespace::isValid),
 			TestFactory::makeStateful<JsonDeserializer>("first value correct", ms_firstNum, &JsonSerializationTestNamespace::deserializeInt),
 			TestFactory::makeStateful<JsonDeserializer>("second value correct", ms_secondNum, &JsonSerializationTestNamespace::deserializeSecondInt),
 			TestFactory::makeStateful<JsonDeserializer>("finished", false, &JsonSerializationTestNamespace::isValid)
 		)),
-		TestFactory::makeStatefulSuite("nested int", createForNested(ms_firstNum), std::make_tuple(
+		TestFactory::makeStatefulSuite("nested int", std::move(createForNested(ms_firstNum)), std::forward_as_tuple(
 			TestFactory::makeStateful<JsonDeserializer>("valid pre-parse", true, &JsonSerializationTestNamespace::isValid),
 			TestFactory::makeStateful<JsonDeserializer>("correct", ms_firstNum, &JsonSerializationTestNamespace::deserializeInt),
 			TestFactory::makeStateful<JsonDeserializer>("finished", false, &JsonSerializationTestNamespace::isValid)

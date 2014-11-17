@@ -10,15 +10,17 @@ namespace Violet
 	{
 	public:
 
-		StatefulTestSuite(const char * name, State state, std::tuple<Tests...> tests) :
+		StatefulTestSuite(const char * name, State && state, std::tuple<Tests...> && tests) :
 			m_name(name),
-			m_state(state),
-			m_tests(tests)
+			m_state(std::move(state)),
+			m_tests(std::move(tests))
 		{
 		}
 
-		template <typename TestEvaluator>
-		bool evaluate(TestEvaluator & evaluator) const
+		StatefulTestSuite(const StatefulTestSuite &) = delete;
+
+		template <typename Evaluator>
+		bool evaluate(Evaluator & evaluator) const
 		{
 			evaluator.enterSuite();
 			size_t actual = EvaluateHelper<decltype(m_tests), sizeof...(Tests)-1>::evaluate(m_tests, evaluator, m_state);
@@ -34,8 +36,8 @@ namespace Violet
 		{
 		public:
 
-			template <typename TestEvaluator>
-			static size_t evaluate(const Tuple & t, TestEvaluator & evaluator, State & state)
+			template <typename Evaluator>
+			static size_t evaluate(const Tuple & t, Evaluator & evaluator, State & state)
 			{
 				const size_t previous = EvaluateHelper<Tuple, Index - 1>::evaluate(t, evaluator, state);
 				return previous + std::get<Index>(t).evaluate(evaluator, state);
@@ -47,8 +49,8 @@ namespace Violet
 		{
 		public:
 
-			template <typename TestEvaluator>
-			static size_t evaluate(const Tuple & t, TestEvaluator & evaluator, State & state)
+			template <typename Evaluator>
+			static size_t evaluate(const Tuple & t, Evaluator & evaluator, State & state)
 			{
 				return std::get<0>(t).evaluate(evaluator, state);
 			}

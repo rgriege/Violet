@@ -25,15 +25,15 @@ namespace Violet
 		}
 		
 		template <typename... Tests>
-		static StatelessTestSuite<Tests...> makeStatelessSuite(const char * name, std::tuple<Tests...> tests)
+		static StatelessTestSuite<Tests...> makeStatelessSuite(const char * name, std::tuple<Tests...> && tests)
 		{
-			return StatelessTestSuite<Tests...>(name, tests);
+			return StatelessTestSuite<Tests...>(name, std::forward<std::tuple<Tests...>>(tests));
 		}
 
 		template <typename State, typename... Tests>
-		static StatefulTestSuite<State, Tests...> makeStatefulSuite(const char * name, State state, std::tuple<Tests...> tests)
+		static StatefulTestSuite<State, Tests...> makeStatefulSuite(const char * name, State && state, std::tuple<Tests...> && tests)
 		{
-			return StatefulTestSuite<State, Tests...>(name, state, tests);
+			return StatefulTestSuite<State, Tests...>(name, std::forward<State>(state), std::forward<std::tuple<Tests...>>(tests));
 		}
 	};
 }
