@@ -212,7 +212,7 @@ template<typename T>
 Vec2<T> Violet::operator-(Vec2<T> lhs, const Vec2<T> & rhs)
 {
 	lhs -= rhs;
-	return rhs;
+	return lhs;
 }
 
 template<typename T>
