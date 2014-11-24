@@ -4,6 +4,7 @@
 #include "violet/test/math/MathTest.h"
 #include "violet/test/physics/PhysicsTest.h"
 #include "violet/test/serialization/JsonSerializationTest.h"
+#include "violet/test/template/TemplateTest.h"
 
 using namespace Violet;
 
@@ -20,6 +21,7 @@ int main(int argc, char** argv) {
 		MathTests::run(evaluator);
 		PhysicsTest::run(evaluator);
 		JsonSerializationTests::run(evaluator);
+		TemplateTests::run(evaluator);
 	}
 
 	std::cout << "Done." << std::endl;

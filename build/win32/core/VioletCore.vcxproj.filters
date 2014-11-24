@@ -13,6 +13,9 @@
     <Filter Include="entity">
       <UniqueIdentifier>{77e61554-8728-48a6-a170-924d0a0ad45d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="template">
+      <UniqueIdentifier>{df375a4b-5dfd-4dbc-be5f-47849460171d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h">
@@ -54,6 +57,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.ipp">
       <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\template\TemplateUtilities.h">
+      <Filter>template</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\template\TupleUtilities.h">
+      <Filter>template</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

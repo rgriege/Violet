@@ -15,6 +15,7 @@
     <ClCompile Include="..\..\..\src\violet\test\math\MathTest.cpp" />
     <ClCompile Include="..\..\..\src\violet\test\physics\PhysicsTest.cpp" />
     <ClCompile Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.cpp" />
+    <ClCompile Include="..\..\..\src\violet\test\template\TemplateTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\test\core\StatefulTest.h" />
@@ -26,6 +27,7 @@
     <ClInclude Include="..\..\..\src\violet\test\math\MathTest.h" />
     <ClInclude Include="..\..\..\src\violet\test\physics\PhysicsTest.h" />
     <ClInclude Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.h" />
+    <ClInclude Include="..\..\..\src\violet\test\template\TemplateTest.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{18A356F7-AADB-4567-A8CB-5D7E3A9BFFA7}</ProjectGuid>

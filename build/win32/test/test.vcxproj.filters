@@ -11,6 +11,9 @@
     <ClCompile Include="..\..\..\src\violet\test\physics\PhysicsTest.cpp">
       <Filter>physics</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\test\template\TemplateTest.cpp">
+      <Filter>template</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="serialization">
@@ -24,6 +27,9 @@
     </Filter>
     <Filter Include="physics">
       <UniqueIdentifier>{44c622c7-c6f7-49a2-848e-0dc899588056}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="template">
+      <UniqueIdentifier>{7ceed629-1a80-4508-9c8d-7a90e5985fa6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -53,6 +59,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\test\physics\PhysicsTest.h">
       <Filter>physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\template\TemplateTest.h">
+      <Filter>template</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
