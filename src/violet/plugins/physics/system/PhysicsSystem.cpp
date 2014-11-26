@@ -67,6 +67,11 @@ void PhysicsSystem::create(Entity & entity, Deserializer & deserializer)
 	deserializer.leaveSegment();
 }
 
+PhysicsComponent & PhysicsSystem::fetch(const Entity & entity)
+{
+	return ms_physicsSystem->m_components[ms_physicsSystem->m_entityComponentMap[entity.id]];
+}
+
 void PhysicsSystemNamespace::updateEntity(TransformComponent & transform, PhysicsComponent & physics, const float dt)
 {
 	Vec2f const acceleration = physics.m_force / physics.m_mass;
@@ -85,7 +90,7 @@ void PhysicsSystemNamespace::resolveCollisionForEntity(TransformComponent & tran
 	updateEntity(transform, physics, intersection.getTimeOfImpact());
 	Vec2f impulse = intersection.getIntersectionAxis() * intersection.getImpulseScalar();
 	Vec2f const location = intersection.getImpactLocation() - transform.m_position;
-	if (impulse.dot(location) < 0)
+	if (impulse.dot(location) > 0)
 		impulse.invert();
 
 	physics.m_angularVelocity -= location.cross(impulse) / physics.m_momentOfInertia;

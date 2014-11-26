@@ -26,7 +26,7 @@ namespace Violet
 		static bool init(Settings & settings);
 		static void update(float dt);
 		static void create(Entity & entity, Deserializer & deserializer);
-		static PhysicsComponent & get(Entity & entity);
+		static PhysicsComponent & fetch(const Entity & entity);
 
 	private:
 		

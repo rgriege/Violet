@@ -6,6 +6,7 @@
 #include "violet/core/entity/Entity.h"
 #include "violet/core/math/Vec2.h"
 #include "violet/core/transform/TransformSystem.h"
+#include "violet/core/utility/FormattedString.h"
 #include "violet/core/utility/Time.h"
 #include "violet/extras/serialization/JsonDeserializer.h"
 #include "violet/plugins/graphics/Color.h"
@@ -38,6 +39,22 @@ void printWarning(const char * msg)
 	exit(1);
 }
 
+void createEntity(Entity & e, const char * filename)
+{
+	std::filebuf fb;
+	if (!fb.open(filename, std::ios::in))
+		std::cout << "Could not open file " << filename << std::endl;
+
+	std::istream is(&fb);
+	JsonDeserializer deserializer(is);
+	if (!deserializer)
+		printWarning(FormattedString<128>().sprintf("Failed to parse %s", filename));
+	TransformSystem::create(e, deserializer);
+	RenderSystem::create(e, deserializer);
+	PhysicsSystem::create(e, deserializer);
+	fb.close();
+}
+
 int main(int argc, char** argv) {
 	if (!Violet::TransformSystem::init())
 		printWarning("Failed to initialize the TransformSystem");
@@ -54,39 +71,13 @@ int main(int argc, char** argv) {
 
 	Violet::PhysicsSystem::Settings physicsSettings;
 	physicsSettings.drag = 0.f;
-	physicsSettings.gravity = Vec2f(0, -1);
+	physicsSettings.gravity = Vec2f(0, -5);
 	if (!Violet::PhysicsSystem::init(physicsSettings))
 		printWarning("Failed to initialize the PhysicsSystem");
 
-	{
-		std::filebuf fb;
-		if (!fb.open("square.json", std::ios::in))
-			std::cout << "Could not open file square.json" << std::endl;
-
-		std::istream is(&fb);
-		JsonDeserializer deserializer(is);
-		if (!deserializer)
-			printWarning("Failed to parse square.json");
-		TransformSystem::create(e1, deserializer);
-		RenderSystem::create(e1, deserializer);
-		PhysicsSystem::create(e1, deserializer);
-		fb.close();
-	}
-
-	{
-		std::filebuf fb;
-		if (!fb.open("square2.json", std::ios::in))
-			std::cout << "Could not open file square2.json" << std::endl;
-
-		std::istream is(&fb);
-		JsonDeserializer deserializer(is);
-		if (!deserializer)
-			printWarning("Failed to parse square2.json");
-		TransformSystem::create(e2, deserializer);
-		RenderSystem::create(e2, deserializer);
-		PhysicsSystem::create(e2, deserializer);
-		fb.close();
-	}
+	createEntity(e1, "square.json");
+	createEntity(e2, "square2.json");
+	PhysicsSystem::fetch(e1).m_velocity += Vec2f(40, 0);
 
 	previousTime = Time::getTimeInMilliseconds();
 
