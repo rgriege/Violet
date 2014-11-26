@@ -18,6 +18,19 @@ RigidBody::RigidBody(const TransformComponent & transform, const PhysicsComponen
 {
 }
 
+RigidBody::RigidBody(Vec2f && center, Polygon && polygon, float mass) :
+	m_center(center),
+	m_rotation(0),
+	m_polygon(polygon),
+	m_mass(mass),
+	m_velocity(),
+	m_force(),
+	m_momentOfInertia(),
+	m_angularVelocity(),
+	m_torque()
+{
+}
+
 const Vec2f & RigidBody::getCenter()
 {
 	return m_center;

@@ -15,6 +15,7 @@ namespace Violet
 	public:
 
 		RigidBody(const TransformComponent & transform, const PhysicsComponent & physics);
+		RigidBody(Vec2f && center, Polygon && polygon, float mass);
 
 		const Vec2f & getCenter();
 		const Vec2f & getVelocity();

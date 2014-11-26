@@ -1,7 +1,7 @@
 #include "violet/test/physics/PhysicsTest.h"
 
 #include "violet/core/utility/FormattedString.h"
-#include "violet/plugins/core/math/Polygon.h"
+#include "violet/core/math/Polygon.h"
 #include "violet/plugins/physics/collision/Intersection.h"
 #include "violet/test/core/TestEvaluator.h"
 #include "violet/test/core/TestFactory.h"
@@ -12,10 +12,10 @@ using namespace Violet;
 
 void PhysicsTest::run(TestEvaluator & evaluator)
 {
-	Polygon r1(1.f, std::vector<Vec2f>({ Vec2f(1, 1), Vec2f(5, 1), Vec2f(5, 5), Vec2f(1, 5) }));
-	Polygon r2(1.f, std::vector<Vec2f>({ Vec2f(6, 1), Vec2f(10, 1), Vec2f(10, 5), Vec2f(6, 5) }));
+	RigidBody r1(Vec2f(3, 3), Polygon(std::vector<Vec2f>({ Vec2f(-2, -2), Vec2f(2, -2), Vec2f(2, 2), Vec2f(-2, 2) })), 1.f);
+	RigidBody r2(Vec2f(8, 3), Polygon(std::vector<Vec2f>({ Vec2f(-2, -2), Vec2f(2, -2), Vec2f(2, 2), Vec2f(-2, 2) })), 1.f);
 	r2.applyImpulse(Vec2f(-2, 0));
-	Intersection firstIntersection(r1, r2, 1.f);
+	Intersection firstIntersection(std::move(r1), std::move(r2), 1.f);
 
 	TestFactory::makeStatefulSuite("physics tests", std::move(firstIntersection), std::forward_as_tuple(
 		TestFactory::makeStateful<Intersection>("rec-rec intersection exists", true, [](Intersection & i) { return i.exists(); }),
