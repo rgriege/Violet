@@ -11,23 +11,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\plugins\physics\collision\CollisionResolver.cpp" />
     <ClCompile Include="..\..\..\src\violet\plugins\physics\collision\Intersection.cpp" />
-    <ClCompile Include="..\..\..\src\violet\plugins\physics\component\RigidBodyComponent.cpp" />
-    <ClCompile Include="..\..\..\src\violet\plugins\physics\RigidBody.cpp" />
-    <ClCompile Include="..\..\..\src\violet\plugins\physics\shape\Disk.cpp" />
-    <ClCompile Include="..\..\..\src\violet\plugins\physics\shape\Polygon.cpp" />
-    <ClCompile Include="..\..\..\src\violet\plugins\physics\shape\Shape.cpp" />
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\collision\RigidBody.cpp" />
+    <ClCompile Include="..\..\..\src\violet\plugins\physics\component\PhysicsComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\plugins\physics\system\PhysicsSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\plugins\physics\collision\CollisionResolver.h" />
     <ClInclude Include="..\..\..\src\violet\plugins\physics\collision\Intersection.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\physics\component\RigidBodyComponent.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\physics\RigidBody.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\physics\shape\Disk.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\physics\shape\Polygon.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\physics\shape\Shape.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\collision\RigidBody.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\physics\component\PhysicsComponent.h" />
     <ClInclude Include="..\..\..\src\violet\plugins\physics\system\PhysicsSystem.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

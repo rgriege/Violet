@@ -1,9 +1,7 @@
 #ifndef INTERSECTION_H
 #define INTERSECTION_H
 
-#include "violet/plugins/physics/shape/Shape.h"
-
-#include <memory>
+#include "violet/plugins/physics/collision/RigidBody.h"
 
 namespace Violet
 {
@@ -11,7 +9,7 @@ namespace Violet
 	{
 	public:
 
-		Intersection(Shape & shape1, Shape & shape2, float frameTime);
+		Intersection(RigidBody && rb1, RigidBody && rb2, float frameTime);
 		Intersection(Intersection && other);
 		Intersection(const Intersection &) = delete;
 
@@ -20,8 +18,8 @@ namespace Violet
 		float getImpulseScalar() const;
 		float getTimeOfImpact() const;
 		Vec2f getImpactLocation() const;
-		Shape & getShape1() const;
-		Shape & getShape2() const;
+		RigidBody & getRigidBody1() const;
+		RigidBody & getRigidBody2() const;
 
 	private:
 		
@@ -33,8 +31,8 @@ namespace Violet
 
 	private:
 
-		mutable std::unique_ptr<Shape> m_shape1;
-		mutable std::unique_ptr<Shape> m_shape2;
+		mutable RigidBody m_rb1;
+		mutable RigidBody m_rb2;
 		const float m_frameTime;
 		mutable bool m_tested;
 

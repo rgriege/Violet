@@ -4,6 +4,7 @@
 #include "violet/core/math/Circle.h"
 #include "violet/core/math/Constants.h"
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/transform/TransformSystem.h"
 #include "violet/plugins/graphics/Mesh.h"
 
 #include <GL/glut.h>
@@ -52,8 +53,8 @@ void RenderSystem::update(float const /*dt*/)
 void RenderSystem::create(Entity & entity, Deserializer & deserializer)
 {
 	deserializer.enterSegment(ms_componentLabel);
-	ms_renderSystem->m_components.emplace_back(deserializer);
 	ms_renderSystem->m_entityComponentMap.emplace(entity.id, ms_renderSystem->m_components.size());
+	ms_renderSystem->m_components.emplace_back(entity, deserializer);
 	deserializer.leaveSegment();
 }
 
@@ -67,6 +68,9 @@ void RenderSystem::display()
 
 void RenderSystemNamespace::draw(const RenderComponent & renderComponent)
 {
+	glPushMatrix();
+	const TransformComponent & transform = TransformSystem::fetch(renderComponent.m_entity);
+	glTranslatef(transform.m_position.x, transform.m_position.y, 0.f);
 	glColor4f(renderComponent.m_color.r, renderComponent.m_color.g, renderComponent.m_color.b, renderComponent.m_color.a);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glBegin(GL_POLYGON);
@@ -74,4 +78,5 @@ void RenderSystemNamespace::draw(const RenderComponent & renderComponent)
 	for (size_t i = 0; i < len; i++)
 		glVertex2f(renderComponent.m_mesh.m_vertices[i].x, renderComponent.m_mesh.m_vertices[i].y);
 	glEnd();
+	glPopMatrix();
 }

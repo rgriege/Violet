@@ -1,7 +1,7 @@
 #include "violet/test/physics/PhysicsTest.h"
 
 #include "violet/core/utility/FormattedString.h"
-#include "violet/plugins/physics/shape/Polygon.h"
+#include "violet/plugins/core/math/Polygon.h"
 #include "violet/plugins/physics/collision/Intersection.h"
 #include "violet/test/core/TestEvaluator.h"
 #include "violet/test/core/TestFactory.h"

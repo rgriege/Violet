@@ -13,13 +13,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\Color.cpp" />
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\component\RenderComponent.cpp" />
-    <ClCompile Include="..\..\..\src\violet\plugins\graphics\Mesh.cpp" />
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\Color.h" />
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\component\RenderComponent.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\graphics\Mesh.h" />
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

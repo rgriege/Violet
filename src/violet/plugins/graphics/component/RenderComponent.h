@@ -1,7 +1,9 @@
 #ifndef RENDER_COMPONENT_H
 #define RENDER_COMPONENT_H
 
-#include "violet/plugins/graphics/Mesh.h"
+#include "violet/core/component/Component.h"
+
+#include "violet/core/math/Polygon.h"
 #include "violet/plugins/graphics/Color.h"
 
 #include <memory>
@@ -10,15 +12,17 @@ namespace Violet
 {
 	class Deserializer;
 
-	class RenderComponent
+	class RenderComponent : public Component
 	{
 	public:
 
-		RenderComponent(Deserializer & deserializer);
+		RenderComponent(const Entity & entity, Deserializer & deserializer);
+		RenderComponent(RenderComponent && other);
+		RenderComponent(const RenderComponent &) = delete;
 
 	public:
 
-		Mesh m_mesh;
+		Polygon m_mesh;
 		Color m_color;
 	};
 }

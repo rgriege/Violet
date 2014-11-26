@@ -16,6 +16,12 @@
     <Filter Include="template">
       <UniqueIdentifier>{df375a4b-5dfd-4dbc-be5f-47849460171d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="transform">
+      <UniqueIdentifier>{c509c8a6-4564-423f-b5a3-04b210f5b477}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="component">
+      <UniqueIdentifier>{9be588b0-05c1-46a4-8d94-51b416fafbc4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h">
@@ -64,6 +70,18 @@
     <ClInclude Include="..\..\..\src\violet\core\template\TupleUtilities.h">
       <Filter>template</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\transform\TransformComponent.h">
+      <Filter>transform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\transform\TransformSystem.h">
+      <Filter>transform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\component\Component.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h">
+      <Filter>math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -77,6 +95,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.cpp">
       <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\transform\TransformSystem.cpp">
+      <Filter>transform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\transform\TransformComponent.cpp">
+      <Filter>transform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp">
+      <Filter>math</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

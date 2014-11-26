@@ -12,7 +12,7 @@ using namespace EntityNamespace;
 // ============================================================================
 
 Entity::Entity() :
-	id(++s_id)
+	id(s_id++)
 {
 }
 

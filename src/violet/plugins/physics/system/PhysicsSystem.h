@@ -7,7 +7,7 @@
 #include "violet/core/entity/Entity.h"
 #include "violet/core/math/Vec2.h"
 #include "violet/core/serialization/Deserializer.h"
-#include "violet/plugins/physics/component/RigidBodyComponent.h"
+#include "violet/plugins/physics/component/PhysicsComponent.h"
 
 namespace Violet
 {
@@ -24,20 +24,13 @@ namespace Violet
 		};
 
 		static bool init(Settings & settings);
-
 		static void update(float dt);
-
 		static void create(Entity & entity, Deserializer & deserializer);
-
-	private:
-		 
-		void moveBodies(float time);
-		void detectCollisions();
-		void applyGravity();
+		static PhysicsComponent & get(Entity & entity);
 
 	private:
 		
-		std::vector<RigidBodyComponent> m_components;
+		std::vector<PhysicsComponent> m_components;
 		std::map<uint32, uint32> m_entityComponentMap;
 		float m_drag;
 		Vec2f m_gravity;
