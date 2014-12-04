@@ -18,6 +18,11 @@ Json::Value const & JsonDeserializer::Frame::get(const char * label)
 	return m_value->operator[](label);
 }
 
+Json::Value const & JsonDeserializer::Frame::getArray()
+{
+	return m_value->operator[](m_accessCount++);
+}
+
 bool JsonDeserializer::Frame::finished() const
 {
 	return m_accessCount >= m_value->size();
@@ -50,7 +55,7 @@ JsonDeserializer::operator bool() const
 
 void JsonDeserializer::enterSegment(const char * label)
 {
-	m_stack.emplace_front(&m_stack.front().get(label));
+	m_stack.emplace_front(label != nullptr ? &m_stack.front().get(label) : &m_stack.front().getArray());
 }
 
 void JsonDeserializer::leaveSegment()

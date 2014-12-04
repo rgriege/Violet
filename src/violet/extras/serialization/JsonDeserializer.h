@@ -37,6 +37,7 @@ namespace Violet
 			Frame(const Json::Value * value);
 
 			Json::Value const & get(const char * label);
+			Json::Value const & getArray();
 			bool finished() const;
 
 		private:
