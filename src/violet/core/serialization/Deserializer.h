@@ -3,15 +3,13 @@
 
 #include "violet/core/Defines.h"
 
-#include <sstream>
-
 namespace Violet
 {
 	class Deserializer
 	{
 	public:
 
-		virtual ~Deserializer() {}
+		virtual ~Deserializer() = default;
 
 		virtual operator bool() const = 0;
 

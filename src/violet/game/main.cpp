@@ -8,6 +8,7 @@
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/core/utility/FormattedString.h"
 #include "violet/core/utility/Time.h"
+#include "violet/core/serialization/FileDeserializer.h"
 #include "violet/extras/serialization/JsonDeserializer.h"
 #include "violet/plugins/graphics/Color.h"
 #include "violet/plugins/graphics/system/RenderSystem.h"
@@ -41,18 +42,17 @@ void printWarning(const char * msg)
 
 void createEntity(Entity & e, const char * filename)
 {
-	std::filebuf fb;
-	if (!fb.open(filename, std::ios::in))
-		std::cout << "Could not open file " << filename << std::endl;
-
-	std::istream is(&fb);
-	JsonDeserializer deserializer(is);
-	if (!deserializer)
+	auto deserializer = FileDeserializer<JsonDeserializer>::create(filename);
+	if (deserializer == nullptr)
+		printWarning(FormattedString<128>().sprintf("Could not open file %s", filename));
+	else if (!deserializer)
 		printWarning(FormattedString<128>().sprintf("Failed to parse %s", filename));
-	TransformSystem::create(e, deserializer);
-	RenderSystem::create(e, deserializer);
-	PhysicsSystem::create(e, deserializer);
-	fb.close();
+	else
+	{
+		TransformSystem::create(e, *deserializer);
+		RenderSystem::create(e, *deserializer);
+		PhysicsSystem::create(e, *deserializer);
+	}
 }
 
 int main(int argc, char** argv) {

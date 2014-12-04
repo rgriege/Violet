@@ -99,10 +99,12 @@
     <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\template\TemplateUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\template\TupleUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformComponent.h" />
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformSystem.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\Factory.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Time.h" />
   </ItemGroup>
@@ -125,6 +127,11 @@
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.ipp">
+      <FileType>Document</FileType>
+    </ClInclude>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
