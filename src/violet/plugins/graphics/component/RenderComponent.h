@@ -6,8 +6,6 @@
 #include "violet/core/math/Polygon.h"
 #include "violet/plugins/graphics/Color.h"
 
-#include <memory>
-
 namespace Violet
 {
 	class Deserializer;

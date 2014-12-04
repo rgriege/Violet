@@ -1,5 +1,4 @@
 #include <iostream>
-#include <tuple>
 
 #include "violet/test/math/MathTest.h"
 #include "violet/test/physics/PhysicsTest.h"
@@ -13,8 +12,8 @@ using namespace Violet;
 
 using namespace Violet;
 
-int main(int argc, char** argv) {
-
+int main(int argc, char** argv)
+{
 	{
 		TestEvaluator evaluator(std::cout);
 
