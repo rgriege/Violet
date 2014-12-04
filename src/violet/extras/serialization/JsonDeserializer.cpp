@@ -6,15 +6,34 @@
 
 using namespace Violet;
 
+JsonDeserializer::Frame::Frame(const Json::Value * value) :
+	m_value(value),
+	m_accessCount()
+{
+}
+
+Json::Value const & JsonDeserializer::Frame::get(const char * label)
+{
+	++m_accessCount;
+	return m_value->operator[](label);
+}
+
+bool JsonDeserializer::Frame::finished() const
+{
+	return m_accessCount >= m_value->size();
+}
+
 JsonDeserializer::JsonDeserializer(std::istream & stream) :
 	m_root(),
 	m_valid(),
 	m_stack()
 {
 	Json::Reader reader;
-	m_valid = reader.parse(stream, m_root, false);
-	if (m_valid)
-		m_stack.push_front(std::make_pair(&m_root, 0));
+	if (reader.parse(stream, m_root, false))
+	{
+		m_stack.push_front(&m_root);
+		m_valid = !m_stack.front().finished();
+	}
 }
 
 JsonDeserializer::JsonDeserializer(JsonDeserializer && other) :
@@ -26,15 +45,12 @@ JsonDeserializer::JsonDeserializer(JsonDeserializer && other) :
 
 JsonDeserializer::operator bool() const
 {
-	return m_valid && !m_stack.empty();
+	return m_valid && !m_stack.empty() && !(m_stack.size() == 1 && m_stack.front().finished());
 }
 
 void JsonDeserializer::enterSegment(const char * label)
 {
-	if (label != nullptr)
-		m_stack.emplace_front(&m_stack.front().first->operator[](label), 0);
-	else
-		m_stack.emplace_front(&m_stack.front().first->operator[](m_stack.front().second++), 0);
+	m_stack.emplace_front(&m_stack.front().get(label));
 }
 
 void JsonDeserializer::leaveSegment()
@@ -44,17 +60,17 @@ void JsonDeserializer::leaveSegment()
 
 bool JsonDeserializer::getBoolean(const char * label)
 {
-	return m_stack.front().first->get(label, false).asBool();
+	return m_stack.front().get(label).asBool();
 }
 
 uint32 JsonDeserializer::getUint(const char * label)
 {
-	return m_stack.front().first->get(label, 0).asUInt();
+	return m_stack.front().get(label).asUInt();
 }
 
 int JsonDeserializer::getInt(const char * label)
 {
-	return m_stack.front().first->get(label, 0).asInt();
+	return m_stack.front().get(label).asInt();
 }
 
 float JsonDeserializer::getFloat(const char * label)
@@ -64,10 +80,10 @@ float JsonDeserializer::getFloat(const char * label)
 
 double JsonDeserializer::getDouble(const char * label)
 {
-	return m_stack.front().first->get(label, 0).asDouble();
+	return m_stack.front().get(label).asDouble();
 }
 
 const char * JsonDeserializer::getString(const char * label)
 {
-	return m_stack.front().first->get(label, "").asCString();
+	return m_stack.front().get(label).asCString();
 }

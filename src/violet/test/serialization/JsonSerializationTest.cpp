@@ -25,6 +25,7 @@ namespace JsonSerializationTestNamespace
 	bool isValid(JsonDeserializer & deserializer);
 	int deserializeInt(JsonDeserializer & deserializer);
 	int deserializeSecondInt(JsonDeserializer & deserializer);
+	int deserializeNestedInt(JsonDeserializer & deserializer);
 }
 
 using namespace JsonSerializationTestNamespace;
@@ -46,7 +47,7 @@ void JsonSerializationTests::run(TestEvaluator & evaluator)
 		)),
 		TestFactory::makeStatefulSuite("nested int", std::move(createForNested(ms_firstNum)), std::forward_as_tuple(
 			TestFactory::makeStateful<JsonDeserializer>("valid pre-parse", true, &JsonSerializationTestNamespace::isValid),
-			TestFactory::makeStateful<JsonDeserializer>("correct", ms_firstNum, &JsonSerializationTestNamespace::deserializeInt),
+			TestFactory::makeStateful<JsonDeserializer>("correct", ms_firstNum, &JsonSerializationTestNamespace::deserializeNestedInt),
 			TestFactory::makeStateful<JsonDeserializer>("finished", false, &JsonSerializationTestNamespace::isValid)
 		))
 	)).evaluate(evaluator);
@@ -102,4 +103,12 @@ int JsonSerializationTestNamespace::deserializeInt(JsonDeserializer & deserializ
 int JsonSerializationTestNamespace::deserializeSecondInt(JsonDeserializer & deserializer)
 {
 	return deserializer.getInt("int2");
+}
+
+int JsonSerializationTestNamespace::deserializeNestedInt(JsonDeserializer & deserializer)
+{
+	deserializer.enterSegment("object");
+	int const result = deserializer.getInt("int");
+	deserializer.leaveSegment();
+	return result;
 }

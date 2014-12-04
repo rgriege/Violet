@@ -30,8 +30,25 @@ namespace Violet
 
 	private:
 
+		class Frame
+		{
+		public:
+
+			Frame(const Json::Value * value);
+
+			Json::Value const & get(const char * label);
+			bool finished() const;
+
+		private:
+
+			const Json::Value * m_value;
+			uint32 m_accessCount;
+		};
+
+	private:
+
 		Json::Value m_root;
-		std::deque<std::pair<Json::Value *, uint32>> m_stack;
+		std::deque<Frame> m_stack;
 		bool m_valid;
 	};
 }
