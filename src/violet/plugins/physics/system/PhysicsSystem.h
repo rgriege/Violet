@@ -4,13 +4,15 @@
 #include <vector>
 #include <map>
 
-#include "violet/core/entity/Entity.h"
 #include "violet/core/math/Vec2.h"
-#include "violet/core/serialization/Deserializer.h"
 #include "violet/plugins/physics/component/PhysicsComponent.h"
 
 namespace Violet
 {
+	class ComponentFactory;
+	class Deserializer;
+	class Entity;
+
 	class PhysicsSystem
 	{
 	public:
@@ -23,7 +25,7 @@ namespace Violet
 			Vec2f gravity;
 		};
 
-		static bool init(Settings & settings);
+		static bool init(ComponentFactory & factory, Settings & settings);
 		static void update(float dt);
 		static void create(Entity & entity, Deserializer & deserializer);
 		static PhysicsComponent & fetch(const Entity & entity);

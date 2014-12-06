@@ -14,9 +14,14 @@ namespace Violet
 
 		Entity();
 
+	private:
+
+		Entity(const Entity &) = delete;
+		Entity & operator=(const Entity &) = delete;
+
 	public:
 
-		const uint32 id;
+		uint32 m_id;
 	};
 }
 

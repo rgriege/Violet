@@ -4,7 +4,7 @@ using namespace Violet;
 
 namespace EntityNamespace
 {
-	uint32 s_id;
+	uint32 ms_id;
 }
 
 using namespace EntityNamespace;
@@ -12,7 +12,7 @@ using namespace EntityNamespace;
 // ============================================================================
 
 Entity::Entity() :
-	id(s_id++)
+	m_id(ms_id++)
 {
 }
 

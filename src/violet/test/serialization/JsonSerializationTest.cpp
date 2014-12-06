@@ -107,8 +107,7 @@ int JsonSerializationTestNamespace::deserializeSecondInt(JsonDeserializer & dese
 
 int JsonSerializationTestNamespace::deserializeNestedInt(JsonDeserializer & deserializer)
 {
-	deserializer.enterSegment("object");
-	int const result = deserializer.getInt("int");
-	deserializer.leaveSegment();
+	auto segment = deserializer.enterSegment("object");
+	int const result = segment->getInt("int");
 	return result;
 }

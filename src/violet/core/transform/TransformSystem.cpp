@@ -1,5 +1,6 @@
 #include "violet/core/transform/TransformSystem.h"
 
+#include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
 
@@ -14,11 +15,12 @@ namespace TransformSystemNamespace
 
 using namespace TransformSystemNamespace;
 
-bool TransformSystem::init()
+bool TransformSystem::init(ComponentFactory & factory)
 {
 	if (ms_transformSystem == nullptr)
 	{
 		ms_transformSystem = new TransformSystem();
+		factory.assign(ms_componentLabel, &TransformSystem::create);
 		return true;
 	}
 
@@ -31,13 +33,12 @@ void TransformSystem::update(float /*dt*/)
 
 void TransformSystem::create(Entity & entity, Deserializer & deserializer)
 {
-	deserializer.enterSegment(ms_componentLabel);
-	ms_transformSystem->m_entityComponentMap.emplace(entity.id, ms_transformSystem->m_components.size());
-	ms_transformSystem->m_components.emplace_back(entity, deserializer);
-	deserializer.leaveSegment();
+	auto segment = deserializer.enterSegment(ms_componentLabel);
+	ms_transformSystem->m_entityComponentMap.emplace(entity.m_id, ms_transformSystem->m_components.size());
+	ms_transformSystem->m_components.emplace_back(entity, *segment);
 }
 
 TransformComponent & TransformSystem::fetch(const Entity & entity)
 {
-	return ms_transformSystem->m_components[ms_transformSystem->m_entityComponentMap[entity.id]];
+	return ms_transformSystem->m_components[ms_transformSystem->m_entityComponentMap[entity.m_id]];
 }

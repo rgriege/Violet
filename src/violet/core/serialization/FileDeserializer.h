@@ -21,8 +21,8 @@ namespace Violet
 
 		virtual operator bool() const override;
 
-		virtual void enterSegment(const char * label) override;
-		virtual void leaveSegment() override;
+		virtual std::unique_ptr<Deserializer> enterSegment(const char * label) override;
+		virtual const char * nextLabel() const override;
 
 		virtual bool getBoolean(const char * label) override;
 		virtual uint32 getUint(const char * label) override;

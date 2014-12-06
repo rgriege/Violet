@@ -1,5 +1,8 @@
 #include "violet/plugins/physics/system/PhysicsSystem.h"
 
+#include "violet/core/component/ComponentFactory.h"
+#include "violet/core/entity/Entity.h"
+#include "violet/core/serialization/Deserializer.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/plugins/physics/collision/Intersection.h"
 
@@ -21,12 +24,18 @@ namespace PhysicsSystemNamespace
 
 using namespace PhysicsSystemNamespace;
 
-bool PhysicsSystem::init(Settings & settings)
+bool PhysicsSystem::init(ComponentFactory & factory, Settings & settings)
 {
-	ms_physicsSystem = new PhysicsSystem();
-	ms_physicsSystem->m_drag = settings.drag;
-	ms_physicsSystem->m_gravity = settings.gravity;
-	return true;
+	if (ms_physicsSystem == nullptr)
+	{
+		ms_physicsSystem = new PhysicsSystem();
+		ms_physicsSystem->m_drag = settings.drag;
+		ms_physicsSystem->m_gravity = settings.gravity;
+		factory.assign(ms_componentLabel, &PhysicsSystem::create);
+		return true;
+	}
+
+	return false;
 }
 
 void PhysicsSystem::update(const float dt)
@@ -61,15 +70,14 @@ void PhysicsSystem::update(const float dt)
 
 void PhysicsSystem::create(Entity & entity, Deserializer & deserializer)
 {
-	deserializer.enterSegment(ms_componentLabel);
-	ms_physicsSystem->m_entityComponentMap.emplace(entity.id, ms_physicsSystem->m_components.size());
-	ms_physicsSystem->m_components.emplace_back(entity, deserializer);
-	deserializer.leaveSegment();
+	auto segment = deserializer.enterSegment(ms_componentLabel);
+	ms_physicsSystem->m_entityComponentMap.emplace(entity.m_id, ms_physicsSystem->m_components.size());
+	ms_physicsSystem->m_components.emplace_back(entity, *segment);
 }
 
 PhysicsComponent & PhysicsSystem::fetch(const Entity & entity)
 {
-	return ms_physicsSystem->m_components[ms_physicsSystem->m_entityComponentMap[entity.id]];
+	return ms_physicsSystem->m_components[ms_physicsSystem->m_entityComponentMap[entity.m_id]];
 }
 
 void PhysicsSystemNamespace::updateEntity(TransformComponent & transform, PhysicsComponent & physics, const float dt)

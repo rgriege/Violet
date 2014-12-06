@@ -8,6 +8,7 @@
 
 namespace Violet
 {
+	class ComponentFactory;
 	class Deserializer;
 	class Entity;
 
@@ -15,7 +16,7 @@ namespace Violet
 	{
 	public:
 
-		static bool init();
+		static bool init(ComponentFactory & factory);
 		static void update(float dt);
 		static void create(Entity & entity, Deserializer & deserializer);
 		static TransformComponent & fetch(const Entity & entity);

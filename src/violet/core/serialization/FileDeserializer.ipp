@@ -25,15 +25,15 @@ FileDeserializer<StreamDeserializer>::operator bool() const
 }
 
 template <class StreamDeserializer>
-void FileDeserializer<StreamDeserializer>::enterSegment(const char * label)
+std::unique_ptr<Deserializer> FileDeserializer<StreamDeserializer>::enterSegment(const char * label)
 {
-	m_deserializer.enterSegment(label);
+	return m_deserializer.enterSegment(label);
 }
 
 template <class StreamDeserializer>
-void FileDeserializer<StreamDeserializer>::leaveSegment()
+const char * FileDeserializer<StreamDeserializer>::nextLabel() const
 {
-	m_deserializer.leaveSegment();
+	return m_deserializer.nextLabel();
 }
 
 template <class StreamDeserializer>

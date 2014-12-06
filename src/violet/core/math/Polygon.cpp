@@ -27,18 +27,15 @@ Polygon::Polygon(Deserializer & deserializer) :
 
 std::vector<Vec2f> PolygonNamespace::deserializeVertices(Deserializer & deserializer)
 {
-	deserializer.enterSegment(ms_segmentLabel);
-	uint32 n = deserializer.getUint(ms_sizeLabel);
+	auto polygonSegment = deserializer.enterSegment(ms_segmentLabel);
+	uint32 n = polygonSegment->getUint(ms_sizeLabel);
 	std::vector<Vec2f> m_vertices;
 	m_vertices.reserve(n);
-	deserializer.enterSegment(ms_verticesLabel);
+	auto verticesSegment = polygonSegment->enterSegment(ms_verticesLabel);
 	for (uint32 i = 0; i < n; ++i)
 	{
-		deserializer.enterSegment(nullptr);
-		m_vertices.emplace_back(deserializer);
-		deserializer.leaveSegment();
+		auto vertexSegment = verticesSegment->enterSegment(nullptr);
+		m_vertices.emplace_back(*vertexSegment);
 	}
-	deserializer.leaveSegment();
-	deserializer.leaveSegment();
 	return m_vertices;
 }

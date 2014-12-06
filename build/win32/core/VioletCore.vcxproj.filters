@@ -91,6 +91,9 @@
     <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.ipp">
       <Filter>serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\component\ComponentFactory.h">
+      <Filter>component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -113,6 +116,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp">
       <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\component\ComponentFactory.cpp">
+      <Filter>component</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

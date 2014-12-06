@@ -13,13 +13,14 @@ namespace Violet
 	public:
 
 		JsonDeserializer(std::istream & stream);
-		JsonDeserializer(const JsonDeserializer & other) = delete;
 		JsonDeserializer(JsonDeserializer && other);
+		JsonDeserializer(const JsonDeserializer &) = delete;
+		JsonDeserializer & operator=(const JsonDeserializer &) = delete;
 
 		virtual operator bool() const override;
 
-		virtual void enterSegment(const char * label) override;
-		virtual void leaveSegment() override;
+		virtual std::unique_ptr<Deserializer> enterSegment(const char * label) override;
+		virtual const char * nextLabel() const override;
 		
 		virtual bool getBoolean(const char * label) override;
 		virtual uint32 getUint(const char * label) override;
@@ -30,27 +31,8 @@ namespace Violet
 
 	private:
 
-		class Frame
-		{
-		public:
-
-			Frame(const Json::Value * value);
-
-			Json::Value const & get(const char * label);
-			Json::Value const & getArray();
-			bool finished() const;
-
-		private:
-
-			const Json::Value * m_value;
-			uint32 m_accessCount;
-		};
-
-	private:
-
 		Json::Value m_root;
-		std::deque<Frame> m_stack;
-		bool m_valid;
+		Json::ValueConstIterator m_position;
 	};
 }
 

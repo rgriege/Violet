@@ -1,5 +1,6 @@
 #include "violet/plugins/graphics/system/RenderSystem.h"
 
+#include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/math/Circle.h"
 #include "violet/core/math/Constants.h"
@@ -22,7 +23,7 @@ namespace RenderSystemNamespace
 
 using namespace RenderSystemNamespace;
 
-bool RenderSystem::init(Settings & settings)
+bool RenderSystem::init(ComponentFactory & factory, Settings & settings)
 {
 	if (ms_renderSystem != nullptr)
 		return false;
@@ -42,6 +43,7 @@ bool RenderSystem::init(Settings & settings)
 
 	ms_renderSystem = new RenderSystem();
 	glutDisplayFunc(display);
+	factory.assign(ms_componentLabel, &RenderSystem::create);
 	return true;
 }
 
@@ -52,10 +54,9 @@ void RenderSystem::update(float const /*dt*/)
 
 void RenderSystem::create(Entity & entity, Deserializer & deserializer)
 {
-	deserializer.enterSegment(ms_componentLabel);
-	ms_renderSystem->m_entityComponentMap.emplace(entity.id, ms_renderSystem->m_components.size());
-	ms_renderSystem->m_components.emplace_back(entity, deserializer);
-	deserializer.leaveSegment();
+	auto segment = deserializer.enterSegment(ms_componentLabel);
+	ms_renderSystem->m_entityComponentMap.emplace(entity.m_id, ms_renderSystem->m_components.size());
+	ms_renderSystem->m_components.emplace_back(entity, *segment);
 }
 
 void RenderSystem::display()

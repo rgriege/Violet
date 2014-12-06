@@ -19,7 +19,17 @@ BinaryDeserializer::BinaryDeserializer(std::istream & stream) :
 BinaryDeserializer::operator bool() const
 {
 	// error with implicitly/explicitly calling operator bool()
-	return m_stream ? true : false;
+	return m_stream.operator bool();
+}
+
+std::unique_ptr<Deserializer> BinaryDeserializer::enterSegment(const char * /*label*/)
+{
+	return std::unique_ptr<Deserializer>(new BinaryDeserializer(m_stream));
+}
+
+const char * BinaryDeserializer::nextLabel() const
+{
+	return "";
 }
 
 bool BinaryDeserializer::getBoolean(const char * /*label*/)

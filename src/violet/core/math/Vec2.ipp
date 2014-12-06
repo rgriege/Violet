@@ -8,15 +8,6 @@
 
 using namespace Violet;
 
-namespace Vec2Namespace
-{
-	static const char * ms_segmentLabel = "vec";
-	static const char * ms_xLabel = "x";
-	static const char * ms_yLabel = "y";
-}
-
-using namespace Vec2Namespace;
-
 template<typename T>
 const Vec2<T> Vec2<T>::X_AXIS(1, 0);
 
@@ -52,10 +43,9 @@ Vec2<T>::Vec2(Deserializer & deserializer) :
 	x(),
 	y()
 {
-	deserializer.enterSegment(Vec2Namespace::ms_segmentLabel);
-	x = deserializer.getFloat(ms_xLabel);
-	y = deserializer.getFloat(ms_yLabel);
-	deserializer.leaveSegment();
+	auto segment = deserializer.enterSegment("vec");
+	x = segment->getFloat("x");
+	y = segment->getFloat("y");
 }
 
 template<typename T>

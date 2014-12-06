@@ -3,6 +3,8 @@
 
 #include "violet/core/Defines.h"
 
+#include <memory>
+
 namespace Violet
 {
 	class Deserializer
@@ -13,8 +15,8 @@ namespace Violet
 
 		virtual operator bool() const = 0;
 
-		virtual void enterSegment(const char * label) = 0;
-		virtual void leaveSegment() = 0;
+		virtual std::unique_ptr<Deserializer> enterSegment(const char * label) = 0;
+		virtual const char * nextLabel() const = 0;
 
 		virtual bool getBoolean(const char * label) = 0;
 		virtual uint32 getUint(const char * label) = 0;
