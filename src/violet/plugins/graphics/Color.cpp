@@ -85,10 +85,10 @@ Color::Color(Deserializer & deserializer)
 {
 	auto segment = deserializer.enterSegment(ms_segmentLabel);
 	uint32 rgba = segment->getUint(ms_valueLabel);
-	r = static_cast<uint8>(rgba & 0xff000000);
-	g = static_cast<uint8>(rgba & 0x00ff0000);
-	b = static_cast<uint8>(rgba & 0x0000ff00);
-	a = static_cast<uint8>(rgba & 0x000000ff);
+	r = static_cast<uint8>((rgba >> 24) & 0xff);
+	g = static_cast<uint8>((rgba >> 16) & 0xff);
+	b = static_cast<uint8>((rgba >> 8) & 0xff);
+	a = static_cast<uint8>(rgba & 0xff);
 }
 
 float ColorNamespace::convert(const uint8 value)
