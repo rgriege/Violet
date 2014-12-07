@@ -11,6 +11,7 @@ namespace Violet
 	{
 	public:
 
+		Deserializer() = default;
 		virtual ~Deserializer() = default;
 
 		virtual operator bool() const = 0;
@@ -24,6 +25,11 @@ namespace Violet
 		virtual float getFloat(const char * label) = 0;
 		virtual double getDouble(const char * label) = 0;
 		virtual const char * getString(const char * label) = 0;
+
+	private:
+
+		Deserializer(const Deserializer &) = delete;
+		Deserializer & operator=(const Deserializer &) = delete;
 	};
 }
 
