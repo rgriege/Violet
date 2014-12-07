@@ -7,17 +7,24 @@ using namespace Violet;
 namespace PhysicsComponentNamespace
 {
 	const char * const ms_massLabel = "mass";
+	const char * const ms_velocityLabel = "vel";
 
+	Vec2f deserializeVelocity(Deserializer & deserializer);
 	float calculateMomentOfInertia(const Polygon & polygon, float mass);
 }
 
 using namespace PhysicsComponentNamespace;
 
+const char * PhysicsComponent::getLabel()
+{
+	return "phys";
+}
+
 PhysicsComponent::PhysicsComponent(const Entity & entity, Deserializer & deserializer) :
 	Component(entity),
 	m_polygon(deserializer),
 	m_mass(deserializer.getFloat(ms_massLabel)),
-	m_velocity(),
+	m_velocity(deserializeVelocity(deserializer)),
 	m_force(),
 	m_momentOfInertia(calculateMomentOfInertia(m_polygon, m_mass)),
 	m_angularVelocity(),
@@ -35,6 +42,12 @@ PhysicsComponent::PhysicsComponent(PhysicsComponent && other) :
 	m_angularVelocity(other.m_angularVelocity),
 	m_torque(other.m_torque)
 {
+}
+
+Vec2f PhysicsComponentNamespace::deserializeVelocity(Deserializer & deserializer)
+{
+	auto velocitySegment = deserializer.enterSegment(ms_velocityLabel);
+	return Vec2f(*velocitySegment);
 }
 
 float PhysicsComponentNamespace::calculateMomentOfInertia(const Polygon & polygon, const float mass)

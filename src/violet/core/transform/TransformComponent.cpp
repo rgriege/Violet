@@ -1,6 +1,9 @@
 #include "violet/core/transform/TransformComponent.h"
 
-#include "violet/core/serialization/Deserializer.h"
+const char * TransformComponent::getLabel()
+{
+	return "tsfm";
+}
 
 TransformComponent::TransformComponent(const Entity & entity) :
 	Component(entity),

@@ -12,6 +12,9 @@ namespace Violet
 	{
 	public:
 
+		static const char * getLabel();
+	public:
+
 		PhysicsComponent(const Entity & entity, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
 		PhysicsComponent(const PhysicsComponent &) = delete;

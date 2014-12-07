@@ -4,6 +4,11 @@
 
 using namespace Violet;
 
+const char * RenderComponent::getLabel()
+{
+	return "rndr";
+}
+
 RenderComponent::RenderComponent(const Entity & entity, Deserializer & deserializer) :
 	Component(entity),
 	m_mesh(deserializer),

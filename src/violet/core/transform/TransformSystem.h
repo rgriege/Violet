@@ -1,30 +1,25 @@
 #ifndef TRANSFORM_SYSTEM_H
 #define TRANSFORM_SYSTEM_H
 
+#include "violet/core/system/System.h"
 #include "violet/core/transform/TransformComponent.h"
-
-#include <vector>
-#include <map>
 
 namespace Violet
 {
-	class ComponentFactory;
 	class Deserializer;
-	class Entity;
+	class SystemFactory;
 
-	class TransformSystem
+	class TransformSystem : public ComponentSystem<TransformComponent>
 	{
 	public:
 
-		static bool init(ComponentFactory & factory);
-		static void update(float dt);
-		static void create(Entity & entity, Deserializer & deserializer);
-		static TransformComponent & fetch(const Entity & entity);
+		static void install(SystemFactory & factory);
+		static std::unique_ptr<System> init(Deserializer & deserializer);
 
-	private:
+	public:
 
-		std::vector<TransformComponent> m_components;
-		std::map<uint32, uint32> m_entityComponentMap;
+		virtual ~TransformSystem() override = default;
+		virtual void update(float dt, AlterContext & context) override;
 	};
 }
 

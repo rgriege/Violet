@@ -1,49 +1,31 @@
 #ifndef RENDER_SYSTEM_H
 #define RENDER_SYSTEM_H
 
-#include <vector>
-#include <map>
-
+#include "violet/core/system/System.h"
 #include "violet/plugins/graphics/component/RenderComponent.h"
 
 namespace Violet
 {
-	class ComponentFactory;
+	class AlterContext;
 	class Deserializer;
-	class Entity;
+	class SystemFactory;
 
-	class RenderSystem
+	class RenderSystem : public ComponentSystem<RenderComponent>
 	{
 	public:
 
-		class Settings
-		{
-		public:
-
-			int argc;
-			char ** argv;
-			int x, y, width, height;
-			const char * title;
-			Color screenColor;
-		};
+		static void install(SystemFactory & factory);
+		static std::unique_ptr<System> init(Deserializer & deserializer);
 
 	public:
 
-		static bool init(ComponentFactory & factory, Settings & settings);
-
-		static void update(float dt);
-
-		static void create(Entity & entity, Deserializer & deserializer);
+		RenderSystem() = default;
+		virtual ~RenderSystem() override = default;
+		virtual void update(float dt, AlterContext & context) override;
 
 	private:
 
 		static void display();
-
-	private:
-
-		std::vector<RenderComponent> m_components;
-		std::map<uint32, uint32> m_entityComponentMap;
-		int m_window;
 	};
 }
 

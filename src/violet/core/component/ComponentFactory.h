@@ -5,16 +5,19 @@
 #include "violet/core/serialization/Deserializer.h"
 #include "violet/core/utility/Factory.h"
 
-#include <string>
-
 namespace Violet
 {
-	class ComponentFactory : private Factory<std::string, void(Entity &, Deserializer &)>
+	class ComponentFactory : public Factory<const char *, void(Entity &, Deserializer &)>
 	{
 	public:
 
-		void create(Entity & entity, Deserializer & deserializer);
-		void assign(const char * label, const Producer & producer);
+		static ComponentFactory & getInstance();
+
+	private:
+
+		ComponentFactory();
+		ComponentFactory(const ComponentFactory &) = delete;
+		ComponentFactory & operator=(const ComponentFactory &) = delete;
 	};
 }
 

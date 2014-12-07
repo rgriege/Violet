@@ -22,6 +22,12 @@
     <Filter Include="component">
       <UniqueIdentifier>{9be588b0-05c1-46a4-8d94-51b416fafbc4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="scene">
+      <UniqueIdentifier>{855387d4-b30b-42d6-88a4-d0a713a9b43d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="system">
+      <UniqueIdentifier>{d55c8e9b-7c1f-419a-9495-0340e4ea30f8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h">
@@ -85,14 +91,25 @@
     <ClInclude Include="..\..\..\src\violet\core\utility\Factory.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.h">
-      <Filter>serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.ipp">
-      <Filter>serialization</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\component\ComponentFactory.h">
       <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\scene\Scene.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\Engine.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\StringUtilities.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\system\System.h">
+      <Filter>system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\system\SystemFactory.h">
+      <Filter>system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\AlterContext.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.h">
+      <Filter>serialization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -119,6 +136,16 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\component\ComponentFactory.cpp">
       <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\scene\Scene.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\Engine.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\utility\StringUtilities.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.cpp">
+      <Filter>serialization</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

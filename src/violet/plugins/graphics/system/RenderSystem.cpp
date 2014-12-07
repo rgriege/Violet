@@ -1,76 +1,93 @@
 #include "violet/plugins/graphics/system/RenderSystem.h"
 
+#include "violet/core/AlterContext.h"
 #include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
-#include "violet/core/math/Circle.h"
-#include "violet/core/math/Constants.h"
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/plugins/graphics/Mesh.h"
 
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 
 using namespace Violet;
 
 namespace RenderSystemNamespace
 {
-	const char * const ms_componentLabel = "rndr";
-
 	RenderSystem * ms_renderSystem;
 
-	void draw(const RenderComponent & renderComponent);
+	AlterContext * ms_alterContext;
+
+	void draw(RenderComponent & renderComponent);
+	void close(System *);
 }
 
 using namespace RenderSystemNamespace;
 
-bool RenderSystem::init(ComponentFactory & factory, Settings & settings)
+void RenderSystem::install(SystemFactory & factory)
 {
-	if (ms_renderSystem != nullptr)
-		return false;
-
-	glutInit(&settings.argc, settings.argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-	glutInitWindowSize(settings.width, settings.height);
-	glutInitWindowPosition(settings.x, settings.y);
-	if (glutCreateWindow(settings.title) == 0)
-		return false;
-
-	glClearColor(Color::kTan.r, Color::kTan.g, Color::kTan.b, 1);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0, settings.width, 0, settings.height);
-	glMatrixMode(GL_MODELVIEW);
-
-	ms_renderSystem = new RenderSystem();
-	glutDisplayFunc(display);
-	factory.assign(ms_componentLabel, &RenderSystem::create);
-	return true;
+	factory.assign(RenderSystem::getStaticLabel(), &RenderSystem::init);
 }
 
-void RenderSystem::update(float const /*dt*/)
+std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 {
+	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
+
+	bool succeeded = true;
+	if (ms_renderSystem == nullptr)
+	{
+		int argc = 0;
+		char * argv = "";
+		int const x = settingsSegment->getInt("x");
+		int const y = settingsSegment->getInt("y");
+		int const width = settingsSegment->getInt("width");
+		int const height = settingsSegment->getInt("height");
+		const char * title = settingsSegment->getString("title");
+		Color const color(*settingsSegment);
+
+		glutInit(&argc, &argv);
+		glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+		glutInitWindowSize(width, height);
+		glutInitWindowPosition(x, y);
+		if (glutCreateWindow(title) != 0)
+		{
+			glClearColor(color.r, color.g, color.b, color.a);
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			gluOrtho2D(0, width, 0, height);
+			glMatrixMode(GL_MODELVIEW);
+
+			glutDisplayFunc(display);
+
+			ms_renderSystem = new RenderSystem();
+			ComponentFactory::getInstance().assign(RenderComponent::getLabel(), std::bind(&RenderSystem::create, ms_renderSystem, std::placeholders::_1, std::placeholders::_2));
+		}
+		else
+			succeeded = false;
+	}
+
+	return succeeded ? std::unique_ptr<System>(ms_renderSystem) : nullptr;
+}
+
+void RenderSystem::update(float const /*dt*/, AlterContext & context)
+{
+	ms_alterContext = &context;
 	glutPostRedisplay();
-}
-
-void RenderSystem::create(Entity & entity, Deserializer & deserializer)
-{
-	auto segment = deserializer.enterSegment(ms_componentLabel);
-	ms_renderSystem->m_entityComponentMap.emplace(entity.m_id, ms_renderSystem->m_components.size());
-	ms_renderSystem->m_components.emplace_back(entity, *segment);
+	glutMainLoopEvent();
 }
 
 void RenderSystem::display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	for (auto const & component : ms_renderSystem->m_components)
+	for (auto & component : ms_renderSystem->m_components)
 		draw(component);
 	glFlush();
 }
 
-void RenderSystemNamespace::draw(const RenderComponent & renderComponent)
+void RenderSystemNamespace::draw(RenderComponent & renderComponent)
 {
 	glPushMatrix();
-	const TransformComponent & transform = TransformSystem::fetch(renderComponent.m_entity);
+	const TransformComponent & transform = ms_alterContext->fetch<TransformSystem>(renderComponent.m_entity);
 	glTranslatef(transform.m_position.x, transform.m_position.y, 0.f);
 	glColor4f(renderComponent.m_color.r, renderComponent.m_color.g, renderComponent.m_color.b, renderComponent.m_color.a);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -80,4 +97,9 @@ void RenderSystemNamespace::draw(const RenderComponent & renderComponent)
 		glVertex2f(renderComponent.m_mesh.m_vertices[i].x, renderComponent.m_mesh.m_vertices[i].y);
 	glEnd();
 	glPopMatrix();
+}
+
+void RenderSystemNamespace::close(System *)
+{
+	ms_renderSystem = nullptr;
 }

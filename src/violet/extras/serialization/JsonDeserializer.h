@@ -12,6 +12,10 @@ namespace Violet
 	{
 	public:
 
+		static void install();
+
+	public:
+
 		JsonDeserializer(std::istream & stream);
 		JsonDeserializer(JsonDeserializer && other);
 		JsonDeserializer(const JsonDeserializer &) = delete;

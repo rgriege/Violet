@@ -2,13 +2,13 @@
 
 using namespace Violet;
 
-void ComponentFactory::create(Entity & entity, Deserializer & deserializer)
+ComponentFactory & ComponentFactory::getInstance()
 {
-	const char * label = deserializer.nextLabel();
-	Factory::create(label, entity, deserializer);
+	static ComponentFactory ms_instance;
+	return ms_instance;
 }
 
-void ComponentFactory::assign(const char * label, const Producer & producer)
+ComponentFactory::ComponentFactory() :
+	Factory<const char *, void(Entity &, Deserializer &)>()
 {
-	Factory::assign(label, producer);
 }

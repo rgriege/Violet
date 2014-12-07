@@ -92,6 +92,7 @@
     <ClInclude Include="..\..\..\src\violet\core\component\Component.h" />
     <ClInclude Include="..\..\..\src\violet\core\component\ComponentFactory.h" />
     <ClInclude Include="..\..\..\src\violet\core\Defines.h" />
+    <ClInclude Include="..\..\..\src\violet\core\Engine.h" />
     <ClInclude Include="..\..\..\src\violet\core\entity\Entity.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Constants.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Circle.h" />
@@ -99,15 +100,19 @@
     <ClInclude Include="..\..\..\src\violet\core\math\Matrix2.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
+    <ClInclude Include="..\..\..\src\violet\core\scene\Scene.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h" />
-    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.h" />
+    <ClInclude Include="..\..\..\src\violet\core\system\System.h" />
+    <ClInclude Include="..\..\..\src\violet\core\system\SystemFactory.h" />
     <ClInclude Include="..\..\..\src\violet\core\template\TemplateUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\template\TupleUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformComponent.h" />
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformSystem.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Factory.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\StringUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Time.h" />
   </ItemGroup>
   <ItemGroup>
@@ -122,19 +127,25 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\core\AlterContext.h">
+      <FileType>CppCode</FileType>
+    </ClInclude>
     <ClCompile Include="..\..\..\src\violet\core\component\ComponentFactory.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\Engine.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\scene\Scene.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformSystem.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\utility\StringUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.ipp">
+    <ClCompile Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.cpp">
       <FileType>Document</FileType>
-    </ClInclude>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

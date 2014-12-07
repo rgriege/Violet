@@ -13,6 +13,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\game\main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\game\Setup.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{36931C94-D5CE-4770-B712-6E06C5059E90}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

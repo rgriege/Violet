@@ -1,12 +1,13 @@
 #include "violet/plugins/physics/system/PhysicsSystem.h"
 
+#include "violet/core/AlterContext.h"
 #include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/plugins/physics/collision/Intersection.h"
 
-#include <vector>
 #include <iostream>
 #include <cstdio>
 
@@ -14,50 +15,46 @@ using namespace Violet;
 
 namespace PhysicsSystemNamespace
 {
-	const char * const ms_componentLabel = "phys";
-
-	PhysicsSystem * ms_physicsSystem;
-
 	void updateEntity(TransformComponent & transform, PhysicsComponent & physics, float dt);
 	void resolveCollisionForEntity(TransformComponent & transform, PhysicsComponent & physics, Intersection & intersection);
 }
 
 using namespace PhysicsSystemNamespace;
 
-bool PhysicsSystem::init(ComponentFactory & factory, Settings & settings)
+void PhysicsSystem::install(SystemFactory & factory)
 {
-	if (ms_physicsSystem == nullptr)
-	{
-		ms_physicsSystem = new PhysicsSystem();
-		ms_physicsSystem->m_drag = settings.drag;
-		ms_physicsSystem->m_gravity = settings.gravity;
-		factory.assign(ms_componentLabel, &PhysicsSystem::create);
-		return true;
-	}
-
-	return false;
+	factory.assign(getStaticLabel(), &PhysicsSystem::init);
 }
 
-void PhysicsSystem::update(const float dt)
+std::unique_ptr<System> PhysicsSystem::init(Deserializer & deserializer)
 {
-	if (!ms_physicsSystem->m_gravity.isZero())
-		for (auto & component : ms_physicsSystem->m_components)
-			component.m_force += ms_physicsSystem->m_gravity - component.m_velocity * ms_physicsSystem->m_drag;
+	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
+	float const drag = settingsSegment->getFloat("drag");
+	auto system = new PhysicsSystem(drag, Vec2f(*settingsSegment->enterSegment("gravity")));
+	ComponentFactory::getInstance().assign(PhysicsComponent::getLabel(), std::bind(&PhysicsSystem::create, system, std::placeholders::_1, std::placeholders::_2));
+	return std::unique_ptr<System>(system);
+}
 
-	for (auto & component : ms_physicsSystem->m_components)
+void PhysicsSystem::update(const float dt, AlterContext & context)
+{
+	if (!m_gravity.isZero() || m_drag != 0)
+		for (auto & component : m_components)
+			component.m_force += m_gravity - component.m_velocity * m_drag;
+
+	for (auto & component : m_components)
 	{
-		TransformComponent & transform = TransformSystem::fetch(component.m_entity);
+		TransformComponent & transform = context.fetch<TransformSystem>(component.m_entity);
 		updateEntity(transform, component, dt);
 	}
 
-	for (uint32 i = 0, len = ms_physicsSystem->m_components.size(); i < len; ++i)
+	for (uint32 i = 0, len = m_components.size(); i < len; ++i)
 	{
-		PhysicsComponent & physics1 = ms_physicsSystem->m_components[i];
-		TransformComponent & transform1 = TransformSystem::fetch(physics1.m_entity);
+		PhysicsComponent & physics1 = m_components[i];
+		TransformComponent & transform1 = context.fetch<TransformSystem>(physics1.m_entity);
 		for (uint32 j = i + 1; j < len; ++j)
 		{
-			PhysicsComponent & physics2 = ms_physicsSystem->m_components[j];
-			TransformComponent & transform2 = TransformSystem::fetch(physics2.m_entity);
+			PhysicsComponent & physics2 = m_components[j];
+			TransformComponent & transform2 = context.fetch<TransformSystem>(physics2.m_entity);
 			Intersection intersection(RigidBody(transform1, physics1), RigidBody(transform2, physics2), dt);
 			if (intersection.exists())
 			{
@@ -68,16 +65,10 @@ void PhysicsSystem::update(const float dt)
 	}
 }
 
-void PhysicsSystem::create(Entity & entity, Deserializer & deserializer)
+PhysicsSystem::PhysicsSystem(float drag, Vec2f gravity) :
+	m_drag(drag),
+	m_gravity(std::move(gravity))
 {
-	auto segment = deserializer.enterSegment(ms_componentLabel);
-	ms_physicsSystem->m_entityComponentMap.emplace(entity.m_id, ms_physicsSystem->m_components.size());
-	ms_physicsSystem->m_components.emplace_back(entity, *segment);
-}
-
-PhysicsComponent & PhysicsSystem::fetch(const Entity & entity)
-{
-	return ms_physicsSystem->m_components[ms_physicsSystem->m_entityComponentMap[entity.m_id]];
 }
 
 void PhysicsSystemNamespace::updateEntity(TransformComponent & transform, PhysicsComponent & physics, const float dt)

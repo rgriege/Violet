@@ -13,10 +13,13 @@ namespace Violet
 	{
 	public:
 
+		static const char * getLabel();
+
+	public:
+
 		TransformComponent(const Entity & entity);
 		TransformComponent(const Entity & entity, Deserializer & deserializer);
 		TransformComponent(TransformComponent && other);
-		TransformComponent(const TransformComponent &) = delete;
 
 	public:
 

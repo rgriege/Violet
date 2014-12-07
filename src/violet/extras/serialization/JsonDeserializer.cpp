@@ -1,14 +1,13 @@
 /*
  * NOTE: this uses a modified version of the JsonCpp library and will NOT work with the original source.
  * The deserialization process is designed to be read in the order presented in the input stream. However,
- * raw json does not enforce this. The following changes were made:
- *
- * Json::Value::ObjectValues was changed from std::map to std::unordered_map. The hash function used is
- * std::hash<const char *>. Note that this breaks serialization (so the tests will fail), but it's a start.
+ * raw json does not enforce this. You can find the modified version at https://github.com/rgriege/jsoncpp.
  *
  */
 
 #include "violet/extras/serialization/JsonDeserializer.h"
+
+#include "violet/core/serialization/FileDeserializerFactory.h"
 
 #include <memory>
 
@@ -39,9 +38,16 @@ namespace JsonDeserializerNamespace
 		const Json::Value & m_value;
 		Json::ValueConstIterator m_position;
 	};
+
+	std::unique_ptr<JsonDeserializer> create(std::istream & stream);
 }
 
 using namespace JsonDeserializerNamespace;
+
+void JsonDeserializer::install()
+{
+	FileDeserializerFactory::getInstance().assign("json", &create);
+}
 
 JsonDeserializer::JsonDeserializer(std::istream & stream) :
 	m_root(),
@@ -157,4 +163,9 @@ double JsonDeserializerNamespace::SubDeserializer::getDouble(const char * label)
 const char * JsonDeserializerNamespace::SubDeserializer::getString(const char * label)
 {
 	return (*m_position++).asCString();
+}
+
+std::unique_ptr<JsonDeserializer> JsonDeserializerNamespace::create(std::istream & stream)
+{
+	return std::make_unique<JsonDeserializer>(stream);
 }

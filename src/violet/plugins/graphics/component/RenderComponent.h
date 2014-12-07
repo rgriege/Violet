@@ -14,6 +14,10 @@ namespace Violet
 	{
 	public:
 
+		static const char * getLabel();
+
+	public:
+
 		RenderComponent(const Entity & entity, Deserializer & deserializer);
 		RenderComponent(RenderComponent && other);
 		RenderComponent(const RenderComponent &) = delete;
