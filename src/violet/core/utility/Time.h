@@ -7,7 +7,7 @@ namespace Violet
 	{
 	public:
 
-		static long int getTimeInMilliseconds();
+		static long unsigned getTimeInMilliseconds();
 		static double getTimeInSeconds();
 	};
 }

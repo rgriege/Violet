@@ -10,10 +10,8 @@ using namespace Violet;
 
 #ifdef _WIN32
 
-long int Time::getTimeInMilliseconds() {
-    SYSTEMTIME st;
-    GetLocalTime(&st);
-    return st.wSecond * 1000 + st.wMilliseconds;
+long unsigned Time::getTimeInMilliseconds() {
+	return timeGetTime();
 }
 
 double Time::getTimeInSeconds() {
