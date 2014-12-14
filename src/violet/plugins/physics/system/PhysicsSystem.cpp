@@ -15,6 +15,8 @@ using namespace Violet;
 
 namespace PhysicsSystemNamespace
 {
+	float const ms_minimumSpeed = 0.01f;
+
 	void updateEntity(TransformComponent & transform, PhysicsComponent & physics, float dt);
 	void resolveCollisionForEntity(TransformComponent & transform, PhysicsComponent & physics, Intersection & intersection);
 }
@@ -58,6 +60,7 @@ void PhysicsSystem::update(const float dt, AlterContext & context)
 			Intersection intersection(RigidBody(transform1, physics1), RigidBody(transform2, physics2), dt);
 			if (intersection.exists())
 			{
+				printf("collision!\n");
 				resolveCollisionForEntity(transform1, physics1, intersection);
 				resolveCollisionForEntity(transform2, physics2, intersection);
 			}
@@ -73,10 +76,16 @@ PhysicsSystem::PhysicsSystem(float drag, Vec2f gravity) :
 
 void PhysicsSystemNamespace::updateEntity(TransformComponent & transform, PhysicsComponent & physics, const float dt)
 {
-	Vec2f const acceleration = physics.m_force / physics.m_mass;
-	transform.m_position += acceleration * dt * dt / 2.f + physics.m_velocity * dt;
-	physics.m_velocity += acceleration * dt;
-	physics.m_force.zero();
+	float const speed = physics.m_velocity.magSquared();
+	if (speed > ms_minimumSpeed || !physics.m_force.isZero())
+	{
+		Vec2f const acceleration = physics.m_force / physics.m_mass;
+		transform.m_position += acceleration * dt * dt / 2.f + physics.m_velocity * dt;
+		physics.m_velocity += acceleration * dt;
+		physics.m_force.zero();
+	}
+	else if (speed != 0)
+		physics.m_velocity.zero();
 
 	float const angularAcceleration = physics.m_torque / physics.m_momentOfInertia;
 	transform.m_rotation += angularAcceleration * dt * dt + physics.m_angularVelocity * dt;
