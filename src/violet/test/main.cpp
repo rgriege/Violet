@@ -1,14 +1,11 @@
-#include <iostream>
-
+#include "violet/test/core/TestEvaluator.h"
+#include "violet/test/core/TestFactory.h"
 #include "violet/test/math/MathTest.h"
 #include "violet/test/physics/PhysicsTest.h"
 #include "violet/test/serialization/JsonSerializationTest.h"
 #include "violet/test/template/TemplateTest.h"
 
-using namespace Violet;
-
-#include "violet/test/core/TestEvaluator.h"
-#include "violet/test/core/TestFactory.h"
+#include <iostream>
 
 using namespace Violet;
 

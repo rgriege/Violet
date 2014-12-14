@@ -11,9 +11,6 @@ using namespace Violet;
 
 namespace JsonSerializationTestNamespace
 {
-	const std::string ms_emptyObject = "{}";
-	const std::string ms_objectWrapper = "{%s}";
-	const std::string ms_indexedInt = "\"int%d\":%d";
 	const int ms_firstNum = 42;
 	const int ms_secondNum = 14;
 
@@ -56,7 +53,7 @@ void JsonSerializationTests::run(TestEvaluator & evaluator)
 bool JsonSerializationTestNamespace::testEmpty()
 {
 	std::stringstream ss;
-	ss << ms_emptyObject;
+	ss << "{}";
 	return JsonDeserializer(ss);
 }
 

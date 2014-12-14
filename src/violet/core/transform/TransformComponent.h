@@ -9,7 +9,7 @@ namespace Violet
 {
 	class Deserializer;
 
-	class TransformComponent : Component
+	class TransformComponent : public Component
 	{
 	public:
 

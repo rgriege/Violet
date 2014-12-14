@@ -18,8 +18,7 @@ namespace Violet
 
 		JsonDeserializer(std::istream & stream);
 		JsonDeserializer(JsonDeserializer && other);
-		JsonDeserializer(const JsonDeserializer &) = delete;
-		JsonDeserializer & operator=(const JsonDeserializer &) = delete;
+		virtual ~JsonDeserializer() override = default;
 
 		virtual operator bool() const override;
 
