@@ -104,7 +104,7 @@ namespace Violet
 			if (result)
 				ss << "passed";
 			else
-				ss << "failed (" << actual << " != " << desired << ")";
+				ss << "failed (expected " << desired << ", got " << actual << ")";
 			m_currentBuffer->addEntry(ss.str());
 			return result;
 		}
