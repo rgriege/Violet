@@ -4,15 +4,24 @@
     <Filter Include="serialization">
       <UniqueIdentifier>{fe88712b-5536-4492-a0b3-d014ac4f0c93}</UniqueIdentifier>
     </Filter>
+    <Filter Include="script">
+      <UniqueIdentifier>{1c376ecd-e16d-414a-a4fc-1527bbb94e96}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.h">
       <Filter>serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\extras\script\LuaScript.h">
+      <Filter>script</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.cpp">
       <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\extras\script\LuaScript.cpp">
+      <Filter>script</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

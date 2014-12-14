@@ -101,6 +101,8 @@
     <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
     <ClInclude Include="..\..\..\src\violet\core\scene\Scene.h" />
+    <ClInclude Include="..\..\..\src\violet\core\script\Script.h" />
+    <ClInclude Include="..\..\..\src\violet\core\script\ScriptFactory.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.h" />
@@ -110,6 +112,7 @@
     <ClInclude Include="..\..\..\src\violet\core\template\TupleUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformComponent.h" />
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformSystem.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\Assert.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Factory.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\StringUtilities.h" />
@@ -136,6 +139,7 @@
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\scene\Scene.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\script\ScriptFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformSystem.cpp" />

@@ -28,6 +28,9 @@
     <Filter Include="system">
       <UniqueIdentifier>{d55c8e9b-7c1f-419a-9495-0340e4ea30f8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="script">
+      <UniqueIdentifier>{53e97f06-a909-4b1d-a181-883000f67d36}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h">
@@ -111,6 +114,15 @@
     <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.h">
       <Filter>serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\utility\Assert.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\script\Script.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\script\ScriptFactory.h">
+      <Filter>script</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -146,6 +158,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.cpp">
       <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\script\ScriptFactory.cpp">
+      <Filter>script</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

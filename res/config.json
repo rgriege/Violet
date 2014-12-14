@@ -19,7 +19,8 @@
           "y": 0
         }
       }
-    }
+    },
+    "inpt": {}
   },
   "opts": {
     "firstScene": "level1.json"

@@ -56,8 +56,6 @@ namespace Violet
 	template<typename T>
 	Vec2<T> operator-(Vec2<T> lhs, const Vec2<T> & rhs);
 
-	//Vec2<T> operator*(const Matrix2 & mat, const Vec2 & vec);
-
 	template<typename T>
 	Vec2<T> operator*(T scale, Vec2<T> vec);
 
