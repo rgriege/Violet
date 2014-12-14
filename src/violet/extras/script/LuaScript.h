@@ -8,6 +8,8 @@
 
 namespace Violet
 {
+	class Entity;
+
 	class LuaScript : public Script
 	{
 	public:
@@ -19,7 +21,7 @@ namespace Violet
 		LuaScript(std::istream & stream);
 		virtual ~LuaScript() override;
 
-		virtual void run() const override;
+		virtual void run(const Entity & entity) const override;
 
 	private:
 

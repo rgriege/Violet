@@ -3,13 +3,15 @@
 
 namespace Violet
 {
+	class Entity;
+
 	class Script
 	{
 	public:
 
 		virtual ~Script() = default;
 
-		virtual void run() const = 0;
+		virtual void run(const Entity & entity) const = 0;
 	};
 }
 

@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\extras\script\LuaLibrary.h" />
     <ClInclude Include="..\..\..\src\violet\extras\script\LuaScript.h" />
     <ClInclude Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.h" />
   </ItemGroup>

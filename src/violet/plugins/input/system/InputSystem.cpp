@@ -46,6 +46,6 @@ void InputSystem::onMouse(int button, int state, int x, int y)
 	{
 		auto const & transform = ms_alterContext->fetch<TransformSystem>(component.m_entity);
 		if (component.m_mesh.contains(point - transform.m_position))
-			component.m_script->run();
+			component.m_script->run(component.m_entity);
 	}
 }

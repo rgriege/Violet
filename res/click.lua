@@ -1,1 +1,1 @@
-print ("Hellow World!")
+print ("entity " .. entity:getId() .. " clicked!")

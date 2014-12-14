@@ -15,6 +15,9 @@
     <ClInclude Include="..\..\..\src\violet\extras\script\LuaScript.h">
       <Filter>script</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\extras\script\LuaLibrary.h">
+      <Filter>script</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.cpp">
