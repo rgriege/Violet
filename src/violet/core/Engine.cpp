@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <Windows.h>
 
 using namespace Violet;
 
@@ -59,16 +60,27 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 void Engine::begin()
 {
 	AlterContext context(m_systems);
-	long int previousTime = Time::getTimeInMilliseconds();
+	uint32 const targetFrameTime = 1000 / 60;
+	uint32 previousFrameTime = targetFrameTime;
 
 	while (true)
 	{
-		long int const currentTime = Time::getTimeInMilliseconds();
-		float const deltaTime = (currentTime - previousTime) / 1000.f;
+		uint32 const startTime = Time::getTimeInMilliseconds();
 
-		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaTime, context); });
+		float const deltaSeconds = previousFrameTime / 1000.f;
+		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, context); });
 
-		previousTime = currentTime;
+		uint32 const frameTime = Time::getTimeInMilliseconds() - startTime;
+		if (frameTime < targetFrameTime)
+		{
+			Sleep(targetFrameTime - frameTime);
+			previousFrameTime = targetFrameTime;
+		}
+		else
+		{
+			printf("frame time: %.3f\n", frameTime / 1000.f);
+			previousFrameTime = frameTime;
+		}
 	}
 }
 
