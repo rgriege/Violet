@@ -1,10 +1,10 @@
 #ifndef VIOLET_COMPONENT_H__
 #define VIOLET_COMPONENT_H__
 
+#include "violet/core/entity/Entity.h"
+
 namespace Violet
 {
-	class Entity;
-
 	class Component
 	{
 	public:
@@ -25,7 +25,7 @@ namespace Violet
 
 	public:
 
-		const Entity & m_entity;
+		const Entity m_entity;
 	};
 }
 

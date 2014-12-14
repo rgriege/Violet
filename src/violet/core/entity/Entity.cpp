@@ -4,7 +4,7 @@ using namespace Violet;
 
 namespace EntityNamespace
 {
-	uint32 ms_id;
+	uint32 ms_id = 0;
 }
 
 using namespace EntityNamespace;
