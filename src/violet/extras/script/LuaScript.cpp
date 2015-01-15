@@ -75,7 +75,7 @@ CreateLuaWrapper(Entity);
 
 void LuaScript::run(const Entity & entity) const
 {
-	lua_pushudata(m_lua, entity);
+	luaV_pushudata(m_lua, entity);
 	lua_setglobal(m_lua, "entity");
 
 	lua_pcall(m_lua, 0, 0, 0);
