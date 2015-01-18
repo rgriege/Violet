@@ -1,15 +1,15 @@
 #ifndef SCRIPT_FACTORY_H
 #define SCRIPT_FACTORY_H
 
-#include "violet/core/script/Script.h"
 #include "violet/core/utility/Factory.h"
 
-#include <iosfwd>
 #include <memory>
 
 namespace Violet
 {
-	class ScriptFactory : public Factory<const char *, std::unique_ptr<Script>(std::istream &)>
+	class Script;
+
+	class ScriptFactory : public Factory<const char *, std::unique_ptr<Script>(const char *)>
 	{
 	public:
 
@@ -25,7 +25,7 @@ namespace Violet
 		ScriptFactory(const ScriptFactory &) = delete;
 		ScriptFactory & operator=(const ScriptFactory &) = delete;
 
-		typedef Factory<const char *, std::unique_ptr<Script>(std::istream &)> Base;
+		typedef Factory<const char *, std::unique_ptr<Script>(const char *)> Base;
 	};
 }
 

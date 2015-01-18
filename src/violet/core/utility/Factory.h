@@ -10,18 +10,18 @@ namespace Violet
 	class Factory;
 
 	template <typename Label, typename ReturnType, typename... Args>
-	class Factory<Label, ReturnType(Args & ...)>
+	class Factory<Label, ReturnType(Args ...)>
 	{
 	public:
 
-		typedef std::function<ReturnType(Args & ...)> Producer;
+		typedef std::function<ReturnType(Args ...)> Producer;
 
 	public:
 
-		ReturnType create(Label label, Args & ... args)
+		ReturnType create(Label label, Args ... args)
 		{
 			auto producer = m_producers[label];
-			return producer(args...);
+			return producer(std::forward<Args>(args)...);
 		}
 
 		void assign(Label label, const Producer & producer)
@@ -35,15 +35,15 @@ namespace Violet
 	};
 
 	template <typename ReturnType, typename... Args>
-	class Factory<const char *, ReturnType(Args & ...)>
+	class Factory<const char *, ReturnType(Args ...)>
 	{
 	public:
 
-		typedef std::function<ReturnType(Args & ...)> Producer;
+		typedef std::function<ReturnType(Args ...)> Producer;
 
 	public:
 
-		ReturnType create(const char * label, Args & ... args)
+		ReturnType create(const char * label, Args ... args)
 		{
 			auto producer = m_producers[label];
 			return producer(args...);

@@ -123,6 +123,9 @@
     <ClInclude Include="..\..\..\src\violet\core\script\ScriptFactory.h">
       <Filter>script</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\script\CppScript.h">
+      <Filter>script</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -160,6 +163,9 @@
       <Filter>serialization</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\script\ScriptFactory.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\script\CppScript.cpp">
       <Filter>script</Filter>
     </ClCompile>
   </ItemGroup>

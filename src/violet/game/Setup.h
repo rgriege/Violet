@@ -1,6 +1,7 @@
 #ifndef SETUP_H
 #define SETUP_H
 
+#include "violet/core/script/CppScript.h"
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/extras/script/LuaScript.h"
@@ -13,6 +14,7 @@ SystemFactory setup(int argc, char ** argv)
 {
 	Violet::JsonDeserializer::install();
 
+	Violet::CppScript::install();
 	Violet::LuaScript::install();
 
 	Violet::SystemFactory factory;

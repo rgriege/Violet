@@ -108,7 +108,7 @@
           }
         ]
       },
-      "script": "click.lua"
+      "script": "click.dll"
     }
   },
   "ntty": {

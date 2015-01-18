@@ -3,7 +3,6 @@
 
 #include "violet/core/script/Script.h"
 
-#include <iosfwd>
 #include <lua.hpp>
 
 namespace Violet
@@ -18,7 +17,7 @@ namespace Violet
 
 	public:
 
-		LuaScript(std::istream & stream);
+		LuaScript(const char * filename);
 		virtual ~LuaScript() override;
 
 		virtual void run(const Entity & entity) const override;

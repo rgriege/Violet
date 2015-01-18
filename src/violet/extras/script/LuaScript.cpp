@@ -12,27 +12,7 @@ using namespace Violet;
 
 namespace LuaScriptNamespace
 {
-	class BlockStreamReader
-	{
-	public:
-
-		BlockStreamReader(std::istream & stream, uint32 bufferSize);
-		~BlockStreamReader();
-
-	public:
-
-		const char * read(size_t & size);
-
-	private:
-
-		std::istream & m_stream;
-		uint32 const m_bufferSize;
-		char * const m_buffer;
-	};
-
-	const char * readChunk(lua_State * lua, void * data, size_t * size);
-
-	std::unique_ptr<Script> create(std::istream & stream);
+	std::unique_ptr<Script> create(const char *);
 
 	int getId(lua_State * lua)
 	{
@@ -50,7 +30,7 @@ void LuaScript::install()
 	ScriptFactory::getInstance().assign("lua", &create);
 }
 
-LuaScript::LuaScript(std::istream & stream) :
+LuaScript::LuaScript(const char * filename) :
 	m_lua(luaL_newstate()),
 	m_valid()
 {
@@ -62,8 +42,7 @@ LuaScript::LuaScript(std::istream & stream) :
 	lua_pushcfunction(m_lua, getId);
 	lua_setfield(m_lua, -2, "getId");
 
-	auto data = std::make_unique<BlockStreamReader>(stream, 512);
-	m_valid = lua_load(m_lua, readChunk, data.get(), "lua file", "bt") == 0;
+	m_valid = luaL_loadfile(m_lua, filename) == 0;
 }
 
 LuaScript::~LuaScript()
@@ -81,36 +60,7 @@ void LuaScript::run(const Entity & entity) const
 	lua_pcall(m_lua, 0, 0, 0);
 }
 
-LuaScriptNamespace::BlockStreamReader::BlockStreamReader(std::istream & stream, uint32 bufferSize) :
-	m_stream(stream),
-	m_bufferSize(bufferSize),
-	m_buffer(new char[bufferSize])
+std::unique_ptr<Script> LuaScriptNamespace::create(const char * filename)
 {
-}
-
-LuaScriptNamespace::BlockStreamReader::~BlockStreamReader()
-{
-	delete[] m_buffer;
-}
-
-const char * LuaScriptNamespace::BlockStreamReader::read(size_t & size)
-{
-	if (!m_stream)
-		return nullptr;
-
-	m_stream.read(m_buffer, m_bufferSize - 1);
-	size = static_cast<uint32>(m_stream.gcount());
-	m_buffer[size] = 0;
-	return m_buffer;
-}
-
-const char * LuaScriptNamespace::readChunk(lua_State * /*lua*/, void * data, size_t * size)
-{
-	auto reader = static_cast<BlockStreamReader *>(data);
-	return reader->read(*size);
-}
-
-std::unique_ptr<Script> LuaScriptNamespace::create(std::istream & stream)
-{
-	return std::unique_ptr<Script>(new LuaScript(stream));
+	return std::unique_ptr<Script>(new LuaScript(filename));
 }

@@ -5,17 +5,17 @@
       <UniqueIdentifier>{fe88712b-5536-4492-a0b3-d014ac4f0c93}</UniqueIdentifier>
     </Filter>
     <Filter Include="script">
-      <UniqueIdentifier>{1c376ecd-e16d-414a-a4fc-1527bbb94e96}</UniqueIdentifier>
+      <UniqueIdentifier>{0eddca83-c82a-47e5-aa97-21bb2f9d8a27}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.h">
       <Filter>serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\extras\script\LuaScript.h">
+    <ClInclude Include="..\..\..\src\violet\extras\script\LuaLibrary.h">
       <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\extras\script\LuaLibrary.h">
+    <ClInclude Include="..\..\..\src\violet\extras\script\LuaScript.h">
       <Filter>script</Filter>
     </ClInclude>
   </ItemGroup>

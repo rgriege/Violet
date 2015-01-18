@@ -21,7 +21,7 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -101,6 +101,7 @@
     <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
     <ClInclude Include="..\..\..\src\violet\core\scene\Scene.h" />
+    <ClInclude Include="..\..\..\src\violet\core\script\CppScript.h" />
     <ClInclude Include="..\..\..\src\violet\core\script\Script.h" />
     <ClInclude Include="..\..\..\src\violet\core\script\ScriptFactory.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h" />
@@ -139,6 +140,7 @@
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\scene\Scene.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\script\CppScript.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\script\ScriptFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformComponent.cpp" />
