@@ -22,7 +22,7 @@ Intersection::Intersection(RigidBody && rb1, RigidBody && rb2, const float frame
 	m_tested(false),
 	m_axisFromShape1(true),
 	m_axis(),
-	m_impulseScalar(),
+	m_overlapDistance(),
 	m_timeOfImpact(),
 	m_impactLocation()
 {
@@ -63,7 +63,7 @@ bool Intersection::exists() const
 	return true;
 }
 
-Vec2f Intersection::getIntersectionAxis() const
+Vec2f const & Intersection::getIntersectionAxis() const
 {
 	if (!m_tested)
 		exists();
@@ -71,12 +71,12 @@ Vec2f Intersection::getIntersectionAxis() const
 	return m_axis;
 }
 
-float Intersection::getImpulseScalar() const
+float Intersection::getOverlapDistance() const
 {
 	if (!m_tested)
 		exists();
 
-	return m_impulseScalar;
+	return m_overlapDistance;
 }
 
 float Intersection::getTimeOfImpact() const
@@ -87,7 +87,7 @@ float Intersection::getTimeOfImpact() const
 	return m_timeOfImpact;
 }
 
-Vec2f Intersection::getImpactLocation() const
+Vec2f const & Intersection::getImpactLocation() const
 {
 	if (!m_tested)
 		exists();
@@ -133,7 +133,7 @@ void Intersection::findIntersectionAxis(const std::pair<std::vector<Vec2f>, uint
 	}
 
 	m_axis = possibleAxes.first[intersectionAxisIndex];
-	m_impulseScalar = minimumOverlap;
+	m_overlapDistance = minimumOverlap;
 	m_axisFromShape1 = intersectionAxisIndex < possibleAxes.second;
 	const Vec2f centerToCenter = m_rb2.getCenter() - m_rb1.getCenter();
 	if (   (m_axisFromShape1 && m_axis.dot(centerToCenter) < 0)
@@ -145,7 +145,7 @@ float Intersection::findTimeOfImpact() const
 {
 	float impactTime = m_frameTime;
 	float dt = -impactTime / 2;
-	float overlap = m_impulseScalar;
+	float overlap = m_overlapDistance;
 	while (abs(dt) > ms_impactTimeDiffThreshold && abs(overlap) > ms_overlapThreshold)
 	{
 		impactTime += dt;

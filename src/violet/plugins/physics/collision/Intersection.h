@@ -14,12 +14,10 @@ namespace Violet
 		Intersection(const Intersection &) = delete;
 
 		bool exists() const;
-		Vec2f getIntersectionAxis() const;
-		float getImpulseScalar() const;
+		Vec2f const & getIntersectionAxis() const;
+		float getOverlapDistance() const;
 		float getTimeOfImpact() const;
-		Vec2f getImpactLocation() const;
-		RigidBody & getRigidBody1() const;
-		RigidBody & getRigidBody2() const;
+		Vec2f const & getImpactLocation() const;
 
 	private:
 		
@@ -38,7 +36,7 @@ namespace Violet
 
 		mutable bool m_axisFromShape1;
 		mutable Vec2f m_axis;
-		mutable float m_impulseScalar;
+		mutable float m_overlapDistance;
 		mutable float m_timeOfImpact;
 		mutable Vec2f m_impactLocation;
 	};

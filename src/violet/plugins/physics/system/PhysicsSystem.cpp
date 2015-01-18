@@ -16,9 +16,10 @@ using namespace Violet;
 namespace PhysicsSystemNamespace
 {
 	float const ms_minimumSpeed = 0.01f;
+	float const ms_restitution = 1.f;
 
 	void updateEntity(TransformComponent & transform, PhysicsComponent & physics, float dt);
-	void resolveCollisionForEntity(TransformComponent & transform, PhysicsComponent & physics, Intersection & intersection);
+	void resolveCollisionForEntity(TransformComponent & transform, PhysicsComponent & physics, Intersection & intersection, float impulseMagnitude);
 }
 
 using namespace PhysicsSystemNamespace;
@@ -61,8 +62,10 @@ void PhysicsSystem::update(const float dt, AlterContext & context)
 			if (intersection.exists())
 			{
 				printf("collision!\n");
-				resolveCollisionForEntity(transform1, physics1, intersection);
-				resolveCollisionForEntity(transform2, physics2, intersection);
+				float const impulseMagnitude = (-(1 + ms_restitution) * (physics2.m_velocity - physics1.m_velocity).dot(intersection.getIntersectionAxis())) /
+					(1 / physics1.m_mass + 1 / physics2.m_mass);
+				resolveCollisionForEntity(transform1, physics1, intersection, impulseMagnitude);
+				resolveCollisionForEntity(transform2, physics2, intersection, impulseMagnitude);
 			}
 		}
 	}
@@ -93,10 +96,9 @@ void PhysicsSystemNamespace::updateEntity(TransformComponent & transform, Physic
 	physics.m_torque = 0;
 }
 
-void PhysicsSystemNamespace::resolveCollisionForEntity(TransformComponent & transform, PhysicsComponent & physics, Intersection & intersection)
+void PhysicsSystemNamespace::resolveCollisionForEntity(TransformComponent & transform, PhysicsComponent & physics, Intersection & intersection, float impulseMagnitude)
 {
-	updateEntity(transform, physics, intersection.getTimeOfImpact());
-	Vec2f impulse = intersection.getIntersectionAxis() * intersection.getImpulseScalar();
+	Vec2f impulse = intersection.getIntersectionAxis() * impulseMagnitude / physics.m_mass;
 	Vec2f const location = intersection.getImpactLocation() - transform.m_position;
 	if (impulse.dot(location) > 0)
 		impulse.invert();
