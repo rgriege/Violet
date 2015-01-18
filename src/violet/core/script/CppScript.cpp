@@ -13,7 +13,6 @@ namespace CppScriptNamespace
 
 	typedef void (* Proc)(const Entity &);
 
-	std::function<void(const Entity &)> getProc(HMODULE lib, const char * filename);
 	void defaultProc(const Entity &);
 
 	const char * const ms_extension = "dll";
@@ -27,9 +26,10 @@ void CppScript::install()
 }
 
 CppScript::CppScript(const char * filename) :
-	m_lib(LoadLibrary(filename)),
-	m_proc(getProc(m_lib, filename))
+	m_lib(LoadLibrary(filename))
 {
+	if (m_lib == nullptr)
+		std::cout << "Error loading script: " << filename << std::endl;
 }
 
 CppScript::~CppScript()
@@ -54,22 +54,6 @@ void CppScript::run(const char * procedure, const Entity & entity) const
 std::unique_ptr<Script> CppScriptNamespace::create(const char * filename)
 {
 	return std::unique_ptr<Script>(new CppScript(filename));
-}
-
-std::function<void(const Entity &)> CppScriptNamespace::getProc(HMODULE lib, const char * filename)
-{
-	if (lib != nullptr)
-	{
-		auto proc = (Proc)GetProcAddress(lib, "main");
-		if (proc != nullptr)
-			return proc;
-		else
-			std::cout << "Error loading function main in script " << filename << std::endl;
-	}
-	else
-		std::cout << "Error loading script: " << filename << std::endl;
-
-	return &defaultProc;
 }
 
 void CppScriptNamespace::defaultProc(const Entity &)
