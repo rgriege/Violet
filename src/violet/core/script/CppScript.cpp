@@ -1,5 +1,6 @@
 #include "violet/core/script/CppScript.h"
 
+#include "violet/core/Defines.h"
 #include "violet/core/script/ScriptFactory.h"
 
 #include <iostream>
@@ -36,9 +37,18 @@ CppScript::~CppScript()
 	FreeLibrary(m_lib);
 }
 
-void CppScript::run(const Entity & entity) const
+void CppScript::run(const char * procedure, const Entity & entity) const
 {
-	m_proc(entity);
+	auto proc = (Proc)GetProcAddress(m_lib, procedure);
+	if (proc != nullptr)
+		proc(entity);
+	else
+	{
+		static const uint32 bufferSize = 64;
+		char filename[bufferSize];
+		GetModuleFileName(m_lib, filename, bufferSize);
+		std::cout << "Error loading function " << procedure << " in script " << filename << std::endl;
+	}
 }
 
 std::unique_ptr<Script> CppScriptNamespace::create(const char * filename)

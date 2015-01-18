@@ -22,7 +22,7 @@ namespace Violet
 
 		virtual ~CppScript() override;
 
-		virtual void run(const Entity & entity) const;
+		virtual void run(const char * procedure, const Entity & entity) const;
 
 	private:
 

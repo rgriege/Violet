@@ -43,6 +43,8 @@ LuaScript::LuaScript(const char * filename) :
 	lua_setfield(m_lua, -2, "getId");
 
 	m_valid = luaL_loadfile(m_lua, filename) == 0;
+	if (m_valid)
+		lua_pcall(m_lua, 0, 0, 0);
 }
 
 LuaScript::~LuaScript()
@@ -52,11 +54,12 @@ LuaScript::~LuaScript()
 
 CreateLuaWrapper(Entity);
 
-void LuaScript::run(const Entity & entity) const
+void LuaScript::run(const char * procedure, const Entity & entity) const
 {
 	luaV_pushudata(m_lua, entity);
 	lua_setglobal(m_lua, "entity");
 
+	lua_getglobal(m_lua, procedure);
 	lua_pcall(m_lua, 0, 0, 0);
 }
 

@@ -1,1 +1,3 @@
-print ("entity " .. entity:getId() .. " clicked!")
+function onMouse()
+    print ("entity " .. entity:getId() .. " clicked!")
+end

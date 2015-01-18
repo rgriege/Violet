@@ -20,7 +20,7 @@ namespace Violet
 		LuaScript(const char * filename);
 		virtual ~LuaScript() override;
 
-		virtual void run(const Entity & entity) const override;
+		virtual void run(const char * procedure, const Entity & entity) const override;
 
 	private:
 

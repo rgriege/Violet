@@ -11,7 +11,7 @@ namespace Violet
 
 		virtual ~Script() = default;
 
-		virtual void run(const Entity & entity) const = 0;
+		virtual void run(const char * procedure, const Entity & entity) const = 0;
 	};
 }
 

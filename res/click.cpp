@@ -4,7 +4,7 @@
 
 using namespace Violet;
 
-__declspec(dllexport) void main(const Entity & e)
+extern "C" __declspec(dllexport) void onMouse(const Entity & e)
 {
     std::cout << "entity " << e.m_id << " clicked!" << std::endl;
 }
