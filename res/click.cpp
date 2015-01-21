@@ -7,7 +7,7 @@
 
 using namespace Violet;
 
-extern "C" __declspec(dllexport) void onMouseDown(const Entity & e, AlterContext & context)
+extern "C" void onMouseDown(const Entity & e, AlterContext & context)
 {
     PhysicsComponent & physics = context.fetch<PhysicsSystem>(e);
     physics.m_velocity.invert();

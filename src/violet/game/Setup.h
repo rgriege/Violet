@@ -4,7 +4,6 @@
 #include "violet/core/script/CppScript.h"
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
-#include "violet/extras/script/LuaScript.h"
 #include "violet/extras/serialization/JsonDeserializer.h"
 #include "violet/plugins/graphics/system/RenderSystem.h"
 #include "violet/plugins/physics/system/PhysicsSystem.h"
@@ -15,7 +14,6 @@ SystemFactory setup(int argc, char ** argv)
 	Violet::JsonDeserializer::install();
 
 	Violet::CppScript::install();
-	//Violet::LuaScript::install();
 
 	Violet::SystemFactory factory;
 	Violet::TransformSystem::install(factory);
