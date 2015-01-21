@@ -43,11 +43,12 @@ void InputSystem::onMouse(int button, int state, int x, int y)
 {
 	int height = glutGet(GLUT_WINDOW_HEIGHT);
 	Vec2f point(x, height - y);
+	const char * procedure = state == GLUT_DOWN ? "onMouseDown" : "onMouseUp";
 	for (auto const & component : *ms_inputSystem->m_components)
 	{
 		auto const & transform = ms_alterContext->fetch<TransformSystem>(component.m_entity);
 		if (component.m_mesh.contains(point - transform.m_position))
-			component.m_script->run("onMouse", component.m_entity, *ms_alterContext);
+			component.m_script->run(procedure, component.m_entity, *ms_alterContext);
 	}
 }
 

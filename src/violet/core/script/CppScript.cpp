@@ -4,6 +4,7 @@
 #include "violet/core/script/ScriptFactory.h"
 
 #include <iostream>
+#include <set>
 
 using namespace Violet;
 
@@ -16,6 +17,8 @@ namespace CppScriptNamespace
 	void defaultProc(const Entity &);
 
 	const char * const ms_extension = "dll";
+
+	std::set<std::string> ms_missingProcedures;
 }
 
 using namespace CppScriptNamespace;
@@ -47,7 +50,14 @@ void CppScript::run(const char * procedure, const Entity & entity, AlterContext 
 		static const uint32 bufferSize = 64;
 		char filename[bufferSize];
 		GetModuleFileName(m_lib, filename, bufferSize);
-		std::cout << "Error loading function " << procedure << " in script " << filename << std::endl;
+		std::string fileAndProcedure(filename);
+		fileAndProcedure.append(procedure);
+		auto it = ms_missingProcedures.find(fileAndProcedure);
+		if (it == ms_missingProcedures.end())
+		{
+			std::cout << "Error loading function " << procedure << " in script " << filename << std::endl;
+			ms_missingProcedures.insert(fileAndProcedure);
+		}
 	}
 }
 

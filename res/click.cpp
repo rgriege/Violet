@@ -7,9 +7,8 @@
 
 using namespace Violet;
 
-extern "C" __declspec(dllexport) void onMouse(const Entity & e, AlterContext & context)
+extern "C" __declspec(dllexport) void onMouseDown(const Entity & e, AlterContext & context)
 {
-    std::cout << "entity " << e.m_id << " clicked!" << std::endl;
     PhysicsComponent & physics = context.fetch<PhysicsSystem>(e);
     physics.m_velocity.invert();
 }
