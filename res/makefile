@@ -5,10 +5,8 @@ publish: click.dll
 	copy *.json ..\bin\Debug\*.json
 	copy *.dll ..\bin\Debug\*.dll
 	copy *.pdb ..\bin\Debug\*.pdb
-	copy *.lua ..\bin\Debug\*.lua
 
 clean:
 	del *.dll *.obj *.lib *.ilk *.pdb *~
 	del ..\bin\Debug\*.json
 # del ..\bin\Debug\*.dll
-	del ..\bin\Debug\*.lua
