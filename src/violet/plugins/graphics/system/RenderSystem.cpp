@@ -79,7 +79,7 @@ void RenderSystem::update(float const /*dt*/, AlterContext & context)
 void RenderSystem::display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	for (auto & component : ms_renderSystem->m_components)
+	for (auto & component : *ms_renderSystem->m_components)
 		draw(component);
 	glFlush();
 }

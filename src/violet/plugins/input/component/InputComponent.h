@@ -7,11 +7,21 @@
 
 #include <memory>
 
+#ifdef WIN32
+#ifdef VIOLETINPUT_EXPORT
+#define VIOLET_INPUT_API __declspec(dllexport)
+#else
+#define VIOLET_INPUT_API __declspec(dllimport)
+#endif
+#else
+#define VIOLET_API
+#endif
+
 namespace Violet
 {
 	class Deserializer;
 
-	class InputComponent : public Component
+	class VIOLET_INPUT_API InputComponent : public Component
 	{
 	public:
 

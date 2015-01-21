@@ -6,11 +6,21 @@
 #include "violet/core/math/Polygon.h"
 #include "violet/plugins/graphics/Color.h"
 
+#ifdef WIN32
+#ifdef VIOLETGRAPHICS_EXPORT
+#define VIOLET_GRAPHICS_API __declspec(dllexport)
+#else
+#define VIOLET_GRAPHICS_API __declspec(dllimport)
+#endif
+#else
+#define VIOLET_API
+#endif
+
 namespace Violet
 {
 	class Deserializer;
 
-	class RenderComponent : public Component
+	class VIOLET_GRAPHICS_API RenderComponent : public Component
 	{
 	public:
 

@@ -1,9 +1,11 @@
 #ifndef TIME_H
 #define TIME_H
 
+#include "violet/core/Defines.h"
+
 namespace Violet
 {
-	class Time
+	class VIOLET_API Time
 	{
 	public:
 

@@ -10,7 +10,7 @@
 
 namespace Violet
 {
-	class Circle
+	class VIOLET_API Circle
 	{
 	public:
 

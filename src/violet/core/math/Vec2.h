@@ -43,7 +43,9 @@ namespace Violet
 
 	public:
 
-		static const Vec2<T> X_AXIS, Y_AXIS, ZERO;
+		static const Vec2<T> X_AXIS;
+		static const Vec2<T> Y_AXIS;
+		static const Vec2<T> ZERO;
 
 	public:
 

@@ -1,9 +1,11 @@
 #ifndef STRING_UTILITIES_H
 #define STRING_UTILITIES_H
 
+#include "violet/core/Defines.h"
+
 namespace Violet
 {
-	class StringUtilities
+	class VIOLET_API StringUtilities
 	{
 	public:
 

@@ -7,12 +7,13 @@
 
 #include <vector>
 #include <map>
+#include <assert.h>
 
 namespace Violet
 {
 	class AlterContext;
 
-    class System
+	class VIOLET_API System
     {
     public:
 
@@ -41,8 +42,8 @@ namespace Violet
 		virtual void create(Entity & entity, Deserializer & deserializer) override
 		{
 			auto segment = deserializer.enterSegment(Component::getLabel());
-			m_entityComponentMap.emplace(entity.m_id, m_components.size());
-			m_components.emplace_back(entity, *segment);
+			m_entityComponentMap.emplace(entity.m_id, m_components->size());
+			m_components->emplace_back(entity, *segment);
 		}
 
 		virtual const char * getLabel() override
@@ -50,14 +51,27 @@ namespace Violet
 			return getStaticLabel();
 		}
 
+		bool has(const Entity & entity)
+		{
+			return m_entityComponentMap.find(entity.m_id) != m_entityComponentMap.end();
+		}
+
 		Component & fetch(const Entity & entity)
 		{
-			return m_components[m_entityComponentMap[entity.m_id]];
+			assert(has(entity));
+			return m_components->operator[](m_entityComponentMap[entity.m_id]);
 		}
 
 	protected:
 
-		typedef std::vector<Component> Components;
+		ComponentSystem() :
+			m_components(new std::vector<Component>)
+		{
+		}
+
+	protected:
+
+		typedef std::unique_ptr<std::vector<Component>> Components;
 		Components m_components;
 		std::map<uint32, uint32> m_entityComponentMap;
 	};

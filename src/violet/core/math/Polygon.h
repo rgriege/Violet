@@ -8,7 +8,7 @@
 
 namespace Violet
 {
-	class Polygon
+	class VIOLET_API Polygon
 	{
 	public:
 

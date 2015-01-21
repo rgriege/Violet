@@ -11,7 +11,7 @@ namespace Violet
 	class Deserializer;
 	class SystemFactory;
 
-	class PhysicsSystem : public ComponentSystem<PhysicsComponent>
+	class VIOLET_PHYSICS_API PhysicsSystem : public ComponentSystem<PhysicsComponent>
 	{
 	public:
 

@@ -11,7 +11,7 @@ namespace CppScriptNamespace
 {
 	std::unique_ptr<Script> create(const char * filename);
 
-	typedef void (* Proc)(const Entity &);
+	typedef void (* Proc)(const Entity &, AlterContext & context);
 
 	void defaultProc(const Entity &);
 
@@ -37,11 +37,11 @@ CppScript::~CppScript()
 	FreeLibrary(m_lib);
 }
 
-void CppScript::run(const char * procedure, const Entity & entity) const
+void CppScript::run(const char * procedure, const Entity & entity, AlterContext & context) const
 {
 	auto proc = (Proc)GetProcAddress(m_lib, procedure);
 	if (proc != nullptr)
-		proc(entity);
+		proc(entity, context);
 	else
 	{
 		static const uint32 bufferSize = 64;

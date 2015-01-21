@@ -43,19 +43,19 @@ void InputSystem::onMouse(int button, int state, int x, int y)
 {
 	int height = glutGet(GLUT_WINDOW_HEIGHT);
 	Vec2f point(x, height - y);
-	for (auto const & component : ms_inputSystem->m_components)
+	for (auto const & component : *ms_inputSystem->m_components)
 	{
 		auto const & transform = ms_alterContext->fetch<TransformSystem>(component.m_entity);
 		if (component.m_mesh.contains(point - transform.m_position))
-			component.m_script->run("onMouse", component.m_entity);
+			component.m_script->run("onMouse", component.m_entity, *ms_alterContext);
 	}
 }
 
 void InputSystem::onKeyboard(unsigned char key, int /*x*/, int /*y*/)
 {
-	for (auto const & component : ms_inputSystem->m_components)
+	for (auto const & component : *ms_inputSystem->m_components)
 	{
 		auto const & transform = ms_alterContext->fetch<TransformSystem>(component.m_entity);
-		component.m_script->run("onKeyboard", component.m_entity);
+		component.m_script->run("onKeyboard", component.m_entity, *ms_alterContext);
 	}
 }

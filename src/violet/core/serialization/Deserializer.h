@@ -7,7 +7,7 @@
 
 namespace Violet
 {
-	class Deserializer
+	class VIOLET_API Deserializer
 	{
 	public:
 

@@ -16,8 +16,8 @@ using namespace SceneNamespace;
 
 std::unique_ptr<Scene> Scene::create(const char * filename)
 {
+	std::unique_ptr<Scene> scene(new Scene());
 	bool succeeded = true;
-	std::vector<Entity> entities;
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
 	{
@@ -34,16 +34,22 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 		while (*deserializer)
 		{
 			auto entitySegment = deserializer->enterSegment(ms_entityLabel);
-			entities.emplace_back();
+			Entity & entity = scene->createEntity();
 			while (*entitySegment)
-				ComponentFactory::getInstance().create(entitySegment->nextLabel(), entities.back(), *entitySegment);
+				ComponentFactory::getInstance().create(entitySegment->nextLabel(), entity, *entitySegment);
 		}
 	}
 
-	return succeeded ? std::unique_ptr<Scene>(new Scene(std::move(entities))) : nullptr;
+	return succeeded ? std::move(scene) : nullptr;
 }
 
-Scene::Scene(std::vector<Entity> && entities) :
-	m_entities(std::move(entities))
+Scene::Scene() :
+	m_entities(new std::vector<Entity>)
 {
+}
+
+Entity & Scene::createEntity()
+{
+	m_entities->emplace_back();
+	return m_entities->back();
 }

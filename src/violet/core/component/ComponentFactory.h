@@ -7,7 +7,7 @@
 
 namespace Violet
 {
-	class ComponentFactory : public Factory<const char *, void(Entity &, Deserializer &)>
+	class VIOLET_API ComponentFactory : public Factory<const char *, void(Entity &, Deserializer &)>
 	{
 	public:
 

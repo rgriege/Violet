@@ -11,7 +11,7 @@ namespace Violet
 {
 	class Entity;
 
-	class AlterContext
+	class VIOLET_API AlterContext
 	{
 	public:
 

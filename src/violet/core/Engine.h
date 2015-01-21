@@ -1,6 +1,8 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
+#include "violet/core/Defines.h"
+
 #include <memory>
 #include <vector>
 
@@ -11,7 +13,7 @@ namespace Violet
 	class System;
 	class SystemFactory;
 
-	class Engine
+	class VIOLET_API Engine
 	{
 	public:
 

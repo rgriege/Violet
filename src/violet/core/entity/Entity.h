@@ -8,11 +8,12 @@ namespace Violet
 	/**
 	* A basic entity.
 	*/
-	class Entity
+	class VIOLET_API Entity
 	{
 	public:
 
 		Entity();
+		Entity(const Entity & other);
 
 	public:
 

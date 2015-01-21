@@ -9,7 +9,7 @@ namespace Violet
 	class Deserializer;
 	class SystemFactory;
 
-	class TransformSystem : public ComponentSystem<TransformComponent>
+	class VIOLET_API TransformSystem : public ComponentSystem<TransformComponent>
 	{
 	public:
 

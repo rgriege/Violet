@@ -1,6 +1,8 @@
 #ifndef FACTORY_H
 #define FACTORY_H
 
+#include "violet/core/Defines.h"
+
 #include <functional>
 #include <map>
 

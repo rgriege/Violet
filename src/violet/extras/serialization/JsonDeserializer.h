@@ -6,9 +6,19 @@
 #include <istream>
 #include <json/json.h>
 
+#ifdef WIN32
+#ifdef VIOLETEXTRAS_EXPORT
+#define VIOLET_EXTRAS_API __declspec(dllexport)
+#else
+#define VIOLET_EXTRAS_API __declspec(dllimport)
+#endif
+#else
+#define VIOLET_API
+#endif
+
 namespace Violet
 {
-	class JsonDeserializer : public Deserializer
+	class VIOLET_EXTRAS_API JsonDeserializer : public Deserializer
 	{
 	public:
 

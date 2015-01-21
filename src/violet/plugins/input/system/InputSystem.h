@@ -6,7 +6,7 @@
 
 namespace Violet
 {
-	class InputSystem : public ComponentSystem<InputComponent>
+	class VIOLET_INPUT_API InputSystem : public ComponentSystem<InputComponent>
 	{
 	public:
 

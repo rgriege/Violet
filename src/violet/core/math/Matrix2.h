@@ -10,7 +10,8 @@ namespace Violet
 	{
 	public:
 
-		static const Matrix2<T> Identity, Zero;
+		static const Matrix2<T> Identity;
+		static const Matrix2<T> Zero;
 
 	public:
 

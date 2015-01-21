@@ -1,6 +1,7 @@
 #ifndef FILE_DESERIALIZER_H
 #define FILE_DESERIALIZER_H
 
+#include "violet/core/Defines.h"
 #include "violet/core/utility/Factory.h"
 
 #include <istream>
@@ -10,7 +11,7 @@ namespace Violet
 {
 	class Deserializer;
 
-	class FileDeserializerFactory : public Factory<const char *, std::unique_ptr<Deserializer>(std::istream &)>
+	class VIOLET_API FileDeserializerFactory : public Factory<const char *, std::unique_ptr<Deserializer>(std::istream &)>
 	{
 	public:
 

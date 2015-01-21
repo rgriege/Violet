@@ -54,7 +54,7 @@ LuaScript::~LuaScript()
 
 CreateLuaWrapper(Entity);
 
-void LuaScript::run(const char * procedure, const Entity & entity) const
+void LuaScript::run(const char * procedure, const Entity & entity, AlterContext & /*context*/) const
 {
 	luaV_pushudata(m_lua, entity);
 	lua_setglobal(m_lua, "entity");

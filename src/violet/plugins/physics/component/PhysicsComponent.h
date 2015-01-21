@@ -6,9 +6,20 @@
 #include "violet/core/math/Polygon.h"
 #include "violet/core/serialization/Deserializer.h"
 
+
+#ifdef WIN32
+#ifdef VIOLETPHYSICS_EXPORT
+#define VIOLET_PHYSICS_API __declspec(dllexport)
+#else
+#define VIOLET_PHYSICS_API __declspec(dllimport)
+#endif
+#else
+#define VIOLET_API
+#endif
+
 namespace Violet
 {
-	class PhysicsComponent : public Component
+	class VIOLET_PHYSICS_API PhysicsComponent : public Component
 	{
 	public:
 
@@ -18,6 +29,7 @@ namespace Violet
 		PhysicsComponent(const Entity & entity, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
 		PhysicsComponent(const PhysicsComponent &) = delete;
+		PhysicsComponent & operator=(const PhysicsComponent &) = delete;
 
 	public:
 

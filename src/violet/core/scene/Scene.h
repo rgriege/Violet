@@ -8,7 +8,7 @@
 
 namespace Violet
 {
-	class Scene
+	class VIOLET_API Scene
 	{
 	public:
 
@@ -16,11 +16,13 @@ namespace Violet
 
 	private:
 
-		Scene(std::vector<Entity> && entities);
+		Scene();
+
+		Entity & createEntity();
 
 	private:
 
-		std::vector<Entity> m_entities;
+		std::unique_ptr<std::vector<Entity>> m_entities;
 	};
 }
 

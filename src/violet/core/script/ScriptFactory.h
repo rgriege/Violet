@@ -9,7 +9,7 @@ namespace Violet
 {
 	class Script;
 
-	class ScriptFactory : public Factory<const char *, std::unique_ptr<Script>(const char *)>
+	class VIOLET_API ScriptFactory : public Factory<const char *, std::unique_ptr<Script>(const char *)>
 	{
 	public:
 

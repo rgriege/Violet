@@ -1,6 +1,7 @@
 #ifndef CPP_SCRIPT_H
 #define CPP_SCRIPT_H
 
+#include "violet/core/Defines.h"
 #include "violet/core/script/Script.h"
 
 #include "Windows.h"
@@ -8,7 +9,7 @@
 
 namespace Violet
 {
-	class CppScript : public Script
+	class VIOLET_API CppScript : public Script
 	{
 	public:
 
@@ -22,7 +23,7 @@ namespace Violet
 
 		virtual ~CppScript() override;
 
-		virtual void run(const char * procedure, const Entity & entity) const;
+		virtual void run(const char * procedure, const Entity & entity, AlterContext & context) const override;
 
 	private:
 

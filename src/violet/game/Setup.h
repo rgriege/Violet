@@ -15,7 +15,7 @@ SystemFactory setup(int argc, char ** argv)
 	Violet::JsonDeserializer::install();
 
 	Violet::CppScript::install();
-	Violet::LuaScript::install();
+	//Violet::LuaScript::install();
 
 	Violet::SystemFactory factory;
 	Violet::TransformSystem::install(factory);

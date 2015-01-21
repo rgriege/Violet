@@ -16,4 +16,9 @@ Entity::Entity() :
 {
 }
 
+Entity::Entity(const Entity & other) :
+	m_id(other.m_id)
+{
+}
+
 // ============================================================================

@@ -5,7 +5,7 @@
 
 namespace Violet
 {
-	class Component
+	class VIOLET_API Component
 	{
 	public:
 

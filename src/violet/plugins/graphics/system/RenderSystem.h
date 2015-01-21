@@ -10,7 +10,7 @@ namespace Violet
 	class Deserializer;
 	class SystemFactory;
 
-	class RenderSystem : public ComponentSystem<RenderComponent>
+	class VIOLET_GRAPHICS_API RenderSystem : public ComponentSystem<RenderComponent>
 	{
 	public:
 
