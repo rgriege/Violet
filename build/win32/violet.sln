@@ -38,6 +38,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Game", "game\Game.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VioletInput", "input\input.vcxproj", "{DCEAF5BB-5B0C-4F5A-9F40-065583430D25}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VioletUpdate", "update\update.vcxproj", "{5B7F19DA-20F8-4B13-B2B3-7A60EA5E874F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -72,6 +74,10 @@ Global
 		{DCEAF5BB-5B0C-4F5A-9F40-065583430D25}.Debug|Win32.Build.0 = Debug|Win32
 		{DCEAF5BB-5B0C-4F5A-9F40-065583430D25}.Release|Win32.ActiveCfg = Release|Win32
 		{DCEAF5BB-5B0C-4F5A-9F40-065583430D25}.Release|Win32.Build.0 = Release|Win32
+		{5B7F19DA-20F8-4B13-B2B3-7A60EA5E874F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5B7F19DA-20F8-4B13-B2B3-7A60EA5E874F}.Debug|Win32.Build.0 = Debug|Win32
+		{5B7F19DA-20F8-4B13-B2B3-7A60EA5E874F}.Release|Win32.ActiveCfg = Release|Win32
+		{5B7F19DA-20F8-4B13-B2B3-7A60EA5E874F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

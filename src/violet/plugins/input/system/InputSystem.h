@@ -21,7 +21,8 @@ namespace Violet
 	private:
 
 		static void onMouse(int button, int state, int x, int y);
-		static void onKeyboard(unsigned char key, int x, int y);
+		static void onKeyboardDown(unsigned char key, int x, int y);
+		static void onKeyboardUp(unsigned char key, int x, int y);
 
 	private:
 

@@ -9,8 +9,64 @@
 
 namespace Violet
 {
+	/*template <typename ... Args>
+	class CppProcedureImpl : public Procedure
+	{
+	public:
+
+		CppProcedureImpl(HMODULE lib, const char * name) :
+			m_methodPtr(GetProcAddress(m_lib, m_name)),
+			m_args()
+		{
+		}
+
+		virtual void run() override
+		{
+			m_methodPtr(std::get<Args>(m_args)...);
+		}
+
+		template <typename T>
+		void bind(T * t)
+		{
+			std::get<T*>(m_args) = t;
+		}
+
+	private:
+
+		typedef void(*MethodPtr)(Args ... args);
+		MethodPtr m_methodPtr;
+		std::tuple<Args...> m_args;
+	};*/
+
 	class VIOLET_API CppScript : public Script
 	{
+	public:
+
+		class VIOLET_API Allocator
+		{
+			friend class CppScript;
+
+		public:
+
+			template <typename T>
+			void * allocate()
+			{
+				return allocate(sizeof(T));
+			}
+
+		private:
+
+			Allocator();
+			~Allocator();
+
+			void * allocate(size_t size);
+			void * fetch() const;
+
+		private:
+
+			void * m_memory;
+		};
+
 	public:
 
 		static void install();
@@ -23,12 +79,15 @@ namespace Violet
 
 		virtual ~CppScript() override;
 
-		virtual void run(const char * procedure, const Entity & entity, AlterContext & context) const override;
+		virtual void run(ProcedureBase & procedure) override;
+
+		void * getMethodPtr(const char * name) const;
+		void * getMemoryPtr() const;
 
 	private:
 
 		HMODULE m_lib;
-		std::function<void(const Entity &)> m_proc;
+		Allocator m_allocator;
 	};
 }
 

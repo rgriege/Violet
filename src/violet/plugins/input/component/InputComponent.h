@@ -3,9 +3,8 @@
 
 #include "violet/core/component/Component.h"
 #include "violet/core/math/Polygon.h"
-#include "violet/core/script/Script.h"
 
-#include <memory>
+#include <functional>
 
 #ifdef WIN32
 #ifdef VIOLETINPUT_EXPORT
@@ -19,6 +18,7 @@
 
 namespace Violet
 {
+	class AlterContext;
 	class Deserializer;
 
 	class VIOLET_INPUT_API InputComponent : public Component
@@ -36,7 +36,6 @@ namespace Violet
 	public:
 
 		Polygon m_mesh;
-		std::unique_ptr<Script> m_script;
 	};
 }
 

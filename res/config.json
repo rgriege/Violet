@@ -20,7 +20,9 @@
         }
       }
     },
-    "inpt": {}
+    "inpt": {},
+    "scpt": {},
+    "updt": {}
   },
   "opts": {
     "firstScene": "level1.json"
