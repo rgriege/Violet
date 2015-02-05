@@ -12,7 +12,7 @@ namespace Violet
 	{
 	public:
 
-		Entity();
+		Entity(uint32 id);
 		Entity(const Entity & other);
 
 	public:

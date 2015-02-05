@@ -34,7 +34,7 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 		while (*deserializer)
 		{
 			auto entitySegment = deserializer->enterSegment(ms_entityLabel);
-			Entity & entity = scene->createEntity();
+			Entity & entity = scene->createEntity(entitySegment->getUint("id"));
 			while (*entitySegment)
 				ComponentFactory::getInstance().create(entitySegment->nextLabel(), entity, *entitySegment);
 		}
@@ -48,8 +48,8 @@ Scene::Scene() :
 {
 }
 
-Entity & Scene::createEntity()
+Entity & Scene::createEntity(uint32 id)
 {
-	m_entities->emplace_back();
+	m_entities->emplace_back(id);
 	return m_entities->back();
 }

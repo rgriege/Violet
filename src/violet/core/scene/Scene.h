@@ -18,7 +18,7 @@ namespace Violet
 
 		Scene();
 
-		Entity & createEntity();
+		Entity & createEntity(uint32 id);
 
 	private:
 
