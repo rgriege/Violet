@@ -24,7 +24,7 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 		std::cout << "Could not open scene file " << filename << std::endl;
 		succeeded = false;
 	}
-	else if (!deserializer)
+	else if (!*deserializer)
 	{
 		std::cout << "Failed to parse scene file " << filename << std::endl;
 		succeeded = false;
