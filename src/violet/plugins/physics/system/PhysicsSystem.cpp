@@ -61,7 +61,7 @@ void PhysicsSystem::update(const float dt, AlterContext & context)
 			Intersection intersection(RigidBody(transform1, physics1), RigidBody(transform2, physics2), dt);
 			if (intersection.exists())
 			{
-				printf("collision!\n");
+				//printf("collision!\n");
 				float const impulseMagnitude = (-(1 + ms_restitution) * (physics2.m_velocity - physics1.m_velocity).dot(intersection.getIntersectionAxis())) /
 					(1 / physics1.m_mass + 1 / physics2.m_mass);
 				resolveCollisionForEntity(transform1, physics1, intersection, impulseMagnitude);
