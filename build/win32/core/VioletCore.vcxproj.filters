@@ -141,6 +141,9 @@
     <ClInclude Include="..\..\..\src\violet\core\script\Procedure.h">
       <Filter>script</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\utility\FileUtilities.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -188,6 +191,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\script\system\ScriptSystem.cpp">
       <Filter>script\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\utility\FileUtilities.cpp">
+      <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -119,6 +119,7 @@
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformSystem.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Assert.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Factory.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\FileUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\StringUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Time.h" />
@@ -151,6 +152,7 @@
     <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformSystem.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\utility\FileUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\StringUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp" />
   </ItemGroup>

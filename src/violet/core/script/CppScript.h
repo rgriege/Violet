@@ -80,9 +80,15 @@ namespace Violet
 		virtual ~CppScript() override;
 
 		virtual void run(ProcedureBase & procedure) override;
+		virtual void reload() override;
 
 		void * getMethodPtr(const char * name) const;
 		void * getMemoryPtr() const;
+
+	private:
+
+		void load(const char * filename);
+		void unload();
 
 	private:
 

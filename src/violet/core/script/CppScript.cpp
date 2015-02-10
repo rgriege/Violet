@@ -2,6 +2,8 @@
 
 #include "violet/core/Defines.h"
 #include "violet/core/script/ScriptFactory.h"
+#include "violet/core/utility/FileUtilities.h"
+#include "violet/core/utility/StringUtilities.h"
 
 #include <iostream>
 #include <set>
@@ -13,6 +15,8 @@ namespace CppScriptNamespace
 	typedef void (*Initializer)(CppScript::Allocator & allocator);
 	
 	const char * const ms_extension = "dll";
+	const char * const ms_debugExtension = "pdb";
+	const char * const ms_swapSuffix = ".swp";
 
 	std::unique_ptr<Script> create(const char * filename);
 	void warnMissing(const char * procedureName, HMODULE lib);
@@ -51,29 +55,60 @@ void CppScript::install()
 }
 
 CppScript::CppScript(const char * filename) :
-	m_lib(LoadLibrary(filename)),
+	m_lib(),
 	m_allocator()
 {
-	if (m_lib == nullptr)
-		std::cout << "Error loading script: " << filename << std::endl;
-	else
-	{
-		auto init = (Initializer)GetProcAddress(m_lib, "init");
-		if (init != nullptr)
-			init(m_allocator);
-		else
-			warnMissing("init", m_lib);
-	}
+	load(filename);
 }
 
 CppScript::~CppScript()
 {
-	FreeLibrary(m_lib);
+	unload();
 }
 
 void CppScript::run(ProcedureBase & procedure)
 {
 	procedure.run(*this);
+}
+
+void CppScript::reload()
+{
+	if (m_lib != nullptr)
+	{
+		std::string filename;
+		{
+			static const uint32 bufferSize = 64;
+			char buffer[bufferSize];
+			GetModuleFileName(m_lib, buffer, bufferSize);
+			filename = buffer;
+		}
+
+		unload();
+		int retCode = std::remove(filename.c_str());
+		if (retCode == 0)
+		{
+			if (FileUtilities::copy((filename + ms_swapSuffix).c_str(), filename.c_str()))
+			{
+#ifdef _DEBUG
+				std::string pdbFilename = filename;
+				StringUtilities::replace(pdbFilename, ms_extension, ms_debugExtension);
+				retCode = std::remove(pdbFilename.c_str());
+				if (retCode == 0)
+				{
+					if (!FileUtilities::copy((pdbFilename + ms_swapSuffix).c_str(), pdbFilename.c_str()))
+						std::cout << "Could not copy file '" << pdbFilename << ms_swapSuffix << "' to '" << pdbFilename << "'" << std::endl;
+				}
+				else
+					std::cout << "Could not remove file: " << pdbFilename << std::endl;
+#endif
+				load(filename.c_str());
+			}
+			else
+				std::cout << "Could not copy file '" << filename << ms_swapSuffix << "' to '" << filename << "'" << std::endl;
+		}
+		else
+			std::cout << "Could not remove file: " << filename << std::endl;
+	}
 }
 
 void * CppScript::getMethodPtr(const char * name) const
@@ -87,6 +122,24 @@ void * CppScript::getMethodPtr(const char * name) const
 void * CppScript::getMemoryPtr() const
 {
 	return m_allocator.fetch();
+}
+
+void CppScript::load(const char * filename)
+{
+	m_lib = LoadLibrary(filename);
+	if (m_lib == nullptr)
+		std::cout << "Error loading script: " << filename << std::endl;
+	else
+	{
+		auto init = (Initializer)getMethodPtr("init");
+		if (init != nullptr)
+			init(m_allocator);
+	}
+}
+
+void CppScript::unload()
+{
+	FreeLibrary(m_lib);
 }
 
 std::unique_ptr<Script> CppScriptNamespace::create(const char * filename)

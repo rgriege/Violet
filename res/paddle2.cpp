@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-#define WASD 1
+#define WASD
 
 using namespace Violet;
 
@@ -19,6 +19,12 @@ struct Mem
 
 extern "C" __declspec(dllexport) void init(CppScript::Allocator & allocator)
 {
+#ifdef WASD
+    std::cout << "wasd loaded" << std::endl;
+#else
+    std::cout << "ijkl loaded" << std::endl;
+#endif
+
     Mem * mem = static_cast<Mem*>(allocator.allocate<Mem>());
     mem->keyUpPressed = mem->keyDownPressed = false;
 }
