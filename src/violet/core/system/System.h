@@ -11,7 +11,7 @@
 
 namespace Violet
 {
-	class AlterContext;
+	class Engine;
 
 	class VIOLET_API System
     {
@@ -20,7 +20,7 @@ namespace Violet
 		virtual ~System() = default;
 		virtual void create(Entity & entity, Deserializer & deserializer) = 0;
 		virtual const char * getLabel() = 0;
-		virtual void update(float dt, AlterContext & context) = 0;
+		virtual void update(float dt, Engine & engine) = 0;
     };
 
 	template <typename Component>

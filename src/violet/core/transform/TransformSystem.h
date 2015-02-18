@@ -19,7 +19,7 @@ namespace Violet
 	public:
 
 		virtual ~TransformSystem() override = default;
-		virtual void update(float dt, AlterContext & context) override;
+		virtual void update(float dt, Engine & engine) override;
 	};
 }
 

@@ -1,4 +1,4 @@
-#include "violet/core/AlterContext.h"
+#include "violet/core/Engine.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/script/CppScript.h"
 #include "violet/core/transform/TransformComponent.h"
@@ -29,7 +29,7 @@ extern "C" __declspec(dllexport) void init(CppScript::Allocator & allocator)
     mem->keyUpPressed = mem->keyDownPressed = false;
 }
 
-extern "C" __declspec(dllexport) void onKeyDown(const Entity & e, AlterContext & context, const unsigned char & key, Mem * mem)
+extern "C" __declspec(dllexport) void onKeyDown(const Entity & e, Engine & engine, const unsigned char & key, Mem * mem)
 {
 #ifdef WASD
     if (key == 119)
@@ -44,7 +44,7 @@ extern "C" __declspec(dllexport) void onKeyDown(const Entity & e, AlterContext &
 #endif
 }
 
-extern "C" __declspec(dllexport) void onKeyUp(const Entity & e, AlterContext & context, const unsigned char & key, Mem * mem)
+extern "C" __declspec(dllexport) void onKeyUp(const Entity & e, Engine & engine, const unsigned char & key, Mem * mem)
 {
 #ifdef WASD
     if (key == 119)
@@ -59,14 +59,14 @@ extern "C" __declspec(dllexport) void onKeyUp(const Entity & e, AlterContext & c
 #endif
 }
 
-extern "C" __declspec(dllexport) void update(const Entity & e, AlterContext & context, Mem * mem)
+extern "C" __declspec(dllexport) void update(const Entity & e, Engine & engine, Mem * mem)
 {
     if (mem->keyUpPressed ^ mem->keyDownPressed)
     {
-        TransformComponent & transform = context.fetch<TransformSystem>(e);
+        TransformComponent & transform = engine.fetch<TransformSystem>(e);
         transform.m_position += Vec2f(0, mem->keyUpPressed ? 5 : -5);
     }
 
-    PhysicsComponent & physics = context.fetch<PhysicsSystem>(e);
+    PhysicsComponent & physics = engine.fetch<PhysicsSystem>(e);
     physics.m_velocity.x = 0;
 }

@@ -1,6 +1,5 @@
 #include "violet/core/Engine.h"
 
-#include "violet/core/AlterContext.h"
 #include "violet/core/scene/Scene.h"
 #include "violet/core/serialization/Deserializer.h"
 #include "violet/core/system/System.h"
@@ -59,7 +58,6 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 
 void Engine::begin()
 {
-	AlterContext context(m_systems);
 	uint32 const targetFrameTime = 1000 / 60;
 	uint32 previousFrameTime = targetFrameTime;
 
@@ -68,7 +66,7 @@ void Engine::begin()
 		uint32 const startTime = Time::getTimeInMilliseconds();
 
 		float const deltaSeconds = previousFrameTime / 1000.f;
-		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, context); });
+		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, *this); });
 
 		uint32 const frameTime = Time::getTimeInMilliseconds() - startTime;
 		if (frameTime < targetFrameTime)

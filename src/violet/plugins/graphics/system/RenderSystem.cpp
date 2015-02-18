@@ -1,6 +1,6 @@
 #include "violet/plugins/graphics/system/RenderSystem.h"
 
-#include "violet/core/AlterContext.h"
+#include "violet/core/Engine.h"
 #include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
@@ -16,7 +16,7 @@ namespace RenderSystemNamespace
 {
 	RenderSystem * ms_renderSystem;
 
-	AlterContext * ms_alterContext;
+	Engine * ms_engine;
 
 	void draw(RenderComponent & renderComponent);
 	void close(System *);
@@ -69,9 +69,9 @@ std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 	return succeeded ? std::unique_ptr<System>(ms_renderSystem) : nullptr;
 }
 
-void RenderSystem::update(float const /*dt*/, AlterContext & context)
+void RenderSystem::update(float const /*dt*/, Engine & engine)
 {
-	ms_alterContext = &context;
+	ms_engine = &engine;
 	glutPostRedisplay();
 	glutMainLoopEvent();
 }
@@ -87,7 +87,7 @@ void RenderSystem::display()
 void RenderSystemNamespace::draw(RenderComponent & renderComponent)
 {
 	glPushMatrix();
-	const TransformComponent & transform = ms_alterContext->fetch<TransformSystem>(renderComponent.m_entity);
+	const TransformComponent & transform = ms_engine->fetch<TransformSystem>(renderComponent.m_entity);
 	glTranslatef(transform.m_position.x, transform.m_position.y, 0.f);
 	glColor4f(renderComponent.m_color.r, renderComponent.m_color.g, renderComponent.m_color.b, renderComponent.m_color.a);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

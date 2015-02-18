@@ -1,6 +1,5 @@
 #include "violet/core/script/system/ScriptSystem.h"
 
-#include "violet/core/AlterContext.h"
 #include "violet/core/component/ComponentFactory.h"
 
 using namespace Violet;
@@ -18,6 +17,6 @@ std::unique_ptr<System> ScriptSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(system);
 }
 
-void ScriptSystem::update(float /*dt*/, AlterContext & /*context*/)
+void ScriptSystem::update(float /*dt*/, Engine & /*engine*/)
 {
 }

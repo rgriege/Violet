@@ -7,7 +7,6 @@
 
 namespace Violet
 {
-	class AlterContext;
 	class Deserializer;
 	class SystemFactory;
 
@@ -21,7 +20,7 @@ namespace Violet
 	public:
 
 		virtual ~PhysicsSystem() override = default;
-		virtual void update(float dt, AlterContext & context);
+		virtual void update(float dt, Engine & engine);
 
 	private:
 

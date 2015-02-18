@@ -5,10 +5,12 @@
 
 #include <memory>
 #include <vector>
+#include <algorithm>
 
 namespace Violet
 {
 	class Deserializer;
+	class Entity;
 	class Scene;
 	class System;
 	class SystemFactory;
@@ -19,9 +21,16 @@ namespace Violet
 
 		static std::unique_ptr<Engine> init(SystemFactory & factory, Deserializer & deserializer);
 
+	public:
+
 		void begin();
 
-	public:
+		template <typename SystemType>
+		typename SystemType::ComponentType & fetch(const Entity & entity)
+		{
+			auto it = std::find_if(std::begin(m_systems), std::end(m_systems), [](std::unique_ptr<System> const & system) { return system->getLabel() == SystemType::getStaticLabel(); });
+			return dynamic_cast<SystemType *>(it->get())->fetch(entity);
+		}
 
 		~Engine();
 

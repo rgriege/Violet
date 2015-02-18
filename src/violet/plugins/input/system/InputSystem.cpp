@@ -1,6 +1,6 @@
 #include "violet/plugins/input/system/InputSystem.h"
 
-#include "violet/core/AlterContext.h"
+#include "violet/core/Engine.h"
 #include "violet/core/component/ComponentFactory.h"
 #include "violet/core/script/Procedure.h"
 #include "violet/core/script/system/ScriptSystem.h"
@@ -15,7 +15,7 @@ namespace InputSystemNamespace
 {
 	InputSystem * ms_inputSystem;
 
-	AlterContext * ms_alterContext;
+	Engine * ms_engine;
 }
 
 using namespace InputSystemNamespace;
@@ -36,9 +36,9 @@ std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(ms_inputSystem);
 }
 
-void InputSystem::update(float /*dt*/, AlterContext & context)
+void InputSystem::update(float /*dt*/, Engine & engine)
 {
-	ms_alterContext = &context;
+	ms_engine = &engine;
 }
 
 void InputSystem::onMouse(int button, int state, int x, int y)
@@ -47,11 +47,11 @@ void InputSystem::onMouse(int button, int state, int x, int y)
 	Vec2f point(x, height - y);
 	for (auto const & component : *ms_inputSystem->m_components)
 	{
-		auto const & transform = ms_alterContext->fetch<TransformSystem>(component.m_entity);
+		auto const & transform = ms_engine->fetch<TransformSystem>(component.m_entity);
 		if (component.m_mesh.contains(point - transform.m_position))
 		{
-			auto const & scriptComponent = ms_alterContext->fetch<ScriptSystem>(component.m_entity);
-			scriptComponent.m_script->run(Procedure::create(state == GLUT_DOWN ? "onMouseDown" : "onMouseUp", component.m_entity, *ms_alterContext));
+			auto const & scriptComponent = ms_engine->fetch<ScriptSystem>(component.m_entity);
+			scriptComponent.m_script->run(Procedure::create(state == GLUT_DOWN ? "onMouseDown" : "onMouseUp", component.m_entity, *ms_engine));
 		}
 	}
 }
@@ -85,8 +85,8 @@ void InputSystem::onKeyboardDown(const unsigned char key, int /*x*/, int /*y*/)
 {
 	for (auto const & component : *ms_inputSystem->m_components)
 	{
-		auto const & scriptComponent = ms_alterContext->fetch<ScriptSystem>(component.m_entity);
-		scriptComponent.m_script->run(Procedure::create("onKeyDown", component.m_entity, *ms_alterContext, key));
+		auto const & scriptComponent = ms_engine->fetch<ScriptSystem>(component.m_entity);
+		scriptComponent.m_script->run(Procedure::create("onKeyDown", component.m_entity, *ms_engine, key));
 	}
 }
 
@@ -95,7 +95,7 @@ void InputSystem::onKeyboardUp(const unsigned char key, int /*x*/, int /*y*/)
 	static int i = 0;
 	for (auto const & component : *ms_inputSystem->m_components)
 	{
-		auto const & scriptComponent = ms_alterContext->fetch<ScriptSystem>(component.m_entity);
-		scriptComponent.m_script->run(Procedure::create("onKeyUp", component.m_entity, *ms_alterContext, key));
+		auto const & scriptComponent = ms_engine->fetch<ScriptSystem>(component.m_entity);
+		scriptComponent.m_script->run(Procedure::create("onKeyUp", component.m_entity, *ms_engine, key));
 	}
 }

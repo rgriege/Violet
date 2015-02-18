@@ -1,6 +1,6 @@
 #include "violet/plugins/physics/system/PhysicsSystem.h"
 
-#include "violet/core/AlterContext.h"
+#include "violet/core/Engine.h"
 #include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
@@ -38,7 +38,7 @@ std::unique_ptr<System> PhysicsSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(system);
 }
 
-void PhysicsSystem::update(const float dt, AlterContext & context)
+void PhysicsSystem::update(const float dt, Engine & engine)
 {
 	if (!m_gravity.isZero() || m_drag != 0)
 		for (auto & component : *m_components)
@@ -46,18 +46,18 @@ void PhysicsSystem::update(const float dt, AlterContext & context)
 
 	for (auto & component : *m_components)
 	{
-		TransformComponent & transform = context.fetch<TransformSystem>(component.m_entity);
+		TransformComponent & transform = engine.fetch<TransformSystem>(component.m_entity);
 		updateEntity(transform, component, dt);
 	}
 
 	for (uint32 i = 0, len = m_components->size(); i < len; ++i)
 	{
 		PhysicsComponent & physics1 = m_components->operator[](i);
-		TransformComponent & transform1 = context.fetch<TransformSystem>(physics1.m_entity);
+		TransformComponent & transform1 = engine.fetch<TransformSystem>(physics1.m_entity);
 		for (uint32 j = i + 1; j < len; ++j)
 		{
 			PhysicsComponent & physics2 = m_components->operator[](j);
-			TransformComponent & transform2 = context.fetch<TransformSystem>(physics2.m_entity);
+			TransformComponent & transform2 = engine.fetch<TransformSystem>(physics2.m_entity);
 			Intersection intersection(RigidBody(transform1, physics1), RigidBody(transform2, physics2), dt);
 			if (intersection.exists())
 			{

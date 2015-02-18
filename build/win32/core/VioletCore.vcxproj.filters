@@ -116,7 +116,6 @@
     <ClInclude Include="..\..\..\src\violet\core\system\SystemFactory.h">
       <Filter>system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\AlterContext.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.h">
       <Filter>serialization</Filter>
     </ClInclude>

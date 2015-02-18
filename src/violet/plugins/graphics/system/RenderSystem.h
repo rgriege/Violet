@@ -6,7 +6,6 @@
 
 namespace Violet
 {
-	class AlterContext;
 	class Deserializer;
 	class SystemFactory;
 
@@ -21,7 +20,7 @@ namespace Violet
 
 		RenderSystem() = default;
 		virtual ~RenderSystem() override = default;
-		virtual void update(float dt, AlterContext & context) override;
+		virtual void update(float dt, Engine & engine) override;
 
 	private:
 

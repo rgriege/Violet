@@ -136,9 +136,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\core\AlterContext.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
     <ClCompile Include="..\..\..\src\violet\core\component\ComponentFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\Engine.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp" />

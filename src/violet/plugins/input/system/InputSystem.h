@@ -16,7 +16,7 @@ namespace Violet
 	public:
 
 		virtual ~InputSystem() override = default;
-		virtual void update(float dt, AlterContext & context);
+		virtual void update(float dt, Engine & engine);
 
 	private:
 
