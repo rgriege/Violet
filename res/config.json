@@ -25,6 +25,6 @@
     "updt": {}
   },
   "opts": {
-    "firstScene": "level1.json"
+    "firstScene": "menu.json"
   }
 }

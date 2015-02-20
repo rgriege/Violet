@@ -61,12 +61,21 @@ void Engine::begin()
 	uint32 const targetFrameTime = 1000 / 60;
 	uint32 previousFrameTime = targetFrameTime;
 
-	while (true)
+	while (m_running)
 	{
 		uint32 const startTime = Time::getTimeInMilliseconds();
 
 		float const deltaSeconds = previousFrameTime / 1000.f;
 		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, *this); });
+
+		if (!m_nextSceneFileName.empty())
+		{
+			for (auto & system : m_systems)
+				system->clear();
+			m_activeScene.reset();
+			m_activeScene = Scene::create(m_nextSceneFileName.c_str());
+			m_nextSceneFileName.clear();
+		}
 
 		uint32 const frameTime = Time::getTimeInMilliseconds() - startTime;
 		if (frameTime < targetFrameTime)
@@ -82,12 +91,24 @@ void Engine::begin()
 	}
 }
 
+void Engine::switchScene(const char * filename)
+{
+	m_nextSceneFileName = filename;
+}
+
+void Engine::stop()
+{
+	m_running = false;
+}
+
 Engine::~Engine()
 {
 }
 
 Engine::Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && firstScene) :
 	m_activeScene(std::move(firstScene)),
-	m_systems(std::move(systems))
+	m_nextSceneFileName(),
+	m_systems(std::move(systems)),
+	m_running(true)
 {
 }

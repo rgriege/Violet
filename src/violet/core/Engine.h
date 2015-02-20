@@ -24,6 +24,8 @@ namespace Violet
 	public:
 
 		void begin();
+		void switchScene(const char * filename);
+		void stop();
 
 		template <typename SystemType>
 		typename SystemType::ComponentType & fetch(const Entity & entity)
@@ -41,7 +43,9 @@ namespace Violet
 	private:
 
 		std::unique_ptr<Scene> m_activeScene;
+		std::string m_nextSceneFileName;
 		std::vector<std::unique_ptr<System>> m_systems;
+		bool m_running;
 	};
 }
 

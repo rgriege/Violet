@@ -4,5 +4,5 @@ using namespace Violet;
 
 extern "C" __declspec(dllexport) void onMouseDown(const Entity & e, Engine & engine)
 {
-    engine.switchScene("level1.json");
+    engine.stop();
 }

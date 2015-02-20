@@ -21,6 +21,7 @@ namespace Violet
 		virtual void create(Entity & entity, Deserializer & deserializer) = 0;
 		virtual const char * getLabel() = 0;
 		virtual void update(float dt, Engine & engine) = 0;
+		virtual void clear() = 0;
     };
 
 	template <typename Component>
@@ -49,6 +50,12 @@ namespace Violet
 		virtual const char * getLabel() override
 		{
 			return getStaticLabel();
+		}
+
+		virtual void clear() override
+		{
+			m_entityComponentMap.clear();
+			m_components->clear();
 		}
 
 		bool has(const Entity & entity)
