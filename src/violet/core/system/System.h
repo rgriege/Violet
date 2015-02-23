@@ -1,9 +1,11 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
+#include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
 #include "violet/core/system/SystemFactory.h"
+#include "violet/core/template/TupleUtilities.h"
 
 #include <vector>
 #include <map>
@@ -17,11 +19,24 @@ namespace Violet
     {
     public:
 
+		System(const char * label) :
+			m_label(label)
+		{
+		}
+
 		virtual ~System() = default;
-		virtual void create(Entity & entity, Deserializer & deserializer) = 0;
-		virtual const char * getLabel() = 0;
+
+		const char * getLabel()
+		{
+			return m_label;
+		}
+
 		virtual void update(float dt, Engine & engine) = 0;
 		virtual void clear() = 0;
+
+	private:
+
+		const char * m_label;
     };
 
 	template <typename Component>
@@ -40,16 +55,16 @@ namespace Violet
 
 	public:
 
-		virtual void create(Entity & entity, Deserializer & deserializer) override
+		~ComponentSystem()
 		{
-			auto segment = deserializer.enterSegment(Component::getLabel());
-			m_entityComponentMap.emplace(entity.m_id, m_components->size());
-			m_components->emplace_back(entity, *segment);
+			ComponentFactory::getInstance().remove(getStaticLabel());
 		}
 
-		virtual const char * getLabel() override
+		void create(Entity & entity, Deserializer & deserializer)
 		{
-			return getStaticLabel();
+			auto segment = deserializer.enterSegment(getStaticLabel());
+			m_entityComponentMap.emplace(entity.m_id, m_components->size());
+			m_components->emplace_back(entity, *segment);
 		}
 
 		virtual void clear() override
@@ -72,8 +87,10 @@ namespace Violet
 	protected:
 
 		ComponentSystem() :
+			System(Component::getLabel()),
 			m_components(new std::vector<Component>)
 		{
+			ComponentFactory::getInstance().assign(getStaticLabel(), std::bind(&ComponentSystem<Component>::create, this, std::placeholders::_1, std::placeholders::_2));
 		}
 
 	protected:

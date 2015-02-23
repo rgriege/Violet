@@ -1,7 +1,6 @@
 #include "violet/plugins/graphics/system/RenderSystem.h"
 
 #include "violet/core/Engine.h"
-#include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
 #include "violet/core/system/SystemFactory.h"
@@ -60,7 +59,6 @@ std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 			glutDisplayFunc(display);
 
 			ms_renderSystem = new RenderSystem();
-			ComponentFactory::getInstance().assign(RenderComponent::getLabel(), std::bind(&RenderSystem::create, ms_renderSystem, std::placeholders::_1, std::placeholders::_2));
 		}
 		else
 			succeeded = false;

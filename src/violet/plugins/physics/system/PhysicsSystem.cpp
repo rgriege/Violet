@@ -1,7 +1,6 @@
 #include "violet/plugins/physics/system/PhysicsSystem.h"
 
 #include "violet/core/Engine.h"
-#include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
 #include "violet/core/system/SystemFactory.h"
@@ -34,7 +33,6 @@ std::unique_ptr<System> PhysicsSystem::init(Deserializer & deserializer)
 	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
 	float const drag = settingsSegment->getFloat("drag");
 	auto system = new PhysicsSystem(drag, Vec2f(*settingsSegment->enterSegment("gravity")));
-	ComponentFactory::getInstance().assign(PhysicsComponent::getLabel(), std::bind(&PhysicsSystem::create, system, std::placeholders::_1, std::placeholders::_2));
 	return std::unique_ptr<System>(system);
 }
 

@@ -1,7 +1,6 @@
 #include "violet/plugins/update/system/UpdateSystem.h"
 
 #include "violet/core/Engine.h"
-#include "violet/core/component/ComponentFactory.h"
 #include "violet/core/script/Procedure.h"
 #include "violet/core/script/system/ScriptSystem.h"
 
@@ -16,7 +15,6 @@ std::unique_ptr<System> UpdateSystem::init(Deserializer & deserializer)
 {
 	deserializer.enterSegment(getStaticLabel());
 	auto system = new UpdateSystem;
-	ComponentFactory::getInstance().assign(UpdateComponent::getLabel(), std::bind(&UpdateSystem::create, system, std::placeholders::_1, std::placeholders::_2));
 	return std::unique_ptr<System>(system);
 }
 

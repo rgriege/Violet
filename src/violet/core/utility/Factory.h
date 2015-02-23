@@ -31,6 +31,11 @@ namespace Violet
 			m_producers[label] = producer;
 		}
 
+		void remove(Label label)
+		{
+			m_producers.erase(label);
+		}
+
 	private:
 
 		std::map<Label, Producer> m_producers;
@@ -54,6 +59,11 @@ namespace Violet
 		void assign(const char * label, const Producer & producer)
 		{
 			m_producers[label] = producer;
+		}
+
+		void remove(const char * label)
+		{
+			m_producers.erase(label);
 		}
 
 	private:

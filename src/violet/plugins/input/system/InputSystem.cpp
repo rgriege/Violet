@@ -1,7 +1,6 @@
 #include "violet/plugins/input/system/InputSystem.h"
 
 #include "violet/core/Engine.h"
-#include "violet/core/component/ComponentFactory.h"
 #include "violet/core/script/Procedure.h"
 #include "violet/core/script/system/ScriptSystem.h"
 #include "violet/core/transform/TransformSystem.h"
@@ -32,7 +31,6 @@ std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
 	glutKeyboardFunc(onKeyboardDown);
 	glutKeyboardUpFunc(onKeyboardUp);
 	ms_inputSystem = new InputSystem();
-	ComponentFactory::getInstance().assign(InputComponent::getLabel(), std::bind(&InputSystem::create, ms_inputSystem, std::placeholders::_1, std::placeholders::_2));
 	return std::unique_ptr<System>(ms_inputSystem);
 }
 
