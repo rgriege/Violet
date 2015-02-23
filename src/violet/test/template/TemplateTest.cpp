@@ -11,17 +11,22 @@
 
 using namespace Violet;
 
-struct Int
+namespace TemplateTestNamespace
 {
-	Int(int i) : m_i(i) {}
-	operator int() { return m_i; }
-	friend std::ostream & operator<<(std::ostream & stream, const Int & i) { return stream << i.m_i; }
-	friend bool operator==(const Int & lhs, const Int & rhs) { return true; }
-	int m_i;
-};
+	struct Int
+	{
+		Int(int i) : m_i(i) {}
+		operator int() { return m_i; }
+		friend std::ostream & operator<<(std::ostream & stream, const Int & i) { return stream << i.m_i; }
+		friend bool operator==(const Int & lhs, const Int & rhs) { return true; }
+		int m_i;
+	};
 
-struct Zero : Int { Zero() : Int(0) {} };
-struct One : Int { One() : Int(1) {} };
+	struct Zero : Int { Zero() : Int(0) {} };
+	struct One : Int { One() : Int(1) {} };
+}
+
+using namespace TemplateTestNamespace;
 
 void TemplateTests::run(TestEvaluator & evaluator)
 {
@@ -48,6 +53,17 @@ void TemplateTests::run(TestEvaluator & evaluator)
 			std::tuple<int, char> t2;
 			extract(t1, t2);
 			return t2;
+		}),
+		TestFactory::makeStateless("for_all", 6.0, []() { return for_all([](int i, float f, double d) { return i + f + d; }, std::make_tuple(1, 2.f, 3.0)); }),
+		TestFactory::makeStateless("for_each", 6.0, []() {
+			static double result = 0;
+			for_each([&](double d) { result += d; }, std::make_tuple(1, 2.f, 3.0));
+			return result;
+		}),
+		TestFactory::makeStateless("for_each order", std::string("123"), []() {
+			static std::string result = "";
+			for_each([&](const std::string & s) { result += s; }, std::make_tuple("1", "2", "3"));
+			return result;
 		})
 	)).evaluate(evaluator);
 }

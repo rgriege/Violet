@@ -4,6 +4,7 @@
 #include "TemplateUtilities.h"
 
 #include <tuple>
+#include <functional>
 
 namespace Violet
 {
@@ -229,6 +230,92 @@ namespace Violet
 		const Tuple & m_tuple;
 		const char * m_separator;
 	};
+
+
+
+
+	/*
+	 * sequence
+	 */
+
+	template <size_t... Is>
+	struct sequence {};
+
+	template <size_t N, size_t... Is>
+	struct sequence_generator : sequence_generator<N - 1, N - 1, Is...> {};
+
+	template <size_t... Is>
+	struct sequence_generator<0, Is...>
+	{
+		using type = sequence<Is...>;
+	};
+
+
+
+
+	/*
+	 * for_all
+	 */
+	
+	namespace detail
+	{
+		template <typename Predicate, typename... Args, size_t... N>
+		std::result_of_t<Predicate(Args...)> for_all(Predicate pr, const std::tuple<Args...> & tup, sequence<N...> seq)
+		{
+			return pr(std::get<N>(tup)...);
+		}
+	}
+
+	template <typename Predicate, typename... Args>
+	std::result_of_t<Predicate(Args...)> for_all(Predicate pr, const std::tuple<Args...> & tup)
+	{
+		return detail::for_all(pr, tup, typename sequence_generator<sizeof...(Args)>::type());
+	}
+
+	namespace detail
+	{
+		template <typename Type, typename Predicate, typename... Args, size_t... N>
+		std::result_of_t<Predicate(Type, Args...)> for_all(Type & type, Predicate pr, const std::tuple<Args...> & tup, sequence<N...> seq)
+		{
+			return (type.*pr)(std::get<N>(tup)...);
+		}
+	}
+
+	template <typename Type, typename Predicate, typename... Args>
+	std::result_of_t<Predicate(Type, Args...)> for_all(Type & type, Predicate pr, const std::tuple<Args...> & tup)
+	{
+		return detail::for_all(type, pr, tup, typename sequence_generator<sizeof...(Args)>::type());
+	}
+
+
+
+
+	/*
+	* for_each
+	*/
+
+	namespace detail
+	{
+		template <size_t> struct Index {};
+
+		template <typename Predicate, typename... Args>
+		void for_each(Predicate pr, const std::tuple<Args...> & tup, Index<0>)
+		{
+		}
+
+		template <typename Predicate, typename... Args, size_t N>
+		void for_each(Predicate pr, const std::tuple<Args...> & tup, Index<N>)
+		{
+			for_each(pr, tup, Index<N - 1>());
+			pr(std::get<N - 1>(tup));
+		}
+	}
+
+	template <typename Predicate, typename... Args>
+	void for_each(Predicate pr, const std::tuple<Args...> & tup)
+	{
+		detail::for_each(pr, tup, detail::Index<sizeof...(Args)>());
+	}
 }
 
 #endif
