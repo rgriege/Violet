@@ -8,11 +8,11 @@
     <ClCompile Include="..\..\..\src\violet\test\math\MathTest.cpp">
       <Filter>math</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\test\physics\PhysicsTest.cpp">
-      <Filter>physics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\test\template\TemplateTest.cpp">
       <Filter>template</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\test\physics\PhysicsTest.cpp">
+      <Filter>physics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -57,11 +57,11 @@
     <ClInclude Include="..\..\..\src\violet\test\core\StatelessTestSuite.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\test\physics\PhysicsTest.h">
-      <Filter>physics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\test\template\TemplateTest.h">
       <Filter>template</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\physics\PhysicsTest.h">
+      <Filter>physics</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

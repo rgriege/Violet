@@ -5,12 +5,23 @@
 #include "violet/core/math/Polygon.h"
 #include "violet/core/math/Vec2.h"
 
+
+#ifdef WIN32
+#ifdef VIOLETPHYSICS_EXPORT
+#define VIOLET_PHYSICS_API __declspec(dllexport)
+#else
+#define VIOLET_PHYSICS_API __declspec(dllimport)
+#endif
+#else
+#define VIOLET_API
+#endif
+
 namespace Violet
 {
 	class TransformComponent;
 	class PhysicsComponent;
 
-	class RigidBody
+	class VIOLET_PHYSICS_API RigidBody
 	{
 	public:
 

@@ -5,7 +5,7 @@
 
 namespace Violet
 {
-	class Intersection
+	class VIOLET_PHYSICS_API Intersection
 	{
 	public:
 
