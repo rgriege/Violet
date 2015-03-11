@@ -12,7 +12,7 @@ namespace Violet
 	{
 	public:
 
-		explicit Polygon(std::vector<Vec2f> vertices);
+		explicit Polygon(std::vector<Vec2f> && vertices);
 		explicit Polygon(Deserializer & deserializer);
 
 		bool contains(const Vec2f & point) const;
