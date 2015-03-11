@@ -12,6 +12,8 @@ int main(int argc, char** argv)
 	if (deserializer == nullptr || !*deserializer)
 	{
 		std::cout << "failed to read config file" << std::endl;
+		char c;
+		std::cin >> c;
 		exit(1);
 	}
 
@@ -19,6 +21,8 @@ int main(int argc, char** argv)
 	if (engine == nullptr)
 	{
 		std::cout << "failed to init engine" << std::endl;
+		char c;
+		std::cin >> c;
 		exit(1);
 	}
 
