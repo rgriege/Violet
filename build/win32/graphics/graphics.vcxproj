@@ -13,11 +13,18 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\Color.cpp" />
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\component\RenderComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\Mesh.cpp" />
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\shader\Shader.cpp" />
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\shader\ShaderCache.cpp" />
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\Color.h" />
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\component\RenderComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\Config.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\Mesh.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\shader\Shader.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\shader\ShaderCache.h" />
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -66,15 +73,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;VIOLETGRAPHICS_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freeglut\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freeglut\include;E:\Libraries\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4251</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>VioletCore.lib;OpenGL32.lib;freeglut.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>E:\Libraries\freeglut\lib\x86\Debug;E:\Documents\alottabit\violet\bin\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>VioletCore.lib;OpenGL32.lib;freeglut.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\Libraries\freeglut\lib\x86\Debug;E:\Documents\alottabit\violet\bin\Debug;E:\Libraries\glew\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

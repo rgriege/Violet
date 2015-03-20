@@ -8,6 +8,8 @@ all: $(foreach TARGET, $(TARGETS), $(TARGET).dll )
 
 install: all
 	copy *.json $(DST)\*.json
+	copy *.vert $(DST)\*.vert
+	copy *.frag $(DST)\*.frag
 	copy *.dll $(DST)\*.dll
 	copy *.pdb $(DST)\*.pdb
 
@@ -20,6 +22,8 @@ clean:
 	del *.dll *.obj *.lib *.ilk *.pdb *.exp *~ *.swp
 
 uninstall:
-	$(foreach TARGET, $(TARGETS), del $(DST)\$(TARGET).dll;)
-	$(foreach TARGET, $(TARGETS), del $(DST)\$(TARGET).pdb;)
+	del $(foreach TARGET, $(TARGETS), $(DST)\$(TARGET).dll)
+	del $(foreach TARGET, $(TARGETS), $(DST)\$(TARGET).pdb)
 	del $(DST)\*.json
+	del $(DST)\*.vert
+	del $(DST)\*.frag

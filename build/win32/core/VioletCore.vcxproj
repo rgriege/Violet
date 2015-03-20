@@ -99,6 +99,7 @@
     <ClInclude Include="..\..\..\src\violet\core\math\Circle.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Matrix2.h" />
+    <ClInclude Include="..\..\..\src\violet\core\math\Matrix3.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
     <ClInclude Include="..\..\..\src\violet\core\scene\Scene.h" />
@@ -118,6 +119,7 @@
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformComponent.h" />
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformSystem.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Assert.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\Buffer.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Factory.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FileUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />
@@ -157,6 +159,9 @@
     <ClCompile Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.cpp">
       <FileType>Document</FileType>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\src\violet\core\math\Matrix3.ipp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

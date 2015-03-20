@@ -41,8 +41,9 @@ void InputSystem::update(float /*dt*/, Engine & engine)
 
 void InputSystem::onMouse(int button, int state, int x, int y)
 {
-	int height = glutGet(GLUT_WINDOW_HEIGHT);
-	Vec2f point(x, height - y);
+	const int height = glutGet(GLUT_WINDOW_HEIGHT);
+	const int width = glutGet(GLUT_WINDOW_WIDTH);
+	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
 	for (auto const & component : *ms_inputSystem->m_components)
 	{
 		auto const & transform = ms_engine->fetch<TransformSystem>(component.m_entity);

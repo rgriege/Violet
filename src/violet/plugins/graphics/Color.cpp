@@ -91,6 +91,11 @@ Color::Color(Deserializer & deserializer)
 	a = static_cast<uint8>(rgba & 0xff);
 }
 
+std::array<float, 4> Color::as4fv() const
+{
+	return { r, g, b, a };
+}
+
 float ColorNamespace::convert(const uint8 value)
 {
 	return static_cast<float>(value) / 255.f;

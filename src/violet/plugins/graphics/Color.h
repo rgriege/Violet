@@ -3,6 +3,8 @@
 
 #include "violet/core/Defines.h"
 
+#include <array>
+
 namespace Violet
 {
 	class Deserializer;
@@ -50,6 +52,8 @@ namespace Violet
 		Color();
 		Color(uint8 _r, uint8 _g, uint8 _b, uint8 _a = 255);
 		Color(Deserializer & deserializer);
+
+		std::array<float, 4> as4fv() const;
 
 	public:
 

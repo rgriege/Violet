@@ -1,4 +1,4 @@
-#ifdef VIOLET_GRAPHICS_EXPORTS
+#ifdef VIOLETGRAPHICS_EXPORT
     #define VIOLET_GRAPHICS_API __declspec(dllexport)
     #define VIOLET_GRAPHICS_TEMPLATE_EXTERN
 #else

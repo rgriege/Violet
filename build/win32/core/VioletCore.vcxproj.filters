@@ -143,6 +143,12 @@
     <ClInclude Include="..\..\..\src\violet\core\utility\FileUtilities.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\utility\Buffer.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\math\Matrix3.h">
+      <Filter>math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -194,5 +200,10 @@
     <ClCompile Include="..\..\..\src\violet\core\utility\FileUtilities.cpp">
       <Filter>utility</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\src\violet\core\math\Matrix3.ipp">
+      <Filter>math</Filter>
+    </None>
   </ItemGroup>
 </Project>

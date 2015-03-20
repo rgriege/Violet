@@ -3,22 +3,14 @@
 
 #include "violet/core/component/Component.h"
 
-#include "violet/core/math/Polygon.h"
+#include "violet/plugins/graphics/Mesh.h"
 #include "violet/plugins/graphics/Color.h"
-
-#ifdef WIN32
-#ifdef VIOLETGRAPHICS_EXPORT
-#define VIOLET_GRAPHICS_API __declspec(dllexport)
-#else
-#define VIOLET_GRAPHICS_API __declspec(dllimport)
-#endif
-#else
-#define VIOLET_API
-#endif
+#include "violet/plugins/graphics/Config.h"
 
 namespace Violet
 {
 	class Deserializer;
+	class ShaderProgram;
 
 	class VIOLET_GRAPHICS_API RenderComponent : public Component
 	{
@@ -34,8 +26,10 @@ namespace Violet
 
 	public:
 
-		Polygon m_mesh;
+		uint32 m_vertexArrayBuffer;
+		Mesh m_mesh;
 		Color m_color;
+		std::shared_ptr<ShaderProgram> m_shader;
 	};
 }
 
