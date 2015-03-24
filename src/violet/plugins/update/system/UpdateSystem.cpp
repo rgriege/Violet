@@ -20,9 +20,9 @@ std::unique_ptr<System> UpdateSystem::init(Deserializer & deserializer)
 
 void UpdateSystem::update(float /*dt*/, Engine & engine)
 {
-	for (auto const & component : *m_components)
+	for (auto const & component : getComponents())
 	{
-		auto const & scriptComponent = engine.fetch<ScriptSystem>(component.m_entity);
+		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
 		scriptComponent.m_script->run(Procedure::create("update", component.m_entity, engine));
 	}
 }

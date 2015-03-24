@@ -8,6 +8,7 @@ all: $(foreach TARGET, $(TARGETS), $(TARGET).dll )
 
 install: all
 	copy *.json $(DST)\*.json
+	copy *.ttf $(DST)\*.ttf
 	copy *.vert $(DST)\*.vert
 	copy *.frag $(DST)\*.frag
 	copy *.dll $(DST)\*.dll
@@ -15,6 +16,7 @@ install: all
 
 install-live: all
 	copy *.json $(DST)\*.json
+	copy *.ttf $(DST)\*.ttf
 	copy *.dll $(DST)\*.dll.swp
 	copy *.pdb $(DST)\*.pdb.swp
 
@@ -25,5 +27,6 @@ uninstall:
 	del $(foreach TARGET, $(TARGETS), $(DST)\$(TARGET).dll)
 	del $(foreach TARGET, $(TARGETS), $(DST)\$(TARGET).pdb)
 	del $(DST)\*.json
+	del $(DST)\*.ttf
 	del $(DST)\*.vert
 	del $(DST)\*.frag

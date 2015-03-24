@@ -3,22 +3,24 @@
 
 #include "violet/core/system/System.h"
 #include "violet/plugins/graphics/component/RenderComponent.h"
+#include "violet/plugins/graphics/component/TextComponent.h"
 
 namespace Violet
 {
 	class Deserializer;
 	class SystemFactory;
 
-	class VIOLET_GRAPHICS_API RenderSystem : public ComponentSystem<RenderComponent>
+	class VIOLET_GRAPHICS_API RenderSystem : public MultiComponentSystem<RenderComponent, TextComponent>
 	{
 	public:
 
+		static const char * getStaticLabel();
 		static void install(SystemFactory & factory);
 		static std::unique_ptr<System> init(Deserializer & deserializer);
 
 	public:
 
-		RenderSystem() = default;
+		RenderSystem();
 		virtual ~RenderSystem() override = default;
 		virtual void update(float dt, Engine & engine) override;
 

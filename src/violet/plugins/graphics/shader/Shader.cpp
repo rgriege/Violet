@@ -31,7 +31,7 @@ std::unique_ptr<Shader> Shader::create(const char * filename, Type type)
 	stream.seekg(0, std::ios::end);
 	uint32 const size = static_cast<uint32>(stream.tellg() - start);
 	stream.seekg(0, std::ios::beg);
-	HeapBuffer<char> buffer(size + 1); //char * buffer = static_cast<char *>(malloc(size + 1));
+	HeapBuffer<char> buffer(size + 1);
 	stream.read(buffer, size);
 	buffer[size] = 0;
 
@@ -67,23 +67,13 @@ Shader::~Shader()
 	glDeleteShader(m_handle);
 }
 
-ShaderProgram::Guard::Guard(const GLuint handle)
-{
-	glUseProgram(handle);
-}
-
-ShaderProgram::Guard::~Guard()
-{
-	glUseProgram(0);
-}
-
-std::unique_ptr<ShaderProgram> ShaderProgram::create(const char * name)
+std::unique_ptr<ShaderProgram> ShaderProgram::load(const char * name)
 {
 	std::string nameStr = name;
-	return create((nameStr + ".vert").c_str(), (nameStr + ".frag").c_str());
+	return load((nameStr + ".vert").c_str(), (nameStr + ".frag").c_str());
 }
 
-std::unique_ptr<ShaderProgram> ShaderProgram::create(const char * vertexShaderFilename, const char * fragmentShaderFilename)
+std::unique_ptr<ShaderProgram> ShaderProgram::load(const char * vertexShaderFilename, const char * fragmentShaderFilename)
 {
 	auto vertexShader = Shader::create(vertexShaderFilename, Shader::Vertex);
 	auto fragmentShader = Shader::create(fragmentShaderFilename, Shader::Fragment);
@@ -116,10 +106,26 @@ std::unique_ptr<ShaderProgram> ShaderProgram::create(std::shared_ptr<Shader> ver
 	return std::unique_ptr<ShaderProgram>(new ShaderProgram(program, vertexShader, fragmentShader));
 }
 
+ShaderProgram::Cache & ShaderProgram::getCache()
+{
+	static Cache s_cache;
+	return s_cache;
+}
+
+void ShaderProgram::bind(const ShaderProgram & program)
+{
+	glUseProgram(program.m_handle);
+}
+
+void ShaderProgram::unbind()
+{
+	glUseProgram(0);
+}
+
 ShaderProgram::ShaderProgram(const GLuint handle, std::shared_ptr<Shader> vertexShader, std::shared_ptr<Shader> fragmentShader) :
 	m_handle(handle),
-	m_vertexShader(vertexShader),
-	m_fragmentShader(fragmentShader)
+	m_vertexShader(std::move(vertexShader)),
+	m_fragmentShader(std::move(fragmentShader))
 {
 }
 
@@ -138,9 +144,4 @@ int ShaderProgram::getAttributeLocation(const char * name)
 int ShaderProgram::getUniformLocation(const char * name)
 {
 	return glGetUniformLocation(m_handle, name);
-}
-
-ShaderProgram::Guard ShaderProgram::use()
-{
-	return Guard(m_handle);
 }

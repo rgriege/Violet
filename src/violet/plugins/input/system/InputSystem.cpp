@@ -44,12 +44,12 @@ void InputSystem::onMouse(int button, int state, int x, int y)
 	const int height = glutGet(GLUT_WINDOW_HEIGHT);
 	const int width = glutGet(GLUT_WINDOW_WIDTH);
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
-	for (auto const & component : *ms_inputSystem->m_components)
+	for (auto const & component : ms_inputSystem->getComponents())
 	{
-		auto const & transform = ms_engine->fetch<TransformSystem>(component.m_entity);
+		auto const & transform = ms_engine->fetch<TransformComponent>(component.m_entity);
 		if (component.m_mesh.contains(point - transform.m_position))
 		{
-			auto const & scriptComponent = ms_engine->fetch<ScriptSystem>(component.m_entity);
+			auto const & scriptComponent = ms_engine->fetch<ScriptComponent>(component.m_entity);
 			scriptComponent.m_script->run(Procedure::create(state == GLUT_DOWN ? "onMouseDown" : "onMouseUp", component.m_entity, *ms_engine));
 		}
 	}
@@ -82,9 +82,9 @@ private:
 
 void InputSystem::onKeyboardDown(const unsigned char key, int /*x*/, int /*y*/)
 {
-	for (auto const & component : *ms_inputSystem->m_components)
+	for (auto const & component : ms_inputSystem->getComponents())
 	{
-		auto const & scriptComponent = ms_engine->fetch<ScriptSystem>(component.m_entity);
+		auto const & scriptComponent = ms_engine->fetch<ScriptComponent>(component.m_entity);
 		scriptComponent.m_script->run(Procedure::create("onKeyDown", component.m_entity, *ms_engine, key));
 	}
 }
@@ -92,9 +92,9 @@ void InputSystem::onKeyboardDown(const unsigned char key, int /*x*/, int /*y*/)
 void InputSystem::onKeyboardUp(const unsigned char key, int /*x*/, int /*y*/)
 {
 	static int i = 0;
-	for (auto const & component : *ms_inputSystem->m_components)
+	for (auto const & component : ms_inputSystem->getComponents())
 	{
-		auto const & scriptComponent = ms_engine->fetch<ScriptSystem>(component.m_entity);
+		auto const & scriptComponent = ms_engine->fetch<ScriptComponent>(component.m_entity);
 		scriptComponent.m_script->run(Procedure::create("onKeyUp", component.m_entity, *ms_engine, key));
 	}
 }

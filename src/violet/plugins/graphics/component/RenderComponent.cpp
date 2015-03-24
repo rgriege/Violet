@@ -1,7 +1,7 @@
 #include "violet/plugins/graphics/component/RenderComponent.h"
 
 #include "violet/core/serialization/Deserializer.h"
-#include "violet/plugins/graphics/shader/ShaderCache.h"
+#include "violet/core/utility/Guard.h"
 #include "violet/plugins/graphics/shader/Shader.h"
 
 #include <GL\glew.h>
@@ -25,11 +25,14 @@ RenderComponent::RenderComponent(const Entity & entity, Deserializer & deseriali
 	m_vertexArrayBuffer(initVertexArrayBuffer()),
 	m_mesh(deserializer),
 	m_color(deserializer),
-	m_shader(ShaderCache::fetch(deserializer.getString("shader")))
+	m_shader(ShaderProgram::getCache().fetch(deserializer.getString("shader")))
 {
+	const Guard<Mesh> meshGuard(m_mesh);
 	const GLint positionAttribute = m_shader->getAttributeLocation("position");
 	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(positionAttribute);
+
+	glBindVertexArray(0);
 }
 
 RenderComponent::RenderComponent(RenderComponent && other) :
@@ -40,6 +43,11 @@ RenderComponent::RenderComponent(RenderComponent && other) :
 	m_shader()
 {
 	m_shader.swap(other.m_shader);
+}
+
+RenderComponent::~RenderComponent()
+{
+	glDeleteVertexArrays(1, &m_vertexArrayBuffer);
 }
 
 GLuint RenderComponentNamespace::initVertexArrayBuffer()

@@ -39,23 +39,23 @@ std::unique_ptr<System> PhysicsSystem::init(Deserializer & deserializer)
 void PhysicsSystem::update(const float dt, Engine & engine)
 {
 	if (!m_gravity.isZero() || m_drag != 0)
-		for (auto & component : *m_components)
+		for (auto & component : getComponents())
 			component.m_force += m_gravity - component.m_velocity * m_drag;
 
-	for (auto & component : *m_components)
+	for (auto & component : getComponents())
 	{
-		TransformComponent & transform = engine.fetch<TransformSystem>(component.m_entity);
+		TransformComponent & transform = engine.fetch<TransformComponent>(component.m_entity);
 		updateEntity(transform, component, dt);
 	}
 
-	for (uint32 i = 0, len = m_components->size(); i < len; ++i)
+	for (uint32 i = 0, len = getComponents().size(); i < len; ++i)
 	{
-		PhysicsComponent & physics1 = m_components->operator[](i);
-		TransformComponent & transform1 = engine.fetch<TransformSystem>(physics1.m_entity);
+		PhysicsComponent & physics1 = getComponents()[i];
+		TransformComponent & transform1 = engine.fetch<TransformComponent>(physics1.m_entity);
 		for (uint32 j = i + 1; j < len; ++j)
 		{
-			PhysicsComponent & physics2 = m_components->operator[](j);
-			TransformComponent & transform2 = engine.fetch<TransformSystem>(physics2.m_entity);
+			PhysicsComponent & physics2 = getComponents()[j];
+			TransformComponent & transform2 = engine.fetch<TransformComponent>(physics2.m_entity);
 			Intersection intersection(RigidBody(transform1, physics1), RigidBody(transform2, physics2), dt);
 			if (intersection.exists())
 			{

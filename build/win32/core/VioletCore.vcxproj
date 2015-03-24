@@ -120,6 +120,8 @@
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformSystem.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Assert.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Buffer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\Guard.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\ResourceCache.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Factory.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FileUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />

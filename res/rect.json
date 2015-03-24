@@ -1,0 +1,60 @@
+{
+  "ntty": {
+    "id": 1,
+    "tsfm": {
+      "vec": {
+        "x": -300,
+        "y": 0
+      }
+    },
+    "rndr": {
+      "poly": {
+        "n": 4,
+        "vertices": [
+          {
+            "vec": {
+              "x": -50,
+              "y": -20
+            }
+          },
+          {
+            "vec": {
+              "x": 50,
+              "y": -20
+            }
+          },
+          {
+            "vec": {
+              "x": 50,
+              "y": 20
+            }
+          },
+          {
+            "vec": {
+              "x": -50,
+              "y": 20
+            }
+          }
+        ]
+      },
+      "color": {
+        "value": 255
+      },
+      "shader": "poly"
+    }
+  },
+  "ntty": {
+    "id": 2,
+    "tsfm": {
+      "vec": {
+        "x": -100,
+        "y": 0
+      }
+    },
+    "text": {
+      "str": "Hello, world!",
+      "font": "Vera.ttf",
+      "shader": "text"
+    }
+  }
+}

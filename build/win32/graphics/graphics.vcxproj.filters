@@ -12,8 +12,17 @@
       <Filter>shader</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\plugins\graphics\Mesh.cpp" />
-    <ClCompile Include="..\..\..\src\violet\plugins\graphics\shader\ShaderCache.cpp">
-      <Filter>shader</Filter>
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\component\TextComponent.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\font\Font.cpp">
+      <Filter>font</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\texture\Texture.cpp">
+      <Filter>texture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\plugins\graphics\texture\Bitmap.cpp">
+      <Filter>texture</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -24,13 +33,22 @@
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\system\RenderSystem.h">
       <Filter>system</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\component\TextComponent.h">
+      <Filter>component</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\shader\Shader.h">
       <Filter>shader</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\Mesh.h" />
     <ClInclude Include="..\..\..\src\violet\plugins\graphics\Config.h" />
-    <ClInclude Include="..\..\..\src\violet\plugins\graphics\shader\ShaderCache.h">
-      <Filter>shader</Filter>
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\font\Font.h">
+      <Filter>font</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\texture\Bitmap.h">
+      <Filter>texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\graphics\texture\Texture.h">
+      <Filter>texture</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -42,6 +60,12 @@
     </Filter>
     <Filter Include="shader">
       <UniqueIdentifier>{bfd95ff0-5335-4116-8ae1-f82623aa9e5a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="font">
+      <UniqueIdentifier>{161db1dc-f6e7-4d74-a4a4-4803ecbb95a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="texture">
+      <UniqueIdentifier>{a829f8fa-f745-4720-a47c-8471e3a22114}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

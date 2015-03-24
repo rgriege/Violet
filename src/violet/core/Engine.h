@@ -2,6 +2,7 @@
 #define ENGINE_H
 
 #include "violet/core/Defines.h"
+#include "violet/core/system/System.h"
 
 #include <memory>
 #include <vector>
@@ -27,11 +28,11 @@ namespace Violet
 		void switchScene(const char * filename);
 		void stop();
 
-		template <typename SystemType>
-		typename SystemType::ComponentType & fetch(const Entity & entity)
+		template <typename ComponentType>
+		typename ComponentType & fetch(const Entity & entity)
 		{
-			auto it = std::find_if(std::begin(m_systems), std::end(m_systems), [](std::unique_ptr<System> const & system) { return system->getLabel() == SystemType::getStaticLabel(); });
-			return dynamic_cast<SystemType *>(it->get())->fetch(entity);
+			auto it = std::find_if(std::begin(m_systems), std::end(m_systems), [](std::unique_ptr<System> const & system) { return system->owns(ComponentType::getLabel()); });
+			return dynamic_cast<ComponentType &>((*it)->fetch(ComponentType::getLabel(), entity));
 		}
 
 		~Engine();

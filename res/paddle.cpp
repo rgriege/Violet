@@ -2,9 +2,7 @@
 #include "violet/core/entity/Entity.h"
 #include "violet/core/script/CppScript.h"
 #include "violet/core/transform/TransformComponent.h"
-#include "violet/core/transform/TransformSystem.h"
 #include "violet/plugins/physics/component/PhysicsComponent.h"
-#include "violet/plugins/physics/system/PhysicsSystem.h"
 
 #include <iostream>
 
@@ -57,10 +55,10 @@ extern "C" __declspec(dllexport) void update(const Entity & e, Engine & engine, 
 {
     if (mem->keyUpPressed ^ mem->keyDownPressed)
     {
-        TransformComponent & transform = engine.fetch<TransformSystem>(e);
+        TransformComponent & transform = engine.fetch<TransformComponent>(e);
         transform.m_position += Vec2f(0, mem->keyUpPressed ? 5 : -5);
     }
 
-    PhysicsComponent & physics = engine.fetch<PhysicsSystem>(e);
+    PhysicsComponent & physics = engine.fetch<PhysicsComponent>(e);
     physics.m_velocity.x = 0;
 }

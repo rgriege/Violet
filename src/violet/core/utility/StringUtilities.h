@@ -11,6 +11,15 @@ namespace Violet
 	{
 	public:
 
+		struct Less
+		{
+			bool operator()(const char * lhs, const char * rhs)
+			{
+				return strcmp(lhs, rhs) < 0;
+			}
+		};
+	public:
+
 		static std::string left(std::string const & str, char delimiter);
 		static std::string right(std::string const & str, char delimiter);
 		static const char * right(const char * str, char delimiter);

@@ -1,6 +1,8 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+#include "violet/core/utility/ResourceCache.h"
+
 #include <GL/glew.h>
 #include <memory>
 
@@ -39,19 +41,13 @@ namespace Violet
 	{
 	public:
 
-		class Guard
-		{
-		public:
-
-			Guard(GLuint handle);
-			~Guard();
-		};
-
-	public:
-
-		static std::unique_ptr<ShaderProgram> create(const char * name);
-		static std::unique_ptr<ShaderProgram> create(const char * vertexShaderFilename, const char * fragmentShaderFilename);
+		static std::unique_ptr<ShaderProgram> load(const char * name);
+		static std::unique_ptr<ShaderProgram> load(const char * vertexShaderFilename, const char * fragmentShaderFilename);
 		static std::unique_ptr<ShaderProgram> create(std::shared_ptr<Shader> vertexShader, std::shared_ptr<Shader> fragmentShader);
+		typedef ResourceCache<ShaderProgram, &ShaderProgram::load> Cache;
+		static Cache & getCache();
+		static void bind(const ShaderProgram & program);
+		static void unbind();
 
 	public:
 
@@ -60,8 +56,6 @@ namespace Violet
 
 		int getAttributeLocation(const char * name);
 		int getUniformLocation(const char * name);
-
-		Guard use();
 
 	private:
 

@@ -299,12 +299,12 @@ namespace Violet
 		template <size_t> struct Index {};
 
 		template <typename Predicate, typename... Args>
-		void for_each(Predicate pr, const std::tuple<Args...> & tup, Index<0>)
+		void for_each(Predicate pr, std::tuple<Args...> & tup, Index<0>)
 		{
 		}
 
 		template <typename Predicate, typename... Args, size_t N>
-		void for_each(Predicate pr, const std::tuple<Args...> & tup, Index<N>)
+		void for_each(Predicate pr, std::tuple<Args...> & tup, Index<N>)
 		{
 			for_each(pr, tup, Index<N - 1>());
 			pr(std::get<N - 1>(tup));
@@ -312,9 +312,42 @@ namespace Violet
 	}
 
 	template <typename Predicate, typename... Args>
-	void for_each(Predicate pr, const std::tuple<Args...> & tup)
+	void for_each(Predicate pr, std::tuple<Args...> & tup)
 	{
 		detail::for_each(pr, tup, detail::Index<sizeof...(Args)>());
+	}
+
+
+
+
+	/*
+	* first
+	*/
+
+	namespace detail
+	{
+		template <typename Predicate, typename... Args>
+		size_t first(Predicate pr, std::tuple<Args...> & tup, Index<0>)
+		{
+			return std::tuple_size(tup);
+		}
+
+		template <typename Predicate, typename... Args, size_t N>
+		size_t first(Predicate pr, std::tuple<Args...> & tup, Index<N>)
+		{
+			auto currentResult = first(pr, tup, Index<N - 1>());
+			return currentResult != std::tuple_size(tup) ?
+				currentResult :
+				pr(std::get<N - 1>(tup)) ?
+					N - 1 :
+					currentResult;
+		}
+	}
+
+	template <typename Predicate, typename... Args>
+	size_t first(Predicate pr, std::tuple<Args...> & tup)
+	{
+		return detail::first(pr, tup, detail::Index<sizeof...(Args)>());
 	}
 }
 

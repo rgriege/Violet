@@ -149,6 +149,12 @@
     <ClInclude Include="..\..\..\src\violet\core\math\Matrix3.h">
       <Filter>math</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\utility\ResourceCache.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\utility\Guard.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">

@@ -2,6 +2,7 @@
 #define FACTORY_H
 
 #include "violet/core/Defines.h"
+#include "violet/core/utility/StringUtilities.h"
 
 #include <functional>
 #include <map>
@@ -68,15 +69,7 @@ namespace Violet
 
 	private:
 
-		struct Less
-		{
-			bool operator()(const char * lhs, const char * rhs)
-			{
-				return strcmp(lhs, rhs) < 0;
-			}
-		};
-
-		std::map<const char *, Producer, Less> m_producers;
+		std::map<const char *, Producer, StringUtilities::Less> m_producers;
 	};
 }
 
