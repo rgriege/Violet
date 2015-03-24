@@ -3,7 +3,4 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\game\main.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\game\Setup.h" />
-  </ItemGroup>
 </Project>
