@@ -38,7 +38,7 @@
         ]
       },
       "color": {
-        "value": 0
+        "value": 255
       },
       "shader": "poly"
     },
@@ -116,7 +116,7 @@
         ]
       },
       "color": {
-        "value": 0
+        "value": 255
       },
       "shader": "poly"
     },
