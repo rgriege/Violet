@@ -43,11 +43,13 @@ RenderComponent::RenderComponent(RenderComponent && other) :
 	m_shader()
 {
 	m_shader.swap(other.m_shader);
+	other.m_vertexArrayBuffer = 0;
 }
 
 RenderComponent::~RenderComponent()
 {
-	glDeleteVertexArrays(1, &m_vertexArrayBuffer);
+	if (m_vertexArrayBuffer != 0)
+		glDeleteVertexArrays(1, &m_vertexArrayBuffer);
 }
 
 GLuint RenderComponentNamespace::initVertexArrayBuffer()
