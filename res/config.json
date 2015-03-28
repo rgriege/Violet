@@ -1,12 +1,15 @@
 {
+  "wndw": {
+    "x": 0,
+    "y": 0,
+    "width": 800,
+    "height": 600,
+    "title": "Billiards"
+
+  },
   "sysv": {
     "tsfm": {},
     "rndr": {
-      "x": 0,
-      "y": 0,
-      "width": 800,
-      "height": 600,
-      "title": "Billiards",
       "color": {
         "value": 4294967295
       }
@@ -25,6 +28,6 @@
     "updt": {}
   },
   "opts": {
-    "firstScene": "rect.json"
+    "firstScene": "menu.json"
   }
 }

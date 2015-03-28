@@ -5,15 +5,17 @@
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/extras/serialization/JsonDeserializer.h"
+#include "violet/plugins/glut/GlutWindow.h"
 #include "violet/plugins/graphics/system/RenderSystem.h"
-#include "violet/plugins/physics/system/PhysicsSystem.h"
 #include "violet/plugins/input/system/InputSystem.h"
+#include "violet/plugins/physics/system/PhysicsSystem.h"
 #include "violet/plugins/update/system/UpdateSystem.h"
 
 #include <iostream>
 
 SystemFactory setup()
 {
+	Violet::Window::install(&GlutWindow::create);
 	Violet::JsonDeserializer::install();
 
 	Violet::CppScript::install();

@@ -79,15 +79,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;VIOLETGRAPHICS_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freeglut\include;E:\Libraries\freetype-2.5.2\include;E:\Libraries\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freetype-2.5.2\include;E:\Libraries\glew\include;E:\Libraries\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4251</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>VioletCore.lib;OpenGL32.lib;freeglut.lib;freetype252_D.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>E:\Libraries\freeglut\lib\x86\Debug;E:\Documents\alottabit\violet\bin\Debug;E:\Libraries\freetype-2.5.2\objs\win32\vc2010;E:\Libraries\glew\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>VioletCore.lib;OpenGL32.lib;SDL2.lib;freetype252_D.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\Libraries\SDL2\VisualC\SDL\Win32\Debug;E:\Documents\alottabit\violet\bin\Debug;E:\Libraries\freetype-2.5.2\objs\win32\vc2010;E:\Libraries\glew\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

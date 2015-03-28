@@ -4,20 +4,9 @@
 #include "violet/core/script/Procedure.h"
 #include "violet/core/script/system/ScriptSystem.h"
 #include "violet/core/transform/TransformSystem.h"
-
-#include <GL/freeglut.h>
-#include <iostream>
+#include "violet/core/window/Window.h"
 
 using namespace Violet;
-
-namespace InputSystemNamespace
-{
-	InputSystem * ms_inputSystem;
-
-	Engine * ms_engine;
-}
-
-using namespace InputSystemNamespace;
 
 void InputSystem::install(SystemFactory & factory)
 {
@@ -27,30 +16,60 @@ void InputSystem::install(SystemFactory & factory)
 std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
 {
 	deserializer.enterSegment(getStaticLabel());
-	glutMouseFunc(onMouse);
-	glutKeyboardFunc(onKeyboardDown);
-	glutKeyboardUpFunc(onKeyboardUp);
-	ms_inputSystem = new InputSystem();
-	return std::unique_ptr<System>(ms_inputSystem);
+	return std::unique_ptr<System>(new InputSystem);
 }
 
 void InputSystem::update(float /*dt*/, Engine & engine)
 {
-	ms_engine = &engine;
+	Window::Event event;
+	while (Window::getCurrent().getEvent(static_cast<Window::EventType>(Window::ET_KeyDown | Window::ET_KeyUp | Window::ET_MouseDown | Window::ET_MouseUp), &event))
+	{
+		switch (event.type)
+		{
+		case Window::ET_KeyDown:
+			onKeyDown(event.key.code, engine);
+			break;
+		case Window::ET_KeyUp:
+			onKeyUp(event.key.code, engine);
+			break;
+		case Window::ET_MouseDown:
+			onMouseDown(event.mouse.x, event.mouse.y, engine);
+			break;
+		case Window::ET_MouseUp:
+			onMouseUp(event.mouse.x, event.mouse.y, engine);
+			break;
+		}
+	}
 }
 
-void InputSystem::onMouse(int button, int state, int x, int y)
+void InputSystem::onMouseDown(const int x, const int y, Engine & engine)
 {
-	const int height = glutGet(GLUT_WINDOW_HEIGHT);
-	const int width = glutGet(GLUT_WINDOW_WIDTH);
+	const int width = Window::getCurrent().getWidth();
+	const int height = Window::getCurrent().getHeight();
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
-	for (auto const & component : ms_inputSystem->getComponents())
+	for (auto const & component : getComponents())
 	{
-		auto const & transform = ms_engine->fetch<TransformComponent>(component.m_entity);
+		auto const & transform = engine.fetch<TransformComponent>(component.m_entity);
 		if (component.m_mesh.contains(point - transform.m_position))
 		{
-			auto const & scriptComponent = ms_engine->fetch<ScriptComponent>(component.m_entity);
-			scriptComponent.m_script->run(Procedure::create(state == GLUT_DOWN ? "onMouseDown" : "onMouseUp", component.m_entity, *ms_engine));
+			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
+			scriptComponent.m_script->run(Procedure::create("onMouseDown", component.m_entity, engine));
+		}
+	}
+}
+
+void InputSystem::onMouseUp(const int x, const int y, Engine & engine)
+{
+	const int width = Window::getCurrent().getWidth();
+	const int height = Window::getCurrent().getHeight();
+	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
+	for (auto const & component : getComponents())
+	{
+		auto const & transform = engine.fetch<TransformComponent>(component.m_entity);
+		if (component.m_mesh.contains(point - transform.m_position))
+		{
+			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
+			scriptComponent.m_script->run(Procedure::create("onMouseUp", component.m_entity, engine));
 		}
 	}
 }
@@ -80,21 +99,21 @@ private:
 	std::map<Entity, Listener> m_listeners;
 };*/
 
-void InputSystem::onKeyboardDown(const unsigned char key, int /*x*/, int /*y*/)
+void InputSystem::onKeyDown(const unsigned char key, Engine & engine)
 {
-	for (auto const & component : ms_inputSystem->getComponents())
+	for (auto const & component : getComponents())
 	{
-		auto const & scriptComponent = ms_engine->fetch<ScriptComponent>(component.m_entity);
-		scriptComponent.m_script->run(Procedure::create("onKeyDown", component.m_entity, *ms_engine, key));
+		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
+		scriptComponent.m_script->run(Procedure::create("onKeyDown", component.m_entity, engine, key));
 	}
 }
 
-void InputSystem::onKeyboardUp(const unsigned char key, int /*x*/, int /*y*/)
+void InputSystem::onKeyUp(const unsigned char key, Engine & engine)
 {
 	static int i = 0;
-	for (auto const & component : ms_inputSystem->getComponents())
+	for (auto const & component : getComponents())
 	{
-		auto const & scriptComponent = ms_engine->fetch<ScriptComponent>(component.m_entity);
-		scriptComponent.m_script->run(Procedure::create("onKeyUp", component.m_entity, *ms_engine, key));
+		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
+		scriptComponent.m_script->run(Procedure::create("onKeyUp", component.m_entity, engine, key));
 	}
 }

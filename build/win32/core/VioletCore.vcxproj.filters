@@ -37,6 +37,9 @@
     <Filter Include="script\system">
       <UniqueIdentifier>{36c56ecd-bc80-446c-9c27-7c0b0e510705}</UniqueIdentifier>
     </Filter>
+    <Filter Include="window">
+      <UniqueIdentifier>{87796dd6-fa8b-4c55-af72-e89e1583d37a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h">
@@ -155,6 +158,9 @@
     <ClInclude Include="..\..\..\src\violet\core\utility\Guard.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\window\Window.h">
+      <Filter>window</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -205,6 +211,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\utility\FileUtilities.cpp">
       <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\window\Window.cpp">
+      <Filter>window</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -7,12 +7,12 @@
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/core/utility/Guard.h"
+#include "violet/core/window/Window.h"
 #include "violet/plugins/graphics/font/Font.h"
 #include "violet/plugins/graphics/shader/Shader.h"
 
 #include <iostream>
 #include <fstream>
-#include <GL/freeglut.h>
 #include <GL/glew.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -21,15 +21,7 @@ using namespace Violet;
 
 namespace RenderSystemNamespace
 {
-	RenderSystem * ms_renderSystem;
-
-	Engine * ms_engine;
-
 	Matrix3f ms_viewMatrix;
-
-	void draw(RenderComponent & renderComponent);
-	void draw(TextComponent & textComponent);
-	void close();
 }
 
 using namespace RenderSystemNamespace;
@@ -48,27 +40,7 @@ std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
 
-	if (ms_renderSystem != nullptr)
-		return nullptr;
-
-	int argc = 0;
-	char * argv = "";
-	int const x = settingsSegment->getInt("x");
-	int const y = settingsSegment->getInt("y");
-	int const width = settingsSegment->getInt("width");
-	int const height = settingsSegment->getInt("height");
-	const char * title = settingsSegment->getString("title");
 	Color const color(*settingsSegment);
-
-	glutInit(&argc, &argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-	glutInitWindowSize(width, height);
-	glutInitWindowPosition(x, y);
-	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
-	if (glutCreateWindow(title) == 0)
-		return nullptr;
-	
-	std::cout << "GL version: " << glGetString(GL_VERSION) << std::endl;
 
 	GLenum glewError = glewInit();
 	if (glewError != GLEW_OK)
@@ -77,47 +49,39 @@ std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 		return nullptr;
 	}
 
+	std::cout << "GL version: " << glGetString(GL_VERSION) << std::endl;
+
 	ms_viewMatrix = Matrix3f::Identity;
-	ms_viewMatrix[0][0] = 2.f / static_cast<float>(width);
-	ms_viewMatrix[1][1] = 2.f / static_cast<float>(height);
+	ms_viewMatrix[0][0] = 2.f / Window::getCurrent().getWidth();
+	ms_viewMatrix[1][1] = 2.f / Window::getCurrent().getHeight();
 	
 	glClearColor(color.r, color.g, color.b, color.a);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glutDisplayFunc(display);
-	glutCloseFunc(close);
-
-	ms_renderSystem = new RenderSystem();
 	
-	return std::unique_ptr<System>(ms_renderSystem);
+	return std::unique_ptr<System>(new RenderSystem);
 }
 
-RenderSystem::RenderSystem() :
-	MultiComponentSystem<RenderComponent, TextComponent>("rndr")
+RenderSystem::~RenderSystem()
 {
+	ShaderProgram::getCache().clear();
+	Font::getCache().clear();
 }
 
 void RenderSystem::update(float const /*dt*/, Engine & engine)
 {
-	ms_engine = &engine;
-	glutPostRedisplay();
-	glutMainLoopEvent();
-}
-
-void RenderSystem::display()
-{
 	glClear(GL_COLOR_BUFFER_BIT);
-	for (auto & component : ms_renderSystem->getComponents<RenderComponent>())
-		draw(component);
-	for (auto & component : ms_renderSystem->getComponents<TextComponent>())
-		draw(component);
+	for (auto & component : getComponents<RenderComponent>())
+		draw(component, engine);
+	for (auto & component : getComponents<TextComponent>())
+		draw(component, engine);
 	glFlush();
+	Window::getCurrent().render();
 }
 
-void RenderSystemNamespace::draw(RenderComponent & renderComponent)
+void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
 {
-	const TransformComponent & transform = ms_engine->fetch<TransformComponent>(renderComponent.m_entity);
+	const TransformComponent & transform = engine.fetch<TransformComponent>(renderComponent.m_entity);
 	const float modelMat[9] = {
 		1.f, 0.f, transform.m_position.x,
 		0.f, 1.f, transform.m_position.y,
@@ -138,9 +102,9 @@ void RenderSystemNamespace::draw(RenderComponent & renderComponent)
 	glBindVertexArray(0);
 }
 
-void RenderSystemNamespace::draw(TextComponent & textComponent)
+void RenderSystem::draw(TextComponent & textComponent, Engine & engine)
 {
-	const TransformComponent & transform = ms_engine->fetch<TransformComponent>(textComponent.m_entity);
+	const TransformComponent & transform = engine.fetch<TransformComponent>(textComponent.m_entity);
 	float modelMat[9] = {
 		1.f, 0.f, transform.m_position.x,
 		0.f, 1.f, transform.m_position.y,
@@ -157,10 +121,7 @@ void RenderSystemNamespace::draw(TextComponent & textComponent)
 	textComponent.m_font->render(textComponent.m_text, *textComponent.m_shader);
 }
 
-void RenderSystemNamespace::close()
+RenderSystem::RenderSystem() :
+	MultiComponentSystem<RenderComponent, TextComponent>("rndr")
 {
-	ms_renderSystem = nullptr;
-	ShaderProgram::getCache().clear();
-	Font::getCache().clear();
-	ms_engine->stop();
 }

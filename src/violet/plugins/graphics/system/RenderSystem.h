@@ -20,13 +20,15 @@ namespace Violet
 
 	public:
 
-		RenderSystem();
-		virtual ~RenderSystem() override = default;
+		virtual ~RenderSystem() override;
 		virtual void update(float dt, Engine & engine) override;
+
+		void draw(RenderComponent & renderComponent, Engine & engine);
+		void draw(TextComponent & textComponent, Engine & engine);
 
 	private:
 
-		static void display();
+		RenderSystem();
 	};
 }
 

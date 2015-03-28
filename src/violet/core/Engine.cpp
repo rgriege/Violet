@@ -5,6 +5,7 @@
 #include "violet/core/system/System.h"
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/utility/Time.h"
+#include "violet/core/window/Window.h"
 
 #include <iostream>
 #include <algorithm>
@@ -27,8 +28,20 @@ using namespace EngineNamespace;
 
 std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & deserializer)
 {
-	std::vector<std::unique_ptr<System>> systems;
 	bool succeeded = true;
+
+	{
+		auto windowSegment = deserializer.enterSegment("wndw");
+		if (*windowSegment)
+			Window::create(*windowSegment);
+		else
+		{
+			std::cout << "failed to create window" << std::endl;
+			succeeded = false;
+		}
+	}
+
+	std::vector<std::unique_ptr<System>> systems;
 	{
 		auto systemsSegment = deserializer.enterSegment("sysv");
 		while (*systemsSegment && succeeded)
@@ -66,6 +79,7 @@ void Engine::begin()
 		uint32 const startTime = Time::getTimeInMilliseconds();
 
 		float const deltaSeconds = previousFrameTime / 1000.f;
+		Window::getCurrent().update();
 		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, *this); });
 
 		if (!m_nextSceneFileName.empty())
