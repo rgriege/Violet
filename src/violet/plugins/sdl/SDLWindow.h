@@ -1,26 +1,28 @@
-#ifndef GLUT_WINDOW_H
-#define GLUT_WINDOW_H
+#ifndef SDL_WINDOW_H
+#define SDL_WINDOW_H
 
 #include "violet/core/window/Window.h"
 
 #include <memory>
-#include <deque>
 
 #ifdef WIN32
-#ifdef VIOLETGLUT_EXPORT
-#define VIOLET_GLUT_API __declspec(dllexport)
+#ifdef VIOLETSDL_EXPORT
+#define VIOLET_SDL_API __declspec(dllexport)
 #else
-#define VIOLET_GLUT_API __declspec(dllimport)
+#define VIOLET_SDL_API __declspec(dllimport)
 #endif
 #else
 #define VIOLET_API
 #endif
 
+struct SDL_Window;
+typedef void * SDL_GLContext;
+
 namespace Violet
 {
 	class Deserializer;
 
-	class VIOLET_GLUT_API GlutWindow : public Window
+	class VIOLET_SDL_API SDLWindow : public Window
 	{
 	public:
 
@@ -28,24 +30,26 @@ namespace Violet
 
 	public:
 
-		virtual ~GlutWindow() override = default;
+		virtual ~SDLWindow() override;
 
 		virtual bool update() override;
 		virtual void render() override;
-		virtual bool getEvent(EventType type, Event * event) override;
+		virtual bool getEvent(EventType type, Event* event) override;
 		virtual void addEvent(Event event) override;
 		virtual int getWidth() const override;
 		virtual int getHeight() const override;
 
 	private:
 
-		GlutWindow(int width, int height);
+		SDLWindow(SDL_Window * window, SDL_GLContext context);
 
 	private:
 
+		SDL_Window * m_window;
+		SDL_GLContext m_glContext;
 		int m_width;
 		int m_height;
-		std::deque<Event> m_eventQueue;
+		bool m_quit;
 	};
 }
 

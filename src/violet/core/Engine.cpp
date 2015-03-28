@@ -79,29 +79,33 @@ void Engine::begin()
 		uint32 const startTime = Time::getTimeInMilliseconds();
 
 		float const deltaSeconds = previousFrameTime / 1000.f;
-		Window::getCurrent().update();
-		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, *this); });
-
-		if (!m_nextSceneFileName.empty())
+		if (Window::getCurrent().update())
 		{
-			for (auto & system : m_systems)
-				system->clear();
-			m_activeScene.reset();
-			m_activeScene = Scene::create(m_nextSceneFileName.c_str());
-			m_nextSceneFileName.clear();
-		}
+			std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, *this); });
 
-		uint32 const frameTime = Time::getTimeInMilliseconds() - startTime;
-		if (frameTime < targetFrameTime)
-		{
-			Sleep(targetFrameTime - frameTime);
-			previousFrameTime = targetFrameTime;
+			if (!m_nextSceneFileName.empty())
+			{
+				for (auto & system : m_systems)
+					system->clear();
+				m_activeScene.reset();
+				m_activeScene = Scene::create(m_nextSceneFileName.c_str());
+				m_nextSceneFileName.clear();
+			}
+
+			uint32 const frameTime = Time::getTimeInMilliseconds() - startTime;
+			if (frameTime < targetFrameTime)
+			{
+				Sleep(targetFrameTime - frameTime);
+				previousFrameTime = targetFrameTime;
+			}
+			else
+			{
+				printf("frame time: %.3f\n", frameTime / 1000.f);
+				previousFrameTime = frameTime;
+			}
 		}
 		else
-		{
-			printf("frame time: %.3f\n", frameTime / 1000.f);
-			previousFrameTime = frameTime;
-		}
+			stop();
 	}
 }
 

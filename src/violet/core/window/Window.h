@@ -52,7 +52,7 @@ namespace Violet
 
 		virtual ~Window() = default;
 
-		virtual void update() = 0;
+		virtual bool update() = 0;
 		virtual void render() = 0;
 		virtual bool getEvent(EventType type, Event* event) = 0;
 		virtual void addEvent(Event event) = 0;

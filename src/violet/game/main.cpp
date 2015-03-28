@@ -9,13 +9,14 @@
 #include "violet/plugins/graphics/system/RenderSystem.h"
 #include "violet/plugins/input/system/InputSystem.h"
 #include "violet/plugins/physics/system/PhysicsSystem.h"
+#include "violet/plugins/sdl/SDLWindow.h"
 #include "violet/plugins/update/system/UpdateSystem.h"
 
 #include <iostream>
 
 SystemFactory setup()
 {
-	Violet::Window::install(&GlutWindow::create);
+	Violet::Window::install(&SDLWindow::create);
 	Violet::JsonDeserializer::install();
 
 	Violet::CppScript::install();

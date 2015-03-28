@@ -8,6 +8,8 @@ using namespace Violet;
 
 namespace GlutWindowNamespace
 {
+	bool ms_quit = false;
+
 	void close();
 	void display();
 	void onMouse(int button, int state, int x, int y);
@@ -44,10 +46,11 @@ std::unique_ptr<Window> GlutWindow::create(Deserializer & deserializer)
 	return std::unique_ptr<Window>(new GlutWindow(width, height));
 }
 
-void GlutWindow::update()
+bool GlutWindow::update()
 {
 	m_eventQueue.clear();
 	glutMainLoopEvent();
+	return !ms_quit;
 }
 
 void GlutWindow::render()
@@ -94,12 +97,11 @@ GlutWindow::GlutWindow(const int width, const int height) :
 
 void GlutWindowNamespace::close()
 {
-
+	ms_quit = true;
 }
 
 void GlutWindowNamespace::display()
 {
-
 }
 
 void GlutWindowNamespace::onMouse(int button, int state, int x, int y)
