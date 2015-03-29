@@ -14,6 +14,9 @@
     <ClCompile Include="..\..\..\src\violet\test\physics\PhysicsTest.cpp">
       <Filter>physics</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\test\core\TestEvaluator.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="serialization">

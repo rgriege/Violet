@@ -24,15 +24,9 @@ namespace Violet
 		{
 		public:
 
-			TestBuffer(std::string const & entry) :
-				m_entry(entry)
-			{
-			}
+			TestBuffer(std::string const & entry);
 
-			virtual void write(std::ostream & stream, int level) override
-			{
-				stream << std::string(2 * level, ' ') << m_entry << std::endl;
-			}
+			virtual void write(std::ostream & stream, int level) override;
 
 		private:
 
@@ -43,36 +37,13 @@ namespace Violet
 		{
 		public:
 
-			SuiteBuffer(SuiteBuffer * parentBuffer) :
-				m_parentBuffer(parentBuffer),
-				m_buffers()
-			{
-			}
+			SuiteBuffer(SuiteBuffer * parentBuffer);
 
-			virtual void write(std::ostream & stream, int level) override
-			{
-				m_buffers.back()->write(stream, level);
-				std::for_each(std::begin(m_buffers),
-					          std::end(m_buffers) - 1,
-							  [&](std::unique_ptr<BufferBase> const & buffer) { buffer->write(stream, level + 1); });
-			}
+			virtual void write(std::ostream & stream, int level) override;
 
-			void addEntry(std::string const & entry)
-			{
-				m_buffers.emplace_back(new TestBuffer(entry));
-			}
-
-			SuiteBuffer * enterSuite()
-			{
-				auto subSuiteBuffer = new SuiteBuffer(this);
-				m_buffers.emplace_back(subSuiteBuffer);
-				return subSuiteBuffer;
-			}
-
-			SuiteBuffer * exitSuite()
-			{
-				return m_parentBuffer;
-			}
+			void addEntry(std::string const & entry);
+			SuiteBuffer * enterSuite();
+			SuiteBuffer * exitSuite();
 
 		private:
 
@@ -82,42 +53,13 @@ namespace Violet
 
 	public:
 
-		TestEvaluator(std::ostream & stream) :
-			m_baseBuffer(nullptr),
-			m_currentBuffer(&m_baseBuffer),
-			m_stream(stream)
-		{
-		}
-
-		~TestEvaluator()
-		{
-			m_baseBuffer.addEntry("Test Results");
-			m_baseBuffer.write(m_stream, 0);
-		}
+		TestEvaluator(std::ostream & stream);
+		~TestEvaluator();
 
 		template <typename ResultType>
-		bool evaluate(const char * name, const ResultType & desired, const ResultType & actual)
-		{
-			const bool result = (desired == actual);
-			std::stringstream ss;
-			ss << name << ": ";
-			if (result)
-				ss << "passed";
-			else
-				ss << "failed (expected " << desired << ", got " << actual << ")";
-			m_currentBuffer->addEntry(ss.str());
-			return result;
-		}
-
-		void enterSuite()
-		{
-			m_currentBuffer = m_currentBuffer->enterSuite();
-		}
-
-		void exitSuite()
-		{
-			m_currentBuffer = m_currentBuffer->exitSuite();
-		}
+		bool evaluate(const char * name, const ResultType & desired, const ResultType & actual);
+		void enterSuite();
+		void exitSuite();
 
 	private:
 
@@ -125,6 +67,20 @@ namespace Violet
 		SuiteBuffer * m_currentBuffer;
 		std::ostream & m_stream;
 	};
+
+	template <typename ResultType>
+	bool TestEvaluator::evaluate(const char * name, const ResultType & desired, const ResultType & actual)
+	{
+		const bool result = (desired == actual);
+		std::stringstream ss;
+		ss << name << ": ";
+		if (result)
+			ss << "passed";
+		else
+			ss << "failed (expected " << desired << ", got " << actual << ")";
+		m_currentBuffer->addEntry(ss.str());
+		return result;
+	}
 }
 
 #endif

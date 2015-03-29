@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\violet\test\core\TestEvaluator.cpp" />
     <ClCompile Include="..\..\..\src\violet\test\main.cpp" />
     <ClCompile Include="..\..\..\src\violet\test\math\MathTest.cpp" />
     <ClCompile Include="..\..\..\src\violet\test\physics\PhysicsTest.cpp" />
@@ -73,7 +74,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freeglut\include;E:\Libraries\jsoncpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\jsoncpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4251</DisableSpecificWarnings>
     </ClCompile>
@@ -81,7 +82,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>VioletCore.lib;VioletExtras.lib;VioletPhysics.lib;lib_json.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>E:\Documents\alottabit\violet\bin\Debug;E:\Libraries\freeglut\lib\x86\Debug;E:\Libraries\jsoncpp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>E:\Documents\alottabit\violet\bin\Debug;E:\Libraries\jsoncpp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
