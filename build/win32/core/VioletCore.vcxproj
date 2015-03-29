@@ -112,6 +112,7 @@
     <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.h" />
+    <ClInclude Include="..\..\..\src\violet\core\structures\CrsGraph.h" />
     <ClInclude Include="..\..\..\src\violet\core\system\System.h" />
     <ClInclude Include="..\..\..\src\violet\core\system\SystemFactory.h" />
     <ClInclude Include="..\..\..\src\violet\core\template\TemplateUtilities.h" />
@@ -166,6 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\violet\core\math\Matrix3.ipp" />
+    <None Include="..\..\..\src\violet\core\structures\CrsGraph.ipp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

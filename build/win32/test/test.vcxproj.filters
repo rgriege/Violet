@@ -17,6 +17,9 @@
     <ClCompile Include="..\..\..\src\violet\test\core\TestEvaluator.cpp">
       <Filter>core</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\test\game\PathfindingTest.cpp">
+      <Filter>game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="serialization">
@@ -33,6 +36,9 @@
     </Filter>
     <Filter Include="template">
       <UniqueIdentifier>{7ceed629-1a80-4508-9c8d-7a90e5985fa6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game">
+      <UniqueIdentifier>{a2952f37-e4f7-4607-9a3f-1d88428bfc18}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -65,6 +71,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\test\physics\PhysicsTest.h">
       <Filter>physics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\test\game\PathfindingTest.h">
+      <Filter>game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

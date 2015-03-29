@@ -40,6 +40,9 @@
     <Filter Include="window">
       <UniqueIdentifier>{87796dd6-fa8b-4c55-af72-e89e1583d37a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="structures">
+      <UniqueIdentifier>{1c8556e8-4c7e-4452-a1b6-a3dd148745ab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h">
@@ -161,6 +164,9 @@
     <ClInclude Include="..\..\..\src\violet\core\window\Window.h">
       <Filter>window</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\structures\CrsGraph.h">
+      <Filter>structures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -219,6 +225,9 @@
   <ItemGroup>
     <None Include="..\..\..\src\violet\core\math\Matrix3.ipp">
       <Filter>math</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\core\structures\CrsGraph.ipp">
+      <Filter>structures</Filter>
     </None>
   </ItemGroup>
 </Project>
