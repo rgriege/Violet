@@ -235,7 +235,7 @@ bool Violet::operator==(const Vec2<T> & lhs, const Vec2<T> & rhs)
 template<typename T>
 bool Violet::operator!=(const Vec2<T> & lhs, const Vec2<T> & rhs)
 {
-	return lhs.x != rhs.x && lhs.y != rhs.y;
+	return !(lhs == rhs);
 }
 
 template<typename T>
