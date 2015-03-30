@@ -1,6 +1,8 @@
 #ifndef CRS_GRAPH_H
 #define CRS_GRAPH_H
 
+#include "violet/core/Defines.h"
+
 #include <vector>
 
 namespace Violet
@@ -17,38 +19,61 @@ namespace Violet
 		typedef typename Nodes::const_iterator ConstNodeIterator;
 		typedef typename Edges::const_iterator ConstEdgeIterator;
 
+		class EdgeSegment
+		{
+		public:
+
+			EdgeSegment(EdgeIterator begin, EdgeIterator end);
+
+			EdgeIterator begin();
+			EdgeIterator end();
+
+		private:
+
+			const EdgeIterator m_begin;
+			const EdgeIterator m_end;
+		};
+
+		class ConstEdgeSegment
+		{
+		public:
+
+			ConstEdgeSegment(ConstEdgeIterator begin, ConstEdgeIterator end);
+
+			ConstEdgeIterator begin() const;
+			ConstEdgeIterator end() const;
+
+		private:
+
+			const ConstEdgeIterator m_begin;
+			const ConstEdgeIterator m_end;
+		};
+
 	private:
 
-		static bool compareEdges(const EdgeType & e1, const EdgeType & e2) {
-			return e1.m_src < e2.m_src;
-		}
+		static bool compareEdges(const EdgeType & e1, const EdgeType & e2);
 
     public:
 
         CrsGraph();
 
-        unsigned addNode(const NodeType & node);
-		bool hasNode(unsigned nodeIndex) const;
-		NodeType & getNode(unsigned nodeIndex);
-		const NodeType & getNode(unsigned nodeIndex) const;
+        uint32 addNode(const NodeType & node);
+		bool hasNode(uint32 nodeIndex) const;
+		NodeType & getNode(uint32 nodeIndex);
+		const NodeType & getNode(uint32 nodeIndex) const;
         size_t numNodes() const;
-		NodeIterator beginNodes();
-		ConstNodeIterator beginNodes() const;
-		NodeIterator endNodes();
-		ConstNodeIterator endNodes() const;
+		const Nodes & getNodes() const;
 
-        void addEdge(unsigned src, unsigned dst, const EdgeType & edge);
+        void addEdge(const EdgeType & edge);
         /*
          * Used to add multiple edges at once.
          * Adding many edges using AddEdge(...) is highly inefficient,
          * since potentially lots of edge pointers will need updating.
          */
-		void addEdges(const std::vector<unsigned> & sources, const std::vector<unsigned> & destinations, const Edges & edges);
-        unsigned numEdges() const;
-        EdgeIterator beginEdgesBySrc(unsigned src);
-		ConstEdgeIterator beginEdgesBySrc(unsigned src) const;
-        EdgeIterator endEdgesBySrc(unsigned src);
-		ConstEdgeIterator endEdgesBySrc(unsigned src) const;
+		void addEdges(const Edges & edges);
+        uint32 numEdges() const;
+		EdgeSegment getEdges(uint32 src);
+		ConstEdgeSegment getEdges(uint32 src) const;
 
         void clear();
 

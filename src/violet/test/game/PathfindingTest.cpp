@@ -13,23 +13,23 @@ bool operator==(const Path & lhs, const Path & rhs);
 void PathfindingTest::run(Violet::TestEvaluator & evaluator)
 {
 	Map map;
-	map.m_graph.addNode({ { 0.f, 0.f } });
-	map.m_graph.addNode({ { 10.f, 0.f } });
-	map.m_graph.addNode({ { 10.f, 2.f } });
-	map.m_graph.addNode({ { 0.f, 2.f } });
-	map.m_graph.addNode({ { 5.f, 2.f } });
-	map.m_graph.addNode({ { 5.f, 8.f } });
-	map.m_graph.addNode({ { -10.f, 8.f } });
-	map.m_graph.addNode({ { 10.f, 8.f } });
+	map.getGraph().addNode({ { 0.f, 0.f } });
+	map.getGraph().addNode({ { 10.f, 0.f } });
+	map.getGraph().addNode({ { 10.f, 2.f } });
+	map.getGraph().addNode({ { 0.f, 2.f } });
+	map.getGraph().addNode({ { 5.f, 2.f } });
+	map.getGraph().addNode({ { 5.f, 8.f } });
+	map.getGraph().addNode({ { -10.f, 8.f } });
+	map.getGraph().addNode({ { 10.f, 8.f } });
 
-	map.m_graph.addEdge(0, 1, { 0, 1 });
-	map.m_graph.addEdge(1, 2, { 1, 2 });
-	map.m_graph.addEdge(0, 3, { 0, 3 });
-	map.m_graph.addEdge(3, 4, { 3, 4 });
-	map.m_graph.addEdge(2, 4, { 2, 4 });
-	map.m_graph.addEdge(4, 5, { 4, 5 });
-	map.m_graph.addEdge(5, 6, { 5, 6 });
-	map.m_graph.addEdge(5, 7, { 5, 7 });
+	map.getGraph().addEdge({ 0, 1 });
+	map.getGraph().addEdge({ 1, 2 });
+	map.getGraph().addEdge({ 0, 3 });
+	map.getGraph().addEdge({ 3, 4 });
+	map.getGraph().addEdge({ 2, 4 });
+	map.getGraph().addEdge({ 4, 5 });
+	map.getGraph().addEdge({ 5, 6 });
+	map.getGraph().addEdge({ 5, 7 });
 
 	auto const path = Path::create({ 0.f, 0.f }, { -10.f, 8.f }, map);
 

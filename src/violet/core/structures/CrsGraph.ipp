@@ -1,9 +1,54 @@
 #ifndef CRS_GRAPH_IPP
 #define CRS_GRAPH_IPP
 
+#include <algorithm>
 #include <assert.h>
 
 using namespace Violet;
+
+template <class NodeType, class EdgeType>
+CrsGraph<NodeType, EdgeType>::EdgeSegment::EdgeSegment(EdgeIterator begin, EdgeIterator end) :
+	m_begin(begin),
+	m_end(end)
+{
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::EdgeIterator CrsGraph<NodeType, EdgeType>::EdgeSegment::begin()
+{
+	return m_begin;
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::EdgeIterator CrsGraph<NodeType, EdgeType>::EdgeSegment::end()
+{
+	return m_end;
+}
+
+template <class NodeType, class EdgeType>
+CrsGraph<NodeType, EdgeType>::ConstEdgeSegment::ConstEdgeSegment(ConstEdgeIterator begin, ConstEdgeIterator end) :
+	m_begin(begin),
+	m_end(end)
+{
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::ConstEdgeIterator CrsGraph<NodeType, EdgeType>::ConstEdgeSegment::begin() const
+{
+	return m_begin;
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::ConstEdgeIterator CrsGraph<NodeType, EdgeType>::ConstEdgeSegment::end() const
+{
+	return m_end;
+}
+
+template <class NodeType, class EdgeType>
+bool CrsGraph<NodeType, EdgeType>::compareEdges(const EdgeType & e1, const EdgeType & e2)
+{
+	return e1.getSource() < e2.getSource();
+}
 
 template <class NodeType, class EdgeType>
 CrsGraph<NodeType, EdgeType>::CrsGraph() :
@@ -14,65 +59,56 @@ CrsGraph<NodeType, EdgeType>::CrsGraph() :
 }
 
 template <class NodeType, class EdgeType>
-unsigned CrsGraph<NodeType, EdgeType>::addNode(const NodeType& node) {
+uint32 CrsGraph<NodeType, EdgeType>::addNode(const NodeType& node)
+{
     m_nodes.push_back(node);
     m_edgePointers.push_back(m_edges.size());
     return m_nodes.size();
 }
 
 template <class NodeType, class EdgeType>
-bool CrsGraph<NodeType, EdgeType>::hasNode(unsigned nodeIndex) const
+bool CrsGraph<NodeType, EdgeType>::hasNode(const uint32 nodeIndex) const
 {
 	return nodeIndex >= 0 && nodeIndex < m_nodes.size();
 }
 
 template <class NodeType, class EdgeType>
-NodeType & CrsGraph<NodeType, EdgeType>::getNode(unsigned nodeIndex) {
+NodeType & CrsGraph<NodeType, EdgeType>::getNode(const uint32 nodeIndex)
+{
     assert(hasNode(nodeIndex));
     return m_nodes[nodeIndex];
 }
 
 template <class NodeType, class EdgeType>
-const NodeType & CrsGraph<NodeType, EdgeType>::getNode(unsigned nodeIndex) const {
+const NodeType & CrsGraph<NodeType, EdgeType>::getNode(const uint32 nodeIndex) const
+{
     assert(hasNode(nodeIndex));
     return m_nodes[nodeIndex];
 }
 
 template <class NodeType, class EdgeType>
-size_t CrsGraph<NodeType, EdgeType>::numNodes() const {
+size_t CrsGraph<NodeType, EdgeType>::numNodes() const
+{
     return m_nodes.size();
 }
 
 template <class NodeType, class EdgeType>
-typename CrsGraph<NodeType, EdgeType>::NodeIterator CrsGraph<NodeType, EdgeType>::beginNodes() {
-    return m_nodes.begin();
+const typename CrsGraph<NodeType, EdgeType>::Nodes & CrsGraph<NodeType, EdgeType>::getNodes() const
+{
+	return m_nodes;
 }
 
-template <class NodeType, class EdgeType>
-typename CrsGraph<NodeType, EdgeType>::ConstNodeIterator CrsGraph<NodeType, EdgeType>::beginNodes() const {
-    return m_nodes.begin();
-}
 
 template <class NodeType, class EdgeType>
-typename CrsGraph<NodeType, EdgeType>::NodeIterator CrsGraph<NodeType, EdgeType>::endNodes() {
-    return m_nodes.end();
-}
-
-template <class NodeType, class EdgeType>
-typename CrsGraph<NodeType, EdgeType>::ConstNodeIterator CrsGraph<NodeType, EdgeType>::endNodes() const {
-    return m_nodes.end();
-}
-
-template <class NodeType, class EdgeType>
-void CrsGraph<NodeType, EdgeType>::addEdge(unsigned src, unsigned dst, const EdgeType & edge) {
-    if (!m_edges.empty() && m_edges.back().m_src <= edge.m_src) {
+void CrsGraph<NodeType, EdgeType>::addEdge(const EdgeType & edge) {
+    if (!m_edges.empty() && m_edges.back().getSource() <= edge.getSource()) {
         m_edges.push_back(edge);
     } else {
-        typename EdgeIterator it = upper_bound(m_edges.begin(),
+        typename EdgeIterator it = std::upper_bound(m_edges.begin(),
             m_edges.end(), edge, compareEdges);
         m_edges.insert(it, edge);
     }
-    for (unsigned i = edge.m_src; i < m_edgePointers.size(); ++i)
+    for (uint32 i = edge.getSource(); i < m_edgePointers.size(); ++i)
         ++m_edgePointers[i];
 }
 
@@ -82,13 +118,13 @@ void CrsGraph<NodeType, EdgeType>::addEdge(unsigned src, unsigned dst, const Edg
     * since potentially lots of edge pointers will need updating.
     */
 template <class NodeType, class EdgeType>
-void CrsGraph<NodeType, EdgeType>::addEdges(const std::vector<unsigned> & sources, const std::vector<unsigned> & destinations, const Edges & edges) {
+void CrsGraph<NodeType, EdgeType>::addEdges(const Edges & edges) {
     if (edges.empty())
         return;
 
     /* Add the edges */
     for (typename EdgeIterator it = edges.begin(); it != edges.end(); ++it) {
-        if (!m_edges.empty() && m_edges.back().m_src <= it->m_src) {
+        if (!m_edges.empty() && m_edges.back().getSource() <= it->getSource()) {
             m_edges.push_back(*it);
         } else {
             typename EdgeIterator pos = upper_bound(m_edges.begin(), m_edges.end(), *it, compareEdges);
@@ -98,40 +134,32 @@ void CrsGraph<NodeType, EdgeType>::addEdges(const std::vector<unsigned> & source
 
     /* Adjust the edge pointers */
     int current_src = 0;
-    for (unsigned i = 0; i < m_edges.size(); i++) {
-        if (m_edges[i].m_src != current_src) {
-            for (int j = current_src; j < m_edges[i].m_src; j++)
+    for (uint32 i = 0; i < m_edges.size(); i++) {
+        if (m_edges[i].getSource() != current_src) {
+            for (int j = current_src; j < m_edges[i].getSource(); j++)
                 m_edgePointers[j] = i;
-            current_src = m_edges[i].m_src;
+            current_src = m_edges[i].getSource();
         }
     }
-    for (unsigned i = current_src; i < m_edgePointers.size(); i++)
+    for (uint32 i = current_src; i < m_edgePointers.size(); i++)
         m_edgePointers[i] = m_edges.size();
 }
 
 template <class NodeType, class EdgeType>
-unsigned CrsGraph<NodeType, EdgeType>::numEdges() const {
+uint32 CrsGraph<NodeType, EdgeType>::numEdges() const {
     return m_edges.size();
 }
 
 template <class NodeType, class EdgeType>
-typename CrsGraph<NodeType, EdgeType>::EdgeIterator CrsGraph<NodeType, EdgeType>::beginEdgesBySrc(unsigned src) {
-    return m_edges.begin() + (src == 0 ? 0 : m_edgePointers[src-1]);
+typename CrsGraph<NodeType, EdgeType>::EdgeSegment CrsGraph<NodeType, EdgeType>::getEdges(const uint32 src)
+{
+	return EdgeSegment(m_edges.begin() + (src == 0 ? 0 : m_edgePointers[src - 1]), m_edges.begin() + m_edgePointers[src]);
 }
 
 template <class NodeType, class EdgeType>
-typename CrsGraph<NodeType, EdgeType>::ConstEdgeIterator CrsGraph<NodeType, EdgeType>::beginEdgesBySrc(unsigned src) const {
-    return m_edges.begin() + (src == 0 ? 0 : m_edgePointers[src-1]);
-}
-
-template <class NodeType, class EdgeType>
-typename CrsGraph<NodeType, EdgeType>::EdgeIterator CrsGraph<NodeType, EdgeType>::endEdgesBySrc(unsigned src) {
-    return m_edges.begin() + m_edgePointers[src];
-}
-
-template <class NodeType, class EdgeType>
-typename CrsGraph<NodeType, EdgeType>::ConstEdgeIterator CrsGraph<NodeType, EdgeType>::endEdgesBySrc(unsigned src) const {
-    return m_edges.begin() + m_edgePointers[src];
+typename CrsGraph<NodeType, EdgeType>::ConstEdgeSegment CrsGraph<NodeType, EdgeType>::getEdges(const uint32 src) const
+{
+	return ConstEdgeSegment(m_edges.begin() + (src == 0 ? 0 : m_edgePointers[src - 1]), m_edges.begin() + m_edgePointers[src]);
 }
 
 template <class NodeType, class EdgeType>

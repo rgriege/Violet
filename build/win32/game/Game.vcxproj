@@ -16,6 +16,7 @@
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\Path.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\violet\game\pathfinding\Map.cpp" />
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Path.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

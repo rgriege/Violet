@@ -18,5 +18,8 @@
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Path.cpp">
       <Filter>pathfinding</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\game\pathfinding\Map.cpp">
+      <Filter>pathfinding</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
