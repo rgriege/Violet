@@ -32,7 +32,7 @@ namespace Violet
 		typename ComponentType & fetch(const Entity & entity)
 		{
 			auto it = std::find_if(std::begin(m_systems), std::end(m_systems), [](std::unique_ptr<System> const & system) { return system->owns(ComponentType::getLabel()); });
-			return dynamic_cast<ComponentType &>((*it)->fetch(ComponentType::getLabel(), entity));
+			return static_cast<ComponentType &>((*it)->fetch(ComponentType::getLabel(), entity));
 		}
 
 		~Engine();

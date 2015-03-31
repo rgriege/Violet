@@ -49,11 +49,11 @@ void InputSystem::onMouseDown(const int x, const int y, Engine & engine)
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
 	for (auto const & component : getComponents())
 	{
-		auto const & transform = engine.fetch<TransformComponent>(component.m_entity);
+		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
 		if (component.m_mesh.contains(point - transform.m_position))
 		{
-			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
-			scriptComponent.m_script->run(Procedure::create("onMouseDown", component.m_entity, engine));
+			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
+			scriptComponent.m_script->run(Procedure::create("onMouseDown", component.getEntity(), engine));
 		}
 	}
 }
@@ -65,11 +65,11 @@ void InputSystem::onMouseUp(const int x, const int y, Engine & engine)
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
 	for (auto const & component : getComponents())
 	{
-		auto const & transform = engine.fetch<TransformComponent>(component.m_entity);
+		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
 		if (component.m_mesh.contains(point - transform.m_position))
 		{
-			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
-			scriptComponent.m_script->run(Procedure::create("onMouseUp", component.m_entity, engine));
+			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
+			scriptComponent.m_script->run(Procedure::create("onMouseUp", component.getEntity(), engine));
 		}
 	}
 }
@@ -103,8 +103,8 @@ void InputSystem::onKeyDown(const unsigned char key, Engine & engine)
 {
 	for (auto const & component : getComponents())
 	{
-		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
-		scriptComponent.m_script->run(Procedure::create("onKeyDown", component.m_entity, engine, key));
+		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
+		scriptComponent.m_script->run(Procedure::create("onKeyDown", component.getEntity(), engine, key));
 	}
 }
 
@@ -113,7 +113,7 @@ void InputSystem::onKeyUp(const unsigned char key, Engine & engine)
 	static int i = 0;
 	for (auto const & component : getComponents())
 	{
-		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
-		scriptComponent.m_script->run(Procedure::create("onKeyUp", component.m_entity, engine, key));
+		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
+		scriptComponent.m_script->run(Procedure::create("onKeyUp", component.getEntity(), engine, key));
 	}
 }

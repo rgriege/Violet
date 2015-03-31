@@ -81,7 +81,7 @@ void RenderSystem::update(float const /*dt*/, Engine & engine)
 
 void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
 {
-	const TransformComponent & transform = engine.fetch<TransformComponent>(renderComponent.m_entity);
+	const TransformComponent & transform = engine.fetch<TransformComponent>(renderComponent.getEntity());
 	const float modelMat[9] = {
 		1.f, 0.f, transform.m_position.x,
 		0.f, 1.f, transform.m_position.y,
@@ -104,7 +104,7 @@ void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
 
 void RenderSystem::draw(TextComponent & textComponent, Engine & engine)
 {
-	const TransformComponent & transform = engine.fetch<TransformComponent>(textComponent.m_entity);
+	const TransformComponent & transform = engine.fetch<TransformComponent>(textComponent.getEntity());
 	float modelMat[9] = {
 		1.f, 0.f, transform.m_position.x,
 		0.f, 1.f, transform.m_position.y,

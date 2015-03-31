@@ -13,11 +13,12 @@ namespace Violet
 	public:
 
 		Entity(uint32 id);
-		Entity(const Entity & other);
 
-	public:
+		uint32 getId() const;
 
-		const uint32 m_id;
+	private:
+
+		uint32 m_id;
 	};
 }
 

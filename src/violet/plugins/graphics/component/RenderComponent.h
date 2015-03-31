@@ -23,7 +23,7 @@ namespace Violet
 		RenderComponent(const Entity & entity, Deserializer & deserializer);
 		RenderComponent(RenderComponent && other);
 		RenderComponent(const RenderComponent &) = delete;
-		virtual ~RenderComponent() override;
+		virtual ~RenderComponent();
 
 	public:
 

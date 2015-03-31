@@ -22,7 +22,7 @@ void UpdateSystem::update(float /*dt*/, Engine & engine)
 {
 	for (auto const & component : getComponents())
 	{
-		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.m_entity);
-		scriptComponent.m_script->run(Procedure::create("update", component.m_entity, engine));
+		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
+		scriptComponent.m_script->run(Procedure::create("update", component.getEntity(), engine));
 	}
 }

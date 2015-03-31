@@ -19,13 +19,25 @@ namespace Violet
 		{
 		}
 
+		Component & operator=(Component && other)
+		{
+			m_entity = other.m_entity;
+			return *this;
+		}
+
+		Entity const & getEntity() const
+		{
+			return m_entity;
+		}
+
+	private:
+
 		Component(const Component &) = delete;
 		Component & operator=(const Component &) = delete;
-		virtual ~Component() = default;
 
-	public:
+	private:
 
-		const Entity m_entity;
+		Entity m_entity;
 	};
 }
 

@@ -70,7 +70,7 @@ namespace Violet
 		void create(Entity & entity, Deserializer & deserializer)
 		{
 			auto segment = deserializer.enterSegment(getStaticLabel());
-			m_entityComponentMap.emplace(entity.m_id, m_components->size());
+			m_entityComponentMap.emplace(entity.getId(), m_components->size());
 			m_components->emplace_back(entity, *segment);
 		}
 
@@ -82,13 +82,13 @@ namespace Violet
 		virtual bool has(const char * label, const Entity & entity) const override
 		{
 			assert(label == getStaticLabel());
-			return m_entityComponentMap.find(entity.m_id) != m_entityComponentMap.end();
+			return m_entityComponentMap.find(entity.getId()) != m_entityComponentMap.end();
 		}
 
 		virtual ComponentType & fetch(const char * label, const Entity & entity) override
 		{
 			assert(has(label, entity));
-			return m_components->operator[](m_entityComponentMap[entity.m_id]);
+			return m_components->operator[](m_entityComponentMap[entity.getId()]);
 		}
 
 		virtual void clear() override

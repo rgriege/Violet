@@ -44,18 +44,18 @@ void PhysicsSystem::update(const float dt, Engine & engine)
 
 	for (auto & component : getComponents())
 	{
-		TransformComponent & transform = engine.fetch<TransformComponent>(component.m_entity);
+		TransformComponent & transform = engine.fetch<TransformComponent>(component.getEntity());
 		updateEntity(transform, component, dt);
 	}
 
 	for (uint32 i = 0, len = getComponents().size(); i < len; ++i)
 	{
 		PhysicsComponent & physics1 = getComponents()[i];
-		TransformComponent & transform1 = engine.fetch<TransformComponent>(physics1.m_entity);
+		TransformComponent & transform1 = engine.fetch<TransformComponent>(physics1.getEntity());
 		for (uint32 j = i + 1; j < len; ++j)
 		{
 			PhysicsComponent & physics2 = getComponents()[j];
-			TransformComponent & transform2 = engine.fetch<TransformComponent>(physics2.m_entity);
+			TransformComponent & transform2 = engine.fetch<TransformComponent>(physics2.getEntity());
 			Intersection intersection(RigidBody(transform1, physics1), RigidBody(transform2, physics2), dt);
 			if (intersection.exists())
 			{

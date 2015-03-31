@@ -9,9 +9,9 @@ Entity::Entity(uint32 id) :
 {
 }
 
-Entity::Entity(const Entity & other) :
-	m_id(other.m_id)
+uint32 Entity::getId() const
 {
+	return m_id;
 }
 
 // ============================================================================
