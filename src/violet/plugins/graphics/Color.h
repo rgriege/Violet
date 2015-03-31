@@ -2,6 +2,7 @@
 #define COLOR_H
 
 #include "violet/core/Defines.h"
+#include "violet/plugins/graphics/Config.h"
 
 #include <array>
 
@@ -9,7 +10,7 @@ namespace Violet
 {
 	class Deserializer;
 
-	class Color
+	class VIOLET_GRAPHICS_API Color
 	{
 	public:
 	

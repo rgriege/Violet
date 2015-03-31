@@ -2,12 +2,13 @@
 #define SHADER_H
 
 #include "violet/core/utility/ResourceCache.h"
+#include "violet/plugins/graphics/Config.h"
 
 #include <memory>
 
 namespace Violet
 {
-	class Shader
+	class VIOLET_GRAPHICS_API Shader
 	{
 	public:
 
@@ -36,7 +37,7 @@ namespace Violet
 		const uint32 m_handle;
 	};
 
-	class ShaderProgram
+	class VIOLET_GRAPHICS_API ShaderProgram
 	{
 	public:
 
