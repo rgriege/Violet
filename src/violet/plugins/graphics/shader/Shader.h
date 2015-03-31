@@ -3,7 +3,6 @@
 
 #include "violet/core/utility/ResourceCache.h"
 
-#include <GL/glew.h>
 #include <memory>
 
 namespace Violet
@@ -30,11 +29,11 @@ namespace Violet
 
 	private:
 
-		Shader(GLuint handle);
+		Shader(uint32 handle);
 
 	private:
 
-		const GLuint m_handle;
+		const uint32 m_handle;
 	};
 
 	class ShaderProgram
@@ -51,7 +50,7 @@ namespace Violet
 
 	public:
 
-		ShaderProgram(GLuint handle, std::shared_ptr<Shader> vertexShader, std::shared_ptr<Shader> fragmentShader);
+		ShaderProgram(uint32 handle, std::shared_ptr<Shader> vertexShader, std::shared_ptr<Shader> fragmentShader);
 		~ShaderProgram();
 
 		int getAttributeLocation(const char * name);
@@ -59,7 +58,7 @@ namespace Violet
 
 	private:
 
-		const GLuint m_handle;
+		const uint32 m_handle;
 		const std::shared_ptr<Shader> m_vertexShader;
 		const std::shared_ptr<Shader> m_fragmentShader;
 	};
