@@ -61,9 +61,10 @@ T Vec2<T>::magSquared() const
 }
 
 template<typename T>
-void Vec2<T>::normalize()
+Vec2<T> & Vec2<T>::normalize()
 {
 	*this /= magnitude();
+	return *this;
 }
 
 template<typename T>

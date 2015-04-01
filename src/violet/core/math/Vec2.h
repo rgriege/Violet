@@ -19,7 +19,7 @@ namespace Violet
 
 		T magnitude() const;
 		T magSquared() const;
-		void normalize();
+		Vec2<T> & normalize();
 		Vec2<T> getUnit() const;
 		bool isUnit() const;
 
