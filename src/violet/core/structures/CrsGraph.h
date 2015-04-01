@@ -12,11 +12,41 @@ namespace Violet
     {
     public:
 
-        typedef std::vector<NodeType> Nodes;
+		typedef std::vector<NodeType> Nodes;
+
+		class NodeIterator
+		{
+		public:
+
+			NodeIterator(const Nodes & nodes, uint32 index);
+
+			NodeIterator & operator++();
+			std::pair<uint32, const NodeType &> operator*();
+			bool operator!=(const NodeIterator & other) const;
+
+		private:
+
+			typename Nodes::const_iterator m_nodesIterator;
+			uint32 m_index;
+		};
+
+		class NodeSegment
+		{
+		public:
+
+			NodeSegment(NodeIterator begin, NodeIterator end);
+
+			NodeIterator begin();
+			NodeIterator end();
+
+		private:
+
+			NodeIterator m_begin;
+			NodeIterator m_end;
+		};
+
         typedef std::vector<EdgeType> Edges;
-        typedef typename Nodes::iterator NodeIterator;
 		typedef typename Edges::iterator EdgeIterator;
-		typedef typename Nodes::const_iterator ConstNodeIterator;
 		typedef typename Edges::const_iterator ConstEdgeIterator;
 
 		class EdgeSegment
@@ -62,7 +92,7 @@ namespace Violet
 		NodeType & getNode(uint32 nodeIndex);
 		const NodeType & getNode(uint32 nodeIndex) const;
         size_t numNodes() const;
-		const Nodes & getNodes() const;
+		NodeSegment getNodes() const;
 
         void addEdge(const EdgeType & edge);
         /*
@@ -72,6 +102,8 @@ namespace Violet
          */
 		void addEdges(const Edges & edges);
         uint32 numEdges() const;
+		EdgeSegment getEdges();
+		ConstEdgeSegment getEdges() const;
 		EdgeSegment getEdges(uint32 src);
 		ConstEdgeSegment getEdges(uint32 src) const;
 

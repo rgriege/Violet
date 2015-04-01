@@ -16,7 +16,9 @@ public:
 
 public:
 
+	Path();
 	Path(std::vector<Vec2f> && points);
+	Path(Path && other);
 
 	const std::vector<Vec2f> & getPoints() const;
 

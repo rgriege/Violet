@@ -13,12 +13,24 @@
       <Filter>pathfinding</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\game\Config.h" />
+    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingComponent.h">
+      <Filter>pathfinding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.h">
+      <Filter>pathfinding</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Path.cpp">
       <Filter>pathfinding</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Map.cpp">
+      <Filter>pathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.cpp">
+      <Filter>pathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingComponent.cpp">
       <Filter>pathfinding</Filter>
     </ClCompile>
   </ItemGroup>

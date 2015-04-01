@@ -7,6 +7,52 @@
 using namespace Violet;
 
 template <class NodeType, class EdgeType>
+CrsGraph<NodeType, EdgeType>::NodeIterator::NodeIterator(const Nodes & nodes, const uint32 index) :
+	m_nodesIterator(nodes.begin() + index),
+	m_index(index)
+{
+}
+
+template <class NodeType, class EdgeType>
+std::pair<uint32, const NodeType &> CrsGraph<NodeType, EdgeType>::NodeIterator::operator*()
+{
+	return std::pair<uint32, const NodeType &>(m_index, *m_nodesIterator);
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::NodeIterator & CrsGraph<NodeType, EdgeType>::NodeIterator::operator++()
+{
+	++m_nodesIterator;
+	++m_index;
+	return *this;
+}
+
+template <class NodeType, class EdgeType>
+bool typename CrsGraph<NodeType, EdgeType>::NodeIterator::operator!=(const NodeIterator & other) const
+{
+	return m_index != other.m_index;
+}
+
+template <class NodeType, class EdgeType>
+CrsGraph<NodeType, EdgeType>::NodeSegment::NodeSegment(NodeIterator begin, NodeIterator end) :
+	m_begin(begin),
+	m_end(end)
+{
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::NodeIterator CrsGraph<NodeType, EdgeType>::NodeSegment::begin()
+{
+	return m_begin;
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::NodeIterator CrsGraph<NodeType, EdgeType>::NodeSegment::end()
+{
+	return m_end;
+}
+
+template <class NodeType, class EdgeType>
 CrsGraph<NodeType, EdgeType>::EdgeSegment::EdgeSegment(EdgeIterator begin, EdgeIterator end) :
 	m_begin(begin),
 	m_end(end)
@@ -93,11 +139,10 @@ size_t CrsGraph<NodeType, EdgeType>::numNodes() const
 }
 
 template <class NodeType, class EdgeType>
-const typename CrsGraph<NodeType, EdgeType>::Nodes & CrsGraph<NodeType, EdgeType>::getNodes() const
+typename CrsGraph<NodeType, EdgeType>::NodeSegment CrsGraph<NodeType, EdgeType>::getNodes() const
 {
-	return m_nodes;
+	return NodeSegment(NodeIterator(m_nodes, 0), NodeIterator(m_nodes, m_nodes.size()));
 }
-
 
 template <class NodeType, class EdgeType>
 void CrsGraph<NodeType, EdgeType>::addEdge(const EdgeType & edge) {
@@ -148,6 +193,18 @@ void CrsGraph<NodeType, EdgeType>::addEdges(const Edges & edges) {
 template <class NodeType, class EdgeType>
 uint32 CrsGraph<NodeType, EdgeType>::numEdges() const {
     return m_edges.size();
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::EdgeSegment CrsGraph<NodeType, EdgeType>::getEdges()
+{
+	return EdgeSegment(m_edges.begin(), m_edges.end());
+}
+
+template <class NodeType, class EdgeType>
+typename CrsGraph<NodeType, EdgeType>::ConstEdgeSegment CrsGraph<NodeType, EdgeType>::getEdges() const
+{
+	return ConstEdgeSegment(m_edges.begin(), m_edges.end());
 }
 
 template <class NodeType, class EdgeType>

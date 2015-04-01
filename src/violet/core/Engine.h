@@ -35,6 +35,13 @@ namespace Violet
 			return static_cast<ComponentType &>((*it)->fetch(ComponentType::getLabel(), entity));
 		}
 
+		template <typename SystemType>
+		SystemType & fetch()
+		{
+			auto it = std::find_if(std::begin(m_systems), std::end(m_systems), [](std::unique_ptr<System> const & system) { return system->getLabel() == SystemType::getStaticLabel(); });
+			return static_cast<SystemType &>(**it);
+		}
+
 		~Engine();
 
 	private:

@@ -25,6 +25,11 @@ namespace Violet
 			return *this;
 		}
 
+		Entity & getEntity()
+		{
+			return m_entity;
+		}
+
 		Entity const & getEntity() const
 		{
 			return m_entity;

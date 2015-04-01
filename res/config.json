@@ -25,9 +25,50 @@
     },
     "inpt": {},
     "scpt": {},
-    "updt": {}
+    "updt": {},
+    "path": {
+      "map": {
+        "roadWidth": 10,
+        "nodes": {
+          "n": 3,
+          "nodes": [
+            {
+              "vec": {
+                "x": -200,
+                "y": 0
+              }
+            },
+            {
+              "vec": {
+                "x": 0,
+                "y": 100
+              }
+            },
+            {
+              "vec": {
+                "x": 200,
+                "y": 0
+              }
+            }
+          ]
+        },
+        "edges": {
+          "n": 2,
+          "edges": [
+            {
+              "src": 0,
+              "dst": 1
+            },
+            {
+              "src": 1,
+              "dst": 2
+            }
+          ]
+        }
+      }
+    }
   },
   "opts": {
-    "firstScene": "menu.json"
+    "firstScene": "path.json"
   }
 }

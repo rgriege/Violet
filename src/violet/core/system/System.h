@@ -74,6 +74,13 @@ namespace Violet
 			m_components->emplace_back(entity, *segment);
 		}
 
+		template <typename... Args>
+		void create(Entity & entity, Args&&... args)
+		{
+			m_entityComponentMap.emplace(entity.getId(), m_components->size());
+			m_components->emplace_back(entity, std::forward<Args>(args)...);
+		}
+
 		virtual bool owns(const char * label) const override
 		{
 			return strcmp(label, getStaticLabel()) == 0;
@@ -135,8 +142,15 @@ namespace Violet
 		template <typename ComponentType, std::enable_if_t<has_type<Systems, ComponentSystem<ComponentType>>::value>* = nullptr>
 		void create(Entity & entity, Deserializer & deserializer)
 		{
-			auto system = get<ComponentSystem<ComponentType>>(m_systems);
+			auto & system = get<ComponentSystem<ComponentType>>(m_systems);
 			system.create(entity, deserializer);
+		}
+
+		template <typename ComponentType, typename... Args> //std::enable_if_t<has_type<Systems, ComponentSystem<ComponentType>>::value>* = nullptr
+		void create(Entity & entity, Args&&... args)
+		{
+			auto & system = get<ComponentSystem<ComponentType>>(m_systems);
+			system.create(entity, std::forward<Args>(args)...);
 		}
 
 		virtual bool owns(const char * label) const override

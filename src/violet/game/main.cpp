@@ -5,6 +5,7 @@
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/extras/serialization/JsonDeserializer.h"
+#include "violet/game/pathfinding/PathfindingSystem.h"
 #include "violet/plugins/glut/GlutWindow.h"
 #include "violet/plugins/graphics/system/RenderSystem.h"
 #include "violet/plugins/input/system/InputSystem.h"
@@ -28,6 +29,7 @@ SystemFactory setup()
 	Violet::InputSystem::install(factory);
 	Violet::ScriptSystem::install(factory);
 	Violet::UpdateSystem::install(factory);
+	PathfindingSystem::install(factory);
 
 	return factory;
 }

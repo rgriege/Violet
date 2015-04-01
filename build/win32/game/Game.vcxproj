@@ -14,10 +14,14 @@
     <ClInclude Include="..\..\..\src\violet\game\Config.h" />
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\Map.h" />
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\Path.h" />
+    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Map.cpp" />
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Path.cpp" />
+    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{195EE832-67E7-4051-8445-0EF5F765311D}</ProjectGuid>
@@ -76,9 +80,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>
-      </AdditionalLibraryDirectories>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\Documents\alottabit\violet\bin\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>VioletCore.lib;VioletGraphics.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

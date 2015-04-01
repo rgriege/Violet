@@ -46,24 +46,33 @@ Path Path::create(const Vec2f & start, const Vec2f & goal, const Map & map)
 	std::vector<AStarNode> closedSet;
 
 	uint32 firstNode = 0;
-	float minDistance = std::numeric_limits<float>::max();
+	uint32 lastNode = 0;
+	float minStartDistance = std::numeric_limits<float>::max();
+	float minGoalDistance = std::numeric_limits<float>::max();
 	for (auto const & node : map.getGraph().getNodes())
 	{
-		const float distance = (node.m_position - start).magnitude();
-		if (distance < minDistance)
+		const Vec2f position = node.second.m_position;
+		const float startDistance = (node.second.m_position - start).magnitude();
+		if (startDistance < minStartDistance)
 		{
-			firstNode;
-			minDistance = distance;
+			firstNode = node.first;
+			minStartDistance = startDistance;
+		}
+		const float goalDistance = (node.second.m_position - goal).magnitude();
+		if (goalDistance < minGoalDistance)
+		{
+			lastNode = node.first;
+			minGoalDistance = goalDistance;
 		}
 	}
 
-	openSet.push({ firstNode, map.getGraph().getNode(firstNode).m_position, minDistance, -1 });
-	while (!openSet.empty() && (closedSet.empty() || closedSet.back().m_position != goal)) {
+	openSet.push({ firstNode, map.getGraph().getNode(firstNode).m_position, minStartDistance, -1 });
+	while (!openSet.empty() && (closedSet.empty() || closedSet.back().m_node != lastNode)) {
 		closedSet.push_back(openSet.top());
 		const AStarNode & currentNode = closedSet.back();
 		const Map::Intersection & currentIntersection = map.getGraph().getNode(currentNode.m_node);
 		openSet.pop();
-		if (closedSet.back().m_position != goal)
+		if (closedSet.back().m_node != lastNode)
 		{
 			for (auto const & edge : map.getGraph().getEdges(currentNode.m_node))
 			{
@@ -91,18 +100,30 @@ Path Path::create(const Vec2f & start, const Vec2f & goal, const Map & map)
 	}
 
 	std::vector<Vec2f> points;
+	points.emplace_back(goal);
 	uint32 node = closedSet.size() - 1;
 	while (node != -1)
 	{
 		points.emplace_back(closedSet[node].m_position);
 		node = closedSet[node].m_previousNode;
 	}
+	points.emplace_back(start);
 	reverse(points);
 	return Path(std::move(points));
 }
 
+Path::Path() :
+	m_points()
+{
+}
+
 Path::Path(std::vector<Vec2f> && points) :
 	m_points(std::move(points))
+{
+}
+
+Path::Path(Path && other) :
+	m_points(std::move(other.m_points))
 {
 }
 

@@ -15,9 +15,10 @@ Map::Map() :
 Map::Map(Deserializer & deserializer) :
 	m_graph()
 {
-	const uint32 roadWidth = deserializer.getUint("roadWidth");
+	auto const & mapSegment = deserializer.enterSegment("map");
+	const uint32 roadWidth = mapSegment->getUint("roadWidth");
 	{
-		auto nodesSegment = deserializer.enterSegment("nodes");
+		auto nodesSegment = mapSegment->enterSegment("nodes");
 		const uint32 n = nodesSegment->getUint("n");
 		auto listSegment = nodesSegment->enterSegment("nodes");
 		for (uint32 i = 0; i < n; ++i)
@@ -25,7 +26,7 @@ Map::Map(Deserializer & deserializer) :
 	}
 
 	{
-		auto edgesSegment = deserializer.enterSegment("edges");
+		auto edgesSegment = mapSegment->enterSegment("edges");
 		const uint32 n = edgesSegment->getUint("n");
 		auto listSegment = edgesSegment->enterSegment("edges");
 		for (uint32 i = 0; i < n; ++i)
