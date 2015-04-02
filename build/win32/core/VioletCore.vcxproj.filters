@@ -167,6 +167,9 @@
     <ClInclude Include="..\..\..\src\violet\core\structures\CrsGraph.h">
       <Filter>structures</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\entity\EntityFactory.h">
+      <Filter>entity</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -220,6 +223,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\window\Window.cpp">
       <Filter>window</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\entity\EntityFactory.cpp">
+      <Filter>entity</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

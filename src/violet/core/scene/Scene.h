@@ -18,11 +18,9 @@ namespace Violet
 
 		Scene();
 
-		Entity & createEntity(uint32 id);
-
 	private:
 
-		std::unique_ptr<std::vector<Entity>> m_entities;
+		std::vector<Entity> m_entities;
 	};
 }
 

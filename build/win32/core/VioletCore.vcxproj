@@ -95,6 +95,7 @@
     <ClInclude Include="..\..\..\src\violet\core\Defines.h" />
     <ClInclude Include="..\..\..\src\violet\core\Engine.h" />
     <ClInclude Include="..\..\..\src\violet\core\entity\Entity.h" />
+    <ClInclude Include="..\..\..\src\violet\core\entity\EntityFactory.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Constants.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Circle.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h" />
@@ -145,6 +146,7 @@
     <ClCompile Include="..\..\..\src\violet\core\component\ComponentFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\Engine.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\entity\EntityFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\scene\Scene.cpp" />
