@@ -34,6 +34,7 @@ namespace Violet
 		T cross(const Vec2<T> & other) const;
 		Vec2<T> project(const Vec2<T> & axis) const;
 		Vec2<T> perpendicular(bool left = true) const;
+		Vec2<T> operator-() const;
 		Vec2<T> inverse() const;
 		void invert();
 		bool isZero() const;

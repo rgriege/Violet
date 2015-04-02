@@ -156,6 +156,12 @@ Vec2<T> Vec2<T>::perpendicular(const bool left) const
 }
 
 template<typename T>
+Vec2<T> Vec2<T>::operator-() const
+{
+	return inverse();
+}
+
+template<typename T>
 Vec2<T> Vec2<T>::inverse() const
 {
 	return Vec2(-x, -y);
