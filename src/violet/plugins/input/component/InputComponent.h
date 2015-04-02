@@ -31,7 +31,7 @@ namespace Violet
 
 		InputComponent(const Entity & entity, Deserializer & deserializer);
 		InputComponent(InputComponent && other);
-		InputComponent(const InputComponent &) = delete;
+		InputComponent & operator=(InputComponent && other);
 
 	public:
 

@@ -21,6 +21,7 @@ namespace Violet
 	public:
 
 		RenderComponent(const Entity & entity, Deserializer & deserializer);
+		RenderComponent(const Entity & entity, const Polygon & poly, Color color, std::shared_ptr<ShaderProgram> shader);
 		RenderComponent(RenderComponent && other);
 		RenderComponent(const RenderComponent &) = delete;
 		virtual ~RenderComponent();

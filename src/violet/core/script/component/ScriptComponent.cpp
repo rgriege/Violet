@@ -21,3 +21,9 @@ ScriptComponent::ScriptComponent(ScriptComponent && other) :
 	m_script(std::move(other.m_script))
 {
 }
+
+ScriptComponent & ScriptComponent::operator=(ScriptComponent && other)
+{
+	std::swap(m_script, other.m_script);
+	return *this;
+}

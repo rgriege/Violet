@@ -18,3 +18,9 @@ InputComponent::InputComponent(InputComponent && other) :
 	m_mesh(std::move(other.m_mesh))
 {
 }
+
+InputComponent & InputComponent::operator=(InputComponent && other)
+{
+	m_mesh = std::move(other.m_mesh);
+	return *this;
+}

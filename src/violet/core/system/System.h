@@ -81,6 +81,18 @@ namespace Violet
 			m_components->emplace_back(entity, std::forward<Args>(args)...);
 		}
 
+		typename std::vector<ComponentType>::iterator remove(Entity & entity)
+		{
+			auto const it = m_entityComponentMap.find(entity.getId());
+			if (it != m_entityComponentMap.end())
+			{
+				auto const result = m_components->erase(m_components->begin() + it->second);
+				m_entityComponentMap.erase(it);
+				return result;
+			}
+			return m_components->end();
+		}
+
 		virtual bool owns(const char * label) const override
 		{
 			return strcmp(label, getStaticLabel()) == 0;

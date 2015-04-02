@@ -35,6 +35,21 @@ RenderComponent::RenderComponent(const Entity & entity, Deserializer & deseriali
 	glBindVertexArray(0);
 }
 
+RenderComponent::RenderComponent(const Entity & entity, const Polygon & poly, Color color, std::shared_ptr<ShaderProgram> shader) :
+	Component(entity),
+	m_vertexArrayBuffer(initVertexArrayBuffer()),
+	m_mesh(poly),
+	m_color(color),
+	m_shader(std::move(shader))
+{
+	const Guard<Mesh> meshGuard(m_mesh);
+	const GLint positionAttribute = m_shader->getAttributeLocation("position");
+	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(positionAttribute);
+
+	glBindVertexArray(0);
+}
+
 RenderComponent::RenderComponent(RenderComponent && other) :
 	Component(std::move(other)),
 	m_mesh(std::move(other.m_mesh)),

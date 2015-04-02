@@ -18,3 +18,8 @@ UpdateComponent::UpdateComponent(UpdateComponent && other) :
 	Component(std::move(other))
 {
 }
+
+UpdateComponent & UpdateComponent::operator=(UpdateComponent && other)
+{
+	return *this;
+}

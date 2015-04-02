@@ -28,8 +28,7 @@ namespace Violet
 
 		PhysicsComponent(const Entity & entity, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
-		PhysicsComponent(const PhysicsComponent &) = delete;
-		PhysicsComponent & operator=(const PhysicsComponent &) = delete;
+		PhysicsComponent & operator=(PhysicsComponent && other);
 
 	public:
 

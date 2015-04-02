@@ -20,6 +20,7 @@ namespace Violet
 		TransformComponent(const Entity & entity);
 		TransformComponent(const Entity & entity, Deserializer & deserializer);
 		TransformComponent(TransformComponent && other);
+		TransformComponent & operator=(TransformComponent && other);
 
 	public:
 

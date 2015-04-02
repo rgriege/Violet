@@ -21,7 +21,7 @@ namespace Violet
 
 		ScriptComponent(const Entity & entity, Deserializer & deserializer);
 		ScriptComponent(ScriptComponent && other);
-		ScriptComponent(const ScriptComponent &) = delete;
+		ScriptComponent & operator=(ScriptComponent && other);
 
 	public:
 

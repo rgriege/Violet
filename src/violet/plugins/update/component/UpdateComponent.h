@@ -28,7 +28,7 @@ namespace Violet
 
 		UpdateComponent(const Entity & entity, Deserializer & deserializer);
 		UpdateComponent(UpdateComponent && other);
-		UpdateComponent(const UpdateComponent &) = delete;
+		UpdateComponent & operator=(UpdateComponent && other);
 	};
 }
 

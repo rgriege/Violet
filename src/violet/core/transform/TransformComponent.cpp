@@ -25,3 +25,10 @@ TransformComponent::TransformComponent(TransformComponent && other) :
 	m_rotation(other.m_rotation)
 {
 }
+
+TransformComponent & TransformComponent::operator=(TransformComponent && other)
+{
+	m_position = std::move(other.m_position);
+	m_rotation = other.m_rotation;
+	return *this;
+}
