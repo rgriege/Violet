@@ -29,7 +29,7 @@ void PathfindingSystem::update(const float dt, Engine & engine)
 	{
 		if (!updateComponent(*it, dt, engine))
 		{
-			it = getComponents().erase(it);
+			it = remove(it->getEntity());
 			end = getComponents().end();
 		}
 		else

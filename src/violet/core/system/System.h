@@ -98,10 +98,15 @@ namespace Violet
 			return strcmp(label, getStaticLabel()) == 0;
 		}
 
+		bool has(const Entity & entity) const
+		{
+			return m_entityComponentMap.find(entity.getId()) != m_entityComponentMap.end();
+		}
+
 		virtual bool has(const char * label, const Entity & entity) const override
 		{
 			assert(label == getStaticLabel());
-			return m_entityComponentMap.find(entity.getId()) != m_entityComponentMap.end();
+			return has(entity);
 		}
 
 		virtual ComponentType & fetch(const char * label, const Entity & entity) override

@@ -29,6 +29,13 @@ namespace Violet
 		void stop();
 
 		template <typename ComponentType>
+		bool has(const Entity & entity)
+		{
+			auto it = std::find_if(std::begin(m_systems), std::end(m_systems), [](std::unique_ptr<System> const & system) { return system->owns(ComponentType::getLabel()); });
+			return (*it)->has(ComponentType::getLabel(), entity);
+		}
+
+		template <typename ComponentType>
 		typename ComponentType & fetch(const Entity & entity)
 		{
 			auto it = std::find_if(std::begin(m_systems), std::end(m_systems), [](std::unique_ptr<System> const & system) { return system->owns(ComponentType::getLabel()); });
