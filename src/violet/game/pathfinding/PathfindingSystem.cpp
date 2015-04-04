@@ -93,11 +93,9 @@ bool PathfindingSystemNamespace::updateComponent(PathComponent & pc, const float
 	const Vec2f overshoot = nextPos - points[pc.m_lastIntersection + 1];
 	if (overshoot.dot(roadDir) >= 0)
 	{
-		if (++pc.m_lastIntersection < points.size() - 1)
-		{
-			tc.m_position = points[pc.m_lastIntersection];
+		tc.m_position = points[++pc.m_lastIntersection];
+		if (pc.m_lastIntersection < points.size() - 1)
 			return updateComponent(pc, dt * overshoot.magnitude() / deltaPos.magnitude(), engine);
-		}
 		else
 			return false;
 	}
