@@ -7,6 +7,8 @@ typedef unsigned short uint16;
 typedef short int16;
 typedef unsigned uint32;
 typedef int int32;
+typedef long long unsigned uint64;
+typedef long long int64;
 
 #ifdef WIN32
 #ifdef VIOLETCORE_EXPORT

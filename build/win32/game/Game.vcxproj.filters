@@ -4,6 +4,9 @@
     <Filter Include="pathfinding">
       <UniqueIdentifier>{383fa773-b581-47ae-a024-62fd344a3b6a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="world">
+      <UniqueIdentifier>{50eda4ba-6491-4f21-b5ee-d32abc69afdc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\Map.h">
@@ -19,6 +22,9 @@
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathComponent.h">
       <Filter>pathfinding</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\game\world\WorldSystem.h">
+      <Filter>world</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Path.cpp">
@@ -32,6 +38,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathComponent.cpp">
       <Filter>pathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\game\world\WorldSystem.cpp">
+      <Filter>world</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -40,6 +40,9 @@
     <Filter Include="structures">
       <UniqueIdentifier>{1c8556e8-4c7e-4452-a1b6-a3dd148745ab}</UniqueIdentifier>
     </Filter>
+    <Filter Include="time">
+      <UniqueIdentifier>{f9ff5f0e-a301-4c44-80ab-a3f8dd3512eb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Interval.h">
@@ -62,9 +65,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\math\Circle.h">
       <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\utility\Time.h">
-      <Filter>utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\Defines.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h">
@@ -164,13 +164,13 @@
     <ClInclude Include="..\..\..\src\violet\core\entity\EntityFactory.h">
       <Filter>entity</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\time\Time.h">
+      <Filter>time</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
       <Filter>math</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\core\utility\Time.cpp">
-      <Filter>utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\entity\Entity.cpp">
       <Filter>entity</Filter>
@@ -217,6 +217,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\entity\EntityFactory.cpp">
       <Filter>entity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\time\Time.cpp">
+      <Filter>time</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

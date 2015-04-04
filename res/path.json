@@ -89,39 +89,27 @@
       },
       "shader": "poly"
     },
-    "inpt": {
-      "poly": {
-        "n": 4,
-        "vertices": [
-          {
-            "vec": {
-              "x": -10,
-              "y": -10
-            }
-          },
-          {
-            "vec": {
-              "x": 10,
-              "y": -10
-            }
-          },
-          {
-            "vec": {
-              "x": 10,
-              "y": 10
-            }
-          },
-          {
-            "vec": {
-              "x": -10,
-              "y": 10
-            }
-          }
-        ]
-      }
-    },
+    "updt": {},
     "scpt": {
       "file": "path.dll"
     }
+  },
+  "ntty": {
+    "id": 2,
+    "tsfm": {
+      "vec": {
+        "x": 0,
+        "y": 250
+      }
+    },
+    "text": {
+      "str": "",
+      "font": "Vera.ttf",
+      "shader": "text"
+    },
+    "scpt": {
+      "file": "clock.dll"
+    },
+    "updt": {}
   }
 }

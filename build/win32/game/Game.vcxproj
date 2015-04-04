@@ -16,12 +16,14 @@
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\Path.h" />
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathComponent.h" />
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.h" />
+    <ClInclude Include="..\..\..\src\violet\game\world\WorldSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Map.cpp" />
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Path.cpp" />
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.cpp" />
+    <ClCompile Include="..\..\..\src\violet\game\world\WorldSystem.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{195EE832-67E7-4051-8445-0EF5F765311D}</ProjectGuid>

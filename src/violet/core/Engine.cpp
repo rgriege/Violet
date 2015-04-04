@@ -5,12 +5,12 @@
 #include "violet/core/serialization/FileDeserializerFactory.h"
 #include "violet/core/system/System.h"
 #include "violet/core/system/SystemFactory.h"
-#include "violet/core/utility/Time.h"
 #include "violet/core/window/Window.h"
 
 #include <iostream>
 #include <algorithm>
-#include <Windows.h>
+#include <chrono>
+#include <thread>
 
 using namespace Violet;
 
@@ -93,7 +93,7 @@ void Engine::begin()
 
 	while (m_running)
 	{
-		uint32 const startTime = Time::getTimeInMilliseconds();
+		const auto startTime = std::chrono::system_clock::now();
 
 		float const deltaSeconds = previousFrameTime / 1000.f;
 		if (Window::getCurrent().update())
@@ -108,10 +108,10 @@ void Engine::begin()
 				m_nextSceneFileName.clear();
 			}
 
-			uint32 const frameTime = Time::getTimeInMilliseconds() - startTime;
+			auto const frameTime = static_cast<uint32>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - startTime).count());
 			if (frameTime < targetFrameTime)
 			{
-				Sleep(targetFrameTime - frameTime);
+				std::this_thread::sleep_for(std::chrono::milliseconds(targetFrameTime - frameTime));
 				previousFrameTime = targetFrameTime;
 			}
 			else
