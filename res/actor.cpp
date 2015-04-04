@@ -52,7 +52,8 @@ void travel(Entity & e, Engine & engine, Mem * mem)
 {
     auto & ps = engine.fetch<PathfindingSystem>();
     auto & tc = engine.fetch<TransformComponent>(e);
-    ps.create(e, 50.f, ps.getPath(tc.m_position, -tc.m_position));
+    const Vec2f goal = mem->working ? Vec2f(0, -270.f) : Vec2f(200, 120);
+    ps.create(e, 1800.f, ps.getPath(tc.m_position, goal));
     mem->traveling = true;
     mem->working = false;
 }

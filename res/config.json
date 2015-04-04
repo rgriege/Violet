@@ -10,9 +10,7 @@
   "sysv": {
     "tsfm": {},
     "rndr": {
-      "color": {
-        "value": 4294967295
-      }
+      "color": "0xffffffff"
     },
     "phys": {
       "drag": 0,
@@ -32,6 +30,6 @@
     }
   },
   "opts": {
-    "firstScene": "path.json"
+    "firstScene": "scene.json"
   }
 }
