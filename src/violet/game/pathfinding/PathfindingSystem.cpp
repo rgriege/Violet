@@ -10,8 +10,7 @@
 
 namespace PathfindingSystemNamespace
 {
-	void createMap(Deserializer & deserializer, SceneInitContext & initContext);
-	bool updateComponent(PathfindingComponent & pc, float dt, Engine & engine);
+	bool updateComponent(PathComponent & pc, float dt, Engine & engine);
 }
 
 using namespace PathfindingSystemNamespace;
@@ -23,7 +22,8 @@ void PathfindingSystem::install(SystemFactory & factory)
 
 std::unique_ptr<System> PathfindingSystem::init(Deserializer & deserializer)
 {
-	return std::unique_ptr<System>(new PathfindingSystem(*deserializer.enterSegment(getStaticLabel())));
+	deserializer.enterSegment(getStaticLabel());
+	return std::unique_ptr<System>(new PathfindingSystem);
 }
 
 PathfindingSystem::~PathfindingSystem()
@@ -53,24 +53,18 @@ Path PathfindingSystem::getPath(const Vec2f & start, const Vec2f & goal)
 PathfindingSystem::PathfindingSystem() :
 	m_map()
 {
-	EntityFactory::getInstance().assign("map", createMap);
+	EntityFactory::getInstance().assign("map", std::bind(&PathfindingSystem::createMap, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-PathfindingSystem::PathfindingSystem(Deserializer & deserializer) :
-	m_map(deserializer)
+void PathfindingSystem::createMap(Deserializer & deserializer, SceneInitContext & initContext)
 {
-	EntityFactory::getInstance().assign("map", createMap);
-}
+	m_map = Map(deserializer);
 
-void PathfindingSystemNamespace::createMap(Deserializer & deserializer, SceneInitContext & initContext)
-{
-	Map map(deserializer);
-
-	for (auto const & road : map.getGraph().getEdges())
+	for (auto const & road : m_map.getGraph().getEdges())
 	{
 		Entity & entity = initContext.createEntity();
-		auto const & start = map.getGraph().getNode(road.m_src).m_position;
-		auto const & end = map.getGraph().getNode(road.m_destination).m_position;
+		auto const & start = m_map.getGraph().getNode(road.m_src).m_position;
+		auto const & end = m_map.getGraph().getNode(road.m_destination).m_position;
 		auto const center = (end + start) / 2.f;
 		auto const halfEdge = (end - start) / 2.f;
 		auto const dir = halfEdge.getUnit();
@@ -86,7 +80,7 @@ void PathfindingSystemNamespace::createMap(Deserializer & deserializer, SceneIni
 	}
 }
 
-bool PathfindingSystemNamespace::updateComponent(PathfindingComponent & pc, const float dt, Engine & engine)
+bool PathfindingSystemNamespace::updateComponent(PathComponent & pc, const float dt, Engine & engine)
 {
  	auto & tc = engine.fetch<TransformComponent>(pc.getEntity());
 	auto const & points = pc.m_path.getPoints();

@@ -13,10 +13,10 @@
       <Filter>pathfinding</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\game\Config.h" />
-    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingComponent.h">
+    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.h">
       <Filter>pathfinding</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.h">
+    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathComponent.h">
       <Filter>pathfinding</Filter>
     </ClInclude>
   </ItemGroup>
@@ -30,7 +30,7 @@
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.cpp">
       <Filter>pathfinding</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathComponent.cpp">
       <Filter>pathfinding</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,13 +1,13 @@
-#include "violet/game/pathfinding/PathfindingComponent.h"
+#include "violet/game/pathfinding/PathComponent.h"
 
 #include "violet/core/serialization/Deserializer.h"
 
-const char * PathfindingComponent::getLabel()
+const char * PathComponent::getLabel()
 {
 	return "path";
 }
 
-PathfindingComponent::PathfindingComponent(const Entity & entity, Deserializer & deserializer) :
+PathComponent::PathComponent(const Entity & entity, Deserializer & deserializer) :
 	Component(entity),
 	m_path(),
 	m_lastIntersection(0),
@@ -15,7 +15,7 @@ PathfindingComponent::PathfindingComponent(const Entity & entity, Deserializer &
 {
 }
 
-PathfindingComponent::PathfindingComponent(const Entity & entity, const float speed, Path && path) :
+PathComponent::PathComponent(const Entity & entity, const float speed, Path && path) :
 	Component(entity),
 	m_path(std::move(path)),
 	m_lastIntersection(0),
@@ -23,7 +23,7 @@ PathfindingComponent::PathfindingComponent(const Entity & entity, const float sp
 {
 }
 
-PathfindingComponent::PathfindingComponent(PathfindingComponent && other) :
+PathComponent::PathComponent(PathComponent && other) :
 	Component(other.getEntity()),
 	m_path(std::move(other.m_path)),
 	m_lastIntersection(other.m_lastIntersection),
@@ -31,7 +31,7 @@ PathfindingComponent::PathfindingComponent(PathfindingComponent && other) :
 {
 }
 
-PathfindingComponent & PathfindingComponent::operator=(PathfindingComponent && other)
+PathComponent & PathComponent::operator=(PathComponent && other)
 {
 	Component::operator=(std::move(other));
 	m_path = std::move(other.m_path);

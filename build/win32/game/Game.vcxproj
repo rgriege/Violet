@@ -14,13 +14,13 @@
     <ClInclude Include="..\..\..\src\violet\game\Config.h" />
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\Map.h" />
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\Path.h" />
-    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathComponent.h" />
     <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Map.cpp" />
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\Path.cpp" />
-    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
