@@ -8,7 +8,7 @@
 namespace Violet
 {
 	template <uint32 bufferSize>
-	class VIOLET_API FormattedString
+	class FormattedString
 	{
 	public:
 

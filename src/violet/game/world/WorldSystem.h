@@ -34,6 +34,7 @@ public:
 
 	const Violet::Time & getTime() const;
 	float getTimeScale() const;
+	void setTimeScale(float timeScale);
 
 private:
 

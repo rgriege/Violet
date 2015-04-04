@@ -5,6 +5,7 @@
 #include "violet/core/math/Polygon.h"
 #include "violet/core/transform/TransformComponent.h"
 #include "violet/core/transform/TransformSystem.h"
+#include "violet/game/world/WorldSystem.h"
 #include "violet/plugins/graphics/system/RenderSystem.h"
 #include "violet/plugins/graphics/shader/Shader.h"
 
@@ -87,7 +88,7 @@ bool PathfindingSystemNamespace::updateComponent(PathComponent & pc, const float
 	const Vec2f roadVec = points[pc.m_lastIntersection + 1] - points[pc.m_lastIntersection];
 	const Vec2f roadDir = roadVec.getUnit();
 	const float roadLen = roadVec.magnitude();
-	const Vec2f deltaPos = pc.m_speed * dt * roadDir;
+	const Vec2f deltaPos = pc.m_speed * dt * roadDir * engine.fetch<WorldSystem>().getTimeScale();
 	const Vec2f nextPos = tc.m_position + deltaPos;
 
 	const Vec2f overshoot = nextPos - points[pc.m_lastIntersection + 1];

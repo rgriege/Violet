@@ -70,3 +70,8 @@ float WorldSystem::getTimeScale() const
 {
 	return m_timeScale;
 }
+
+void WorldSystem::setTimeScale(const float timeScale)
+{
+	m_timeScale = timeScale;
+}

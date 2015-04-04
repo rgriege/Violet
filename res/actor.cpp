@@ -50,10 +50,11 @@ extern "C" __declspec(dllexport) void update(Entity & e, Engine & engine, Mem * 
 
 void travel(Entity & e, Engine & engine, Mem * mem)
 {
+    auto & ws = engine.fetch<WorldSystem>(); 
     auto & ps = engine.fetch<PathfindingSystem>();
     auto & tc = engine.fetch<TransformComponent>(e);
     const Vec2f goal = mem->working ? Vec2f(0, -270.f) : Vec2f(200, 120);
-    ps.create(e, 1800.f, ps.getPath(tc.m_position, goal));
+    ps.create(e, 1.f, ps.getPath(tc.m_position, goal));
     mem->traveling = true;
     mem->working = false;
 }
