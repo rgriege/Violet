@@ -15,20 +15,19 @@ public:
 
 public:
 
-	virtual ~PathfindingSystem() override = default;
+	virtual ~PathfindingSystem() override;
 	virtual void update(float dt, Engine & engine);
 
 	Path getPath(const Vec2f & start, const Vec2f & goal);
 
 private:
 
-	PathfindingSystem() = default;
+	PathfindingSystem();
 	PathfindingSystem(Deserializer & deserializer);
 
 private:
 
 	Map m_map;
-	Entity m_renderEntity;
 };
 
 #endif

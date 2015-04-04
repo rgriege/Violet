@@ -2,6 +2,7 @@
 #define ENGINE_H
 
 #include "violet/core/Defines.h"
+#include "violet/core/entity/Entity.h"
 #include "violet/core/system/System.h"
 
 #include <memory>
@@ -12,17 +13,23 @@ namespace Violet
 {
 	class Deserializer;
 	class Entity;
-	class Scene;
 	class System;
 	class SystemFactory;
-
+	
 	class VIOLET_API Engine
 	{
+	public:
+
+		friend class SceneInitContext;
+
 	public:
 
 		static std::unique_ptr<Engine> init(SystemFactory & factory, Deserializer & deserializer);
 
 	public:
+
+		Engine(Engine && other);
+		Engine & operator=(Engine && other);
 
 		void begin();
 		void switchScene(const char * filename);
@@ -53,14 +60,42 @@ namespace Violet
 
 	private:
 
-		Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && firstScene);
+		Engine(std::vector<std::unique_ptr<System>> && systems);
+
+		Engine(const Engine &) = delete;
+		Engine & operator=(const Engine &) = delete;
 
 	private:
 
-		std::unique_ptr<Scene> m_activeScene;
 		std::string m_nextSceneFileName;
 		std::vector<std::unique_ptr<System>> m_systems;
 		bool m_running;
+	};
+
+	class VIOLET_API SceneInitContext
+	{
+	public:
+
+		SceneInitContext(Engine & engine) :
+			m_engine(engine)
+		{
+		}
+
+		Entity createEntity()
+		{
+			static uint32 s_id = 10000;
+			return Entity(++s_id);
+		}
+
+		template <typename SystemType, typename ComponentType, typename... Args>
+		void createComponent(Entity & entity, Args&&... args)
+		{
+			m_engine.fetch<SystemType>().create<ComponentType>(entity, std::forward<Args>(args)...);
+		}
+
+	private:
+
+		Engine & m_engine;
 	};
 }
 

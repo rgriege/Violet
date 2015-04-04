@@ -33,12 +33,6 @@ Mesh::Mesh(Mesh && other) :
 	other.m_vertexBuffer = 0;
 }
 
-Mesh::~Mesh()
-{
-	if (m_vertexBuffer != 0)
-		glDeleteBuffers(1, &m_vertexBuffer);
-}
-
 Mesh::Mesh(const Polygon & poly) :
 	m_vertexBuffer(0),
 	m_size(poly.m_vertices.size())
@@ -47,4 +41,10 @@ Mesh::Mesh(const Polygon & poly) :
 	bind(*this);
 	glBufferData(GL_ARRAY_BUFFER, poly.m_vertices.size() * sizeof(Vec2f), poly.m_vertices.data(), GL_STATIC_DRAW);
 	unbind();
+}
+
+Mesh::~Mesh()
+{
+	if (m_vertexBuffer != 0)
+		glDeleteBuffers(1, &m_vertexBuffer);
 }

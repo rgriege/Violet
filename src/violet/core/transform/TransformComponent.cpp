@@ -19,6 +19,13 @@ TransformComponent::TransformComponent(const Entity & entity, Deserializer & des
 {
 }
 
+TransformComponent::TransformComponent(const Entity & entity, Vec2f position, float rotation) :
+	Component(entity),
+	m_position(position),
+	m_rotation(rotation)
+{
+}
+
 TransformComponent::TransformComponent(TransformComponent && other) :
 	Component(std::move(other)),
 	m_position(std::move(other.m_position)),

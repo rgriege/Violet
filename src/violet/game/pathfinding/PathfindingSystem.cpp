@@ -1,13 +1,16 @@
 #include "violet/game/pathfinding/PathfindingSystem.h"
 
 #include "violet/core/Engine.h"
+#include "violet/core/entity/EntityFactory.h"
 #include "violet/core/math/Polygon.h"
 #include "violet/core/transform/TransformComponent.h"
+#include "violet/core/transform/TransformSystem.h"
 #include "violet/plugins/graphics/system/RenderSystem.h"
 #include "violet/plugins/graphics/shader/Shader.h"
 
 namespace PathfindingSystemNamespace
 {
+	void createMap(Deserializer & deserializer, SceneInitContext & initContext);
 	bool updateComponent(PathfindingComponent & pc, float dt, Engine & engine);
 }
 
@@ -21,6 +24,11 @@ void PathfindingSystem::install(SystemFactory & factory)
 std::unique_ptr<System> PathfindingSystem::init(Deserializer & deserializer)
 {
 	return std::unique_ptr<System>(new PathfindingSystem(*deserializer.enterSegment(getStaticLabel())));
+}
+
+PathfindingSystem::~PathfindingSystem()
+{
+	EntityFactory::getInstance().remove("map");
 }
 
 void PathfindingSystem::update(const float dt, Engine & engine)
@@ -42,10 +50,40 @@ Path PathfindingSystem::getPath(const Vec2f & start, const Vec2f & goal)
 	return Path::create(start, goal, m_map);
 }
 
-PathfindingSystem::PathfindingSystem(Deserializer & deserializer) :
-	m_map(deserializer),
-	m_renderEntity(100)
+PathfindingSystem::PathfindingSystem() :
+	m_map()
 {
+	EntityFactory::getInstance().assign("map", createMap);
+}
+
+PathfindingSystem::PathfindingSystem(Deserializer & deserializer) :
+	m_map(deserializer)
+{
+	EntityFactory::getInstance().assign("map", createMap);
+}
+
+void PathfindingSystemNamespace::createMap(Deserializer & deserializer, SceneInitContext & initContext)
+{
+	Map map(deserializer);
+
+	for (auto const & road : map.getGraph().getEdges())
+	{
+		Entity & entity = initContext.createEntity();
+		auto const & start = map.getGraph().getNode(road.m_src).m_position;
+		auto const & end = map.getGraph().getNode(road.m_destination).m_position;
+		auto const center = (end + start) / 2.f;
+		auto const halfEdge = (end - start) / 2.f;
+		auto const dir = halfEdge.getUnit();
+		auto const offset = dir * -5.f + dir.perpendicular() * 5.f;
+		Polygon p{ {
+			-halfEdge + offset,
+			-halfEdge + offset.perpendicular(),
+			halfEdge - offset,
+			halfEdge - offset.perpendicular()
+		} };
+		initContext.createComponent<TransformSystem, TransformComponent>(entity, center, 0.f);
+		initContext.createComponent<RenderSystem, RenderComponent>(entity, p, Color(128, 128, 128), ShaderProgram::getCache().fetch("poly"));
+	}
 }
 
 bool PathfindingSystemNamespace::updateComponent(PathfindingComponent & pc, const float dt, Engine & engine)

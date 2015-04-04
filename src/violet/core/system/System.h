@@ -81,6 +81,12 @@ namespace Violet
 			m_components->emplace_back(entity, std::forward<Args>(args)...);
 		}
 
+		template <typename ComponentType, typename... Args> //std::enable_if_t<has_type<Systems, ComponentSystem<ComponentType>>::value>* = nullptr
+		void create(Entity & entity, Args&&... args)
+		{
+			return create(entity, std::forward<Args>(args)...);
+		}
+
 		typename std::vector<ComponentType>::iterator remove(Entity & entity)
 		{
 			auto const it = m_entityComponentMap.find(entity.getId());
@@ -128,6 +134,7 @@ namespace Violet
 
 	private:
 
+		ComponentSystem<ComponentType>(const ComponentSystem<ComponentType> &) = delete;
 		ComponentSystem<ComponentType> & operator=(const ComponentSystem<ComponentType> &) = delete;
 		
 	private:
@@ -206,6 +213,7 @@ namespace Violet
 
 	private:
 
+		MultiComponentSystem<ComponentTypes...>(const MultiComponentSystem<ComponentTypes...> &) = delete;
 		MultiComponentSystem<ComponentTypes...> & operator=(const MultiComponentSystem<ComponentTypes...> &) = delete;
 
 	private:

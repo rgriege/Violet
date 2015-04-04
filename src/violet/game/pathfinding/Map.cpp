@@ -1,5 +1,7 @@
 #include "violet/game/pathfinding/Map.h"
 
+#include "violet/core/Engine.h"
+#include "violet/core/math/Polygon.h"
 #include "violet/core/serialization/Deserializer.h"
 
 uint32 Map::Road::getSource() const
@@ -8,15 +10,16 @@ uint32 Map::Road::getSource() const
 }
 
 Map::Map() :
-	m_graph()
+	m_graph(),
+	m_roadWidth(0)
 {
 }
 
 Map::Map(Deserializer & deserializer) :
-	m_graph()
+	Map()
 {
 	auto const & mapSegment = deserializer.enterSegment("map");
-	const uint32 roadWidth = mapSegment->getUint("roadWidth");
+	m_roadWidth = mapSegment->getFloat("roadWidth");
 	{
 		auto nodesSegment = mapSegment->enterSegment("nodes");
 		const uint32 n = nodesSegment->getUint("n");

@@ -19,6 +19,7 @@ namespace Violet
 
 		TransformComponent(const Entity & entity);
 		TransformComponent(const Entity & entity, Deserializer & deserializer);
+		TransformComponent(const Entity & entity, Vec2f position, float rotation);
 		TransformComponent(TransformComponent && other);
 		TransformComponent & operator=(TransformComponent && other);
 

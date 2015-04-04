@@ -1,6 +1,7 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include "violet/core/entity/Entity.h"
 #include "violet/core/structures/CrsGraph.h"
 #include "violet/core/math/Vec2.h"
 #include "violet/game/Config.h"
@@ -40,11 +41,12 @@ public:
 	Map(Deserializer & deserializer);
 
 	Violet::CrsGraph<Intersection, Road> & getGraph();
-	const Violet::CrsGraph<Intersection, Road> & getGraph() const;;
+	const Violet::CrsGraph<Intersection, Road> & getGraph() const;
 
 private:
 
 	Violet::CrsGraph<Intersection, Road> m_graph;
+	float m_roadWidth;
 };
 
 #endif

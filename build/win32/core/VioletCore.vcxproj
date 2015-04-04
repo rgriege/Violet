@@ -103,7 +103,6 @@
     <ClInclude Include="..\..\..\src\violet\core\math\Matrix3.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Polygon.h" />
     <ClInclude Include="..\..\..\src\violet\core\math\Vec2.h" />
-    <ClInclude Include="..\..\..\src\violet\core\scene\Scene.h" />
     <ClInclude Include="..\..\..\src\violet\core\script\component\ScriptComponent.h" />
     <ClInclude Include="..\..\..\src\violet\core\script\CppScript.h" />
     <ClInclude Include="..\..\..\src\violet\core\script\Procedure.h" />
@@ -149,7 +148,6 @@
     <ClCompile Include="..\..\..\src\violet\core\entity\EntityFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
-    <ClCompile Include="..\..\..\src\violet\core\scene\Scene.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\script\component\ScriptComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\script\CppScript.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\script\ScriptFactory.cpp" />
