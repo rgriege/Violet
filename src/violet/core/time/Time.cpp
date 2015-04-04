@@ -22,17 +22,17 @@ Time & Time::operator+=(const uint64 seconds)
 
 uint64 Time::getHours() const
 {
-	return std::chrono::duration_cast<std::chrono::hours>(m_time.time_since_epoch()).count();
+	return std::chrono::duration_cast<std::chrono::hours>(m_time.time_since_epoch()).count() % 24;
 }
 
 uint64 Time::getMinutes() const
 {
-	return std::chrono::duration_cast<std::chrono::minutes>(m_time.time_since_epoch()).count();
+	return std::chrono::duration_cast<std::chrono::minutes>(m_time.time_since_epoch()).count() % 60;
 }
 
 uint64 Time::getSeconds() const
 {
-	return std::chrono::duration_cast<std::chrono::seconds>(m_time.time_since_epoch()).count();
+	return std::chrono::duration_cast<std::chrono::seconds>(m_time.time_since_epoch()).count() % 60;
 }
 
 std::string Time::toString() const
