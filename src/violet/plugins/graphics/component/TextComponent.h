@@ -30,6 +30,7 @@ namespace Violet
 
 		std::string m_text;
 		std::shared_ptr<Font> m_font;
+		uint32 m_size;
 		std::shared_ptr<ShaderProgram> m_shader;
 	};
 }

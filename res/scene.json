@@ -231,6 +231,7 @@
     "text": {
       "str": "",
       "font": "Vera.ttf",
+      "size": 24,
       "shader": "text"
     },
     "scpt": {

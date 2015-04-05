@@ -47,6 +47,7 @@ namespace Violet
 		static std::unique_ptr<Font> load(const char * filename);
 		typedef ResourceCache<Font, &Font::load> Cache;
 		static Cache & getCache();
+		static uint32 getFontImageSize();
 
 	public:
 

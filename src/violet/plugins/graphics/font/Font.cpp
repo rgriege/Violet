@@ -15,6 +15,8 @@ using namespace Violet;
 namespace FontNamespace
 {
 	FT_Library ms_freetypeLibrary;
+
+	uint32 ms_fontImageSize = 60;
 };
 
 using namespace FontNamespace;
@@ -95,7 +97,7 @@ std::unique_ptr<Font> Font::load(const char * filename)
 		return nullptr;
 	}
 
-	ftError = FT_Set_Char_Size(face, 0, 60 * 64, 0, 0);
+	ftError = FT_Set_Char_Size(face, 0, ms_fontImageSize * 64, 0, 0);
 	if (ftError != FT_Err_Ok)
 	{
 		std::cout << "FT_Set_Char_Size error: " << ftError << std::endl;
@@ -103,7 +105,7 @@ std::unique_ptr<Font> Font::load(const char * filename)
 	}
 
 	std::map<char, Glyph> glyphs;
-	uint32 spaceWidth = 60;
+	uint32 spaceWidth = ms_fontImageSize;
 
 	FT_ULong charcode;
 	FT_UInt glyphIndex;
@@ -188,6 +190,11 @@ Font::Cache & Font::getCache()
 {
 	static Cache s_cache;
 	return s_cache;
+}
+
+uint32 Font::getFontImageSize()
+{
+	return ms_fontImageSize;
 }
 
 void Font::render(std::string const & str, ShaderProgram & program)

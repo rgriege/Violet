@@ -105,9 +105,10 @@ void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
 void RenderSystem::draw(TextComponent & textComponent, Engine & engine)
 {
 	const TransformComponent & transform = engine.fetch<TransformComponent>(textComponent.getEntity());
+	const float scale = static_cast<float>(textComponent.m_size) / Font::getFontImageSize();
 	float modelMat[9] = {
-		1.f, 0.f, transform.m_position.x,
-		0.f, 1.f, transform.m_position.y,
+		scale, 0.f, transform.m_position.x,
+		0.f, scale, transform.m_position.y,
 		0.f, 0.f, 1.f
 	};
 

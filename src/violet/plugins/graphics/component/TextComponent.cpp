@@ -15,6 +15,7 @@ TextComponent::TextComponent(const Entity & entity, Deserializer & deserializer)
 	Component(entity),
 	m_text(deserializer.getString("str")),
 	m_font(Font::getCache().fetch(deserializer.getString("font"))),
+	m_size(deserializer.getUint("size")),
 	m_shader(ShaderProgram::getCache().fetch(deserializer.getString("shader")))
 {
 }
@@ -23,6 +24,7 @@ TextComponent::TextComponent(TextComponent && other) :
 	Component(std::move(other)),
 	m_text(std::move(other.m_text)),
 	m_font(std::move(other.m_font)),
+	m_size(other.m_size),
 	m_shader(std::move(other.m_shader))
 {
 }
