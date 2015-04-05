@@ -8,5 +8,5 @@ using namespace Violet;
 extern "C" __declspec(dllexport) void update(Entity & e, Engine & engine)
 {
     auto & ws = engine.fetch<WorldSystem>(); 
-    engine.fetch<TextComponent>(e).m_text = FormattedString<16>().sprintf("%f", ws.getTimeScale());
+    engine.fetch<TextComponent>(e).m_text = FormattedString<16>().sprintf("%.0fx", ws.getTimeScale());
 }
