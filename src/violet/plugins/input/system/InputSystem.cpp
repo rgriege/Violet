@@ -22,7 +22,7 @@ std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
 void InputSystem::update(float /*dt*/, Engine & engine)
 {
 	Window::Event event;
-	while (Window::getCurrent().getEvent(static_cast<Window::EventType>(Window::ET_KeyDown | Window::ET_KeyUp | Window::ET_MouseDown | Window::ET_MouseUp), &event))
+	while (Window::getCurrent().getEvent(static_cast<Window::EventType>(Window::ET_KeyDown | Window::ET_KeyUp | Window::ET_MouseDown | Window::ET_MouseUp | Window::ET_MouseMove), &event))
 	{
 		switch (event.type)
 		{
@@ -38,6 +38,32 @@ void InputSystem::update(float /*dt*/, Engine & engine)
 		case Window::ET_MouseUp:
 			onMouseUp(event.mouse.x, event.mouse.y, engine);
 			break;
+		case Window::ET_MouseMove:
+			onMouseMove(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel, engine);
+			break;
+		}
+	}
+}
+
+void InputSystem::onMouseMove(int x, int y, int xrel, int yrel, Engine & engine)
+{
+	const int width = Window::getCurrent().getWidth();
+	const int height = Window::getCurrent().getHeight();
+	Vec2f newPoint(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
+	Vec2f oldPoint(static_cast<float>(x - xrel - width / 2), static_cast<float>(height / 2 - y + yrel));
+	for (auto const & component : getComponents())
+	{
+		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
+		const bool contains = component.m_mesh.contains(newPoint - transform.m_position);
+		const bool contained = component.m_mesh.contains(oldPoint - transform.m_position);
+
+		if (contains ^ contained)
+		{
+			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
+			if (contains)
+				scriptComponent.m_script->run(Procedure::create("onMouseIn", component.getEntity(), engine));
+			else
+				scriptComponent.m_script->run(Procedure::create("onMouseOut", component.getEntity(), engine));
 		}
 	}
 }

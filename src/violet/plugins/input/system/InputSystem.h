@@ -20,6 +20,7 @@ namespace Violet
 
 	private:
 
+		void onMouseMove(int x, int y, int xrel, int yrel, Engine & engine);
 		void onMouseDown(int x, int y, Engine & engine);
 		void onMouseUp(int x, int y, Engine & engine);
 		void onKeyDown(unsigned char key, Engine & engine);

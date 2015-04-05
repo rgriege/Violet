@@ -103,6 +103,14 @@ bool SDLWindow::getEvent(EventType type, Event* event)
 			event->mouse.y = sdlEvent.button.y;
 			break;
 
+		case SDL_MOUSEMOTION:
+			event->type = Window::ET_MouseMove;
+			event->motion.x = sdlEvent.motion.x;
+			event->motion.y = sdlEvent.motion.y;
+			event->motion.xrel = sdlEvent.motion.xrel;
+			event->motion.yrel = sdlEvent.motion.yrel;
+			break;
+
 		case SDL_QUIT:
 			m_quit = true;
 			break;
@@ -137,7 +145,14 @@ void SDLWindow::addEvent(Event event)
 		sdlEvent.type = SDL_MOUSEBUTTONDOWN;
 		sdlEvent.button.x = event.mouse.x;
 		sdlEvent.button.y = event.mouse.y;
+		break;
 
+	case Window::ET_MouseMove:
+		sdlEvent.type = SDL_MOUSEMOTION;
+		sdlEvent.motion.x = event.motion.x;
+		sdlEvent.motion.y = event.motion.y;
+		sdlEvent.motion.xrel = event.motion.xrel;
+		sdlEvent.motion.yrel = event.motion.yrel;
 		break;
 	}
 	SDL_PushEvent(&sdlEvent);
@@ -177,6 +192,7 @@ int SDLWindowNamespace::filterEvent(void * /*userdata*/, SDL_Event * event)
 	case SDL_KEYUP:
 	case SDL_MOUSEBUTTONDOWN:
 	case SDL_MOUSEBUTTONUP:
+	case SDL_MOUSEMOTION:
 	case SDL_QUIT:
 		return 1;
 

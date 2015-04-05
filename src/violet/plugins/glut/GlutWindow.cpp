@@ -1,5 +1,6 @@
 #include "violet/plugins/glut/GlutWindow.h"
 
+#include "violet/core/math/Vec2.h"
 #include "violet/core/serialization/Deserializer.h"
 
 #include <GL/freeglut.h>
@@ -9,10 +10,12 @@ using namespace Violet;
 namespace GlutWindowNamespace
 {
 	bool ms_quit = false;
+	Vec2i ms_mousePos;
 
 	void close();
 	void display();
-	void onMouse(int button, int state, int x, int y);
+	void onMouseButton(int button, int state, int x, int y);
+	void onMouseMove(int x, int y);
 	void onKeyboardDown(unsigned char key, int x, int y);
 	void onKeyboardUp(unsigned char key, int x, int y);
 }
@@ -39,7 +42,8 @@ std::unique_ptr<Window> GlutWindow::create(Deserializer & deserializer)
 
 	glutCloseFunc(close);
 	glutDisplayFunc(display);
-	glutMouseFunc(onMouse);
+	glutMouseFunc(onMouseButton);
+	glutMotionFunc(onMouseMove);
 	glutKeyboardFunc(onKeyboardDown);
 	glutKeyboardUpFunc(onKeyboardUp);
 
@@ -104,12 +108,22 @@ void GlutWindowNamespace::display()
 {
 }
 
-void GlutWindowNamespace::onMouse(int button, int state, int x, int y)
+void GlutWindowNamespace::onMouseButton(int button, int state, int x, int y)
 {
 	Window::Event event;
 	event.type = state == GLUT_DOWN ? Window::ET_MouseDown : Window::ET_MouseUp;
 	event.mouse = { x, y };
 	Window::getCurrent().addEvent(event);
+	ms_mousePos = { x, y };
+}
+
+void GlutWindowNamespace::onMouseMove(int x, int y)
+{
+	Window::Event event;
+	event.type = Window::ET_MouseMove;
+	event.motion = { x, y, ms_mousePos.x - x, ms_mousePos.y - y };
+	Window::getCurrent().addEvent(event);
+	ms_mousePos = { x, y };
 }
 
 void GlutWindowNamespace::onKeyboardDown(unsigned char key, int x, int y)

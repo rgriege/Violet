@@ -30,6 +30,6 @@
     }
   },
   "opts": {
-    "firstScene": "scene.json"
+    "firstScene": "editor.json"
   }
 }

@@ -18,7 +18,8 @@ namespace Violet
 			ET_KeyDown = 1,
 			ET_KeyUp = 2,
 			ET_MouseDown = 4,
-			ET_MouseUp = 8
+			ET_MouseUp = 8,
+			ET_MouseMove = 16,
 		};
 
 		struct KeyEvent
@@ -31,6 +32,11 @@ namespace Violet
 			int x, y;
 		};
 
+		struct MotionEvent
+		{
+			int x, y, xrel, yrel;
+		};
+
 		struct Event
 		{
 			EventType type;
@@ -39,6 +45,7 @@ namespace Violet
 			{
 				KeyEvent key;
 				MouseEvent mouse;
+				MotionEvent motion;
 			};
 		};
 
