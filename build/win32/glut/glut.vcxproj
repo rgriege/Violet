@@ -11,10 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\plugins\glut\GlutWindow.cpp" />
+    <ClCompile Include="..\..\..\src\violet\plugins\glut\GlutWindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\plugins\glut\GlutWindow.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\glut\GlutWindowSystem.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7908955B-03BD-48A1-80C6-7B9120B870DE}</ProjectGuid>

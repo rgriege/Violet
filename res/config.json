@@ -1,13 +1,13 @@
 {
-  "wndw": {
-    "x": 50,
-    "y": 50,
-    "width": 800,
-    "height": 600,
-    "title": "Billiards"
-
-  },
   "sysv": {
+    "wndw": {
+      "x": 50,
+      "y": 50,
+      "width": 800,
+      "height": 600,
+      "title": "Billiards"
+
+    },
     "tsfm": {},
     "rndr": {
       "color": "0xffffffff"

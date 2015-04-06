@@ -1,7 +1,9 @@
 #ifndef GLUT_WINDOW_H
 #define GLUT_WINDOW_H
 
-#include "violet/core/window/Window.h"
+#include "violet/core/window/WindowSystem.h"
+
+#include "violet/core/math/Vec2.h"
 
 #include <memory>
 #include <deque>
@@ -16,21 +18,31 @@
 #define VIOLET_API
 #endif
 
+namespace GlutWindowSystemNamespace
+{
+	void onMouseMove(int x, int y);
+}
+
 namespace Violet
 {
 	class Deserializer;
 
-	class VIOLET_GLUT_API GlutWindow : public Window
+	class VIOLET_GLUT_API GlutWindowSystem : public WindowSystem
 	{
 	public:
 
-		static std::unique_ptr<Window> create(Deserializer & deserializer);
+		friend void GlutWindowSystemNamespace::onMouseMove(int x, int y);
 
 	public:
 
-		virtual ~GlutWindow() override = default;
+		static void install(SystemFactory & factory);
+		static std::unique_ptr<System> init(Deserializer & deserializer);
 
-		virtual bool update() override;
+	public:
+
+		virtual ~GlutWindowSystem() override = default;
+
+		virtual void update(float dt, Engine & engine) override;
 		virtual void render() override;
 		virtual bool getEvent(EventType type, Event * event) override;
 		virtual void addEvent(Event event) override;
@@ -39,13 +51,15 @@ namespace Violet
 
 	private:
 
-		GlutWindow(int width, int height);
+		GlutWindowSystem(int id, int width, int height);
 
 	private:
 
+		const int m_id;
 		int m_width;
 		int m_height;
 		std::deque<Event> m_eventQueue;
+		Vec2i m_mousePos;
 	};
 }
 

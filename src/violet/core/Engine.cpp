@@ -5,7 +5,7 @@
 #include "violet/core/serialization/FileDeserializerFactory.h"
 #include "violet/core/system/System.h"
 #include "violet/core/system/SystemFactory.h"
-#include "violet/core/window/Window.h"
+#include "violet/core/window/WindowSystem.h"
 
 #include <iostream>
 #include <algorithm>
@@ -32,17 +32,6 @@ using namespace EngineNamespace;
 std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & deserializer)
 {
 	bool succeeded = true;
-
-	{
-		auto windowSegment = deserializer.enterSegment("wndw");
-		if (*windowSegment)
-			Window::create(*windowSegment);
-		else
-		{
-			std::cout << "failed to create window" << std::endl;
-			succeeded = false;
-		}
-	}
 
 	std::vector<std::unique_ptr<System>> systems;
 	{
@@ -96,32 +85,28 @@ void Engine::begin()
 		const auto startTime = std::chrono::system_clock::now();
 
 		float const deltaSeconds = previousFrameTime / 1000.f;
-		if (Window::getCurrent().update())
+
+		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, *this); });
+
+		if (!m_nextSceneFileName.empty())
 		{
-			std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, *this); });
+			for (auto & system : m_systems)
+				system->clear();
+			createScene(m_nextSceneFileName.c_str(), SceneInitContext(*this));
+			m_nextSceneFileName.clear();
+		}
 
-			if (!m_nextSceneFileName.empty())
-			{
-				for (auto & system : m_systems)
-					system->clear();
-				createScene(m_nextSceneFileName.c_str(), SceneInitContext(*this));
-				m_nextSceneFileName.clear();
-			}
-
-			auto const frameTime = static_cast<uint32>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - startTime).count());
-			if (frameTime < targetFrameTime)
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(targetFrameTime - frameTime));
-				previousFrameTime = targetFrameTime;
-			}
-			else
-			{
-				printf("frame time: %.3f\n", frameTime / 1000.f);
-				previousFrameTime = frameTime;
-			}
+		auto const frameTime = static_cast<uint32>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - startTime).count());
+		if (frameTime < targetFrameTime)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(targetFrameTime - frameTime));
+			previousFrameTime = targetFrameTime;
 		}
 		else
-			stop();
+		{
+			printf("frame time: %.3f\n", frameTime / 1000.f);
+			previousFrameTime = frameTime;
+		}
 	}
 }
 

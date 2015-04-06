@@ -1,6 +1,7 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
+#include "violet/core/component/Component.h"
 #include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
@@ -34,11 +35,15 @@ namespace Violet
 
 		virtual void bind(ComponentFactory & factory) {};
 		virtual void unbind(ComponentFactory & factory) {};
-		virtual bool owns(const char * label) const = 0;
-		virtual bool has(const char * label, const Entity & entity) const = 0;
-		virtual Component & fetch(const char * label, const Entity & entity) = 0;
+		virtual bool owns(const char * label) const { return false; }
+		virtual bool has(const char * label, const Entity & entity) const { return false; }
+		virtual Component & fetch(const char * label, const Entity & entity) {
+			static Component s_component(entity);
+			s_component = Component(entity);
+			return s_component;
+		}
 		virtual void update(float dt, Engine & engine) {}
-		virtual void clear() = 0;
+		virtual void clear() {}
 
 	private:
 

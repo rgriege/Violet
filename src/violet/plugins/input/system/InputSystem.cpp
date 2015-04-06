@@ -4,7 +4,7 @@
 #include "violet/core/script/Procedure.h"
 #include "violet/core/script/system/ScriptSystem.h"
 #include "violet/core/transform/TransformSystem.h"
-#include "violet/core/window/Window.h"
+#include "violet/core/window/WindowSystem.h"
 
 using namespace Violet;
 
@@ -21,25 +21,29 @@ std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
 
 void InputSystem::update(float /*dt*/, Engine & engine)
 {
-	Window::Event event;
-	while (Window::getCurrent().getEvent(static_cast<Window::EventType>(Window::ET_KeyDown | Window::ET_KeyUp | Window::ET_MouseDown | Window::ET_MouseUp | Window::ET_MouseMove), &event))
+	WindowSystem::Event event;
+	auto & windowSystem = engine.fetch<WindowSystem>();
+	while (windowSystem.getEvent(static_cast<WindowSystem::EventType>(WindowSystem::ET_KeyDown | WindowSystem::ET_KeyUp | WindowSystem::ET_MouseDown | WindowSystem::ET_MouseUp | WindowSystem::ET_MouseMove), &event))
 	{
 		switch (event.type)
 		{
-		case Window::ET_KeyDown:
+		case WindowSystem::ET_KeyDown:
 			onKeyDown(event.key.code, engine);
 			break;
-		case Window::ET_KeyUp:
+		case WindowSystem::ET_KeyUp:
 			onKeyUp(event.key.code, engine);
 			break;
-		case Window::ET_MouseDown:
+		case WindowSystem::ET_MouseDown:
 			onMouseDown(event.mouse.x, event.mouse.y, engine);
 			break;
-		case Window::ET_MouseUp:
+		case WindowSystem::ET_MouseUp:
 			onMouseUp(event.mouse.x, event.mouse.y, engine);
 			break;
-		case Window::ET_MouseMove:
+		case WindowSystem::ET_MouseMove:
 			onMouseMove(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel, engine);
+			break;
+		case WindowSystem::ET_Quit:
+			engine.stop();
 			break;
 		}
 	}
@@ -47,8 +51,9 @@ void InputSystem::update(float /*dt*/, Engine & engine)
 
 void InputSystem::onMouseMove(int x, int y, int xrel, int yrel, Engine & engine)
 {
-	const int width = Window::getCurrent().getWidth();
-	const int height = Window::getCurrent().getHeight();
+	auto & windowSystem = engine.fetch<WindowSystem>();
+	const int width = windowSystem.getWidth();
+	const int height = windowSystem.getHeight();
 	Vec2f newPoint(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
 	Vec2f oldPoint(static_cast<float>(x - xrel - width / 2), static_cast<float>(height / 2 - y + yrel));
 	for (auto const & component : getComponents())
@@ -70,8 +75,9 @@ void InputSystem::onMouseMove(int x, int y, int xrel, int yrel, Engine & engine)
 
 void InputSystem::onMouseDown(const int x, const int y, Engine & engine)
 {
-	const int width = Window::getCurrent().getWidth();
-	const int height = Window::getCurrent().getHeight();
+	auto & windowSystem = engine.fetch<WindowSystem>();
+	const int width = windowSystem.getWidth();
+	const int height = windowSystem.getHeight();
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
 	for (auto const & component : getComponents())
 	{
@@ -86,8 +92,9 @@ void InputSystem::onMouseDown(const int x, const int y, Engine & engine)
 
 void InputSystem::onMouseUp(const int x, const int y, Engine & engine)
 {
-	const int width = Window::getCurrent().getWidth();
-	const int height = Window::getCurrent().getHeight();
+	auto & windowSystem = engine.fetch<WindowSystem>();
+	const int width = windowSystem.getWidth();
+	const int height = windowSystem.getHeight();
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
 	for (auto const & component : getComponents())
 	{
@@ -99,31 +106,6 @@ void InputSystem::onMouseUp(const int x, const int y, Engine & engine)
 		}
 	}
 }
-
-/*class KeyboardDownEvent
-{
-public:
-
-	typedef std::function<void(const Entity & entity, AlterContext & context, unsigned char key)> Listener;
-
-public:
-
-	static void subscribe(const Entity & entity, Listener listener)
-	{
-		m_listeners[entity] = listener;
-	}
-
-	static void send(const Entity & entity, AlterContext & context, unsigned char key)
-	{
-		auto it = m_listeners.find(entity);
-		if (it != m_listeners.end())
-			it->second(entity, context, key);
-	}
-
-private:
-
-	std::map<Entity, Listener> m_listeners;
-};*/
 
 void InputSystem::onKeyDown(const unsigned char key, Engine & engine)
 {

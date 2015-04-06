@@ -1,7 +1,7 @@
 #ifndef SDL_WINDOW_H
 #define SDL_WINDOW_H
 
-#include "violet/core/window/Window.h"
+#include "violet/core/window/WindowSystem.h"
 
 #include <memory>
 
@@ -22,17 +22,18 @@ namespace Violet
 {
 	class Deserializer;
 
-	class VIOLET_SDL_API SDLWindow : public Window
+	class VIOLET_SDL_API SDLWindowSystem : public WindowSystem
 	{
 	public:
 
-		static std::unique_ptr<Window> create(Deserializer & deserializer);
+		static void install(SystemFactory & factory);
+		static std::unique_ptr<System> init(Deserializer & deserializer);
 
 	public:
 
-		virtual ~SDLWindow() override;
+		virtual ~SDLWindowSystem() override;
 
-		virtual bool update() override;
+		virtual void update(float dt, Engine & engine) override;
 		virtual void render() override;
 		virtual bool getEvent(EventType type, Event* event) override;
 		virtual void addEvent(Event event) override;
@@ -41,7 +42,7 @@ namespace Violet
 
 	private:
 
-		SDLWindow(SDL_Window * window, SDL_GLContext context);
+		SDLWindowSystem(SDL_Window * window, SDL_GLContext context);
 
 	private:
 
@@ -49,7 +50,6 @@ namespace Violet
 		SDL_GLContext m_glContext;
 		int m_width;
 		int m_height;
-		bool m_quit;
 	};
 }
 

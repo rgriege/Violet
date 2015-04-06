@@ -128,7 +128,7 @@
     <ClInclude Include="..\..\..\src\violet\core\utility\FileUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\StringUtilities.h" />
-    <ClInclude Include="..\..\..\src\violet\core\window\Window.h" />
+    <ClInclude Include="..\..\..\src\violet\core\window\WindowSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\core\math\Matrix2.ipp" />
@@ -157,7 +157,6 @@
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\FileUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\StringUtilities.cpp" />
-    <ClCompile Include="..\..\..\src\violet\core\window\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.cpp">

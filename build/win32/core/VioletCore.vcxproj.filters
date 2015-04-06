@@ -155,9 +155,6 @@
     <ClInclude Include="..\..\..\src\violet\core\utility\Guard.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\window\Window.h">
-      <Filter>window</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\structures\CrsGraph.h">
       <Filter>structures</Filter>
     </ClInclude>
@@ -166,6 +163,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\time\Time.h">
       <Filter>time</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\window\WindowSystem.h">
+      <Filter>window</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -208,9 +208,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\utility\FileUtilities.cpp">
       <Filter>utility</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\core\window\Window.cpp">
-      <Filter>window</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\entity\EntityFactory.cpp">
       <Filter>entity</Filter>

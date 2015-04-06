@@ -1,4 +1,4 @@
-#include "violet/plugins/sdl/SDLWindow.h"
+#include "violet/plugins/sdl/SDLWindowSystem.h"
 
 #include "violet/core/serialization/Deserializer.h"
 
@@ -9,16 +9,22 @@
 
 using namespace Violet;
 
-namespace SDLWindowNamespace
+namespace SDLWindowSystemNamespace
 {
 	char convertKey(SDL_Keycode key);
 	int filterEvent(void * userdata, SDL_Event * event);
 }
 
-using namespace SDLWindowNamespace;
+using namespace SDLWindowSystemNamespace;
 
-std::unique_ptr<Window> SDLWindow::create(Deserializer & deserializer)
+void SDLWindowSystem::install(SystemFactory & factory)
 {
+	factory.assign(getStaticLabel(), &SDLWindowSystem::init);
+}
+std::unique_ptr<System> SDLWindowSystem::init(Deserializer & deserializer)
+{
+	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
+
 	SDL_SetMainReady();
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
@@ -26,11 +32,11 @@ std::unique_ptr<Window> SDLWindow::create(Deserializer & deserializer)
 		return nullptr;
 	}
 
-	int const x = deserializer.getInt("x");
-	int const y = deserializer.getInt("y");
-	int const width = deserializer.getInt("width");
-	int const height = deserializer.getInt("height");
-	const char * title = deserializer.getString("title");
+	int const x = settingsSegment->getInt("x");
+	int const y = settingsSegment->getInt("y");
+	int const width = settingsSegment->getInt("width");
+	int const height = settingsSegment->getInt("height");
+	const char * title = settingsSegment->getString("title");
 
 	//Use OpenGL 3.1 core
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -53,27 +59,26 @@ std::unique_ptr<Window> SDLWindow::create(Deserializer & deserializer)
 
 	SDL_SetEventFilter(filterEvent, nullptr);
 
-	return std::unique_ptr<Window>(new SDLWindow(window, glContext));
+	return std::unique_ptr<System>(new SDLWindowSystem(window, glContext));
 }
 
-SDLWindow::~SDLWindow()
+SDLWindowSystem::~SDLWindowSystem()
 {
 	SDL_GL_DeleteContext(m_glContext);
 	SDL_DestroyWindow(m_window);
 	SDL_Quit();
 }
 
-void SDLWindow::render()
+void SDLWindowSystem::render()
 {
 	SDL_GL_SwapWindow(m_window);
 }
 
-bool SDLWindow::update()
+void SDLWindowSystem::update(float /*dt*/, Engine & /*engine*/)
 {
-	return !m_quit;
 }
 
-bool SDLWindow::getEvent(EventType type, Event* event)
+bool SDLWindowSystem::getEvent(EventType type, Event* event)
 {
 	SDL_Event sdlEvent;
 	bool const hasEvent = SDL_PollEvent(&sdlEvent) == 1;
@@ -82,29 +87,29 @@ bool SDLWindow::getEvent(EventType type, Event* event)
 		switch (sdlEvent.type)
 		{
 		case SDL_KEYDOWN:
-			event->type = Window::ET_KeyDown;
+			event->type = WindowSystem::ET_KeyDown;
 			event->key.code = convertKey(sdlEvent.key.keysym.sym);
 			break;
 
 		case SDL_KEYUP:
-			event->type = Window::ET_KeyUp;
+			event->type = WindowSystem::ET_KeyUp;
 			event->key.code = convertKey(sdlEvent.key.keysym.sym);
 			break;
 
 		case SDL_MOUSEBUTTONDOWN:
-			event->type = Window::ET_MouseDown;
+			event->type = WindowSystem::ET_MouseDown;
 			event->mouse.x = sdlEvent.button.x;
 			event->mouse.y = sdlEvent.button.y;
 			break;
 
 		case SDL_MOUSEBUTTONUP:
-			event->type = Window::ET_MouseUp;
+			event->type = WindowSystem::ET_MouseUp;
 			event->mouse.x = sdlEvent.button.x;
 			event->mouse.y = sdlEvent.button.y;
 			break;
 
 		case SDL_MOUSEMOTION:
-			event->type = Window::ET_MouseMove;
+			event->type = WindowSystem::ET_MouseMove;
 			event->motion.x = sdlEvent.motion.x;
 			event->motion.y = sdlEvent.motion.y;
 			event->motion.xrel = sdlEvent.motion.xrel;
@@ -112,7 +117,7 @@ bool SDLWindow::getEvent(EventType type, Event* event)
 			break;
 
 		case SDL_QUIT:
-			m_quit = true;
+			event->type = WindowSystem::ET_Quit;
 			break;
 		}
 	}
@@ -120,34 +125,34 @@ bool SDLWindow::getEvent(EventType type, Event* event)
 	return hasEvent;
 }
 
-void SDLWindow::addEvent(Event event)
+void SDLWindowSystem::addEvent(Event event)
 {
 	SDL_Event sdlEvent;
 	switch (event.type)
 	{
-	case Window::ET_KeyDown:
+	case WindowSystem::ET_KeyDown:
 		sdlEvent.type = SDL_KEYDOWN;
 		sdlEvent.key.keysym.sym = static_cast<SDL_Keycode>(event.key.code);
 		break;
 
-	case Window::ET_KeyUp:
+	case WindowSystem::ET_KeyUp:
 		sdlEvent.type = SDL_KEYUP;
 		sdlEvent.key.keysym.sym = static_cast<SDL_Keycode>(event.key.code);
 		break;
 
-	case Window::ET_MouseUp:
+	case WindowSystem::ET_MouseUp:
 		sdlEvent.type = SDL_MOUSEBUTTONUP;
 		sdlEvent.button.x = event.mouse.x;
 		sdlEvent.button.y = event.mouse.y;
 		break;
 
-	case Window::ET_MouseDown:
+	case WindowSystem::ET_MouseDown:
 		sdlEvent.type = SDL_MOUSEBUTTONDOWN;
 		sdlEvent.button.x = event.mouse.x;
 		sdlEvent.button.y = event.mouse.y;
 		break;
 
-	case Window::ET_MouseMove:
+	case WindowSystem::ET_MouseMove:
 		sdlEvent.type = SDL_MOUSEMOTION;
 		sdlEvent.motion.x = event.motion.x;
 		sdlEvent.motion.y = event.motion.y;
@@ -158,33 +163,33 @@ void SDLWindow::addEvent(Event event)
 	SDL_PushEvent(&sdlEvent);
 }
 
-int SDLWindow::getWidth() const
+int SDLWindowSystem::getWidth() const
 {
 	return m_width;
 }
 
-int SDLWindow::getHeight() const
+int SDLWindowSystem::getHeight() const
 {
 	return m_height;
 }
 
-SDLWindow::SDLWindow(SDL_Window * window, SDL_GLContext context) :
+SDLWindowSystem::SDLWindowSystem(SDL_Window * window, SDL_GLContext context) :
+	WindowSystem(),
 	m_window(window),
 	m_glContext(context),
 	m_width(0),
-	m_height(0),
-	m_quit(false)
+	m_height(0)
 {
 	SDL_GetWindowSize(m_window, &m_width, &m_height);
 }
 
-char SDLWindowNamespace::convertKey(SDL_Keycode key)
+char SDLWindowSystemNamespace::convertKey(SDL_Keycode key)
 {
 	static char keys[1 + SDLK_z - SDLK_a] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
 	return (key >= SDLK_a && key <= SDLK_z) ? keys[key - SDLK_a] : 0;
 }
 
-int SDLWindowNamespace::filterEvent(void * /*userdata*/, SDL_Event * event)
+int SDLWindowSystemNamespace::filterEvent(void * /*userdata*/, SDL_Event * event)
 {
 	switch (event->type)
 	{

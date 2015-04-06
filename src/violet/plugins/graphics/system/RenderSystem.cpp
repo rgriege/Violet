@@ -7,7 +7,7 @@
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/core/utility/Guard.h"
-#include "violet/core/window/Window.h"
+#include "violet/core/window/WindowSystem.h"
 #include "violet/plugins/graphics/font/Font.h"
 #include "violet/plugins/graphics/shader/Shader.h"
 
@@ -50,10 +50,6 @@ std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 	}
 
 	std::cout << "GL version: " << glGetString(GL_VERSION) << std::endl;
-
-	ms_viewMatrix = Matrix3f::Identity;
-	ms_viewMatrix[0][0] = 2.f / Window::getCurrent().getWidth();
-	ms_viewMatrix[1][1] = 2.f / Window::getCurrent().getHeight();
 	
 	glClearColor(color.r, color.g, color.b, color.a);
 	glEnable(GL_BLEND);
@@ -70,13 +66,18 @@ RenderSystem::~RenderSystem()
 
 void RenderSystem::update(float const /*dt*/, Engine & engine)
 {
+	auto & windowSystem = engine.fetch<WindowSystem>();
+	ms_viewMatrix = Matrix3f::Identity;
+	ms_viewMatrix[0][0] = 2.f / windowSystem.getWidth();
+	ms_viewMatrix[1][1] = 2.f / windowSystem.getHeight();
+
 	glClear(GL_COLOR_BUFFER_BIT);
 	for (auto & component : getComponents<RenderComponent>())
 		draw(component, engine);
 	for (auto & component : getComponents<TextComponent>())
 		draw(component, engine);
 	glFlush();
-	Window::getCurrent().render();
+	windowSystem.render();
 }
 
 void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)

@@ -7,23 +7,23 @@
 #include "violet/extras/serialization/JsonDeserializer.h"
 #include "violet/game/pathfinding/PathfindingSystem.h"
 #include "violet/game/world/WorldSystem.h"
-#include "violet/plugins/glut/GlutWindow.h"
+#include "violet/plugins/glut/GlutWindowSystem.h"
 #include "violet/plugins/graphics/system/RenderSystem.h"
 #include "violet/plugins/input/system/InputSystem.h"
 #include "violet/plugins/physics/system/PhysicsSystem.h"
-#include "violet/plugins/sdl/SDLWindow.h"
+#include "violet/plugins/sdl/SDLWindowSystem.h"
 #include "violet/plugins/update/system/UpdateSystem.h"
 
 #include <iostream>
 
 SystemFactory setup()
 {
-	Violet::Window::install(&SDLWindow::create);
 	Violet::JsonDeserializer::install();
 
 	Violet::CppScript::install();
 
 	Violet::SystemFactory factory;
+	Violet::SDLWindowSystem::install(factory);
 	Violet::TransformSystem::install(factory);
 	Violet::PhysicsSystem::install(factory);
 	Violet::RenderSystem::install(factory);

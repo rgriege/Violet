@@ -11,10 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\plugins\sdl\SDLWindow.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\sdl\SDLWindowSystem.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\plugins\sdl\SDLWindow.cpp" />
+    <ClCompile Include="..\..\..\src\violet\plugins\sdl\SDLWindowSystem.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{70A685BB-723C-4310-AF80-C11D3EC60CD6}</ProjectGuid>
