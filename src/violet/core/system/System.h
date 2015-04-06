@@ -32,6 +32,8 @@ namespace Violet
 			return m_label;
 		}
 
+		virtual void bind(ComponentFactory & factory) {};
+		virtual void unbind(ComponentFactory & factory) {};
 		virtual bool owns(const char * label) const = 0;
 		virtual bool has(const char * label, const Entity & entity) const = 0;
 		virtual Component & fetch(const char * label, const Entity & entity) = 0;
@@ -59,12 +61,6 @@ namespace Violet
 			System(ComponentType::getLabel()),
 			m_components(new std::vector<ComponentType>)
 		{
-			ComponentFactory::getInstance().assign(getStaticLabel(), std::bind(&ComponentSystem<ComponentType>::create, this, std::placeholders::_1, std::placeholders::_2));
-		}
-
-		~ComponentSystem()
-		{
-			ComponentFactory::getInstance().remove(getStaticLabel());
 		}
 
 		void create(Entity & entity, Deserializer & deserializer)
@@ -97,6 +93,16 @@ namespace Violet
 				return result;
 			}
 			return m_components->end();
+		}
+
+		virtual void bind(ComponentFactory & factory) override
+		{
+			factory.assign(getStaticLabel(), std::bind(&ComponentSystem<ComponentType>::create, this, std::placeholders::_1, std::placeholders::_2));
+		}
+
+		virtual void unbind(ComponentFactory & factory) override
+		{
+			factory.remove(getStaticLabel());
 		}
 
 		virtual bool owns(const char * label) const override
@@ -161,8 +167,6 @@ namespace Violet
 			for_each([&](System & system) { m_systemDictionary[system.getLabel()] = &system; }, m_systems);
 		}
 
-		virtual ~MultiComponentSystem() override = default;
-
 		template <typename ComponentType, std::enable_if_t<has_type<Systems, ComponentSystem<ComponentType>>::value>* = nullptr>
 		void create(Entity & entity, Deserializer & deserializer)
 		{
@@ -175,6 +179,16 @@ namespace Violet
 		{
 			auto & system = get<ComponentSystem<ComponentType>>(m_systems);
 			system.create(entity, std::forward<Args>(args)...);
+		}
+
+		virtual void bind(ComponentFactory & factory) override
+		{
+			for_each([&](System & system) { system.bind(factory); }, m_systems);
+		}
+
+		virtual void unbind(ComponentFactory & factory) override
+		{
+			for_each([&](System & system) { system.unbind(factory); }, m_systems);
 		}
 
 		virtual bool owns(const char * label) const override

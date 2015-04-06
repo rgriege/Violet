@@ -187,9 +187,6 @@
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp">
       <Filter>math</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\core\component\ComponentFactory.cpp">
-      <Filter>component</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\Engine.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\StringUtilities.cpp">
       <Filter>utility</Filter>

@@ -35,5 +35,5 @@ void EntityFactoryNamespace::createFromComponentList(Deserializer & deserializer
 	auto entitySegment = deserializer.enterSegment(ms_entityLabel);
 	Entity entity(entitySegment->getUint("id"));
 	while (*entitySegment)
-		ComponentFactory::getInstance().create(entitySegment->nextLabel(), entity, *entitySegment);
+		initContext.createComponent(entitySegment->nextLabel(), entity, *entitySegment);
 }

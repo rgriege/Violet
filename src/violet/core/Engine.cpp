@@ -137,13 +137,18 @@ void Engine::stop()
 
 Engine::~Engine()
 {
+	for (auto const & system : m_systems)
+		system->unbind(m_componentFactory);
 }
 
 Engine::Engine(std::vector<std::unique_ptr<System>> && systems) :
 	m_nextSceneFileName(),
 	m_systems(std::move(systems)),
+	m_componentFactory(),
 	m_running(true)
 {
+	for (auto const & system : m_systems)
+		system->bind(m_componentFactory);
 }
 
 
