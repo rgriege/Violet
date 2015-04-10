@@ -41,7 +41,7 @@ namespace Violet
 
 #include "violet/core/math/Matrix3.ipp"
 
-typedef Matrix3<int> Matrix3i;
-typedef Matrix3<float> Matrix3f;
+typedef Violet::Matrix3<int> Matrix3i;
+typedef Violet::Matrix3<float> Matrix3f;
 
 #endif

@@ -5,7 +5,7 @@
 #include "violet/game/Config.h"
 #include "violet/game/pathfinding/Path.h"
 
-class VIOLET_GAME_API PathComponent : public Component
+class VIOLET_GAME_API PathComponent : public Violet::Component
 {
 public:
 
@@ -13,8 +13,8 @@ public:
 
 public:
 
-	PathComponent(const Entity & entity, Deserializer & deserializer);
-	PathComponent(const Entity & entity, float speed, Path && path);
+	PathComponent(const Violet::Entity & entity, Violet::Deserializer & deserializer);
+	PathComponent(const Violet::Entity & entity, float speed, Path && path);
 	PathComponent(PathComponent && other);
 	PathComponent & operator=(PathComponent && other);
 

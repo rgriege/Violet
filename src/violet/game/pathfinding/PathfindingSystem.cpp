@@ -11,20 +11,20 @@
 
 namespace PathfindingSystemNamespace
 {
-	bool updateComponent(PathComponent & pc, float dt, Engine & engine);
+	bool updateComponent(PathComponent & pc, float dt, Violet::Engine & engine);
 }
 
 using namespace PathfindingSystemNamespace;
 
-void PathfindingSystem::install(SystemFactory & factory)
+void PathfindingSystem::install(Violet::SystemFactory & factory)
 {
 	factory.assign(getStaticLabel(), &PathfindingSystem::init);
 }
 
-std::unique_ptr<System> PathfindingSystem::init(Deserializer & deserializer)
+std::unique_ptr<Violet::System> PathfindingSystem::init(Violet::Deserializer & deserializer)
 {
 	deserializer.enterSegment(getStaticLabel());
-	return std::unique_ptr<System>(new PathfindingSystem);
+	return std::unique_ptr<Violet::System>(new PathfindingSystem);
 }
 
 PathfindingSystem::PathfindingSystem(PathfindingSystem && other) :
@@ -38,17 +38,17 @@ PathfindingSystem::~PathfindingSystem()
 }
 
 
-void PathfindingSystem::bind(EntityFactory & factory)
+void PathfindingSystem::bind(Violet::EntityFactory & factory)
 {
 	factory.assign("map", std::bind(&PathfindingSystem::createMap, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-void PathfindingSystem::unbind(EntityFactory & factory)
+void PathfindingSystem::unbind(Violet::EntityFactory & factory)
 {
 	factory.remove("map");
 }
 
-void PathfindingSystem::update(const float dt, Engine & engine)
+void PathfindingSystem::update(const float dt, Violet::Engine & engine)
 {
 	for (auto it = getComponents().begin(), end = getComponents().end(); it != end; )
 	{
@@ -72,33 +72,33 @@ PathfindingSystem::PathfindingSystem() :
 {
 }
 
-void PathfindingSystem::createMap(Deserializer & deserializer, SceneInitContext & initContext)
+void PathfindingSystem::createMap(Violet::Deserializer & deserializer, Violet::SceneInitContext & initContext)
 {
 	m_map = Map(deserializer);
 
 	for (auto const & road : m_map.getGraph().getEdges())
 	{
-		Entity & entity = initContext.createEntity();
+		Violet::Entity & entity = initContext.createEntity();
 		auto const & start = m_map.getGraph().getNode(road.m_src).m_position;
 		auto const & end = m_map.getGraph().getNode(road.m_destination).m_position;
 		auto const center = (end + start) / 2.f;
 		auto const halfEdge = (end - start) / 2.f;
 		auto const dir = halfEdge.getUnit();
 		auto const offset = dir * -5.f + dir.perpendicular() * 5.f;
-		Polygon p{ {
+		Violet::Polygon p{ {
 			-halfEdge + offset,
 			-halfEdge + offset.perpendicular(),
 			halfEdge - offset,
 			halfEdge - offset.perpendicular()
 		} };
-		initContext.createComponent<TransformSystem, TransformComponent>(entity, center, 0.f);
-		initContext.createComponent<RenderSystem, RenderComponent>(entity, p, Color(128, 128, 128), ShaderProgram::getCache().fetch("poly"));
+		initContext.createComponent<Violet::TransformSystem, Violet::TransformComponent>(entity, center, 0.f);
+		initContext.createComponent<Violet::RenderSystem, Violet::RenderComponent>(entity, p, Violet::Color(128, 128, 128), Violet::ShaderProgram::getCache().fetch("poly"));
 	}
 }
 
-bool PathfindingSystemNamespace::updateComponent(PathComponent & pc, const float dt, Engine & engine)
+bool PathfindingSystemNamespace::updateComponent(PathComponent & pc, const float dt, Violet::Engine & engine)
 {
- 	auto & tc = engine.fetch<TransformComponent>(pc.getEntity());
+	auto & tc = engine.fetch<Violet::TransformComponent>(pc.getEntity());
 	auto const & points = pc.m_path.getPoints();
 	const Vec2f roadVec = points[pc.m_lastIntersection + 1] - points[pc.m_lastIntersection];
 	const Vec2f roadDir = roadVec.getUnit();

@@ -15,7 +15,7 @@ Map::Map() :
 {
 }
 
-Map::Map(Deserializer & deserializer) :
+Map::Map(Violet::Deserializer & deserializer) :
 	Map()
 {
 	auto const & mapSegment = deserializer.enterSegment("map");

@@ -80,7 +80,7 @@ namespace Violet
 
 #include "violet/core/math/Vec2.ipp"
 
-typedef Vec2<int> Vec2i;
-typedef Vec2<float> Vec2f;
+typedef Violet::Vec2<int> Vec2i;
+typedef Violet::Vec2<float> Vec2f;
 
 #endif

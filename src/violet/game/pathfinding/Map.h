@@ -38,7 +38,7 @@ public:
 public:
 
 	Map();
-	Map(Deserializer & deserializer);
+	Map(Violet::Deserializer & deserializer);
 
 	Violet::CrsGraph<Intersection, Road> & getGraph();
 	const Violet::CrsGraph<Intersection, Road> & getGraph() const;

@@ -29,6 +29,6 @@ namespace Violet
 
 #include "violet/core/math/Interval.ipp"
 
-typedef Interval<float> FloatInterval;
+typedef Violet::Interval<float> FloatInterval;
 
 #endif

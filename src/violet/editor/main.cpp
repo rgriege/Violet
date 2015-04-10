@@ -13,7 +13,7 @@
 
 #include <iostream>
 
-SystemFactory setup()
+Violet::SystemFactory setup()
 {
 	Violet::JsonDeserializer::install();
 
@@ -34,7 +34,7 @@ int main(int /*argc*/, char ** /*argv*/)
 {
 	auto factory = setup();
 
-	auto deserializer = FileDeserializerFactory::getInstance().create("editorConfig.json");
+	auto deserializer = Violet::FileDeserializerFactory::getInstance().create("editorConfig.json");
 	if (deserializer == nullptr || !*deserializer)
 	{
 		std::cout << "failed to read config file" << std::endl;

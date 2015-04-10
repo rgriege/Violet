@@ -7,7 +7,7 @@ const char * PathComponent::getLabel()
 	return "path";
 }
 
-PathComponent::PathComponent(const Entity & entity, Deserializer & deserializer) :
+PathComponent::PathComponent(const Violet::Entity & entity, Violet::Deserializer & deserializer) :
 	Component(entity),
 	m_path(),
 	m_lastIntersection(0),
@@ -15,7 +15,7 @@ PathComponent::PathComponent(const Entity & entity, Deserializer & deserializer)
 {
 }
 
-PathComponent::PathComponent(const Entity & entity, const float speed, Path && path) :
+PathComponent::PathComponent(const Violet::Entity & entity, const float speed, Path && path) :
 	Component(entity),
 	m_path(std::move(path)),
 	m_lastIntersection(0),

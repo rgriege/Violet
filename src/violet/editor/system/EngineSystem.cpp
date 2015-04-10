@@ -64,7 +64,7 @@ const char * EngineSystem::getStaticLabel()
 	return "engn";
 }
 
-EngineSystem::EngineSystem(std::unique_ptr<Engine> && engine) : 
+EngineSystem::EngineSystem(std::unique_ptr<Violet::Engine> && engine) :
 	System(getStaticLabel()),
 	m_engine(std::move(engine))
 {

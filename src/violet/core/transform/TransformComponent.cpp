@@ -1,5 +1,7 @@
 #include "violet/core/transform/TransformComponent.h"
 
+using namespace Violet;
+
 const char * TransformComponent::getLabel()
 {
 	return "tsfm";
