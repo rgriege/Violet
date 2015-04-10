@@ -23,8 +23,9 @@ namespace Violet
 
 		ReturnType create(Label label, Args ... args)
 		{
-			auto producer = m_producers[label];
-			return producer(std::forward<Args>(args)...);
+			auto it = m_producers.find(label);
+			assert(it != m_producers.end());
+			return (*producer)(std::forward<Args>(args)...);
 		}
 
 		void assign(Label label, const Producer & producer)
