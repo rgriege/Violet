@@ -27,9 +27,25 @@ std::unique_ptr<System> PathfindingSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(new PathfindingSystem);
 }
 
+PathfindingSystem::PathfindingSystem(PathfindingSystem && other) :
+	ComponentSystem<PathComponent>(std::move(other)),
+	m_map(std::move(other.m_map))
+{
+}
+
 PathfindingSystem::~PathfindingSystem()
 {
-	EntityFactory::getInstance().remove("map");
+}
+
+
+void PathfindingSystem::bind(EntityFactory & factory)
+{
+	factory.assign("map", std::bind(&PathfindingSystem::createMap, this, std::placeholders::_1, std::placeholders::_2));
+}
+
+void PathfindingSystem::unbind(EntityFactory & factory)
+{
+	factory.remove("map");
 }
 
 void PathfindingSystem::update(const float dt, Engine & engine)
@@ -54,7 +70,6 @@ Path PathfindingSystem::getPath(const Vec2f & start, const Vec2f & goal)
 PathfindingSystem::PathfindingSystem() :
 	m_map()
 {
-	EntityFactory::getInstance().assign("map", std::bind(&PathfindingSystem::createMap, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void PathfindingSystem::createMap(Deserializer & deserializer, SceneInitContext & initContext)

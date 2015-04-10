@@ -19,6 +19,8 @@ namespace Violet
 
 	public:
 
+		PhysicsSystem(PhysicsSystem && other);
+
 		virtual ~PhysicsSystem() override = default;
 		virtual void update(float dt, Engine & engine);
 

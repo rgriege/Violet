@@ -4,6 +4,7 @@
 #include "violet/core/Defines.h"
 #include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
+#include "violet/core/entity/EntityFactory.h"
 #include "violet/core/system/System.h"
 
 #include <memory>
@@ -70,6 +71,7 @@ namespace Violet
 
 		std::string m_nextSceneFileName;
 		std::vector<std::unique_ptr<System>> m_systems;
+		EntityFactory m_entityFactory;
 		ComponentFactory m_componentFactory;
 		bool m_running;
 	};
@@ -87,6 +89,11 @@ namespace Violet
 		{
 			static uint32 s_id = 10000;
 			return Entity(++s_id);
+		}
+
+		void createEntity(const char * label, Deserializer & deserializer)
+		{
+			m_engine.m_entityFactory.create(label, deserializer, *this);
 		}
 
 		void createComponent(const char * label, Entity & entity, Deserializer & deserializer)

@@ -1,6 +1,8 @@
 #include "violet/core/entity/EntityFactory.h"
 
-#include "violet/core/component/ComponentFactory.h"
+#include "violet/core/Engine.h"
+#include "violet/core/entity/Entity.h"
+#include "violet/core/serialization/Deserializer.h"
 
 using namespace Violet;
 
@@ -12,12 +14,6 @@ namespace EntityFactoryNamespace
 }
 
 using namespace EntityFactoryNamespace;
-
-EntityFactory & EntityFactory::getInstance()
-{
-	static EntityFactory s_instance;
-	return s_instance;
-}
 
 EntityFactory::EntityFactory() :
 	Factory<const char *, void (Deserializer &, SceneInitContext &)>()

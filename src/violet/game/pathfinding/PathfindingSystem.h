@@ -20,8 +20,12 @@ public:
 
 public:
 
+	PathfindingSystem(PathfindingSystem && other);
+
 	virtual ~PathfindingSystem() override;
-	virtual void update(float dt, Engine & engine);
+	virtual void bind(EntityFactory & factory) override;
+	virtual void unbind(EntityFactory & factory) override;
+	virtual void update(float dt, Engine & engine) override;
 
 	Path getPath(const Vec2f & start, const Vec2f & goal);
 

@@ -18,6 +18,11 @@ std::unique_ptr<System> UpdateSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(system);
 }
 
+UpdateSystem::UpdateSystem(UpdateSystem && other) :
+	ComponentSystem<UpdateComponent>(std::move(other))
+{
+}
+
 void UpdateSystem::update(float /*dt*/, Engine & engine)
 {
 	for (auto const & component : getComponents())

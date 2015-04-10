@@ -123,17 +123,24 @@ void Engine::stop()
 Engine::~Engine()
 {
 	for (auto const & system : m_systems)
+	{
+		system->bind(m_entityFactory);
 		system->unbind(m_componentFactory);
+	}
 }
 
 Engine::Engine(std::vector<std::unique_ptr<System>> && systems) :
 	m_nextSceneFileName(),
 	m_systems(std::move(systems)),
+	m_entityFactory(),
 	m_componentFactory(),
 	m_running(true)
 {
 	for (auto const & system : m_systems)
+	{
+		system->bind(m_entityFactory);
 		system->bind(m_componentFactory);
+	}
 }
 
 
@@ -153,7 +160,7 @@ bool EngineNamespace::createScene(const char * filename, SceneInitContext & init
 	else
 	{
 		while (*deserializer)
-			EntityFactory::getInstance().create(deserializer->nextLabel(), *deserializer, initContext);
+			initContext.createEntity(deserializer->nextLabel(), *deserializer);
 	}
 
 	return true;

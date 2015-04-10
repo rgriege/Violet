@@ -15,6 +15,8 @@ namespace Violet
 
 	public:
 
+		ScriptSystem(ScriptSystem && other);
+
 		virtual ~ScriptSystem() override = default;
 		virtual void update(float dt, Engine & engine);
 

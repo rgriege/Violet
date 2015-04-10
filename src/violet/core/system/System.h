@@ -16,6 +16,7 @@ namespace Violet
 {
 	class Component;
 	class Engine;
+	class EntityFactory;
 
 	class VIOLET_API System
     {
@@ -35,6 +36,8 @@ namespace Violet
 
 		virtual void bind(ComponentFactory & factory) {};
 		virtual void unbind(ComponentFactory & factory) {};
+		virtual void bind(EntityFactory & factory) {};
+		virtual void unbind(EntityFactory & factory) {};
 		virtual bool owns(const char * label) const { return false; }
 		virtual bool has(const char * label, const Entity & entity) const { return false; }
 		virtual Component & fetch(const char * label, const Entity & entity) {
@@ -65,6 +68,13 @@ namespace Violet
 		ComponentSystem() :
 			System(ComponentType::getLabel()),
 			m_components(new std::vector<ComponentType>)
+		{
+		}
+
+		ComponentSystem<ComponentType>(ComponentSystem<ComponentType> && other) :
+			System(ComponentType::getLabel()),
+			m_components(std::move(other.m_components)),
+			m_entityComponentMap(std::move(other.m_entityComponentMap))
 		{
 		}
 

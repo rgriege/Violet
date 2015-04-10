@@ -36,6 +36,13 @@ std::unique_ptr<System> PhysicsSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(system);
 }
 
+PhysicsSystem::PhysicsSystem(PhysicsSystem && other) :
+	ComponentSystem<PhysicsComponent>(std::move(other)),
+	m_drag(other.m_drag),
+	m_gravity(other.m_gravity)
+{
+}
+
 void PhysicsSystem::update(const float dt, Engine & engine)
 {
 	if (!m_gravity.isZero() || m_drag != 0)

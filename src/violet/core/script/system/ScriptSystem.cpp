@@ -14,6 +14,11 @@ std::unique_ptr<System> ScriptSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(system);
 }
 
+ScriptSystem::ScriptSystem(ScriptSystem && other) :
+	ComponentSystem<ScriptComponent>(std::move(other))
+{
+}
+
 void ScriptSystem::update(float /*dt*/, Engine & /*engine*/)
 {
 }

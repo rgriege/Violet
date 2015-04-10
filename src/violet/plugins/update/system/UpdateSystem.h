@@ -18,6 +18,8 @@ namespace Violet
 
 	public:
 
+		UpdateSystem(UpdateSystem && other);
+
 		virtual ~UpdateSystem() override = default;
 		virtual void update(float dt, Engine & engine);
 

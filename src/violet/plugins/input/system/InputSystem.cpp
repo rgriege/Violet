@@ -19,6 +19,11 @@ std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(new InputSystem);
 }
 
+InputSystem::InputSystem(InputSystem && other) :
+	ComponentSystem<InputComponent>(std::move(other))
+{
+}
+
 void InputSystem::update(float /*dt*/, Engine & engine)
 {
 	WindowSystem::Event event;
