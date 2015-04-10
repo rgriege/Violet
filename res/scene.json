@@ -229,7 +229,7 @@
       }
     },
     "text": {
-      "str": "",
+      "str": "00:00:00",
       "font": "Vera.ttf",
       "size": 24,
       "shader": "text"
@@ -318,7 +318,7 @@
       }
     },
     "text": {
-      "str": "",
+      "str": "1800x",
       "font": "Vera.ttf",
       "size": 18,
       "shader": "text"

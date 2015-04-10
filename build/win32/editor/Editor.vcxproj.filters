@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\violet\editor\SubWindowSystem.cpp" />
+    <ClCompile Include="..\..\..\src\violet\editor\main.cpp" />
+    <ClCompile Include="..\..\..\src\violet\editor\EngineSystem.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\editor\SubWindowSystem.h" />
+    <ClInclude Include="..\..\..\src\violet\editor\EngineSystem.h" />
+    <ClInclude Include="..\..\..\src\violet\editor\system\EditorSystem.h">
+      <Filter>system</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="system">
+      <UniqueIdentifier>{4b5d2b48-59da-4feb-9e0d-1a4ce31311e7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

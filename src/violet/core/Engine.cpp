@@ -83,18 +83,7 @@ void Engine::begin()
 	while (m_running)
 	{
 		const auto startTime = std::chrono::system_clock::now();
-
-		float const deltaSeconds = previousFrameTime / 1000.f;
-
-		std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(deltaSeconds, *this); });
-
-		if (!m_nextSceneFileName.empty())
-		{
-			for (auto & system : m_systems)
-				system->clear();
-			createScene(m_nextSceneFileName.c_str(), SceneInitContext(*this));
-			m_nextSceneFileName.clear();
-		}
+		runFrame(previousFrameTime / 1000.f);
 
 		auto const frameTime = static_cast<uint32>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - startTime).count());
 		if (frameTime < targetFrameTime)
@@ -107,6 +96,21 @@ void Engine::begin()
 			printf("frame time: %.3f\n", frameTime / 1000.f);
 			previousFrameTime = frameTime;
 		}
+	}
+}
+
+void Engine::runFrame(const float frameTime)
+{
+	const auto startTime = std::chrono::system_clock::now();
+
+	std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(frameTime, *this); });
+
+	if (!m_nextSceneFileName.empty())
+	{
+		for (auto & system : m_systems)
+			system->clear();
+		createScene(m_nextSceneFileName.c_str(), SceneInitContext(*this));
+		m_nextSceneFileName.clear();
 	}
 }
 

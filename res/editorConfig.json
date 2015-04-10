@@ -5,22 +5,20 @@
       "y": 50,
       "width": 800,
       "height": 600,
-      "title": "Billiards"
-
+      "title": "Editor"
     },
     "tsfm": {},
     "rndr": {
       "color": "0xffffffff"
     },
+    "engn": {
+      "width": 800,
+      "height": 600
+    },
     "inpt": {},
-    "scpt": {},
-    "updt": {},
-    "path": {},
-    "wrld": {
-      "timeScale": 1800
-    }
+    "scpt": {}
   },
   "opts": {
-    "firstScene": "scene.json"
+    "firstScene": "editor.json"
   }
 }

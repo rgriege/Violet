@@ -71,13 +71,17 @@ void RenderSystem::update(float const /*dt*/, Engine & engine)
 	ms_viewMatrix[0][0] = 2.f / windowSystem.getWidth();
 	ms_viewMatrix[1][1] = 2.f / windowSystem.getHeight();
 
-	glClear(GL_COLOR_BUFFER_BIT);
 	for (auto & component : getComponents<RenderComponent>())
 		draw(component, engine);
 	for (auto & component : getComponents<TextComponent>())
 		draw(component, engine);
 	glFlush();
 	windowSystem.render();
+}
+
+void RenderSystem::clear()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)

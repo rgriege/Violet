@@ -1,6 +1,8 @@
 #include "violet/plugins/sdl/SDLWindowSystem.h"
 
+#include "violet/core/Engine.h"
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/plugins/graphics/system/RenderSystem.h"
 
 #include <SDL.h>
 
@@ -42,6 +44,7 @@ std::unique_ptr<System> SDLWindowSystem::init(Deserializer & deserializer)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	SDL_Window * window = SDL_CreateWindow(title, x, y, width, height, SDL_WINDOW_OPENGL);
 	if (window == nullptr)
@@ -71,11 +74,12 @@ SDLWindowSystem::~SDLWindowSystem()
 
 void SDLWindowSystem::render()
 {
-	SDL_GL_SwapWindow(m_window);
 }
 
-void SDLWindowSystem::update(float /*dt*/, Engine & /*engine*/)
+void SDLWindowSystem::update(float /*dt*/, Engine & engine)
 {
+	SDL_GL_SwapWindow(m_window);
+	engine.fetch<RenderSystem>().clear();
 }
 
 bool SDLWindowSystem::getEvent(EventType type, Event* event)

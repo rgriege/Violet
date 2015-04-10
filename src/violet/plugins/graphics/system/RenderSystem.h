@@ -23,6 +23,8 @@ namespace Violet
 		virtual ~RenderSystem() override;
 		virtual void update(float dt, Engine & engine) override;
 
+		void clear();
+
 		void draw(RenderComponent & renderComponent, Engine & engine);
 		void draw(TextComponent & textComponent, Engine & engine);
 

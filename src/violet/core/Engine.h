@@ -17,7 +17,7 @@ namespace Violet
 	class Entity;
 	class System;
 	class SystemFactory;
-	
+
 	class VIOLET_API Engine
 	{
 	public:
@@ -34,6 +34,7 @@ namespace Violet
 		Engine & operator=(Engine && other);
 
 		void begin();
+		void runFrame(float frameTime);
 		void switchScene(const char * filename);
 		void stop();
 
