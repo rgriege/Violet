@@ -11,14 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\editor\EngineSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\editor\main.cpp" />
-    <ClCompile Include="..\..\..\src\violet\editor\SubWindowSystem.cpp" />
+    <ClCompile Include="..\..\..\src\violet\editor\system\EngineSystem.cpp" />
+    <ClCompile Include="..\..\..\src\violet\editor\system\SubWindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\editor\EngineSystem.h" />
-    <ClInclude Include="..\..\..\src\violet\editor\SubWindowSystem.h" />
     <ClInclude Include="..\..\..\src\violet\editor\system\EditorSystem.h" />
+    <ClInclude Include="..\..\..\src\violet\editor\system\EngineSystem.h" />
+    <ClInclude Include="..\..\..\src\violet\editor\system\SubWindowSystem.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C493A578-E9E7-476E-A96E-A272232655EB}</ProjectGuid>
