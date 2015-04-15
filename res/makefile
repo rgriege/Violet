@@ -30,3 +30,5 @@ uninstall:
 	del $(DST)\*.ttf
 	del $(DST)\*.vert
 	del $(DST)\*.frag
+
+print-%: ; @echo $*=$($*)
