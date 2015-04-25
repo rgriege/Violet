@@ -55,7 +55,7 @@ namespace Violet
 		ReturnType create(const char * label, Args ... args)
 		{
 			auto producer = m_producers[label];
-			return producer(args...);
+			return producer(std::forward<Args>(args)...);
 		}
 
 		void assign(const char * label, const Producer & producer)
