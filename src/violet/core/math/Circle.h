@@ -1,6 +1,7 @@
 #ifndef CIRCLE_H
 #define CIRCLE_H
 
+#include "violet/core/Defines.h"
 #include "violet/core/math/Vec2.h"
 #include "violet/core/math/Interval.h"
 
