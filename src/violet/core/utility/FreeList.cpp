@@ -31,7 +31,7 @@ bool FreeList::reserve(const uint32 id)
 		const uint32 size = m_usedList.size();
 		if (id >= size)
 		{
-			m_usedList.resize(id);
+			m_usedList.resize(id + 1);
 			for (uint32 i = size; i < id; ++i)
 				m_recycleList.push(i);
 		}
