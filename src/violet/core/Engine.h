@@ -30,6 +30,7 @@ namespace Violet
 
 	public:
 
+		~Engine();
 		Engine(Engine && other);
 		Engine & operator=(Engine && other);
 
@@ -59,7 +60,10 @@ namespace Violet
 			return static_cast<SystemType &>(**it);
 		}
 
-		~Engine();
+		EntityFactory & getEntityFactory()
+		{
+			return m_entityFactory;
+		}
 
 	private:
 

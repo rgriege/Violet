@@ -1,7 +1,11 @@
 #ifndef ENTITY_FACTORY_H
 #define ENTITY_FACTORY_H
 
+#include "violet/core/entity/Entity.h"
 #include "violet/core/utility/Factory.h"
+#include "violet/core/utility/FreeList.h"
+
+#include <queue>
 
 namespace Violet
 {
@@ -14,6 +18,17 @@ namespace Violet
 
 		EntityFactory();
 		~EntityFactory();
+
+		Entity createNew();
+		void free(const Entity & entity);
+
+	private:
+
+		void createFromComponentList(Deserializer & deserializer, SceneInitContext & initContext);
+
+	private:
+
+		FreeList m_freeList;
 	};
 }
 

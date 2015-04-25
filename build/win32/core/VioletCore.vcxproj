@@ -122,6 +122,7 @@
     <ClInclude Include="..\..\..\src\violet\core\transform\TransformSystem.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Assert.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Buffer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\FreeList.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Guard.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\ResourceCache.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\Factory.h" />
@@ -156,6 +157,7 @@
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\FileUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\utility\FreeList.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\utility\StringUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>

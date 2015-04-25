@@ -60,6 +60,15 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 	return succeeded ? std::move(engine) : nullptr;
 }
 
+Engine::~Engine()
+{
+	for (auto const & system : m_systems)
+	{
+		system->bind(m_entityFactory);
+		system->unbind(m_componentFactory);
+	}
+}
+
 Engine::Engine(Engine && other) :
 	m_systems(std::move(other.m_systems)),
 	m_nextSceneFileName(other.m_nextSceneFileName),
@@ -122,15 +131,6 @@ void Engine::switchScene(const char * filename)
 void Engine::stop()
 {
 	m_running = false;
-}
-
-Engine::~Engine()
-{
-	for (auto const & system : m_systems)
-	{
-		system->bind(m_entityFactory);
-		system->unbind(m_componentFactory);
-	}
 }
 
 Engine::Engine(std::vector<std::unique_ptr<System>> && systems) :

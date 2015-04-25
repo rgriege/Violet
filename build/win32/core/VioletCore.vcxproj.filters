@@ -167,6 +167,9 @@
     <ClInclude Include="..\..\..\src\violet\core\window\WindowSystem.h">
       <Filter>window</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\utility\FreeList.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -214,6 +217,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\time\Time.cpp">
       <Filter>time</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\utility\FreeList.cpp">
+      <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
