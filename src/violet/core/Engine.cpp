@@ -3,6 +3,8 @@
 #include "violet/core/Entity/EntityFactory.h"
 #include "violet/core/serialization/Deserializer.h"
 #include "violet/core/serialization/FileDeserializerFactory.h"
+#include "violet/core/serialization/FileSerializerFactory.h"
+#include "violet/core/serialization/Serializer.h"
 #include "violet/core/system/System.h"
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/window/WindowSystem.h"
@@ -126,6 +128,28 @@ void Engine::runFrame(const float frameTime)
 void Engine::switchScene(const char * filename)
 {
 	m_nextSceneFileName = filename;
+}
+
+bool Engine::saveScene(const char * filename)
+{
+	auto const serializer = FileSerializerFactory::getInstance().create(filename);
+	if (serializer == nullptr)
+	{
+		std::cout << "Could not open scene file " << filename << std::endl;
+		return false;
+	}
+
+	auto const entities = m_entityFactory.getEntities();
+	for (auto const & id : entities)
+	{
+		const Entity entity(id);
+		auto segment = serializer->createSegment("ntty");
+		segment->writeUint("id", id);
+		for (auto const & system : m_systems)
+			system->save(*segment, entity);
+	}
+
+	return true;
 }
 
 void Engine::stop()

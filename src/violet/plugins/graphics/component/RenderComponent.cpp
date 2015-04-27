@@ -1,6 +1,7 @@
 #include "violet/plugins/graphics/component/RenderComponent.h"
 
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/serialization/Serializer.h"
 #include "violet/core/utility/Guard.h"
 #include "violet/plugins/graphics/shader/Shader.h"
 
@@ -73,4 +74,11 @@ GLuint RenderComponentNamespace::initVertexArrayBuffer()
 	glGenVertexArrays(1, &vertexArrayBuffer);
 	glBindVertexArray(vertexArrayBuffer);
 	return vertexArrayBuffer;
+}
+
+Serializer & Violet::operator<<(Serializer & serializer, const RenderComponent & component)
+{
+	serializer << component.m_mesh << component.m_color;
+	serializer.writeString("shader", component.m_shader->getName().c_str());
+	return serializer;
 }

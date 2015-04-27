@@ -11,10 +11,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\extras\Config.h" />
     <ClInclude Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.h" />
+    <ClInclude Include="..\..\..\src\violet\extras\serialization\JsonSerializer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.cpp" />
+    <ClCompile Include="..\..\..\src\violet\extras\serialization\JsonSerializer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{55A822C6-108B-43FD-BAD0-404D7B72AFC2}</ProjectGuid>

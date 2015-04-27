@@ -52,13 +52,15 @@ namespace Violet
 	public:
 
 		void render(std::string const & str, ShaderProgram & program);
+		const char * getFilename() const;
 
 	private:
 
-		Font(std::map<char, Glyph> && glyphs, uint32 spaceWidth);
+		Font(const char * filename, std::map<char, Glyph> && glyphs, uint32 spaceWidth);
 
 	private:
 
+		const std::string m_filename;
 		std::map<char, Glyph> m_glyphs;
 		uint32 m_spaceWidth;
 	};

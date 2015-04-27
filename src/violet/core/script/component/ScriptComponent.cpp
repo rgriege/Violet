@@ -2,6 +2,7 @@
 
 #include "violet/core/script/ScriptFactory.h"
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/serialization/Serializer.h"
 
 using namespace Violet;
 
@@ -26,4 +27,10 @@ ScriptComponent & ScriptComponent::operator=(ScriptComponent && other)
 {
 	std::swap(m_script, other.m_script);
 	return *this;
+}
+
+Serializer & Violet::operator<<(Serializer & serializer, const ScriptComponent & component)
+{
+	serializer.writeString("file", component.m_script->getFilename().c_str());
+	return serializer;
 }

@@ -23,20 +23,17 @@ Map::Map(Violet::Deserializer & deserializer) :
 	{
 		auto nodesSegment = mapSegment->enterSegment("nodes");
 		const uint32 n = nodesSegment->getUint("n");
-		auto listSegment = nodesSegment->enterSegment("nodes");
 		for (uint32 i = 0; i < n; ++i)
-			m_graph.addNode({ Vec2f(*listSegment->enterSegment(nullptr)) });
+			m_graph.addNode({ Vec2f(*nodesSegment) });
 	}
 
 	{
 		auto edgesSegment = mapSegment->enterSegment("edges");
 		const uint32 n = edgesSegment->getUint("n");
-		auto listSegment = edgesSegment->enterSegment("edges");
 		for (uint32 i = 0; i < n; ++i)
 		{
-			auto edgeSegment = listSegment->enterSegment("edge");
-			const uint32 src = edgeSegment->getUint("src");
-			const uint32 dst = edgeSegment->getUint("dst");
+			const uint32 src = edgesSegment->getUint("src");
+			const uint32 dst = edgesSegment->getUint("dst");
 			m_graph.addEdge({ src, dst });
 		}
 	}

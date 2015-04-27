@@ -21,6 +21,8 @@ namespace Violet
 
 		std::vector<Vec2f> m_vertices;
 	};
+
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Polygon & poly);
 }
 
 #endif

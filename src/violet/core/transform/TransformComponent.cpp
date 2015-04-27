@@ -1,5 +1,7 @@
 #include "violet/core/transform/TransformComponent.h"
 
+#include "violet/core/serialization/Serializer.h"
+
 using namespace Violet;
 
 const char * TransformComponent::getLabel()
@@ -40,4 +42,10 @@ TransformComponent & TransformComponent::operator=(TransformComponent && other)
 	m_position = std::move(other.m_position);
 	m_rotation = other.m_rotation;
 	return *this;
+}
+
+Serializer & Violet::operator<<(Serializer & serializer, const TransformComponent & component)
+{
+	serializer << component.m_position;
+	return serializer;
 }

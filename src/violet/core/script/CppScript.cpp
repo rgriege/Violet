@@ -66,6 +66,11 @@ CppScript::~CppScript()
 	unload();
 }
 
+std::string CppScript::getFilename() const
+{
+	return StringUtilities::lastRight(getFilenameWithPath(), '\\');
+}
+
 void CppScript::run(ProcedureBase & procedure)
 {
 	procedure.run(*this);
@@ -75,13 +80,7 @@ void CppScript::reload()
 {
 	if (m_lib != nullptr)
 	{
-		std::string filename;
-		{
-			static const uint32 bufferSize = 64;
-			char buffer[bufferSize];
-			GetModuleFileName(m_lib, buffer, bufferSize);
-			filename = buffer;
-		}
+		const std::string filename = getFilename();
 
 		unload();
 		int retCode = std::remove(filename.c_str());
@@ -122,6 +121,19 @@ void * CppScript::getMethodPtr(const char * name) const
 void * CppScript::getMemoryPtr() const
 {
 	return m_allocator.fetch();
+}
+
+std::string CppScript::getFilenameWithPath() const
+{
+	std::string filename;
+	{
+		static const uint32 bufferSize = 64;
+		char buffer[bufferSize];
+		GetModuleFileName(m_lib, buffer, bufferSize);
+		filename = buffer;
+	}
+
+	return filename;
 }
 
 void CppScript::load(const char * filename)

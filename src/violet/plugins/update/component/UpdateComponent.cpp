@@ -23,3 +23,8 @@ UpdateComponent & UpdateComponent::operator=(UpdateComponent && other)
 {
 	return *this;
 }
+
+Serializer & Violet::operator<<(Serializer & serializer, const UpdateComponent & /*component*/)
+{
+	return serializer;
+}

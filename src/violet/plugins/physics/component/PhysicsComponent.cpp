@@ -1,6 +1,7 @@
 #include "violet/plugins/physics/component/PhysicsComponent.h"
 
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/serialization/Serializer.h"
 
 using namespace Violet;
 
@@ -80,4 +81,13 @@ float PhysicsComponentNamespace::calculateMomentOfInertia(const Polygon & polygo
 		denominator += squareArea;
 	}
 	return (mass / 6) * (numerator / denominator);
+}
+
+Serializer & Violet::operator<<(Serializer & serializer, const PhysicsComponent & component)
+{
+	serializer << component.m_polygon;
+	serializer.writeFloat(ms_massLabel, component.m_mass);
+	auto segment = serializer.createSegment(ms_velocityLabel);
+	*segment << component.m_velocity;
+	return serializer;
 }

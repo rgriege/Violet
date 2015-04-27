@@ -28,12 +28,15 @@ namespace Violet
 
 		~Shader();
 
-	private:
-
-		Shader(uint32 handle);
+		const char * getFilename() const;
 
 	private:
 
+		Shader(const char * filename, uint32 handle);
+
+	private:
+
+		const std::string m_filename;
 		const uint32 m_handle;
 	};
 
@@ -54,6 +57,7 @@ namespace Violet
 		ShaderProgram(uint32 handle, std::shared_ptr<Shader> vertexShader, std::shared_ptr<Shader> fragmentShader);
 		~ShaderProgram();
 
+		std::string getName() const;
 		int getAttributeLocation(const char * name);
 		int getUniformLocation(const char * name);
 

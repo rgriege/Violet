@@ -1,5 +1,7 @@
 #include "violet/plugins/input/component/InputComponent.h"
 
+#include "violet/core/serialization/Serializer.h"
+
 using namespace Violet;
 
 const char * InputComponent::getLabel()
@@ -23,4 +25,9 @@ InputComponent & InputComponent::operator=(InputComponent && other)
 {
 	m_mesh = std::move(other.m_mesh);
 	return *this;
+}
+
+Serializer & Violet::operator<<(Serializer & serializer, const InputComponent & component)
+{
+	return serializer << component.m_mesh;
 }

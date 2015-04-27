@@ -2,19 +2,10 @@
 #define JSON_DESERIALIZER_H
 
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/extras/Config.h"
 
 #include <istream>
 #include <json/json.h>
-
-#ifdef WIN32
-#ifdef VIOLETEXTRAS_EXPORT
-#define VIOLET_EXTRAS_API __declspec(dllexport)
-#else
-#define VIOLET_EXTRAS_API __declspec(dllimport)
-#endif
-#else
-#define VIOLET_API
-#endif
 
 namespace Violet
 {

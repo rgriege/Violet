@@ -5,6 +5,7 @@
 #include "violet/core/component/ComponentFactory.h"
 #include "violet/core/entity/Entity.h"
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/serialization/Serializer.h"
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/template/TupleUtilities.h"
 
@@ -45,7 +46,13 @@ namespace Violet
 			s_component = Component(entity);
 			return s_component;
 		}
+		virtual const Component & fetch(const char * label, const Entity & entity) const {
+			static Component s_component(entity);
+			s_component = Component(entity);
+			return s_component;
+		}
 		virtual void update(float dt, Engine & engine) {}
+		virtual void save(Serializer & serializer, const Entity & entity) const {}
 		virtual void clear() {}
 
 	private:
@@ -142,6 +149,23 @@ namespace Violet
 			return m_components->operator[](m_entityComponentMap[entity.getId()]);
 		}
 
+		virtual const ComponentType & fetch(const char * label, const Entity & entity) const override
+		{
+			assert(has(label, entity));
+			auto const it = m_entityComponentMap.find(entity.getId());
+			return m_components->operator[](it->second);
+		}
+
+		virtual void save(Serializer & serializer, const Entity & entity) const override
+		{
+			if (has(entity))
+			{
+				const ComponentType & c = fetch(getStaticLabel(), entity);
+				auto segment = serializer.createSegment(getStaticLabel());
+				*segment << c;
+			}
+		}
+
 		virtual void clear() override
 		{
 			m_entityComponentMap.clear();
@@ -224,6 +248,11 @@ namespace Violet
 			auto it = m_systemDictionary.find(label);
 			assert(it != m_systemDictionary.end());
 			return it->second->fetch(label, entity);
+		}
+
+		virtual void save(Serializer & serializer, const Entity & entity) const override
+		{
+			for_each([&](const System & system) { system.save(serializer, entity); }, m_systems);
 		}
 
 		virtual void clear() override

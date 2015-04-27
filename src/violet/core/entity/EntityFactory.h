@@ -21,6 +21,7 @@ namespace Violet
 
 		Entity createNew();
 		void free(const Entity & entity);
+		std::vector<uint32> getEntities() const;
 
 	private:
 

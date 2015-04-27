@@ -2,17 +2,13 @@
 
 #include "violet/core/math/Interval.h"
 #include "violet/core/math/Matrix2.h"
-#include "violet/core/serialization/Deserializer.h"
+#include "violet/core/serialization/SerializationUtilities.h"
 
 using namespace Violet;
 
 namespace PolygonNamespace
 {
 	const char * const ms_segmentLabel("poly");
-	const char * const ms_sizeLabel("n");
-	const char * const ms_verticesLabel("vertices");
-
-	std::vector<Vec2f> deserializeVertices(Violet::Deserializer & deserializer);
 }
 
 using namespace PolygonNamespace;
@@ -23,8 +19,10 @@ Polygon::Polygon(std::vector<Vec2f> && vertices) :
 }
 
 Polygon::Polygon(Deserializer & deserializer) :
-	m_vertices(std::move(deserializeVertices(deserializer)))
+	m_vertices()
 {
+	auto polygonSegment = deserializer.enterSegment(ms_segmentLabel);
+	m_vertices.swap(SerializationUtilities::deserializeElements<Vec2f>(*polygonSegment));
 }
 
 bool Polygon::contains(const Vec2f & point) const
@@ -53,17 +51,9 @@ bool Polygon::contains(const Vec2f & point) const
 	return inside;
 }
 
-std::vector<Vec2f> PolygonNamespace::deserializeVertices(Deserializer & deserializer)
+Serializer & Violet::operator<<(Serializer & serializer, const Polygon & poly)
 {
-	auto polygonSegment = deserializer.enterSegment(ms_segmentLabel);
-	uint32 n = polygonSegment->getUint(ms_sizeLabel);
-	std::vector<Vec2f> m_vertices;
-	m_vertices.reserve(n);
-	auto verticesSegment = polygonSegment->enterSegment(ms_verticesLabel);
-	for (uint32 i = 0; i < n; ++i)
-	{
-		auto vertexSegment = verticesSegment->enterSegment(nullptr);
-		m_vertices.emplace_back(*vertexSegment);
-	}
-	return m_vertices;
+	auto segment = serializer.createSegment(ms_segmentLabel);
+	SerializationUtilities::serializeElements(*segment, poly.m_vertices);
+	return serializer;
 }

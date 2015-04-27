@@ -183,7 +183,7 @@ std::unique_ptr<Font> Font::load(const char * filename)
 		return nullptr;
 	}
 
-	return std::unique_ptr<Font>(new Font(std::move(glyphs), spaceWidth));
+	return std::unique_ptr<Font>(new Font(filename, std::move(glyphs), spaceWidth));
 }
 
 Font::Cache & Font::getCache()
@@ -220,7 +220,13 @@ void Font::render(std::string const & str, ShaderProgram & program)
 	}
 }
 
-Font::Font(std::map<char, Glyph> && glyphs, const uint32 spaceWidth) :
+const char * Font::getFilename() const
+{
+	return m_filename.c_str();
+}
+
+Font::Font(const char * filename, std::map<char, Glyph> && glyphs, const uint32 spaceWidth) :
+	m_filename(filename),
 	m_glyphs(std::move(glyphs)),
 	m_spaceWidth(spaceWidth)
 {

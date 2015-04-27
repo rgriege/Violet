@@ -60,7 +60,7 @@ bool JsonSerializationTestNamespace::testEmpty()
 JsonDeserializer JsonSerializationTestNamespace::createForInt(const int num)
 {
 	Json::Value root(Json::objectValue);
-	root["int"] = num;
+	root.append("int", num);
 	std::stringstream ss;
 	ss << root;
 	return JsonDeserializer(ss);
@@ -69,8 +69,8 @@ JsonDeserializer JsonSerializationTestNamespace::createForInt(const int num)
 JsonDeserializer JsonSerializationTestNamespace::createForTwoInts(const int firstNum, const int secondNum)
 {
 	Json::Value root(Json::objectValue);
-	root["int"] = firstNum;
-	root["int2"] = secondNum;
+	root.append("int", firstNum);
+	root.append("int2", secondNum);
 	std::stringstream ss;
 	ss << root;
 	return JsonDeserializer(ss);
@@ -80,8 +80,8 @@ JsonDeserializer JsonSerializationTestNamespace::createForNested(const int num)
 {
 	Json::Value root(Json::objectValue);
 	Json::Value nested(Json::objectValue);
-	nested["int"] = num;
-	root["object"] = nested;
+	nested.append("int", num);
+	root.append("object", nested);
 	std::stringstream ss;
 	ss << root;
 	return JsonDeserializer(ss);

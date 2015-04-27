@@ -37,6 +37,7 @@ namespace Violet
 		void begin();
 		void runFrame(float frameTime);
 		void switchScene(const char * filename);
+		bool saveScene(const char * filename);
 		void stop();
 
 		template <typename ComponentType>

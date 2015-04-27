@@ -1,11 +1,14 @@
 #ifndef VEC2_H
 #define VEC2_H
 
+#include "violet/core/Defines.h"
+
 #include <ostream>
 
 namespace Violet
 {
 	class Deserializer;
+	class Serializer;
 
 	template<typename T>
 	class Vec2
@@ -76,6 +79,18 @@ namespace Violet
 
 	template<typename T>
 	std::ostream & operator<<(std::ostream & os, const Vec2<T> & vec);
+
+
+	template<typename T>
+	Serializer & operator<<(Serializer & serializer, const Vec2<T> & vec);
+	template<>
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Vec2<int> & vec);
+	template<>
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Vec2<uint32> & vec);
+	template<>
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Vec2<float> & vec);
+	template<>
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Vec2<double> & vec);
 }
 
 #include "violet/core/math/Vec2.ipp"

@@ -36,6 +36,7 @@ namespace Violet
 
 		virtual ~Script() = default;
 
+		virtual std::string getFilename() const = 0;
 		virtual void reload() = 0;
 		virtual void run(ProcedureBase & procedure) = 0;
 	};

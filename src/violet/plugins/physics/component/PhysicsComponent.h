@@ -4,8 +4,6 @@
 #include "violet/core/component/Component.h"
 
 #include "violet/core/math/Polygon.h"
-#include "violet/core/serialization/Deserializer.h"
-
 
 #ifdef WIN32
 #ifdef VIOLETPHYSICS_EXPORT
@@ -19,6 +17,9 @@
 
 namespace Violet
 {
+	class Deserializer;
+	class Serializer;
+
 	class VIOLET_PHYSICS_API PhysicsComponent : public Component
 	{
 	public:
@@ -40,6 +41,8 @@ namespace Violet
 		float m_angularVelocity;
 		float m_torque;
 	};
+
+	Serializer & operator<<(Serializer & serializer, const PhysicsComponent & component);
 }
 
 #endif

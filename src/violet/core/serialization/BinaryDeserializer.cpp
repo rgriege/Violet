@@ -1,5 +1,7 @@
 #include "violet/core/serialization/BinaryDeserializer.h"
 
+#include "violet/core/serialization/FileDeserializerFactory.h"
+
 using namespace Violet;
 
 namespace BinaryDeserializerNamespace
@@ -9,6 +11,11 @@ namespace BinaryDeserializerNamespace
 }
 
 using namespace BinaryDeserializerNamespace;
+
+void BinaryDeserializer::install()
+{
+	FileDeserializerFactory::getInstance().assign<BinaryDeserializer>("vba");
+}
 
 BinaryDeserializer::BinaryDeserializer(std::istream & stream) :
 	m_stream(stream),

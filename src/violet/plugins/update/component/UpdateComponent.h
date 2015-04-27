@@ -17,6 +17,7 @@
 namespace Violet
 {
 	class Deserializer;
+	class Serializer;
 
 	class VIOLET_UPDATE_API UpdateComponent : public Component
 	{
@@ -30,6 +31,8 @@ namespace Violet
 		UpdateComponent(UpdateComponent && other);
 		UpdateComponent & operator=(UpdateComponent && other);
 	};
+
+	Serializer & operator<<(Serializer & serializer, const UpdateComponent & component);
 }
 
 #endif

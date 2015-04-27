@@ -8,6 +8,7 @@
 namespace Violet
 {
 	class Deserializer;
+	class Serializer;
 
 	class VIOLET_API TransformComponent : public Component
 	{
@@ -28,6 +29,8 @@ namespace Violet
 		Vec2f m_position;
 		float m_rotation;
 	};
+
+	Serializer & operator<<(Serializer & serializer, const TransformComponent & component);
 }
 
 #endif

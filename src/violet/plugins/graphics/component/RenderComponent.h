@@ -10,6 +10,7 @@
 namespace Violet
 {
 	class Deserializer;
+	class Serializer;
 	class ShaderProgram;
 
 	class VIOLET_GRAPHICS_API RenderComponent : public Component
@@ -33,6 +34,8 @@ namespace Violet
 		Color m_color;
 		std::shared_ptr<ShaderProgram> m_shader;
 	};
+
+	Serializer & operator<<(Serializer & serializer, const RenderComponent & component);
 }
 
 #endif

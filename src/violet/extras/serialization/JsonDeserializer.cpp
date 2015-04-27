@@ -38,15 +38,13 @@ namespace JsonDeserializerNamespace
 		const Json::Value & m_value;
 		Json::ValueConstIterator m_position;
 	};
-
-	std::unique_ptr<JsonDeserializer> create(std::istream & stream);
 }
 
 using namespace JsonDeserializerNamespace;
 
 void JsonDeserializer::install()
 {
-	FileDeserializerFactory::getInstance().assign("json", &create);
+	FileDeserializerFactory::getInstance().assign<JsonDeserializer>("json");
 }
 
 JsonDeserializer::JsonDeserializer(std::istream & stream) :
@@ -163,9 +161,4 @@ double JsonDeserializerNamespace::SubDeserializer::getDouble(const char * label)
 const char * JsonDeserializerNamespace::SubDeserializer::getString(const char * label)
 {
 	return (*m_position++).asCString();
-}
-
-std::unique_ptr<JsonDeserializer> JsonDeserializerNamespace::create(std::istream & stream)
-{
-	return std::make_unique<JsonDeserializer>(stream);
 }

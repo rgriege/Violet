@@ -17,6 +17,7 @@ namespace Violet
 		uint32 reserve();
 		bool reserve(uint32 id);
 		bool available(uint32 id) const;
+		std::vector<uint32> getUsed() const;
 		void free(uint32 id);
 
 	private:

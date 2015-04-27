@@ -37,6 +37,11 @@ void EntityFactory::free(const Entity & entity)
 	return m_freeList.free(entity.getId());
 }
 
+std::vector<uint32> EntityFactory::getEntities() const
+{
+	return m_freeList.getUsed();
+}
+
 void EntityFactory::createFromComponentList(Deserializer & deserializer, SceneInitContext & initContext)
 {
 	auto entitySegment = deserializer.enterSegment(ms_entityLabel);

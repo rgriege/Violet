@@ -5,6 +5,8 @@
 #include "violet/game/Config.h"
 #include "violet/game/pathfinding/Path.h"
 
+class Violet::Serializer;
+
 class VIOLET_GAME_API PathComponent : public Violet::Component
 {
 public:
@@ -28,5 +30,7 @@ public:
 	uint32 m_lastIntersection;
 	float m_speed;
 };
+
+Violet::Serializer & operator<<(Violet::Serializer & serializer, const PathComponent & component);
 
 #endif

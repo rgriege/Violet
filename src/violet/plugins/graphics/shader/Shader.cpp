@@ -54,10 +54,11 @@ std::unique_ptr<Shader> Shader::create(const char * filename, Type type)
 	}
 
 	ms_shaderFilenames[shader] = filename;
-	return std::unique_ptr<Shader>(new Shader(shader));
+	return std::unique_ptr<Shader>(new Shader(filename, shader));
 }
 
-Shader::Shader(const GLuint handle) :
+Shader::Shader(const char * filename, const GLuint handle) :
+	m_filename(filename),
 	m_handle(handle)
 {
 }
@@ -65,6 +66,11 @@ Shader::Shader(const GLuint handle) :
 Shader::~Shader()
 {
 	glDeleteShader(m_handle);
+}
+
+const char * Shader::getFilename() const
+{
+	return m_filename.c_str();
 }
 
 std::unique_ptr<ShaderProgram> ShaderProgram::load(const char * name)
@@ -134,6 +140,11 @@ ShaderProgram::~ShaderProgram()
 	glDetachShader(m_handle, m_vertexShader->m_handle);
 	glDetachShader(m_handle, m_fragmentShader->m_handle);
 	glDeleteProgram(m_handle);
+}
+
+std::string ShaderProgram::getName() const
+{
+	return StringUtilities::left(m_vertexShader->getFilename(), '.');
 }
 
 int ShaderProgram::getAttributeLocation(const char * name)

@@ -20,6 +20,7 @@ namespace Violet
 {
 	class AlterContext;
 	class Deserializer;
+	class Serializer;
 
 	class VIOLET_INPUT_API InputComponent : public Component
 	{
@@ -37,6 +38,8 @@ namespace Violet
 
 		Polygon m_mesh;
 	};
+
+	Serializer & operator<<(Serializer & serializer, const InputComponent & component);
 }
 
 #endif

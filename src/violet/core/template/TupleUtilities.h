@@ -321,6 +321,34 @@ namespace Violet
 
 
 	/*
+	* for_each (const)
+	*/
+
+	namespace detail
+	{
+		template <typename Predicate, typename... Args>
+		void for_each(Predicate pr, const std::tuple<Args...> & tup, Index<0>)
+		{
+		}
+
+		template <typename Predicate, typename... Args, size_t N>
+		void for_each(Predicate pr, const std::tuple<Args...> & tup, Index<N>)
+		{
+			for_each(pr, tup, Index<N - 1>());
+			pr(std::get<N - 1>(tup));
+		}
+	}
+
+	template <typename Predicate, typename... Args>
+	void for_each(Predicate pr, const std::tuple<Args...> & tup)
+	{
+		detail::for_each(pr, tup, detail::Index<sizeof...(Args)>());
+	}
+
+
+
+
+	/*
 	* first
 	*/
 

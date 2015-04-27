@@ -9,9 +9,16 @@
     <ClInclude Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.h">
       <Filter>serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\extras\Config.h" />
+    <ClInclude Include="..\..\..\src\violet\extras\serialization\JsonSerializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\extras\serialization\JsonDeserializer.cpp">
+      <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\extras\serialization\JsonSerializer.cpp">
       <Filter>serialization</Filter>
     </ClCompile>
   </ItemGroup>

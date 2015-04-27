@@ -110,8 +110,14 @@
     <ClInclude Include="..\..\..\src\violet\core\script\ScriptFactory.h" />
     <ClInclude Include="..\..\..\src\violet\core\script\system\ScriptSystem.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\BinarySerializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\Deserializer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileSerializer.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileSerializerFactory.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\SerializationUtilities.h" />
+    <ClInclude Include="..\..\..\src\violet\core\serialization\Serializer.h" />
     <ClInclude Include="..\..\..\src\violet\core\structures\CrsGraph.h" />
     <ClInclude Include="..\..\..\src\violet\core\system\System.h" />
     <ClInclude Include="..\..\..\src\violet\core\system\SystemFactory.h" />
@@ -129,6 +135,7 @@
     <ClInclude Include="..\..\..\src\violet\core\utility\FileUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\FormattedString.h" />
     <ClInclude Include="..\..\..\src\violet\core\utility\StringUtilities.h" />
+    <ClInclude Include="..\..\..\src\violet\core\utility\unique_val.h" />
     <ClInclude Include="..\..\..\src\violet\core\window\WindowSystem.h" />
   </ItemGroup>
   <ItemGroup>
@@ -148,11 +155,14 @@
     <ClCompile Include="..\..\..\src\violet\core\entity\EntityFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\math\Polygon.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\math\Vec2.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\script\component\ScriptComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\script\CppScript.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\script\ScriptFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\script\system\ScriptSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\serialization\BinaryDeserializer.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\serialization\BinarySerializer.cpp" />
+    <ClCompile Include="..\..\..\src\violet\core\serialization\FileSerializerFactory.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\time\Time.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\core\transform\TransformSystem.cpp" />
@@ -167,7 +177,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\violet\core\math\Matrix3.ipp" />
+    <None Include="..\..\..\src\violet\core\serialization\FileDeserializer.ipp" />
+    <None Include="..\..\..\src\violet\core\serialization\FileSerializer.ipp" />
     <None Include="..\..\..\src\violet\core\structures\CrsGraph.ipp" />
+    <None Include="..\..\..\src\violet\core\utility\unique_val.ipp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

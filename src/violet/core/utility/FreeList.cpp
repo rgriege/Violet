@@ -47,6 +47,20 @@ bool FreeList::available(const uint32 id) const
 	return id >= m_usedList.size() ? true : m_usedList[id];
 }
 
+std::vector<uint32> FreeList::getUsed() const
+{
+	std::vector<uint32> result;
+	uint32 id = 0;
+	for (auto const & used : m_usedList)
+	{
+		if (used)
+			result.emplace_back(id);
+		++id;
+	}
+
+	return result;
+}
+
 void FreeList::free(const uint32 id)
 {
 	if (id < m_usedList.size())

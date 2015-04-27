@@ -48,3 +48,13 @@ Mesh::~Mesh()
 	if (m_vertexBuffer != 0)
 		glDeleteBuffers(1, &m_vertexBuffer);
 }
+
+Serializer & Violet::operator<<(Serializer & serializer, const Mesh & mesh)
+{
+	std::vector<Vec2f> vertices;
+	vertices.resize(mesh.m_size);
+	Mesh::bind(mesh);
+	glGetBufferSubData(GL_ARRAY_BUFFER, 0, mesh.m_size * sizeof(Vec2f), vertices.data());
+	Mesh::unbind();
+	return serializer << Polygon(std::move(vertices));
+}

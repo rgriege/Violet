@@ -79,6 +79,7 @@ namespace Violet
 
 		virtual ~CppScript() override;
 
+		virtual std::string getFilename() const override;
 		virtual void run(ProcedureBase & procedure) override;
 		virtual void reload() override;
 
@@ -86,6 +87,8 @@ namespace Violet
 		void * getMemoryPtr() const;
 
 	private:
+
+		std::string getFilenameWithPath() const;
 
 		void load(const char * filename);
 		void unload();

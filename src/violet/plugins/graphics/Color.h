@@ -9,6 +9,7 @@
 namespace Violet
 {
 	class Deserializer;
+	class Serializer;
 
 	class VIOLET_GRAPHICS_API Color
 	{
@@ -60,6 +61,8 @@ namespace Violet
 
 		Component r, g, b, a;
 	};
+
+	Serializer & operator<<(Serializer & serializer, const Color & color);
 }
 
 #endif

@@ -10,6 +10,7 @@ namespace Violet
 {
 	class Deserializer;
 	class Polygon;
+	class Serializer;
 
 	class Mesh
 	{
@@ -36,6 +37,8 @@ namespace Violet
 		uint32 m_vertexBuffer;
 		uint32 m_size;
 	};
+
+	Serializer & operator<<(Serializer & serializer, const Mesh & mesh);
 }
 
 #endif

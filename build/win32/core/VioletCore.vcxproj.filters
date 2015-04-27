@@ -170,6 +170,27 @@
     <ClInclude Include="..\..\..\src\violet\core\utility\FreeList.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\BinarySerializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\Serializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\utility\unique_val.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileSerializerFactory.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileSerializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\SerializationUtilities.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -221,6 +242,15 @@
     <ClCompile Include="..\..\..\src\violet\core\utility\FreeList.cpp">
       <Filter>utility</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\serialization\BinarySerializer.cpp">
+      <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\serialization\FileSerializerFactory.cpp">
+      <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\math\Vec2.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\violet\core\math\Matrix3.ipp">
@@ -228,6 +258,15 @@
     </None>
     <None Include="..\..\..\src\violet\core\structures\CrsGraph.ipp">
       <Filter>structures</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\core\utility\unique_val.ipp">
+      <Filter>utility</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\core\serialization\FileSerializer.ipp">
+      <Filter>serialization</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\core\serialization\FileDeserializer.ipp">
+      <Filter>serialization</Filter>
     </None>
   </ItemGroup>
 </Project>

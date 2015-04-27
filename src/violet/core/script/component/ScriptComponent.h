@@ -10,6 +10,7 @@
 namespace Violet
 {
 	class Deserializer;
+	class Serializer;
 
 	class VIOLET_API ScriptComponent : public Component
 	{
@@ -27,6 +28,8 @@ namespace Violet
 
 		std::unique_ptr<Script> m_script;
 	};
+
+	Serializer & operator<<(Serializer & serializer, const ScriptComponent & component);
 }
 
 #endif

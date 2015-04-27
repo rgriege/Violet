@@ -1,6 +1,7 @@
 #include "violet/plugins/graphics/Color.h"
 
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/serialization/Serializer.h"
 
 using namespace Violet;
 
@@ -103,4 +104,13 @@ float ColorNamespace::convert(const uint8 value)
 uint8 ColorNamespace::convert(const float value)
 {
 	return static_cast<uint8>((value + 0.5f) * 255);
+}
+
+Serializer & Violet::operator<<(Serializer & serializer, const Color & color)
+{
+	char hexString[11];
+	sprintf(hexString, "0x%.2x%.2x%.2x%.2x", color.r, color.g, color.b, color.a);
+	hexString[10] = 0;
+	serializer.writeString(ms_segmentLabel, hexString);
+	return serializer;
 }

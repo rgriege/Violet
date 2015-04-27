@@ -1,6 +1,7 @@
 #include "violet/game/pathfinding/PathComponent.h"
 
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/serialization/Serializer.h"
 
 const char * PathComponent::getLabel()
 {
@@ -38,4 +39,10 @@ PathComponent & PathComponent::operator=(PathComponent && other)
 	m_lastIntersection = other.m_lastIntersection;
 	m_speed = other.m_speed;
 	return *this;
+}
+
+Violet::Serializer & operator<<(Violet::Serializer & serializer, const PathComponent & component)
+{
+	serializer.writeFloat("speed", component.m_speed);
+	return serializer;
 }

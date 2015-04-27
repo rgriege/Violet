@@ -1,6 +1,7 @@
 #include "violet/plugins/graphics/component/TextComponent.h"
 
 #include "violet/core/serialization/Deserializer.h"
+#include "violet/core/serialization/Serializer.h"
 #include "violet/plugins/graphics/font/Font.h"
 #include "violet/plugins/graphics/shader/Shader.h"
 
@@ -27,4 +28,13 @@ TextComponent::TextComponent(TextComponent && other) :
 	m_size(other.m_size),
 	m_shader(std::move(other.m_shader))
 {
+}
+
+Serializer & Violet::operator<<(Serializer & serializer, const TextComponent & component)
+{
+	serializer.writeString("str", component.m_text.c_str());
+	serializer.writeString("font", component.m_font->getFilename());
+	serializer.writeUint("size", component.m_size);
+	serializer.writeString("shader", component.m_shader->getName().c_str());
+	return serializer;
 }

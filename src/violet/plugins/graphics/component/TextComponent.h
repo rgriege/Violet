@@ -12,6 +12,7 @@ namespace Violet
 {
 	class Deserializer;
 	class Font;
+	class Serializer;
 	class ShaderProgram;
 
 	class VIOLET_GRAPHICS_API TextComponent : public Component
@@ -33,6 +34,8 @@ namespace Violet
 		uint32 m_size;
 		std::shared_ptr<ShaderProgram> m_shader;
 	};
+
+	Serializer & operator<<(Serializer & serializer, const TextComponent & component);
 }
 
 #endif
