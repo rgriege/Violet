@@ -1,8 +1,7 @@
 #include "violet/plugins/update/system/UpdateSystem.h"
 
 #include "violet/core/Engine.h"
-#include "violet/core/script/Procedure.h"
-#include "violet/core/script/system/ScriptSystem.h"
+#include "violet/core/script/ScriptUtilities.h"
 
 using namespace Violet;
 
@@ -26,8 +25,5 @@ UpdateSystem::UpdateSystem(UpdateSystem && other) :
 void UpdateSystem::update(float /*dt*/, Engine & engine)
 {
 	for (auto const & component : getComponents())
-	{
-		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
-		scriptComponent.m_script->run(Procedure::create("update", component.getEntity(), engine));
-	}
+		ScriptUtilities::run<void>(engine, component.getEntity(), "update", component.getEntity(), engine);
 }

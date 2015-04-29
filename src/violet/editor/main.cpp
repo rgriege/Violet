@@ -1,6 +1,5 @@
 #include "violet/core/Engine.h"
-#include "violet/core/script/CppScript.h"
-#include "violet/core/script/system/ScriptSystem.h"
+#include "violet/core/script/system/CppScriptSystem.h"
 #include "violet/core/serialization/FileDeserializerFactory.h"
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
@@ -19,14 +18,12 @@ Violet::SystemFactory setup()
 	Violet::JsonDeserializer::install();
 	Violet::JsonSerializer::install();
 
-	Violet::CppScript::install();
-
 	Violet::SystemFactory factory;
 	Violet::SDLWindowSystem::install(factory);
 	Violet::TransformSystem::install(factory);
 	Violet::RenderSystem::install(factory);
 	Violet::InputSystem::install(factory);
-	Violet::ScriptSystem::install(factory);
+	Violet::CppScriptSystem::install(factory);
 	EngineSystem::install(factory);
 
 	return factory;

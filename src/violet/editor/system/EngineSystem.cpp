@@ -1,6 +1,6 @@
 #include "violet/editor/system/EngineSystem.h"
 
-#include "violet/core/script/system/ScriptSystem.h"
+#include "violet/core/script/system/CppScriptSystem.h"
 #include "violet/core/serialization/FileDeserializerFactory.h"
 #include "violet/core/system/SystemFactory.h"
 #include "violet/core/transform/TransformSystem.h"
@@ -33,7 +33,7 @@ std::unique_ptr<Violet::System> EngineSystem::init(Violet::Deserializer & deseri
 	EditorSystem<Violet::PhysicsSystem>::install(factory);
 	Violet::RenderSystem::install(factory);
 	EditorSystem<Violet::InputSystem>::install(factory);
-	EditorSystem<Violet::ScriptSystem>::install(factory);
+	EditorSystem<Violet::CppScriptSystem>::install(factory);
 	EditorSystem<Violet::UpdateSystem>::install(factory);
 	EditorSystem<PathfindingSystem>::install(factory);
 	EditorSystem<WorldSystem>::install(factory);

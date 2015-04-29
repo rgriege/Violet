@@ -1,8 +1,7 @@
 #include "violet/plugins/input/system/InputSystem.h"
 
 #include "violet/core/Engine.h"
-#include "violet/core/script/Procedure.h"
-#include "violet/core/script/system/ScriptSystem.h"
+#include "violet/core/script/ScriptUtilities.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/core/window/WindowSystem.h"
 
@@ -69,11 +68,10 @@ void InputSystem::onMouseMove(int x, int y, int xrel, int yrel, Engine & engine)
 
 		if (contains ^ contained)
 		{
-			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
 			if (contains)
-				scriptComponent.m_script->run(Procedure::create("onMouseIn", component.getEntity(), engine));
+				ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseIn", component.getEntity(), engine);
 			else
-				scriptComponent.m_script->run(Procedure::create("onMouseOut", component.getEntity(), engine));
+				ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseOut", component.getEntity(), engine);
 		}
 	}
 }
@@ -88,10 +86,7 @@ void InputSystem::onMouseDown(const int x, const int y, Engine & engine)
 	{
 		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
 		if (component.m_mesh.contains(point - transform.m_position))
-		{
-			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
-			scriptComponent.m_script->run(Procedure::create("onMouseDown", component.getEntity(), engine));
-		}
+			ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseDown", component.getEntity(), engine);
 	}
 }
 
@@ -105,28 +100,18 @@ void InputSystem::onMouseUp(const int x, const int y, Engine & engine)
 	{
 		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
 		if (component.m_mesh.contains(point - transform.m_position))
-		{
-			auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
-			scriptComponent.m_script->run(Procedure::create("onMouseUp", component.getEntity(), engine));
-		}
+			ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseUp", component.getEntity(), engine);
 	}
 }
 
 void InputSystem::onKeyDown(const unsigned char key, Engine & engine)
 {
 	for (auto const & component : getComponents())
-	{
-		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
-		scriptComponent.m_script->run(Procedure::create("onKeyDown", component.getEntity(), engine, key));
-	}
+		ScriptUtilities::run<void>(engine, component.getEntity(), "onKeyDown", component.getEntity(), engine, key);
 }
 
 void InputSystem::onKeyUp(const unsigned char key, Engine & engine)
 {
-	static int i = 0;
 	for (auto const & component : getComponents())
-	{
-		auto const & scriptComponent = engine.fetch<ScriptComponent>(component.getEntity());
-		scriptComponent.m_script->run(Procedure::create("onKeyUp", component.getEntity(), engine, key));
-	}
+		ScriptUtilities::run<void>(engine, component.getEntity(), "onKeyDown", component.getEntity(), engine, key);
 }

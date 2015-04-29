@@ -122,24 +122,6 @@
     <ClInclude Include="..\..\..\src\violet\core\utility\Assert.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\script\Script.h">
-      <Filter>script</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\script\ScriptFactory.h">
-      <Filter>script</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\script\CppScript.h">
-      <Filter>script</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\script\component\ScriptComponent.h">
-      <Filter>script\component</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\script\system\ScriptSystem.h">
-      <Filter>script\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\core\script\Procedure.h">
-      <Filter>script</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\core\utility\FileUtilities.h">
       <Filter>utility</Filter>
     </ClInclude>
@@ -191,6 +173,15 @@
     <ClInclude Include="..\..\..\src\violet\core\serialization\FileDeserializer.h">
       <Filter>serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\script\component\CppScriptComponent.h">
+      <Filter>script\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\script\system\CppScriptSystem.h">
+      <Filter>script\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\script\ScriptUtilities.h">
+      <Filter>script</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
@@ -218,18 +209,6 @@
     <ClCompile Include="..\..\..\src\violet\core\serialization\FileDeserializerFactory.cpp">
       <Filter>serialization</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\core\script\ScriptFactory.cpp">
-      <Filter>script</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\core\script\CppScript.cpp">
-      <Filter>script</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\core\script\component\ScriptComponent.cpp">
-      <Filter>script\component</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\core\script\system\ScriptSystem.cpp">
-      <Filter>script\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\utility\FileUtilities.cpp">
       <Filter>utility</Filter>
     </ClCompile>
@@ -250,6 +229,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\math\Vec2.cpp">
       <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\script\component\CppScriptComponent.cpp">
+      <Filter>script\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\core\script\system\CppScriptSystem.cpp">
+      <Filter>script\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

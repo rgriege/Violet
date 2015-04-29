@@ -1,5 +1,5 @@
 #include "violet/core/Engine.h"
-#include "violet/core/script/CppScript.h"
+#include "violet/core/script/component/CppScriptComponent.h"
 #include "violet/core/transform/TransformComponent.h"
 #include "violet/game/pathfinding/Path.h"
 #include "violet/game/pathfinding/PathfindingSystem.h"
@@ -16,9 +16,9 @@ void travel(Entity & e, Engine & engine, Mem * mem);
 void work(Mem * mem);
 void rest(Mem * mem);
 
-extern "C" __declspec(dllexport) void init(CppScript::Allocator & allocator)
+extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator)
 {
-    Mem * mem = static_cast<Mem*>(allocator.allocate<Mem>());
+    Mem * mem = allocator.allocate<Mem>();
     mem->traveling = mem->working = false;
 }
 
