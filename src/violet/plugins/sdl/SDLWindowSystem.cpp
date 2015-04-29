@@ -104,12 +104,14 @@ bool SDLWindowSystem::getEvent(EventType type, Event* event)
 			event->type = WindowSystem::ET_MouseDown;
 			event->mouse.x = sdlEvent.button.x;
 			event->mouse.y = sdlEvent.button.y;
+			event->mouse.button = static_cast<MouseButton>(sdlEvent.button.button - 1);
 			break;
 
 		case SDL_MOUSEBUTTONUP:
 			event->type = WindowSystem::ET_MouseUp;
 			event->mouse.x = sdlEvent.button.x;
 			event->mouse.y = sdlEvent.button.y;
+			event->mouse.button = static_cast<MouseButton>(sdlEvent.button.button - 1);
 			break;
 
 		case SDL_MOUSEMOTION:

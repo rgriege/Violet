@@ -1,8 +1,10 @@
 #include "violet/core/Engine.h"
+#include "violet/core/window/MouseButton.h"
 
 using namespace Violet;
 
-extern "C" __declspec(dllexport) void onMouseDown(const Entity & e, Engine & engine)
+extern "C" __declspec(dllexport) void onMouseDown(const Entity & e, Engine & engine, const MouseButton button)
 {
-    engine.switchScene("level1.json");
+    if (button == MB_Left)
+        engine.switchScene("level1.json");
 }

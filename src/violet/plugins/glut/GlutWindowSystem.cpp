@@ -123,7 +123,7 @@ void GlutWindowSystemNamespace::onMouseButton(int button, int state, int x, int 
 {
 	WindowSystem::Event event;
 	event.type = state == GLUT_DOWN ? WindowSystem::ET_MouseDown : WindowSystem::ET_MouseUp;
-	event.mouse = { x, y };
+	event.mouse = { x, y, static_cast<MouseButton>(button) };
 	ms_currentWindow->addEvent(event);
 }
 

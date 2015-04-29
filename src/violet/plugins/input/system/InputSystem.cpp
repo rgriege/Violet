@@ -5,6 +5,8 @@
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/core/window/WindowSystem.h"
 
+#include <iostream>
+
 using namespace Violet;
 
 void InputSystem::install(SystemFactory & factory)
@@ -38,10 +40,10 @@ void InputSystem::update(float /*dt*/, Engine & engine)
 			onKeyUp(event.key.code, engine);
 			break;
 		case WindowSystem::ET_MouseDown:
-			onMouseDown(event.mouse.x, event.mouse.y, engine);
+			onMouseDown(event.mouse.x, event.mouse.y, event.mouse.button, engine);
 			break;
 		case WindowSystem::ET_MouseUp:
-			onMouseUp(event.mouse.x, event.mouse.y, engine);
+			onMouseUp(event.mouse.x, event.mouse.y, event.mouse.button, engine);
 			break;
 		case WindowSystem::ET_MouseMove:
 			onMouseMove(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel, engine);
@@ -76,7 +78,7 @@ void InputSystem::onMouseMove(int x, int y, int xrel, int yrel, Engine & engine)
 	}
 }
 
-void InputSystem::onMouseDown(const int x, const int y, Engine & engine)
+void InputSystem::onMouseDown(const int x, const int y, const MouseButton button, Engine & engine)
 {
 	auto & windowSystem = engine.fetch<WindowSystem>();
 	const int width = windowSystem.getWidth();
@@ -86,11 +88,11 @@ void InputSystem::onMouseDown(const int x, const int y, Engine & engine)
 	{
 		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
 		if (component.m_mesh.contains(point - transform.m_position))
-			ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseDown", component.getEntity(), engine);
+			ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseDown", component.getEntity(), engine, std::move(button));
 	}
 }
 
-void InputSystem::onMouseUp(const int x, const int y, Engine & engine)
+void InputSystem::onMouseUp(const int x, const int y, const MouseButton button, Engine & engine)
 {
 	auto & windowSystem = engine.fetch<WindowSystem>();
 	const int width = windowSystem.getWidth();
@@ -100,7 +102,7 @@ void InputSystem::onMouseUp(const int x, const int y, Engine & engine)
 	{
 		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
 		if (component.m_mesh.contains(point - transform.m_position))
-			ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseUp", component.getEntity(), engine);
+			ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseUp", component.getEntity(), engine, button);
 	}
 }
 

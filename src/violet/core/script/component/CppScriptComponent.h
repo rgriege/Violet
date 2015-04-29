@@ -94,12 +94,12 @@ namespace Violet
 			if (getMemoryPtr() == nullptr)
 			{
 				auto m = (ResultType(*)(Args...)) methodPtr;
-				return m(args...);
+				return m(std::forward<Args>(args)...);
 			}
 			else
 			{
 				auto m = (ResultType(*)(Args..., void *)) methodPtr;
-				return m(args..., getMemoryPtr());
+				return m(std::forward<Args>(args)..., getMemoryPtr());
 			}
 		}
 

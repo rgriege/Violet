@@ -3,6 +3,7 @@
 
 #include "violet/core/Defines.h"
 #include "violet/core/system/System.h"
+#include "violet/core/window/MouseButton.h"
 
 #include <memory>
 
@@ -36,6 +37,7 @@ namespace Violet
 		struct MouseEvent
 		{
 			int x, y;
+			MouseButton button;
 		};
 
 		struct MotionEvent

@@ -182,6 +182,9 @@
     <ClInclude Include="..\..\..\src\violet\core\script\ScriptUtilities.h">
       <Filter>script</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\core\window\MouseButton.h">
+      <Filter>window</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\core\math\Circle.cpp">
