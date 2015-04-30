@@ -1,0 +1,464 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="math">
+      <UniqueIdentifier>{185638bb-e365-4401-87db-7718ab882309}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utility">
+      <UniqueIdentifier>{4e2a84a8-3936-457a-bfe0-4b35cec40a3c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="serialization">
+      <UniqueIdentifier>{fda7cfc0-3d20-43a3-b632-59f02934ceef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="entity">
+      <UniqueIdentifier>{77e61554-8728-48a6-a170-924d0a0ad45d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="template">
+      <UniqueIdentifier>{df375a4b-5dfd-4dbc-be5f-47849460171d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="transform">
+      <UniqueIdentifier>{c509c8a6-4564-423f-b5a3-04b210f5b477}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="component">
+      <UniqueIdentifier>{9be588b0-05c1-46a4-8d94-51b416fafbc4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="system">
+      <UniqueIdentifier>{d55c8e9b-7c1f-419a-9495-0340e4ea30f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script">
+      <UniqueIdentifier>{53e97f06-a909-4b1d-a181-883000f67d36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="window">
+      <UniqueIdentifier>{87796dd6-fa8b-4c55-af72-e89e1583d37a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="structures">
+      <UniqueIdentifier>{1c8556e8-4c7e-4452-a1b6-a3dd148745ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="time">
+      <UniqueIdentifier>{f9ff5f0e-a301-4c44-80ab-a3f8dd3512eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics">
+      <UniqueIdentifier>{11c398d7-388b-4cf5-853e-20d050656959}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\component">
+      <UniqueIdentifier>{316c3753-ca62-4f7e-b573-81a61a7a036a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\system">
+      <UniqueIdentifier>{2325d76b-9b55-4101-a19a-4b88f3c70ba4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\shader">
+      <UniqueIdentifier>{114f6896-9bff-4db9-9ac7-76154f28030d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\font">
+      <UniqueIdentifier>{78f4ccc2-d958-45da-a039-9f1ff7a1b62b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="graphics\texture">
+      <UniqueIdentifier>{b358e8d1-f820-4b30-85f3-b879175b03e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="input">
+      <UniqueIdentifier>{aad7d019-b38b-4442-bb22-fdd4a9c45f20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="input\component">
+      <UniqueIdentifier>{1c93db13-0a3b-4a0a-9544-80aecf2a758e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="input\system">
+      <UniqueIdentifier>{27d2e53e-dd8a-4fb4-b869-a3a4a5122b74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="physics">
+      <UniqueIdentifier>{c02ecbec-8808-4398-ad18-58a8a50128d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="physics\collision">
+      <UniqueIdentifier>{8610e46d-fade-439a-9fa6-31af4342d996}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="physics\component">
+      <UniqueIdentifier>{b325e664-3c8f-4e88-a44d-8382d14e9c9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="physics\system">
+      <UniqueIdentifier>{f8b90d0b-cd70-4f5f-b805-3da2ce45b8c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script\cpp">
+      <UniqueIdentifier>{e3f5b34f-b8ba-48d0-a675-d51657477749}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script\lua">
+      <UniqueIdentifier>{fa3031d8-e890-4706-ace4-ce3f8bbaf196}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script\component">
+      <UniqueIdentifier>{3e4d76e7-2dca-45a5-b6ae-8f0dba4d30eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script\system">
+      <UniqueIdentifier>{75aaf76f-1abb-488d-b0e0-557b304cfee5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="serialization\binary">
+      <UniqueIdentifier>{30327e16-e7fd-44bb-a03a-23ba393fe2cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="serialization\file">
+      <UniqueIdentifier>{9044c68f-6cf0-4d95-a448-2ccf6f1fa660}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="serialization\json">
+      <UniqueIdentifier>{dd809d65-d84b-44b1-a5c2-c2cee66ffcfe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="transform\component">
+      <UniqueIdentifier>{04a36eb9-0930-4bfc-ae0d-827766819f47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="transform\system">
+      <UniqueIdentifier>{e796661d-3ebd-4cb2-8d99-a343c82f0945}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="window\glut">
+      <UniqueIdentifier>{2321e376-e87f-4548-ae98-4327432e1bbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="window\sdl">
+      <UniqueIdentifier>{9393980f-24d4-4022-a07b-c0ec03ebfd53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="update">
+      <UniqueIdentifier>{6951ce98-620a-42ac-9cee-60bd0ce870e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="update\component">
+      <UniqueIdentifier>{4d21c956-fb8f-432f-837a-65d8b82450f3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="update\system">
+      <UniqueIdentifier>{90110065-8ad8-485c-af53-ce40f837b18c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\engine\graphics\Color.h">
+      <Filter>graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\Mesh.h">
+      <Filter>graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponent.h">
+      <Filter>graphics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\component\TextComponent.h">
+      <Filter>graphics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\font\Font.h">
+      <Filter>graphics\font</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\texture\Bitmap.h">
+      <Filter>graphics\texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\texture\Texture.h">
+      <Filter>graphics\texture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\shader\Shader.h">
+      <Filter>graphics\shader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\system\RenderSystem.h">
+      <Filter>graphics\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\input\InputResult.h">
+      <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\input\component\InputComponent.h">
+      <Filter>input\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\input\system\InputSystem.h">
+      <Filter>input\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\physics\collision\Intersection.h">
+      <Filter>physics\collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\physics\collision\RigidBody.h">
+      <Filter>physics\collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\physics\component\PhysicsComponent.h">
+      <Filter>physics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\physics\system\PhysicsSystem.h">
+      <Filter>physics\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\ScriptUtilities.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\component\CppScriptComponent.h">
+      <Filter>script\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\system\CppScriptSystem.h">
+      <Filter>script\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Circle.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Constants.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Interval.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Matrix2.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Matrix3.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Polygon.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Vec2.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\entity\Entity.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\entity\EntityFactory.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\component\Component.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\component\ComponentFactory.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\Deserializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\SerializationUtilities.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\Serializer.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.h">
+      <Filter>serialization\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\binary\BinarySerializer.h">
+      <Filter>serialization\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\file\FileDeserializer.h">
+      <Filter>serialization\file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.h">
+      <Filter>serialization\file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\file\FileSerializer.h">
+      <Filter>serialization\file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\file\FileSerializerFactory.h">
+      <Filter>serialization\file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\json\JsonDeserializer.h">
+      <Filter>serialization\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\serialization\json\JsonSerializer.h">
+      <Filter>serialization\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\structures\CrsGraph.h">
+      <Filter>structures</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\system\System.h">
+      <Filter>system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\system\SystemFactory.h">
+      <Filter>system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\template\TemplateUtilities.h">
+      <Filter>template</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\template\TupleUtilities.h">
+      <Filter>template</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\time\Time.h">
+      <Filter>time</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\transform\component\TransformComponent.h">
+      <Filter>transform\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\transform\system\TransformSystem.h">
+      <Filter>transform\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\Assert.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\Buffer.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\Factory.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\FileUtilities.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\FormattedString.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\FreeList.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\Guard.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\ResourceCache.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\StringUtilities.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\unique_val.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\window\MouseButton.h">
+      <Filter>window</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\window\WindowSystem.h">
+      <Filter>window</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\window\glut\GlutWindowSystem.h">
+      <Filter>window\glut</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\window\sdl\SDLWindowSystem.h">
+      <Filter>window\sdl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\Defines.h" />
+    <ClInclude Include="..\..\..\src\engine\Engine.h" />
+    <ClInclude Include="..\..\..\src\engine\update\component\UpdateComponent.h">
+      <Filter>update\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\update\system\UpdateSystem.h">
+      <Filter>update\system</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp">
+      <Filter>graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\Mesh.cpp">
+      <Filter>graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponent.cpp">
+      <Filter>graphics\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\component\TextComponent.cpp">
+      <Filter>graphics\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\font\Font.cpp">
+      <Filter>graphics\font</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\texture\Bitmap.cpp">
+      <Filter>graphics\texture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\texture\Texture.cpp">
+      <Filter>graphics\texture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\shader\Shader.cpp">
+      <Filter>graphics\shader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\system\RenderSystem.cpp">
+      <Filter>graphics\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\input\component\InputComponent.cpp">
+      <Filter>input\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\input\system\InputSystem.cpp">
+      <Filter>input\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\physics\collision\Intersection.cpp">
+      <Filter>physics\collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\physics\collision\RigidBody.cpp">
+      <Filter>physics\collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\physics\component\PhysicsComponent.cpp">
+      <Filter>physics\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\physics\system\PhysicsSystem.cpp">
+      <Filter>physics\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\script\component\CppScriptComponent.cpp">
+      <Filter>script\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\script\system\CppScriptSystem.cpp">
+      <Filter>script\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\math\Circle.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\math\Polygon.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\math\Vec2.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\entity\Entity.cpp">
+      <Filter>entity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\entity\EntityFactory.cpp">
+      <Filter>entity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.cpp">
+      <Filter>serialization\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\serialization\binary\BinarySerializer.cpp">
+      <Filter>serialization\binary</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.cpp">
+      <Filter>serialization\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\serialization\file\FileSerializerFactory.cpp">
+      <Filter>serialization\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\serialization\json\JsonDeserializer.cpp">
+      <Filter>serialization\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\serialization\json\JsonSerializer.cpp">
+      <Filter>serialization\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\time\Time.cpp">
+      <Filter>time</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\transform\component\TransformComponent.cpp">
+      <Filter>transform\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\transform\system\TransformSystem.cpp">
+      <Filter>transform\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\FileUtilities.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\FreeList.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\StringUtilities.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\window\glut\GlutWindowSystem.cpp">
+      <Filter>window\glut</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\window\sdl\SDLWindowSystem.cpp">
+      <Filter>window\sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\Engine.cpp" />
+    <ClCompile Include="..\..\..\src\engine\update\component\UpdateComponent.cpp">
+      <Filter>update\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\update\system\UpdateSystem.cpp">
+      <Filter>update\system</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\src\engine\math\Interval.ipp">
+      <Filter>math</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\math\Matrix2.ipp">
+      <Filter>math</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\math\Matrix3.ipp">
+      <Filter>math</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\math\Vec2.ipp">
+      <Filter>math</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.ipp">
+      <Filter>serialization\file</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\serialization\file\FileSerializer.ipp">
+      <Filter>serialization\file</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\structures\CrsGraph.ipp">
+      <Filter>structures</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\utility\unique_val.ipp">
+      <Filter>utility</Filter>
+    </None>
+  </ItemGroup>
+</Project>

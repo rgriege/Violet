@@ -11,26 +11,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\test\core\TestEvaluator.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\game\PathfindingTest.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\main.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\math\MathTest.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\physics\PhysicsTest.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.cpp" />
-    <ClCompile Include="..\..\..\src\violet\test\template\TemplateTest.cpp" />
+    <ClCompile Include="..\..\..\src\test\core\TestEvaluator.cpp" />
+    <ClCompile Include="..\..\..\src\test\game\PathfindingTest.cpp" />
+    <ClCompile Include="..\..\..\src\test\main.cpp" />
+    <ClCompile Include="..\..\..\src\test\math\MathTest.cpp" />
+    <ClCompile Include="..\..\..\src\test\physics\PhysicsTest.cpp" />
+    <ClCompile Include="..\..\..\src\test\serialization\JsonSerializationTest.cpp" />
+    <ClCompile Include="..\..\..\src\test\template\TemplateTest.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\test\core\StatefulTest.h" />
-    <ClInclude Include="..\..\..\src\violet\test\core\StatefulTestSuite.h" />
-    <ClInclude Include="..\..\..\src\violet\test\core\StatelessTest.h" />
-    <ClInclude Include="..\..\..\src\violet\test\core\StatelessTestSuite.h" />
-    <ClInclude Include="..\..\..\src\violet\test\core\TestEvaluator.h" />
-    <ClInclude Include="..\..\..\src\violet\test\core\TestFactory.h" />
-    <ClInclude Include="..\..\..\src\violet\test\game\PathfindingTest.h" />
-    <ClInclude Include="..\..\..\src\violet\test\math\MathTest.h" />
-    <ClInclude Include="..\..\..\src\violet\test\physics\PhysicsTest.h" />
-    <ClInclude Include="..\..\..\src\violet\test\serialization\JsonSerializationTest.h" />
-    <ClInclude Include="..\..\..\src\violet\test\template\TemplateTest.h" />
+    <ClInclude Include="..\..\..\src\test\core\StatefulTest.h" />
+    <ClInclude Include="..\..\..\src\test\core\StatefulTestSuite.h" />
+    <ClInclude Include="..\..\..\src\test\core\StatelessTest.h" />
+    <ClInclude Include="..\..\..\src\test\core\StatelessTestSuite.h" />
+    <ClInclude Include="..\..\..\src\test\core\TestEvaluator.h" />
+    <ClInclude Include="..\..\..\src\test\core\TestFactory.h" />
+    <ClInclude Include="..\..\..\src\test\game\PathfindingTest.h" />
+    <ClInclude Include="..\..\..\src\test\math\MathTest.h" />
+    <ClInclude Include="..\..\..\src\test\physics\PhysicsTest.h" />
+    <ClInclude Include="..\..\..\src\test\serialization\JsonSerializationTest.h" />
+    <ClInclude Include="..\..\..\src\test\template\TemplateTest.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{18A356F7-AADB-4567-A8CB-5D7E3A9BFFA7}</ProjectGuid>
@@ -83,7 +83,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>VioletCore.lib;VioletExtras.lib;VioletPhysics.lib;lib_json.lib;Game.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Engine.lib;lib_json.lib;Game.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>E:\Documents\alottabit\violet\bin\Debug;E:\Libraries\jsoncpp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

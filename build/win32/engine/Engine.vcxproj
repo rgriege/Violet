@@ -1,0 +1,214 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{BBA986C9-F129-4B3D-8D52-4FF41256BCA6}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>violet</RootNamespace>
+    <ProjectName>Engine</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)..\..\bin\$(Configuration)\</OutDir>
+    <TargetExt>.dll</TargetExt>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)..\..\bin\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;VIOLETCORE_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\boost_1_51_0;E:\Libraries\jsoncpp\include;E:\Libraries\lua-5.2.3\src;E:\Libraries\freetype-2.5.2\include;E:\Libraries\glew\include;E:\Libraries\SDL2\include;E:\Libraries\freeglut\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <DisableSpecificWarnings>4251</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>E:\Libraries\jsoncpp\lib\Debug;E:\Libraries\SDL2\VisualC\SDL\Win32\Debug;E:\Libraries\freetype-2.5.2\objs\win32\vc2010;E:\Libraries\glew\lib\Release\Win32;E:\Libraries\freeglut\lib\x86\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lib_json.lib;OpenGL32.lib;SDL2.lib;freetype252_D.lib;glew32.lib;freeglut.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;VIOLET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\engine\component\Component.h" />
+    <ClInclude Include="..\..\..\src\engine\component\ComponentFactory.h" />
+    <ClInclude Include="..\..\..\src\engine\Defines.h" />
+    <ClInclude Include="..\..\..\src\engine\Engine.h" />
+    <ClInclude Include="..\..\..\src\engine\entity\Entity.h" />
+    <ClInclude Include="..\..\..\src\engine\entity\EntityFactory.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\Color.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\component\TextComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\font\Font.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\Mesh.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\shader\Shader.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\system\RenderSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\texture\Bitmap.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\texture\Texture.h" />
+    <ClInclude Include="..\..\..\src\engine\input\component\InputComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\input\InputResult.h" />
+    <ClInclude Include="..\..\..\src\engine\input\system\InputSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\math\Circle.h" />
+    <ClInclude Include="..\..\..\src\engine\math\Constants.h" />
+    <ClInclude Include="..\..\..\src\engine\math\Interval.h" />
+    <ClInclude Include="..\..\..\src\engine\math\Matrix2.h" />
+    <ClInclude Include="..\..\..\src\engine\math\Matrix3.h" />
+    <ClInclude Include="..\..\..\src\engine\math\Polygon.h" />
+    <ClInclude Include="..\..\..\src\engine\math\Vec2.h" />
+    <ClInclude Include="..\..\..\src\engine\physics\collision\Intersection.h" />
+    <ClInclude Include="..\..\..\src\engine\physics\collision\RigidBody.h" />
+    <ClInclude Include="..\..\..\src\engine\physics\component\PhysicsComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\physics\system\PhysicsSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\script\component\CppScriptComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\script\ScriptUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\script\system\CppScriptSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\binary\BinarySerializer.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\Deserializer.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\file\FileDeserializer.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\file\FileSerializer.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\file\FileSerializerFactory.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\json\JsonDeserializer.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\json\JsonSerializer.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\SerializationUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\serialization\Serializer.h" />
+    <ClInclude Include="..\..\..\src\engine\structures\CrsGraph.h" />
+    <ClInclude Include="..\..\..\src\engine\system\System.h" />
+    <ClInclude Include="..\..\..\src\engine\system\SystemFactory.h" />
+    <ClInclude Include="..\..\..\src\engine\template\TemplateUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\template\TupleUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\time\Time.h" />
+    <ClInclude Include="..\..\..\src\engine\transform\component\TransformComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\transform\system\TransformSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\update\component\UpdateComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\update\system\UpdateSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\Assert.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\Buffer.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\Factory.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\FileUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\FormattedString.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\FreeList.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\Guard.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\ResourceCache.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\StringUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\unique_val.h" />
+    <ClInclude Include="..\..\..\src\engine\window\glut\GlutWindowSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\window\MouseButton.h" />
+    <ClInclude Include="..\..\..\src\engine\window\sdl\SDLWindowSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\window\WindowSystem.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\engine\Engine.cpp" />
+    <ClCompile Include="..\..\..\src\engine\entity\Entity.cpp" />
+    <ClCompile Include="..\..\..\src\engine\entity\EntityFactory.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\component\TextComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\font\Font.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\Mesh.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\shader\Shader.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\system\RenderSystem.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\texture\Bitmap.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\texture\Texture.cpp" />
+    <ClCompile Include="..\..\..\src\engine\input\component\InputComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\input\system\InputSystem.cpp" />
+    <ClCompile Include="..\..\..\src\engine\math\Circle.cpp" />
+    <ClCompile Include="..\..\..\src\engine\math\Polygon.cpp" />
+    <ClCompile Include="..\..\..\src\engine\math\Vec2.cpp" />
+    <ClCompile Include="..\..\..\src\engine\physics\collision\Intersection.cpp" />
+    <ClCompile Include="..\..\..\src\engine\physics\collision\RigidBody.cpp" />
+    <ClCompile Include="..\..\..\src\engine\physics\component\PhysicsComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\physics\system\PhysicsSystem.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\component\CppScriptComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\system\CppScriptSystem.cpp" />
+    <ClCompile Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.cpp" />
+    <ClCompile Include="..\..\..\src\engine\serialization\binary\BinarySerializer.cpp" />
+    <ClCompile Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.cpp" />
+    <ClCompile Include="..\..\..\src\engine\serialization\file\FileSerializerFactory.cpp" />
+    <ClCompile Include="..\..\..\src\engine\serialization\json\JsonDeserializer.cpp" />
+    <ClCompile Include="..\..\..\src\engine\serialization\json\JsonSerializer.cpp" />
+    <ClCompile Include="..\..\..\src\engine\time\Time.cpp" />
+    <ClCompile Include="..\..\..\src\engine\transform\component\TransformComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\transform\system\TransformSystem.cpp" />
+    <ClCompile Include="..\..\..\src\engine\update\component\UpdateComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\update\system\UpdateSystem.cpp" />
+    <ClCompile Include="..\..\..\src\engine\utility\FileUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\engine\utility\FreeList.cpp" />
+    <ClCompile Include="..\..\..\src\engine\utility\StringUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\engine\window\glut\GlutWindowSystem.cpp" />
+    <ClCompile Include="..\..\..\src\engine\window\sdl\SDLWindowSystem.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\src\engine\math\Interval.ipp" />
+    <None Include="..\..\..\src\engine\math\Matrix2.ipp" />
+    <None Include="..\..\..\src\engine\math\Matrix3.ipp" />
+    <None Include="..\..\..\src\engine\math\Vec2.ipp" />
+    <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.ipp" />
+    <None Include="..\..\..\src\engine\serialization\file\FileSerializer.ipp" />
+    <None Include="..\..\..\src\engine\structures\CrsGraph.ipp" />
+    <None Include="..\..\..\src\engine\utility\unique_val.ipp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

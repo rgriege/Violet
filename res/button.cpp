@@ -1,6 +1,6 @@
-#include "violet/core/Engine.h"
-#include "violet/plugins/graphics/Color.h"
-#include "violet/plugins/graphics/component/RenderComponent.h"
+#include "engine/Engine.h"
+#include "engine/graphics/Color.h"
+#include "engine/graphics/component/RenderComponent.h"
 
 using namespace Violet;
 

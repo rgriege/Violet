@@ -1,0 +1,40 @@
+#ifndef TEXT_COMPONENT_H
+#define TEXT_COMPONENT_H
+
+#include "engine/component/Component.h"
+
+#include <string>
+#include <memory>
+
+namespace Violet
+{
+	class Deserializer;
+	class Font;
+	class Serializer;
+	class ShaderProgram;
+
+	class VIOLET_API TextComponent : public Component
+	{
+	public:
+
+		static const char * getLabel();
+
+	public:
+
+		TextComponent(const Entity & entity, Deserializer & deserializer);
+		TextComponent(TextComponent && other);
+		TextComponent & operator=(TextComponent && other);
+		TextComponent(const TextComponent &) = delete;
+
+	public:
+
+		std::string m_text;
+		std::shared_ptr<Font> m_font;
+		uint32 m_size;
+		std::shared_ptr<ShaderProgram> m_shader;
+	};
+
+	Serializer & operator<<(Serializer & serializer, const TextComponent & component);
+}
+
+#endif

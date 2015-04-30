@@ -1,6 +1,6 @@
-#include "violet/core/Engine.h"
-#include "violet/core/window/MouseButton.h"
-#include "violet/plugins/input/InputResult.h"
+#include "engine/Engine.h"
+#include "engine/window/MouseButton.h"
+#include "engine/input/InputResult.h"
 
 using namespace Violet;
 

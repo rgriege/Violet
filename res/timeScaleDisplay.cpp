@@ -1,7 +1,7 @@
-#include "violet/core/Engine.h"
-#include "violet/core/utility/FormattedString.h"
-#include "violet/game/world/WorldSystem.h"
-#include "violet/plugins/graphics/component/TextComponent.h"
+#include "engine/Engine.h"
+#include "engine/utility/FormattedString.h"
+#include "game/world/WorldSystem.h"
+#include "engine/graphics/component/TextComponent.h"
 
 using namespace Violet;
 

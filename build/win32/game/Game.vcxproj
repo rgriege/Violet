@@ -11,19 +11,19 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\game\Config.h" />
-    <ClInclude Include="..\..\..\src\violet\game\pathfinding\Map.h" />
-    <ClInclude Include="..\..\..\src\violet\game\pathfinding\Path.h" />
-    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathComponent.h" />
-    <ClInclude Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.h" />
-    <ClInclude Include="..\..\..\src\violet\game\world\WorldSystem.h" />
+    <ClInclude Include="..\..\..\src\game\Config.h" />
+    <ClInclude Include="..\..\..\src\game\pathfinding\Map.h" />
+    <ClInclude Include="..\..\..\src\game\pathfinding\Path.h" />
+    <ClInclude Include="..\..\..\src\game\pathfinding\PathComponent.h" />
+    <ClInclude Include="..\..\..\src\game\pathfinding\PathfindingSystem.h" />
+    <ClInclude Include="..\..\..\src\game\world\WorldSystem.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\game\pathfinding\Map.cpp" />
-    <ClCompile Include="..\..\..\src\violet\game\pathfinding\Path.cpp" />
-    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathComponent.cpp" />
-    <ClCompile Include="..\..\..\src\violet\game\pathfinding\PathfindingSystem.cpp" />
-    <ClCompile Include="..\..\..\src\violet\game\world\WorldSystem.cpp" />
+    <ClCompile Include="..\..\..\src\game\pathfinding\Map.cpp" />
+    <ClCompile Include="..\..\..\src\game\pathfinding\Path.cpp" />
+    <ClCompile Include="..\..\..\src\game\pathfinding\PathComponent.cpp" />
+    <ClCompile Include="..\..\..\src\game\pathfinding\PathfindingSystem.cpp" />
+    <ClCompile Include="..\..\..\src\game\world\WorldSystem.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{195EE832-67E7-4051-8445-0EF5F765311D}</ProjectGuid>
@@ -83,7 +83,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>E:\Documents\alottabit\violet\bin\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>VioletCore.lib;VioletGraphics.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Engine.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

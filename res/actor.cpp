@@ -1,9 +1,9 @@
-#include "violet/core/Engine.h"
-#include "violet/core/script/component/CppScriptComponent.h"
-#include "violet/core/transform/TransformComponent.h"
-#include "violet/game/pathfinding/Path.h"
-#include "violet/game/pathfinding/PathfindingSystem.h"
-#include "violet/game/world/WorldSystem.h"
+#include "engine/Engine.h"
+#include "engine/script/component/CppScriptComponent.h"
+#include "engine/transform/component/TransformComponent.h"
+#include "game/pathfinding/Path.h"
+#include "game/pathfinding/PathfindingSystem.h"
+#include "game/world/WorldSystem.h"
 
 using namespace Violet;
 

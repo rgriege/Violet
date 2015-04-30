@@ -1,0 +1,49 @@
+#include "engine/graphics/component/TextComponent.h"
+
+#include "engine/serialization/Deserializer.h"
+#include "engine/serialization/Serializer.h"
+#include "engine/graphics/font/Font.h"
+#include "engine/graphics/shader/Shader.h"
+
+using namespace Violet;
+
+const char * TextComponent::getLabel()
+{
+	return "text";
+}
+
+TextComponent::TextComponent(const Entity & entity, Deserializer & deserializer) :
+	Component(entity),
+	m_text(deserializer.getString("str")),
+	m_font(Font::getCache().fetch(deserializer.getString("font"))),
+	m_size(deserializer.getUint("size")),
+	m_shader(ShaderProgram::getCache().fetch(deserializer.getString("shader")))
+{
+}
+
+TextComponent::TextComponent(TextComponent && other) :
+	Component(std::move(other)),
+	m_text(std::move(other.m_text)),
+	m_font(std::move(other.m_font)),
+	m_size(other.m_size),
+	m_shader(std::move(other.m_shader))
+{
+}
+
+TextComponent & TextComponent::operator=(TextComponent && other)
+{
+	std::swap(m_text, other.m_text);
+	std::swap(m_font, other.m_font);
+	std::swap(m_size, other.m_size);
+	std::swap(m_shader, other.m_shader);
+	return *this;
+}
+
+Serializer & Violet::operator<<(Serializer & serializer, const TextComponent & component)
+{
+	serializer.writeString("str", component.m_text.c_str());
+	serializer.writeString("font", component.m_font->getFilename());
+	serializer.writeUint("size", component.m_size);
+	serializer.writeString("shader", component.m_shader->getName().c_str());
+	return serializer;
+}

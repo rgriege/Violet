@@ -1,8 +1,8 @@
-#include "violet/core/Engine.h"
-#include "violet/core/script/component/CppScriptComponent.h"
-#include "violet/core/serialization/FileDeserializerFactory.h"
-#include "violet/core/window/MouseButton.h"
-#include "violet/plugins/input/InputResult.h"
+#include "engine/Engine.h"
+#include "engine/script/component/CppScriptComponent.h"
+#include "engine/serialization/file/FileDeserializerFactory.h"
+#include "engine/window/MouseButton.h"
+#include "engine/input/InputResult.h"
 
 using namespace Violet;
 
