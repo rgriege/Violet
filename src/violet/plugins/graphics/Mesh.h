@@ -25,6 +25,7 @@ namespace Violet
 		explicit Mesh(const Polygon & poly);
 		explicit Mesh(Deserializer & deserializer);
 		Mesh(Mesh && other);
+		Mesh & operator=(Mesh && other);
 		~Mesh();
 
 	private:

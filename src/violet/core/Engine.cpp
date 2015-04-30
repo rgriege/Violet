@@ -26,7 +26,7 @@ namespace EngineNamespace
 		exit(1);
 	}
 
-	bool createScene(const char * filename, SceneInitContext & initContext);
+	bool createScene(const char * filename, Engine & engine);
 }
 
 using namespace EngineNamespace;
@@ -56,7 +56,7 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 	if (succeeded)
 	{
 		auto optionsSegment = deserializer.enterSegment("opts");
-		succeeded = createScene(optionsSegment->getString("firstScene"), SceneInitContext(*engine));
+		succeeded = createScene(optionsSegment->getString("firstScene"), *engine);
 	}
 
 	return succeeded ? std::move(engine) : nullptr;
@@ -120,7 +120,7 @@ void Engine::runFrame(const float frameTime)
 	{
 		for (auto & system : m_systems)
 			system->clear();
-		createScene(m_nextSceneFileName.c_str(), SceneInitContext(*this));
+		createScene(m_nextSceneFileName.c_str(), *this);
 		m_nextSceneFileName.clear();
 	}
 }
@@ -172,7 +172,7 @@ Engine::Engine(std::vector<std::unique_ptr<System>> && systems) :
 }
 
 
-bool EngineNamespace::createScene(const char * filename, SceneInitContext & initContext)
+bool EngineNamespace::createScene(const char * filename, Engine & engine)
 {
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
@@ -188,7 +188,7 @@ bool EngineNamespace::createScene(const char * filename, SceneInitContext & init
 	else
 	{
 		while (*deserializer)
-			initContext.createEntity(deserializer->nextLabel(), *deserializer);
+			engine.getEntityFactory().create(deserializer->nextLabel(), *deserializer, engine);
 	}
 
 	return true;

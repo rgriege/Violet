@@ -64,8 +64,10 @@ RenderSystem::~RenderSystem()
 	Font::getCache().clear();
 }
 
-void RenderSystem::update(float const /*dt*/, Engine & engine)
+void RenderSystem::update(float const dt, Engine & engine)
 {
+	MultiComponentSystem<RenderComponent, TextComponent>::update(dt, engine);
+
 	auto & windowSystem = engine.fetch<WindowSystem>();
 	ms_viewMatrix = Matrix3f::Identity;
 	ms_viewMatrix[0][0] = 2.f / windowSystem.getWidth();

@@ -6,11 +6,6 @@
 #include "violet/game/pathfinding/Map.h"
 #include "violet/game/pathfinding/PathComponent.h"
 
-namespace Violet
-{
-	class SceneInitContext;
-}
-
 class VIOLET_GAME_API PathfindingSystem : public Violet::ComponentSystem<PathComponent>
 {
 public:
@@ -33,7 +28,7 @@ private:
 
 	PathfindingSystem();
 
-	void createMap(Violet::Deserializer & deserializer, Violet::SceneInitContext & initContext);
+	void createMap(Violet::Deserializer & deserializer, Violet::Engine & engine);
 
 private:
 

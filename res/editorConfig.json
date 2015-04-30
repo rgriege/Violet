@@ -11,10 +11,6 @@
     "rndr": {
       "color": "0xffffffff"
     },
-    "engn": {
-      "width": 800,
-      "height": 600
-    },
     "inpt": {},
     "scpt": {}
   },

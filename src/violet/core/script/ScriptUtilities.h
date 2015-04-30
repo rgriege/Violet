@@ -17,6 +17,8 @@ namespace Violet
 				auto & component = engine.fetch<CppScriptComponent>(entity);
 				return component.run<ResultType>(method, std::forward<Args>(args)...);
 			}
+
+			return ResultType();
 		}
 	};
 }

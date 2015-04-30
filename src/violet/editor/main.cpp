@@ -24,7 +24,7 @@ Violet::SystemFactory setup()
 	Violet::RenderSystem::install(factory);
 	Violet::InputSystem::install(factory);
 	Violet::CppScriptSystem::install(factory);
-	EngineSystem::install(factory);
+	//EngineSystem::install(factory);
 
 	return factory;
 }

@@ -62,6 +62,16 @@ RenderComponent::RenderComponent(RenderComponent && other) :
 	other.m_vertexArrayBuffer = 0;
 }
 
+RenderComponent & RenderComponent::operator=(RenderComponent && other)
+{
+	Component::operator=(std::move(other));
+	std::swap(m_mesh, other.m_mesh);
+	std::swap(m_color, other.m_color);
+	std::swap(m_vertexArrayBuffer, other.m_vertexArrayBuffer);
+	std::swap(m_shader, other.m_shader);
+	return *this;
+}
+
 RenderComponent::~RenderComponent()
 {
 	if (m_vertexArrayBuffer != 0)

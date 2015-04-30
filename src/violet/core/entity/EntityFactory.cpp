@@ -16,7 +16,7 @@ namespace EntityFactoryNamespace
 using namespace EntityFactoryNamespace;
 
 EntityFactory::EntityFactory() :
-	Factory<const char *, void (Deserializer &, SceneInitContext &)>(),
+	Factory<const char *, void (Deserializer &, Engine &)>(),
 	m_freeList()
 {
 	assign(ms_entityLabel, std::bind(&EntityFactory::createFromComponentList, this, std::placeholders::_1, std::placeholders::_2));
@@ -42,17 +42,23 @@ std::vector<uint32> EntityFactory::getEntities() const
 	return m_freeList.getUsed();
 }
 
-void EntityFactory::createFromComponentList(Deserializer & deserializer, SceneInitContext & initContext)
+void EntityFactory::createFromComponentList(Deserializer & deserializer, Engine & engine)
 {
 	auto entitySegment = deserializer.enterSegment(ms_entityLabel);
-	uint32 id = entitySegment->getUint("id");
-	if (!m_freeList.reserve(id))
+	uint32 id;
+	if (entitySegment->nextLabel() == std::string("id"))
 	{
-		uint32 const failedId = id;
-		id = m_freeList.reserve();
-		std::cout << "Failed to create entity with id " << failedId << ", using " << id << " instead." << std::endl;
+		id = entitySegment->getUint("id");
+		if (!m_freeList.reserve(id))
+		{
+			uint32 const failedId = id;
+			id = m_freeList.reserve();
+			std::cout << "Failed to create entity with id " << failedId << ", using " << id << " instead." << std::endl;
+		}
 	}
+	else
+		id = m_freeList.reserve();
 	Entity entity(id);
 	while (*entitySegment)
-		initContext.createComponent(entitySegment->nextLabel(), entity, *entitySegment);
+		engine.getComponentFactory().create(entitySegment->nextLabel(), entity, *entitySegment);
 }

@@ -25,6 +25,7 @@ namespace Violet
 
 		TextComponent(const Entity & entity, Deserializer & deserializer);
 		TextComponent(TextComponent && other);
+		TextComponent & operator=(TextComponent && other);
 		TextComponent(const TextComponent &) = delete;
 
 	public:

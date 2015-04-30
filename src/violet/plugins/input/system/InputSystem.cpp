@@ -4,6 +4,7 @@
 #include "violet/core/script/ScriptUtilities.h"
 #include "violet/core/transform/TransformSystem.h"
 #include "violet/core/window/WindowSystem.h"
+#include "violet/plugins/input/InputResult.h"
 
 #include <iostream>
 
@@ -25,8 +26,10 @@ InputSystem::InputSystem(InputSystem && other) :
 {
 }
 
-void InputSystem::update(float /*dt*/, Engine & engine)
+void InputSystem::update(float dt, Engine & engine)
 {
+	ComponentSystem<InputComponent>::update(dt, engine);
+
 	WindowSystem::Event event;
 	auto & windowSystem = engine.fetch<WindowSystem>();
 	while (windowSystem.getEvent(static_cast<WindowSystem::EventType>(WindowSystem::ET_KeyDown | WindowSystem::ET_KeyUp | WindowSystem::ET_MouseDown | WindowSystem::ET_MouseUp | WindowSystem::ET_MouseMove), &event))
@@ -84,11 +87,14 @@ void InputSystem::onMouseDown(const int x, const int y, const MouseButton button
 	const int width = windowSystem.getWidth();
 	const int height = windowSystem.getHeight();
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
-	for (auto const & component : getComponents())
+	auto const & components = getComponents();
+	for (auto it = components.rbegin(), end = components.rend(); it != end; ++it)
 	{
+		auto const & component = *it;
 		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
-		if (component.m_mesh.contains(point - transform.m_position))
-			ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseDown", component.getEntity(), engine, std::move(button));
+		if (component.m_mesh.contains(point - transform.m_position) &&
+			ScriptUtilities::run<InputResult>(engine, component.getEntity(), "onMouseDown", component.getEntity(), engine, std::move(button)) == InputResult::Block)
+			break;
 	}
 }
 
@@ -98,11 +104,14 @@ void InputSystem::onMouseUp(const int x, const int y, const MouseButton button, 
 	const int width = windowSystem.getWidth();
 	const int height = windowSystem.getHeight();
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
-	for (auto const & component : getComponents())
+	auto const & components = getComponents();
+	for (auto it = components.rbegin(), end = components.rend(); it != end; ++it)
 	{
+		auto const & component = *it;
 		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
-		if (component.m_mesh.contains(point - transform.m_position))
-			ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseUp", component.getEntity(), engine, button);
+		if (component.m_mesh.contains(point - transform.m_position) &&
+			ScriptUtilities::run<InputResult>(engine, component.getEntity(), "onMouseUp", component.getEntity(), engine, std::move(button)) == InputResult::Block)
+			break;
 	}
 }
 

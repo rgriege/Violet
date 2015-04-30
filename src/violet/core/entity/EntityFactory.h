@@ -10,9 +10,9 @@
 namespace Violet
 {
 	class Deserializer;
-	class SceneInitContext;
+	class Engine;
 
-	class VIOLET_API EntityFactory : public Factory<const char *, void(Deserializer &, SceneInitContext &)>
+	class VIOLET_API EntityFactory : public Factory<const char *, void(Deserializer &, Engine &)>
 	{
 	public:
 
@@ -25,7 +25,7 @@ namespace Violet
 
 	private:
 
-		void createFromComponentList(Deserializer & deserializer, SceneInitContext & initContext);
+		void createFromComponentList(Deserializer & deserializer, Engine & engine);
 
 	private:
 

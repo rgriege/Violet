@@ -18,6 +18,7 @@ std::unique_ptr<System> TransformSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(system);
 }
 
-void TransformSystem::update(float /*dt*/, Engine & /*engine*/)
+void TransformSystem::update(const float dt, Engine & engine)
 {
+	ComponentSystem<TransformComponent>::update(dt, engine);
 }

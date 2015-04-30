@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\plugins\input\component\InputComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\plugins\input\InputResult.h" />
     <ClInclude Include="..\..\..\src\violet\plugins\input\system\InputSystem.h" />
   </ItemGroup>
   <ItemGroup>

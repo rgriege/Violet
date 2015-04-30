@@ -61,9 +61,20 @@ namespace Violet
 			return static_cast<SystemType &>(**it);
 		}
 
+		void remove(const Entity & entity)
+		{
+			for (auto const & system : m_systems)
+				system->remove(entity);
+		}
+
 		EntityFactory & getEntityFactory()
 		{
 			return m_entityFactory;
+		}
+
+		ComponentFactory & getComponentFactory()
+		{
+			return m_componentFactory;
 		}
 
 	private:
@@ -80,42 +91,6 @@ namespace Violet
 		EntityFactory m_entityFactory;
 		ComponentFactory m_componentFactory;
 		bool m_running;
-	};
-
-	class VIOLET_API SceneInitContext
-	{
-	public:
-
-		SceneInitContext(Engine & engine) :
-			m_engine(engine)
-		{
-		}
-
-		Entity createEntity()
-		{
-			static uint32 s_id = 10000;
-			return Entity(++s_id);
-		}
-
-		void createEntity(const char * label, Deserializer & deserializer)
-		{
-			m_engine.m_entityFactory.create(label, deserializer, *this);
-		}
-
-		void createComponent(const char * label, Entity & entity, Deserializer & deserializer)
-		{
-			m_engine.m_componentFactory.create(label, entity, deserializer);
-		}
-
-		template <typename SystemType, typename ComponentType, typename... Args>
-		void createComponent(Entity & entity, Args&&... args)
-		{
-			m_engine.fetch<SystemType>().create<ComponentType>(entity, std::forward<Args>(args)...);
-		}
-
-	private:
-
-		Engine & m_engine;
 	};
 }
 

@@ -50,15 +50,10 @@ void PathfindingSystem::unbind(Violet::EntityFactory & factory)
 
 void PathfindingSystem::update(const float dt, Violet::Engine & engine)
 {
-	for (auto it = getComponents().begin(), end = getComponents().end(); it != end; )
+	for (auto & component : getComponents())
 	{
-		if (!updateComponent(*it, dt, engine))
-		{
-			it = remove(it->getEntity());
-			end = getComponents().end();
-		}
-		else
-			++it;
+		if (!updateComponent(component, dt, engine))
+			remove(component.getEntity());
 	}
 }
 
@@ -72,13 +67,13 @@ PathfindingSystem::PathfindingSystem() :
 {
 }
 
-void PathfindingSystem::createMap(Violet::Deserializer & deserializer, Violet::SceneInitContext & initContext)
+void PathfindingSystem::createMap(Violet::Deserializer & deserializer, Violet::Engine & engine)
 {
 	m_map = Map(deserializer);
 
 	for (auto const & road : m_map.getGraph().getEdges())
 	{
-		Violet::Entity & entity = initContext.createEntity();
+		Violet::Entity & entity = engine.getEntityFactory().createNew();
 		auto const & start = m_map.getGraph().getNode(road.m_src).m_position;
 		auto const & end = m_map.getGraph().getNode(road.m_destination).m_position;
 		auto const center = (end + start) / 2.f;
@@ -91,8 +86,8 @@ void PathfindingSystem::createMap(Violet::Deserializer & deserializer, Violet::S
 			halfEdge - offset,
 			halfEdge - offset.perpendicular()
 		} };
-		initContext.createComponent<Violet::TransformSystem, Violet::TransformComponent>(entity, center, 0.f);
-		initContext.createComponent<Violet::RenderSystem, Violet::RenderComponent>(entity, p, Violet::Color(128, 128, 128), Violet::ShaderProgram::getCache().fetch("poly"));
+		engine.fetch<Violet::TransformSystem>().create(entity, center, 0.f);
+		engine.fetch<Violet::RenderSystem>().create<Violet::RenderComponent>(entity, p, Violet::Color(128, 128, 128), Violet::ShaderProgram::getCache().fetch("poly"));
 	}
 }
 

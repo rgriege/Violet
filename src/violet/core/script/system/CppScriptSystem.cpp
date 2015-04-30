@@ -19,6 +19,7 @@ CppScriptSystem::CppScriptSystem(CppScriptSystem && other) :
 {
 }
 
-void CppScriptSystem::update(float /*dt*/, Engine & /*engine*/)
+void CppScriptSystem::update(const float dt, Engine & engine)
 {
+	ComponentSystem<CppScriptComponent>::update(dt, engine);
 }

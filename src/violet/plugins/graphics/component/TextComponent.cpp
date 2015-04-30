@@ -30,6 +30,15 @@ TextComponent::TextComponent(TextComponent && other) :
 {
 }
 
+TextComponent & TextComponent::operator=(TextComponent && other)
+{
+	std::swap(m_text, other.m_text);
+	std::swap(m_font, other.m_font);
+	std::swap(m_size, other.m_size);
+	std::swap(m_shader, other.m_shader);
+	return *this;
+}
+
 Serializer & Violet::operator<<(Serializer & serializer, const TextComponent & component)
 {
 	serializer.writeString("str", component.m_text.c_str());

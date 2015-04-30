@@ -11,14 +11,6 @@ namespace Violet
 	{
 	public:
 
-		enum InputResult
-		{
-			IR_pass,
-			IR_block
-		};
-
-	public:
-
 		static void install(SystemFactory & factory);
 		static std::unique_ptr<System> init(Deserializer & deserializer);
 

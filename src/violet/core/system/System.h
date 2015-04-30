@@ -51,6 +51,7 @@ namespace Violet
 			s_component = Component(entity);
 			return s_component;
 		}
+		virtual void remove(const Entity & entity) {}
 		virtual void update(float dt, Engine & engine) {}
 		virtual void save(Serializer & serializer, const Entity & entity) const {}
 		virtual void clear() {}
@@ -74,14 +75,17 @@ namespace Violet
 
 		ComponentSystem() :
 			System(ComponentType::getLabel()),
-			m_components(new std::vector<ComponentType>)
+			m_components(new std::vector<ComponentType>),
+			m_entityComponentMap(),
+			m_removed()
 		{
 		}
 
 		ComponentSystem<ComponentType>(ComponentSystem<ComponentType> && other) :
 			System(ComponentType::getLabel()),
 			m_components(std::move(other.m_components)),
-			m_entityComponentMap(std::move(other.m_entityComponentMap))
+			m_entityComponentMap(std::move(other.m_entityComponentMap)),
+			m_removed(std::move(other.m_removed))
 		{
 		}
 
@@ -103,18 +107,6 @@ namespace Violet
 		void create(Entity & entity, Args&&... args)
 		{
 			return create(entity, std::forward<Args>(args)...);
-		}
-
-		typename std::vector<ComponentType>::iterator remove(Entity & entity)
-		{
-			auto const it = m_entityComponentMap.find(entity.getId());
-			if (it != m_entityComponentMap.end())
-			{
-				auto const result = m_components->erase(m_components->begin() + it->second);
-				m_entityComponentMap.erase(it);
-				return result;
-			}
-			return m_components->end();
 		}
 
 		virtual void bind(ComponentFactory & factory) override
@@ -156,6 +148,25 @@ namespace Violet
 			return m_components->operator[](it->second);
 		}
 
+		virtual void remove(const Entity & entity) override
+		{
+			m_removed.emplace_back(entity);
+		}
+
+		virtual void update(float /*dt*/, Engine & /*engine*/) override
+		{
+			for (auto const & entity : m_removed)
+			{
+				auto const it = m_entityComponentMap.find(entity.getId());
+				if (it != m_entityComponentMap.end())
+				{
+					m_components->erase(m_components->begin() + it->second);
+					m_entityComponentMap.erase(it);
+				}
+			}
+			m_removed.clear();
+		}
+
 		virtual void save(Serializer & serializer, const Entity & entity) const override
 		{
 			if (has(entity))
@@ -187,6 +198,7 @@ namespace Violet
 		typedef std::unique_ptr<std::vector<ComponentType>> Components;
 		Components m_components;
 		std::map<uint32, uint32> m_entityComponentMap;
+		std::vector<Entity> m_removed;
 	};
 
 	template <typename ... ComponentTypes>

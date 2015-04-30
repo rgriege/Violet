@@ -15,6 +15,7 @@
     <ClInclude Include="..\..\..\src\violet\plugins\input\component\InputComponent.h">
       <Filter>component</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\plugins\input\InputResult.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\plugins\input\component\InputComponent.cpp">

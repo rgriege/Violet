@@ -33,6 +33,13 @@ Mesh::Mesh(Mesh && other) :
 	other.m_vertexBuffer = 0;
 }
 
+Mesh & Mesh::operator=(Mesh && other)
+{
+	std::swap(m_vertexBuffer, other.m_vertexBuffer);
+	std::swap(m_size, other.m_size);
+	return *this;
+}
+
 Mesh::Mesh(const Polygon & poly) :
 	m_vertexBuffer(0),
 	m_size(poly.m_vertices.size())
