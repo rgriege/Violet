@@ -5,12 +5,12 @@ Violet is yet another open source entity-component framework.  Yes there are alr
 
 ### Features
 
-Rendering colored 2D polygons
-Rendering text
-Keyboard (A-Z) and mouse input
-Basic collision of 2D polygons
-JSON scene files
-C++ Scripting (can be reloaded at runtime)
+Rendering colored 2D polygons  
+Rendering text  
+Keyboard (A-Z) and mouse input  
+Basic collision of 2D polygons  
+JSON scene files  
+C++ Scripting (can be reloaded at runtime)  
 
 ### Check out what's in development:
 
