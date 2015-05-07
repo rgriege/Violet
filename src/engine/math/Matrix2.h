@@ -1,5 +1,5 @@
-#ifndef MATRIX_H
-#define MATRIX_H
+#ifndef VIOLET_Matrix2_H
+#define VIOLET_Matrix2_H
 
 #include "engine/math/Vec2.h"
 
@@ -43,7 +43,7 @@ namespace Violet
 	std::ostream & operator<<(std::ostream & os, const Matrix2<T> & mat);
 }
 
-#include "engine/math/Matrix2.ipp"
+#include "engine/math/Matrix2.inl"
 
 typedef Violet::Matrix2<int> Matrix2i;
 typedef Violet::Matrix2<float> Matrix2f;

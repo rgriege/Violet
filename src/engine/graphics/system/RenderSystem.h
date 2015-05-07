@@ -1,5 +1,5 @@
-#ifndef RENDER_SYSTEM_H
-#define RENDER_SYSTEM_H
+#ifndef VIOLET_RenderSystem_H
+#define VIOLET_RenderSystem_H
 
 #include "engine/system/System.h"
 #include "engine/graphics/component/RenderComponent.h"
@@ -10,7 +10,7 @@ namespace Violet
 	class Deserializer;
 	class SystemFactory;
 
-	class VIOLET_API RenderSystem : public MultiComponentSystem<RenderComponent, TextComponent>
+	class VIOLET_API RenderSystem : public System
 	{
 	public:
 

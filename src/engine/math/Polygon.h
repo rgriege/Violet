@@ -1,10 +1,9 @@
-#ifndef POLYGON_H
-#define POLYGON_H
+#ifndef VIOLET_Polygon_H
+#define VIOLET_Polygon_H
 
 #include <vector>
 
 #include "engine/math/Vec2.h"
-#include "engine/math/Interval.h"
 
 namespace Violet
 {
@@ -23,6 +22,7 @@ namespace Violet
 	};
 
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const Polygon & poly);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Polygon & poly);
 }
 
 #endif

@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "engine/graphics/component/TextComponent.h"
 
 #include "engine/serialization/Deserializer.h"
@@ -7,22 +9,29 @@
 
 using namespace Violet;
 
-const char * TextComponent::getLabel()
+// ============================================================================
+
+Tag TextComponent::getTypeId()
 {
-	return "text";
+	return Tag('t', 'e', 'x', 't');
 }
 
-TextComponent::TextComponent(const Entity & entity, Deserializer & deserializer) :
-	Component(entity),
-	m_text(deserializer.getString("str")),
-	m_font(Font::getCache().fetch(deserializer.getString("font"))),
-	m_size(deserializer.getUint("size")),
-	m_shader(ShaderProgram::getCache().fetch(deserializer.getString("shader")))
+// ============================================================================
+
+TextComponent::TextComponent(const Entity entity, Deserializer & deserializer) :
+	Component<TextComponent>(entity),
+	m_text(),
+	m_font(),
+	m_size(),
+	m_shader()
 {
+	deserializer >> *this;
 }
+
+// ----------------------------------------------------------------------------
 
 TextComponent::TextComponent(TextComponent && other) :
-	Component(std::move(other)),
+	Component<TextComponent>(std::move(other)),
 	m_text(std::move(other.m_text)),
 	m_font(std::move(other.m_font)),
 	m_size(other.m_size),
@@ -30,14 +39,30 @@ TextComponent::TextComponent(TextComponent && other) :
 {
 }
 
+// ----------------------------------------------------------------------------
+
 TextComponent & TextComponent::operator=(TextComponent && other)
 {
+	Component<TextComponent>::operator=(std::move(other));
 	std::swap(m_text, other.m_text);
 	std::swap(m_font, other.m_font);
 	std::swap(m_size, other.m_size);
 	std::swap(m_shader, other.m_shader);
 	return *this;
 }
+
+// ============================================================================
+
+Deserializer & Violet::operator>>(Deserializer & deserializer, TextComponent & component)
+{
+	component.m_text = deserializer.getString("str");
+	component.m_font = Font::getCache().fetch(deserializer.getString("font"));
+	component.m_size = deserializer.getUint("size");
+	component.m_shader = ShaderProgram::getCache().fetch(deserializer.getString("shader"));
+	return deserializer;
+}
+
+// ----------------------------------------------------------------------------
 
 Serializer & Violet::operator<<(Serializer & serializer, const TextComponent & component)
 {
@@ -47,3 +72,5 @@ Serializer & Violet::operator<<(Serializer & serializer, const TextComponent & c
 	serializer.writeString("shader", component.m_shader->getName().c_str());
 	return serializer;
 }
+
+// ============================================================================

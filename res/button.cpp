@@ -4,14 +4,14 @@
 
 using namespace Violet;
 
-extern "C" __declspec(dllexport) void onMouseIn(Entity & e, Engine & engine)
+extern "C" __declspec(dllexport) void onMouseIn(const Entity e, Engine & engine)
 {
-    auto & rc = engine.fetch<RenderComponent>(e);
-    rc.m_color = Color::kGreen;
+    auto * rc = engine.getCurrentScene().getComponent<RenderComponent>(e);
+    rc->m_color = Color::kGreen;
 }
 
-extern "C" __declspec(dllexport) void onMouseOut(Entity & e, Engine & engine)
+extern "C" __declspec(dllexport) void onMouseOut(const Entity e, Engine & engine)
 {
-    auto & rc = engine.fetch<RenderComponent>(e);
-    rc.m_color = Color::kRed;
+    auto * rc = engine.getCurrentScene().getComponent<RenderComponent>(e);
+    rc->m_color = Color::kRed;
 }

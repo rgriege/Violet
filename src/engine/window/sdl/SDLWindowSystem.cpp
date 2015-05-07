@@ -1,8 +1,11 @@
+// ============================================================================
+
 #include "engine/window/sdl/SDLWindowSystem.h"
 
 #include "engine/Engine.h"
-#include "engine/serialization/Deserializer.h"
 #include "engine/graphics/system/RenderSystem.h"
+#include "engine/serialization/Deserializer.h"
+#include "engine/system/SystemFactory.h"
 
 #include <SDL.h>
 
@@ -10,6 +13,8 @@
 #include <iostream>
 
 using namespace Violet;
+
+// ============================================================================
 
 namespace SDLWindowSystemNamespace
 {
@@ -19,10 +24,15 @@ namespace SDLWindowSystemNamespace
 
 using namespace SDLWindowSystemNamespace;
 
+// ============================================================================
+
 void SDLWindowSystem::install(SystemFactory & factory)
 {
 	factory.assign(getStaticLabel(), &SDLWindowSystem::init);
 }
+
+// ----------------------------------------------------------------------------
+
 std::unique_ptr<System> SDLWindowSystem::init(Deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
@@ -65,6 +75,8 @@ std::unique_ptr<System> SDLWindowSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(new SDLWindowSystem(window, glContext));
 }
 
+// ============================================================================
+
 SDLWindowSystem::~SDLWindowSystem()
 {
 	SDL_GL_DeleteContext(m_glContext);
@@ -72,15 +84,21 @@ SDLWindowSystem::~SDLWindowSystem()
 	SDL_Quit();
 }
 
+// ----------------------------------------------------------------------------
+
 void SDLWindowSystem::render()
 {
 }
 
+// ----------------------------------------------------------------------------
+
 void SDLWindowSystem::update(float /*dt*/, Engine & engine)
 {
 	SDL_GL_SwapWindow(m_window);
-	engine.fetch<RenderSystem>().clear();
+	engine.fetch<RenderSystem>()->clear();
 }
+
+// ----------------------------------------------------------------------------
 
 bool SDLWindowSystem::getEvent(EventType type, Event* event)
 {
@@ -131,6 +149,8 @@ bool SDLWindowSystem::getEvent(EventType type, Event* event)
 	return hasEvent;
 }
 
+// ----------------------------------------------------------------------------
+
 void SDLWindowSystem::addEvent(Event event)
 {
 	SDL_Event sdlEvent;
@@ -169,15 +189,21 @@ void SDLWindowSystem::addEvent(Event event)
 	SDL_PushEvent(&sdlEvent);
 }
 
+// ----------------------------------------------------------------------------
+
 int SDLWindowSystem::getWidth() const
 {
 	return m_width;
 }
 
+// ----------------------------------------------------------------------------
+
 int SDLWindowSystem::getHeight() const
 {
 	return m_height;
 }
+
+// ============================================================================
 
 SDLWindowSystem::SDLWindowSystem(SDL_Window * window, SDL_GLContext context) :
 	WindowSystem(),
@@ -189,11 +215,15 @@ SDLWindowSystem::SDLWindowSystem(SDL_Window * window, SDL_GLContext context) :
 	SDL_GetWindowSize(m_window, &m_width, &m_height);
 }
 
+// ============================================================================
+
 char SDLWindowSystemNamespace::convertKey(SDL_Keycode key)
 {
 	static char keys[1 + SDLK_z - SDLK_a] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
 	return (key >= SDLK_a && key <= SDLK_z) ? keys[key - SDLK_a] : 0;
 }
+
+// ----------------------------------------------------------------------------
 
 int SDLWindowSystemNamespace::filterEvent(void * /*userdata*/, SDL_Event * event)
 {
@@ -212,3 +242,5 @@ int SDLWindowSystemNamespace::filterEvent(void * /*userdata*/, SDL_Event * event
 		break;
 	}
 }
+
+// ============================================================================

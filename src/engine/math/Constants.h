@@ -1,5 +1,5 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef VIOLET_Constants_H
+#define VIOLET_Constants_H
 
 #define PI 3.1415
 

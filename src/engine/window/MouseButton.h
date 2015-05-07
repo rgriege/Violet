@@ -1,5 +1,5 @@
-#ifndef MOUSE_BUTTON_H
-#define MOUSE_BUTTON_H
+#ifndef VIOLET_MouseButton_H
+#define VIOLET_MouseButton_H
 
 namespace Violet
 {

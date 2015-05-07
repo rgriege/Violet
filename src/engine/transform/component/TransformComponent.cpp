@@ -1,51 +1,77 @@
+// ============================================================================
+
 #include "engine/transform/component/TransformComponent.h"
 
 #include "engine/serialization/Serializer.h"
 
 using namespace Violet;
 
-const char * TransformComponent::getLabel()
+// ============================================================================
+
+Tag TransformComponent::getTypeId()
 {
-	return "tsfm";
+	return Tag('t', 's', 'f', 'm');
 }
 
-TransformComponent::TransformComponent(const Entity & entity) :
-	Component(entity),
+// ============================================================================
+
+TransformComponent::TransformComponent(const Entity entity) :
+	Component<TransformComponent>(entity),
 	m_position(),
-	m_rotation()
-{
-}
-
-TransformComponent::TransformComponent(const Entity & entity, Deserializer & deserializer) :
-	Component(entity),
-	m_position(deserializer),
 	m_rotation(0)
 {
 }
 
-TransformComponent::TransformComponent(const Entity & entity, Vec2f position, float rotation) :
-	Component(entity),
+// ----------------------------------------------------------------------------
+
+TransformComponent::TransformComponent(const Entity entity, Deserializer & deserializer) :
+	Component<TransformComponent>(entity),
+	m_position(),
+	m_rotation(0)
+{
+	deserializer >> *this;
+}
+
+// ----------------------------------------------------------------------------
+
+TransformComponent::TransformComponent(const Entity entity, const Vec2f position, const float rotation) :
+	Component<TransformComponent>(entity),
 	m_position(position),
 	m_rotation(rotation)
 {
 }
 
+// ----------------------------------------------------------------------------
+
 TransformComponent::TransformComponent(TransformComponent && other) :
-	Component(std::move(other)),
+	Component<TransformComponent>(std::move(other)),
 	m_position(std::move(other.m_position)),
 	m_rotation(other.m_rotation)
 {
 }
 
+// ----------------------------------------------------------------------------
+
 TransformComponent & TransformComponent::operator=(TransformComponent && other)
 {
+	Component<TransformComponent>::operator=(std::move(other));
 	m_position = std::move(other.m_position);
 	m_rotation = other.m_rotation;
 	return *this;
 }
 
+// ============================================================================
+
+Deserializer & Violet::operator>>(Deserializer & deserializer, TransformComponent & component)
+{
+	return deserializer >> component.m_position;
+}
+
+// ----------------------------------------------------------------------------
+
 Serializer & Violet::operator<<(Serializer & serializer, const TransformComponent & component)
 {
-	serializer << component.m_position;
-	return serializer;
+	return serializer << component.m_position;
 }
+
+// ============================================================================

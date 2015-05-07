@@ -1,5 +1,5 @@
-#ifndef PATHFINDING_COMPONENT_H
-#define PATHFINDING_COMPONENT_H
+#ifndef GAME_PathComponent_H
+#define GAME_PathComponent_H
 
 #include "engine/component/Component.h"
 #include "game/Config.h"
@@ -7,16 +7,16 @@
 
 class Violet::Serializer;
 
-class VIOLET_GAME_API PathComponent : public Violet::Component
+class VIOLET_GAME_API PathComponent : public Violet::Component<PathComponent>
 {
 public:
 
-	static const char * getLabel();
+	static Violet::Tag getTypeId();
 
 public:
 
-	PathComponent(const Violet::Entity & entity, Violet::Deserializer & deserializer);
-	PathComponent(const Violet::Entity & entity, float speed, Path && path);
+	PathComponent(Violet::Entity entity, Violet::Deserializer & deserializer);
+	PathComponent(Violet::Entity entity, float speed, Path && path);
 	PathComponent(PathComponent && other);
 	PathComponent & operator=(PathComponent && other);
 

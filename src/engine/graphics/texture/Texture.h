@@ -1,9 +1,7 @@
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#ifndef VIOLET_Texture_H
+#define VIOLET_Texture_H
 
 #include "engine/Defines.h"
-
-#include <memory>
 
 namespace Violet
 {

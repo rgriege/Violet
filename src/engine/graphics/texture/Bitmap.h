@@ -1,5 +1,5 @@
-#ifndef BITMAP_H
-#define BITMAP_H
+#ifndef VIOLET_Bitmap_H
+#define VIOLET_Bitmap_H
 
 #include "engine/utility/ResourceCache.h"
 

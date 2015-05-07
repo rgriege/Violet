@@ -34,6 +34,6 @@ namespace Violet
 	};
 }
 
-#include "engine/serialization/file/FileSerializer.ipp"
+#include "engine/serialization/file/FileSerializer.inl"
 
 #endif

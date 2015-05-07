@@ -1,5 +1,5 @@
-#ifndef BINARY_SERIALIZER
-#define BINARY_SERIALIZER
+#ifndef VIOLET_BinarySerializer_H
+#define VIOLET_BinarySerializer_H
 
 #include "engine/serialization/Serializer.h"
 

@@ -1,5 +1,5 @@
-#ifndef TIME_H
-#define TIME_H
+#ifndef VIOLET_Time_H
+#define VIOLET_Time_H
 
 #include "engine/Defines.h"
 

@@ -1,13 +1,8 @@
-#ifndef CIRCLE_H
-#define CIRCLE_H
+#ifndef VIOLET_Circle_H
+#define VIOLET_Circle_H
 
-#include "engine/Defines.h"
 #include "engine/math/Vec2.h"
 #include "engine/math/Interval.h"
-
-#include <cmath>
-#include <string>
-#include <iostream>
 
 namespace Violet
 {
@@ -16,13 +11,13 @@ namespace Violet
 	public:
 
 		Circle();
-		Circle(Vec2f _center, float _radius);
+		Circle(const Vec2f & center, float radius);
 		FloatInterval project(const Vec2f & axis) const;
 
 	public:
 	
-		Vec2f const center;
-		float const radius;
+		const Vec2f m_center;
+		const float m_radius;
 	};
 }
 

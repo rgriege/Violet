@@ -1,5 +1,5 @@
-#ifndef TEMPLATE_UTILITIES_H
-#define TEMPLATE_UTILITIES_H
+#ifndef VIOLET_TemplateUtilities_H
+#define VIOLET_TemplateUtilities_H
 
 namespace Violet
 {

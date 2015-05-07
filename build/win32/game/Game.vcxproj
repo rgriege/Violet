@@ -13,15 +13,19 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\src\game\Config.h" />
     <ClInclude Include="..\..\..\src\game\pathfinding\Map.h" />
+    <ClInclude Include="..\..\..\src\game\pathfinding\MapComponent.h" />
     <ClInclude Include="..\..\..\src\game\pathfinding\Path.h" />
     <ClInclude Include="..\..\..\src\game\pathfinding\PathComponent.h" />
+    <ClInclude Include="..\..\..\src\game\pathfinding\PathfindingComponent.h" />
     <ClInclude Include="..\..\..\src\game\pathfinding\PathfindingSystem.h" />
     <ClInclude Include="..\..\..\src\game\world\WorldSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\game\pathfinding\Map.cpp" />
+    <ClCompile Include="..\..\..\src\game\pathfinding\MapComponent.cpp" />
     <ClCompile Include="..\..\..\src\game\pathfinding\Path.cpp" />
     <ClCompile Include="..\..\..\src\game\pathfinding\PathComponent.cpp" />
+    <ClCompile Include="..\..\..\src\game\pathfinding\PathfindingComponent.cpp" />
     <ClCompile Include="..\..\..\src\game\pathfinding\PathfindingSystem.cpp" />
     <ClCompile Include="..\..\..\src\game\world\WorldSystem.cpp" />
   </ItemGroup>

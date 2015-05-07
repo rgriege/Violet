@@ -17,7 +17,7 @@ extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & alloc
     mem->hasMenu = false;
 }
 
-extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity & e, Engine & engine, const MouseButton button, Mem * mem)
+extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity e, Engine & engine, const MouseButton button, Mem * mem)
 {
     if (button == MB_Right)
     {
@@ -30,7 +30,7 @@ extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity & e, Engin
             auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
             if (deserializer != nullptr)
             {
-                engine.getEntityFactory().create("ntty", *deserializer, engine);
+                engine.getCurrentScene().createEntity(*deserializer);
                 mem->hasMenu = true;
             }
         }

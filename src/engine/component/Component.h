@@ -1,49 +1,47 @@
-#ifndef VIOLET_COMPONENT_H__
-#define VIOLET_COMPONENT_H__
+#ifndef VIOLET_Component_H
+#define VIOLET_Component_H
 
 #include "engine/entity/Entity.h"
+#include "engine/utility/Tag.h"
 
 namespace Violet
 {
-	class VIOLET_API Component
+	class VIOLET_API BaseComponent
 	{
 	public:
 
-		Component(const Entity & e) :
-			m_entity(e)
-		{
-		}
+		Entity getEntity() const;
 
-		Component(Component && c) :
-			m_entity(c.m_entity)
-		{
-		}
+		virtual ~BaseComponent() = 0;
 
-		Component & operator=(Component && other)
-		{
-			m_entity = other.m_entity;
-			return *this;
-		}
+	protected:
 
-		Entity & getEntity()
-		{
-			return m_entity;
-		}
+		BaseComponent(Entity entity);
 
-		Entity const & getEntity() const
-		{
-			return m_entity;
-		}
+		BaseComponent(const BaseComponent &) = default;
+		BaseComponent & operator=(const BaseComponent &) = default;
 
-	private:
-
-		Component(const Component &) = delete;
-		Component & operator=(const Component &) = delete;
+		BaseComponent(BaseComponent &&);
+		BaseComponent & operator=(BaseComponent &&);
 
 	private:
 
 		Entity m_entity;
 	};
+
+	template <typename Derived>
+	class Component : public BaseComponent
+	{
+	public:
+
+		static Tag getTypeId();
+
+	protected:
+
+		Component(Entity entity);
+	};
 }
+
+#include "engine/component/Component.inl"
 
 #endif

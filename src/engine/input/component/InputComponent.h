@@ -1,5 +1,5 @@
-#ifndef INPUT_COMPONENT_H
-#define INPUT_COMPONENT_H
+#ifndef VIOLET_InputComponent_H
+#define VIOLET_InputComponent_H
 
 #include "engine/component/Component.h"
 #include "engine/math/Polygon.h"
@@ -12,15 +12,15 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API InputComponent : public Component
+	class VIOLET_API InputComponent : public Component<InputComponent>
 	{
 	public:
 
-		static const char * getLabel();
+		static Tag getTypeId();
 
 	public:
 
-		InputComponent(const Entity & entity, Deserializer & deserializer);
+		InputComponent(Entity entity, Deserializer & deserializer);
 		InputComponent(InputComponent && other);
 		InputComponent & operator=(InputComponent && other);
 
@@ -30,6 +30,7 @@ namespace Violet
 	};
 
 	Serializer & operator<<(Serializer & serializer, const InputComponent & component);
+	Deserializer & operator>>(Deserializer & deserializer, InputComponent & component);
 }
 
 #endif

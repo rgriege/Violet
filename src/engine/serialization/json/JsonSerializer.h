@@ -1,5 +1,5 @@
-#ifndef JSON_SERIALIZER_H
-#define JSON_SERIALIZER_H
+#ifndef VIOLET_JsonSerializer_H
+#define VIOLET_JsonSerializer_H
 
 #include "engine/serialization/Serializer.h"
 #include "engine/Defines.h"

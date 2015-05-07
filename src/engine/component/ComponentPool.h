@@ -1,90 +1,89 @@
-#ifndef COMPONENT_POOL_H
-#define COMPONENT_POOL_H
+#ifndef VIOLET_ComponentPool_H
+#define VIOLET_ComponentPool_H
 
-#include "violet/core/component/ComponentFactory.h"
-#include "violet/core/entity/Entity.h"
+#include "engine/component/Component.h"
+#include "engine/entity/Entity.h"
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 namespace Violet
 {
-	template <typename ComponentType>
-	class ComponentPool
+	class VIOLET_API ComponentPool
 	{
 	public:
 
-		static const char * getStaticLabel()
+		template <typename ComponentType>
+		class Iterator
 		{
-			return ComponentType::getLabel();
-		}
+		public:
+
+			Iterator(ComponentType * ptr);
+
+			Iterator<ComponentType> & operator++();
+			Iterator<ComponentType> & advanceTo(Entity entity, const Iterator<ComponentType> & end);
+
+			ComponentType & operator*();
+			ComponentType * operator->();
+
+			bool operator!=(const Iterator<ComponentType> & other) const;
+
+		private:
+
+			ComponentType * m_ptr;
+		};
 
 	public:
 
-		void create(Entity & entity, Deserializer & deserializer)
-		{
-			auto segment = deserializer.enterSegment(getStaticLabel());
-			m_entityComponentMap.emplace(entity.getId(), m_components->size());
-			m_components->emplace_back(entity, *segment);
-		}
+		template <typename ComponentType>
+		static ComponentPool create();
 
-		template <typename... Args>
-		void create(Entity & entity, Args&&... args)
-		{
-			m_entityComponentMap.emplace(entity.getId(), m_components->size());
-			m_components->emplace_back(entity, std::forward<Args>(args)...);
-		}
+	public:
 
-		template <typename ComponentType, typename... Args> //std::enable_if_t<has_type<Systems, ComponentSystem<ComponentType>>::value>* = nullptr
-		void create(Entity & entity, Args&&... args)
-		{
-			return create(entity, std::forward<Args>(args)...);
-		}
+		~ComponentPool();
 
-		typename std::vector<ComponentType>::iterator remove(Entity & entity)
-		{
-			auto const it = m_entityComponentMap.find(entity.getId());
-			if (it != m_entityComponentMap.end())
-			{
-				auto const result = m_components->erase(m_components->begin() + it->second);
-				m_entityComponentMap.erase(it);
-				return result;
-			}
-			return m_components->end();
-		}
+		ComponentPool(ComponentPool && other);
+		ComponentPool & operator=(ComponentPool && other);
 
-		virtual void bind(ComponentFactory & factory) override
-		{
-			factory.assign(getStaticLabel(), std::bind(&ComponentSystem<ComponentType>::create, this, std::placeholders::_1, std::placeholders::_2));
-		}
+		Tag getTypeId() const;
 
-		virtual void unbind(ComponentFactory & factory) override
-		{
-			factory.remove(getStaticLabel());
-		}
+		template <typename ComponentType, typename... Args>
+		ComponentType & create(Entity entity, Args&&... args);
 
-		virtual bool owns(const char * label) const override
-		{
-			return strcmp(label, getStaticLabel()) == 0;
-		}
+		bool has(Entity entity) const;
 
-		bool has(const Entity & entity) const
-		{
-			return m_entityComponentMap.find(entity.getId()) != m_entityComponentMap.end();
-		}
+		template <typename ComponentType>
+		ComponentType * get(Entity entity);
 
-		virtual bool has(const char * label, const Entity & entity) const override
-		{
-			assert(label == getStaticLabel());
-			return has(entity);
-		}
+		template <typename ComponentType>
+		Iterator<ComponentType> begin();
+		template <typename ComponentType>
+		Iterator<ComponentType> end();
 
-		virtual ComponentType & fetch(const char * label, const Entity & entity) override
-		{
-			assert(has(label, entity));
-			return m_components->operator[](m_entityComponentMap[entity.getId()]);
-		}
+		bool remove(Entity entity);
+		void clear();
+
+	private:
+
+		ComponentPool(Tag typeId, uint32 componentSize);
+
+		ComponentPool(const ComponentPool &) = delete;
+		ComponentPool & operator=(const ComponentPool &) = delete;
+
+		template <typename ComponentType>
+		ComponentType * get(uint32 index);
+
+	private:
+
+		Tag m_typeId;
+		uint32 m_componentSize;
+		std::vector<uint8> m_data;
+		std::unordered_map<Entity, uint32> m_lookupMap;
 	};
+
+	template <typename T> using ComponentPoolIterator = typename ComponentPool::Iterator<T>;
 }
+
+#include "engine/component/ComponentPool.inl"
 
 #endif

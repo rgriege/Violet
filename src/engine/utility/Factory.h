@@ -25,7 +25,7 @@ namespace Violet
 		{
 			auto it = m_producers.find(label);
 			assert(it != m_producers.end());
-			return (*producer)(std::forward<Args>(args)...);
+			return (it->second)(std::forward<Args>(args)...);
 		}
 
 		void assign(Label label, const Producer & producer)

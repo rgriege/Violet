@@ -1,5 +1,5 @@
-#ifndef TEXT_COMPONENT_H
-#define TEXT_COMPONENT_H
+#ifndef VIOLET_TextComponent_H
+#define VIOLET_TextComponent_H
 
 #include "engine/component/Component.h"
 
@@ -13,18 +13,17 @@ namespace Violet
 	class Serializer;
 	class ShaderProgram;
 
-	class VIOLET_API TextComponent : public Component
+	class VIOLET_API TextComponent : public Component<TextComponent>
 	{
 	public:
 
-		static const char * getLabel();
+		static Tag getTypeId();
 
 	public:
 
-		TextComponent(const Entity & entity, Deserializer & deserializer);
+		TextComponent(Entity entity, Deserializer & deserializer);
 		TextComponent(TextComponent && other);
 		TextComponent & operator=(TextComponent && other);
-		TextComponent(const TextComponent &) = delete;
 
 	public:
 
@@ -34,6 +33,7 @@ namespace Violet
 		std::shared_ptr<ShaderProgram> m_shader;
 	};
 
+	Deserializer & operator>>(Deserializer & deserializer, TextComponent & component);
 	Serializer & operator<<(Serializer & serializer, const TextComponent & component);
 }
 

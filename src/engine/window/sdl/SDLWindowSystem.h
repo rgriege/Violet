@@ -1,7 +1,8 @@
-#ifndef SDL_WINDOW_H
-#define SDL_WINDOW_H
+#ifndef VIOLET_SDLWindowSystem_H
+#define VIOLET_SDLWindowSystem_H
 
 #include "engine/window/WindowSystem.h"
+#include "engine/Defines.h"
 
 #include <memory>
 
@@ -11,6 +12,8 @@ typedef void * SDL_GLContext;
 namespace Violet
 {
 	class Deserializer;
+	class Engine;
+	class SystemFactory;
 
 	class VIOLET_API SDLWindowSystem : public WindowSystem
 	{

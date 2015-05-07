@@ -1,30 +1,43 @@
+// ============================================================================
+
 #include "engine/update/component/UpdateComponent.h"
 
-#include <vector>
+#include "engine/serialization/Deserializer.h"
+#include "engine/serialization/Serializer.h"
 
 using namespace Violet;
 
-const char * UpdateComponent::getLabel()
+// ============================================================================
+
+Tag UpdateComponent::getTypeId()
 {
-	return "updt";
+	return Tag('u', 'p', 'd', 't');
 }
 
-UpdateComponent::UpdateComponent(const Entity & entity, Deserializer & /*deserializer*/) :
-	Component(entity)
+// ============================================================================
+
+UpdateComponent::UpdateComponent(const Entity entity) :
+	Component<UpdateComponent>(entity)
 {
 }
 
-UpdateComponent::UpdateComponent(UpdateComponent && other) :
-	Component(std::move(other))
+UpdateComponent::UpdateComponent(const Entity entity, Deserializer & /*deserializer*/) :
+	Component<UpdateComponent>(entity)
 {
 }
 
-UpdateComponent & UpdateComponent::operator=(UpdateComponent && other)
+// ============================================================================
+
+Deserializer & Violet::operator>>(Deserializer & deserializer, UpdateComponent & /*component*/)
 {
-	return *this;
+	return deserializer;
 }
+
+// ----------------------------------------------------------------------------
 
 Serializer & Violet::operator<<(Serializer & serializer, const UpdateComponent & /*component*/)
 {
 	return serializer;
 }
+
+// ============================================================================

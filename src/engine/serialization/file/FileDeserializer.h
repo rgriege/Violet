@@ -1,5 +1,5 @@
-#ifndef FILE_DESERIALIZER_H
-#define FILE_DESERIALIZER_H
+#ifndef VIOLET_FileDeserializer_H
+#define VIOLET_FileDeserializer_H
 
 #include "engine/serialization/Deserializer.h"
 
@@ -37,6 +37,6 @@ namespace Violet
 	};
 }
 
-#include "engine/serialization/file/FileDeserializer.ipp"
+#include "engine/serialization/file/FileDeserializer.inl"
 
 #endif

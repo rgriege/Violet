@@ -1,5 +1,9 @@
+// ============================================================================
+
 #include <algorithm>
 #include <assert.h>
+
+// ============================================================================
 
 template <class NodeType, class EdgeType>
 Violet::CrsGraph<NodeType, EdgeType>::NodeIterator::NodeIterator(const Nodes & nodes, const uint32 index) :
@@ -8,11 +12,15 @@ Violet::CrsGraph<NodeType, EdgeType>::NodeIterator::NodeIterator(const Nodes & n
 {
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 std::pair<uint32, const NodeType &> Violet::CrsGraph<NodeType, EdgeType>::NodeIterator::operator*()
 {
 	return std::pair<uint32, const NodeType &>(m_index, *m_nodesIterator);
 }
+
+// ----------------------------------------------------------------------------
 
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::NodeIterator & Violet::CrsGraph<NodeType, EdgeType>::NodeIterator::operator++()
@@ -22,11 +30,15 @@ typename Violet::CrsGraph<NodeType, EdgeType>::NodeIterator & Violet::CrsGraph<N
 	return *this;
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 bool typename Violet::CrsGraph<NodeType, EdgeType>::NodeIterator::operator!=(const NodeIterator & other) const
 {
 	return m_index != other.m_index;
 }
+
+// ============================================================================
 
 template <class NodeType, class EdgeType>
 Violet::CrsGraph<NodeType, EdgeType>::NodeSegment::NodeSegment(NodeIterator begin, NodeIterator end) :
@@ -35,17 +47,23 @@ Violet::CrsGraph<NodeType, EdgeType>::NodeSegment::NodeSegment(NodeIterator begi
 {
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::NodeIterator Violet::CrsGraph<NodeType, EdgeType>::NodeSegment::begin()
 {
 	return m_begin;
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::NodeIterator Violet::CrsGraph<NodeType, EdgeType>::NodeSegment::end()
 {
 	return m_end;
 }
+
+// ============================================================================
 
 template <class NodeType, class EdgeType>
 Violet::CrsGraph<NodeType, EdgeType>::EdgeSegment::EdgeSegment(EdgeIterator begin, EdgeIterator end) :
@@ -54,17 +72,23 @@ Violet::CrsGraph<NodeType, EdgeType>::EdgeSegment::EdgeSegment(EdgeIterator begi
 {
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::EdgeIterator Violet::CrsGraph<NodeType, EdgeType>::EdgeSegment::begin()
 {
 	return m_begin;
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::EdgeIterator Violet::CrsGraph<NodeType, EdgeType>::EdgeSegment::end()
 {
 	return m_end;
 }
+
+// ============================================================================
 
 template <class NodeType, class EdgeType>
 Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeSegment::ConstEdgeSegment(ConstEdgeIterator begin, ConstEdgeIterator end) :
@@ -73,11 +97,15 @@ Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeSegment::ConstEdgeSegment(ConstEd
 {
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeIterator Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeSegment::begin() const
 {
 	return m_begin;
 }
+
+// ----------------------------------------------------------------------------
 
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeIterator Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeSegment::end() const
@@ -85,11 +113,7 @@ typename Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeIterator Violet::CrsGrap
 	return m_end;
 }
 
-template <class NodeType, class EdgeType>
-bool Violet::CrsGraph<NodeType, EdgeType>::compareEdges(const EdgeType & e1, const EdgeType & e2)
-{
-	return e1.getSource() < e2.getSource();
-}
+// ============================================================================
 
 template <class NodeType, class EdgeType>
 Violet::CrsGraph<NodeType, EdgeType>::CrsGraph() :
@@ -99,6 +123,8 @@ Violet::CrsGraph<NodeType, EdgeType>::CrsGraph() :
 {
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 uint32 Violet::CrsGraph<NodeType, EdgeType>::addNode(const NodeType& node)
 {
@@ -107,11 +133,15 @@ uint32 Violet::CrsGraph<NodeType, EdgeType>::addNode(const NodeType& node)
     return m_nodes.size();
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 bool Violet::CrsGraph<NodeType, EdgeType>::hasNode(const uint32 nodeIndex) const
 {
 	return nodeIndex >= 0 && nodeIndex < m_nodes.size();
 }
+
+// ----------------------------------------------------------------------------
 
 template <class NodeType, class EdgeType>
 NodeType & Violet::CrsGraph<NodeType, EdgeType>::getNode(const uint32 nodeIndex)
@@ -120,6 +150,8 @@ NodeType & Violet::CrsGraph<NodeType, EdgeType>::getNode(const uint32 nodeIndex)
     return m_nodes[nodeIndex];
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 const NodeType & Violet::CrsGraph<NodeType, EdgeType>::getNode(const uint32 nodeIndex) const
 {
@@ -127,17 +159,23 @@ const NodeType & Violet::CrsGraph<NodeType, EdgeType>::getNode(const uint32 node
     return m_nodes[nodeIndex];
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 size_t Violet::CrsGraph<NodeType, EdgeType>::numNodes() const
 {
     return m_nodes.size();
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::NodeSegment Violet::CrsGraph<NodeType, EdgeType>::getNodes() const
 {
 	return NodeSegment(NodeIterator(m_nodes, 0), NodeIterator(m_nodes, m_nodes.size()));
 }
+
+// ----------------------------------------------------------------------------
 
 template <class NodeType, class EdgeType>
 void Violet::CrsGraph<NodeType, EdgeType>::addEdge(const EdgeType & edge) {
@@ -151,6 +189,8 @@ void Violet::CrsGraph<NodeType, EdgeType>::addEdge(const EdgeType & edge) {
     for (uint32 i = edge.getSource(); i < m_edgePointers.size(); ++i)
         ++m_edgePointers[i];
 }
+
+// ----------------------------------------------------------------------------
 
 /*
     * Used to add multiple edges at once.
@@ -185,10 +225,14 @@ void Violet::CrsGraph<NodeType, EdgeType>::addEdges(const Edges & edges) {
         m_edgePointers[i] = m_edges.size();
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 uint32 Violet::CrsGraph<NodeType, EdgeType>::numEdges() const {
     return m_edges.size();
 }
+
+// ----------------------------------------------------------------------------
 
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::EdgeSegment Violet::CrsGraph<NodeType, EdgeType>::getEdges()
@@ -196,11 +240,15 @@ typename Violet::CrsGraph<NodeType, EdgeType>::EdgeSegment Violet::CrsGraph<Node
 	return EdgeSegment(m_edges.begin(), m_edges.end());
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeSegment Violet::CrsGraph<NodeType, EdgeType>::getEdges() const
 {
 	return ConstEdgeSegment(m_edges.begin(), m_edges.end());
 }
+
+// ----------------------------------------------------------------------------
 
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::EdgeSegment Violet::CrsGraph<NodeType, EdgeType>::getEdges(const uint32 src)
@@ -208,11 +256,15 @@ typename Violet::CrsGraph<NodeType, EdgeType>::EdgeSegment Violet::CrsGraph<Node
 	return EdgeSegment(m_edges.begin() + (src == 0 ? 0 : m_edgePointers[src - 1]), m_edges.begin() + m_edgePointers[src]);
 }
 
+// ----------------------------------------------------------------------------
+
 template <class NodeType, class EdgeType>
 typename Violet::CrsGraph<NodeType, EdgeType>::ConstEdgeSegment Violet::CrsGraph<NodeType, EdgeType>::getEdges(const uint32 src) const
 {
 	return ConstEdgeSegment(m_edges.begin() + (src == 0 ? 0 : m_edgePointers[src - 1]), m_edges.begin() + m_edgePointers[src]);
 }
+
+// ----------------------------------------------------------------------------
 
 template <class NodeType, class EdgeType>
 void Violet::CrsGraph<NodeType, EdgeType>::clear() {
@@ -220,3 +272,13 @@ void Violet::CrsGraph<NodeType, EdgeType>::clear() {
     m_edgePointers.clear();
     m_edges.clear();
 }
+
+// ============================================================================
+
+template <class NodeType, class EdgeType>
+bool Violet::CrsGraph<NodeType, EdgeType>::compareEdges(const EdgeType & e1, const EdgeType & e2)
+{
+	return e1.getSource() < e2.getSource();
+}
+
+// ============================================================================

@@ -1,5 +1,5 @@
-#ifndef TRANSFORM_COMPONENT_H
-#define TRANSFORM_COMPONENT_H
+#ifndef VIOLET_TransformComponent_H
+#define VIOLET_TransformComponent_H
 
 #include "engine/component/Component.h"
 
@@ -10,17 +10,17 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API TransformComponent : public Component
+	class VIOLET_API TransformComponent : public Component<TransformComponent>
 	{
 	public:
 
-		static const char * getLabel();
+		static Tag getTypeId();
 
 	public:
 
-		TransformComponent(const Entity & entity);
-		TransformComponent(const Entity & entity, Deserializer & deserializer);
-		TransformComponent(const Entity & entity, Vec2f position, float rotation);
+		TransformComponent(Entity entity);
+		TransformComponent(Entity entity, Deserializer & deserializer);
+		TransformComponent(Entity entity, Vec2f position, float rotation);
 		TransformComponent(TransformComponent && other);
 		TransformComponent & operator=(TransformComponent && other);
 
@@ -30,6 +30,7 @@ namespace Violet
 		float m_rotation;
 	};
 
+	Deserializer & operator>>(Deserializer & deserializer, TransformComponent & component);
 	Serializer & operator<<(Serializer & serializer, const TransformComponent & component);
 }
 

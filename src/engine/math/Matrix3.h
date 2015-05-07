@@ -1,5 +1,5 @@
-#ifndef MATRIX3_H
-#define MATRIX3_H
+#ifndef VIOLET_Matrix3_H
+#define VIOLET_Matrix3_H
 
 namespace Violet
 {
@@ -39,7 +39,7 @@ namespace Violet
 	};
 }
 
-#include "engine/math/Matrix3.ipp"
+#include "engine/math/Matrix3.inl"
 
 typedef Violet::Matrix3<int> Matrix3i;
 typedef Violet::Matrix3<float> Matrix3f;

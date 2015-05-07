@@ -1,9 +1,13 @@
+// ============================================================================
+
 #include "engine/physics/collision/RigidBody.h"
 
 #include "engine/transform/component/TransformComponent.h"
 #include "engine/physics/component/PhysicsComponent.h"
 
 using namespace Violet;
+
+// ============================================================================
 
 RigidBody::RigidBody(const TransformComponent & transform, const PhysicsComponent & physics) :
 	m_center(transform.m_position),
@@ -18,6 +22,8 @@ RigidBody::RigidBody(const TransformComponent & transform, const PhysicsComponen
 {
 }
 
+// ----------------------------------------------------------------------------
+
 RigidBody::RigidBody(Vec2f && center, Polygon && polygon, float mass) :
 	m_center(center),
 	m_rotation(0),
@@ -31,25 +37,35 @@ RigidBody::RigidBody(Vec2f && center, Polygon && polygon, float mass) :
 {
 }
 
+// ----------------------------------------------------------------------------
+
 const Vec2f & RigidBody::getCenter()
 {
 	return m_center;
 }
+
+// ----------------------------------------------------------------------------
 
 const Vec2f & RigidBody::getVelocity()
 {
 	return m_velocity;
 }
 
+// ----------------------------------------------------------------------------
+
 void RigidBody::translate(const Vec2f & translation)
 {
 	m_center += translation;
 }
 
+// ----------------------------------------------------------------------------
+
 void RigidBody::rotate(const float radians)
 {
 	m_rotation += radians;
 }
+
+// ----------------------------------------------------------------------------
 
 void RigidBody::applyImpulse(Vec2f impulse, const Vec2f & location)
 {
@@ -61,6 +77,8 @@ void RigidBody::applyImpulse(Vec2f impulse, const Vec2f & location)
 	m_velocity += impulse;
 }
 
+// ----------------------------------------------------------------------------
+
 FloatInterval RigidBody::project(const Vec2f & axis) const
 {
 	const Vec2f & unitAxis = axis.isUnit() ? axis : axis.getUnit();
@@ -68,16 +86,18 @@ FloatInterval RigidBody::project(const Vec2f & axis) const
 	for (const auto & vertex : m_polygon.m_vertices)
 	{
 		const float dp = vertex.dot(unitAxis);
-		if (dp < projection.left)
-			projection.left = dp;
-		else if (dp > projection.right)
-			projection.right = dp;
+		if (dp < projection.m_left)
+			projection.m_left = dp;
+		else if (dp > projection.m_right)
+			projection.m_right = dp;
 	}
 	const float dp = m_center.dot(unitAxis);
-	projection.left += dp;
-	projection.right += dp;
+	projection.m_left += dp;
+	projection.m_right += dp;
 	return projection;
 }
+
+// ----------------------------------------------------------------------------
 
 float RigidBody::maxRadius() const
 {
@@ -91,6 +111,8 @@ float RigidBody::maxRadius() const
 	return sqrt(result);
 }
 
+// ----------------------------------------------------------------------------
+
 void RigidBody::findIntersectionAxes(const RigidBody & /*other*/, std::vector<Vec2f> & axes) const
 {
 	axes.emplace_back((m_polygon.m_vertices.front() - m_polygon.m_vertices.back()).perpendicular());
@@ -100,6 +122,8 @@ void RigidBody::findIntersectionAxes(const RigidBody & /*other*/, std::vector<Ve
 		axes.push_back(side.perpendicular());
 	}
 }
+
+// ----------------------------------------------------------------------------
 
 // TODO: fails if any vertices are past the goal
 void RigidBody::findClosestVertices(const Vec2f & axis, const Vec2f & goal, std::vector<Vec2f> & vertices) const
@@ -128,3 +152,5 @@ void RigidBody::findClosestVertices(const Vec2f & axis, const Vec2f & goal, std:
 	if (edgeIdx != 0)
 		vertices.emplace_back(m_center + m_polygon.m_vertices[edgeIdx]);
 }
+
+// ============================================================================

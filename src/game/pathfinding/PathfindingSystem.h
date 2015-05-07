@@ -1,15 +1,22 @@
-#ifndef PATHFINDING_SYSTEM_H
-#define PATHFINDING_SYSTEM_H
+#ifndef GAME_PathfindingSystem_H
+#define GAME_PathfindingSystem_H
 
 #include "engine/system/System.h"
 #include "game/Config.h"
-#include "game/pathfinding/Map.h"
-#include "game/pathfinding/PathComponent.h"
+#include "game/pathfinding/Path.h"
+#include "game/pathfinding/PathfindingComponent.h"
 
-class VIOLET_GAME_API PathfindingSystem : public Violet::ComponentSystem<PathComponent>
+namespace Violet
+{
+	class Scene;
+	class SystemFactory;
+}
+
+class VIOLET_GAME_API PathfindingSystem : public Violet::System
 {
 public:
 
+	static const char * getStaticLabel();
 	static void install(Violet::SystemFactory & factory);
 	static std::unique_ptr<Violet::System> init(Violet::Deserializer & deserializer);
 
@@ -18,21 +25,15 @@ public:
 	PathfindingSystem(PathfindingSystem && other);
 
 	virtual ~PathfindingSystem() override;
-	virtual void bind(Violet::EntityFactory & factory) override;
-	virtual void unbind(Violet::EntityFactory & factory) override;
-	virtual void update(float dt, Violet::Engine & engine) override;
+	void update(float dt, Violet::Engine & engine) override;
 
-	Path getPath(const Vec2f & start, const Vec2f & goal);
+	void path(Violet::Scene & scene, Violet::Entity entity, const Vec2f & goal);
 
 private:
 
 	PathfindingSystem();
 
 	void createMap(Violet::Deserializer & deserializer, Violet::Engine & engine);
-
-private:
-
-	Map m_map;
 };
 
 #endif

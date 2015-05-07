@@ -1,5 +1,5 @@
-#ifndef INPUT_SYSTEM_H
-#define INPUT_SYSTEM_H
+#ifndef VIOLET_InputSystem_H
+#define VIOLET_InputSystem_H
 
 #include "engine/system/System.h"
 #include "engine/input/component/InputComponent.h"
@@ -7,10 +7,13 @@
 
 namespace Violet
 {
-	class VIOLET_API InputSystem : public ComponentSystem<InputComponent>
+	class SystemFactory;
+
+	class VIOLET_API InputSystem : public System
 	{
 	public:
 
+		static const char * getStaticLabel();
 		static void install(SystemFactory & factory);
 		static std::unique_ptr<System> init(Deserializer & deserializer);
 
@@ -31,7 +34,7 @@ namespace Violet
 
 	private:
 
-		InputSystem() = default;
+		InputSystem();
 	};
 }
 

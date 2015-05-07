@@ -1,5 +1,5 @@
-#ifndef INPUT_RESULT_H
-#define INPUT_RESULT_H
+#ifndef VIOLET_InputResult_H
+#define VIOLET_InputResult_H
 
 enum class InputResult
 {

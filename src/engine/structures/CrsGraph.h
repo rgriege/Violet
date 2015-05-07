@@ -1,5 +1,5 @@
-#ifndef CRS_GRAPH_H
-#define CRS_GRAPH_H
+#ifndef VIOLET_CrsGraph_H
+#define VIOLET_CrsGraph_H
 
 #include "engine/Defines.h"
 
@@ -79,10 +79,6 @@ namespace Violet
 			const ConstEdgeIterator m_end;
 		};
 
-	private:
-
-		static bool compareEdges(const EdgeType & e1, const EdgeType & e2);
-
     public:
 
         CrsGraph();
@@ -107,7 +103,11 @@ namespace Violet
 		EdgeSegment getEdges(uint32 src);
 		ConstEdgeSegment getEdges(uint32 src) const;
 
-        void clear();
+		void clear();
+
+	private:
+
+		static bool compareEdges(const EdgeType & e1, const EdgeType & e2);
 
     private:
 
@@ -117,6 +117,6 @@ namespace Violet
     };
 }
 
-#include "engine/structures/CrsGraph.ipp"
+#include "engine/structures/CrsGraph.inl"
 
 #endif

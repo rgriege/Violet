@@ -1,11 +1,12 @@
 #include "game/world/WorldSystem.h"
 
 #include "engine/component/Component.h"
+#include "engine/serialization/Deserializer.h"
+#include "engine/system/SystemFactory.h"
 
 namespace WorldSystemNamespace
 {
 	const char * ms_label = "wrld";
-	std::unique_ptr<Violet::Component> ms_component;
 }
 
 using namespace WorldSystemNamespace;
@@ -35,30 +36,9 @@ WorldSystem::WorldSystem(const float timeScale) :
 {
 }
 
-bool WorldSystem::owns(const char * /*label*/) const
-{
-	return false;
-}
-
-bool WorldSystem::has(const char * /*label*/, const Violet::Entity & /*entity*/) const
-{
-	return false;
-}
-
-Violet::Component & WorldSystem::fetch(const char * /*label*/, const Violet::Entity & entity)
-{
-	ms_component = std::make_unique<Violet::Component>(entity);
-	return *ms_component;
-}
-
 void WorldSystem::update(const float dt, Violet::Engine & /*engine*/)
 {
 	m_time += static_cast<uint64>(dt * m_timeScale);
-}
-
-void WorldSystem::clear()
-{
-	m_time = Violet::Time(0);
 }
 
 const Violet::Time & WorldSystem::getTime() const

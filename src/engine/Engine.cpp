@@ -1,6 +1,7 @@
+// ============================================================================
+
 #include "engine/Engine.h"
 
-#include "engine/Entity/EntityFactory.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/serialization/file/FileDeserializerFactory.h"
 #include "engine/serialization/file/FileSerializerFactory.h"
@@ -16,6 +17,8 @@
 
 using namespace Violet;
 
+// ============================================================================
+
 namespace EngineNamespace
 {
 	void printWarning(const char * msg)
@@ -25,11 +28,11 @@ namespace EngineNamespace
 		std::cin >> c;
 		exit(1);
 	}
-
-	bool createScene(const char * filename, Engine & engine);
 }
 
 using namespace EngineNamespace;
+
+// ============================================================================
 
 std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & deserializer)
 {
@@ -52,24 +55,25 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 		}
 	}
 
-	std::unique_ptr<Engine> engine(new Engine(std::move(systems)));
 	if (succeeded)
 	{
 		auto optionsSegment = deserializer.enterSegment("opts");
-		succeeded = createScene(optionsSegment->getString("firstScene"), *engine);
+		Scene scene = Scene::create(optionsSegment->getString("firstScene"));
+
+		std::unique_ptr<Engine> engine(new Engine(std::move(systems), std::move(scene)));
+		return std::move(engine);
 	}
 
-	return succeeded ? std::move(engine) : nullptr;
+	return nullptr;
 }
+
+// ============================================================================
 
 Engine::~Engine()
 {
-	for (auto const & system : m_systems)
-	{
-		system->bind(m_entityFactory);
-		system->unbind(m_componentFactory);
-	}
 }
+
+// ----------------------------------------------------------------------------
 
 Engine::Engine(Engine && other) :
 	m_systems(std::move(other.m_systems)),
@@ -78,6 +82,8 @@ Engine::Engine(Engine && other) :
 {
 }
 
+// ----------------------------------------------------------------------------
+
 Engine & Engine::operator=(Engine && other)
 {
 	m_systems = std::move(other.m_systems);
@@ -85,6 +91,8 @@ Engine & Engine::operator=(Engine && other)
 	m_running = other.m_running;
 	return *this;
 }
+
+// ----------------------------------------------------------------------------
 
 void Engine::begin()
 {
@@ -110,6 +118,8 @@ void Engine::begin()
 	}
 }
 
+// ----------------------------------------------------------------------------
+
 void Engine::runFrame(const float frameTime)
 {
 	const auto startTime = std::chrono::system_clock::now();
@@ -118,9 +128,7 @@ void Engine::runFrame(const float frameTime)
 
 	if (!m_nextSceneFileName.empty())
 	{
-		for (auto & system : m_systems)
-			system->clear();
-		createScene(m_nextSceneFileName.c_str(), *this);
+		m_scene = Scene::create(m_nextSceneFileName.c_str());
 		m_nextSceneFileName.clear();
 	}
 }
@@ -130,66 +138,28 @@ void Engine::switchScene(const char * filename)
 	m_nextSceneFileName = filename;
 }
 
-bool Engine::saveScene(const char * filename)
+// ----------------------------------------------------------------------------
+
+Scene & Engine::getCurrentScene()
 {
-	auto const serializer = FileSerializerFactory::getInstance().create(filename);
-	if (serializer == nullptr)
-	{
-		std::cout << "Could not open scene file " << filename << std::endl;
-		return false;
-	}
-
-	auto const entities = m_entityFactory.getEntities();
-	for (auto const & id : entities)
-	{
-		const Entity entity(id);
-		auto segment = serializer->createSegment("ntty");
-		segment->writeUint("id", id);
-		for (auto const & system : m_systems)
-			system->save(*segment, entity);
-	}
-
-	return true;
+	return m_scene;
 }
+
+// ----------------------------------------------------------------------------
 
 void Engine::stop()
 {
 	m_running = false;
 }
 
-Engine::Engine(std::vector<std::unique_ptr<System>> && systems) :
+// ============================================================================
+
+Engine::Engine(std::vector<std::unique_ptr<System>> && systems, Scene && scene) :
 	m_nextSceneFileName(),
 	m_systems(std::move(systems)),
-	m_entityFactory(),
-	m_componentFactory(),
+	m_scene(std::move(scene)),
 	m_running(true)
 {
-	for (auto const & system : m_systems)
-	{
-		system->bind(m_entityFactory);
-		system->bind(m_componentFactory);
-	}
 }
 
-
-bool EngineNamespace::createScene(const char * filename, Engine & engine)
-{
-	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
-	if (deserializer == nullptr)
-	{
-		std::cout << "Could not open scene file " << filename << std::endl;
-		return false;
-	}
-	else if (!*deserializer)
-	{
-		std::cout << "Failed to parse scene file " << filename << std::endl;
-		return false;
-	}
-	else
-	{
-		while (*deserializer)
-			engine.getEntityFactory().create(deserializer->nextLabel(), *deserializer, engine);
-	}
-
-	return true;
-}
+// ============================================================================

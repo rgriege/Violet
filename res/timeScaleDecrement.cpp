@@ -7,12 +7,12 @@
 
 using namespace Violet;
 
-extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity & e, Engine & engine, const MouseButton button)
+extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity e, Engine & engine, const MouseButton button)
 {
     if (button == MB_Left)
     {
-        auto & ws = engine.fetch<WorldSystem>(); 
-        ws.setTimeScale(ws.getTimeScale() / 2);
+        auto * ws = engine.fetch<WorldSystem>(); 
+        ws->setTimeScale(ws->getTimeScale() / 2);
     }
 
     return InputResult::Block;

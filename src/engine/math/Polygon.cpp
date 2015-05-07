@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "engine/math/Polygon.h"
 
 #include "engine/math/Interval.h"
@@ -6,6 +8,8 @@
 
 using namespace Violet;
 
+// ============================================================================
+
 namespace PolygonNamespace
 {
 	const char * const ms_segmentLabel("poly");
@@ -13,10 +17,14 @@ namespace PolygonNamespace
 
 using namespace PolygonNamespace;
 
+// ============================================================================
+
 Polygon::Polygon(std::vector<Vec2f> && vertices) :
 	m_vertices(std::move(vertices))
 {
 }
+
+// ----------------------------------------------------------------------------
 
 Polygon::Polygon(Deserializer & deserializer) :
 	m_vertices()
@@ -24,6 +32,8 @@ Polygon::Polygon(Deserializer & deserializer) :
 	auto polygonSegment = deserializer.enterSegment(ms_segmentLabel);
 	m_vertices.swap(SerializationUtilities::deserializeElements<Vec2f>(*polygonSegment));
 }
+
+// ----------------------------------------------------------------------------
 
 bool Polygon::contains(const Vec2f & point) const
 {
@@ -51,9 +61,22 @@ bool Polygon::contains(const Vec2f & point) const
 	return inside;
 }
 
+// ============================================================================
+
 Serializer & Violet::operator<<(Serializer & serializer, const Polygon & poly)
 {
 	auto segment = serializer.createSegment(ms_segmentLabel);
 	SerializationUtilities::serializeElements(*segment, poly.m_vertices);
 	return serializer;
 }
+
+// ----------------------------------------------------------------------------
+
+Deserializer & Violet::operator>>(Deserializer & deserializer, Polygon & poly)
+{
+	auto segment = deserializer.enterSegment(ms_segmentLabel);
+	poly.m_vertices = SerializationUtilities::deserializeElements<Vec2f>(*segment);
+	return deserializer;
+}
+
+// ============================================================================

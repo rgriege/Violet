@@ -16,6 +16,7 @@
     <ClCompile Include="..\..\..\src\test\main.cpp" />
     <ClCompile Include="..\..\..\src\test\math\MathTest.cpp" />
     <ClCompile Include="..\..\..\src\test\physics\PhysicsTest.cpp" />
+    <ClCompile Include="..\..\..\src\test\scene\SceneTest.cpp" />
     <ClCompile Include="..\..\..\src\test\serialization\JsonSerializationTest.cpp" />
     <ClCompile Include="..\..\..\src\test\template\TemplateTest.cpp" />
   </ItemGroup>
@@ -29,6 +30,7 @@
     <ClInclude Include="..\..\..\src\test\game\PathfindingTest.h" />
     <ClInclude Include="..\..\..\src\test\math\MathTest.h" />
     <ClInclude Include="..\..\..\src\test\physics\PhysicsTest.h" />
+    <ClInclude Include="..\..\..\src\test\scene\SceneTest.h" />
     <ClInclude Include="..\..\..\src\test\serialization\JsonSerializationTest.h" />
     <ClInclude Include="..\..\..\src\test\template\TemplateTest.h" />
   </ItemGroup>

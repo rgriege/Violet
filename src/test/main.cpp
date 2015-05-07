@@ -3,6 +3,7 @@
 #include "test/game/PathfindingTest.h"
 #include "test/math/MathTest.h"
 #include "test/physics/PhysicsTest.h"
+#include "test/scene/SceneTest.h"
 #include "test/serialization/JsonSerializationTest.h"
 #include "test/template/TemplateTest.h"
 
@@ -19,6 +20,7 @@ int main(int argc, char** argv)
 		PhysicsTest::run(evaluator);
 		JsonSerializationTests::run(evaluator);
 		TemplateTests::run(evaluator);
+		SceneTest::run(evaluator);
 		PathfindingTest::run(evaluator);
 	}
 

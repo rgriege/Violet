@@ -1,11 +1,16 @@
+// ============================================================================
+
 #include "engine/window/glut/GlutWindowSystem.h"
 
 #include "engine/math/Vec2.h"
 #include "engine/serialization/Deserializer.h"
+#include "engine/system/SystemFactory.h"
 
 #include <GL/freeglut.h>
 
 using namespace Violet;
+
+// ============================================================================
 
 namespace GlutWindowSystemNamespace
 {
@@ -20,10 +25,14 @@ namespace GlutWindowSystemNamespace
 
 using namespace GlutWindowSystemNamespace;
 
+// ============================================================================
+
 void GlutWindowSystem::install(SystemFactory & factory)
 {
 	factory.assign(getStaticLabel(), &GlutWindowSystem::init);
 }
+
+// ----------------------------------------------------------------------------
 
 std::unique_ptr<System> GlutWindowSystem::init(Deserializer & deserializer)
 {
@@ -56,7 +65,9 @@ std::unique_ptr<System> GlutWindowSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(new GlutWindowSystem(id, width, height));
 }
 
-void GlutWindowSystem::update(float /*dt*/, Engine & engine)
+// ============================================================================
+
+void GlutWindowSystem::update(float /*dt*/, Engine & /*engine*/)
 {
 	m_eventQueue.clear();
 	glutSetWindow(m_id);
@@ -64,10 +75,14 @@ void GlutWindowSystem::update(float /*dt*/, Engine & engine)
 	glutMainLoopEvent();
 }
 
+// ----------------------------------------------------------------------------
+
 void GlutWindowSystem::render()
 {
 	glutPostRedisplay();
 }
+
+// ----------------------------------------------------------------------------
 
 bool GlutWindowSystem::getEvent(const EventType type, Event * const event)
 {
@@ -84,20 +99,28 @@ bool GlutWindowSystem::getEvent(const EventType type, Event * const event)
 	return false;
 }
 
+// ----------------------------------------------------------------------------
+
 void GlutWindowSystem::addEvent(Event event)
 {
 	m_eventQueue.push_back(event);
 }
+
+// ----------------------------------------------------------------------------
 
 int GlutWindowSystem::getWidth() const
 {
 	return m_width;
 }
 
+// ----------------------------------------------------------------------------
+
 int GlutWindowSystem::getHeight() const
 {
 	return m_height;
 }
+
+// ============================================================================
 
 GlutWindowSystem::GlutWindowSystem(const int id, const int width, const int height) :
 	WindowSystem(),
@@ -108,6 +131,8 @@ GlutWindowSystem::GlutWindowSystem(const int id, const int width, const int heig
 {
 }
 
+// ============================================================================
+
 void GlutWindowSystemNamespace::close()
 {
 	WindowSystem::Event e;
@@ -115,9 +140,13 @@ void GlutWindowSystemNamespace::close()
 	ms_currentWindow->addEvent(e);
 }
 
+// ----------------------------------------------------------------------------
+
 void GlutWindowSystemNamespace::display()
 {
 }
+
+// ----------------------------------------------------------------------------
 
 void GlutWindowSystemNamespace::onMouseButton(int button, int state, int x, int y)
 {
@@ -126,6 +155,8 @@ void GlutWindowSystemNamespace::onMouseButton(int button, int state, int x, int 
 	event.mouse = { x, y, static_cast<MouseButton>(button) };
 	ms_currentWindow->addEvent(event);
 }
+
+// ----------------------------------------------------------------------------
 
 void GlutWindowSystemNamespace::onMouseMove(int x, int y)
 {
@@ -136,6 +167,8 @@ void GlutWindowSystemNamespace::onMouseMove(int x, int y)
 	ms_currentWindow->m_mousePos = { x, y };
 }
 
+// ----------------------------------------------------------------------------
+
 void GlutWindowSystemNamespace::onKeyboardDown(unsigned char key, int x, int y)
 {
 	WindowSystem::Event event;
@@ -144,6 +177,8 @@ void GlutWindowSystemNamespace::onKeyboardDown(unsigned char key, int x, int y)
 	ms_currentWindow->addEvent(event);
 }
 
+// ----------------------------------------------------------------------------
+
 void GlutWindowSystemNamespace::onKeyboardUp(unsigned char key, int x, int y)
 {
 	WindowSystem::Event event;
@@ -151,3 +186,5 @@ void GlutWindowSystemNamespace::onKeyboardUp(unsigned char key, int x, int y)
 	event.key = { key };
 	ms_currentWindow->addEvent(event);
 }
+
+// ============================================================================

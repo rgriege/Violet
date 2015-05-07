@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "engine/graphics/component/RenderComponent.h"
 
 #include "engine/serialization/Deserializer.h"
@@ -5,9 +7,11 @@
 #include "engine/utility/Guard.h"
 #include "engine/graphics/shader/Shader.h"
 
-#include <GL\glew.h>
+#include <GL/glew.h>
 
 using namespace Violet;
+
+// ============================================================================
 
 namespace RenderComponentNamespace
 {
@@ -16,13 +20,17 @@ namespace RenderComponentNamespace
 
 using namespace RenderComponentNamespace;
 
-const char * RenderComponent::getLabel()
+// ============================================================================
+
+Tag RenderComponent::getTypeId()
 {
-	return "rndr";
+	return Tag('r', 'n', 'd', 'r');
 }
 
-RenderComponent::RenderComponent(const Entity & entity, Deserializer & deserializer) :
-	Component(entity),
+// ============================================================================
+
+RenderComponent::RenderComponent(const Entity entity, Deserializer & deserializer) :
+	Component<RenderComponent>(entity),
 	m_vertexArrayBuffer(initVertexArrayBuffer()),
 	m_mesh(deserializer),
 	m_color(deserializer),
@@ -36,7 +44,9 @@ RenderComponent::RenderComponent(const Entity & entity, Deserializer & deseriali
 	glBindVertexArray(0);
 }
 
-RenderComponent::RenderComponent(const Entity & entity, const Polygon & poly, Color color, std::shared_ptr<ShaderProgram> shader) :
+// ----------------------------------------------------------------------------
+
+RenderComponent::RenderComponent(const Entity entity, const Polygon & poly, Color color, std::shared_ptr<ShaderProgram> shader) :
 	Component(entity),
 	m_vertexArrayBuffer(initVertexArrayBuffer()),
 	m_mesh(poly),
@@ -51,6 +61,8 @@ RenderComponent::RenderComponent(const Entity & entity, const Polygon & poly, Co
 	glBindVertexArray(0);
 }
 
+// ----------------------------------------------------------------------------
+
 RenderComponent::RenderComponent(RenderComponent && other) :
 	Component(std::move(other)),
 	m_mesh(std::move(other.m_mesh)),
@@ -62,6 +74,8 @@ RenderComponent::RenderComponent(RenderComponent && other) :
 	other.m_vertexArrayBuffer = 0;
 }
 
+// ----------------------------------------------------------------------------
+
 RenderComponent & RenderComponent::operator=(RenderComponent && other)
 {
 	Component::operator=(std::move(other));
@@ -72,11 +86,33 @@ RenderComponent & RenderComponent::operator=(RenderComponent && other)
 	return *this;
 }
 
+// ----------------------------------------------------------------------------
+
 RenderComponent::~RenderComponent()
 {
 	if (m_vertexArrayBuffer != 0)
 		glDeleteVertexArrays(1, &m_vertexArrayBuffer);
 }
+
+// ============================================================================
+
+Deserializer & Violet::operator>>(Deserializer & deserializer, RenderComponent & component)
+{
+	deserializer >> component.m_mesh >> component.m_color;
+	component.m_shader = ShaderProgram::getCache().fetch(deserializer.getString("shader"));
+	return deserializer;
+}
+
+// ----------------------------------------------------------------------------
+
+Serializer & Violet::operator<<(Serializer & serializer, const RenderComponent & component)
+{
+	serializer << component.m_mesh << component.m_color;
+	serializer.writeString("shader", component.m_shader->getName().c_str());
+	return serializer;
+}
+
+// ============================================================================
 
 GLuint RenderComponentNamespace::initVertexArrayBuffer()
 {
@@ -86,9 +122,4 @@ GLuint RenderComponentNamespace::initVertexArrayBuffer()
 	return vertexArrayBuffer;
 }
 
-Serializer & Violet::operator<<(Serializer & serializer, const RenderComponent & component)
-{
-	serializer << component.m_mesh << component.m_color;
-	serializer.writeString("shader", component.m_shader->getName().c_str());
-	return serializer;
-}
+// ============================================================================

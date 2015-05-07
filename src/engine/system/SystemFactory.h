@@ -1,5 +1,5 @@
-#ifndef SYSTEM_FACTORY_H
-#define SYSTEM_FACTORY_H
+#ifndef VIOLET_SystemFactory_H
+#define VIOLET_SystemFactory_H
 
 #include "engine/utility/Factory.h"
 

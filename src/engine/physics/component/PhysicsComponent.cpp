@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "engine/physics/component/PhysicsComponent.h"
 
 #include "engine/serialization/Deserializer.h"
@@ -5,33 +7,42 @@
 
 using namespace Violet;
 
+// ============================================================================
+
 namespace PhysicsComponentNamespace
 {
 	const char * const ms_massLabel = "mass";
 	const char * const ms_velocityLabel = "vel";
 
-	Vec2f deserializeVelocity(Deserializer & deserializer);
 	float calculateMomentOfInertia(const Polygon & polygon, float mass);
+	Deserializer & deserializeAllButPolygon(Deserializer & deserializer, PhysicsComponent & component);
 }
 
 using namespace PhysicsComponentNamespace;
 
-const char * PhysicsComponent::getLabel()
+// ============================================================================
+
+Tag PhysicsComponent::getTypeId()
 {
-	return "phys";
+	return Tag('p', 'h', 'y', 's');
 }
 
-PhysicsComponent::PhysicsComponent(const Entity & entity, Deserializer & deserializer) :
+// ============================================================================
+
+PhysicsComponent::PhysicsComponent(const Entity entity, Deserializer & deserializer) :
 	Component(entity),
 	m_polygon(deserializer),
-	m_mass(deserializer.getFloat(ms_massLabel)),
-	m_velocity(deserializeVelocity(deserializer)),
+	m_mass(),
+	m_velocity(),
 	m_force(),
-	m_momentOfInertia(calculateMomentOfInertia(m_polygon, m_mass)),
+	m_momentOfInertia(),
 	m_angularVelocity(),
 	m_torque()
 {
+	deserializeAllButPolygon(deserializer, *this);
 }
+
+// ----------------------------------------------------------------------------
 
 PhysicsComponent::PhysicsComponent(PhysicsComponent && other) :
 	Component(std::move(other)),
@@ -45,6 +56,8 @@ PhysicsComponent::PhysicsComponent(PhysicsComponent && other) :
 {
 }
 
+// ----------------------------------------------------------------------------
+
 PhysicsComponent & PhysicsComponent::operator=(PhysicsComponent && other)
 {
 	m_polygon = std::move(other.m_polygon);
@@ -57,11 +70,26 @@ PhysicsComponent & PhysicsComponent::operator=(PhysicsComponent && other)
 	return *this;
 }
 
-Vec2f PhysicsComponentNamespace::deserializeVelocity(Deserializer & deserializer)
+// ============================================================================
+
+Deserializer & Violet::operator>>(Deserializer & deserializer, PhysicsComponent & component)
 {
-	auto velocitySegment = deserializer.enterSegment(ms_velocityLabel);
-	return Vec2f(*velocitySegment);
+	deserializer >> component.m_polygon;
+	return deserializeAllButPolygon(deserializer, component);
 }
+
+// ----------------------------------------------------------------------------
+
+Serializer & Violet::operator<<(Serializer & serializer, const PhysicsComponent & component)
+{
+	serializer << component.m_polygon;
+	serializer.writeFloat(ms_massLabel, component.m_mass);
+	auto segment = serializer.createSegment(ms_velocityLabel);
+	*segment << component.m_velocity;
+	return serializer;
+}
+
+// ============================================================================
 
 float PhysicsComponentNamespace::calculateMomentOfInertia(const Polygon & polygon, const float mass)
 {
@@ -83,11 +111,20 @@ float PhysicsComponentNamespace::calculateMomentOfInertia(const Polygon & polygo
 	return (mass / 6) * (numerator / denominator);
 }
 
-Serializer & Violet::operator<<(Serializer & serializer, const PhysicsComponent & component)
+// ----------------------------------------------------------------------------
+
+Deserializer & PhysicsComponentNamespace::deserializeAllButPolygon(Deserializer & deserializer, PhysicsComponent & component)
 {
-	serializer << component.m_polygon;
-	serializer.writeFloat(ms_massLabel, component.m_mass);
-	auto segment = serializer.createSegment(ms_velocityLabel);
-	*segment << component.m_velocity;
-	return serializer;
+	component.m_mass = deserializer.getFloat(ms_massLabel);
+	{
+		auto velocitySegment = deserializer.enterSegment(ms_velocityLabel);
+		*velocitySegment >> component.m_velocity;
+	}
+	component.m_force = Vec2f::ZERO;
+	component.m_momentOfInertia = calculateMomentOfInertia(component.m_polygon, component.m_mass);
+	component.m_angularVelocity = 0;
+	component.m_torque = 0;
+	return deserializer;
 }
+
+// ============================================================================

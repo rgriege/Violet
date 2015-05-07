@@ -1,5 +1,5 @@
-#ifndef WINDOW_SYSTEM_H
-#define WINDOW_SYSTEM_H
+#ifndef VIOLET_WindowSystem_H
+#define VIOLET_WindowSystem_H
 
 #include "engine/Defines.h"
 #include "engine/system/System.h"

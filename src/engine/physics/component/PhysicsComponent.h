@@ -1,5 +1,5 @@
-#ifndef RIGID_BODY_COMPONENT_H
-#define RIGID_BODY_COMPONENT_H
+#ifndef VIOLET_PhysicsComponent_H
+#define VIOLET_PhysicsComponent_H
 
 #include "engine/component/Component.h"
 
@@ -10,14 +10,15 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API PhysicsComponent : public Component
+	class VIOLET_API PhysicsComponent : public Component<PhysicsComponent>
 	{
 	public:
 
-		static const char * getLabel();
+		static Tag getTypeId();
+
 	public:
 
-		PhysicsComponent(const Entity & entity, Deserializer & deserializer);
+		PhysicsComponent(Entity entity, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
 		PhysicsComponent & operator=(PhysicsComponent && other);
 
@@ -32,6 +33,7 @@ namespace Violet
 		float m_torque;
 	};
 
+	Deserializer & operator>>(Deserializer & deserializer, PhysicsComponent & component);
 	Serializer & operator<<(Serializer & serializer, const PhysicsComponent & component);
 }
 

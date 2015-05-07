@@ -1,5 +1,5 @@
-#ifndef CPP_SCRIPT_COMPONENT_H
-#define CPP_SCRIPT_COMPONENT_H
+#ifndef VIOLET_CppScriptComponent_H
+#define VIOLET_CppScriptComponent_H
 
 #include "engine/component/Component.h"
 
@@ -16,7 +16,7 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API CppScriptComponent : public Component
+	class VIOLET_API CppScriptComponent : public Component<CppScriptComponent>
 	{
 	public:
 
@@ -47,7 +47,7 @@ namespace Violet
 
 	public:
 
-		static const char * getLabel();
+		static Tag getTypeId();
 
 	public:
 
@@ -63,6 +63,9 @@ namespace Violet
 
 	private:
 
+		CppScriptComponent(const CppScriptComponent &) = delete;
+		CppScriptComponent & operator=(const CppScriptComponent &) = delete;
+
 		std::string getFilenameWithPath() const;
 		void * getMethodPtr(const char * name) const;
 		void * getMemoryPtr() const;
@@ -77,34 +80,8 @@ namespace Violet
 	};
 
 	Serializer & operator<<(Serializer & serializer, const CppScriptComponent & component);
-
-
-	template <typename T>
-	T * CppScriptComponent::Allocator::allocate()
-	{
-		return static_cast<T*>(allocate(sizeof(T)));
-	}
-
-	template <typename ResultType, typename... Args>
-	ResultType CppScriptComponent::run(const char * method, Args&&... args)
-	{
-		void * methodPtr = getMethodPtr(method);
-		if (methodPtr != nullptr)
-		{
-			if (getMemoryPtr() == nullptr)
-			{
-				auto m = (ResultType(*)(Args...)) methodPtr;
-				return m(std::forward<Args>(args)...);
-			}
-			else
-			{
-				auto m = (ResultType(*)(Args..., void *)) methodPtr;
-				return m(std::forward<Args>(args)..., getMemoryPtr());
-			}
-		}
-
-		return ResultType();
-	}
 }
+
+#include "CppScriptComponent.inl"
 
 #endif

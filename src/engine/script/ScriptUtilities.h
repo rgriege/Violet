@@ -1,5 +1,5 @@
-#ifndef SCRIPT_UTILITIES_H
-#define SCRIPT_UTILITIES_H
+#ifndef VIOLET_ScriptUtilities_H
+#define VIOLET_ScriptUtilities_H
 
 #include "engine/script/component/CppScriptComponent.h"
 
@@ -10,17 +10,13 @@ namespace Violet
 	public:
 
 		template <typename ResultType, typename... Args>
-		static ResultType run(Engine & engine, const Entity & entity, const char * method, Args&&... args)
-		{
-			if (engine.has<CppScriptComponent>(entity))
-			{
-				auto & component = engine.fetch<CppScriptComponent>(entity);
-				return component.run<ResultType>(method, std::forward<Args>(args)...);
-			}
+		static ResultType run(CppScriptComponent & component, const char * method, Args&&... args);
 
-			return ResultType();
-		}
+		template <typename ResultType, typename... Args>
+		static ResultType run(Engine & engine, const Entity & entity, const char * method, Args&&... args);
 	};
 }
+
+#include "engine/script/ScriptUtilities.inl"
 
 #endif

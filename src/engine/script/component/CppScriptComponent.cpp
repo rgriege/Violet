@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "engine/script/component/CppScriptComponent.h"
 
 #include "engine/serialization/Deserializer.h"
@@ -10,6 +12,8 @@
 #include <Windows.h>
 
 using namespace Violet;
+
+// ============================================================================
 
 namespace CppScriptComponentNamespace
 {
@@ -24,10 +28,14 @@ namespace CppScriptComponentNamespace
 
 using namespace CppScriptComponentNamespace;
 
+// ============================================================================
+
 CppScriptComponent::Allocator::Allocator() :
 	m_memory(nullptr)
 {
 }
+
+// ----------------------------------------------------------------------------
 
 CppScriptComponent::Allocator::Allocator(Allocator && other) :
 	m_memory(other.m_memory)
@@ -35,11 +43,15 @@ CppScriptComponent::Allocator::Allocator(Allocator && other) :
 	other.m_memory = nullptr;
 }
 
+// ----------------------------------------------------------------------------
+
 CppScriptComponent::Allocator & CppScriptComponent::Allocator::operator=(Allocator && other)
 {
 	std::swap(m_memory, other.m_memory);
 	return *this;
 }
+
+// ----------------------------------------------------------------------------
 
 CppScriptComponent::Allocator::~Allocator()
 {
@@ -47,10 +59,14 @@ CppScriptComponent::Allocator::~Allocator()
 		free(m_memory);
 }
 
+// ----------------------------------------------------------------------------
+
 void * CppScriptComponent::Allocator::fetch() const
 {
 	return m_memory;
 }
+
+// ----------------------------------------------------------------------------
 
 void * CppScriptComponent::Allocator::allocate(const size_t size)
 {
@@ -61,10 +77,14 @@ void * CppScriptComponent::Allocator::allocate(const size_t size)
 	return m_memory;
 }
 
-const char * CppScriptComponent::getLabel()
+// ============================================================================
+
+Tag CppScriptComponent::getTypeId()
 {
-	return "scpt";
+	return Tag('s', 'c', 'p', 't');
 }
+
+// ============================================================================
 
 CppScriptComponent::CppScriptComponent(const Entity & entity, Deserializer & deserializer) :
 	Component(entity),
@@ -74,6 +94,8 @@ CppScriptComponent::CppScriptComponent(const Entity & entity, Deserializer & des
 	load(deserializer.getString("file"));
 }
 
+// ----------------------------------------------------------------------------
+
 CppScriptComponent::CppScriptComponent(CppScriptComponent && other) :
 	Component(std::move(other)),
 	m_lib(std::move(other.m_lib)),
@@ -82,6 +104,8 @@ CppScriptComponent::CppScriptComponent(CppScriptComponent && other) :
 	other.m_lib = nullptr;
 }
 
+// ----------------------------------------------------------------------------
+
 CppScriptComponent & CppScriptComponent::operator=(CppScriptComponent && other)
 {
 	std::swap(m_lib, other.m_lib);
@@ -89,16 +113,21 @@ CppScriptComponent & CppScriptComponent::operator=(CppScriptComponent && other)
 	return *this;
 }
 
+// ----------------------------------------------------------------------------
+
 CppScriptComponent::~CppScriptComponent()
 {
 	unload();
 }
 
+// ----------------------------------------------------------------------------
 
 std::string CppScriptComponent::getFilename() const
 {
 	return StringUtilities::lastRight(getFilenameWithPath(), '\\');
 }
+
+// ----------------------------------------------------------------------------
 
 void CppScriptComponent::reload()
 {
@@ -134,6 +163,8 @@ void CppScriptComponent::reload()
 	}
 }
 
+// ============================================================================
+
 void * CppScriptComponent::getMethodPtr(const char * name) const
 {
 	void * methodPtr = GetProcAddress(m_lib, name);
@@ -142,10 +173,14 @@ void * CppScriptComponent::getMethodPtr(const char * name) const
 	return methodPtr;
 }
 
+// ----------------------------------------------------------------------------
+
 void * CppScriptComponent::getMemoryPtr() const
 {
 	return m_allocator.fetch();
 }
+
+// ----------------------------------------------------------------------------
 
 std::string CppScriptComponent::getFilenameWithPath() const
 {
@@ -160,6 +195,8 @@ std::string CppScriptComponent::getFilenameWithPath() const
 	return filename;
 }
 
+// ----------------------------------------------------------------------------
+
 void CppScriptComponent::load(const char * filename)
 {
 	m_lib = LoadLibrary(filename);
@@ -173,16 +210,22 @@ void CppScriptComponent::load(const char * filename)
 	}
 }
 
+// ----------------------------------------------------------------------------
+
 void CppScriptComponent::unload()
 {
 	FreeLibrary(m_lib);
 }
+
+// ============================================================================
 
 Serializer & Violet::operator<<(Serializer & serializer, const CppScriptComponent & component)
 {
 	serializer.writeString("file", component.getFilename().c_str());
 	return serializer;
 }
+
+// ============================================================================
 
 void CppScriptComponentNamespace::warnMissing(const char * filename, const char * procedureName)
 {
@@ -197,3 +240,5 @@ void CppScriptComponentNamespace::warnMissing(const char * filename, const char 
 		s_missingProcedures.insert(fileAndProcedure);
 	}
 }
+
+// ============================================================================

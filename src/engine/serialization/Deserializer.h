@@ -1,5 +1,5 @@
-#ifndef DESERIALIZER_H
-#define DESERIALIZER_H
+#ifndef VIOLET_Deserializer_H
+#define VIOLET_Deserializer_H
 
 #include "engine/Defines.h"
 

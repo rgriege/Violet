@@ -1,5 +1,5 @@
-#ifndef RIGID_BODY_H
-#define RIGID_BODY_H
+#ifndef VIOLET_RigidBody_H
+#define VIOLET_RigidBody_H
 
 #include "engine/math/Interval.h"
 #include "engine/math/Polygon.h"

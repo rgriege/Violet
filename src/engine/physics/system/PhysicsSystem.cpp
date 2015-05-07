@@ -4,7 +4,7 @@
 #include "engine/entity/Entity.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/system/SystemFactory.h"
-#include "engine/transform/system/TransformSystem.h"
+#include "engine/transform/component/TransformComponent.h"
 #include "engine/physics/collision/Intersection.h"
 
 #include <iostream>
@@ -23,6 +23,11 @@ namespace PhysicsSystemNamespace
 
 using namespace PhysicsSystemNamespace;
 
+const char * PhysicsSystem::getStaticLabel()
+{
+	return "phys";
+}
+
 void PhysicsSystem::install(SystemFactory & factory)
 {
 	factory.assign(getStaticLabel(), &PhysicsSystem::init);
@@ -37,7 +42,7 @@ std::unique_ptr<System> PhysicsSystem::init(Deserializer & deserializer)
 }
 
 PhysicsSystem::PhysicsSystem(PhysicsSystem && other) :
-	ComponentSystem<PhysicsComponent>(std::move(other)),
+	System(std::move(other)),
 	m_drag(other.m_drag),
 	m_gravity(other.m_gravity)
 {
@@ -45,38 +50,49 @@ PhysicsSystem::PhysicsSystem(PhysicsSystem && other) :
 
 void PhysicsSystem::update(const float dt, Engine & engine)
 {
-	if (!m_gravity.isZero() || m_drag != 0)
-		for (auto & component : getComponents())
-			component.m_force += m_gravity - component.m_velocity * m_drag;
+	auto view = engine.getCurrentScene().getView<PhysicsComponent>();
 
-	for (auto & component : getComponents())
+	if (!m_gravity.isZero() || m_drag != 0)
 	{
-		TransformComponent & transform = engine.fetch<TransformComponent>(component.getEntity());
-		updateEntity(transform, component, dt);
+		for (auto & componentSet : view)
+		{
+			PhysicsComponent & component = get<PhysicsComponent&>(componentSet);
+			component.m_force += m_gravity - component.m_velocity * m_drag;
+		}
 	}
 
-	for (uint32 i = 0, len = getComponents().size(); i < len; ++i)
+	for (auto & componentSet : view)
 	{
-		PhysicsComponent & physics1 = getComponents()[i];
-		TransformComponent & transform1 = engine.fetch<TransformComponent>(physics1.getEntity());
-		for (uint32 j = i + 1; j < len; ++j)
+		PhysicsComponent & component = get<PhysicsComponent&>(componentSet);
+		TransformComponent * transform = engine.getCurrentScene().getComponent<TransformComponent>(component.getEntity());
+		updateEntity(*transform, component, dt);
+	}
+
+	for (auto it = view.begin(), end = view.end(); it != end; ++it)
+	{
+		PhysicsComponent & physics1 = get<PhysicsComponent&>(*it);
+		TransformComponent * transform1 = engine.getCurrentScene().getComponent<TransformComponent>(physics1.getEntity());
+		auto it2 = it;
+		++it2;
+		for (; it2 != end; ++it2)
 		{
-			PhysicsComponent & physics2 = getComponents()[j];
-			TransformComponent & transform2 = engine.fetch<TransformComponent>(physics2.getEntity());
-			Intersection intersection(RigidBody(transform1, physics1), RigidBody(transform2, physics2), dt);
+			PhysicsComponent & physics2 = get<PhysicsComponent&>(*it2);
+			TransformComponent * transform2 = engine.getCurrentScene().getComponent<TransformComponent>(physics2.getEntity());
+			Intersection intersection(RigidBody(*transform1, physics1), RigidBody(*transform2, physics2), dt);
 			if (intersection.exists())
 			{
 				//printf("collision!\n");
 				float const impulseMagnitude = (-(1 + ms_restitution) * (physics2.m_velocity - physics1.m_velocity).dot(intersection.getIntersectionAxis())) /
 					(1 / physics1.m_mass + 1 / physics2.m_mass);
-				resolveCollisionForEntity(transform1, physics1, intersection, impulseMagnitude);
-				resolveCollisionForEntity(transform2, physics2, intersection, impulseMagnitude);
+				resolveCollisionForEntity(*transform1, physics1, intersection, impulseMagnitude);
+				resolveCollisionForEntity(*transform2, physics2, intersection, impulseMagnitude);
 			}
 		}
 	}
 }
 
 PhysicsSystem::PhysicsSystem(float drag, Vec2f gravity) :
+	System(getStaticLabel()),
 	m_drag(drag),
 	m_gravity(std::move(gravity))
 {

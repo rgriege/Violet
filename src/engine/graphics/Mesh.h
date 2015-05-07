@@ -1,5 +1,5 @@
-#ifndef MESH_H
-#define MESH_H
+#ifndef VIOLET_Mesh_H
+#define VIOLET_Mesh_H
 
 #include "engine/Defines.h"
 #include "engine/math/Vec2.h"
@@ -39,6 +39,7 @@ namespace Violet
 		uint32 m_size;
 	};
 
+	Deserializer & operator>>(Deserializer & deserializer, Mesh & mesh);
 	Serializer & operator<<(Serializer & serializer, const Mesh & mesh);
 }
 

@@ -1,5 +1,5 @@
-#ifndef VEC2_H
-#define VEC2_H
+#ifndef VIOLET_Vec2_H
+#define VIOLET_Vec2_H
 
 #include "engine/Defines.h"
 
@@ -91,9 +91,20 @@ namespace Violet
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const Vec2<float> & vec);
 	template<>
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const Vec2<double> & vec);
+
+	template<typename T>
+	Deserializer & operator>>(Deserializer & deserializer, Vec2<T> & vec);
+	template<>
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Vec2<int> & vec);
+	template<>
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Vec2<uint32> & vec);
+	template<>
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Vec2<float> & vec);
+	template<>
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Vec2<double> & vec);
 }
 
-#include "engine/math/Vec2.ipp"
+#include "engine/math/Vec2.inl"
 
 typedef Violet::Vec2<int> Vec2i;
 typedef Violet::Vec2<float> Vec2f;

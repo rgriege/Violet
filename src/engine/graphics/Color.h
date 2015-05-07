@@ -1,5 +1,5 @@
-#ifndef COLOR_H
-#define COLOR_H
+#ifndef VIOLET_Color_H
+#define VIOLET_Color_H
 
 #include "engine/Defines.h"
 
@@ -61,6 +61,7 @@ namespace Violet
 		Component r, g, b, a;
 	};
 
+	Deserializer & operator>>(Deserializer & deserializer, Color & color);
 	Serializer & operator<<(Serializer & serializer, const Color & color);
 }
 

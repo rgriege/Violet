@@ -1,7 +1,7 @@
 #include "engine/Engine.h"
 #include "engine/script/component/CppScriptComponent.h"
 #include "engine/transform/component/TransformComponent.h"
-#include "game/pathfinding/Path.h"
+#include "game/pathfinding/PathComponent.h"
 #include "game/pathfinding/PathfindingSystem.h"
 #include "game/world/WorldSystem.h"
 
@@ -12,7 +12,7 @@ struct Mem
     bool working, traveling;
 };
 
-void travel(Entity & e, Engine & engine, Mem * mem);
+void travel(const Entity e, Engine & engine, Mem * mem);
 void work(Mem * mem);
 void rest(Mem * mem);
 
@@ -22,10 +22,10 @@ extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & alloc
     mem->traveling = mem->working = false;
 }
 
-extern "C" __declspec(dllexport) void update(Entity & e, Engine & engine, Mem * mem)
+extern "C" __declspec(dllexport) void update(const Entity e, Engine & engine, Mem * mem)
 {
-    auto & ws = engine.fetch<WorldSystem>(); 
-    auto const hours = ws.getTime().getHours();
+    auto * ws = engine.fetch<WorldSystem>(); 
+    auto const hours = ws->getTime().getHours();
     if (hours >= 8)
     {
         if (hours < 17)
@@ -34,7 +34,7 @@ extern "C" __declspec(dllexport) void update(Entity & e, Engine & engine, Mem * 
             {
                 if (!mem->traveling)
                     travel(e, engine, mem);
-                else if (!engine.fetch<PathfindingSystem>().has(e))
+                else if (!engine.getCurrentScene().hasComponent<PathComponent>(e))
                     work(mem);
             }
         }
@@ -42,19 +42,17 @@ extern "C" __declspec(dllexport) void update(Entity & e, Engine & engine, Mem * 
         {
             if (mem->working)
                 travel(e, engine, mem);
-            else if (mem->traveling && !engine.fetch<PathfindingSystem>().has(e))
+            else if (mem->traveling && !engine.getCurrentScene().hasComponent<PathComponent>(e))
                 rest(mem);
         }
     }
 }
 
-void travel(Entity & e, Engine & engine, Mem * mem)
+void travel(const Entity e, Engine & engine, Mem * mem)
 {
-    auto & ws = engine.fetch<WorldSystem>(); 
-    auto & ps = engine.fetch<PathfindingSystem>();
-    auto & tc = engine.fetch<TransformComponent>(e);
+    auto * ps = engine.fetch<PathfindingSystem>();
     const Vec2f goal = mem->working ? Vec2f(0, -270.f) : Vec2f(200, 120);
-    ps.create(e, 1.f, ps.getPath(tc.m_position, goal));
+    ps->path(engine.getCurrentScene(), e, goal);
     mem->traveling = true;
     mem->working = false;
 }

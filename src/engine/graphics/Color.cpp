@@ -1,9 +1,13 @@
+// ============================================================================
+
 #include "engine/graphics/Color.h"
 
 #include "engine/serialization/Deserializer.h"
 #include "engine/serialization/Serializer.h"
 
 using namespace Violet;
+
+// ============================================================================
 
 namespace ColorNamespace
 {
@@ -14,6 +18,8 @@ namespace ColorNamespace
 }
 
 using namespace ColorNamespace;
+
+// ============================================================================
 
 const Color Color::kBlack(0, 0, 0);
 const Color Color::kRed(255, 0, 0);
@@ -28,20 +34,28 @@ const Color Color::kTan(240, 230, 170);
 const Color Color::kBrown(107, 66, 38);
 const Color Color::kRainbow[] = { kRed, kOrange, kYellow, kGreen, kIndigo, kBlue, kPurple };
 
+// ============================================================================
+
 Color::Component::Component() :
 	m_value()
 {
 }
+
+// ----------------------------------------------------------------------------
 
 Color::Component::Component(const uint8 value) :
 	m_value(value)
 {
 }
 
+// ----------------------------------------------------------------------------
+
 Color::Component::Component(const float value) :
 	m_value(convert(value))
 {
 }
+
+// ----------------------------------------------------------------------------
 
 Color::Component & Color::Component::operator=(const uint8 value)
 {
@@ -49,21 +63,29 @@ Color::Component & Color::Component::operator=(const uint8 value)
 	return *this;
 }
 
+// ----------------------------------------------------------------------------
+
 Color::Component & Color::Component::operator=(const float value)
 {
 	m_value = convert(value);
 	return *this;
 }
 
+// ----------------------------------------------------------------------------
+
 Color::Component::operator uint8() const
 {
 	return m_value;
 }
 
+// ----------------------------------------------------------------------------
+
 Color::Component::operator float() const
 {
 	return convert(m_value);
 }
+
+// ============================================================================
 
 Color::Color() :
 	r(static_cast<uint8>(0)),
@@ -73,6 +95,8 @@ Color::Color() :
 {
 }
 
+// ----------------------------------------------------------------------------
+
 Color::Color(const uint8 _r, const uint8 _g, const uint8 _b, const uint8 _a) :
 	r(_r),
 	g(_g),
@@ -81,30 +105,35 @@ Color::Color(const uint8 _r, const uint8 _g, const uint8 _b, const uint8 _a) :
 {
 }
 
-Color::Color(Deserializer & deserializer)
+// ----------------------------------------------------------------------------
+
+Color::Color(Deserializer & deserializer) :
+	Color()
 {
-	const char * hexString = deserializer.getString(ms_segmentLabel);
-	uint32 rgba = strtoul(hexString, nullptr, 16);
-	r = static_cast<uint8>((rgba >> 24) & 0xff);
-	g = static_cast<uint8>((rgba >> 16) & 0xff);
-	b = static_cast<uint8>((rgba >> 8) & 0xff);
-	a = static_cast<uint8>(rgba & 0xff);
+	deserializer >> *this;
 }
+
+// ----------------------------------------------------------------------------
 
 std::array<float, 4> Color::as4fv() const
 {
 	return { r, g, b, a };
 }
 
-float ColorNamespace::convert(const uint8 value)
+// ============================================================================
+
+Deserializer & Violet::operator>>(Deserializer & deserializer, Color & color)
 {
-	return static_cast<float>(value) / 255.f;
+	const char * hexString = deserializer.getString(ms_segmentLabel);
+	uint32 rgba = strtoul(hexString, nullptr, 16);
+	color.r = static_cast<uint8>((rgba >> 24) & 0xff);
+	color.g = static_cast<uint8>((rgba >> 16) & 0xff);
+	color.b = static_cast<uint8>((rgba >> 8) & 0xff);
+	color.a = static_cast<uint8>(rgba & 0xff);
+	return deserializer;
 }
 
-uint8 ColorNamespace::convert(const float value)
-{
-	return static_cast<uint8>((value + 0.5f) * 255);
-}
+// ----------------------------------------------------------------------------
 
 Serializer & Violet::operator<<(Serializer & serializer, const Color & color)
 {
@@ -114,3 +143,19 @@ Serializer & Violet::operator<<(Serializer & serializer, const Color & color)
 	serializer.writeString(ms_segmentLabel, hexString);
 	return serializer;
 }
+
+// ============================================================================
+
+float ColorNamespace::convert(const uint8 value)
+{
+	return static_cast<float>(value) / 255.f;
+}
+
+// ----------------------------------------------------------------------------
+
+uint8 ColorNamespace::convert(const float value)
+{
+	return static_cast<uint8>((value + 0.5f) * 255);
+}
+
+// ============================================================================

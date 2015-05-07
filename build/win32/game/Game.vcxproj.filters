@@ -10,9 +10,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\game\Config.h" />
-    <ClInclude Include="..\..\..\src\game\pathfinding\Map.h">
-      <Filter>pathfinding</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\game\pathfinding\Path.h">
       <Filter>pathfinding</Filter>
     </ClInclude>
@@ -25,11 +22,17 @@
     <ClInclude Include="..\..\..\src\game\world\WorldSystem.h">
       <Filter>world</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\game\pathfinding\MapComponent.h">
+      <Filter>pathfinding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\pathfinding\PathfindingComponent.h">
+      <Filter>pathfinding</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\game\pathfinding\Map.h">
+      <Filter>pathfinding</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\game\pathfinding\Map.cpp">
-      <Filter>pathfinding</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\game\pathfinding\Path.cpp">
       <Filter>pathfinding</Filter>
     </ClCompile>
@@ -41,6 +44,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\game\world\WorldSystem.cpp">
       <Filter>world</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\game\pathfinding\MapComponent.cpp">
+      <Filter>pathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\game\pathfinding\PathfindingComponent.cpp">
+      <Filter>pathfinding</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\game\pathfinding\Map.cpp">
+      <Filter>pathfinding</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

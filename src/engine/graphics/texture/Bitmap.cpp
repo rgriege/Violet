@@ -1,9 +1,13 @@
+// ============================================================================
+
 #include "engine/graphics/texture/Bitmap.h"
 
 #include <fstream>
 #include <iostream>
 
 using namespace Violet;
+
+// ============================================================================
 
 namespace BitmapNamespace
 {
@@ -36,6 +40,8 @@ namespace BitmapNamespace
 
 using namespace BitmapNamespace;
 
+// ============================================================================
+
 std::unique_ptr<Bitmap> Bitmap::load(const char * filename)
 {
 	std::ifstream stream(filename, std::ios_base::binary);
@@ -48,7 +54,7 @@ std::unique_ptr<Bitmap> Bitmap::load(const char * filename)
 	return load(stream);
 }
 
-
+// ----------------------------------------------------------------------------
 
 std::unique_ptr<Bitmap> Bitmap::load(std::istream & stream)
 {
@@ -124,6 +130,8 @@ std::unique_ptr<Bitmap> Bitmap::load(std::istream & stream)
 	return nullptr;
 }
 
+// ============================================================================
+
 BitmapNamespace::DibHeader::DibHeader() :
 	size(0),
 	width(0),
@@ -138,3 +146,5 @@ BitmapNamespace::DibHeader::DibHeader() :
 	colorsUsedCount(0)
 {
 }
+
+// ============================================================================

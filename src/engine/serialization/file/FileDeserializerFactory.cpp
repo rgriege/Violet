@@ -1,6 +1,10 @@
+// ============================================================================
+
 #include "engine/serialization/file/FileDeserializerFactory.h"
 
 using namespace Violet;
+
+// ============================================================================
 
 FileDeserializerFactory & FileDeserializerFactory::getInstance()
 {
@@ -8,10 +12,7 @@ FileDeserializerFactory & FileDeserializerFactory::getInstance()
 	return ms_instance;
 }
 
-FileDeserializerFactory::FileDeserializerFactory() :
-	m_factory()
-{
-}
+// ============================================================================
 
 std::unique_ptr<Deserializer> FileDeserializerFactory::create(const char * filename)
 {
@@ -22,7 +23,18 @@ std::unique_ptr<Deserializer> FileDeserializerFactory::create(const char * filen
 	return m_factory.create(StringUtilities::right(filename, '.'), std::move(fb));
 }
 
+// ----------------------------------------------------------------------------
+
 void FileDeserializerFactory::remove(const char * extension)
 {
 	m_factory.remove(extension);
 }
+
+// ============================================================================
+
+FileDeserializerFactory::FileDeserializerFactory() :
+	m_factory()
+{
+}
+
+// ============================================================================

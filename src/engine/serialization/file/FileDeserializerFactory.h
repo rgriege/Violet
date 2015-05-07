@@ -1,5 +1,5 @@
-#ifndef FILE_DESERIALIZER_FACTORY_H
-#define FILE_DESERIALIZER_FACTORY_H
+#ifndef VIOLET_FileDeserializerFactory_H
+#define VIOLET_FileDeserializerFactory_H
 
 #include "engine/Defines.h"
 #include "engine/serialization/file/FileDeserializer.h"
@@ -40,18 +40,8 @@ namespace Violet
 
 		Factory<const char *, std::unique_ptr<Deserializer>(std::filebuf &&)> m_factory;
 	};
-
-	template <typename StreamDeserializer>
-	std::unique_ptr<Deserializer> FileDeserializerFactory::produce(std::filebuf && file)
-	{
-		return std::unique_ptr<Deserializer>(new FileDeserializer<StreamDeserializer>(std::move(file)));
-	}
-
-	template <typename T>
-	void FileDeserializerFactory::assign(const char * extension)
-	{
-		m_factory.assign(extension, &produce<T>);
-	}
 }
+
+#include "engine/serialization/file/FileDeserializerFactory.inl"
 
 #endif

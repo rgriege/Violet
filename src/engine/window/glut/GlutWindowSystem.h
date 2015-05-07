@@ -1,5 +1,5 @@
-#ifndef GLUT_WINDOW_H
-#define GLUT_WINDOW_H
+#ifndef VIOLET_GlutWindowSystem_H
+#define VIOLET_GlutWindowSystem_H
 
 #include "engine/window/WindowSystem.h"
 
@@ -16,6 +16,7 @@ namespace GlutWindowSystemNamespace
 namespace Violet
 {
 	class Deserializer;
+	class SystemFactory;
 
 	class VIOLET_API GlutWindowSystem : public WindowSystem
 	{

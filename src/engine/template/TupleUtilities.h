@@ -1,5 +1,5 @@
-#ifndef TUPLE_UTILITIES_H
-#define TUPLE_UTILITIES_H
+#ifndef VIOLET_TupleUtilities_H
+#define VIOLET_TupleUtilities_H
 
 #include "engine/template/TemplateUtilities.h"
 

@@ -10,10 +10,11 @@ namespace Violet
 	class Deserializer;
 	class SystemFactory;
 
-	class VIOLET_API PhysicsSystem : public ComponentSystem<PhysicsComponent>
+	class VIOLET_API PhysicsSystem : public System
 	{
 	public:
 
+		static const char * getStaticLabel();
 		static void install(SystemFactory & factory);
 		static std::unique_ptr<System> init(Deserializer & deserializer);
 

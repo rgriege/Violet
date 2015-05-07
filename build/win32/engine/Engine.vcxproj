@@ -90,11 +90,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\engine\component\Component.h" />
-    <ClInclude Include="..\..\..\src\engine\component\ComponentFactory.h" />
+    <ClInclude Include="..\..\..\src\engine\component\ComponentManager.h" />
+    <ClInclude Include="..\..\..\src\engine\component\ComponentPool.h" />
     <ClInclude Include="..\..\..\src\engine\Defines.h" />
     <ClInclude Include="..\..\..\src\engine\Engine.h" />
     <ClInclude Include="..\..\..\src\engine\entity\Entity.h" />
-    <ClInclude Include="..\..\..\src\engine\entity\EntityFactory.h" />
+    <ClInclude Include="..\..\..\src\engine\entity\EntityManager.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\Color.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponent.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\component\TextComponent.h" />
@@ -118,9 +119,9 @@
     <ClInclude Include="..\..\..\src\engine\physics\collision\RigidBody.h" />
     <ClInclude Include="..\..\..\src\engine\physics\component\PhysicsComponent.h" />
     <ClInclude Include="..\..\..\src\engine\physics\system\PhysicsSystem.h" />
+    <ClInclude Include="..\..\..\src\engine\scene\Scene.h" />
     <ClInclude Include="..\..\..\src\engine\script\component\CppScriptComponent.h" />
     <ClInclude Include="..\..\..\src\engine\script\ScriptUtilities.h" />
-    <ClInclude Include="..\..\..\src\engine\script\system\CppScriptSystem.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\binary\BinarySerializer.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\Deserializer.h" />
@@ -139,7 +140,6 @@
     <ClInclude Include="..\..\..\src\engine\template\TupleUtilities.h" />
     <ClInclude Include="..\..\..\src\engine\time\Time.h" />
     <ClInclude Include="..\..\..\src\engine\transform\component\TransformComponent.h" />
-    <ClInclude Include="..\..\..\src\engine\transform\system\TransformSystem.h" />
     <ClInclude Include="..\..\..\src\engine\update\component\UpdateComponent.h" />
     <ClInclude Include="..\..\..\src\engine\update\system\UpdateSystem.h" />
     <ClInclude Include="..\..\..\src\engine\utility\Assert.h" />
@@ -151,6 +151,7 @@
     <ClInclude Include="..\..\..\src\engine\utility\Guard.h" />
     <ClInclude Include="..\..\..\src\engine\utility\ResourceCache.h" />
     <ClInclude Include="..\..\..\src\engine\utility\StringUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\Tag.h" />
     <ClInclude Include="..\..\..\src\engine\utility\unique_val.h" />
     <ClInclude Include="..\..\..\src\engine\window\glut\GlutWindowSystem.h" />
     <ClInclude Include="..\..\..\src\engine\window\MouseButton.h" />
@@ -158,9 +159,12 @@
     <ClInclude Include="..\..\..\src\engine\window\WindowSystem.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\engine\component\Component.cpp" />
+    <ClCompile Include="..\..\..\src\engine\component\ComponentManager.cpp" />
+    <ClCompile Include="..\..\..\src\engine\component\ComponentPool.cpp" />
     <ClCompile Include="..\..\..\src\engine\Engine.cpp" />
     <ClCompile Include="..\..\..\src\engine\entity\Entity.cpp" />
-    <ClCompile Include="..\..\..\src\engine\entity\EntityFactory.cpp" />
+    <ClCompile Include="..\..\..\src\engine\entity\EntityManager.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\component\TextComponent.cpp" />
@@ -179,33 +183,55 @@
     <ClCompile Include="..\..\..\src\engine\physics\collision\RigidBody.cpp" />
     <ClCompile Include="..\..\..\src\engine\physics\component\PhysicsComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\physics\system\PhysicsSystem.cpp" />
+    <ClCompile Include="..\..\..\src\engine\scene\Scene.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\component\CppScriptComponent.cpp" />
-    <ClCompile Include="..\..\..\src\engine\script\system\CppScriptSystem.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinarySerializer.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\file\FileSerializerFactory.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\json\JsonDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\json\JsonSerializer.cpp" />
+    <ClCompile Include="..\..\..\src\engine\system\System.cpp" />
     <ClCompile Include="..\..\..\src\engine\time\Time.cpp" />
     <ClCompile Include="..\..\..\src\engine\transform\component\TransformComponent.cpp" />
-    <ClCompile Include="..\..\..\src\engine\transform\system\TransformSystem.cpp" />
     <ClCompile Include="..\..\..\src\engine\update\component\UpdateComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\update\system\UpdateSystem.cpp" />
     <ClCompile Include="..\..\..\src\engine\utility\FileUtilities.cpp" />
     <ClCompile Include="..\..\..\src\engine\utility\FreeList.cpp" />
     <ClCompile Include="..\..\..\src\engine\utility\StringUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\engine\utility\Tag.cpp" />
     <ClCompile Include="..\..\..\src\engine\window\glut\GlutWindowSystem.cpp" />
     <ClCompile Include="..\..\..\src\engine\window\sdl\SDLWindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\engine\math\Interval.ipp" />
-    <None Include="..\..\..\src\engine\math\Matrix2.ipp" />
-    <None Include="..\..\..\src\engine\math\Matrix3.ipp" />
-    <None Include="..\..\..\src\engine\math\Vec2.ipp" />
-    <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.ipp" />
-    <None Include="..\..\..\src\engine\serialization\file\FileSerializer.ipp" />
-    <None Include="..\..\..\src\engine\structures\CrsGraph.ipp" />
+    <ClInclude Include="..\..\..\src\engine\component\Component.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\component\ComponentPool.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <None Include="..\..\..\src\engine\component\ComponentManager.inl" />
+    <ClInclude Include="..\..\..\src\engine\math\Interval.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Matrix2.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Matrix3.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Vec2.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <None Include="..\..\..\src\engine\Engine.inl" />
+    <None Include="..\..\..\src\engine\scene\Scene.inl" />
+    <None Include="..\..\..\src\engine\script\component\CppScriptComponent.inl" />
+    <None Include="..\..\..\src\engine\script\ScriptUtilities.inl" />
+    <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.inl" />
+    <None Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.inl" />
+    <None Include="..\..\..\src\engine\serialization\file\FileSerializer.inl" />
+    <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl" />
+    <None Include="..\..\..\src\engine\structures\CrsGraph.inl" />
     <None Include="..\..\..\src\engine\utility\unique_val.ipp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

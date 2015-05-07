@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "engine/graphics/font/Font.h"
 
 #include "engine/Defines.h"
@@ -12,6 +14,8 @@
 
 using namespace Violet;
 
+// ============================================================================
+
 namespace FontNamespace
 {
 	FT_Library ms_freetypeLibrary;
@@ -21,6 +25,8 @@ namespace FontNamespace
 
 using namespace FontNamespace;
 
+// ============================================================================
+
 Font::Glyph::Glyph(const uint32 vertexArrayBuffer, Texture && texture, Mesh && mesh, Mesh && texCoords, const uint32 advance) :
 	m_vertexArrayBuffer(vertexArrayBuffer),
 	m_texture(std::move(texture)),
@@ -29,6 +35,8 @@ Font::Glyph::Glyph(const uint32 vertexArrayBuffer, Texture && texture, Mesh && m
 	m_advance(advance)
 {
 }
+
+// ----------------------------------------------------------------------------
 
 Font::Glyph::Glyph(Glyph && other) :
 	m_vertexArrayBuffer(other.m_vertexArrayBuffer),
@@ -40,11 +48,15 @@ Font::Glyph::Glyph(Glyph && other) :
 	other.m_vertexArrayBuffer = 0;
 }
 
+// ----------------------------------------------------------------------------
+
 Font::Glyph::~Glyph()
 {
 	if (m_vertexArrayBuffer != 0)
 		glDeleteVertexArrays(1, &m_vertexArrayBuffer);
 }
+
+// ----------------------------------------------------------------------------
 
 void Font::Glyph::render(ShaderProgram & program) const
 {
@@ -65,10 +77,14 @@ void Font::Glyph::render(ShaderProgram & program) const
 	glBindVertexArray(0);
 }
 
+// ----------------------------------------------------------------------------
+
 int Font::Glyph::getAdvance() const
 {
 	return m_advance;
 }
+
+// ============================================================================
 
 std::unique_ptr<Font> Font::load(const char * filename)
 {
@@ -186,22 +202,30 @@ std::unique_ptr<Font> Font::load(const char * filename)
 	return std::unique_ptr<Font>(new Font(filename, std::move(glyphs), spaceWidth));
 }
 
+// ----------------------------------------------------------------------------
+
 Font::Cache & Font::getCache()
 {
 	static Cache s_cache;
 	return s_cache;
 }
 
+// ----------------------------------------------------------------------------
+
 uint32 Font::getFontImageSize()
 {
 	return ms_fontImageSize;
 }
 
+// ============================================================================
+
 void Font::render(std::string const & str, ShaderProgram & program)
 {
 	float xOffset = 0;
-	for (auto const character : str)
+	// Only God knows why ranged for doesn't work here...
+	for (uint32 i = 0, end = str.size(); i < end; ++i)
 	{
+		char character = str[i];
 		if (character == ' ')
 			xOffset += m_spaceWidth;
 		else
@@ -220,10 +244,14 @@ void Font::render(std::string const & str, ShaderProgram & program)
 	}
 }
 
+// ----------------------------------------------------------------------------
+
 const char * Font::getFilename() const
 {
 	return m_filename.c_str();
 }
+
+// ============================================================================
 
 Font::Font(const char * filename, std::map<char, Glyph> && glyphs, const uint32 spaceWidth) :
 	m_filename(filename),
@@ -231,3 +259,5 @@ Font::Font(const char * filename, std::map<char, Glyph> && glyphs, const uint32 
 	m_spaceWidth(spaceWidth)
 {
 }
+
+// ============================================================================

@@ -1,3 +1,5 @@
+// ============================================================================
+
 /*
  * NOTE: this uses a modified version of the JsonCpp library and will NOT work with the original source.
  * The deserialization process is designed to be read in the order presented in the input stream. However,
@@ -12,6 +14,8 @@
 #include <memory>
 
 using namespace Violet;
+
+// ============================================================================
 
 namespace JsonDeserializerNamespace
 {
@@ -42,10 +46,14 @@ namespace JsonDeserializerNamespace
 
 using namespace JsonDeserializerNamespace;
 
+// ============================================================================
+
 void JsonDeserializer::install()
 {
 	FileDeserializerFactory::getInstance().assign<JsonDeserializer>("json");
 }
+
+// ============================================================================
 
 JsonDeserializer::JsonDeserializer(std::istream & stream) :
 	m_root(),
@@ -54,6 +62,8 @@ JsonDeserializer::JsonDeserializer(std::istream & stream) :
 	Json::Reader reader;
 	m_position = reader.parse(stream, m_root, false) ? m_root.begin() : m_root.end();
 }
+
+// ----------------------------------------------------------------------------
 
 JsonDeserializer::JsonDeserializer(JsonDeserializer && other) :
 	m_root(),
@@ -67,50 +77,70 @@ JsonDeserializer::JsonDeserializer(JsonDeserializer && other) :
 		++m_position;
 }
 
+// ----------------------------------------------------------------------------
+
 JsonDeserializer::operator bool() const
 {
 	return m_position != m_root.end();
 }
+
+// ----------------------------------------------------------------------------
 
 std::unique_ptr<Deserializer> JsonDeserializer::enterSegment(const char * label)
 {
 	return std::unique_ptr<Deserializer>(new SubDeserializer(*m_position++));
 }
 
+// ----------------------------------------------------------------------------
+
 const char * JsonDeserializer::nextLabel() const
 {
 	return m_position.memberName();
 }
+
+// ----------------------------------------------------------------------------
 
 bool JsonDeserializer::getBoolean(const char * label)
 {
 	return (*m_position++).asBool();
 }
 
+// ----------------------------------------------------------------------------
+
 uint32 JsonDeserializer::getUint(const char * label)
 {
 	return (*m_position++).asUInt();
 }
+
+// ----------------------------------------------------------------------------
 
 int JsonDeserializer::getInt(const char * label)
 {
 	return (*m_position++).asInt();
 }
 
+// ----------------------------------------------------------------------------
+
 float JsonDeserializer::getFloat(const char * label)
 {
 	return static_cast<float>(getDouble(label));
 }
+
+// ----------------------------------------------------------------------------
 
 double JsonDeserializer::getDouble(const char * label)
 {
 	return (*m_position++).asDouble();
 }
 
+// ----------------------------------------------------------------------------
+
 const char * JsonDeserializer::getString(const char * label)
 {
 	return (*m_position++).asCString();
 }
+
+// ============================================================================
 
 JsonDeserializerNamespace::SubDeserializer::SubDeserializer(const Json::Value & value) :
 	m_value(value),
@@ -118,47 +148,67 @@ JsonDeserializerNamespace::SubDeserializer::SubDeserializer(const Json::Value & 
 {
 }
 
+// ----------------------------------------------------------------------------
+
 JsonDeserializerNamespace::SubDeserializer::operator bool() const
 {
 	return m_position != m_value.end();
 }
+
+// ----------------------------------------------------------------------------
 
 std::unique_ptr<Deserializer> JsonDeserializerNamespace::SubDeserializer::enterSegment(const char * label)
 {
 	return std::unique_ptr<Deserializer>(new SubDeserializer(*m_position++));
 }
 
+// ----------------------------------------------------------------------------
+
 const char * JsonDeserializerNamespace::SubDeserializer::nextLabel() const
 {
 	return m_position.memberName();
 }
+
+// ----------------------------------------------------------------------------
 
 bool JsonDeserializerNamespace::SubDeserializer::getBoolean(const char * label)
 {
 	return (*m_position++).asBool();
 }
 
+// ----------------------------------------------------------------------------
+
 uint32 JsonDeserializerNamespace::SubDeserializer::getUint(const char * label)
 {
 	return (*m_position++).asUInt();
 }
+
+// ----------------------------------------------------------------------------
 
 int JsonDeserializerNamespace::SubDeserializer::getInt(const char * label)
 {
 	return (*m_position++).asInt();
 }
 
+// ----------------------------------------------------------------------------
+
 float JsonDeserializerNamespace::SubDeserializer::getFloat(const char * label)
 {
 	return static_cast<float>(getDouble(label));
 }
+
+// ----------------------------------------------------------------------------
 
 double JsonDeserializerNamespace::SubDeserializer::getDouble(const char * label)
 {
 	return (*m_position++).asDouble();
 }
 
+// ----------------------------------------------------------------------------
+
 const char * JsonDeserializerNamespace::SubDeserializer::getString(const char * label)
 {
 	return (*m_position++).asCString();
 }
+
+// ============================================================================

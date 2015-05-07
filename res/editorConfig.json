@@ -7,12 +7,10 @@
       "height": 600,
       "title": "Editor"
     },
-    "tsfm": {},
     "rndr": {
       "color": "0xffffffff"
     },
-    "inpt": {},
-    "scpt": {}
+    "inpt": {}
   },
   "opts": {
     "firstScene": "editor.json"

@@ -1,5 +1,5 @@
-#ifndef FONT_H
-#define FONT_H
+#ifndef VIOLET_Font_H
+#define VIOLET_Font_H
 
 #include "engine/utility/ResourceCache.h"
 

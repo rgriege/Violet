@@ -1,5 +1,5 @@
-#ifndef PATH_H
-#define PATH_H
+#ifndef GAME_Path_H
+#define GAME_Path_H
 
 #include "engine/math/Vec2.h"
 #include "game/Config.h"

@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "engine/graphics/system/RenderSystem.h"
 
 #include "engine/Engine.h"
@@ -5,7 +7,7 @@
 #include "engine/math/Matrix3.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/system/SystemFactory.h"
-#include "engine/transform/system/TransformSystem.h"
+#include "engine/transform/component/TransformComponent.h"
 #include "engine/utility/Guard.h"
 #include "engine/window/WindowSystem.h"
 #include "engine/graphics/font/Font.h"
@@ -19,6 +21,8 @@
 
 using namespace Violet;
 
+// ============================================================================
+
 namespace RenderSystemNamespace
 {
 	Matrix3f ms_viewMatrix;
@@ -26,15 +30,21 @@ namespace RenderSystemNamespace
 
 using namespace RenderSystemNamespace;
 
+// ============================================================================
+
 const char * RenderSystem::getStaticLabel()
 {
-	return RenderComponent::getLabel();
+	return "rndr";
 }
+
+// ----------------------------------------------------------------------------
 
 void RenderSystem::install(SystemFactory & factory)
 {
 	factory.assign(getStaticLabel(), &RenderSystem::init);
 }
+
+// ----------------------------------------------------------------------------
 
 std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 {
@@ -58,40 +68,47 @@ std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(new RenderSystem);
 }
 
+// ============================================================================
+
 RenderSystem::~RenderSystem()
 {
 	ShaderProgram::getCache().clear();
 	Font::getCache().clear();
 }
 
+// ----------------------------------------------------------------------------
+
 void RenderSystem::update(float const dt, Engine & engine)
 {
-	MultiComponentSystem<RenderComponent, TextComponent>::update(dt, engine);
 
-	auto & windowSystem = engine.fetch<WindowSystem>();
+	auto windowSystem = engine.fetch<WindowSystem>();
 	ms_viewMatrix = Matrix3f::Identity;
-	ms_viewMatrix[0][0] = 2.f / windowSystem.getWidth();
-	ms_viewMatrix[1][1] = 2.f / windowSystem.getHeight();
+	ms_viewMatrix[0][0] = 2.f / windowSystem->getWidth();
+	ms_viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 
-	for (auto & component : getComponents<RenderComponent>())
-		draw(component, engine);
-	for (auto & component : getComponents<TextComponent>())
-		draw(component, engine);
+	for (auto & component : engine.getCurrentScene().getView<RenderComponent>())
+		draw(get<RenderComponent&>(component), engine);
+	for (auto & component : engine.getCurrentScene().getView<TextComponent>())
+		draw(get<TextComponent&>(component), engine);
 	glFlush();
-	windowSystem.render();
+	windowSystem->render();
 }
+
+// ----------------------------------------------------------------------------
 
 void RenderSystem::clear()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
+// ============================================================================
+
 void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
 {
-	const TransformComponent & transform = engine.fetch<TransformComponent>(renderComponent.getEntity());
+	const TransformComponent * transform = engine.getCurrentScene().getComponent<TransformComponent>(renderComponent.getEntity());
 	const float modelMat[9] = {
-		1.f, 0.f, transform.m_position.x,
-		0.f, 1.f, transform.m_position.y,
+		1.f, 0.f, transform->m_position.x,
+		0.f, 1.f, transform->m_position.y,
 		0.f, 0.f, 1.f
 	};
 
@@ -109,13 +126,15 @@ void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
 	glBindVertexArray(0);
 }
 
+// ----------------------------------------------------------------------------
+
 void RenderSystem::draw(TextComponent & textComponent, Engine & engine)
 {
-	const TransformComponent & transform = engine.fetch<TransformComponent>(textComponent.getEntity());
+	const TransformComponent * transform = engine.getCurrentScene().getComponent<TransformComponent>(textComponent.getEntity());
 	const float scale = static_cast<float>(textComponent.m_size) / Font::getFontImageSize();
 	float modelMat[9] = {
-		scale, 0.f, transform.m_position.x,
-		0.f, scale, transform.m_position.y,
+		scale, 0.f, transform->m_position.x,
+		0.f, scale, transform->m_position.y,
 		0.f, 0.f, 1.f
 	};
 
@@ -129,7 +148,11 @@ void RenderSystem::draw(TextComponent & textComponent, Engine & engine)
 	textComponent.m_font->render(textComponent.m_text, *textComponent.m_shader);
 }
 
+// ----------------------------------------------------------------------------
+
 RenderSystem::RenderSystem() :
-	MultiComponentSystem<RenderComponent, TextComponent>("rndr")
+	System("rndr")
 {
 }
+
+// ============================================================================

@@ -1,5 +1,5 @@
-#ifndef DEFINES_H
-#define DEFINES_H
+#ifndef VIOLET_Defines_H
+#define VIOLET_Defines_H
 
 typedef unsigned char uint8;
 typedef char int8;

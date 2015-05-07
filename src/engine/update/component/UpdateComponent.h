@@ -1,5 +1,5 @@
-#ifndef UPDATE_COMPONENT_H
-#define UPDATE_COMPONENT_H
+#ifndef VIOLET_UpdateComponent_H
+#define VIOLET_UpdateComponent_H
 
 #include "engine/component/Component.h"
 
@@ -8,19 +8,19 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API UpdateComponent : public Component
+	class VIOLET_API UpdateComponent : public Component<UpdateComponent>
 	{
 	public:
 
-		static const char * getLabel();
+		static Tag getTypeId();
 
 	public:
 
-		UpdateComponent(const Entity & entity, Deserializer & deserializer);
-		UpdateComponent(UpdateComponent && other);
-		UpdateComponent & operator=(UpdateComponent && other);
+		UpdateComponent(Entity entity);
+		UpdateComponent(Entity entity, Deserializer & deserializer);
 	};
 
+	Deserializer & operator>>(Deserializer & deserializer, UpdateComponent & component);
 	Serializer & operator<<(Serializer & serializer, const UpdateComponent & component);
 }
 

@@ -1,17 +1,17 @@
-#ifndef INTERVAL_H
-#define INTERVAL_H
+#ifndef VIOLET_Interval_H
+#define VIOLET_Interval_H
 
-#include <ostream>
+#include <iosfwd>
 
 namespace Violet
 {
-	template<typename T>
+	template <typename T>
 	class Interval
 	{
 	public:
 
 		Interval();
-		Interval(T _left, T _right);
+		Interval(T left, T right);
 		Interval(const Interval & other);
 		T length() const;
 		bool contains(T x) const;
@@ -20,14 +20,14 @@ namespace Violet
 
 	public:
 
-		T left, right;
+		T m_left, m_right;
 	};
 
 	template<typename T>
 	std::ostream & operator<<(std::ostream & os, const Interval<T> & interval);
 }
 
-#include "engine/math/Interval.ipp"
+#include "engine/math/Interval.inl"
 
 typedef Violet::Interval<float> FloatInterval;
 

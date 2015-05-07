@@ -1,8 +1,11 @@
+// ============================================================================
+
 #include "engine/input/system/InputSystem.h"
 
 #include "engine/Engine.h"
 #include "engine/script/ScriptUtilities.h"
-#include "engine/transform/system/TransformSystem.h"
+#include "engine/system/SystemFactory.h"
+#include "engine/transform/component/TransformComponent.h"
 #include "engine/window/WindowSystem.h"
 #include "engine/input/InputResult.h"
 
@@ -10,10 +13,21 @@
 
 using namespace Violet;
 
+// ============================================================================
+
+const char * InputSystem::getStaticLabel()
+{
+	return "inpt";
+}
+
+// ----------------------------------------------------------------------------
+
 void InputSystem::install(SystemFactory & factory)
 {
 	factory.assign(getStaticLabel(), &InputSystem::init);
 }
+
+// ----------------------------------------------------------------------------
 
 std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
 {
@@ -21,18 +35,20 @@ std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
 	return std::unique_ptr<System>(new InputSystem);
 }
 
+// ============================================================================
+
 InputSystem::InputSystem(InputSystem && other) :
-	ComponentSystem<InputComponent>(std::move(other))
+	System(std::move(other))
 {
 }
 
+// ----------------------------------------------------------------------------
+
 void InputSystem::update(float dt, Engine & engine)
 {
-	ComponentSystem<InputComponent>::update(dt, engine);
-
 	WindowSystem::Event event;
-	auto & windowSystem = engine.fetch<WindowSystem>();
-	while (windowSystem.getEvent(static_cast<WindowSystem::EventType>(WindowSystem::ET_KeyDown | WindowSystem::ET_KeyUp | WindowSystem::ET_MouseDown | WindowSystem::ET_MouseUp | WindowSystem::ET_MouseMove), &event))
+	auto windowSystem = engine.fetch<WindowSystem>();
+	while (windowSystem->getEvent(static_cast<WindowSystem::EventType>(WindowSystem::ET_KeyDown | WindowSystem::ET_KeyUp | WindowSystem::ET_MouseDown | WindowSystem::ET_MouseUp | WindowSystem::ET_MouseMove), &event))
 	{
 		switch (event.type)
 		{
@@ -58,71 +74,99 @@ void InputSystem::update(float dt, Engine & engine)
 	}
 }
 
+// ----------------------------------------------------------------------------
+
 void InputSystem::onMouseMove(int x, int y, int xrel, int yrel, Engine & engine)
 {
-	auto & windowSystem = engine.fetch<WindowSystem>();
-	const int width = windowSystem.getWidth();
-	const int height = windowSystem.getHeight();
+	auto windowSystem = engine.fetch<WindowSystem>();
+	const int width = windowSystem->getWidth();
+	const int height = windowSystem->getHeight();
 	Vec2f newPoint(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
 	Vec2f oldPoint(static_cast<float>(x - xrel - width / 2), static_cast<float>(height / 2 - y + yrel));
-	for (auto const & component : getComponents())
+	for (auto const & componentSet : engine.getCurrentScene().getView<InputComponent, TransformComponent, CppScriptComponent>())
 	{
-		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
-		const bool contains = component.m_mesh.contains(newPoint - transform.m_position);
-		const bool contained = component.m_mesh.contains(oldPoint - transform.m_position);
+		InputComponent & ic = get<InputComponent&>(componentSet);
+		TransformComponent & tc = get<TransformComponent&>(componentSet);
+		const bool contains = ic.m_mesh.contains(newPoint - tc.m_position);
+		const bool contained = ic.m_mesh.contains(oldPoint - tc.m_position);
 
 		if (contains ^ contained)
 		{
+			CppScriptComponent & sc = get<CppScriptComponent&>(componentSet);
 			if (contains)
-				ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseIn", component.getEntity(), engine);
+				ScriptUtilities::run<void>(sc, "onMouseIn", sc.getEntity(), engine);
 			else
-				ScriptUtilities::run<void>(engine, component.getEntity(), "onMouseOut", component.getEntity(), engine);
+				ScriptUtilities::run<void>(sc, "onMouseOut", sc.getEntity(), engine);
 		}
 	}
 }
 
+// ----------------------------------------------------------------------------
+
 void InputSystem::onMouseDown(const int x, const int y, const MouseButton button, Engine & engine)
 {
-	auto & windowSystem = engine.fetch<WindowSystem>();
-	const int width = windowSystem.getWidth();
-	const int height = windowSystem.getHeight();
+	auto windowSystem = engine.fetch<WindowSystem>();
+	const int width = windowSystem->getWidth();
+	const int height = windowSystem->getHeight();
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
-	auto const & components = getComponents();
-	for (auto it = components.rbegin(), end = components.rend(); it != end; ++it)
+	//for (auto it = components.rbegin(), end = components.rend(); it != end; ++it)
+	for (auto const & componentSet : engine.getCurrentScene().getView<InputComponent, TransformComponent, CppScriptComponent>())
 	{
-		auto const & component = *it;
-		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
-		if (component.m_mesh.contains(point - transform.m_position) &&
-			ScriptUtilities::run<InputResult>(engine, component.getEntity(), "onMouseDown", component.getEntity(), engine, std::move(button)) == InputResult::Block)
+		InputComponent & ic = get<InputComponent&>(componentSet);
+		TransformComponent & tc = get<TransformComponent&>(componentSet);
+		CppScriptComponent & sc = get<CppScriptComponent&>(componentSet);
+		if (ic.m_mesh.contains(point - tc.m_position) &&
+			ScriptUtilities::run<InputResult>(sc, "onMouseDown", ic.getEntity(), engine, std::move(button)) == InputResult::Block)
 			break;
 	}
 }
+
+// ----------------------------------------------------------------------------
 
 void InputSystem::onMouseUp(const int x, const int y, const MouseButton button, Engine & engine)
 {
-	auto & windowSystem = engine.fetch<WindowSystem>();
-	const int width = windowSystem.getWidth();
-	const int height = windowSystem.getHeight();
+	auto windowSystem = engine.fetch<WindowSystem>();
+	const int width = windowSystem->getWidth();
+	const int height = windowSystem->getHeight();
 	Vec2f point(static_cast<float>(x - width / 2), static_cast<float>(height / 2 - y));
-	auto const & components = getComponents();
-	for (auto it = components.rbegin(), end = components.rend(); it != end; ++it)
+	for (auto const & componentSet : engine.getCurrentScene().getView<InputComponent, TransformComponent, CppScriptComponent>())
 	{
-		auto const & component = *it;
-		auto const & transform = engine.fetch<TransformComponent>(component.getEntity());
-		if (component.m_mesh.contains(point - transform.m_position) &&
-			ScriptUtilities::run<InputResult>(engine, component.getEntity(), "onMouseUp", component.getEntity(), engine, std::move(button)) == InputResult::Block)
+		InputComponent & ic = get<InputComponent&>(componentSet);
+		TransformComponent & tc = get<TransformComponent&>(componentSet);
+		CppScriptComponent & sc = get<CppScriptComponent&>(componentSet);
+		if (ic.m_mesh.contains(point - tc.m_position) &&
+			ScriptUtilities::run<InputResult>(sc, "onMouseUp", ic.getEntity(), engine, std::move(button)) == InputResult::Block)
 			break;
 	}
 }
 
+// ----------------------------------------------------------------------------
+
 void InputSystem::onKeyDown(const unsigned char key, Engine & engine)
 {
-	for (auto const & component : getComponents())
-		ScriptUtilities::run<void>(engine, component.getEntity(), "onKeyDown", component.getEntity(), engine, key);
+	for (auto & componentSet : engine.getCurrentScene().getView<InputComponent, CppScriptComponent>())
+	{
+		CppScriptComponent & component = get<CppScriptComponent&>(componentSet);
+		ScriptUtilities::run<void>(component, "onKeyDown", component.getEntity(), engine, key);
+	}
 }
+
+// ----------------------------------------------------------------------------
 
 void InputSystem::onKeyUp(const unsigned char key, Engine & engine)
 {
-	for (auto const & component : getComponents())
-		ScriptUtilities::run<void>(engine, component.getEntity(), "onKeyDown", component.getEntity(), engine, key);
+	for (auto & componentSet : engine.getCurrentScene().getView<InputComponent, CppScriptComponent>())
+	{
+		CppScriptComponent & component = get<CppScriptComponent&>(componentSet);
+		ScriptUtilities::run<void>(component, "onKeyUp", component.getEntity(), engine, key);
+	}
 }
+
+// ============================================================================
+
+InputSystem::InputSystem() :
+	System(getStaticLabel())
+{
+}
+
+// ============================================================================

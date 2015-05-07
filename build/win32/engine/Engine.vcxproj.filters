@@ -76,17 +76,8 @@
     <Filter Include="physics\system">
       <UniqueIdentifier>{f8b90d0b-cd70-4f5f-b805-3da2ce45b8c9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="script\cpp">
-      <UniqueIdentifier>{e3f5b34f-b8ba-48d0-a675-d51657477749}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="script\lua">
-      <UniqueIdentifier>{fa3031d8-e890-4706-ace4-ce3f8bbaf196}</UniqueIdentifier>
-    </Filter>
     <Filter Include="script\component">
       <UniqueIdentifier>{3e4d76e7-2dca-45a5-b6ae-8f0dba4d30eb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="script\system">
-      <UniqueIdentifier>{75aaf76f-1abb-488d-b0e0-557b304cfee5}</UniqueIdentifier>
     </Filter>
     <Filter Include="serialization\binary">
       <UniqueIdentifier>{30327e16-e7fd-44bb-a03a-23ba393fe2cb}</UniqueIdentifier>
@@ -100,14 +91,14 @@
     <Filter Include="transform\component">
       <UniqueIdentifier>{04a36eb9-0930-4bfc-ae0d-827766819f47}</UniqueIdentifier>
     </Filter>
-    <Filter Include="transform\system">
-      <UniqueIdentifier>{e796661d-3ebd-4cb2-8d99-a343c82f0945}</UniqueIdentifier>
-    </Filter>
     <Filter Include="window\glut">
       <UniqueIdentifier>{2321e376-e87f-4548-ae98-4327432e1bbb}</UniqueIdentifier>
     </Filter>
     <Filter Include="window\sdl">
       <UniqueIdentifier>{9393980f-24d4-4022-a07b-c0ec03ebfd53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="scene">
+      <UniqueIdentifier>{1287be17-2169-4394-925e-c7938ee50adb}</UniqueIdentifier>
     </Filter>
     <Filter Include="update">
       <UniqueIdentifier>{6951ce98-620a-42ac-9cee-60bd0ce870e4}</UniqueIdentifier>
@@ -174,9 +165,6 @@
     <ClInclude Include="..\..\..\src\engine\script\component\CppScriptComponent.h">
       <Filter>script\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\system\CppScriptSystem.h">
-      <Filter>script\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\engine\math\Circle.h">
       <Filter>math</Filter>
     </ClInclude>
@@ -201,13 +189,7 @@
     <ClInclude Include="..\..\..\src\engine\entity\Entity.h">
       <Filter>entity</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\entity\EntityFactory.h">
-      <Filter>entity</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\engine\component\Component.h">
-      <Filter>component</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\component\ComponentFactory.h">
       <Filter>component</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\serialization\Deserializer.h">
@@ -264,9 +246,6 @@
     <ClInclude Include="..\..\..\src\engine\transform\component\TransformComponent.h">
       <Filter>transform\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\transform\system\TransformSystem.h">
-      <Filter>transform\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\engine\utility\Assert.h">
       <Filter>utility</Filter>
     </ClInclude>
@@ -316,6 +295,39 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\update\system\UpdateSystem.h">
       <Filter>update\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\component\ComponentPool.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\component\Component.inl">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\component\ComponentPool.inl">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\entity\EntityManager.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\component\ComponentManager.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\scene\Scene.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\Tag.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Matrix2.inl">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Interval.inl">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Matrix3.inl">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\Vec2.inl">
+      <Filter>math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -367,9 +379,6 @@
     <ClCompile Include="..\..\..\src\engine\script\component\CppScriptComponent.cpp">
       <Filter>script\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\script\system\CppScriptSystem.cpp">
-      <Filter>script\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\engine\math\Circle.cpp">
       <Filter>math</Filter>
     </ClCompile>
@@ -380,9 +389,6 @@
       <Filter>math</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\entity\Entity.cpp">
-      <Filter>entity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\entity\EntityFactory.cpp">
       <Filter>entity</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.cpp">
@@ -409,9 +415,6 @@
     <ClCompile Include="..\..\..\src\engine\transform\component\TransformComponent.cpp">
       <Filter>transform\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\transform\system\TransformSystem.cpp">
-      <Filter>transform\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\engine\utility\FileUtilities.cpp">
       <Filter>utility</Filter>
     </ClCompile>
@@ -434,31 +437,59 @@
     <ClCompile Include="..\..\..\src\engine\update\system\UpdateSystem.cpp">
       <Filter>update\system</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\entity\EntityManager.cpp">
+      <Filter>entity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\component\Component.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\component\ComponentPool.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\component\ComponentManager.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\scene\Scene.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\Tag.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\system\System.cpp">
+      <Filter>system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\engine\math\Interval.ipp">
-      <Filter>math</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\math\Matrix2.ipp">
-      <Filter>math</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\math\Matrix3.ipp">
-      <Filter>math</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\math\Vec2.ipp">
-      <Filter>math</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.ipp">
-      <Filter>serialization\file</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\serialization\file\FileSerializer.ipp">
-      <Filter>serialization\file</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\structures\CrsGraph.ipp">
-      <Filter>structures</Filter>
-    </None>
     <None Include="..\..\..\src\engine\utility\unique_val.ipp">
       <Filter>utility</Filter>
     </None>
+    <None Include="..\..\..\src\engine\component\ComponentManager.inl">
+      <Filter>component</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\scene\Scene.inl">
+      <Filter>scene</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\script\ScriptUtilities.inl">
+      <Filter>script</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\script\component\CppScriptComponent.inl">
+      <Filter>script\component</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl">
+      <Filter>serialization</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.inl">
+      <Filter>serialization\file</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\serialization\file\FileSerializer.inl">
+      <Filter>serialization\file</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.inl">
+      <Filter>serialization\file</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\structures\CrsGraph.inl">
+      <Filter>structures</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\Engine.inl" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
-#ifndef SERIALIZER_H
-#define SERIALIZER_H
+#ifndef VIOLET_Serializer_H
+#define VIOLET_Serializer_H
 
 #include "engine/Defines.h"
 #include "engine/utility/unique_val.h"

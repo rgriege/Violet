@@ -5,9 +5,10 @@
 #include "engine/time/Time.h"
 #include "game/Config.h"
 
+#include <memory>
+
 namespace Violet
 {
-	class Component;
 	class Deserializer;
 	class Engine;
 	class Entity;
@@ -26,11 +27,7 @@ public:
 
 	WorldSystem(float timeScale);
 
-	virtual bool owns(const char * label) const override;
-	virtual bool has(const char * label, const Violet::Entity & entity) const override;
-	virtual Violet::Component & fetch(const char * label, const Violet::Entity & entity) override;
 	virtual void update(float dt, Violet::Engine & engine) override;
-	virtual void clear() override;
 
 	const Violet::Time & getTime() const;
 	float getTimeScale() const;
