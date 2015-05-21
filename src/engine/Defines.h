@@ -2,7 +2,9 @@
 #define VIOLET_Defines_H
 
 typedef unsigned char uint8;
+typedef uint8 ubyte;
 typedef char int8;
+typedef int8 byte;
 typedef unsigned short uint16;
 typedef short int16;
 typedef unsigned uint32;

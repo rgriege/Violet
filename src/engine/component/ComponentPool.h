@@ -77,7 +77,7 @@ namespace Violet
 
 		Tag m_typeId;
 		uint32 m_componentSize;
-		std::vector<uint8> m_data;
+		std::vector<ubyte> m_data;
 		std::unordered_map<Entity, uint32> m_lookupMap;
 	};
 

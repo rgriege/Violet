@@ -16,18 +16,14 @@ Tag TransformComponent::getTypeId()
 // ============================================================================
 
 TransformComponent::TransformComponent(const Entity entity) :
-	Component<TransformComponent>(entity),
-	m_position(),
-	m_rotation(0)
+	TransformComponent(entity, Vec2f::ZERO, 0)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 TransformComponent::TransformComponent(const Entity entity, Deserializer & deserializer) :
-	Component<TransformComponent>(entity),
-	m_position(),
-	m_rotation(0)
+	TransformComponent(entity, Vec2f::ZERO, 0)
 {
 	deserializer >> *this;
 }

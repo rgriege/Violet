@@ -80,7 +80,6 @@ RenderSystem::~RenderSystem()
 
 void RenderSystem::update(float const dt, Engine & engine)
 {
-
 	auto windowSystem = engine.fetch<WindowSystem>();
 	ms_viewMatrix = Matrix3f::Identity;
 	ms_viewMatrix[0][0] = 2.f / windowSystem->getWidth();
@@ -90,6 +89,7 @@ void RenderSystem::update(float const dt, Engine & engine)
 		draw(get<RenderComponent&>(component), engine);
 	for (auto & component : engine.getCurrentScene().getView<TextComponent>())
 		draw(get<TextComponent&>(component), engine);
+
 	glFlush();
 	windowSystem->render();
 }
