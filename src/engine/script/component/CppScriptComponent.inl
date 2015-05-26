@@ -3,7 +3,9 @@
 template <typename T>
 T * Violet::CppScriptComponent::Allocator::allocate()
 {
-	return static_cast<T*>(allocate(sizeof(T)));
+	void * buffer = allocate(sizeof(T));
+	T * data = new (buffer) T;
+	return data;
 }
 
 // ============================================================================

@@ -3,7 +3,7 @@
 
 #include "engine/system/System.h"
 #include "engine/input/component/InputComponent.h"
-#include "engine/window/MouseButton.h"
+#include "engine/window/WindowSystem.h"
 
 namespace Violet
 {
@@ -26,11 +26,11 @@ namespace Violet
 
 	private:
 
-		void onMouseMove(int x, int y, int xrel, int yrel, Engine & engine);
-		void onMouseDown(int x, int y, MouseButton button, Engine & engine);
-		void onMouseUp(int x, int y, MouseButton button, Engine & engine);
-		void onKeyDown(unsigned char key, Engine & engine);
-		void onKeyUp(unsigned char key, Engine & engine);
+		void onMouseMove(const WindowSystem::MotionEvent & event, Engine & engine);
+		void onMouseDown(const WindowSystem::MouseEvent & event, Engine & engine);
+		void onMouseUp(const WindowSystem::MouseEvent & event, Engine & engine);
+		void onKeyDown(const WindowSystem::KeyEvent & event, Engine & engine);
+		void onKeyUp(const WindowSystem::KeyEvent & event, Engine & engine);
 
 	private:
 

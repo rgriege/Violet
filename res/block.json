@@ -15,11 +15,11 @@
           "y": 0
         },
         "vec": {
-          "x": 100,
+          "x": 120,
           "y": 0
         },
         "vec": {
-          "x": 100,
+          "x": 120,
           "y": 30
         },
         "vec": {
@@ -27,8 +27,14 @@
           "y": 30
         }
       },
-      "color": "0x000000FF",
+      "color": "0xFF0000FF",
       "shader": "poly"
+    },
+    "text": {
+      "str": "Do nothing!",
+      "font": "Vera.ttf",
+      "size": 18,
+      "shader": "text"
     }
   }
 }
