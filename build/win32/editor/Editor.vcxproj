@@ -10,16 +10,6 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\editor\main.cpp" />
-    <ClCompile Include="..\..\..\src\violet\editor\system\EngineSystem.cpp" />
-    <ClCompile Include="..\..\..\src\violet\editor\system\SubWindowSystem.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\editor\system\EditorSystem.h" />
-    <ClInclude Include="..\..\..\src\violet\editor\system\EngineSystem.h" />
-    <ClInclude Include="..\..\..\src\violet\editor\system\SubWindowSystem.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C493A578-E9E7-476E-A96E-A272232655EB}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -28,7 +18,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -53,6 +43,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\..\bin\$(Configuration)\</OutDir>
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
