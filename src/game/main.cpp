@@ -49,7 +49,7 @@ int main(int /*argc*/, char ** /*argv*/)
 {
 	auto factory = setup();
 
-	auto deserializer = Violet::FileDeserializerFactory::getInstance().create("config.json");
+	auto deserializer = Violet::FileDeserializerFactory::getInstance().create("editorConfig.json");
 	if (deserializer == nullptr || !*deserializer)
 	{
 		std::cout << "failed to read config file" << std::endl;
