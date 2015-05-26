@@ -1,5 +1,6 @@
 {
   "ntty": {
+    "ref": true,
     "id": 0,
     "mapc": {
       "nodes": {
@@ -57,6 +58,7 @@
     }
   },
   "ntty": {
+    "ref": true,
     "id": 1,
     "tsfm": {
       "vec": {
@@ -89,6 +91,7 @@
     }
   },
   "ntty": {
+    "ref": true,
     "id": 2,
     "tsfm": {
       "vec": {
@@ -121,6 +124,7 @@
     }
   },
   "ntty": {
+    "ref": true,
     "id": 3,
     "tsfm": {
       "vec": {
@@ -161,6 +165,7 @@
     }
   },
   "ntty": {
+    "ref": true,
     "id": 4,
     "tsfm": {
       "vec": {
@@ -180,6 +185,7 @@
     "updt": {}
   },
   "ntty": {
+    "ref": true,
     "id": 5,
     "tsfm": {
       "vec": {
@@ -232,6 +238,7 @@
     }
   },
   "ntty": {
+    "ref": true,
     "id": 6,
     "tsfm": {
       "vec": {
@@ -251,6 +258,7 @@
     "updt": {}
   },
   "ntty": {
+    "ref": true,
     "id": 7,
     "tsfm": {
       "vec": {

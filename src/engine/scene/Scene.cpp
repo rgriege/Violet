@@ -76,8 +76,8 @@ Entity Scene::createEntity()
 Entity Scene::createEntity(Deserializer & deserializer)
 {
 	auto entitySegment = deserializer.enterSegment("ntty");
-	const uint32 id = entitySegment->getUint("id");
-	const Entity entity = m_entityManager.create(id);
+	const bool referenced = entitySegment->getBoolean("ref");
+	const Entity entity = referenced ? m_entityManager.create(entitySegment->getUint("id")) : m_entityManager.create();
 	while (*entitySegment)
 	{
 		std::string label = entitySegment->nextLabel();
