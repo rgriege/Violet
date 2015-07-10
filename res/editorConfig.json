@@ -13,6 +13,7 @@
     "inpt": {}
   },
   "opts": {
-    "firstScene": "editor.json"
+    "firstScene": "editor.json",
+    "workerCount": 0
   }
 }

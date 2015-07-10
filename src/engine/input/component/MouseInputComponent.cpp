@@ -1,6 +1,6 @@
 // ============================================================================
 
-#include "engine/input/component/InputComponent.h"
+#include "engine/input/component/MouseInputComponent.h"
 
 #include "engine/serialization/Serializer.h"
 
@@ -8,45 +8,45 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag InputComponent::getTypeId()
+Tag MouseInputComponent::getTag()
 {
-	return Tag('i', 'n', 'p', 't');
+	return Tag('m', 'i', 'p', 't');
 }
 
 // ============================================================================
 
-InputComponent::InputComponent(const Entity entity, Deserializer & deserializer) :
-	Component(entity),
+MouseInputComponent::MouseInputComponent(const Entity & owner, Deserializer & deserializer) :
+	ComponentBase<MouseInputComponent>(owner),
 	m_mesh(deserializer)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-InputComponent::InputComponent(InputComponent && other) :
-	Component(std::move(other)),
+MouseInputComponent::MouseInputComponent(MouseInputComponent && other) :
+	ComponentBase<MouseInputComponent>(std::move(other)),
 	m_mesh(std::move(other.m_mesh))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-InputComponent & InputComponent::operator=(InputComponent && other)
-{
-	m_mesh = std::move(other.m_mesh);
-	return *this;
-}
+//MouseInputComponent & MouseInputComponent::operator=(MouseInputComponent && other)
+//{
+//	m_mesh = std::move(other.m_mesh);
+//	return *this;
+//}
 
 // ============================================================================
 
-Serializer & Violet::operator<<(Serializer & serializer, const InputComponent & component)
+Serializer & Violet::operator<<(Serializer & serializer, const MouseInputComponent & component)
 {
 	return serializer << component.m_mesh;
 }
 
 // ----------------------------------------------------------------------------
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, InputComponent & component)
+Deserializer & Violet::operator>>(Deserializer & deserializer, MouseInputComponent & component)
 {
 	return deserializer >> component.m_mesh;
 }

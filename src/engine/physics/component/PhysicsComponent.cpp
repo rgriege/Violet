@@ -22,15 +22,15 @@ using namespace PhysicsComponentNamespace;
 
 // ============================================================================
 
-Tag PhysicsComponent::getTypeId()
+Tag PhysicsComponent::getTag()
 {
 	return Tag('p', 'h', 'y', 's');
 }
 
 // ============================================================================
 
-PhysicsComponent::PhysicsComponent(const Entity entity, Deserializer & deserializer) :
-	Component(entity),
+PhysicsComponent::PhysicsComponent(const Entity & owner, Deserializer & deserializer) :
+	ComponentBase<PhysicsComponent>(owner),
 	m_polygon(deserializer),
 	m_mass(),
 	m_velocity(),
@@ -45,7 +45,7 @@ PhysicsComponent::PhysicsComponent(const Entity entity, Deserializer & deseriali
 // ----------------------------------------------------------------------------
 
 PhysicsComponent::PhysicsComponent(PhysicsComponent && other) :
-	Component(std::move(other)),
+	ComponentBase<PhysicsComponent>(std::move(other)),
 	m_polygon(std::move(other.m_polygon)),
 	m_mass(other.m_mass),
 	m_velocity(std::move(other.m_velocity)),

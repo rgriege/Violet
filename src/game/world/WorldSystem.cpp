@@ -36,7 +36,7 @@ WorldSystem::WorldSystem(const float timeScale) :
 {
 }
 
-void WorldSystem::update(const float dt, Violet::Engine & /*engine*/)
+void WorldSystem::update(const float dt, const Violet::Engine & /*engine*/)
 {
 	m_time += static_cast<uint64>(dt * m_timeScale);
 }

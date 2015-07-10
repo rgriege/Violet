@@ -11,7 +11,7 @@ T * Violet::CppScriptComponent::Allocator::allocate()
 // ============================================================================
 
 template <typename ResultType, typename... Args>
-ResultType Violet::CppScriptComponent::run(const char * method, Args&&... args)
+ResultType Violet::CppScriptComponent::run(const char * method, Args&&... args) const
 {
 	void * methodPtr = getMethodPtr(method);
 	if (methodPtr != nullptr)

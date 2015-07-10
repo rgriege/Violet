@@ -12,18 +12,18 @@ namespace Violet
 	class Serializer;
 	class ShaderProgram;
 
-	class VIOLET_API RenderComponent : public Component<RenderComponent>
+	class VIOLET_API RenderComponent : public ComponentBase<RenderComponent>
 	{
 	public:
 
-		static Tag getTypeId();
+		static Tag getTag();
 
 	public:
 
-		RenderComponent(const Entity entity, Deserializer & deserializer);
-		RenderComponent(const Entity entity, const Polygon & poly, Color color, std::shared_ptr<ShaderProgram> shader);
+		RenderComponent(const Entity & owner, Deserializer & deserializer);
+		RenderComponent(const Entity & owner, const Polygon & poly, Color color, std::shared_ptr<ShaderProgram> shader);
 		RenderComponent(RenderComponent && other);
-		RenderComponent & operator=(RenderComponent &&);
+		//RenderComponent & operator=(RenderComponent &&);
 		RenderComponent(const RenderComponent &) = delete;
 		RenderComponent & operator=(const RenderComponent &) = delete;
 		virtual ~RenderComponent();

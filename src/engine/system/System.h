@@ -14,7 +14,7 @@ namespace Violet
 		System(const char * label);
 		virtual ~System() = default;
 
-		virtual void update(float dt, Engine & engine) = 0;
+		virtual void update(float dt, const Engine & engine) = 0;
 
 		const char * getLabel() const;
 

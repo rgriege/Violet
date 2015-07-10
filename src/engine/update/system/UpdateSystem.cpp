@@ -3,7 +3,7 @@
 #include "engine/update/system/UpdateSystem.h"
 
 #include "engine/Engine.h"
-#include "engine/scene/Scene.h"
+#include "engine/scene/SceneUtilities.h"
 #include "engine/script/ScriptUtilities.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/system/SystemFactory.h"
@@ -43,13 +43,14 @@ UpdateSystem::UpdateSystem(UpdateSystem && other) :
 
 // ----------------------------------------------------------------------------
 
-void UpdateSystem::update(float /*dt*/, Engine & engine)
+void UpdateSystem::update(const float dt, const Engine & engine)
 {
-	for (auto & components : engine.getCurrentScene().getView<UpdateComponent, CppScriptComponent>())
-	{
-		CppScriptComponent & sc = get<CppScriptComponent&>(components);
-		ScriptUtilities::run<void>(sc, "update", sc.getEntity(), engine);
-	}
+	SceneUtilities::Processor processor;
+	processor.addDelegate(SceneUtilities::Processor::Filter::create<UpdateComponent, CppScriptComponent>(), [&](const Entity & entity, float) {
+		const CppScriptComponent & scriptComponent = *entity.getComponent<CppScriptComponent>();
+		ScriptUtilities::run<void>(scriptComponent, "update", entity, engine);
+	});
+	processor.process(engine.getCurrentScene(), dt);
 }
 
 // ============================================================================

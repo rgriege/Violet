@@ -16,7 +16,7 @@ namespace ComponentManagerNamespace
 // ============================================================================
 
 template <typename... ComponentTypes>
-Violet::ComponentManager::Iterator<ComponentTypes...>::Iterator(ComponentManager & manager, const bool begin) :
+Violet::ComponentManager::Iterator<ComponentTypes...>::Iterator(const ComponentManager & manager, const bool begin) :
 	m_iterators(std::make_tuple(manager.getPool<ComponentTypes>().begin<ComponentTypes>()...)),
 	m_ends(std::make_tuple(manager.getPool<ComponentTypes>().end<ComponentTypes>()...)),
 	m_entity(Entity::INVALID)
@@ -64,7 +64,7 @@ bool Violet::ComponentManager::Iterator<ComponentTypes...>::operator!=(const Ite
 // ============================================================================
 
 template <typename... ComponentTypes>
-Violet::ComponentManager::View<ComponentTypes...>::View(ComponentManager & manager) :
+Violet::ComponentManager::View<ComponentTypes...>::View(const ComponentManager & manager) :
 	m_manager(manager)
 {
 }
@@ -98,13 +98,13 @@ ComponentType & Violet::ComponentManager::create(const Entity entity, Args&&... 
 template <typename ComponentType>
 bool Violet::ComponentManager::has(const Entity entity) const
 {
-	return getPool<ComponentType>()->has(entity);
+	return getPool<ComponentType>().has(entity);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-ComponentType * Violet::ComponentManager::get(const Entity entity)
+ComponentType * Violet::ComponentManager::get(const Entity entity) const
 {
 	return getPool<ComponentType>().get<ComponentType>(entity);
 }
@@ -112,7 +112,7 @@ ComponentType * Violet::ComponentManager::get(const Entity entity)
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-Violet::ComponentManager::View<ComponentTypes...> Violet::ComponentManager::getView()
+Violet::ComponentManager::View<ComponentTypes...> Violet::ComponentManager::getView() const
 {
 	return View<ComponentTypes...>(*this);
 }
@@ -128,22 +128,13 @@ bool Violet::ComponentManager::remove(const Entity entity)
 // ============================================================================
 
 template <typename ComponentType>
-Violet::ComponentPool & Violet::ComponentManager::getPool()
+Violet::ComponentPool & Violet::ComponentManager::getPool() const
 {
 	auto it = std::find_if(m_pools.begin(), m_pools.end(), [](ComponentPool & pool) { return pool.getTypeId() == ComponentType::getTypeId(); });
 	bool const added = it == m_pools.end();
 	if (added)
 		m_pools.emplace_back(ComponentPool::create<ComponentType>());
 	return added ? m_pools.back() : *it;
-}
-
-// ----------------------------------------------------------------------------
-
-template <typename ComponentType>
-const Violet::ComponentPool * Violet::ComponentManager::getPool() const
-{
-	auto it = std::find_if(m_pools.begin(), m_pools.end(), [](const ComponentPool & pool) { return pool.getTypeId() == ComponentType::getTypeId(); });
-	return it == m_pools.end() ? nullptr : &*it;
 }
 
 // ============================================================================

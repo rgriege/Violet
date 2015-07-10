@@ -27,7 +27,7 @@ public:
 
 	WorldSystem(float timeScale);
 
-	virtual void update(float dt, Violet::Engine & engine) override;
+	virtual void update(float dt, const Violet::Engine & engine) override;
 
 	const Violet::Time & getTime() const;
 	float getTimeScale() const;

@@ -61,3 +61,24 @@ const T * Violet::Matrix3<T>::data() const
 }
 
 // ============================================================================
+
+template <typename T>
+Violet::Matrix3<T> Violet::operator*(const Matrix3<T> & lhs, const Matrix3<T> & rhs)
+{
+	Matrix3<T> result = Matrix3<T>::Zero;
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			for (int h = 0; h < 3; h++)
+				result[i][j] += lhs[i][h] * rhs[h][j];
+	return result;
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename T>
+Violet::Vec2<T> Violet::operator*(const Matrix3<T> & lhs, const Vec2<T> & rhs)
+{
+	return Vec2<T>(lhs[0][0] * rhs.x + lhs[0][1] * rhs.y + lhs[0][2], lhs[1][0] * rhs.x + lhs[1][1] * rhs.y + lhs[1][2]);
+}
+
+// ============================================================================

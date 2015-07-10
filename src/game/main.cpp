@@ -1,5 +1,7 @@
 #include "engine/Engine.h"
 #include "engine/graphics/system/RenderSystem.h"
+#include "engine/input/component/KeyInputComponent.h"
+#include "engine/input/component/MouseInputComponent.h"
 #include "engine/input/system/InputSystem.h"
 #include "engine/physics/system/PhysicsSystem.h"
 #include "engine/script/component/CppScriptComponent.h"
@@ -23,7 +25,8 @@ Violet::SystemFactory setup()
 	Violet::Scene::installComponent<Violet::TransformComponent>();
 	Violet::Scene::installComponent<Violet::RenderComponent>();
 	Violet::Scene::installComponent<Violet::TextComponent>();
-	Violet::Scene::installComponent<Violet::InputComponent>();
+	Violet::Scene::installComponent<Violet::MouseInputComponent>();
+	Violet::Scene::installComponent<Violet::KeyInputComponent>();
 	Violet::Scene::installComponent<Violet::PhysicsComponent>();
 	Violet::Scene::installComponent<Violet::CppScriptComponent>();
 	Violet::Scene::installComponent<Violet::UpdateComponent>();
@@ -34,6 +37,7 @@ Violet::SystemFactory setup()
 	Violet::JsonDeserializer::install();
 
 	Violet::SystemFactory factory;
+	// Violet::GlutWindowSystem::install(factory);
 	Violet::SDLWindowSystem::install(factory);
 	Violet::PhysicsSystem::install(factory);
 	Violet::RenderSystem::install(factory);

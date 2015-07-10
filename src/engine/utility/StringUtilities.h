@@ -18,6 +18,12 @@ namespace Violet
 				return strcmp(lhs, rhs) < 0;
 			}
 		};
+
+		struct Hash
+		{
+			
+		};
+
 	public:
 
 		static std::string left(std::string const & str, char delimiter);

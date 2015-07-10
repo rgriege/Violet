@@ -13,17 +13,17 @@ namespace Violet
 	class Serializer;
 	class ShaderProgram;
 
-	class VIOLET_API TextComponent : public Component<TextComponent>
+	class VIOLET_API TextComponent : public ComponentBase<TextComponent>
 	{
 	public:
 
-		static Tag getTypeId();
+		static Tag getTag();
 
 	public:
 
-		TextComponent(Entity entity, Deserializer & deserializer);
+		TextComponent(const Entity & owner, Deserializer & deserializer);
 		TextComponent(TextComponent && other);
-		TextComponent & operator=(TextComponent && other);
+		//TextComponent & operator=(TextComponent && other);
 
 	public:
 

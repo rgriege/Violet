@@ -11,15 +11,15 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag TextComponent::getTypeId()
+Tag TextComponent::getTag()
 {
 	return Tag('t', 'e', 'x', 't');
 }
 
 // ============================================================================
 
-TextComponent::TextComponent(const Entity entity, Deserializer & deserializer) :
-	Component<TextComponent>(entity),
+TextComponent::TextComponent(const Entity & owner, Deserializer & deserializer) :
+	ComponentBase<TextComponent>(owner),
 	m_text(),
 	m_font(),
 	m_size(),
@@ -31,7 +31,7 @@ TextComponent::TextComponent(const Entity entity, Deserializer & deserializer) :
 // ----------------------------------------------------------------------------
 
 TextComponent::TextComponent(TextComponent && other) :
-	Component<TextComponent>(std::move(other)),
+	ComponentBase<TextComponent>(std::move(other)),
 	m_text(std::move(other.m_text)),
 	m_font(std::move(other.m_font)),
 	m_size(other.m_size),
@@ -41,15 +41,15 @@ TextComponent::TextComponent(TextComponent && other) :
 
 // ----------------------------------------------------------------------------
 
-TextComponent & TextComponent::operator=(TextComponent && other)
-{
-	Component<TextComponent>::operator=(std::move(other));
-	std::swap(m_text, other.m_text);
-	std::swap(m_font, other.m_font);
-	std::swap(m_size, other.m_size);
-	std::swap(m_shader, other.m_shader);
-	return *this;
-}
+//TextComponent & TextComponent::operator=(TextComponent && other)
+//{
+//	Component<TextComponent>::operator=(std::move(other));
+//	std::swap(m_text, other.m_text);
+//	std::swap(m_font, other.m_font);
+//	std::swap(m_size, other.m_size);
+//	std::swap(m_shader, other.m_shader);
+//	return *this;
+//}
 
 // ============================================================================
 

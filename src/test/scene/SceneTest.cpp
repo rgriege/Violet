@@ -132,5 +132,5 @@ void SceneTestNamespace::SceneBuilder::reset()
 Entity SceneTestNamespace::tryGet(Scene & scene, const uint32 index)
 {
 	auto const & entities = scene.getEntities();
-	return index < entities.size() ? entities[index] : Entity::INVALID;
+	return index < entities.size() ? entities[index] : Entity::ms_invalid;
 }

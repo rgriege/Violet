@@ -1,44 +1,66 @@
 #ifndef VIOLET_Component_H
 #define VIOLET_Component_H
 
-#include "engine/entity/Entity.h"
 #include "engine/utility/Tag.h"
 
 namespace Violet
 {
-	class VIOLET_API BaseComponent
+	class Entity;
+
+	class VIOLET_API Component
 	{
 	public:
 
-		Entity getEntity() const;
+		template <typename Derived>
+		static uint32 getFlag();
 
-		virtual ~BaseComponent() = 0;
-
-	protected:
-
-		BaseComponent(Entity entity);
-
-		BaseComponent(const BaseComponent &) = default;
-		BaseComponent & operator=(const BaseComponent &) = default;
-
-		BaseComponent(BaseComponent &&);
-		BaseComponent & operator=(BaseComponent &&);
+		template <typename ComponentType>
+		static uint32 gatherFlags();
+		template <typename ComponentType, typename OtherComponentType, typename ... ComponentTypes>
+		static uint32 gatherFlags();
 
 	private:
 
-		Entity m_entity;
-	};
+		static uint32 getNextFlag();
 
-	template <typename Derived>
-	class Component : public BaseComponent
-	{
 	public:
 
-		static Tag getTypeId();
+		const Entity & getOwner() const;
+
+		virtual Tag getTag() const = 0;
+
+		virtual ~Component() = 0;
 
 	protected:
 
-		Component(Entity entity);
+		Component(const Entity & owner);
+
+		Component(const Component &) = delete;
+		Component & operator=(const Component &) = delete;
+
+		Component(Component &&);
+		// Component & operator=(Component &&);
+
+	private:
+
+		const Entity & m_owner;
+	};
+
+	template <typename Derived>
+	class ComponentBase : public Component
+	{
+	public:
+
+		static uint32 getFlag();
+
+	public:
+
+		virtual Tag getTag() const override;
+
+	protected:
+
+		ComponentBase(const Entity & owner);
+		ComponentBase(ComponentBase && other);
 	};
 }
 

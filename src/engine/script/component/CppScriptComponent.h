@@ -16,7 +16,7 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API CppScriptComponent : public Component<CppScriptComponent>
+	class VIOLET_API CppScriptComponent : public ComponentBase<CppScriptComponent>
 	{
 	public:
 
@@ -47,19 +47,19 @@ namespace Violet
 
 	public:
 
-		static Tag getTypeId();
+		static Tag getTag();
 
 	public:
 
-		CppScriptComponent(const Entity & entity, Deserializer & deserializer);
+		CppScriptComponent(const Entity & owner, Deserializer & deserializer);
 		CppScriptComponent(CppScriptComponent && other);
-		CppScriptComponent & operator=(CppScriptComponent && other);
+		//CppScriptComponent & operator=(CppScriptComponent && other);
 		~CppScriptComponent();
 
 		std::string getFilename() const;
 		void reload();
 		template <typename ResultType, typename... Args>
-		ResultType run(const char * method, Args&&... args);
+		ResultType run(const char * method, Args&&... args) const;
 
 	private:
 

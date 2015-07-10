@@ -8,12 +8,10 @@
 #include "engine/serialization/Serializer.h"
 #include "engine/system/System.h"
 #include "engine/system/SystemFactory.h"
-#include "engine/window/WindowSystem.h"
+#include "engine/utility/Profiler.h"
 
 #include <iostream>
 #include <algorithm>
-#include <chrono>
-#include <thread>
 
 using namespace Violet;
 
@@ -31,6 +29,14 @@ namespace EngineNamespace
 }
 
 using namespace EngineNamespace;
+
+// ============================================================================
+
+Engine::Task::Task(const Engine & engine, const uint32 priority) :
+	Violet::Task(priority),
+	m_engine(const_cast<Engine &>(engine))
+{
+}
 
 // ============================================================================
 
@@ -59,8 +65,9 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 	{
 		auto optionsSegment = deserializer.enterSegment("opts");
 		Scene scene = Scene::create(optionsSegment->getString("firstScene"));
+		const uint32 workerCount = optionsSegment->getUint("workerCount");
 
-		std::unique_ptr<Engine> engine(new Engine(std::move(systems), std::move(scene)));
+		std::unique_ptr<Engine> engine(new Engine(std::move(systems), std::move(scene), workerCount));
 		return std::move(engine);
 	}
 
@@ -69,42 +76,20 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 
 // ============================================================================
 
-Engine::~Engine()
-{
-}
-
-// ----------------------------------------------------------------------------
-
-Engine::Engine(Engine && other) :
-	m_systems(std::move(other.m_systems)),
-	m_nextSceneFileName(other.m_nextSceneFileName),
-	m_running(other.m_running)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-Engine & Engine::operator=(Engine && other)
-{
-	m_systems = std::move(other.m_systems);
-	m_nextSceneFileName = other.m_nextSceneFileName;
-	m_running = other.m_running;
-	return *this;
-}
-
-// ----------------------------------------------------------------------------
-
 void Engine::begin()
 {
 	uint32 const targetFrameTime = 1000 / 60;
 	uint32 previousFrameTime = targetFrameTime;
+	uint32 framesSinceReport = 0;
 
 	while (m_running)
 	{
-		const auto startTime = std::chrono::system_clock::now();
-		runFrame(previousFrameTime / 1000.f);
+		{
+			Profiler::Block("frame");
+			runFrame(previousFrameTime / 1000.f);
+		}
 
-		auto const frameTime = static_cast<uint32>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - startTime).count());
+		auto const frameTime = static_cast<uint32>(Profiler::getInstance().report("frame"));
 		if (frameTime < targetFrameTime)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(targetFrameTime - frameTime));
@@ -122,8 +107,6 @@ void Engine::begin()
 
 void Engine::runFrame(const float frameTime)
 {
-	const auto startTime = std::chrono::system_clock::now();
-
 	std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(frameTime, *this); });
 
 	if (!m_nextSceneFileName.empty())
@@ -131,7 +114,11 @@ void Engine::runFrame(const float frameTime)
 		m_scene = Scene::create(m_nextSceneFileName.c_str());
 		m_nextSceneFileName.clear();
 	}
+
+	m_taskScheduler.finishCurrentTasks();
 }
+
+// ----------------------------------------------------------------------------
 
 void Engine::switchScene(const char * filename)
 {
@@ -147,17 +134,32 @@ Scene & Engine::getCurrentScene()
 
 // ----------------------------------------------------------------------------
 
+const Scene & Engine::getCurrentScene() const
+{
+	return m_scene;
+}
+
+// ----------------------------------------------------------------------------
+
 void Engine::stop()
 {
 	m_running = false;
 }
 
+// ----------------------------------------------------------------------------
+
+void Engine::addTask(std::unique_ptr<Task> && task) const
+{
+	m_taskScheduler.addTask(std::move(task));
+}
+
 // ============================================================================
 
-Engine::Engine(std::vector<std::unique_ptr<System>> && systems, Scene && scene) :
+Engine::Engine(std::vector<std::unique_ptr<System>> && systems, Scene && scene, const uint32 workerCount) :
 	m_nextSceneFileName(),
 	m_systems(std::move(systems)),
 	m_scene(std::move(scene)),
+	m_taskScheduler(workerCount),
 	m_running(true)
 {
 }

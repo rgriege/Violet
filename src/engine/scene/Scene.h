@@ -1,9 +1,11 @@
 #ifndef VIOLET_Scene_H
 #define VIOLET_Scene_H
 
-#include "engine/component/ComponentManager.h"
-#include "engine/entity/EntityManager.h"
+#include "engine/entity/Entity.h"
 #include "engine/utility/Factory.h"
+#include "engine/utility/handle/HandleManager.h"
+
+#include <unordered_map>
 
 namespace Violet
 {
@@ -26,33 +28,26 @@ namespace Violet
 		Scene(Scene && other);
 		Scene & operator=(Scene && other);
 
-		Entity createEntity();
-		Entity createEntity(Deserializer & deserializer);
-		void destroyEntity(Entity entity);
-		std::vector<Entity> getEntities() const;
+		Entity & createEntity();
+		Entity & createEntity(Deserializer & deserializer);
 
-		template <typename ComponentType, typename... Args>
-		ComponentType & createComponent(Entity entity, Args&&... args);
+		Entity & getRoot();
+		const Entity & getRoot() const;
+		Entity & getEntity(Handle handle);
+		const Entity & getEntity(Handle handle) const;
 
-		template <typename ComponentType>
-		bool hasComponent(Entity entity) const;
+		bool destroyEntity(Handle handle);
 
-		template <typename ComponentType>
-		ComponentType * getComponent(Entity entity);
-		template <typename... ComponentTypes>
-		ComponentManager::View<ComponentTypes...> getView();
-
-		template <typename ComponentType>
-		bool removeComponent(Entity entity);
-
-		void clear();
+		void index(Entity & entity);
+		void reindex(Entity & entity);
+		bool deindex(Handle handle);
 
 	private:
 
-		static Factory<std::string, void(Scene &, Entity, Deserializer &)> ms_componentFactory;
+		static Factory<std::string, void(Scene &, Entity &, Deserializer &)> ms_componentFactory;
 
 		template <typename ComponentType>
-		static void factoryCreateComponent(Scene & scene, Entity entity, Deserializer & deserializer);
+		static void factoryCreateComponent(Scene & scene, Entity & entity, Deserializer & deserializer);
 
 	private:
 
@@ -61,8 +56,9 @@ namespace Violet
 
 	private:
 
-		EntityManager m_entityManager;
-		ComponentManager m_componentManager;
+		Entity m_root;
+		std::unordered_map<Handle, std::reference_wrapper<Entity>> m_lookupMap;
+		HandleManager m_handleManager;
 	};
 }
 

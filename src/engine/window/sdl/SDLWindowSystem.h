@@ -26,7 +26,7 @@ namespace Violet
 
 		virtual ~SDLWindowSystem() override;
 
-		virtual void update(float dt, Engine & engine) override;
+		virtual void update(float dt, const Engine & engine) override;
 		virtual void render() override;
 		virtual bool getEvent(EventType type, Event* event) override;
 		virtual void addEvent(Event event) override;

@@ -4,6 +4,7 @@
 #include "engine/Defines.h"
 #include "engine/utility/StringUtilities.h"
 
+#include <assert.h>
 #include <functional>
 #include <map>
 

@@ -7,16 +7,16 @@
 
 // ============================================================================
 
-Tag PathfindingComponent::getTypeId()
+Tag PathfindingComponent::getTag()
 {
 	return Tag('p', 'f', 'n', 'd');
 }
 
 // ============================================================================
 
-PathfindingComponent::PathfindingComponent(const Violet::Entity entity, Violet::Deserializer & deserializer) :
-	Component<PathfindingComponent>(entity),
-	m_mapEntity(deserializer.getUint("mapId"), 0),
+PathfindingComponent::PathfindingComponent(const Violet::Entity & owner, Violet::Deserializer & deserializer) :
+	ComponentBase<PathfindingComponent>(owner),
+	m_mapId(deserializer.getUint("mapId")),
 	m_speed(deserializer.getFloat("speed"))
 {
 }
@@ -25,7 +25,7 @@ PathfindingComponent::PathfindingComponent(const Violet::Entity entity, Violet::
 
 Violet::Serializer & operator<<(Violet::Serializer & serializer, const PathfindingComponent & component)
 {
-	serializer.writeUint("mapId", component.m_mapEntity.getId());
+	serializer.writeUint("mapId", component.m_mapId);
 	serializer.writeFloat("speed", component.m_speed);
 	return serializer;
 }

@@ -79,15 +79,15 @@ void * CppScriptComponent::Allocator::allocate(const size_t size)
 
 // ============================================================================
 
-Tag CppScriptComponent::getTypeId()
+Tag CppScriptComponent::getTag()
 {
 	return Tag('s', 'c', 'p', 't');
 }
 
 // ============================================================================
 
-CppScriptComponent::CppScriptComponent(const Entity & entity, Deserializer & deserializer) :
-	Component(entity),
+CppScriptComponent::CppScriptComponent(const Entity & owner, Deserializer & deserializer) :
+	ComponentBase<CppScriptComponent>(owner),
 	m_lib(),
 	m_allocator()
 {
@@ -97,7 +97,7 @@ CppScriptComponent::CppScriptComponent(const Entity & entity, Deserializer & des
 // ----------------------------------------------------------------------------
 
 CppScriptComponent::CppScriptComponent(CppScriptComponent && other) :
-	Component(std::move(other)),
+	ComponentBase<CppScriptComponent>(std::move(other)),
 	m_lib(std::move(other.m_lib)),
 	m_allocator(std::move(other.m_allocator))
 {
@@ -106,12 +106,12 @@ CppScriptComponent::CppScriptComponent(CppScriptComponent && other) :
 
 // ----------------------------------------------------------------------------
 
-CppScriptComponent & CppScriptComponent::operator=(CppScriptComponent && other)
-{
-	std::swap(m_lib, other.m_lib);
-	std::swap(m_allocator, other.m_allocator);
-	return *this;
-}
+//CppScriptComponent & CppScriptComponent::operator=(CppScriptComponent && other)
+//{
+//	std::swap(m_lib, other.m_lib);
+//	std::swap(m_allocator, other.m_allocator);
+//	return *this;
+//}
 
 // ----------------------------------------------------------------------------
 

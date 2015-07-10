@@ -3,8 +3,8 @@
     "ref": false,
     "tsfm": {
       "vec": {
-        "x": -375,
-        "y": 290
+        "x": 0,
+        "y": 0
       }
     },
     "rndr": {
@@ -30,7 +30,7 @@
       "color": "0xff0000ff",
       "shader": "poly"
     },
-    "inpt": {
+    "mipt": {
       "poly": {
         "n": 4,
         "vec": {
@@ -64,7 +64,7 @@
         "y": 0
       }
     },
-    "inpt": {
+    "mipt": {
       "poly": {
         "n": 4,
         "vec": {

@@ -22,15 +22,15 @@ using namespace RenderComponentNamespace;
 
 // ============================================================================
 
-Tag RenderComponent::getTypeId()
+Tag RenderComponent::getTag()
 {
 	return Tag('r', 'n', 'd', 'r');
 }
 
 // ============================================================================
 
-RenderComponent::RenderComponent(const Entity entity, Deserializer & deserializer) :
-	Component<RenderComponent>(entity),
+RenderComponent::RenderComponent(const Entity & owner, Deserializer & deserializer) :
+	ComponentBase<RenderComponent>(owner),
 	m_vertexArrayBuffer(initVertexArrayBuffer()),
 	m_mesh(deserializer),
 	m_color(deserializer),
@@ -46,8 +46,8 @@ RenderComponent::RenderComponent(const Entity entity, Deserializer & deserialize
 
 // ----------------------------------------------------------------------------
 
-RenderComponent::RenderComponent(const Entity entity, const Polygon & poly, Color color, std::shared_ptr<ShaderProgram> shader) :
-	Component(entity),
+RenderComponent::RenderComponent(const Entity & owner, const Polygon & poly, Color color, std::shared_ptr<ShaderProgram> shader) :
+	ComponentBase<RenderComponent>(owner),
 	m_vertexArrayBuffer(initVertexArrayBuffer()),
 	m_mesh(poly),
 	m_color(color),
@@ -64,7 +64,7 @@ RenderComponent::RenderComponent(const Entity entity, const Polygon & poly, Colo
 // ----------------------------------------------------------------------------
 
 RenderComponent::RenderComponent(RenderComponent && other) :
-	Component(std::move(other)),
+	ComponentBase<RenderComponent>(std::move(other)),
 	m_mesh(std::move(other.m_mesh)),
 	m_color(std::move(other.m_color)),
 	m_vertexArrayBuffer(other.m_vertexArrayBuffer),
@@ -76,15 +76,15 @@ RenderComponent::RenderComponent(RenderComponent && other) :
 
 // ----------------------------------------------------------------------------
 
-RenderComponent & RenderComponent::operator=(RenderComponent && other)
-{
-	Component::operator=(std::move(other));
-	std::swap(m_mesh, other.m_mesh);
-	std::swap(m_color, other.m_color);
-	std::swap(m_vertexArrayBuffer, other.m_vertexArrayBuffer);
-	std::swap(m_shader, other.m_shader);
-	return *this;
-}
+//RenderComponent & RenderComponent::operator=(RenderComponent && other)
+//{
+//	Component::operator=(std::move(other));
+//	std::swap(m_mesh, other.m_mesh);
+//	std::swap(m_color, other.m_color);
+//	std::swap(m_vertexArrayBuffer, other.m_vertexArrayBuffer);
+//	std::swap(m_shader, other.m_shader);
+//	return *this;
+//}
 
 // ----------------------------------------------------------------------------
 

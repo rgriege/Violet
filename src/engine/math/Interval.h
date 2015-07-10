@@ -15,6 +15,7 @@ namespace Violet
 		Interval(const Interval & other);
 		T length() const;
 		bool contains(T x) const;
+		bool contains(const Interval & other) const;
 		bool overlaps(const Interval & other) const;
 		T overlap(const Interval & other) const;
 

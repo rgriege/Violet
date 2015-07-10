@@ -67,7 +67,7 @@ std::unique_ptr<System> GlutWindowSystem::init(Deserializer & deserializer)
 
 // ============================================================================
 
-void GlutWindowSystem::update(float /*dt*/, Engine & /*engine*/)
+void GlutWindowSystem::update(float /*dt*/, const Engine & /*engine*/)
 {
 	m_eventQueue.clear();
 	glutSetWindow(m_id);

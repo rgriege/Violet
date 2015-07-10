@@ -8,16 +8,16 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API UpdateComponent : public Component<UpdateComponent>
+	class VIOLET_API UpdateComponent : public ComponentBase<UpdateComponent>
 	{
 	public:
 
-		static Tag getTypeId();
+		static Tag getTag();
 
 	public:
 
-		UpdateComponent(Entity entity);
-		UpdateComponent(Entity entity, Deserializer & deserializer);
+		UpdateComponent(const Entity & owner);
+		UpdateComponent(const Entity & owner, Deserializer & deserializer);
 	};
 
 	Deserializer & operator>>(Deserializer & deserializer, UpdateComponent & component);

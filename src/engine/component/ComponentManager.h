@@ -18,7 +18,7 @@ namespace Violet
 		{
 		public:
 
-			Iterator(ComponentManager & manager, bool begin);
+			Iterator(const ComponentManager & manager, bool begin);
 
 			Iterator<ComponentTypes...> & operator++();
 			std::tuple<ComponentTypes&...> operator*();
@@ -42,14 +42,14 @@ namespace Violet
 
 		public:
 
-			View(ComponentManager & manager);
+			View(const ComponentManager & manager);
 
 			Iterator<ComponentTypes...> begin();
 			Iterator<ComponentTypes...> end();
 
 		private:
 
-			ComponentManager & m_manager;
+			const ComponentManager & m_manager;
 		};
 
 	public:
@@ -66,9 +66,9 @@ namespace Violet
 		bool has(Entity entity) const;
 
 		template <typename ComponentType>
-		ComponentType * get(Entity entity);
+		ComponentType * get(Entity entity) const;
 		template <typename... ComponentTypes>
-		View<ComponentTypes...> getView();
+		View<ComponentTypes...> getView() const;
 		
 		template <typename ComponentType>
 		bool remove(Entity entity);
@@ -78,17 +78,14 @@ namespace Violet
 	private:
 
 		template <typename ComponentType>
-		ComponentPool & getPool();
-
-		template <typename ComponentType>
-		const ComponentPool * getPool() const;
+		ComponentPool & getPool() const;
 
 		ComponentManager(const ComponentManager &) = delete;
 		ComponentManager & operator=(const ComponentManager &) = delete;
 
 	private:
 
-		std::vector<ComponentPool> m_pools;
+		mutable std::vector<ComponentPool> m_pools;
 	};
 }
 

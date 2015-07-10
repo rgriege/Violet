@@ -1,16 +1,57 @@
 // ============================================================================
 
 template <typename Derived>
-Violet::Tag Violet::Component<Derived>::getTypeId()
+uint32 Violet::Component::getFlag()
 {
-	return Derived::getTypeId();
+	static const uint32 s_flag = getNextFlag();
+	return s_flag;
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+uint32 Violet::Component::gatherFlags()
+{
+	return ComponentType::getFlag();
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType, typename OtherComponentType, typename ... ComponentTypes>
+uint32 Violet::Component::gatherFlags()
+{
+	return gatherFlags<ComponentType>() | gatherFlags<OtherComponentType, ComponentTypes...>();
 }
 
 // ============================================================================
 
 template <typename Derived>
-Violet::Component<Derived>::Component(const Entity entity) :
-	BaseComponent(entity)
+uint32 Violet::ComponentBase<Derived>::getFlag()
+{
+	return Component::getFlag<Derived>();
+}
+
+// ============================================================================
+
+template <typename Derived>
+Violet::Tag Violet::ComponentBase<Derived>::getTag() const
+{
+	return Derived::getTag();
+}
+
+// ============================================================================
+
+template <typename Derived>
+Violet::ComponentBase<Derived>::ComponentBase(const Entity & owner) :
+	Component(owner)
+{
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Derived>
+Violet::ComponentBase<Derived>::ComponentBase(ComponentBase && other) :
+	Component(std::move(other))
 {
 }
 

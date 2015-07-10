@@ -9,20 +9,22 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag UpdateComponent::getTypeId()
+Tag UpdateComponent::getTag()
 {
 	return Tag('u', 'p', 'd', 't');
 }
 
 // ============================================================================
 
-UpdateComponent::UpdateComponent(const Entity entity) :
-	Component<UpdateComponent>(entity)
+UpdateComponent::UpdateComponent(const Entity & owner) :
+	ComponentBase<UpdateComponent>(owner)
 {
 }
 
-UpdateComponent::UpdateComponent(const Entity entity, Deserializer & /*deserializer*/) :
-	Component<UpdateComponent>(entity)
+// ----------------------------------------------------------------------------
+
+UpdateComponent::UpdateComponent(const Entity & owner, Deserializer & /*deserializer*/) :
+	ComponentBase<UpdateComponent>(owner)
 {
 }
 

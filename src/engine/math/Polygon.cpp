@@ -61,6 +61,16 @@ bool Polygon::contains(const Vec2f & point) const
 	return inside;
 }
 
+// ----------------------------------------------------------------------------
+
+AABB Polygon::getBoundingBox() const
+{
+	AABB result;
+	for (auto const & vertex : m_vertices)
+		result.extend(vertex);
+	return result;
+}
+
 // ============================================================================
 
 Serializer & Violet::operator<<(Serializer & serializer, const Polygon & poly)

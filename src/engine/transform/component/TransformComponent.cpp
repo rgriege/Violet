@@ -8,30 +8,30 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag TransformComponent::getTypeId()
+Tag TransformComponent::getTag()
 {
 	return Tag('t', 's', 'f', 'm');
 }
 
 // ============================================================================
 
-TransformComponent::TransformComponent(const Entity entity) :
-	TransformComponent(entity, Vec2f::ZERO, 0)
+TransformComponent::TransformComponent(const Entity & owner) :
+	TransformComponent(owner, Vec2f::ZERO, 0)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-TransformComponent::TransformComponent(const Entity entity, Deserializer & deserializer) :
-	TransformComponent(entity, Vec2f::ZERO, 0)
+TransformComponent::TransformComponent(const Entity & owner, Deserializer & deserializer) :
+	TransformComponent(owner, Vec2f::ZERO, 0)
 {
 	deserializer >> *this;
 }
 
 // ----------------------------------------------------------------------------
 
-TransformComponent::TransformComponent(const Entity entity, const Vec2f position, const float rotation) :
-	Component<TransformComponent>(entity),
+TransformComponent::TransformComponent(const Entity & owner, const Vec2f position, const float rotation) :
+	ComponentBase<TransformComponent>(owner),
 	m_position(position),
 	m_rotation(rotation)
 {
@@ -40,7 +40,7 @@ TransformComponent::TransformComponent(const Entity entity, const Vec2f position
 // ----------------------------------------------------------------------------
 
 TransformComponent::TransformComponent(TransformComponent && other) :
-	Component<TransformComponent>(std::move(other)),
+	ComponentBase<TransformComponent>(std::move(other)),
 	m_position(std::move(other.m_position)),
 	m_rotation(other.m_rotation)
 {
@@ -48,13 +48,13 @@ TransformComponent::TransformComponent(TransformComponent && other) :
 
 // ----------------------------------------------------------------------------
 
-TransformComponent & TransformComponent::operator=(TransformComponent && other)
-{
-	Component<TransformComponent>::operator=(std::move(other));
-	m_position = std::move(other.m_position);
-	m_rotation = other.m_rotation;
-	return *this;
-}
+//TransformComponent & TransformComponent::operator=(TransformComponent && other)
+//{
+//	Component::operator=(std::move(other));
+//	m_position = std::move(other.m_position);
+//	m_rotation = other.m_rotation;
+//	return *this;
+//}
 
 // ============================================================================
 

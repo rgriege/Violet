@@ -12,19 +12,20 @@ namespace Violet
 	class Engine;
 }
 
-class VIOLET_GAME_API MapComponent : public Violet::Component<MapComponent>
+class VIOLET_GAME_API MapComponent : public Violet::ComponentBase<MapComponent>
 {
 public:
 
-	static Violet::Tag getTypeId();
+	static Violet::Tag getTag();
 
 public:
 
-	MapComponent(Violet::Entity entity, Violet::Deserializer & deserializer);
+	MapComponent(const Violet::Entity & owner, Violet::Deserializer & deserializer);
 
 public:
 
 	Map m_graph;
+	uint32 m_id;
 };
 
 #endif

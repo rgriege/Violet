@@ -109,6 +109,12 @@
     <Filter Include="update\system">
       <UniqueIdentifier>{90110065-8ad8-485c-af53-ce40f837b18c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="utility\task">
+      <UniqueIdentifier>{dbc5b38d-0507-40bd-9a29-82841c960e36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utility\handle">
+      <UniqueIdentifier>{308526e8-6260-43a3-92ee-1d259babd847}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\engine\graphics\Color.h">
@@ -140,9 +146,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\input\InputResult.h">
       <Filter>input</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\input\component\InputComponent.h">
-      <Filter>input\component</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\input\system\InputSystem.h">
       <Filter>input\system</Filter>
@@ -246,9 +249,6 @@
     <ClInclude Include="..\..\..\src\engine\transform\component\TransformComponent.h">
       <Filter>transform\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\Assert.h">
-      <Filter>utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\engine\utility\Buffer.h">
       <Filter>utility</Filter>
     </ClInclude>
@@ -296,21 +296,6 @@
     <ClInclude Include="..\..\..\src\engine\update\system\UpdateSystem.h">
       <Filter>update\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\component\ComponentPool.h">
-      <Filter>component</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\component\Component.inl">
-      <Filter>component</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\component\ComponentPool.inl">
-      <Filter>component</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\entity\EntityManager.h">
-      <Filter>entity</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\component\ComponentManager.h">
-      <Filter>component</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\engine\scene\Scene.h">
       <Filter>scene</Filter>
     </ClInclude>
@@ -328,6 +313,39 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\math\Vec2.inl">
       <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\scene\SceneUtilities.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\Profiler.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\structures\QuadTree.h">
+      <Filter>structures</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\math\AABB.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\structures\QuadTree.inl">
+      <Filter>structures</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\input\component\KeyInputComponent.h">
+      <Filter>input\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\input\component\MouseInputComponent.h">
+      <Filter>input\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\task\Task.h">
+      <Filter>utility\task</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\task\TaskScheduler.h">
+      <Filter>utility\task</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\handle\Handle.h">
+      <Filter>utility\handle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\handle\HandleManager.h">
+      <Filter>utility\handle</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -357,9 +375,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\graphics\system\RenderSystem.cpp">
       <Filter>graphics\system</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\input\component\InputComponent.cpp">
-      <Filter>input\component</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\input\system\InputSystem.cpp">
       <Filter>input\system</Filter>
@@ -437,16 +452,7 @@
     <ClCompile Include="..\..\..\src\engine\update\system\UpdateSystem.cpp">
       <Filter>update\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\entity\EntityManager.cpp">
-      <Filter>entity</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\engine\component\Component.cpp">
-      <Filter>component</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\component\ComponentPool.cpp">
-      <Filter>component</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\component\ComponentManager.cpp">
       <Filter>component</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\scene\Scene.cpp">
@@ -458,13 +464,35 @@
     <ClCompile Include="..\..\..\src\engine\system\System.cpp">
       <Filter>system</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\scene\SceneUtilities.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\math\AABB.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\input\component\KeyInputComponent.cpp">
+      <Filter>input\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\input\component\MouseInputComponent.cpp">
+      <Filter>input\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\task\Task.cpp">
+      <Filter>utility\task</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\task\TaskScheduler.cpp">
+      <Filter>utility\task</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\handle\Handle.cpp">
+      <Filter>utility\handle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\handle\HandleManager.cpp">
+      <Filter>utility\handle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\Profiler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\engine\utility\unique_val.ipp">
       <Filter>utility</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\component\ComponentManager.inl">
-      <Filter>component</Filter>
     </None>
     <None Include="..\..\..\src\engine\scene\Scene.inl">
       <Filter>scene</Filter>
@@ -491,5 +519,11 @@
       <Filter>structures</Filter>
     </None>
     <None Include="..\..\..\src\engine\Engine.inl" />
+    <None Include="..\..\..\src\engine\entity\Entity.inl">
+      <Filter>entity</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\component\Component.inl">
+      <Filter>component</Filter>
+    </None>
   </ItemGroup>
 </Project>

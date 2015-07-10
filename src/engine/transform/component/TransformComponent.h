@@ -10,19 +10,19 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API TransformComponent : public Component<TransformComponent>
+	class VIOLET_API TransformComponent : public ComponentBase<TransformComponent>
 	{
 	public:
 
-		static Tag getTypeId();
+		static Tag getTag();
 
 	public:
 
-		TransformComponent(Entity entity);
-		TransformComponent(Entity entity, Deserializer & deserializer);
-		TransformComponent(Entity entity, Vec2f position, float rotation);
+		TransformComponent(const Entity & owner);
+		TransformComponent(const Entity & owner, Deserializer & deserializer);
+		TransformComponent(const Entity & owner, Vec2f position, float rotation);
 		TransformComponent(TransformComponent && other);
-		TransformComponent & operator=(TransformComponent && other);
+		//TransformComponent & operator=(TransformComponent && other);
 
 	public:
 

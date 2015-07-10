@@ -48,6 +48,14 @@ bool Violet::Interval<T>::contains(const T x) const
 
 // ----------------------------------------------------------------------------
 
+template <typename T>
+bool Violet::Interval<T>::contains(const Interval & other) const
+{
+	return contains(other.m_left) && contains(other.m_right);
+}
+
+// ----------------------------------------------------------------------------
+
 template<typename T>
 bool Violet::Interval<T>::overlaps(const Interval & other) const
 {

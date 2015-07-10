@@ -3,6 +3,7 @@
 #include "game/pathfinding/PathfindingSystem.h"
 
 #include "engine/Engine.h"
+#include "engine/scene/SceneUtilities.h"
 #include "engine/system/SystemFactory.h"
 #include "engine/transform/component/TransformComponent.h"
 #include "game/world/WorldSystem.h"
@@ -55,32 +56,33 @@ PathfindingSystem::~PathfindingSystem()
 
 // ----------------------------------------------------------------------------
 
-void PathfindingSystem::update(const float dt, Violet::Engine & engine)
+void PathfindingSystem::update(const float dt, const Violet::Engine & engine)
 {
-	for (auto & componentSet : engine.getCurrentScene().getView<PathComponent>())
-	{
-		PathComponent & component = Violet::get<PathComponent&>(componentSet);
-		if (!updateComponent(component, dt, engine))
-			engine.getCurrentScene().removeComponent<PathComponent>(component.getEntity());
-	}
+	/*Violet::SceneUtilities::Processor processor;
+	processor.addDelegate(Violet::SceneUtilities::Processor::Filter::create<PathComponent>(), [&](const Violet::Entity & entity, const float dt) {
+		PathComponent & pathComponent = *entity.getComponent<PathComponent>();
+		if (!updateComponent(pathComponent, dt, engine))
+			engine.getCurrentScene().getRoot().removeChild(entity);
+	});
+	processor.process(engine.getCurrentScene(), dt);*/
 }
 
 // ----------------------------------------------------------------------------
 
-void PathfindingSystem::path(Violet::Scene & scene, const Violet::Entity entity, const Vec2f & goal)
+void PathfindingSystem::path(Violet::Scene & scene, Violet::Entity & entity, const Vec2f & goal)
 {
-	const PathfindingComponent * pc = scene.getComponent<PathfindingComponent>(entity);
-	if (pc == nullptr)
+	/*const auto & pathfindingComponent = entity.getComponent<PathfindingComponent>();
+	if (pathfindingComponent == nullptr)
 		return;
 
-	const Violet::TransformComponent * tc = scene.getComponent<Violet::TransformComponent>(entity);
-	if (tc == nullptr)
+	const auto & transformComponent = entity.getComponent<Violet::TransformComponent>();
+	if (transformComponent == nullptr)
 		return;
 
 	auto view = scene.getView<MapComponent>();
 	auto it = std::find_if(view.begin(), view.end(), [&](std::tuple<MapComponent&> & tuple) { return std::get<0>(tuple).getEntity() == pc->m_mapEntity; });
 	if (it != view.end())
-		scene.createComponent<PathComponent>(entity, pc->m_speed, Path::create(tc->m_position, goal, std::get<0>(*it).m_graph));
+		scene.createComponent<PathComponent>(entity, pc->m_speed, Path::create(tc->m_position, goal, std::get<0>(*it).m_graph));*/
 }
 
 // ============================================================================
@@ -120,12 +122,12 @@ PathfindingSystem::PathfindingSystem() :
 
 bool PathfindingSystemNamespace::updateComponent(PathComponent & pc, const float dt, Violet::Engine & engine)
 {
-	auto tc = engine.getCurrentScene().getComponent<Violet::TransformComponent>(pc.getEntity());
+	/*auto & tc = pc.getOwner().getComponent<Violet::TransformComponent>();
 	auto const & points = pc.m_path.getPoints();
 	const Vec2f roadVec = points[pc.m_lastIntersection + 1] - points[pc.m_lastIntersection];
 	const Vec2f roadDir = roadVec.getUnit();
 	const float roadLen = roadVec.magnitude();
-	const Vec2f deltaPos = pc.m_speed * dt * roadDir * engine.fetch<WorldSystem>()->getTimeScale();
+	const Vec2f deltaPos = pc.m_speed * dt * roadDir * engine.getSystem<WorldSystem>()->getTimeScale();
 	const Vec2f nextPos = tc->m_position + deltaPos;
 
 	const Vec2f overshoot = nextPos - points[pc.m_lastIntersection + 1];
@@ -138,7 +140,7 @@ bool PathfindingSystemNamespace::updateComponent(PathComponent & pc, const float
 			return false;
 	}
 	else
-		tc->m_position = nextPos;
+		tc->m_position = nextPos;*/
 	return true;
 }
 

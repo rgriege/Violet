@@ -7,15 +7,15 @@
 
 // ============================================================================
 
-Tag PathComponent::getTypeId()
+Tag PathComponent::getTag()
 {
 	return Tag('p', 'a', 't', 'h');
 }
 
 // ============================================================================
 
-PathComponent::PathComponent(const Violet::Entity entity, Violet::Deserializer & deserializer) :
-	Component<PathComponent>(entity),
+PathComponent::PathComponent(const Violet::Entity & owner, Violet::Deserializer & deserializer) :
+	ComponentBase<PathComponent>(owner),
 	m_path(),
 	m_lastIntersection(0),
 	m_speed(deserializer.getFloat("speed"))
@@ -24,8 +24,8 @@ PathComponent::PathComponent(const Violet::Entity entity, Violet::Deserializer &
 
 // ----------------------------------------------------------------------------
 
-PathComponent::PathComponent(const Violet::Entity entity, const float speed, Path && path) :
-	Component<PathComponent>(entity),
+PathComponent::PathComponent(const Violet::Entity & owner, const float speed, Path && path) :
+	ComponentBase<PathComponent>(owner),
 	m_path(std::move(path)),
 	m_lastIntersection(0),
 	m_speed(speed)
@@ -35,7 +35,7 @@ PathComponent::PathComponent(const Violet::Entity entity, const float speed, Pat
 // ----------------------------------------------------------------------------
 
 PathComponent::PathComponent(PathComponent && other) :
-	Component<PathComponent>(other.getEntity()),
+	ComponentBase<PathComponent>(std::move(other)),
 	m_path(std::move(other.m_path)),
 	m_lastIntersection(other.m_lastIntersection),
 	m_speed(other.m_speed)
@@ -44,14 +44,14 @@ PathComponent::PathComponent(PathComponent && other) :
 
 // ----------------------------------------------------------------------------
 
-PathComponent & PathComponent::operator=(PathComponent && other)
-{
-	Component<PathComponent>::operator=(std::move(other));
-	m_path = std::move(other.m_path);
-	m_lastIntersection = other.m_lastIntersection;
-	m_speed = other.m_speed;
-	return *this;
-}
+//PathComponent & PathComponent::operator=(PathComponent && other)
+//{
+//	Component<PathComponent>::operator=(std::move(other));
+//	m_path = std::move(other.m_path);
+//	m_lastIntersection = other.m_lastIntersection;
+//	m_speed = other.m_speed;
+//	return *this;
+//}
 
 // ============================================================================
 

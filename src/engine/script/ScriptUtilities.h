@@ -10,10 +10,7 @@ namespace Violet
 	public:
 
 		template <typename ResultType, typename... Args>
-		static ResultType run(CppScriptComponent & component, const char * method, Args&&... args);
-
-		template <typename ResultType, typename... Args>
-		static ResultType run(Engine & engine, const Entity & entity, const char * method, Args&&... args);
+		static ResultType run(const CppScriptComponent & component, const char * method, Args&&... args);
 	};
 }
 

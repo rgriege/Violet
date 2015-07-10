@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "engine/math/Vec2.h"
+#include "engine/math/AABB.h"
 
 namespace Violet
 {
@@ -15,6 +16,7 @@ namespace Violet
 		explicit Polygon(Deserializer & deserializer);
 
 		bool contains(const Vec2f & point) const;
+		AABB getBoundingBox() const;
 
 	public:
 

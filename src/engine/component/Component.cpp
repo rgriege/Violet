@@ -4,39 +4,57 @@
 
 using namespace Violet;
 
-// ============================================================================
-
-BaseComponent::~BaseComponent()
-{
-}
+#ifdef _DEBUG
+#include <iostream>
+#endif
 
 // ============================================================================
 
-BaseComponent::BaseComponent(const Entity entity) :
-	m_entity(entity)
+uint32 Component::getNextFlag()
+{
+	static uint32 s_nextFlag = 1;
+	const uint32 result = s_nextFlag;
+	s_nextFlag <<= 1;
+#ifdef _DEBUG
+	if (s_nextFlag == 0)
+		std::cout << "Exceeded component flag size" << std::endl;
+#endif
+	return result;
+}
+
+// ============================================================================
+
+Component::~Component()
+{
+}
+
+// ============================================================================
+
+Component::Component(const Entity & owner) :
+	m_owner(owner)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-BaseComponent::BaseComponent(BaseComponent && other) :
-	m_entity(other.m_entity)
+Component::Component(Component && other) :
+	m_owner(other.m_owner)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-BaseComponent & BaseComponent::operator=(BaseComponent && other)
-{
-	m_entity = other.m_entity;
-	return *this;
-}
+//Component & Component::operator=(Component && other)
+//{
+//	m_owner = other.m_owner;
+//	return *this;
+//}
 
 // ----------------------------------------------------------------------------
 
-Entity BaseComponent::getEntity() const
+const Entity & Component::getOwner() const
 {
-	return m_entity;
+	return m_owner;
 }
 
 // ============================================================================

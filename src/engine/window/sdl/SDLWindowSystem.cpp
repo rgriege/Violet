@@ -88,65 +88,95 @@ SDLWindowSystem::~SDLWindowSystem()
 
 void SDLWindowSystem::render()
 {
-}
-
-// ----------------------------------------------------------------------------
-
-void SDLWindowSystem::update(float /*dt*/, Engine & engine)
-{
 	SDL_GL_SwapWindow(m_window);
-	engine.fetch<RenderSystem>()->clear();
 }
 
 // ----------------------------------------------------------------------------
 
-bool SDLWindowSystem::getEvent(EventType type, Event* event)
+void SDLWindowSystem::update(float /*dt*/, const Engine & /*engine*/)
 {
-	SDL_Event sdlEvent;
-	bool const hasEvent = SDL_PollEvent(&sdlEvent) == 1;
-	if (hasEvent)
+}
+
+// ----------------------------------------------------------------------------
+
+bool SDLWindowSystem::getEvent(const EventType type, Event * const event)
+{
+	bool queueEmpty = false;
+	bool foundEvent = false;
+
+	while (!queueEmpty && !foundEvent)
 	{
-		switch (sdlEvent.type)
+		SDL_Event sdlEvent;
+		if (SDL_PollEvent(&sdlEvent) == 1)
 		{
-		case SDL_KEYDOWN:
-			event->type = WindowSystem::ET_KeyDown;
-			event->key.code = convertKey(sdlEvent.key.keysym.sym);
-			break;
+			switch (sdlEvent.type)
+			{
+			case SDL_KEYDOWN:
+				if (type & ET_KeyDown)
+				{
+					event->type = WindowSystem::ET_KeyDown;
+					event->key.code = convertKey(sdlEvent.key.keysym.sym);
+					foundEvent = true;
+				}
+				break;
 
-		case SDL_KEYUP:
-			event->type = WindowSystem::ET_KeyUp;
-			event->key.code = convertKey(sdlEvent.key.keysym.sym);
-			break;
+			case SDL_KEYUP:
+				if (type & ET_KeyUp)
+				{
+					event->type = WindowSystem::ET_KeyUp;
+					event->key.code = convertKey(sdlEvent.key.keysym.sym);
+					foundEvent = true;
+				}
+				break;
 
-		case SDL_MOUSEBUTTONDOWN:
-			event->type = WindowSystem::ET_MouseDown;
-			event->mouse.x = sdlEvent.button.x;
-			event->mouse.y = sdlEvent.button.y;
-			event->mouse.button = static_cast<MouseButton>(sdlEvent.button.button - 1);
-			break;
+			case SDL_MOUSEBUTTONDOWN:
+				if (type & ET_MouseDown)
+				{
+					event->type = WindowSystem::ET_MouseDown;
+					event->mouse.x = sdlEvent.button.x;
+					event->mouse.y = sdlEvent.button.y;
+					event->mouse.button = static_cast<MouseButton>(sdlEvent.button.button - 1);
+					foundEvent = true;
+				}
+				break;
 
-		case SDL_MOUSEBUTTONUP:
-			event->type = WindowSystem::ET_MouseUp;
-			event->mouse.x = sdlEvent.button.x;
-			event->mouse.y = sdlEvent.button.y;
-			event->mouse.button = static_cast<MouseButton>(sdlEvent.button.button - 1);
-			break;
+			case SDL_MOUSEBUTTONUP:
+				if (type & ET_MouseUp)
+				{
+					event->type = WindowSystem::ET_MouseUp;
+					event->mouse.x = sdlEvent.button.x;
+					event->mouse.y = sdlEvent.button.y;
+					event->mouse.button = static_cast<MouseButton>(sdlEvent.button.button - 1);
+					foundEvent = true;
+				}
+				break;
 
-		case SDL_MOUSEMOTION:
-			event->type = WindowSystem::ET_MouseMove;
-			event->motion.x = sdlEvent.motion.x;
-			event->motion.y = sdlEvent.motion.y;
-			event->motion.xrel = sdlEvent.motion.xrel;
-			event->motion.yrel = sdlEvent.motion.yrel;
-			break;
+			case SDL_MOUSEMOTION:
+				if (type & ET_MouseMove)
+				{
+					event->type = WindowSystem::ET_MouseMove;
+					event->motion.x = sdlEvent.motion.x;
+					event->motion.y = sdlEvent.motion.y;
+					event->motion.xrel = sdlEvent.motion.xrel;
+					event->motion.yrel = sdlEvent.motion.yrel;
+					foundEvent = true;
+				}
+				break;
 
-		case SDL_QUIT:
-			event->type = WindowSystem::ET_Quit;
-			break;
+			case SDL_QUIT:
+				if (type & ET_Quit)
+				{
+					event->type = WindowSystem::ET_Quit;
+					foundEvent = true;
+				}
+				break;
+			}
 		}
+		else
+			queueEmpty = true;
 	}
 
-	return hasEvent;
+	return foundEvent;
 }
 
 // ----------------------------------------------------------------------------

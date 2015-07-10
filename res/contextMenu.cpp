@@ -2,8 +2,8 @@
 #include "engine/script/component/CppScriptComponent.h"
 #include "engine/serialization/file/FileDeserializerFactory.h"
 #include "engine/transform/component/TransformComponent.h"
-#include "engine/window/WindowSystem.h"
 #include "engine/input/InputResult.h"
+#include "engine/input/system/InputSystem.h"
 
 #include <vector>
 
@@ -11,30 +11,81 @@ using namespace Violet;
 
 struct Mem
 {
-    std::vector<Entity> buttons;
+    Handle menu;
+};
+
+class AddMenuTask : public Engine::Task
+{
+public:
+
+    AddMenuTask(const Engine & engine, const Vec2f & position, Mem & mem) :
+        Engine::Task(engine),
+        m_position(position),
+        m_mem(mem)
+    {
+    }
+
+    virtual void execute() const override
+    {
+        auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
+        if (deserializer != nullptr && *deserializer)
+        {
+            Entity & menu = m_engine.getCurrentScene().createEntity(*deserializer);
+            auto & transformComponent = menu.getComponent<TransformComponent>();
+            if (transformComponent != nullptr)
+                transformComponent->m_position = m_position;
+            m_mem.menu = menu.getHandle();
+        }
+    }
+
+private:
+
+    const Vec2f m_position;
+    Mem & m_mem;
+};
+
+class RemoveMenuTask : public Engine::Task
+{
+public:
+
+    RemoveMenuTask(const Engine & engine, Mem & mem) :
+        Engine::Task(engine),
+        m_mem(mem)
+    {
+    }
+
+    virtual void execute() const override
+    {
+        m_engine.getCurrentScene().destroyEntity(m_mem.menu);
+        m_mem.menu = Handle::ms_invalid;
+    }
+
+private:
+
+    Mem & m_mem;
 };
 
 bool activeMenu(Mem & mem);
-void createMenu(Mem & mem, Engine & engine, Entity entity, int x, int y);
-void removeMenu(Mem & mem, Engine & engine);
+void createMenu(Mem & mem, const Engine & engine, const Vec2f & position);
+void removeMenu(Mem & mem, const Engine & engine);
 
 extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator)
 {
     Mem * mem = allocator.allocate<Mem>();
-    // mem->menu = Entity::INVALID;
+    mem->menu = Handle::ms_invalid;
 }
 
-extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity e, Engine & engine, const WindowSystem::MouseEvent & event, Mem * mem)
+extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem * mem)
 {
     if (event.button == MB_Right)
     {
         if (activeMenu(*mem))
         {
             removeMenu(*mem, engine);
-            createMenu(*mem, engine, e, event.x, event.y);
+            createMenu(*mem, engine, event.position);
         }
         else
-            createMenu(*mem, engine, e, event.x, event.y);
+            createMenu(*mem, engine, event.position);
     }
     else if (activeMenu(*mem))
         removeMenu(*mem, engine);
@@ -46,32 +97,16 @@ extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity e, Engine 
 
 bool activeMenu(Mem & mem)
 {
-    return !mem.buttons.empty();
-    // return mem.menu != Entity::INVALID;
+    return mem.menu.isValid();
 }
 
-void createMenu(Mem & mem, Engine & engine, const Entity entity, int x, int y)
+void createMenu(Mem & mem, const Engine & engine, const Vec2f & position)
 {
-    auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
-    if (deserializer != nullptr)
-    {
-        // mem.menu = engine.getCurrentScene().createEntity(*deserializer);
-        while (*deserializer)
-        {
-            mem.buttons.emplace_back(engine.getCurrentScene().createEntity(*deserializer));
-            auto * buttonTc = engine.getCurrentScene().getComponent<TransformComponent>(mem.buttons.back());
-            if (buttonTc != nullptr)
-                buttonTc->m_position += Vec2f(x, y);
-        }
-    }
+    engine.addTask(std::make_unique<AddMenuTask>(engine, position, mem));
 }
 
-void removeMenu(Mem & mem, Engine & engine)
+void removeMenu(Mem & mem, const Engine & engine)
 {
-    // engine.getCurrentScene().destroyEntity(mem.menu);
-    // mem.menu = Entity::INVALID;
-    for (auto button : mem.buttons)
-        engine.getCurrentScene().destroyEntity(button);
-    mem.buttons.clear();
+    engine.addTask(std::make_unique<RemoveMenuTask>(engine, mem));
 }
 

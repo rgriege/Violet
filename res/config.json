@@ -18,6 +18,7 @@
     }
   },
   "opts": {
-    "firstScene": "scene.json"
+    "firstScene": "scene.json",
+    "workerCount": 1
   }
 }

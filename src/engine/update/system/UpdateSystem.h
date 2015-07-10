@@ -23,7 +23,7 @@ namespace Violet
 		UpdateSystem(UpdateSystem && other);
 
 		virtual ~UpdateSystem() override = default;
-		virtual void update(float dt, Engine & engine);
+		virtual void update(float dt, const Engine & engine) override;
 
 	private:
 

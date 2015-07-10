@@ -1,6 +1,6 @@
 // ============================================================================
 
-#include "engine/entity/EntityManager.h"
+#include "engine/utility/handle/HandleManager.h"
 
 #include <iostream>
 
@@ -8,7 +8,7 @@ using namespace Violet;
 
 // ============================================================================
 
-EntityManager::EntityManager() :
+HandleManager::HandleManager() :
 	m_usedList(),
 	m_recycleList(),
 	m_versions()
@@ -17,22 +17,22 @@ EntityManager::EntityManager() :
 
 // ----------------------------------------------------------------------------
 
-EntityManager::~EntityManager()
+HandleManager::~HandleManager()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-EntityManager::EntityManager(EntityManager && other) :
-	m_usedList(other.m_usedList),
-	m_recycleList(other.m_recycleList),
-	m_versions(other.m_versions)
+HandleManager::HandleManager(HandleManager && other) :
+	m_usedList(std::move(other.m_usedList)),
+	m_recycleList(std::move(other.m_recycleList)),
+	m_versions(std::move(other.m_versions))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-EntityManager & EntityManager::operator=(EntityManager && other)
+HandleManager & HandleManager::operator=(HandleManager && other)
 {
 	std::swap(m_usedList, other.m_usedList);
 	std::swap(m_recycleList, other.m_recycleList);
@@ -42,7 +42,7 @@ EntityManager & EntityManager::operator=(EntityManager && other)
 
 // ----------------------------------------------------------------------------
 
-Entity EntityManager::create()
+Handle HandleManager::create()
 {
 	uint32 id, version;
 	if (!m_recycleList.empty())
@@ -59,29 +59,32 @@ Entity EntityManager::create()
 		id = m_usedList.size() - 1;
 		version = m_versions.back();
 	}
-	return Entity(id, version);
+	return Handle(id, version);
 }
 
 // ----------------------------------------------------------------------------
 
-Entity EntityManager::create(const uint32 desiredId)
+Handle HandleManager::create(const uint32 desiredId)
 {
-	if (desiredId >= m_usedList.size())
+	const uint32 originalUsedListSize = m_usedList.size();
+	if (desiredId >= originalUsedListSize)
 	{
 		m_usedList.resize(desiredId + 1);
 		m_usedList[desiredId] = true;
 		m_versions.resize(desiredId + 1);
 		m_versions[desiredId] = 0;
-		return Entity(desiredId, 0);
+		for (uint32 id = originalUsedListSize; id < desiredId; ++id)
+			m_recycleList.emplace(id);
+		return Handle(desiredId, 0);
 	}
 	else if (!m_usedList[desiredId])
 	{
 		m_usedList[desiredId] = true;
-		return Entity(desiredId, ++m_versions[desiredId]);
+		return Handle(desiredId, ++m_versions[desiredId]);
 	}
 	else
 	{
-		const Entity result = create();
+		const Handle result = create();
 		std::cout << "Could not create entity with id " << desiredId << ", using " << result.getId() << " instead" << std::endl;
 		return result;
 	}
@@ -89,7 +92,7 @@ Entity EntityManager::create(const uint32 desiredId)
 
 // ----------------------------------------------------------------------------
 
-void EntityManager::destroy(const Entity entity)
+void HandleManager::free(const Handle entity)
 {
 	const uint32 id = entity.getId();
 	if (id < m_usedList.size())
@@ -98,18 +101,6 @@ void EntityManager::destroy(const Entity entity)
 		m_recycleList.push(id);
 		++m_versions[id];
 	}
-}
-
-// ----------------------------------------------------------------------------
-
-std::vector<Entity> EntityManager::getEntities() const
-{
-	std::vector<Entity> result;
-	result.reserve(m_usedList.size() - m_recycleList.size());
-	for (uint32 i = 0, end = m_usedList.size(); i < end; ++i)
-		if (m_usedList[i])
-			result.emplace_back(i, m_versions[i]);
-	return result;
 }
 
 // ============================================================================

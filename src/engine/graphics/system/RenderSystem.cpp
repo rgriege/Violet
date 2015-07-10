@@ -4,7 +4,7 @@
 
 #include "engine/Engine.h"
 #include "engine/entity/Entity.h"
-#include "engine/math/Matrix3.h"
+#include "engine/scene/SceneUtilities.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/system/SystemFactory.h"
 #include "engine/transform/component/TransformComponent.h"
@@ -21,11 +21,16 @@
 
 using namespace Violet;
 
-// ============================================================================
-
 namespace RenderSystemNamespace
 {
-	Matrix3f ms_viewMatrix;
+	class RenderTask : public Engine::Task
+	{
+	public:
+
+		RenderTask(const Engine & engine);
+
+		virtual void execute() const override;
+	};
 }
 
 using namespace RenderSystemNamespace;
@@ -76,39 +81,62 @@ RenderSystem::~RenderSystem()
 	Font::getCache().clear();
 }
 
+void process(const Entity &, float);
+
 // ----------------------------------------------------------------------------
 
-void RenderSystem::update(float const dt, Engine & engine)
+void RenderSystem::update(float const dt, const Engine & engine)
 {
-	auto windowSystem = engine.fetch<WindowSystem>();
-	ms_viewMatrix = Matrix3f::Identity;
-	ms_viewMatrix[0][0] = 2.f / windowSystem->getWidth();
-	ms_viewMatrix[1][1] = 2.f / windowSystem->getHeight();
+	glClear(GL_COLOR_BUFFER_BIT);
+	const auto & windowSystem = engine.getSystem<WindowSystem>();
+	Matrix3f viewMatrix = Matrix3f::Identity;
+	viewMatrix[0][0] = 2.f / windowSystem->getWidth();
+	viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 
-	for (auto & component : engine.getCurrentScene().getView<RenderComponent>())
-		draw(get<RenderComponent&>(component), engine);
-	for (auto & component : engine.getCurrentScene().getView<TextComponent>())
-		draw(get<TextComponent&>(component), engine);
-
+	for (auto const & child : engine.getCurrentScene().getRoot().getChildren())
+		process(child, viewMatrix, Matrix3f::Identity);
+	
 	glFlush();
-	windowSystem->render();
+	engine.addTask(std::make_unique<RenderTask>(engine));
 }
 
 // ----------------------------------------------------------------------------
 
-void RenderSystem::clear()
+void RenderSystem::process(const Entity & entity, const Matrix3f & view, const Matrix3f & parentToWorld)
 {
-	glClear(GL_COLOR_BUFFER_BIT);
+	if (entity.hasComponent<TransformComponent>())
+	{
+		auto const & transformComponent = *entity.getComponent<TransformComponent>();
+		const Matrix3f transform = {
+			1.f, 0.f, transformComponent.m_position.x,
+			0.f, 1.f, transformComponent.m_position.y,
+			0.f, 0.f, 1.f
+		};
+		const Matrix3f localToWorld = parentToWorld * transform;
+		for (auto const & child : entity.getChildren())
+			process(child, view, localToWorld);
+
+		if (entity.hasComponent<RenderComponent>())
+			draw(transformComponent, *entity.getComponent<RenderComponent>(), view, parentToWorld);
+		if (entity.hasComponent<TextComponent>())
+			draw(transformComponent, *entity.getComponent<TextComponent>(), view, parentToWorld);
+	}
 }
 
 // ============================================================================
 
-void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
+RenderSystem::RenderSystem() :
+	System("rndr")
 {
-	const TransformComponent * transform = engine.getCurrentScene().getComponent<TransformComponent>(renderComponent.getEntity());
-	const float modelMat[9] = {
-		1.f, 0.f, transform->m_position.x,
-		0.f, 1.f, transform->m_position.y,
+}
+
+// ----------------------------------------------------------------------------
+
+void RenderSystem::draw(const TransformComponent & transformComponent, const RenderComponent & renderComponent, const Matrix3f & view, const Matrix3f & parentToWorld)
+{
+	const Matrix3f transform = {
+		1.f, 0.f, transformComponent.m_position.x,
+		0.f, 1.f, transformComponent.m_position.y,
 		0.f, 0.f, 1.f
 	};
 
@@ -119,8 +147,8 @@ void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
 	glBindVertexArray(renderComponent.m_vertexArrayBuffer);
 	const Guard<ShaderProgram> shaderGuard(*renderComponent.m_shader);
 	glUniform4fv(colorAttrib, 1, renderComponent.m_color.as4fv().data());
-	glUniformMatrix3fv(modelAttrib, 1, true, modelMat);
-	glUniformMatrix3fv(viewAttribute, 1, true, ms_viewMatrix.data());
+	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * transform).data());
+	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
 	glDrawArrays(GL_TRIANGLE_FAN, 0, renderComponent.m_mesh.m_size);
 	glBindVertexArray(0);
@@ -128,13 +156,12 @@ void RenderSystem::draw(RenderComponent & renderComponent, Engine & engine)
 
 // ----------------------------------------------------------------------------
 
-void RenderSystem::draw(TextComponent & textComponent, Engine & engine)
+void RenderSystem::draw(const TransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view, const Matrix3f & parentToWorld)
 {
-	const TransformComponent * transform = engine.getCurrentScene().getComponent<TransformComponent>(textComponent.getEntity());
 	const float scale = static_cast<float>(textComponent.m_size) / Font::getFontImageSize();
-	float modelMat[9] = {
-		scale, 0.f, transform->m_position.x,
-		0.f, scale, transform->m_position.y,
+	const Matrix3f transform = {
+		scale, 0.f, transformComponent.m_position.x,
+		0.f, scale, transformComponent.m_position.y,
 		0.f, 0.f, 1.f
 	};
 
@@ -142,17 +169,24 @@ void RenderSystem::draw(TextComponent & textComponent, Engine & engine)
 	const GLint viewAttribute = textComponent.m_shader->getUniformLocation("view");
 
 	const Guard<ShaderProgram> shaderGuard(*textComponent.m_shader);
-	glUniformMatrix3fv(modelAttrib, 1, true, modelMat);
-	glUniformMatrix3fv(viewAttribute, 1, true, ms_viewMatrix.data());
+	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * transform).data());
+	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
 	textComponent.m_font->render(textComponent.m_text, *textComponent.m_shader);
 }
 
+// ============================================================================
+
+RenderSystemNamespace::RenderTask::RenderTask(const Engine & engine) :
+	Engine::Task(engine, 64)
+{
+}
+
 // ----------------------------------------------------------------------------
 
-RenderSystem::RenderSystem() :
-	System("rndr")
+void RenderSystemNamespace::RenderTask::execute() const
 {
+	m_engine.getSystem<WindowSystem>()->render();
 }
 
 // ============================================================================

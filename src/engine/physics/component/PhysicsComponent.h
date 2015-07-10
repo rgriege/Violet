@@ -10,15 +10,15 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API PhysicsComponent : public Component<PhysicsComponent>
+	class VIOLET_API PhysicsComponent : public ComponentBase<PhysicsComponent>
 	{
 	public:
 
-		static Tag getTypeId();
+		static Tag getTag();
 
 	public:
 
-		PhysicsComponent(Entity entity, Deserializer & deserializer);
+		PhysicsComponent(const Entity & owner, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
 		PhysicsComponent & operator=(PhysicsComponent && other);
 

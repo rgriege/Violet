@@ -11,7 +11,7 @@ using namespace Violet;
 
 // ============================================================================
 
-Factory<std::string, void(Scene &, Entity, Deserializer &)> Scene::ms_componentFactory;
+Factory<std::string, void(Scene &, Entity &, Deserializer &)> Scene::ms_componentFactory;
 
 // ============================================================================
 
@@ -36,78 +36,147 @@ Scene Scene::create(const char * filename)
 // ============================================================================
 
 Scene::Scene() :
-	m_componentManager(),
-	m_entityManager()
+	m_root(Handle::ms_invalid),
+	m_lookupMap(),
+	m_handleManager()
 {
+	m_root.addToScene(*this);
 }
 
 // ----------------------------------------------------------------------------
 
 Scene::~Scene()
 {
+	if (m_root.inScene())
+		m_root.removeFromScene();
 }
 
 // ----------------------------------------------------------------------------
 
 Scene::Scene(Scene && other) :
-	m_componentManager(std::move(other.m_componentManager)),
-	m_entityManager(std::move(other.m_entityManager))
+	m_root(std::move(other.m_root)),
+	m_lookupMap(std::move(other.m_lookupMap)),
+	m_handleManager(std::move(other.m_handleManager))
 {
+	if (m_root.inScene())
+	{
+		m_root.removeFromScene();
+		m_root.addToScene(*this);
+	}
 }
 
 // ----------------------------------------------------------------------------
 
 Scene & Scene::operator=(Scene && other)
 {
-	std::swap(m_componentManager, other.m_componentManager);
-	std::swap(m_entityManager, other.m_entityManager);
+	m_root = std::move(other.m_root);
+	m_lookupMap = std::move(other.m_lookupMap);
+	m_handleManager = std::move(other.m_handleManager);
+
+	if (m_root.inScene())
+	{
+		m_root.removeFromScene();
+		m_root.addToScene(*this);
+	}
+
 	return *this;
 }
 
 // ----------------------------------------------------------------------------
 
-Entity Scene::createEntity()
+Entity & Scene::createEntity()
 {
-	return m_entityManager.create();
-}
-
-// ----------------------------------------------------------------------------
-
-Entity Scene::createEntity(Deserializer & deserializer)
-{
-	auto entitySegment = deserializer.enterSegment("ntty");
-	const bool referenced = entitySegment->getBoolean("ref");
-	const Entity entity = referenced ? m_entityManager.create(entitySegment->getUint("id")) : m_entityManager.create();
-	while (*entitySegment)
-	{
-		std::string label = entitySegment->nextLabel();
-		auto componentSegment = entitySegment->enterSegment(label.c_str());
-		ms_componentFactory.create(label.c_str(), *this, entity, *componentSegment);
-	}
+	Entity & entity = m_root.addChild(Entity(m_handleManager.create()));
 	return entity;
 }
 
 // ----------------------------------------------------------------------------
 
-void Scene::destroyEntity(const Entity entity)
+Entity & Scene::createEntity(Deserializer & deserializer)
 {
-	m_entityManager.destroy(entity);
-	m_componentManager.removeAll(entity);
+	auto entitySegment = deserializer.enterSegment("ntty");
+	const bool referenced = entitySegment->getBoolean("ref");
+	Entity entity(referenced ? m_handleManager.create(entitySegment->getUint("id")) : m_handleManager.create());
+	while (*entitySegment)
+	{
+		const char * const label = entitySegment->nextLabel();
+		auto componentSegment = entitySegment->enterSegment(label);
+		ms_componentFactory.create(label, *this, entity, *componentSegment);
+	}
+	Entity & result = m_root.addChild(std::move(entity));
+	return result;
 }
 
 // ----------------------------------------------------------------------------
 
-std::vector<Entity> Scene::getEntities() const
+Entity & Scene::getRoot()
 {
-	return m_entityManager.getEntities();
+	return m_root;
 }
 
 // ----------------------------------------------------------------------------
 
-void Scene::clear()
+const Entity & Scene::getRoot() const
 {
-	for (auto entity : getEntities())
-		destroyEntity(entity);
+	return m_root;
+}
+
+// ----------------------------------------------------------------------------
+
+Entity & Scene::getEntity(const Handle handle)
+{
+	static Entity s_invalidEntity(Handle::ms_invalid);
+	const auto it = m_lookupMap.find(handle);
+	return it != m_lookupMap.end() ? it->second : s_invalidEntity;
+}
+
+// ----------------------------------------------------------------------------
+
+const Entity & Scene::getEntity(const Handle handle) const
+{
+	const auto it = m_lookupMap.find(handle);
+	return it != m_lookupMap.end() ? it->second : Entity::ms_invalid;
+}
+
+// ----------------------------------------------------------------------------
+
+bool Scene::destroyEntity(const Handle handle)
+{
+	// TODO - implement
+	const auto it = m_lookupMap.find(handle);
+	const bool found = it != m_lookupMap.end();
+
+	if (found)
+	{
+		Entity & entity = it->second;
+		m_lookupMap.erase(it);
+		entity.removeFromScene();
+		entity.getParent()->removeChild(handle);
+		m_handleManager.free(handle);
+	}
+
+	return found;
+}
+
+// ----------------------------------------------------------------------------
+
+void Scene::index(Entity & entity)
+{
+	m_lookupMap.emplace(entity.getHandle(), entity);
+}
+
+// ----------------------------------------------------------------------------
+
+void Scene::reindex(Entity & entity)
+{
+	m_lookupMap.find(entity.getHandle())->second = entity;
+}
+
+// ----------------------------------------------------------------------------
+
+bool Scene::deindex(const Handle handle)
+{
+	return m_lookupMap.erase(handle) > 0;
 }
 
 // ============================================================================

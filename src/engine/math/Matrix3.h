@@ -1,6 +1,8 @@
 #ifndef VIOLET_Matrix3_H
 #define VIOLET_Matrix3_H
 
+#include "engine/math/Vec2.h"
+
 namespace Violet
 {
 	template<typename T>
@@ -37,6 +39,12 @@ namespace Violet
 
 		Column m_rows[3];
 	};
+
+	template <typename T>
+	Matrix3<T> operator*(const Matrix3<T> & lhs, const Matrix3<T> & rhs);
+
+	template <typename T>
+	Vec2<T> operator*(const Matrix3<T> & lhs, const Vec2<T> & rhs);
 }
 
 #include "engine/math/Matrix3.inl"

@@ -10,19 +10,19 @@ namespace Violet
 	class Serializer;
 }
 
-class VIOLET_GAME_API PathfindingComponent : public Violet::Component<PathfindingComponent>
+class VIOLET_GAME_API PathfindingComponent : public Violet::ComponentBase<PathfindingComponent>
 {
 public:
 
-	static Violet::Tag getTypeId();
+	static Violet::Tag getTag();
 
 public:
 
-	PathfindingComponent(Violet::Entity entity, Violet::Deserializer & deserializer);
+	PathfindingComponent(const Violet::Entity & owner, Violet::Deserializer & deserializer);
 
 public:
 
-	Violet::Entity m_mapEntity;
+	uint32 m_mapId;
 	float m_speed;
 };
 

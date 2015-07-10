@@ -8,17 +8,19 @@
 
 // ============================================================================
 
-Violet::Tag MapComponent::getTypeId()
+Violet::Tag MapComponent::getTag()
 {
 	return Violet::Tag('m', 'a', 'p', 'c');
 }
 
 // ============================================================================
 
-MapComponent::MapComponent(const Violet::Entity entity, Violet::Deserializer & deserializer) :
-	Component<MapComponent>(entity),
-	m_graph()
+MapComponent::MapComponent(const Violet::Entity & owner, Violet::Deserializer & deserializer) :
+	ComponentBase<MapComponent>(owner),
+	m_graph(),
+	m_id(0)
 {
+	m_id = deserializer.getUint("id");
 	{
 		auto nodesSegment = deserializer.enterSegment("nodes");
 		std::vector<Vec2f> nodes = SerializationUtilities::deserializeElements<Vec2f>(*nodesSegment);
