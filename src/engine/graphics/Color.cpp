@@ -73,6 +73,29 @@ Color::Component & Color::Component::operator=(const float value)
 
 // ----------------------------------------------------------------------------
 
+bool Color::Component::operator!=(const uint8 value) const
+{
+	return m_value != value;
+}
+
+// ----------------------------------------------------------------------------
+
+Color::Component & Color::Component::operator+=(const uint8 value)
+{
+	m_value += value;
+	return *this;
+}
+
+// ----------------------------------------------------------------------------
+
+Color::Component & Color::Component::operator-=(const uint8 value)
+{
+	m_value -= value;
+	return *this;
+}
+
+// ----------------------------------------------------------------------------
+
 Color::Component::operator uint8() const
 {
 	return m_value;
@@ -81,6 +104,20 @@ Color::Component::operator uint8() const
 // ----------------------------------------------------------------------------
 
 Color::Component::operator float() const
+{
+	return convert(m_value);
+}
+
+// ----------------------------------------------------------------------------
+
+uint8 Color::Component::asUint() const
+{
+	return m_value;
+}
+
+// ----------------------------------------------------------------------------
+
+float Color::Component::asFloat() const
 {
 	return convert(m_value);
 }

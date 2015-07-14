@@ -10,7 +10,8 @@
     "rndr": {
       "color": "0xffffffff"
     },
-    "inpt": {}
+    "inpt": {},
+    "updt": {}
   },
   "opts": {
     "firstScene": "editor.json",

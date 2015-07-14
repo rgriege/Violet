@@ -27,7 +27,7 @@ Scene Scene::create(const char * filename)
 	else
 	{
 		while (*deserializer)
-			scene.createEntity(*deserializer);
+			scene.createEntity(scene.m_root, *deserializer);
 	}
 
 	return scene;
@@ -84,26 +84,32 @@ Scene & Scene::operator=(Scene && other)
 
 // ----------------------------------------------------------------------------
 
-Entity & Scene::createEntity()
+Entity & Scene::createEntity(Entity & parent)
 {
-	Entity & entity = m_root.addChild(Entity(m_handleManager.create()));
+	Entity & entity = parent.addChild(Entity(m_handleManager.create()));
 	return entity;
 }
 
 // ----------------------------------------------------------------------------
 
-Entity & Scene::createEntity(Deserializer & deserializer)
+Entity & Scene::createEntity(Entity & parent, Deserializer & deserializer)
 {
 	auto entitySegment = deserializer.enterSegment("ntty");
 	const bool referenced = entitySegment->getBoolean("ref");
 	Entity entity(referenced ? m_handleManager.create(entitySegment->getUint("id")) : m_handleManager.create());
-	while (*entitySegment)
+	auto componentsSegment = entitySegment->enterSegment("cpnt");
+	while (*componentsSegment)
 	{
-		const char * const label = entitySegment->nextLabel();
-		auto componentSegment = entitySegment->enterSegment(label);
+		const char * const label = componentsSegment->nextLabel();
+		auto componentSegment = componentsSegment->enterSegment(label);
 		ms_componentFactory.create(label, *this, entity, *componentSegment);
 	}
-	Entity & result = m_root.addChild(std::move(entity));
+
+	auto childrenSegment = entitySegment->enterSegment("chld");
+	while (*childrenSegment)
+		createEntity(entity, *childrenSegment);
+
+	Entity & result = parent.addChild(std::move(entity));
 	return result;
 }
 

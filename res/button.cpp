@@ -1,8 +1,17 @@
 #include "engine/Engine.h"
+#include "engine/script/component/CppScriptComponent.h"
 #include "engine/graphics/Color.h"
 #include "engine/graphics/component/RenderComponent.h"
 
+#include <algorithm>
+
 using namespace Violet;
+
+struct Mem
+{
+    uint8 opacity;
+    bool disappearing;
+};
 
 class ChangeColorTask : public Engine::Task
 {
@@ -31,12 +40,38 @@ private:
     const Color m_color;
 };
 
-extern "C" __declspec(dllexport) void onMouseIn(const Entity & entity, const Engine & engine)
+extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator)
 {
-    engine.addTask(std::make_unique<ChangeColorTask>(engine, entity.getHandle(), Color::kGreen));
+    Mem * mem = allocator.allocate<Mem>();
+    mem->opacity = 0xCC;
+    mem->disappearing = false;
 }
 
-extern "C" __declspec(dllexport) void onMouseOut(const Entity & entity, const Engine & engine)
+extern "C" __declspec(dllexport) void onMouseIn(const Entity & entity, const Engine & engine, Mem * mem)
 {
-    engine.addTask(std::make_unique<ChangeColorTask>(engine, entity.getHandle(), Color::kRed));
+    mem->opacity = 0xCC;
+    mem->disappearing = false;
+}
+
+extern "C" __declspec(dllexport) void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem)
+{
+    mem->opacity = 0x33;
+    mem->disappearing = true;
+}
+
+extern "C" __declspec(dllexport) void update(const Entity & entity, const Engine & engine, Mem * mem)
+{
+    auto & renderComponent = entity.getComponent<RenderComponent>();
+    if (renderComponent != nullptr)
+    {
+        if (renderComponent->m_color.a != mem->opacity)
+        {
+            Color newColor(renderComponent->m_color);
+            if (mem->disappearing)
+                newColor.a = std::max<uint8>(newColor.a.asUint() - 5u, mem->opacity);
+            else
+                newColor.a = std::min<uint8>(newColor.a.asUint() + 5u, mem->opacity);
+            engine.addTask(std::make_unique<ChangeColorTask>(engine, entity.getHandle(), newColor));
+        }
+    }
 }

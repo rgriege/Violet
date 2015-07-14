@@ -29,7 +29,7 @@ namespace Violet
 
 	public:
 
-		class Component
+		class VIOLET_API Component
 		{
 		public:
 
@@ -40,8 +40,15 @@ namespace Violet
 			Component & operator=(uint8 value);
 			Component & operator=(float value);
 
+			bool operator!=(uint8 value) const;
+			Component & operator+=(uint8 value);
+			Component & operator-=(uint8 value);
+
 			operator uint8() const;
 			operator float() const;
+
+			uint8 asUint() const;
+			float asFloat() const;
 
 		private:
 

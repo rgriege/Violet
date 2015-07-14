@@ -28,8 +28,8 @@ namespace Violet
 		Scene(Scene && other);
 		Scene & operator=(Scene && other);
 
-		Entity & createEntity();
-		Entity & createEntity(Deserializer & deserializer);
+		Entity & createEntity(Entity & parent);
+		Entity & createEntity(Entity & parent, Deserializer & deserializer);
 
 		Entity & getRoot();
 		const Entity & getRoot() const;
