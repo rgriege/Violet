@@ -112,14 +112,15 @@ void RenderSystem::process(const Entity & entity, const Matrix3f & view, const M
 			0.f, 1.f, transformComponent.m_position.y,
 			0.f, 0.f, 1.f
 		};
-		const Matrix3f localToWorld = parentToWorld * transform;
-		for (auto const & child : entity.getChildren())
-			process(child, view, localToWorld);
 
 		if (entity.hasComponent<RenderComponent>())
 			draw(transformComponent, *entity.getComponent<RenderComponent>(), view, parentToWorld);
 		if (entity.hasComponent<TextComponent>())
 			draw(transformComponent, *entity.getComponent<TextComponent>(), view, parentToWorld);
+
+		const Matrix3f localToWorld = parentToWorld * transform;
+		for (auto const & child : entity.getChildren())
+			process(child, view, localToWorld);
 	}
 }
 
