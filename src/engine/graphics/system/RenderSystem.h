@@ -28,10 +28,6 @@ namespace Violet
 	private:
 
 		RenderSystem();
-
-		void process(const Entity & entity, const Matrix3f & view, const Matrix3f & localToWorld);
-		void draw(const TransformComponent & transformComponent, const RenderComponent & renderComponent, const Matrix3f & view, const Matrix3f & localToWorld);
-		void draw(const TransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view, const Matrix3f & localToWorld);
 	};
 }
 

@@ -23,6 +23,8 @@ using namespace Violet;
 
 namespace RenderSystemNamespace
 {
+	// ----------------------------------------------------------------------------
+
 	class RenderTask : public Engine::Task
 	{
 	public:
@@ -31,6 +33,14 @@ namespace RenderSystemNamespace
 
 		virtual void execute() const override;
 	};
+
+	// ----------------------------------------------------------------------------
+
+	void process(const Entity & entity, const Matrix3f & view, const Matrix3f & localToWorld, float opacity);
+	void draw(const TransformComponent & transformComponent, const RenderComponent & renderComponent, const Matrix3f & view, const Matrix3f & localToWorld, float opacity);
+	void draw(const TransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view, const Matrix3f & localToWorld);
+
+	// ----------------------------------------------------------------------------
 }
 
 using namespace RenderSystemNamespace;
@@ -94,15 +104,35 @@ void RenderSystem::update(float const dt, const Engine & engine)
 	viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 
 	for (auto const & child : engine.getCurrentScene().getRoot().getChildren())
-		process(child, viewMatrix, Matrix3f::Identity);
+		process(child, viewMatrix, Matrix3f::Identity, 1.f);
 	
 	glFlush();
 	engine.addTask(std::make_unique<RenderTask>(engine));
 }
 
+// ============================================================================
+
+RenderSystem::RenderSystem() :
+	System("rndr")
+{
+}
+
+// ============================================================================
+
+RenderSystemNamespace::RenderTask::RenderTask(const Engine & engine) :
+	Engine::Task(engine, 64)
+{
+}
+
 // ----------------------------------------------------------------------------
 
-void RenderSystem::process(const Entity & entity, const Matrix3f & view, const Matrix3f & parentToWorld)
+void RenderSystemNamespace::RenderTask::execute() const
+{
+	m_engine.getSystem<WindowSystem>()->render();
+}
+
+// ============================================================================
+void RenderSystemNamespace::process(const Entity & entity, const Matrix3f & view, const Matrix3f & parentToWorld, const float opacity)
 {
 	if (entity.hasComponent<TransformComponent>())
 	{
@@ -113,27 +143,26 @@ void RenderSystem::process(const Entity & entity, const Matrix3f & view, const M
 			0.f, 0.f, 1.f
 		};
 
+		float newOpacity = opacity;
 		if (entity.hasComponent<RenderComponent>())
-			draw(transformComponent, *entity.getComponent<RenderComponent>(), view, parentToWorld);
+		{
+			const auto & renderComponent = *entity.getComponent<RenderComponent>();
+			newOpacity = opacity * renderComponent.m_color.a.asFloat();
+			draw(transformComponent, renderComponent, view, parentToWorld, newOpacity);
+		}
 		if (entity.hasComponent<TextComponent>())
 			draw(transformComponent, *entity.getComponent<TextComponent>(), view, parentToWorld);
 
 		const Matrix3f localToWorld = parentToWorld * transform;
 		for (auto const & child : entity.getChildren())
-			process(child, view, localToWorld);
+			process(child, view, localToWorld, newOpacity);
 	}
-}
-
-// ============================================================================
-
-RenderSystem::RenderSystem() :
-	System("rndr")
-{
 }
 
 // ----------------------------------------------------------------------------
 
-void RenderSystem::draw(const TransformComponent & transformComponent, const RenderComponent & renderComponent, const Matrix3f & view, const Matrix3f & parentToWorld)
+
+void RenderSystemNamespace::draw(const TransformComponent & transformComponent, const RenderComponent & renderComponent, const Matrix3f & view, const Matrix3f & parentToWorld, const float opacity)
 {
 	const Matrix3f transform = {
 		1.f, 0.f, transformComponent.m_position.x,
@@ -147,7 +176,9 @@ void RenderSystem::draw(const TransformComponent & transformComponent, const Ren
 
 	glBindVertexArray(renderComponent.m_vertexArrayBuffer);
 	const Guard<ShaderProgram> shaderGuard(*renderComponent.m_shader);
-	glUniform4fv(colorAttrib, 1, renderComponent.m_color.as4fv().data());
+	Color color = renderComponent.m_color;
+	color.a = color.a.asFloat() * opacity;
+	glUniform4fv(colorAttrib, 1, color.as4fv().data());
 	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * transform).data());
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
@@ -157,7 +188,7 @@ void RenderSystem::draw(const TransformComponent & transformComponent, const Ren
 
 // ----------------------------------------------------------------------------
 
-void RenderSystem::draw(const TransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view, const Matrix3f & parentToWorld)
+void RenderSystemNamespace::draw(const TransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view, const Matrix3f & parentToWorld)
 {
 	const float scale = static_cast<float>(textComponent.m_size) / Font::getFontImageSize();
 	const Matrix3f transform = {
@@ -174,20 +205,6 @@ void RenderSystem::draw(const TransformComponent & transformComponent, const Tex
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
 	textComponent.m_font->render(textComponent.m_text, *textComponent.m_shader);
-}
-
-// ============================================================================
-
-RenderSystemNamespace::RenderTask::RenderTask(const Engine & engine) :
-	Engine::Task(engine, 64)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-void RenderSystemNamespace::RenderTask::execute() const
-{
-	m_engine.getSystem<WindowSystem>()->render();
 }
 
 // ============================================================================

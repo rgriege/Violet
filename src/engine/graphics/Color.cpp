@@ -192,7 +192,7 @@ float ColorNamespace::convert(const uint8 value)
 
 uint8 ColorNamespace::convert(const float value)
 {
-	return static_cast<uint8>((value + 0.5f) * 255);
+	return static_cast<uint8>(value * 255);
 }
 
 // ============================================================================

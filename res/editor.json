@@ -92,6 +92,146 @@
           }
         },
         "chld": {}
+      },
+      "ntty": {
+        "ref": false,
+        "cpnt": {
+          "tsfm": {
+            "vec": {
+              "x": -150,
+              "y": 0
+            }
+          },
+          "rndr": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -10,
+                "y": -10
+              },
+              "vec": {
+                "x": 10,
+                "y": -10
+              },
+              "vec": {
+                "x": 10,
+                "y": 10
+              },
+              "vec": {
+                "x": -10,
+                "y": 10
+              }
+            },
+            "color": "0xF0EDEEFF",
+            "shader": "poly"
+          }
+        },
+        "chld": {}
+      },
+      "ntty": {
+        "ref": false,
+        "cpnt": {
+          "tsfm": {
+            "vec": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "rndr": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -10,
+                "y": -10
+              },
+              "vec": {
+                "x": 10,
+                "y": -10
+              },
+              "vec": {
+                "x": 10,
+                "y": 10
+              },
+              "vec": {
+                "x": -10,
+                "y": 10
+              }
+            },
+            "color": "0xF0EDEEFF",
+            "shader": "poly"
+          }
+        },
+        "chld": {}
+      },
+      "ntty": {
+        "ref": false,
+        "cpnt": {
+          "tsfm": {
+            "vec": {
+              "x": 150,
+              "y": 0
+            }
+          },
+          "rndr": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -10,
+                "y": -10
+              },
+              "vec": {
+                "x": 10,
+                "y": -10
+              },
+              "vec": {
+                "x": 10,
+                "y": 10
+              },
+              "vec": {
+                "x": -10,
+                "y": 10
+              }
+            },
+            "color": "0xF0EDEEFF",
+            "shader": "poly"
+          }
+        },
+        "chld": {}
+      },
+      "ntty": {
+        "ref": false,
+        "cpnt": {
+          "tsfm": {
+            "vec": {
+              "x": 300,
+              "y": 0
+            }
+          },
+          "rndr": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -10,
+                "y": -10
+              },
+              "vec": {
+                "x": 10,
+                "y": -10
+              },
+              "vec": {
+                "x": 10,
+                "y": 10
+              },
+              "vec": {
+                "x": -10,
+                "y": 10
+              }
+            },
+            "color": "0xF0EDEEFF",
+            "shader": "poly"
+          }
+        },
+        "chld": {}
       }
     }
   },
