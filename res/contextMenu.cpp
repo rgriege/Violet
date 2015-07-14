@@ -30,7 +30,7 @@ public:
         auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
         if (deserializer != nullptr && *deserializer)
         {
-            Entity & menu = m_engine.getCurrentScene().createEntity(*deserializer);
+            Entity & menu = m_engine.getCurrentScene().createEntity(m_engine.getCurrentScene().getRoot(), *deserializer);
             auto & transformComponent = menu.getComponent<TransformComponent>();
             if (transformComponent != nullptr)
                 transformComponent->m_position = m_position;

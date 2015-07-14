@@ -1,40 +1,43 @@
 {
   "ntty": {
     "ref": false,
-    "tsfm": {
-      "vec": {
-        "x": 0,
-        "y": 0
-      }
-    },
-    "rndr": {
-      "poly": {
-        "n": 4,
+    "cpnt": {
+      "tsfm": {
         "vec": {
           "x": 0,
           "y": 0
-        },
-        "vec": {
-          "x": 120,
-          "y": 0
-        },
-        "vec": {
-          "x": 120,
-          "y": 30
-        },
-        "vec": {
-          "x": 0,
-          "y": 30
         }
       },
-      "color": "0xFF0000FF",
-      "shader": "poly"
+      "rndr": {
+        "poly": {
+          "n": 4,
+          "vec": {
+            "x": 0,
+            "y": 0
+          },
+          "vec": {
+            "x": 120,
+            "y": 0
+          },
+          "vec": {
+            "x": 120,
+            "y": 30
+          },
+          "vec": {
+            "x": 0,
+            "y": 30
+          }
+        },
+        "color": "0xFF0000FF",
+        "shader": "poly"
+      },
+      "text": {
+        "str": "Do nothing!",
+        "font": "Vera.ttf",
+        "size": 18,
+        "shader": "text"
+      }
     },
-    "text": {
-      "str": "Do nothing!",
-      "font": "Vera.ttf",
-      "size": 18,
-      "shader": "text"
-    }
+    "chld": {}
   }
 }
