@@ -3,11 +3,13 @@
 
 #include "engine/math/Vec2.h"
 #include "engine/input/InputResult.h"
+#include "engine/script/ScriptMethod.h"
 #include "engine/system/System.h"
 #include "engine/window/MouseButton.h"
 
 namespace Violet
 {
+	class Entity;
 	class SystemFactory;
 
 	class VIOLET_API InputSystem : public System
@@ -43,6 +45,13 @@ namespace Violet
 
 		InputSystem();
 	};
+
+	DEFINE_METHOD(KeyDownMethod, void(const Entity &, const Engine &, unsigned char));
+	DEFINE_METHOD(KeyUpMethod, void(const Entity &, const Engine &, unsigned char));
+	DEFINE_METHOD(MouseDownMethod, InputResult(const Entity &, const Engine &, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseUpMethod, InputResult(const Entity &, const Engine &, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseInMethod, void(const Entity &, const Engine &));
+	DEFINE_METHOD(MouseOutMethod, void(const Entity &, const Engine &));
 }
 
 #endif

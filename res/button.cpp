@@ -1,9 +1,12 @@
 #include "engine/Engine.h"
-#include "engine/script/component/CppScriptComponent.h"
+#include "engine/input/system/InputSystem.h"
 #include "engine/graphics/Color.h"
 #include "engine/graphics/component/RenderComponent.h"
+#include "engine/script/cpp/CppScriptComponent.h"
+#include "engine/update/system/UpdateSystem.h"
 
 #include <algorithm>
+#include <functional>
 
 using namespace Violet;
 
@@ -40,26 +43,44 @@ private:
     const Color m_color;
 };
 
-extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator)
+void onMouseIn(const Entity & entity, const Engine & engine, Mem * mem);
+
+void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem);
+
+void update(const Entity & entity, const Engine & engine, float dt, Mem * mem);
+
+extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
 {
     Mem * mem = allocator.allocate<Mem>();
     mem->opacity = 0xCC;
     mem->disappearing = false;
+
+    using namespace std::placeholders;
+    MouseInMethod::assign(entity, std::bind(onMouseIn, _1, _2, mem));
+    MouseOutMethod::assign(entity, std::bind(onMouseOut, _1, _2, mem));
+    UpdateMethod::assign(entity, std::bind(update, _1, _2, _3, mem));
 }
 
-extern "C" __declspec(dllexport) void onMouseIn(const Entity & entity, const Engine & engine, Mem * mem)
+extern "C" __declspec(dllexport) void clean(const Entity & entity)
+{
+    MouseInMethod::remove(entity);
+    MouseOutMethod::remove(entity);
+    UpdateMethod::remove(entity);
+}
+
+void onMouseIn(const Entity & entity, const Engine & engine, Mem * mem)
 {
     mem->opacity = 0xCC;
     mem->disappearing = false;
 }
 
-extern "C" __declspec(dllexport) void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem)
+void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem)
 {
     mem->opacity = 0x33;
     mem->disappearing = true;
 }
 
-extern "C" __declspec(dllexport) void update(const Entity & entity, const Engine & engine, Mem * mem)
+void update(const Entity & entity, const Engine & engine, const float dt, Mem * mem)
 {
     auto & renderComponent = entity.getComponent<RenderComponent>();
     if (renderComponent != nullptr)

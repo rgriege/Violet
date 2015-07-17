@@ -67,8 +67,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\Libraries\jsoncpp\lib\Debug;E:\Libraries\SDL2\VisualC\SDL\Win32\Debug;E:\Libraries\freetype-2.5.2\objs\win32\vc2010;E:\Libraries\glew\lib\Release\Win32;E:\Libraries\freeglut\lib\x86\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>lib_json.lib;OpenGL32.lib;SDL2.lib;freetype252_D.lib;glew32.lib;freeglut.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\Libraries\jsoncpp\lib\Debug;E:\Libraries\SDL2\VisualC\SDL\Win32\Debug;E:\Libraries\freetype-2.5.2\objs\win32\vc2010;E:\Libraries\glew\lib\Release\Win32;E:\Libraries\freeglut\lib\x86\Debug;E:\Libraries\lua-5.2.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lib_json.lib;OpenGL32.lib;SDL2.lib;freetype252_D.lib;glew32.lib;freeglut.lib;lua_d.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -123,8 +123,9 @@
     <ClInclude Include="..\..\..\src\engine\physics\system\PhysicsSystem.h" />
     <ClInclude Include="..\..\..\src\engine\scene\Scene.h" />
     <ClInclude Include="..\..\..\src\engine\scene\SceneUtilities.h" />
-    <ClInclude Include="..\..\..\src\engine\script\component\CppScriptComponent.h" />
-    <ClInclude Include="..\..\..\src\engine\script\ScriptUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\script\cpp\CppScriptComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\script\lua\LuaScriptComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\script\ScriptMethod.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\binary\BinarySerializer.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\Deserializer.h" />
@@ -192,7 +193,8 @@
     <ClCompile Include="..\..\..\src\engine\physics\system\PhysicsSystem.cpp" />
     <ClCompile Include="..\..\..\src\engine\scene\Scene.cpp" />
     <ClCompile Include="..\..\..\src\engine\scene\SceneUtilities.cpp" />
-    <ClCompile Include="..\..\..\src\engine\script\component\CppScriptComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\lua\LuaScriptComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinarySerializer.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.cpp" />
@@ -236,8 +238,7 @@
     <None Include="..\..\..\src\engine\Engine.inl" />
     <None Include="..\..\..\src\engine\entity\Entity.inl" />
     <None Include="..\..\..\src\engine\scene\Scene.inl" />
-    <None Include="..\..\..\src\engine\script\component\CppScriptComponent.inl" />
-    <None Include="..\..\..\src\engine\script\ScriptUtilities.inl" />
+    <None Include="..\..\..\src\engine\script\cpp\CppScriptComponent.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileSerializer.inl" />

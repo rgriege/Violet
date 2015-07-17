@@ -8,7 +8,6 @@
 #include "engine/input/component/MouseInputComponent.h"
 #include "engine/math/Matrix3.h"
 #include "engine/scene/SceneUtilities.h"
-#include "engine/script/ScriptUtilities.h"
 #include "engine/system/SystemFactory.h"
 #include "engine/transform/component/TransformComponent.h"
 #include "engine/window/WindowSystem.h"
@@ -164,12 +163,15 @@ void InputSystemNamespace::ProcessEventsTask::execute() const
 void InputSystemNamespace::processEvent(const Entity & entity, const WindowSystem::KeyEvent & event, const WindowSystem::EventType type, const Engine & engine)
 {
 	for (auto const & child : entity.getChildren())
-		processEvent(entity, event, type, engine);
+		processEvent(child, event, type, engine);
 
-	if (entity.hasComponents<KeyInputComponent, CppScriptComponent>())
+	if (entity.hasComponents<KeyInputComponent>())
 	{
-		const CppScriptComponent & scriptComponent = *entity.getComponent<CppScriptComponent>();
-		ScriptUtilities::run<void>(scriptComponent, type == WindowSystem::ET_KeyDown ? "onKeyDown" : "onKeyUp", entity, engine, event.code);
+		if (type == WindowSystem::ET_KeyDown)
+		{
+			unsigned char code = event.code;
+			KeyDownMethod::run(entity, entity, engine, std::move(code));
+		}
 	}
 }
 
@@ -195,9 +197,10 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 				if (processEvent(child, event, type, localToWorld, engine) == InputResult::Block)
 					return InputResult::Block;
 
-			auto const & scriptComponent = entity.getComponent<CppScriptComponent>();
-			if (scriptComponent != nullptr)
-				return ScriptUtilities::run<InputResult>(*scriptComponent, type == WindowSystem::ET_MouseDown ? "onMouseDown" : "onMouseUp", entity, engine, event);
+			if (type == WindowSystem::ET_MouseDown)
+				MouseDownMethod::run(entity, entity, engine, event);
+			else
+				MouseUpMethod::run(entity, entity, engine, event);
 		}
 	}
 
@@ -231,9 +234,10 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 
 			if (contained ^ contains)
 			{
-				auto const & scriptComponent = entity.getComponent<CppScriptComponent>();
-				if (scriptComponent != nullptr)
-					return ScriptUtilities::run<InputResult>(*scriptComponent, contains ? "onMouseIn" : "onMouseOut", entity, engine);
+				if (contains)
+					MouseInMethod::run(entity, entity, engine);
+				else
+					MouseOutMethod::run(entity, entity, engine);
 			}
 		}
 	}

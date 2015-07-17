@@ -76,9 +76,6 @@
     <Filter Include="physics\system">
       <UniqueIdentifier>{f8b90d0b-cd70-4f5f-b805-3da2ce45b8c9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="script\component">
-      <UniqueIdentifier>{3e4d76e7-2dca-45a5-b6ae-8f0dba4d30eb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="serialization\binary">
       <UniqueIdentifier>{30327e16-e7fd-44bb-a03a-23ba393fe2cb}</UniqueIdentifier>
     </Filter>
@@ -114,6 +111,12 @@
     </Filter>
     <Filter Include="utility\handle">
       <UniqueIdentifier>{308526e8-6260-43a3-92ee-1d259babd847}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script\lua">
+      <UniqueIdentifier>{8252673d-c9e8-4213-b883-81428f6cbf43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script\cpp">
+      <UniqueIdentifier>{3e4d76e7-2dca-45a5-b6ae-8f0dba4d30eb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -161,12 +164,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\physics\system\PhysicsSystem.h">
       <Filter>physics\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\ScriptUtilities.h">
-      <Filter>script</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\component\CppScriptComponent.h">
-      <Filter>script\component</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\math\Circle.h">
       <Filter>math</Filter>
@@ -347,6 +344,15 @@
     <ClInclude Include="..\..\..\src\engine\utility\handle\HandleManager.h">
       <Filter>utility\handle</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\lua\LuaScriptComponent.h">
+      <Filter>script\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\cpp\CppScriptComponent.h">
+      <Filter>script\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\ScriptMethod.h">
+      <Filter>script</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp">
@@ -390,9 +396,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\physics\system\PhysicsSystem.cpp">
       <Filter>physics\system</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\script\component\CppScriptComponent.cpp">
-      <Filter>script\component</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\math\Circle.cpp">
       <Filter>math</Filter>
@@ -489,6 +492,12 @@
       <Filter>utility\handle</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\utility\Profiler.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\lua\LuaScriptComponent.cpp">
+      <Filter>script\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp">
+      <Filter>script\cpp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\engine\utility\unique_val.ipp">
@@ -496,12 +505,6 @@
     </None>
     <None Include="..\..\..\src\engine\scene\Scene.inl">
       <Filter>scene</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\script\ScriptUtilities.inl">
-      <Filter>script</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\script\component\CppScriptComponent.inl">
-      <Filter>script\component</Filter>
     </None>
     <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl">
       <Filter>serialization</Filter>
@@ -524,6 +527,9 @@
     </None>
     <None Include="..\..\..\src\engine\component\Component.inl">
       <Filter>component</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\script\cpp\CppScriptComponent.inl">
+      <Filter>script\cpp</Filter>
     </None>
   </ItemGroup>
 </Project>

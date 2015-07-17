@@ -4,7 +4,8 @@
 #include "engine/input/component/MouseInputComponent.h"
 #include "engine/input/system/InputSystem.h"
 #include "engine/physics/system/PhysicsSystem.h"
-#include "engine/script/component/CppScriptComponent.h"
+#include "engine/script/cpp/CppScriptComponent.h"
+#include "engine/script/lua/LuaScriptComponent.h"
 #include "engine/serialization/file/FileDeserializerFactory.h"
 #include "engine/serialization/json/JsonDeserializer.h"
 #include "engine/system/SystemFactory.h"
@@ -29,6 +30,7 @@ Violet::SystemFactory setup()
 	Violet::Scene::installComponent<Violet::KeyInputComponent>();
 	Violet::Scene::installComponent<Violet::PhysicsComponent>();
 	Violet::Scene::installComponent<Violet::CppScriptComponent>();
+	Violet::Scene::installComponent<Violet::LuaScriptComponent>();
 	Violet::Scene::installComponent<Violet::UpdateComponent>();
 	Violet::Scene::installComponent<MapComponent>();
 	Violet::Scene::installComponent<PathComponent>();

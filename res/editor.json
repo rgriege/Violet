@@ -53,7 +53,7 @@
         }
       },
       "updt": {},
-      "scpt": {
+      "cpps": {
         "file": "button.dll"
       }
     },
@@ -236,8 +236,7 @@
     }
   },
   "ntty": {
-    "ref": true,
-    "id": 2,
+    "ref": false,
     "cpnt": {
       "tsfm": {
         "vec": {
@@ -266,8 +265,8 @@
           }
         }
       },
-      "scpt": {
-        "file": "contextMenu.dll"
+      "luas": {
+        "file": "contextMenu.lua"
       }
     },
     "chld": {}

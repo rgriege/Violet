@@ -1,6 +1,6 @@
 // ============================================================================
 
-#include "engine/script/component/CppScriptComponent.h"
+#include "engine/script/cpp/CppScriptComponent.h"
 
 #include "engine/serialization/Deserializer.h"
 #include "engine/serialization/Serializer.h"
@@ -17,7 +17,8 @@ using namespace Violet;
 
 namespace CppScriptComponentNamespace
 {
-	typedef void(*Initializer)(CppScriptComponent::Allocator & allocator);
+	typedef void(*Initializer)(CppScriptComponent::Allocator & allocator, const Entity & entity);
+	typedef void(*Cleaner)(const Entity & entity);
 
 	const char * const ms_extension = "dll";
 	const char * const ms_debugExtension = "pdb";
@@ -81,7 +82,7 @@ void * CppScriptComponent::Allocator::allocate(const size_t size)
 
 Tag CppScriptComponent::getTag()
 {
-	return Tag('s', 'c', 'p', 't');
+	return Tag('c', 'p', 'p', 's');
 }
 
 // ============================================================================
@@ -103,15 +104,6 @@ CppScriptComponent::CppScriptComponent(CppScriptComponent && other) :
 {
 	other.m_lib = nullptr;
 }
-
-// ----------------------------------------------------------------------------
-
-//CppScriptComponent & CppScriptComponent::operator=(CppScriptComponent && other)
-//{
-//	std::swap(m_lib, other.m_lib);
-//	std::swap(m_allocator, other.m_allocator);
-//	return *this;
-//}
 
 // ----------------------------------------------------------------------------
 
@@ -206,7 +198,7 @@ void CppScriptComponent::load(const char * filename)
 	{
 		auto init = (Initializer)getMethodPtr("init");
 		if (init != nullptr)
-			init(m_allocator);
+			init(m_allocator, getOwner());
 	}
 }
 
@@ -214,6 +206,9 @@ void CppScriptComponent::load(const char * filename)
 
 void CppScriptComponent::unload()
 {
+	auto clean = (Cleaner)getMethodPtr("clean");
+	if (clean != nullptr)
+		clean(getOwner());
 	FreeLibrary(m_lib);
 }
 

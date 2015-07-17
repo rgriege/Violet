@@ -1,11 +1,11 @@
 #include "engine/Engine.h"
-#include "engine/script/component/CppScriptComponent.h"
-#include "engine/serialization/file/FileDeserializerFactory.h"
-#include "engine/transform/component/TransformComponent.h"
 #include "engine/input/InputResult.h"
 #include "engine/input/system/InputSystem.h"
+#include "engine/script/cpp/CppScriptComponent.h"
+#include "engine/serialization/file/FileDeserializerFactory.h"
+#include "engine/transform/component/TransformComponent.h"
 
-#include <vector>
+#include <functional>
 
 using namespace Violet;
 
@@ -65,17 +65,27 @@ private:
     Mem & m_mem;
 };
 
+InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem * mem);
+
 bool activeMenu(Mem & mem);
 void createMenu(Mem & mem, const Engine & engine, const Vec2f & position);
 void removeMenu(Mem & mem, const Engine & engine);
 
-extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator)
+extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
 {
     Mem * mem = allocator.allocate<Mem>();
     mem->menu = Handle::ms_invalid;
+
+    using namespace std::placeholders;
+    MouseDownMethod::assign(entity, std::bind(onMouseDown, _1, _2, _3, mem));
 }
 
-extern "C" __declspec(dllexport) InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem * mem)
+extern "C" __declspec(dllexport) void clean(const Entity & entity)
+{
+    MouseDownMethod::remove(entity);
+}
+
+InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem * mem)
 {
     if (event.button == MB_Right)
     {

@@ -2,6 +2,7 @@
 #define VIOLET_UpdateSystem_H
 
 #include "engine/system/System.h"
+#include "engine/script/ScriptMethod.h"
 
 #include <memory>
 
@@ -29,6 +30,8 @@ namespace Violet
 
 		UpdateSystem();
 	};
+
+	DEFINE_METHOD(UpdateMethod, void(const Entity &, const Engine &, float));
 }
 
 #endif

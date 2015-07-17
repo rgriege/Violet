@@ -53,7 +53,6 @@ namespace Violet
 
 		CppScriptComponent(const Entity & owner, Deserializer & deserializer);
 		CppScriptComponent(CppScriptComponent && other);
-		//CppScriptComponent & operator=(CppScriptComponent && other);
 		~CppScriptComponent();
 
 		std::string getFilename() const;
@@ -82,6 +81,6 @@ namespace Violet
 	Serializer & operator<<(Serializer & serializer, const CppScriptComponent & component);
 }
 
-#include "CppScriptComponent.inl"
+#include "engine/script/cpp/CppScriptComponent.inl"
 
 #endif
