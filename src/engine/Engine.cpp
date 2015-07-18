@@ -64,7 +64,7 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 	if (succeeded)
 	{
 		auto optionsSegment = deserializer.enterSegment("opts");
-		Scene scene = Scene::create(optionsSegment->getString("firstScene"));
+		std::unique_ptr<Scene> scene = Scene::create(optionsSegment->getString("firstScene"));
 		const uint32 workerCount = optionsSegment->getUint("workerCount");
 
 		std::unique_ptr<Engine> engine(new Engine(std::move(systems), std::move(scene), workerCount));
@@ -129,14 +129,14 @@ void Engine::switchScene(const char * filename)
 
 Scene & Engine::getCurrentScene()
 {
-	return m_scene;
+	return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
 
 const Scene & Engine::getCurrentScene() const
 {
-	return m_scene;
+	return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
@@ -155,7 +155,7 @@ void Engine::addTask(std::unique_ptr<Task> && task) const
 
 // ============================================================================
 
-Engine::Engine(std::vector<std::unique_ptr<System>> && systems, Scene && scene, const uint32 workerCount) :
+Engine::Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && scene, const uint32 workerCount) :
 	m_nextSceneFileName(),
 	m_systems(std::move(systems)),
 	m_scene(std::move(scene)),

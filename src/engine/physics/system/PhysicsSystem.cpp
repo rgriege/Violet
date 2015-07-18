@@ -184,27 +184,30 @@ PhysicsSystemNamespace::MoveTask::MoveTask(const Engine & engine, const Handle h
 
 void PhysicsSystemNamespace::MoveTask::execute() const
 {
-	Entity & entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
-	auto & transformComponent = *entity.getComponent<TransformComponent>();
-	auto & physicsComponent = *entity.getComponent<PhysicsComponent>();
-	if (!m_gravity.isZero() || m_drag != 0)
-		physicsComponent.m_force += m_gravity - physicsComponent.m_velocity * m_drag;
-
-	float const speed = physicsComponent.m_velocity.magSquared();
-	if (speed > ms_minimumSpeed || !physicsComponent.m_force.isZero())
+	Entity * entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
+	if (entity != nullptr)
 	{
-		Vec2f const acceleration = physicsComponent.m_force / physicsComponent.m_mass;
-		transformComponent.m_position += acceleration * m_dt * m_dt / 2.f + physicsComponent.m_velocity * m_dt;
-		physicsComponent.m_velocity += acceleration * m_dt;
-		physicsComponent.m_force.zero();
-	}
-	else if (speed != 0)
-		physicsComponent.m_velocity.zero();
+		auto & transformComponent = *entity->getComponent<TransformComponent>();
+		auto & physicsComponent = *entity->getComponent<PhysicsComponent>();
+		if (!m_gravity.isZero() || m_drag != 0)
+			physicsComponent.m_force += m_gravity - physicsComponent.m_velocity * m_drag;
 
-	float const angularAcceleration = physicsComponent.m_torque / physicsComponent.m_momentOfInertia;
-	transformComponent.m_rotation += angularAcceleration * m_dt * m_dt + physicsComponent.m_angularVelocity * m_dt;
-	physicsComponent.m_angularVelocity += angularAcceleration * m_dt;
-	physicsComponent.m_torque = 0;
+		float const speed = physicsComponent.m_velocity.magSquared();
+		if (speed > ms_minimumSpeed || !physicsComponent.m_force.isZero())
+		{
+			Vec2f const acceleration = physicsComponent.m_force / physicsComponent.m_mass;
+			transformComponent.m_position += acceleration * m_dt * m_dt / 2.f + physicsComponent.m_velocity * m_dt;
+			physicsComponent.m_velocity += acceleration * m_dt;
+			physicsComponent.m_force.zero();
+		}
+		else if (speed != 0)
+			physicsComponent.m_velocity.zero();
+
+		float const angularAcceleration = physicsComponent.m_torque / physicsComponent.m_momentOfInertia;
+		transformComponent.m_rotation += angularAcceleration * m_dt * m_dt + physicsComponent.m_angularVelocity * m_dt;
+		physicsComponent.m_angularVelocity += angularAcceleration * m_dt;
+		physicsComponent.m_torque = 0;
+	}
 }
 
 // ============================================================================
@@ -221,10 +224,10 @@ PhysicsSystemNamespace::CollideTask::CollideTask(const Engine & engine, const Ha
 
 void PhysicsSystemNamespace::CollideTask::execute() const
 {
-	Entity & entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
-	if (entity.isValid())
+	Entity * entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
+	if (entity != nullptr)
 	{
-		auto & physicsComponent = entity.getComponent<PhysicsComponent>();
+		auto & physicsComponent = entity->getComponent<PhysicsComponent>();
 		if (physicsComponent != nullptr)
 		{
 			physicsComponent->m_angularVelocity += m_angularImpulse;

@@ -131,7 +131,7 @@ void InputSystemNamespace::ProcessEventsTask::execute() const
 		case WindowSystem::ET_KeyDown:
 		case WindowSystem::ET_KeyUp:
 			for (auto const & child : m_engine.getCurrentScene().getRoot().getChildren())
-				processEvent(child, event.key, event.type, m_engine);
+				processEvent(*child, event.key, event.type, m_engine);
 			break;
 
 		case WindowSystem::ET_MouseDown:
@@ -139,7 +139,7 @@ void InputSystemNamespace::ProcessEventsTask::execute() const
 		{
 			InputSystem::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button };
 			for (auto const & child : m_engine.getCurrentScene().getRoot().getChildren())
-				processEvent(child, worldEvent, event.type, Matrix3f::Identity, m_engine);
+				processEvent(*child, worldEvent, event.type, Matrix3f::Identity, m_engine);
 		}
 		break;
 
@@ -147,7 +147,7 @@ void InputSystemNamespace::ProcessEventsTask::execute() const
 		{
 			InputSystem::MouseMotionEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.motion.x - event.motion.xrel, event.motion.y - event.motion.yrel), computeWorldCoordinates(windowDimensions, event.motion.x, event.motion.y) };
 			for (auto const & child : m_engine.getCurrentScene().getRoot().getChildren())
-				processEvent(child, worldEvent, Matrix3f::Identity, m_engine);
+				processEvent(*child, worldEvent, Matrix3f::Identity, m_engine);
 		}
 		break;
 
@@ -163,7 +163,7 @@ void InputSystemNamespace::ProcessEventsTask::execute() const
 void InputSystemNamespace::processEvent(const Entity & entity, const WindowSystem::KeyEvent & event, const WindowSystem::EventType type, const Engine & engine)
 {
 	for (auto const & child : entity.getChildren())
-		processEvent(child, event, type, engine);
+		processEvent(*child, event, type, engine);
 
 	if (entity.hasComponents<KeyInputComponent>())
 	{
@@ -194,7 +194,7 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 		if (mouseComponent.m_mesh.getBoundingBox().transform(localToWorld).contains(event.position))
 		{
 			for (auto const & child : entity.getChildren())
-				if (processEvent(child, event, type, localToWorld, engine) == InputResult::Block)
+				if (processEvent(*child, event, type, localToWorld, engine) == InputResult::Block)
 					return InputResult::Block;
 
 			if (type == WindowSystem::ET_MouseDown)
@@ -229,7 +229,7 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 		if (contained || contains)
 		{
 			for (auto const & child : entity.getChildren())
-				if (processEvent(child, event, localToWorld, engine) == InputResult::Block)
+				if (processEvent(*child, event, localToWorld, engine) == InputResult::Block)
 					return InputResult::Block;
 
 			if (contained ^ contains)

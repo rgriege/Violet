@@ -1,74 +1,66 @@
 // ============================================================================
 
-#include "engine/entity/Entity.h"
 #include "engine/component/Component.h"
+#include "engine/entity/Entity.h"
 #include "engine/scene/Scene.h"
+#include "engine/serialization/Deserializer.h"
 
 using namespace Violet;
 
 // ============================================================================
 
-const Entity Entity::ms_invalid(Handle::ms_invalid);
+Factory<std::string, void(Entity &, Deserializer &)> Entity::ms_componentFactory;
 
 // ============================================================================
 
-Entity::Entity(Handle handle) :
-	m_handle(handle),
+Entity::Entity(Scene & scene) :
+	m_components(),
+	m_children(),
+	m_componentFlags(),
+	m_scene(scene),
+	m_handle(scene.createHandle()),
+	m_parent()
+{
+	scene.index(*this);
+}
+
+// ----------------------------------------------------------------------------
+
+
+Entity::Entity(Scene & scene, Deserializer & deserializer) :
 	m_components(),
 	m_children(),
 	m_componentFlags(0),
-	m_scene(nullptr),
-	m_parent(nullptr)
+	m_scene(scene),
+	m_handle(),
+	m_parent()
 {
-}
-
-// ----------------------------------------------------------------------------
-
-Entity::Entity(Entity && other) :
-	m_handle(other.m_handle),
-	m_components(std::move(other.m_components)),
-	m_children(std::move(other.m_children)),
-	m_componentFlags(other.m_componentFlags),
-	m_scene(other.m_scene)
-{
-	other.m_handle = Handle::ms_invalid;
-	other.m_componentFlags = 0;
-
-	if (inScene())
+	auto entitySegment = deserializer.enterSegment("ntty");
+	const bool referenced = entitySegment->getBoolean("ref");
+	if (referenced)
+		m_handle = scene.createHandle(Handle(entitySegment->getUint("id"), 0));
+	else
+		m_handle = scene.createHandle();
+	scene.index(*this);
+	auto componentsSegment = entitySegment->enterSegment("cpnt");
+	while (*componentsSegment)
 	{
-		m_scene->reindex(*this);
-		other.m_scene = nullptr;
-	}
-}
-
-// ----------------------------------------------------------------------------
-
-Entity & Entity::operator=(Entity && other)
-{
-	m_handle = other.m_handle;
-	m_components = std::move(other.m_components);
-	m_children = std::move(other.m_children);
-	m_componentFlags = other.m_componentFlags;
-	m_scene = other.m_scene;
-
-	other.m_handle = Handle::ms_invalid;
-	other.m_componentFlags = 0;
-
-	if (inScene())
-	{
-		m_scene->reindex(*this);
-		other.m_scene = nullptr;
+		const char * const label = componentsSegment->nextLabel();
+		auto componentSegment = componentsSegment->enterSegment(label);
+		ms_componentFactory.create(label, *this, *componentSegment);
 	}
 
-	return *this;
+	auto childrenSegment = entitySegment->enterSegment("chld");
+	while (*childrenSegment)
+		addChild(std::make_unique<Entity>(scene, *childrenSegment));
 }
 
 // ----------------------------------------------------------------------------
 
 Entity::~Entity()
 {
-	if (inScene())
-		m_scene->deindex(m_handle);
+	m_components.clear();
+	m_scene.deindex(m_handle);
 }
 
 // ----------------------------------------------------------------------------
@@ -80,75 +72,59 @@ Handle Entity::getHandle() const
 
 // ----------------------------------------------------------------------------
 
-bool Entity::isValid() const
+Entity & Entity::addChild(std::unique_ptr<Entity> && child)
 {
-	return m_handle.isValid();
-}
-
-// ----------------------------------------------------------------------------
-
-Entity & Entity::addChild(Entity && child)
-{
-	const bool resized = m_children.capacity() == m_children.size();
 	m_children.emplace_back(std::move(child));
-	Entity & newChild = m_children.back();
+	Entity & newChild = *m_children.back();
 	newChild.m_parent = this;
-
-	if (inScene())
-	{
-		if (resized)
-		{
-			for (uint32 i = 0, end = m_children.size() - 1; i < end; ++i)
-				m_scene->reindex(m_children[i]);
-		}
-		newChild.addToScene(*m_scene);
-	}
-
 	return newChild;
 }
 
 // ----------------------------------------------------------------------------
 
-std::vector<Entity> & Entity::getChildren()
+Entity & Entity::addChild(Deserializer & deserializer)
+{
+	return addChild(std::make_unique<Entity>(m_scene, deserializer));
+}
+
+// ----------------------------------------------------------------------------
+
+std::vector<std::unique_ptr<Entity>> & Entity::getChildren()
 {
 	return m_children;
 }
 
 // ----------------------------------------------------------------------------
 
-const std::vector<Entity> & Entity::getChildren() const
+const std::vector<std::unique_ptr<Entity>> & Entity::getChildren() const
 {
 	return m_children;
 }
 
 // ----------------------------------------------------------------------------
 
-Entity & Entity::getChild(const Handle handle)
+Entity * Entity::getChild(const Handle handle)
 {
-	static Entity s_empty(Handle::ms_invalid);
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const Entity & child) { return child.getHandle() == handle; });
-	return it != m_children.end() ? *it : s_empty;
+	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const std::unique_ptr<Entity> & child) { return child->getHandle() == handle; });
+	return it != m_children.end() ? it->get() : nullptr;
 }
 
 // ----------------------------------------------------------------------------
 
-const Entity & Entity::getChild(const Handle handle) const
+const Entity * Entity::getChild(const Handle handle) const
 {
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const Entity & child) { return child.getHandle() == handle; });
-	return it != m_children.end() ? *it : Entity::ms_invalid;
+	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const std::unique_ptr<Entity> & child) { return child->getHandle() == handle; });
+	return it != m_children.end() ? it->get() : nullptr;
 }
 
 // ----------------------------------------------------------------------------
 
 bool Entity::removeChild(const Handle handle)
 {
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const Entity & child) { return child.getHandle() == handle; });
+	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const std::unique_ptr<Entity> & child) { return child->getHandle() == handle; });
 	const bool found = it != m_children.end();
 	if (found)
-	{
-		it->m_parent = nullptr;
 		m_children.erase(it);
-	}
 	return found;
 }
 
@@ -157,35 +133,6 @@ bool Entity::removeChild(const Handle handle)
 uint32 Entity::getComponentFlags() const
 {
 	return m_componentFlags;
-}
-
-// ----------------------------------------------------------------------------
-
-void Entity::addToScene(Scene & scene)
-{
-	scene.index(*this);
-	m_scene = &scene;
-
-	for (auto & child : m_children)
-		child.addToScene(scene);
-}
-
-// ----------------------------------------------------------------------------
-
-bool Entity::inScene() const
-{
-	return m_scene != nullptr;
-}
-
-// ----------------------------------------------------------------------------
-
-void Entity::removeFromScene()
-{
-	m_scene->deindex(m_handle);
-	m_scene = nullptr;
-
-	for (auto & child : m_children)
-		child.removeFromScene();
 }
 
 // ----------------------------------------------------------------------------

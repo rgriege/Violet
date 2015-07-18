@@ -503,9 +503,6 @@
     <None Include="..\..\..\src\engine\utility\unique_val.ipp">
       <Filter>utility</Filter>
     </None>
-    <None Include="..\..\..\src\engine\scene\Scene.inl">
-      <Filter>scene</Filter>
-    </None>
     <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl">
       <Filter>serialization</Filter>
     </None>

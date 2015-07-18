@@ -1,24 +1,21 @@
 #ifndef VIOLET_Scene_H
 #define VIOLET_Scene_H
 
-#include "engine/entity/Entity.h"
-#include "engine/utility/Factory.h"
 #include "engine/utility/handle/HandleManager.h"
 
+#include <memory>
 #include <unordered_map>
 
 namespace Violet
 {
 	class Deserializer;
+	class Entity;
 
 	class VIOLET_API Scene
 	{
 	public:
 
-		template <typename ComponentType>
-		static void installComponent();
-
-		static Scene create(const char * filename);
+		static std::unique_ptr<Scene> create(const char * filename);
 
 	public:
 
@@ -26,28 +23,15 @@ namespace Violet
 		~Scene();
 
 		Scene(Scene && other);
-		Scene & operator=(Scene && other);
-
-		Entity & createEntity(Entity & parent);
-		Entity & createEntity(Entity & parent, Deserializer & deserializer);
 
 		Entity & getRoot();
 		const Entity & getRoot() const;
-		Entity & getEntity(Handle handle);
-		const Entity & getEntity(Handle handle) const;
+		Entity * getEntity(Handle handle);
+		const Entity * getEntity(Handle handle) const;
 
-		bool destroyEntity(Handle handle);
-
+		Handle createHandle(Handle desiredHandle = Handle::ms_invalid);
 		void index(Entity & entity);
-		void reindex(Entity & entity);
 		bool deindex(Handle handle);
-
-	private:
-
-		static Factory<std::string, void(Scene &, Entity &, Deserializer &)> ms_componentFactory;
-
-		template <typename ComponentType>
-		static void factoryCreateComponent(Scene & scene, Entity & entity, Deserializer & deserializer);
 
 	private:
 
@@ -56,9 +40,9 @@ namespace Violet
 
 	private:
 
-		Entity m_root;
 		std::unordered_map<Handle, std::reference_wrapper<Entity>> m_lookupMap;
 		HandleManager m_handleManager;
+		std::unique_ptr<Entity> m_root;
 	};
 }
 

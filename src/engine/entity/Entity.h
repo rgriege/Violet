@@ -3,6 +3,7 @@
 
 #include "engine/Defines.h"
 #include "engine/component/Component.h"
+#include "engine/utility/Factory.h"
 #include "engine/utility/handle/Handle.h"
 
 #include <vector>
@@ -10,29 +11,30 @@
 
 namespace Violet
 {
+	class Deserializer;
 	class Scene;
 
 	class VIOLET_API Entity
 	{
 	public:
 
-		static const Entity ms_invalid;
+		template <typename ComponentType>
+		static void installComponent();
 
 	public:
 
-		Entity(Handle handle);
-		Entity(Entity && other);
-		Entity & operator=(Entity && other);
+		Entity(Scene & scene);
+		Entity(Scene & scene, Deserializer & deserializer);
 		~Entity();
 
 		Handle getHandle() const;
-		bool isValid() const;
 
-		Entity & addChild(Entity && child);
-		std::vector<Entity> & getChildren();
-		const std::vector<Entity> & getChildren() const;
-		Entity & getChild(Handle handle);
-		const Entity & getChild(Handle handle) const;
+		Entity & addChild(std::unique_ptr<Entity> && child);
+		Entity & addChild(Deserializer & deserializer);
+		std::vector<std::unique_ptr<Entity>> & getChildren();
+		const std::vector<std::unique_ptr<Entity>> & getChildren() const;
+		Entity * getChild(Handle handle);
+		const Entity * getChild(Handle handle) const;
 		bool removeChild(Handle handle);
 
 		template <typename ComponentType>
@@ -49,11 +51,14 @@ namespace Violet
 		const std::unique_ptr<const ComponentType> & getComponent() const;
 		uint32 getComponentFlags() const;
 
-		void addToScene(Scene & scene);
-		bool inScene() const;
-		void removeFromScene();
-
 		Entity * getParent();
+
+	private:
+
+		static Factory<std::string, void(Entity &, Deserializer &)> ms_componentFactory;
+
+		template <typename ComponentType>
+		static void factoryCreateComponent(Entity & entity, Deserializer & deserializer);
 
 	private:
 
@@ -65,8 +70,8 @@ namespace Violet
 		Handle m_handle;
 		std::vector<std::unique_ptr<Component>> m_components;
 		uint32 m_componentFlags;
-		std::vector<Entity> m_children;
-		Scene * m_scene;
+		std::vector<std::unique_ptr<Entity>> m_children;
+		Scene & m_scene;
 		Entity * m_parent;
 	};
 }

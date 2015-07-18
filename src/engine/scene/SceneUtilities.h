@@ -46,7 +46,7 @@ namespace Violet
 			{
 			public:
 
-				SiblingIterator(const std::vector<Entity> & siblings);
+				SiblingIterator(const std::vector<std::unique_ptr<Entity>> & siblings);
 
 				const Entity & operator*() const;
 				SiblingIterator & operator++();
@@ -54,8 +54,8 @@ namespace Violet
 
 			private:
 
-				std::vector<Entity>::const_iterator m_pos;
-				std::vector<Entity>::const_iterator m_end;
+				std::vector<std::unique_ptr<Entity>>::const_iterator m_pos;
+				std::vector<std::unique_ptr<Entity>>::const_iterator m_end;
 			};
 
 		public:

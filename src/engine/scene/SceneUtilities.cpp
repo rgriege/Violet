@@ -2,6 +2,8 @@
 
 #include "engine/scene/SceneUtilities.h"
 
+#include "engine/entity/Entity.h"
+
 using namespace Violet;
 
 // ============================================================================
@@ -21,7 +23,7 @@ SceneUtilities::Processor::Filter::Filter(uint32 componentFlags) :
 
 // ============================================================================
 
-SceneUtilities::Processor::SiblingIterator::SiblingIterator(const std::vector<Entity> & siblings) :
+SceneUtilities::Processor::SiblingIterator::SiblingIterator(const std::vector<std::unique_ptr<Entity>> & siblings) :
 	m_pos(siblings.begin()),
 	m_end(siblings.end())
 {
@@ -31,7 +33,7 @@ SceneUtilities::Processor::SiblingIterator::SiblingIterator(const std::vector<En
 
 const Entity & SceneUtilities::Processor::SiblingIterator::operator*() const
 {
-	return *m_pos;
+	return **m_pos;
 }
 
 // ----------------------------------------------------------------------------

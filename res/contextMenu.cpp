@@ -30,7 +30,7 @@ public:
         auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
         if (deserializer != nullptr && *deserializer)
         {
-            Entity & menu = m_engine.getCurrentScene().createEntity(m_engine.getCurrentScene().getRoot(), *deserializer);
+            Entity & menu = m_engine.getCurrentScene().getRoot().addChild(*deserializer);
             auto & transformComponent = menu.getComponent<TransformComponent>();
             if (transformComponent != nullptr)
                 transformComponent->m_position = m_position;
@@ -56,7 +56,7 @@ public:
 
     virtual void execute() const override
     {
-        m_engine.getCurrentScene().destroyEntity(m_mem.menu);
+        m_engine.getCurrentScene().getRoot().removeChild(m_mem.menu);
         m_mem.menu = Handle::ms_invalid;
     }
 

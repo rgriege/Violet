@@ -45,7 +45,8 @@ namespace Violet
 
 		static void remove(const Entity & entity)
 		{
-			ms_delegates.erase(entity.getHandle());
+			if (ms_delegates.erase(entity.getHandle()) == 0)
+				std::cout << "no method bound for " << entity.getHandle().getId() << std::endl;
 		}
 
 	private:

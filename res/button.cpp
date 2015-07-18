@@ -28,10 +28,10 @@ public:
 
     virtual void execute() const override
     {
-        Entity & entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
-        if (entity.isValid())
+        Entity * entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
+        if (entity != nullptr)
         {
-            auto & renderComponent = entity.getComponent<RenderComponent>();
+            auto & renderComponent = entity->getComponent<RenderComponent>();
             if (renderComponent != nullptr)
                 renderComponent->m_color = m_color;
         }

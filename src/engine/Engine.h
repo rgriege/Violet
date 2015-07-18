@@ -56,7 +56,7 @@ namespace Violet
 
 	private:
 
-		Engine(std::vector<std::unique_ptr<System>> && systems, Scene && scene, uint32 workerCount);
+		Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && scene, uint32 workerCount);
 
 		Engine(const Engine &) = delete;
 		Engine & operator=(const Engine &) = delete;
@@ -65,7 +65,7 @@ namespace Violet
 
 		std::string m_nextSceneFileName;
 		std::vector<std::unique_ptr<System>> m_systems;
-		Scene m_scene;
+		std::unique_ptr<Scene> m_scene;
 		mutable TaskScheduler m_taskScheduler;
 		bool m_running;
 	};

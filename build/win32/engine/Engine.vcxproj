@@ -237,7 +237,6 @@
     <None Include="..\..\..\src\engine\component\Component.inl" />
     <None Include="..\..\..\src\engine\Engine.inl" />
     <None Include="..\..\..\src\engine\entity\Entity.inl" />
-    <None Include="..\..\..\src\engine\scene\Scene.inl" />
     <None Include="..\..\..\src\engine\script\cpp\CppScriptComponent.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.inl" />

@@ -44,14 +44,6 @@ Component::Component(Component && other) :
 
 // ----------------------------------------------------------------------------
 
-//Component & Component::operator=(Component && other)
-//{
-//	m_owner = other.m_owner;
-//	return *this;
-//}
-
-// ----------------------------------------------------------------------------
-
 const Entity & Component::getOwner() const
 {
 	return m_owner;

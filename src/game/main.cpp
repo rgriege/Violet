@@ -23,18 +23,18 @@
 
 Violet::SystemFactory setup()
 {
-	Violet::Scene::installComponent<Violet::TransformComponent>();
-	Violet::Scene::installComponent<Violet::RenderComponent>();
-	Violet::Scene::installComponent<Violet::TextComponent>();
-	Violet::Scene::installComponent<Violet::MouseInputComponent>();
-	Violet::Scene::installComponent<Violet::KeyInputComponent>();
-	Violet::Scene::installComponent<Violet::PhysicsComponent>();
-	Violet::Scene::installComponent<Violet::CppScriptComponent>();
-	Violet::Scene::installComponent<Violet::LuaScriptComponent>();
-	Violet::Scene::installComponent<Violet::UpdateComponent>();
-	Violet::Scene::installComponent<MapComponent>();
-	Violet::Scene::installComponent<PathComponent>();
-	Violet::Scene::installComponent<PathfindingComponent>();
+	Violet::Entity::installComponent<Violet::TransformComponent>();
+	Violet::Entity::installComponent<Violet::RenderComponent>();
+	Violet::Entity::installComponent<Violet::TextComponent>();
+	Violet::Entity::installComponent<Violet::MouseInputComponent>();
+	Violet::Entity::installComponent<Violet::KeyInputComponent>();
+	Violet::Entity::installComponent<Violet::PhysicsComponent>();
+	Violet::Entity::installComponent<Violet::CppScriptComponent>();
+	Violet::Entity::installComponent<Violet::LuaScriptComponent>();
+	Violet::Entity::installComponent<Violet::UpdateComponent>();
+	Violet::Entity::installComponent<MapComponent>();
+	Violet::Entity::installComponent<PathComponent>();
+	Violet::Entity::installComponent<PathfindingComponent>();
 
 	Violet::JsonDeserializer::install();
 

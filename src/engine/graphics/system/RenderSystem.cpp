@@ -104,7 +104,7 @@ void RenderSystem::update(float const dt, const Engine & engine)
 	viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 
 	for (auto const & child : engine.getCurrentScene().getRoot().getChildren())
-		process(child, viewMatrix, Matrix3f::Identity, 1.f);
+		process(*child, viewMatrix, Matrix3f::Identity, 1.f);
 	
 	glFlush();
 	engine.addTask(std::make_unique<RenderTask>(engine));
@@ -155,7 +155,7 @@ void RenderSystemNamespace::process(const Entity & entity, const Matrix3f & view
 
 		const Matrix3f localToWorld = parentToWorld * transform;
 		for (auto const & child : entity.getChildren())
-			process(child, view, localToWorld, newOpacity);
+			process(*child, view, localToWorld, newOpacity);
 	}
 }
 

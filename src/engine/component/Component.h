@@ -39,7 +39,6 @@ namespace Violet
 		Component & operator=(const Component &) = delete;
 
 		Component(Component &&);
-		// Component & operator=(Component &&);
 
 	private:
 

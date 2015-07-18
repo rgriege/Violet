@@ -1,5 +1,28 @@
 // ============================================================================
 
+#ifdef _DEBUG
+#include <set>
+#endif
+
+// ============================================================================
+
+template <typename ComponentType>
+void Violet::Entity::installComponent()
+{
+#ifdef _DEBUG
+	std::set<Tag> s_tags;
+	const auto result = s_tags.insert(ComponentType::getTag());
+	if (!result.second)
+	{
+		std::cout << "Tag ";
+		std::cout.write(result.first->asString(), 4) << " already used for a component" << std::endl;
+	}
+#endif
+	ms_componentFactory.assign(std::string(ComponentType::getTag().asString(), 4), &Entity::factoryCreateComponent<ComponentType>);
+}
+
+// ============================================================================
+
 template <typename ComponentType>
 void Violet::Entity::addComponent(std::unique_ptr<ComponentType> && component)
 {
@@ -57,6 +80,14 @@ const std::unique_ptr<const ComponentType> & Violet::Entity::getComponent() cons
 
 	static std::unique_ptr<const ComponentType> s_null;
 	return s_null;
+}
+
+// ============================================================================
+
+template <typename ComponentType>
+void Violet::Entity::factoryCreateComponent(Entity & entity, Deserializer & deserializer)
+{
+	entity.addComponent<ComponentType>(deserializer);
 }
 
 // ============================================================================
