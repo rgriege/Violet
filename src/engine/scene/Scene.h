@@ -46,6 +46,4 @@ namespace Violet
 	};
 }
 
-#include "engine/scene/Scene.inl"
-
 #endif
