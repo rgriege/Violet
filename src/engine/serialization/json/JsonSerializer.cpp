@@ -75,7 +75,7 @@ JsonSerializer::~JsonSerializer()
 
 unique_val<Serializer> JsonSerializer::createSegment(const char * label)
 {
-	return unique_val<Serializer>::create<SubSerializer>(m_value.append(label));
+	return make_unique_val<SubSerializer>(m_value.append(label));
 }
 
 // ----------------------------------------------------------------------------
@@ -131,7 +131,7 @@ SubSerializer::SubSerializer(Json::Value & value) :
 
 unique_val<Serializer> SubSerializer::createSegment(const char * label)
 {
-	return unique_val<Serializer>::create<SubSerializer>(m_value.append(label));
+	return make_unique_val<SubSerializer>(m_value.append(label));
 }
 
 // ----------------------------------------------------------------------------

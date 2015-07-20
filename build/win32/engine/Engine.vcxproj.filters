@@ -353,6 +353,9 @@
     <ClInclude Include="..\..\..\src\engine\script\ScriptMethod.h">
       <Filter>script</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\lent_ptr.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp">
@@ -500,9 +503,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\engine\utility\unique_val.ipp">
-      <Filter>utility</Filter>
-    </None>
     <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl">
       <Filter>serialization</Filter>
     </None>
@@ -527,6 +527,12 @@
     </None>
     <None Include="..\..\..\src\engine\script\cpp\CppScriptComponent.inl">
       <Filter>script\cpp</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\utility\unique_val.inl">
+      <Filter>utility</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\utility\lent_ptr.inl">
+      <Filter>utility</Filter>
     </None>
   </ItemGroup>
 </Project>

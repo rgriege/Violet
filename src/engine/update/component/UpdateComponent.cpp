@@ -28,6 +28,13 @@ UpdateComponent::UpdateComponent(const Entity & owner, Deserializer & /*deserial
 {
 }
 
+// ----------------------------------------------------------------------------
+
+UpdateComponent::UpdateComponent(UpdateComponent && other) :
+	ComponentBase<UpdateComponent>(std::move(other))
+{
+}
+
 // ============================================================================
 
 Deserializer & Violet::operator>>(Deserializer & deserializer, UpdateComponent & /*component*/)

@@ -21,6 +21,7 @@ public:
 public:
 
 	MapComponent(const Violet::Entity & owner, Violet::Deserializer & deserializer);
+	MapComponent(MapComponent && other);
 
 public:
 

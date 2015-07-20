@@ -1,6 +1,7 @@
 #ifndef VIOLET_SceneUtilities_H
 #define VIOLET_SceneUtilities_H
 
+#include "engine/entity/Entity.h"
 #include "engine/scene/Scene.h"
 
 #include <stack>
@@ -46,7 +47,7 @@ namespace Violet
 			{
 			public:
 
-				SiblingIterator(const std::vector<std::unique_ptr<Entity>> & siblings);
+				SiblingIterator(const std::vector<unique_val<Entity>> & siblings);
 
 				const Entity & operator*() const;
 				SiblingIterator & operator++();
@@ -54,8 +55,8 @@ namespace Violet
 
 			private:
 
-				std::vector<std::unique_ptr<Entity>>::const_iterator m_pos;
-				std::vector<std::unique_ptr<Entity>>::const_iterator m_end;
+				std::vector<unique_val<Entity>>::const_iterator m_pos;
+				std::vector<unique_val<Entity>>::const_iterator m_end;
 			};
 
 		public:

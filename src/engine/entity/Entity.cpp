@@ -52,7 +52,7 @@ Entity::Entity(Scene & scene, Deserializer & deserializer) :
 
 	auto childrenSegment = entitySegment->enterSegment("chld");
 	while (*childrenSegment)
-		addChild(std::make_unique<Entity>(scene, *childrenSegment));
+		addChild(make_unique_val<Entity>(scene, *childrenSegment));
 }
 
 // ----------------------------------------------------------------------------
@@ -72,7 +72,7 @@ Handle Entity::getHandle() const
 
 // ----------------------------------------------------------------------------
 
-Entity & Entity::addChild(std::unique_ptr<Entity> && child)
+Entity & Entity::addChild(unique_val<Entity> && child)
 {
 	m_children.emplace_back(std::move(child));
 	Entity & newChild = *m_children.back();
@@ -84,44 +84,44 @@ Entity & Entity::addChild(std::unique_ptr<Entity> && child)
 
 Entity & Entity::addChild(Deserializer & deserializer)
 {
-	return addChild(std::make_unique<Entity>(m_scene, deserializer));
+	return addChild(make_unique_val<Entity>(m_scene, deserializer));
 }
 
 // ----------------------------------------------------------------------------
 
-std::vector<std::unique_ptr<Entity>> & Entity::getChildren()
+std::vector<unique_val<Entity>> & Entity::getChildren()
 {
 	return m_children;
 }
 
 // ----------------------------------------------------------------------------
 
-const std::vector<std::unique_ptr<Entity>> & Entity::getChildren() const
+const std::vector<unique_val<Entity>> & Entity::getChildren() const
 {
 	return m_children;
 }
 
 // ----------------------------------------------------------------------------
 
-Entity * Entity::getChild(const Handle handle)
+lent_ptr<Entity> Entity::getChild(const Handle handle)
 {
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const std::unique_ptr<Entity> & child) { return child->getHandle() == handle; });
-	return it != m_children.end() ? it->get() : nullptr;
+	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });
+	return it != m_children.end() ? it->ptr() : nullptr;
 }
 
 // ----------------------------------------------------------------------------
 
-const Entity * Entity::getChild(const Handle handle) const
+lent_ptr<const Entity> Entity::getChild(const Handle handle) const
 {
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const std::unique_ptr<Entity> & child) { return child->getHandle() == handle; });
-	return it != m_children.end() ? it->get() : nullptr;
+	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });
+	return it != m_children.end() ? it->ptr() : nullptr;
 }
 
 // ----------------------------------------------------------------------------
 
 bool Entity::removeChild(const Handle handle)
 {
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const std::unique_ptr<Entity> & child) { return child->getHandle() == handle; });
+	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });
 	const bool found = it != m_children.end();
 	if (found)
 		m_children.erase(it);
@@ -137,7 +137,7 @@ uint32 Entity::getComponentFlags() const
 
 // ----------------------------------------------------------------------------
 
-Entity * Entity::getParent()
+lent_ptr<Entity> Entity::getParent()
 {
 	return m_parent;
 }

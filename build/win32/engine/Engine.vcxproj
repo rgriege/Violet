@@ -155,6 +155,7 @@
     <ClInclude Include="..\..\..\src\engine\utility\Guard.h" />
     <ClInclude Include="..\..\..\src\engine\utility\handle\Handle.h" />
     <ClInclude Include="..\..\..\src\engine\utility\handle\HandleManager.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\lent_ptr.h" />
     <ClInclude Include="..\..\..\src\engine\utility\Profiler.h" />
     <ClInclude Include="..\..\..\src\engine\utility\ResourceCache.h" />
     <ClInclude Include="..\..\..\src\engine\utility\StringUtilities.h" />
@@ -243,7 +244,8 @@
     <None Include="..\..\..\src\engine\serialization\file\FileSerializer.inl" />
     <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl" />
     <None Include="..\..\..\src\engine\structures\CrsGraph.inl" />
-    <None Include="..\..\..\src\engine\utility\unique_val.ipp" />
+    <None Include="..\..\..\src\engine\utility\lent_ptr.inl" />
+    <None Include="..\..\..\src\engine\utility\unique_val.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

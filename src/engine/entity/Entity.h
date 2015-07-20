@@ -5,6 +5,8 @@
 #include "engine/component/Component.h"
 #include "engine/utility/Factory.h"
 #include "engine/utility/handle/Handle.h"
+#include "engine/utility/unique_val.h"
+#include "engine/utility/lent_ptr.h"
 
 #include <vector>
 #include <memory>
@@ -29,16 +31,16 @@ namespace Violet
 
 		Handle getHandle() const;
 
-		Entity & addChild(std::unique_ptr<Entity> && child);
+		Entity & addChild(unique_val<Entity> && child);
 		Entity & addChild(Deserializer & deserializer);
-		std::vector<std::unique_ptr<Entity>> & getChildren();
-		const std::vector<std::unique_ptr<Entity>> & getChildren() const;
-		Entity * getChild(Handle handle);
-		const Entity * getChild(Handle handle) const;
+		std::vector<unique_val<Entity>> & getChildren();
+		const std::vector<unique_val<Entity>> & getChildren() const;
+		lent_ptr<Entity> getChild(Handle handle);
+		lent_ptr<const Entity> getChild(Handle handle) const;
 		bool removeChild(Handle handle);
 
 		template <typename ComponentType>
-		void addComponent(std::unique_ptr<ComponentType> && component);
+		void addComponent(unique_val<ComponentType> && component);
 		template <typename ComponentType, typename ... Args>
 		void addComponent(Args && ... args);
 		template <typename ComponentType>
@@ -46,12 +48,12 @@ namespace Violet
 		template <typename ... ComponentTypes>
 		bool hasComponents() const;
 		template <typename ComponentType>
-		const std::unique_ptr<ComponentType> & getComponent();
+		lent_ptr<ComponentType> getComponent();
 		template <typename ComponentType>
-		const std::unique_ptr<const ComponentType> & getComponent() const;
+		lent_ptr<const ComponentType> getComponent() const;
 		uint32 getComponentFlags() const;
 
-		Entity * getParent();
+		lent_ptr<Entity> getParent();
 
 	private:
 
@@ -68,9 +70,9 @@ namespace Violet
 	private:
 
 		Handle m_handle;
-		std::vector<std::unique_ptr<Component>> m_components;
+		std::vector<unique_val<Component>> m_components;
 		uint32 m_componentFlags;
-		std::vector<std::unique_ptr<Entity>> m_children;
+		std::vector<unique_val<Entity>> m_children;
 		Scene & m_scene;
 		Entity * m_parent;
 	};

@@ -23,7 +23,7 @@ MapComponent::MapComponent(const Violet::Entity & owner, Violet::Deserializer & 
 	m_id = deserializer.getUint("id");
 	{
 		auto nodesSegment = deserializer.enterSegment("nodes");
-		std::vector<Vec2f> nodes = SerializationUtilities::deserializeElements<Vec2f>(*nodesSegment);
+		std::vector<Vec2f> nodes = Violet::SerializationUtilities::deserializeElements<Vec2f>(*nodesSegment);
 		for (auto const & node : nodes)
 			m_graph.addNode({ node });
 	}

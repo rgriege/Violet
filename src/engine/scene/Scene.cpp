@@ -24,7 +24,7 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 	else
 	{
 		while (*deserializer)
-			scene->m_root->addChild(std::make_unique<Entity>(*scene, *deserializer));
+			scene->m_root->addChild(make_unique_val<Entity>(*scene, *deserializer));
 	}
 
 	return scene;

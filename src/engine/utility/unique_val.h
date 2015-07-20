@@ -8,15 +8,28 @@ namespace Violet
 	template <typename T>
 	class unique_val 
 	{
+		template <typename T, typename ... Args>
+		friend unique_val<T> make_unique_val(Args && ... args);
+
+		template <typename U>
+		friend class unique_val;
+		
 	public:
 
-		template <typename U, typename... Args>
-		static unique_val<T> create(Args&&... args);
+		unique_val(unique_val<T> && rhs);
 
-	public:
+		template <typename U>
+		unique_val(unique_val<U> && rhs);
+
+		unique_val<T> & operator=(unique_val<T> && rhs);
+
+		T & get() const;
+		T * ptr() const;
 
 		T & operator*() const;
 		T * operator->() const;
+
+		operator T &() const;
 
 	private:
 
@@ -26,8 +39,11 @@ namespace Violet
 
 		std::unique_ptr<T> m_ptr;
 	};
+
+	template <typename T, typename ... Args>
+	unique_val<T> make_unique_val(Args && ... args);
 }
 
-#include "engine/utility/unique_val.ipp"
+#include "engine/utility/unique_val.inl"
 
 #endif

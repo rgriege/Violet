@@ -34,7 +34,7 @@ BinarySerializer::BinarySerializer(std::ostream & stream) :
 
 unique_val<Serializer> BinarySerializer::createSegment(const char * /*label*/)
 {
-	return unique_val<Serializer>::create<BinarySerializer>(m_stream);
+	return make_unique_val<BinarySerializer>(m_stream);
 }
 
 // ----------------------------------------------------------------------------
