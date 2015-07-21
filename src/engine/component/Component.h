@@ -11,13 +11,15 @@ namespace Violet
 	{
 	public:
 
-		template <typename Derived>
-		static uint32 getFlag();
-
 		template <typename ComponentType>
 		static uint32 gatherFlags();
 		template <typename ComponentType, typename OtherComponentType, typename ... ComponentTypes>
 		static uint32 gatherFlags();
+
+	protected:
+
+		template <typename Derived>
+		static uint32 getFlag();
 
 	private:
 
