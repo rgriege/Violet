@@ -356,6 +356,9 @@
     <ClInclude Include="..\..\..\src\engine\utility\lent_ptr.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\lua\LuaLibrary.h">
+      <Filter>script\lua</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp">
@@ -501,6 +504,9 @@
     <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp">
       <Filter>script\cpp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\script\lua\LuaLibrary.cpp">
+      <Filter>script\lua</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl">
@@ -533,6 +539,9 @@
     </None>
     <None Include="..\..\..\src\engine\utility\lent_ptr.inl">
       <Filter>utility</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\script\lua\LuaLibrary.inl">
+      <Filter>script\lua</Filter>
     </None>
   </ItemGroup>
 </Project>

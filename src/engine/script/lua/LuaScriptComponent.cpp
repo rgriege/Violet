@@ -3,7 +3,7 @@
 #include "engine/script/lua/LuaScriptComponent.h"
 
 #include "engine/entity/Entity.h"
-// #include "engine/script/lua/LuaLibrary.h"
+#include "engine/script/lua/LuaLibrary.h"
 #include "engine/serialization/Deserializer.h"
 
 #include <assert.h>
@@ -105,12 +105,13 @@ void LuaScriptComponent::load()
 	m_valid = false;
 	
 	luaL_openlibs(m_lua);
+	LuaLibrary::open(m_lua);
 
 	std::ifstream ifstream(m_filename);
 	if (ifstream.is_open())
 	{
 		BlockStreamReader reader(ifstream, 512);
-		if (lua_load(m_lua, BlockStreamReader::readChunk, &reader, "lua file", "bt") == LUA_OK)
+		if (lua_load(m_lua, BlockStreamReader::readChunk, &reader, m_filename.c_str(), "bt") == LUA_OK)
 		{
 			if (lua_pcall(m_lua, 0, 0, 0) == LUA_OK)
 			{
@@ -118,7 +119,10 @@ void LuaScriptComponent::load()
 				if (lua_pcall(m_lua, 0, 0, 0) == LUA_OK)
 					m_valid = true;
 				else
-					printf("%s init error\n");
+				{
+					const char * error = lua_tostring(m_lua, -1);
+					printf("%s\n", error);
+				}
 			}
 			else
 			{

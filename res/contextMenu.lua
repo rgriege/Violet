@@ -1,5 +1,6 @@
 
 function init()
+    sayHi()
     print ("init!")
 end
 

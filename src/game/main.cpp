@@ -5,6 +5,7 @@
 #include "engine/input/system/InputSystem.h"
 #include "engine/physics/system/PhysicsSystem.h"
 #include "engine/script/cpp/CppScriptComponent.h"
+#include "engine/script/lua/LuaLibrary.h"
 #include "engine/script/lua/LuaScriptComponent.h"
 #include "engine/serialization/file/FileDeserializerFactory.h"
 #include "engine/serialization/json/JsonDeserializer.h"
@@ -21,8 +22,14 @@
 
 #include <iostream>
 
+void fromLua()
+{
+	std::cout << "from lua!" << std::endl;
+}
+
 Violet::SystemFactory setup()
 {
+	Violet::LuaLibrary::addMethod(Violet::make_unique_val<Violet::LuaMethod<void(void)>>("sayHi", fromLua));
 	Violet::Entity::installComponent<Violet::TransformComponent>();
 	Violet::Entity::installComponent<Violet::RenderComponent>();
 	Violet::Entity::installComponent<Violet::TextComponent>();
