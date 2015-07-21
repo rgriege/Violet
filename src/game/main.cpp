@@ -22,14 +22,14 @@
 
 #include <iostream>
 
-void fromLua()
+int fromLua()
 {
-	std::cout << "from lua!" << std::endl;
+	return 42;
 }
 
 Violet::SystemFactory setup()
 {
-	Violet::LuaLibrary::addMethod(Violet::make_unique_val<Violet::LuaMethod<void(void)>>("sayHi", fromLua));
+	Violet::LuaLibrary::addMethod(Violet::make_unique_val<Violet::LuaMethod<int(void)>>("sayHi", fromLua));
 	Violet::Entity::installComponent<Violet::TransformComponent>();
 	Violet::Entity::installComponent<Violet::RenderComponent>();
 	Violet::Entity::installComponent<Violet::TextComponent>();

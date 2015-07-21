@@ -17,6 +17,9 @@ namespace Violet
 	template <typename T>
 	void luaV_push(lua_State * lua, const T & value);
 
+	template <>
+	void VIOLET_API luaV_push(lua_State * lua, const int & value);
+
 	class LuaMethodBase
 	{
 	public:
@@ -28,13 +31,25 @@ namespace Violet
 	template <typename Signature>
 	class LuaMethod;
 
+	template <typename ResultType, typename ... Args>
+	class LuaMethod<ResultType(Args ...)> : public LuaMethodBase
+	{
+	public:
+
+		LuaMethod(const char * name, std::function<ResultType(Args...)> func);
+
+		virtual void install(lua_State * lua) override;
+		virtual int eval(lua_State * lua) override;
+
+	private:
+
+		const char * m_name;
+		std::function<ResultType(Args...)> m_func;
+	};
+
 	template <typename ... Args>
 	class LuaMethod<void(Args ...)> : public LuaMethodBase
 	{
-	private:
-
-		static int callFromLua(lua_State * lua);
-
 	public:
 
 		LuaMethod(const char * name, std::function<void(Args...)> func);
@@ -54,6 +69,7 @@ namespace Violet
 
 		static void addMethod(unique_val<LuaMethodBase> && method);
 		static void open(lua_State * lua);
+		static int callFromLua(lua_State * lua);
 
 	private:
 

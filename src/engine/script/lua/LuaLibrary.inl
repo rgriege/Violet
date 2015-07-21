@@ -1,10 +1,29 @@
 // ============================================================================
 
-template <typename ... Args>
-int Violet::LuaMethod<void(Args ...)>::callFromLua(lua_State * lua)
+template <typename ResultType, typename ... Args>
+Violet::LuaMethod<ResultType(Args ...)>::LuaMethod(const char * name, std::function<ResultType(Args...)> func) :
+	m_name(name),
+	m_func(func)
 {
-	void * func = lua_touserdata(lua, lua_upvalueindex(1));
-	return static_cast<Violet::LuaMethodBase *>(func)->eval(lua);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ResultType, typename ... Args>
+void Violet::LuaMethod<ResultType(Args ...)>::install(lua_State * lua)
+{
+	lua_pushlightuserdata(lua, this);
+	lua_pushcclosure(lua, LuaLibrary::callFromLua, 1);
+	lua_setglobal(lua, m_name);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ResultType, typename ... Args>
+int Violet::LuaMethod<ResultType(Args ...)>::eval(lua_State * lua)
+{
+	luaV_push(lua, m_func());
+	return 1;
 }
 
 // ============================================================================
@@ -22,7 +41,7 @@ template <typename ... Args>
 void Violet::LuaMethod<void(Args ...)>::install(lua_State * lua)
 {
 	lua_pushlightuserdata(lua, this);
-	lua_pushcclosure(lua, callFromLua, 1);
+	lua_pushcclosure(lua, LuaLibrary::callFromLua, 1);
 	lua_setglobal(lua, m_name);
 }
 

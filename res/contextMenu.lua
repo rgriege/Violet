@@ -1,7 +1,6 @@
 
 function init()
-    sayHi()
-    print ("init!")
+    print ("init:", sayHi())
 end
 
 function clean()

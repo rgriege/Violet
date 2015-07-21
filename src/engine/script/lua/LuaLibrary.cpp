@@ -47,4 +47,12 @@ void LuaLibrary::open(lua_State * const lua)
 		method->install(lua);
 }
 
+// ----------------------------------------------------------------------------
+
+int LuaLibrary::callFromLua(lua_State * lua)
+{
+	void * func = lua_touserdata(lua, lua_upvalueindex(1));
+	return static_cast<Violet::LuaMethodBase *>(func)->eval(lua);
+}
+
 // ============================================================================
