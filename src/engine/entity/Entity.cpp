@@ -72,6 +72,13 @@ Handle Entity::getHandle() const
 
 // ----------------------------------------------------------------------------
 
+Entity & Entity::addChild()
+{
+	return addChild(make_unique_val<Entity>(m_scene));
+}
+
+// ----------------------------------------------------------------------------
+
 Entity & Entity::addChild(unique_val<Entity> && child)
 {
 	m_children.emplace_back(std::move(child));

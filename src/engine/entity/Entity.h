@@ -31,6 +31,7 @@ namespace Violet
 
 		Handle getHandle() const;
 
+		Entity & addChild();
 		Entity & addChild(unique_val<Entity> && child);
 		Entity & addChild(Deserializer & deserializer);
 		std::vector<unique_val<Entity>> & getChildren();
