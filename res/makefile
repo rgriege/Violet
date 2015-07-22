@@ -23,7 +23,7 @@ install-live: all
 	copy *.lua $(DST)\*.lua
 
 clean:
-	del *.dll *.obj *.lib *.ilk *.pdb *.exp *~ *.swp *.lua
+	del *.dll *.obj *.lib *.ilk *.pdb *.exp *~ *.swp
 
 uninstall:
 	del $(foreach TARGET, $(TARGETS), $(DST)\$(TARGET).dll)
