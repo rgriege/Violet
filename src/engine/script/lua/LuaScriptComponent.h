@@ -3,6 +3,8 @@
 
 #include "engine/component/Component.h"
 
+#include "engine/script/lua/LuaScript.h"
+
 #include <string>
 
 struct lua_State;
@@ -22,26 +24,10 @@ namespace Violet
 
 		LuaScriptComponent(const Entity & owner, Deserializer & deserializer);
 		LuaScriptComponent(LuaScriptComponent && other);
-		~LuaScriptComponent();
 
-		std::string const & getFilename() const;
-		void reload();
-		template <typename ResultType, typename... Args>
-		ResultType run(const char * method, Args&&... args) const;
+	public:
 
-	private:
-
-		LuaScriptComponent(const LuaScriptComponent &) = delete;
-		LuaScriptComponent & operator=(const LuaScriptComponent &) = delete;
-
-		void load();
-		void unload();
-
-	private:
-
-		std::string m_filename;
-		lua_State * m_lua;
-		bool m_valid;
+		LuaScript m_script;
 	};
 
 	Serializer & operator<<(Serializer & serializer, const LuaScriptComponent & component);

@@ -359,6 +359,15 @@
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaLibrary.h">
       <Filter>script\lua</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\lua\LuaScript.h">
+      <Filter>script\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\TextResource.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\utility\shared_val.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp">
@@ -507,6 +516,9 @@
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaLibrary.cpp">
       <Filter>script\lua</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\script\lua\LuaScript.cpp">
+      <Filter>script\lua</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl">
@@ -542,6 +554,9 @@
     </None>
     <None Include="..\..\..\src\engine\script\lua\LuaLibrary.inl">
       <Filter>script\lua</Filter>
+    </None>
+    <None Include="..\..\..\src\engine\utility\shared_val.inl">
+      <Filter>utility</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -265,8 +265,8 @@
           }
         }
       },
-      "luas": {
-        "file": "contextMenu.lua"
+      "cpps": {
+        "file": "contextMenu.dll"
       }
     },
     "chld": {}

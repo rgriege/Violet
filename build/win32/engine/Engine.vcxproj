@@ -125,6 +125,7 @@
     <ClInclude Include="..\..\..\src\engine\scene\SceneUtilities.h" />
     <ClInclude Include="..\..\..\src\engine\script\cpp\CppScriptComponent.h" />
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaLibrary.h" />
+    <ClInclude Include="..\..\..\src\engine\script\lua\LuaScript.h" />
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaScriptComponent.h" />
     <ClInclude Include="..\..\..\src\engine\script\ScriptMethod.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.h" />
@@ -159,10 +160,12 @@
     <ClInclude Include="..\..\..\src\engine\utility\lent_ptr.h" />
     <ClInclude Include="..\..\..\src\engine\utility\Profiler.h" />
     <ClInclude Include="..\..\..\src\engine\utility\ResourceCache.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\shared_val.h" />
     <ClInclude Include="..\..\..\src\engine\utility\StringUtilities.h" />
     <ClInclude Include="..\..\..\src\engine\utility\Tag.h" />
     <ClInclude Include="..\..\..\src\engine\utility\task\TaskScheduler.h" />
     <ClInclude Include="..\..\..\src\engine\utility\task\Task.h" />
+    <ClInclude Include="..\..\..\src\engine\utility\TextResource.h" />
     <ClInclude Include="..\..\..\src\engine\utility\unique_val.h" />
     <ClInclude Include="..\..\..\src\engine\window\glut\GlutWindowSystem.h" />
     <ClInclude Include="..\..\..\src\engine\window\MouseButton.h" />
@@ -197,6 +200,7 @@
     <ClCompile Include="..\..\..\src\engine\scene\SceneUtilities.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaLibrary.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\lua\LuaScript.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaScriptComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinarySerializer.cpp" />
@@ -248,6 +252,7 @@
     <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl" />
     <None Include="..\..\..\src\engine\structures\CrsGraph.inl" />
     <None Include="..\..\..\src\engine\utility\lent_ptr.inl" />
+    <None Include="..\..\..\src\engine\utility\shared_val.inl" />
     <None Include="..\..\..\src\engine\utility\unique_val.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

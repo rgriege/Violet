@@ -23,6 +23,9 @@
     <ClCompile Include="..\..\..\src\test\scene\SceneTest.cpp">
       <Filter>scene</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\test\lua\LuaTest.cpp">
+      <Filter>lua</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="serialization">
@@ -45,6 +48,9 @@
     </Filter>
     <Filter Include="scene">
       <UniqueIdentifier>{5d581245-3860-4e6e-9743-1552940e790b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lua">
+      <UniqueIdentifier>{b612fcda-f4d3-49d2-befc-62ea763ca20b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -83,6 +89,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\test\scene\SceneTest.h">
       <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\test\lua\LuaTest.h">
+      <Filter>lua</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

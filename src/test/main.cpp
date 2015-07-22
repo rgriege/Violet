@@ -1,6 +1,7 @@
 #include "test/core/TestEvaluator.h"
 #include "test/core/TestFactory.h"
 #include "test/game/PathfindingTest.h"
+#include "test/lua/LuaTest.h"
 #include "test/math/MathTest.h"
 #include "test/physics/PhysicsTest.h"
 #include "test/scene/SceneTest.h"
@@ -16,6 +17,7 @@ int main(int argc, char** argv)
 	{
 		TestEvaluator evaluator(std::cout);
 
+		LuaTest::run(evaluator);
 		MathTests::run(evaluator);
 		PhysicsTest::run(evaluator);
 		JsonSerializationTests::run(evaluator);
