@@ -2,6 +2,7 @@
 #define VIOLET_Scene_H
 
 #include "engine/utility/handle/HandleManager.h"
+#include "engine/utility/lent_ptr.h"
 
 #include <memory>
 #include <unordered_map>
@@ -26,8 +27,8 @@ namespace Violet
 
 		Entity & getRoot();
 		const Entity & getRoot() const;
-		Entity * getEntity(Handle handle);
-		const Entity * getEntity(Handle handle) const;
+		lent_ptr<Entity> getEntity(Handle handle);
+		lent_ptr<const Entity> getEntity(Handle handle) const;
 
 		Handle createHandle(Handle desiredHandle = Handle::ms_invalid);
 		void index(Entity & entity);

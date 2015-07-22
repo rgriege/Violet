@@ -1,6 +1,7 @@
 #ifndef VIOLET_LentPtr_H
 #define VIOLET_LentPtr_H
 
+#include <memory>
 
 namespace Violet
 {

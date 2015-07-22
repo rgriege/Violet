@@ -28,7 +28,7 @@ public:
 
     virtual void execute() const override
     {
-        Entity * entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
+        const auto entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
         if (entity != nullptr)
         {
             auto & renderComponent = entity->getComponent<RenderComponent>();

@@ -71,7 +71,7 @@ const Entity & Scene::getRoot() const
 
 // ----------------------------------------------------------------------------
 
-Entity * Scene::getEntity(const Handle handle)
+lent_ptr<Entity> Scene::getEntity(const Handle handle)
 {
 	const auto it = m_lookupMap.find(handle);
 	return it != m_lookupMap.end() ? &it->second.get() : nullptr;
@@ -79,7 +79,7 @@ Entity * Scene::getEntity(const Handle handle)
 
 // ----------------------------------------------------------------------------
 
-const Entity * Scene::getEntity(const Handle handle) const
+lent_ptr<const Entity> Scene::getEntity(const Handle handle) const
 {
 	const auto it = m_lookupMap.find(handle);
 	return it != m_lookupMap.end() ? &it->second.get() : nullptr;

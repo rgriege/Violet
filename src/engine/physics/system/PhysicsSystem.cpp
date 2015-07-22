@@ -184,7 +184,7 @@ PhysicsSystemNamespace::MoveTask::MoveTask(const Engine & engine, const Handle h
 
 void PhysicsSystemNamespace::MoveTask::execute() const
 {
-	Entity * entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
+	const auto entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
 	if (entity != nullptr)
 	{
 		auto & transformComponent = *entity->getComponent<TransformComponent>();
@@ -224,7 +224,7 @@ PhysicsSystemNamespace::CollideTask::CollideTask(const Engine & engine, const Ha
 
 void PhysicsSystemNamespace::CollideTask::execute() const
 {
-	Entity * entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
+	const auto entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
 	if (entity != nullptr)
 	{
 		auto & physicsComponent = entity->getComponent<PhysicsComponent>();
