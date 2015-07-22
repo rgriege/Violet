@@ -18,7 +18,32 @@ namespace Violet
 	void luaV_push(lua_State * lua, const T & value);
 
 	template <>
+	void VIOLET_API luaV_push(lua_State * lua, const bool & value);
+
+	template <>
 	void VIOLET_API luaV_push(lua_State * lua, const int & value);
+
+	template <>
+	void VIOLET_API luaV_push(lua_State * lua, const double & value);
+
+	template <>
+	void VIOLET_API luaV_push(lua_State * lua, const std::string & value);
+
+
+	template <typename T>
+	T luaV_pop(lua_State * lua);
+
+	template <>
+	bool VIOLET_API luaV_pop(lua_State * lua);
+
+	template <>
+	int VIOLET_API luaV_pop(lua_State * lua);
+
+	template <>
+	double VIOLET_API luaV_pop(lua_State * lua);
+
+	template <>
+	std::string VIOLET_API luaV_pop(lua_State * lua);
 
 	class LuaMethodBase
 	{

@@ -22,14 +22,14 @@
 
 #include <iostream>
 
-int fromLua()
+int divideFromLua(const int x, const int y)
 {
-	return 42;
+	return x / y;
 }
 
 Violet::SystemFactory setup()
 {
-	Violet::LuaLibrary::addMethod(Violet::make_unique_val<Violet::LuaMethod<int(void)>>("sayHi", fromLua));
+	Violet::LuaLibrary::addMethod(Violet::make_unique_val<Violet::LuaMethod<int(int, int)>>("sayHi", divideFromLua));
 	Violet::Entity::installComponent<Violet::TransformComponent>();
 	Violet::Entity::installComponent<Violet::RenderComponent>();
 	Violet::Entity::installComponent<Violet::TextComponent>();

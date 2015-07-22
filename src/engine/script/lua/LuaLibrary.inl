@@ -1,5 +1,14 @@
 // ============================================================================
 
+template <typename T>
+T Violet::luaV_pop(lua_State * lua)
+{
+	lua_pop(lua, -1);
+	return T{};
+}
+
+// ============================================================================
+
 template <typename ResultType, typename ... Args>
 Violet::LuaMethod<ResultType(Args ...)>::LuaMethod(const char * name, std::function<ResultType(Args...)> func) :
 	m_name(name),
@@ -22,7 +31,7 @@ void Violet::LuaMethod<ResultType(Args ...)>::install(lua_State * lua)
 template <typename ResultType, typename ... Args>
 int Violet::LuaMethod<ResultType(Args ...)>::eval(lua_State * lua)
 {
-	luaV_push(lua, m_func());
+	luaV_push(lua, m_func(luaV_pop<Args>(lua)...));
 	return 1;
 }
 
