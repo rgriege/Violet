@@ -24,7 +24,7 @@ namespace Violet
 		bool isValid() const;
 		void reload();
 		template <typename ResultType, typename... Args>
-		ResultType run(const char * method, Args&&... args) const;
+		ResultType run(const char * method, Args && ... args) const;
 
 	private:
 
@@ -41,5 +41,7 @@ namespace Violet
 		bool m_valid;
 	};
 }
+
+#include "engine/script/lua/LuaScript.inl"
 
 #endif

@@ -246,6 +246,7 @@
     <None Include="..\..\..\src\engine\entity\Entity.inl" />
     <None Include="..\..\..\src\engine\script\cpp\CppScriptComponent.inl" />
     <None Include="..\..\..\src\engine\script\lua\LuaLibrary.inl" />
+    <None Include="..\..\..\src\engine\script\lua\LuaScript.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileSerializer.inl" />

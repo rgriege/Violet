@@ -558,5 +558,8 @@
     <None Include="..\..\..\src\engine\utility\shared_val.inl">
       <Filter>utility</Filter>
     </None>
+    <None Include="..\..\..\src\engine\script\lua\LuaScript.inl">
+      <Filter>script\lua</Filter>
+    </None>
   </ItemGroup>
 </Project>

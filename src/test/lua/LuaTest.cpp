@@ -19,6 +19,15 @@ namespace LuaTestNamespace
 		"function init()\n"
 		"	sayHiInC()\n"
 		"end\n"
+		"function getFortyTwo()\n"
+		"	return 42\n"
+		"end\n"
+		"function addFive(x)\n"
+		"	return x + 5\n"
+		"end\n"
+		"function sum(x, y)\n"
+		"	return x + y\n"
+		"end\n"
 		"function clean() end\n");
 
 	shared_val<TextResource> m_invalidScriptSource = make_shared_val<StringResource>("invalid.inl",
@@ -54,6 +63,11 @@ void LuaTest::run(TestEvaluator & evaluator)
 			TestFactory::makeStateless("valid", true, []() { return LuaScript(m_validScriptSource).isValid(); }),
 			TestFactory::makeStateless("invalid", false, []() { return LuaScript(m_invalidScriptSource).isValid(); }),
 			TestFactory::makeStateless("no init", false, []() { return LuaScript(m_noInitScriptSource).isValid(); })
+		)),
+		TestFactory::makeStatelessSuite("lua function calls", std::forward_as_tuple(
+			TestFactory::makeStateless("int(void)", 42, []() { return LuaScript(m_validScriptSource).run<int>("getFortyTwo"); }),
+			TestFactory::makeStateless("int(int)", 42, []() { return LuaScript(m_validScriptSource).run<int>("addFive", 37); }),
+			TestFactory::makeStateless("int(int, int)", 42, []() { return LuaScript(m_validScriptSource).run<int>("sum", 14, 28); })
 		)),
 		TestFactory::makeStatelessSuite("c function calls", std::forward_as_tuple(
 			TestFactory::makeStateless("void(void)", true, []() { return saidHi; })
