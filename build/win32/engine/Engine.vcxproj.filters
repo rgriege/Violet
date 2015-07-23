@@ -506,7 +506,6 @@
     <ClCompile Include="..\..\..\src\engine\utility\handle\HandleManager.cpp">
       <Filter>utility\handle</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\Profiler.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaScriptComponent.cpp">
       <Filter>script\lua</Filter>
     </ClCompile>
@@ -518,6 +517,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaScript.cpp">
       <Filter>script\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\utility\Profiler.cpp">
+      <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
