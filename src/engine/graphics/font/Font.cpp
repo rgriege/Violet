@@ -160,7 +160,7 @@ std::unique_ptr<Font> Font::load(const char * filename)
 			glGenVertexArrays(1, &vertexArrayBuffer);
 			glBindVertexArray(vertexArrayBuffer);
 
-			Texture texture(texWidth, texHeight, pixels, GL_ALPHA);
+			Texture texture(filename, texWidth, texHeight, pixels, GL_ALPHA);
 
 			const float width = static_cast<float>(bitmap.width);
 			const float height = static_cast<float>(bitmap.rows);

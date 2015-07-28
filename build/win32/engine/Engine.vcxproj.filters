@@ -126,17 +126,11 @@
     <ClInclude Include="..\..\..\src\engine\graphics\Mesh.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponent.h">
-      <Filter>graphics\component</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\engine\graphics\component\TextComponent.h">
       <Filter>graphics\component</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\graphics\font\Font.h">
       <Filter>graphics\font</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\texture\Bitmap.h">
-      <Filter>graphics\texture</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\graphics\texture\Texture.h">
       <Filter>graphics\texture</Filter>
@@ -368,6 +362,15 @@
     <ClInclude Include="..\..\..\src\engine\utility\shared_val.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\component\ColorComponent.h">
+      <Filter>graphics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\component\TextureComponent.h">
+      <Filter>graphics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponentData.h">
+      <Filter>graphics\component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp">
@@ -376,17 +379,11 @@
     <ClCompile Include="..\..\..\src\engine\graphics\Mesh.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponent.cpp">
-      <Filter>graphics\component</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\engine\graphics\component\TextComponent.cpp">
       <Filter>graphics\component</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\graphics\font\Font.cpp">
       <Filter>graphics\font</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\texture\Bitmap.cpp">
-      <Filter>graphics\texture</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\graphics\texture\Texture.cpp">
       <Filter>graphics\texture</Filter>
@@ -520,6 +517,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\utility\Profiler.cpp">
       <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\component\ColorComponent.cpp">
+      <Filter>graphics\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\component\TextureComponent.cpp">
+      <Filter>graphics\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponentData.cpp">
+      <Filter>graphics\component</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

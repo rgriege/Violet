@@ -2,6 +2,7 @@
 #define VIOLET_TextComponent_H
 
 #include "engine/component/Component.h"
+#include "engine/graphics/component/RenderComponentData.h"
 
 #include <string>
 #include <memory>
@@ -11,9 +12,8 @@ namespace Violet
 	class Deserializer;
 	class Font;
 	class Serializer;
-	class ShaderProgram;
 
-	class VIOLET_API TextComponent : public ComponentBase<TextComponent>
+	class VIOLET_API TextComponent : public ComponentBase<TextComponent>, public RenderComponentData
 	{
 	public:
 
@@ -23,14 +23,17 @@ namespace Violet
 
 		TextComponent(const Entity & owner, Deserializer & deserializer);
 		TextComponent(TextComponent && other);
-		//TextComponent & operator=(TextComponent && other);
+
+	private:
+
+		TextComponent(const TextComponent &) = delete;
+		TextComponent & operator=(const TextComponent &) = delete;
 
 	public:
 
 		std::string m_text;
 		std::shared_ptr<Font> m_font;
 		uint32 m_size;
-		std::shared_ptr<ShaderProgram> m_shader;
 	};
 
 	Deserializer & operator>>(Deserializer & deserializer, TextComponent & component);

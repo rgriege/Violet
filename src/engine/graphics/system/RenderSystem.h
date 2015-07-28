@@ -3,14 +3,11 @@
 
 #include "engine/math/Matrix3.h"
 #include "engine/system/System.h"
-#include "engine/graphics/component/RenderComponent.h"
-#include "engine/graphics/component/TextComponent.h"
 
 namespace Violet
 {
 	class Deserializer;
 	class SystemFactory;
-	class TransformComponent;
 
 	class VIOLET_API RenderSystem : public System
 	{

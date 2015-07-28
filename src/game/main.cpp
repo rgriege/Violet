@@ -1,4 +1,7 @@
 #include "engine/Engine.h"
+#include "engine/graphics/component/ColorComponent.h"
+#include "engine/graphics/component/TextComponent.h"
+#include "engine/graphics/component/TextureComponent.h"
 #include "engine/graphics/system/RenderSystem.h"
 #include "engine/input/component/KeyInputComponent.h"
 #include "engine/input/component/MouseInputComponent.h"
@@ -24,8 +27,9 @@
 Violet::SystemFactory setup()
 {
 	Violet::Entity::installComponent<Violet::TransformComponent>();
-	Violet::Entity::installComponent<Violet::RenderComponent>();
+	Violet::Entity::installComponent<Violet::ColorComponent>();
 	Violet::Entity::installComponent<Violet::TextComponent>();
+	Violet::Entity::installComponent<Violet::TextureComponent>();
 	Violet::Entity::installComponent<Violet::MouseInputComponent>();
 	Violet::Entity::installComponent<Violet::KeyInputComponent>();
 	Violet::Entity::installComponent<Violet::PhysicsComponent>();

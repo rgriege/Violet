@@ -26,6 +26,8 @@ namespace Violet
 
 		Vec2f getCenter() const;
 		Vec2f getHalfDim() const;
+		Vec2f getMinimum() const;
+		Vec2f getMaximum() const;
 
 	private:
 

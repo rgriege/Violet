@@ -105,4 +105,18 @@ Vec2f AABB::getHalfDim() const
 	return getCenter() - m_topLeft;
 }
 
+// ----------------------------------------------------------------------------
+
+Vec2f AABB::getMinimum() const
+{
+	return Vec2f(m_topLeft.x, m_bottomRight.y);
+}
+
+// ----------------------------------------------------------------------------
+
+Vec2f AABB::getMaximum() const
+{
+	return Vec2f(m_bottomRight.x, m_topLeft.y);
+}
+
 // ============================================================================

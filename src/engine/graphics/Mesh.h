@@ -24,13 +24,15 @@ namespace Violet
 		explicit Mesh(std::vector<Vec2f> && vertices);
 		explicit Mesh(const Polygon & poly);
 		explicit Mesh(Deserializer & deserializer);
-		Mesh(Mesh && other);
+		explicit Mesh(const Mesh & other);
+		explicit Mesh(Mesh && other);
 		Mesh & operator=(Mesh && other);
 		~Mesh();
 
+		Polygon getPolygon() const;
+
 	private:
 
-		Mesh(const Mesh & other) = delete;
 		Mesh & operator=(const Mesh & other) = delete;
 
 	public:

@@ -1,7 +1,7 @@
 #include "engine/Engine.h"
 #include "engine/input/system/InputSystem.h"
 #include "engine/graphics/Color.h"
-#include "engine/graphics/component/RenderComponent.h"
+#include "engine/graphics/component/ColorComponent.h"
 #include "engine/script/cpp/CppScriptComponent.h"
 #include "engine/update/system/UpdateSystem.h"
 
@@ -31,9 +31,9 @@ public:
         const auto entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
         if (entity != nullptr)
         {
-            auto & renderComponent = entity->getComponent<RenderComponent>();
-            if (renderComponent != nullptr)
-                renderComponent->m_color = m_color;
+            auto & colorComponent = entity->getComponent<ColorComponent>();
+            if (colorComponent != nullptr)
+                colorComponent->m_color = m_color;
         }
     }
 
@@ -82,12 +82,12 @@ void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem)
 
 void update(const Entity & entity, const Engine & engine, const float dt, Mem * mem)
 {
-    auto & renderComponent = entity.getComponent<RenderComponent>();
-    if (renderComponent != nullptr)
+    auto & colorComponent = entity.getComponent<ColorComponent>();
+    if (colorComponent != nullptr)
     {
-        if (renderComponent->m_color.a != mem->opacity)
+        if (colorComponent->m_color.a != mem->opacity)
         {
-            Color newColor(renderComponent->m_color);
+            Color newColor(colorComponent->m_color);
             if (mem->disappearing)
                 newColor.a = std::max<uint8>(newColor.a.asUint() - 5u, mem->opacity);
             else

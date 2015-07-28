@@ -114,7 +114,7 @@ PathfindingSystem::PathfindingSystem() :
 			halfEdge - offset.perpendicular()
 		} };
 		engine.getCurrentScene().createComponent<Violet::TransformComponent>(entity, center, 0.f);
-		engine.getCurrentScene().createComponent<Violet::RenderComponent>(entity, p, Violet::Color(128, 128, 128), Violet::ShaderProgram::getCache().fetch("poly"));
+		engine.getCurrentScene().createComponent<Violet::MeshComponent>(entity, p, Violet::Color(128, 128, 128), Violet::ShaderProgram::getCache().fetch("poly"));
 	}
 }*/
 

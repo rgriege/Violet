@@ -8,7 +8,8 @@
           "y": 0
         }
       },
-      "rndr": {
+      "texu": {
+        "shader": "texu",
         "poly": {
           "n": 4,
           "vec": {
@@ -28,14 +29,16 @@
             "y": 30
           }
         },
-        "color": "0xFF0000FF",
-        "shader": "poly"
+        "texture": "gradient.png"
       },
       "text": {
+        "shader": "text",
+        "poly": {
+          "n": 0
+        },
         "str": "Do nothing!",
         "font": "Vera.ttf",
-        "size": 18,
-        "shader": "text"
+        "size": 18
       }
     },
     "chld": {}

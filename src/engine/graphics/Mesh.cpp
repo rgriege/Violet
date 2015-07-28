@@ -47,6 +47,13 @@ Mesh::Mesh(Deserializer & deserializer) :
 
 // ----------------------------------------------------------------------------
 
+Mesh::Mesh(const Mesh & other) :
+	Mesh(other.getPolygon())
+{
+}
+
+// ----------------------------------------------------------------------------
+
 Mesh::Mesh(Mesh && other) :
 	m_vertexBuffer(other.m_vertexBuffer),
 	m_size(other.m_size)
@@ -81,6 +88,18 @@ Mesh::~Mesh()
 		glDeleteBuffers(1, &m_vertexBuffer);
 }
 
+// ----------------------------------------------------------------------------
+
+Polygon Mesh::getPolygon() const
+{
+	std::vector<Vec2f> vertices;
+	vertices.resize(m_size);
+	Mesh::bind(*this);
+	glGetBufferSubData(GL_ARRAY_BUFFER, 0, m_size * sizeof(Vec2f), vertices.data());
+	Mesh::unbind();
+	return Polygon(std::move(vertices));
+}
+
 // ============================================================================
 
 Deserializer & Violet::operator>>(Deserializer & deserializer, Mesh & mesh)
@@ -94,12 +113,7 @@ Deserializer & Violet::operator>>(Deserializer & deserializer, Mesh & mesh)
 
 Serializer & Violet::operator<<(Serializer & serializer, const Mesh & mesh)
 {
-	std::vector<Vec2f> vertices;
-	vertices.resize(mesh.m_size);
-	Mesh::bind(mesh);
-	glGetBufferSubData(GL_ARRAY_BUFFER, 0, mesh.m_size * sizeof(Vec2f), vertices.data());
-	Mesh::unbind();
-	return serializer << Polygon(std::move(vertices));
+	return serializer << mesh.getPolygon();
 }
 
 // ============================================================================

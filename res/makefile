@@ -14,6 +14,7 @@ install: all
 	copy *.dll $(DST)\*.dll
 	copy *.pdb $(DST)\*.pdb
 	copy *.lua $(DST)\*.lua
+	copy *.png $(DST)\*.png
 
 install-live: all
 	copy *.json $(DST)\*.json
@@ -21,6 +22,7 @@ install-live: all
 	copy *.dll $(DST)\*.dll.swp
 	copy *.pdb $(DST)\*.pdb.swp
 	copy *.lua $(DST)\*.lua
+	copy *.png $(DST)\*.png
 
 clean:
 	del *.dll *.obj *.lib *.ilk *.pdb *.exp *~ *.swp
@@ -33,5 +35,6 @@ uninstall:
 	del $(DST)\*.ttf
 	del $(DST)\*.vert
 	del $(DST)\*.frag
+	del $(DST)\*.png
 
 print-%: ; @echo $*=$($*)

@@ -55,7 +55,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;VIOLETCORE_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\boost_1_51_0;E:\Libraries\jsoncpp\include;E:\Libraries\lua-5.2.3\src;E:\Libraries\freetype-2.5.2\include;E:\Libraries\glew\include;E:\Libraries\SDL2\include;E:\Libraries\freeglut\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\boost_1_51_0;E:\Libraries\jsoncpp\include;E:\Libraries\lua-5.2.3\src;E:\Libraries\freetype-2.5.2\include;E:\Libraries\glew\include;E:\Libraries\SDL2\include;E:\Libraries\freeglut\include;E:\Libraries\lpng1617;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
@@ -67,8 +67,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\Libraries\jsoncpp\lib\Debug;E:\Libraries\SDL2\VisualC\SDL\Win32\Debug;E:\Libraries\freetype-2.5.2\objs\win32\vc2010;E:\Libraries\glew\lib\Release\Win32;E:\Libraries\freeglut\lib\x86\Debug;E:\Libraries\lua-5.2.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>lib_json.lib;OpenGL32.lib;SDL2.lib;freetype252_D.lib;glew32.lib;freeglut.lib;lua_d.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\Libraries\jsoncpp\lib\Debug;E:\Libraries\SDL2\VisualC\SDL\Win32\Debug;E:\Libraries\freetype-2.5.2\objs\win32\vc2010;E:\Libraries\glew\lib\Release\Win32;E:\Libraries\freeglut\lib\x86\Debug;E:\Libraries\lua-5.2.3\lib;E:\Libraries\lpng1617\projects\vstudio12\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lib_json.lib;OpenGL32.lib;SDL2.lib;freetype252_D.lib;glew32.lib;freeglut.lib;lua_d.lib;libpng16.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -97,13 +97,14 @@
     <ClInclude Include="..\..\..\src\engine\Engine.h" />
     <ClInclude Include="..\..\..\src\engine\entity\Entity.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\Color.h" />
-    <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\component\ColorComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponentData.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\component\TextComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\graphics\component\TextureComponent.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\font\Font.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\Mesh.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\shader\Shader.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\system\RenderSystem.h" />
-    <ClInclude Include="..\..\..\src\engine\graphics\texture\Bitmap.h" />
     <ClInclude Include="..\..\..\src\engine\graphics\texture\Texture.h" />
     <ClInclude Include="..\..\..\src\engine\input\component\MouseInputComponent.h" />
     <ClInclude Include="..\..\..\src\engine\input\component\KeyInputComponent.h" />
@@ -177,13 +178,14 @@
     <ClCompile Include="..\..\..\src\engine\Engine.cpp" />
     <ClCompile Include="..\..\..\src\engine\entity\Entity.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp" />
-    <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\component\ColorComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponentData.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\component\TextComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\graphics\component\TextureComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\font\Font.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\Mesh.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\shader\Shader.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\system\RenderSystem.cpp" />
-    <ClCompile Include="..\..\..\src\engine\graphics\texture\Bitmap.cpp" />
     <ClCompile Include="..\..\..\src\engine\graphics\texture\Texture.cpp" />
     <ClCompile Include="..\..\..\src\engine\input\component\MouseInputComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\input\component\KeyInputComponent.cpp" />

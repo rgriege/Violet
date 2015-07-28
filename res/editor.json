@@ -8,7 +8,8 @@
           "y": 280
         }
       },
-      "rndr": {
+      "colr": {
+        "shader": "poly",
         "poly": {
           "n": 4,
           "vec": {
@@ -28,8 +29,7 @@
             "y": 20
           }
         },
-        "color": "0x2C302ECC",
-        "shader": "poly"
+        "color": "0x2C302ECC"
       },
       "mipt": {
         "poly": {
@@ -67,7 +67,8 @@
               "y": 0
             }
           },
-          "rndr": {
+          "colr": {
+            "shader": "poly",
             "poly": {
               "n": 4,
               "vec": {
@@ -87,8 +88,7 @@
                 "y": 10
               }
             },
-            "color": "0xF0EDEEFF",
-            "shader": "poly"
+            "color": "0xF0EDEEFF"
           }
         },
         "chld": {}
@@ -102,7 +102,8 @@
               "y": 0
             }
           },
-          "rndr": {
+          "colr": {
+            "shader": "poly",
             "poly": {
               "n": 4,
               "vec": {
@@ -122,8 +123,7 @@
                 "y": 10
               }
             },
-            "color": "0xF0EDEEFF",
-            "shader": "poly"
+            "color": "0xF0EDEEFF"
           }
         },
         "chld": {}
@@ -137,7 +137,8 @@
               "y": 0
             }
           },
-          "rndr": {
+          "colr": {
+            "shader": "poly",
             "poly": {
               "n": 4,
               "vec": {
@@ -157,8 +158,7 @@
                 "y": 10
               }
             },
-            "color": "0xF0EDEEFF",
-            "shader": "poly"
+            "color": "0xF0EDEEFF"
           }
         },
         "chld": {}
@@ -172,7 +172,8 @@
               "y": 0
             }
           },
-          "rndr": {
+          "colr": {
+            "shader": "poly",
             "poly": {
               "n": 4,
               "vec": {
@@ -192,8 +193,7 @@
                 "y": 10
               }
             },
-            "color": "0xF0EDEEFF",
-            "shader": "poly"
+            "color": "0xF0EDEEFF"
           }
         },
         "chld": {}
@@ -207,7 +207,8 @@
               "y": 0
             }
           },
-          "rndr": {
+          "colr": {
+            "shader": "poly",
             "poly": {
               "n": 4,
               "vec": {
@@ -227,8 +228,7 @@
                 "y": 10
               }
             },
-            "color": "0xF0EDEEFF",
-            "shader": "poly"
+            "color": "0xF0EDEEFF"
           }
         },
         "chld": {}

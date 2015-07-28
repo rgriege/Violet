@@ -4,6 +4,9 @@
 
 #include "engine/Engine.h"
 #include "engine/entity/Entity.h"
+#include "engine/graphics/component/ColorComponent.h"
+#include "engine/graphics/component/TextComponent.h"
+#include "engine/graphics/component/TextureComponent.h"
 #include "engine/scene/SceneUtilities.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/system/SystemFactory.h"
@@ -37,8 +40,9 @@ namespace RenderSystemNamespace
 	// ----------------------------------------------------------------------------
 
 	void process(const Entity & entity, const Matrix3f & view, const Matrix3f & localToWorld, float opacity);
-	void draw(const TransformComponent & transformComponent, const RenderComponent & renderComponent, const Matrix3f & view, const Matrix3f & localToWorld, float opacity);
+	void draw(const TransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view, const Matrix3f & localToWorld, float opacity);
 	void draw(const TransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view, const Matrix3f & localToWorld);
+	void draw(const TransformComponent & transformComponent, const TextureComponent & textureComponent, const Matrix3f & view, const Matrix3f & localToWorld);
 
 	// ----------------------------------------------------------------------------
 }
@@ -144,14 +148,19 @@ void RenderSystemNamespace::process(const Entity & entity, const Matrix3f & view
 		};
 
 		float newOpacity = opacity;
-		if (entity.hasComponent<RenderComponent>())
+		if ((entity.getComponentFlags() & Component::gatherFlags<ColorComponent, TextComponent, TextureComponent>()) != 0)
 		{
-			const auto & renderComponent = *entity.getComponent<RenderComponent>();
-			newOpacity = opacity * renderComponent.m_color.a.asFloat();
-			draw(transformComponent, renderComponent, view, parentToWorld, newOpacity);
+			if (entity.hasComponent<ColorComponent>())
+			{
+				const auto & colorComponent = *entity.getComponent<ColorComponent>();
+				newOpacity = opacity * colorComponent.m_color.a.asFloat();
+				draw(transformComponent, colorComponent, view, parentToWorld, newOpacity);
+			}
+			if (entity.hasComponent<TextureComponent>())
+				draw(transformComponent, *entity.getComponent<TextureComponent>(), view, parentToWorld);
+			if (entity.hasComponent<TextComponent>())
+				draw(transformComponent, *entity.getComponent<TextComponent>(), view, parentToWorld);
 		}
-		if (entity.hasComponent<TextComponent>())
-			draw(transformComponent, *entity.getComponent<TextComponent>(), view, parentToWorld);
 
 		const Matrix3f localToWorld = parentToWorld * transform;
 		for (auto const & child : entity.getChildren())
@@ -162,7 +171,7 @@ void RenderSystemNamespace::process(const Entity & entity, const Matrix3f & view
 // ----------------------------------------------------------------------------
 
 
-void RenderSystemNamespace::draw(const TransformComponent & transformComponent, const RenderComponent & renderComponent, const Matrix3f & view, const Matrix3f & parentToWorld, const float opacity)
+void RenderSystemNamespace::draw(const TransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view, const Matrix3f & parentToWorld, const float opacity)
 {
 	const Matrix3f transform = {
 		1.f, 0.f, transformComponent.m_position.x,
@@ -170,19 +179,19 @@ void RenderSystemNamespace::draw(const TransformComponent & transformComponent, 
 		0.f, 0.f, 1.f
 	};
 
-	const GLint colorAttrib = renderComponent.m_shader->getUniformLocation("color");
-	const GLint modelAttrib = renderComponent.m_shader->getUniformLocation("model");
-	const GLint viewAttribute = renderComponent.m_shader->getUniformLocation("view");
+	const GLint colorAttrib = colorComponent.m_shader->getUniformLocation("color");
+	const GLint modelAttrib = colorComponent.m_shader->getUniformLocation("model");
+	const GLint viewAttribute = colorComponent.m_shader->getUniformLocation("view");
 
-	glBindVertexArray(renderComponent.m_vertexArrayBuffer);
-	const Guard<ShaderProgram> shaderGuard(*renderComponent.m_shader);
-	Color color = renderComponent.m_color;
+	glBindVertexArray(colorComponent.m_vertexArrayBuffer);
+	const Guard<ShaderProgram> shaderGuard(*colorComponent.m_shader);
+	Color color = colorComponent.m_color;
 	color.a = color.a.asFloat() * opacity;
 	glUniform4fv(colorAttrib, 1, color.as4fv().data());
 	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * transform).data());
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
-	glDrawArrays(GL_TRIANGLE_FAN, 0, renderComponent.m_mesh.m_size);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, colorComponent.m_mesh.m_size);
 	glBindVertexArray(0);
 }
 
@@ -205,6 +214,29 @@ void RenderSystemNamespace::draw(const TransformComponent & transformComponent, 
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
 	textComponent.m_font->render(textComponent.m_text, *textComponent.m_shader);
+}
+
+// ----------------------------------------------------------------------------
+
+void RenderSystemNamespace::draw(const TransformComponent & transformComponent, const TextureComponent & textureComponent, const Matrix3f & view, const Matrix3f & parentToWorld)
+{
+	const Matrix3f transform = {
+		1.f, 0.f, transformComponent.m_position.x,
+		0.f, 1.f, transformComponent.m_position.y,
+		0.f, 0.f, 1.f
+	};
+
+	const GLint modelAttrib = textureComponent.m_shader->getUniformLocation("model");
+	const GLint viewAttribute = textureComponent.m_shader->getUniformLocation("view");
+
+	glBindVertexArray(textureComponent.m_vertexArrayBuffer);
+	const Guard<ShaderProgram> shaderGuard(*textureComponent.m_shader);
+	const Guard<Texture> texGuard(*textureComponent.m_texture);
+	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * transform).data());
+	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
+
+	glDrawArrays(GL_TRIANGLE_FAN, 0, textureComponent.m_mesh.m_size);
+	glBindVertexArray(0);
 }
 
 // ============================================================================
