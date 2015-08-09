@@ -9,7 +9,7 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag LuaScriptComponent::getTag()
+Tag LuaScriptComponent::getStaticTag()
 {
 	return Tag('l', 'u', 'a', 's');
 }

@@ -11,14 +11,14 @@ void Violet::Entity::installComponent()
 {
 #ifdef _DEBUG
 	std::set<Tag> s_tags;
-	const auto result = s_tags.insert(ComponentType::getTag());
+	const auto result = s_tags.insert(ComponentType::getStaticTag());
 	if (!result.second)
 	{
 		std::cout << "Tag ";
 		std::cout.write(result.first->asString(), 4) << " already used for a component" << std::endl;
 	}
 #endif
-	ms_componentFactory.assign(std::string(ComponentType::getTag().asString(), 4), &Entity::factoryCreateComponent<ComponentType>);
+	ms_componentFactory.assign(std::string(ComponentType::getStaticTag().asString(), 4), &Entity::factoryCreateComponent<ComponentType>);
 }
 
 // ============================================================================
@@ -61,7 +61,7 @@ bool Violet::Entity::hasComponents() const
 template <typename ComponentType>
 Violet::lent_ptr<ComponentType> Violet::Entity::getComponent()
 {
-	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getTag() == ComponentType::getTag(); });
+	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getTag() == ComponentType::getStaticTag(); });
 	if (it != m_components.end())
 		return lent_ptr<ComponentType>(static_cast<ComponentType *>(it->ptr()));
 
@@ -73,7 +73,7 @@ Violet::lent_ptr<ComponentType> Violet::Entity::getComponent()
 template <typename ComponentType>
 Violet::lent_ptr<const ComponentType> Violet::Entity::getComponent() const
 {
-	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getTag() == ComponentType::getTag(); });
+	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getTag() == ComponentType::getStaticTag(); });
 	if (it != m_components.end())
 		return lent_ptr<const ComponentType>(static_cast<const ComponentType *>(it->ptr()));
 

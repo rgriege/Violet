@@ -8,7 +8,7 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag MouseInputComponent::getTag()
+Tag MouseInputComponent::getStaticTag()
 {
 	return Tag('m', 'i', 'p', 't');
 }

@@ -24,7 +24,7 @@ using namespace TextureComponentNamespace;
 
 // ============================================================================
 
-Tag TextureComponent::getTag()
+Tag TextureComponent::getStaticTag()
 {
 	return Tag('t', 'e', 'x', 'u');
 }

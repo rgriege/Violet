@@ -7,7 +7,7 @@
 
 // ============================================================================
 
-Violet::Tag PathfindingComponent::getTag()
+Violet::Tag PathfindingComponent::getStaticTag()
 {
 	return Violet::Tag('p', 'f', 'n', 'd');
 }

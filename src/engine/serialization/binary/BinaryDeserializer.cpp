@@ -20,7 +20,7 @@ using namespace BinaryDeserializerNamespace;
 
 void BinaryDeserializer::install()
 {
-	FileDeserializerFactory::getInstance().assign<BinaryDeserializer>("vba");
+	 FileDeserializerFactory::getInstance().assign<BinaryDeserializer>("vba");
 }
 
 // ============================================================================
@@ -36,7 +36,7 @@ BinaryDeserializer::BinaryDeserializer(std::istream & stream) :
 BinaryDeserializer::operator bool() const
 {
 	// error with implicitly/explicitly calling operator bool()
-	return m_stream.operator bool();
+	return static_cast<bool>(m_stream);
 }
 
 // ----------------------------------------------------------------------------

@@ -22,7 +22,7 @@ using namespace PhysicsComponentNamespace;
 
 // ============================================================================
 
-Tag PhysicsComponent::getTag()
+Tag PhysicsComponent::getStaticTag()
 {
 	return Tag('p', 'h', 'y', 's');
 }

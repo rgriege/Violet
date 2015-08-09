@@ -50,7 +50,7 @@ using namespace JsonDeserializerNamespace;
 
 void JsonDeserializer::install()
 {
-	FileDeserializerFactory::getInstance().assign<JsonDeserializer>("json");
+	// FileDeserializerFactory::getInstance().assign<JsonDeserializer>("json");
 }
 
 // ============================================================================

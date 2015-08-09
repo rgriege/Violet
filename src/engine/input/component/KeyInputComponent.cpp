@@ -8,7 +8,7 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag KeyInputComponent::getTag()
+Tag KeyInputComponent::getStaticTag()
 {
 	return Tag('k', 'i', 'p', 't');
 }

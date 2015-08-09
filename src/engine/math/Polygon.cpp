@@ -30,7 +30,7 @@ Polygon::Polygon(Deserializer & deserializer) :
 	m_vertices()
 {
 	auto polygonSegment = deserializer.enterSegment(ms_segmentLabel);
-	m_vertices.swap(SerializationUtilities::deserializeElements<Vec2f>(*polygonSegment));
+	m_vertices = SerializationUtilities::deserializeElements<Vec2f>(*polygonSegment);
 }
 
 // ----------------------------------------------------------------------------

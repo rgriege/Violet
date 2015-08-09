@@ -14,7 +14,7 @@ namespace Violet
 	{
 	public:
 
-		static Tag getTag();
+		static Tag getStaticTag();
 
 	public:
 

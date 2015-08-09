@@ -8,8 +8,9 @@
 #include "engine/utility/unique_val.h"
 #include "engine/utility/lent_ptr.h"
 
-#include <vector>
+#include <algorithm>
 #include <memory>
+#include <vector>
 
 namespace Violet
 {

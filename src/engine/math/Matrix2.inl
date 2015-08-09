@@ -36,10 +36,10 @@ Violet::Matrix2<T>::Matrix2(T _a, T _b, T _c, T _d) :
 
 template <typename T>
 Violet::Matrix2<T>::Matrix2(const T rotation) {
-	ul = std::cos(rotation);
-	ur = -std::sin(rotation);
-	dl = std::sin(rotation);
-	dr = std::cos(rotation);
+	a = std::cos(rotation);
+	b = -std::sin(rotation);
+	c = std::sin(rotation);
+	d = std::cos(rotation);
 }
 
 // ----------------------------------------------------------------------------

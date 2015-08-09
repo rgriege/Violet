@@ -8,7 +8,7 @@
 
 // ============================================================================
 
-Violet::Tag MapComponent::getTag()
+Violet::Tag MapComponent::getStaticTag()
 {
 	return Violet::Tag('m', 'a', 'p', 'c');
 }

@@ -16,7 +16,7 @@ class VIOLET_GAME_API MapComponent : public Violet::ComponentBase<MapComponent>
 {
 public:
 
-	static Violet::Tag getTag();
+	static Violet::Tag getStaticTag();
 
 public:
 

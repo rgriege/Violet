@@ -8,8 +8,8 @@ namespace Violet
 	template <typename T>
 	class unique_val 
 	{
-		template <typename T, typename ... Args>
-		friend unique_val<T> make_unique_val(Args && ... args);
+		template <typename U, typename ... Args>
+		friend unique_val<U> make_unique_val(Args && ... args);
 
 		template <typename U>
 		friend class unique_val;

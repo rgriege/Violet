@@ -8,7 +8,7 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag TransformComponent::getTag()
+Tag TransformComponent::getStaticTag()
 {
 	return Tag('t', 's', 'f', 'm');
 }

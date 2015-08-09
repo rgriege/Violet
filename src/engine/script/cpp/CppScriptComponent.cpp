@@ -2,6 +2,7 @@
 
 #include "engine/script/cpp/CppScriptComponent.h"
 
+#include "engine/script/cpp/SharedLibrary.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/serialization/Serializer.h"
 #include "engine/utility/FileUtilities.h"
@@ -9,7 +10,6 @@
 
 #include <iostream>
 #include <set>
-#include <Windows.h>
 
 using namespace Violet;
 
@@ -20,8 +20,6 @@ namespace CppScriptComponentNamespace
 	typedef void(*Initializer)(CppScriptComponent::Allocator & allocator, const Entity & entity);
 	typedef void(*Cleaner)(const Entity & entity);
 
-	const char * const ms_extension = "dll";
-	const char * const ms_debugExtension = "pdb";
 	const char * const ms_swapSuffix = ".swp";
 
 	void warnMissing(const char * filename, const char * procedureName);
@@ -80,7 +78,7 @@ void * CppScriptComponent::Allocator::allocate(const size_t size)
 
 // ============================================================================
 
-Tag CppScriptComponent::getTag()
+Tag CppScriptComponent::getStaticTag()
 {
 	return Tag('c', 'p', 'p', 's');
 }
@@ -102,7 +100,7 @@ CppScriptComponent::CppScriptComponent(CppScriptComponent && other) :
 	m_lib(std::move(other.m_lib)),
 	m_allocator(std::move(other.m_allocator))
 {
-	other.m_lib = nullptr;
+	other.m_lib.reset();
 }
 
 // ----------------------------------------------------------------------------
@@ -116,7 +114,7 @@ CppScriptComponent::~CppScriptComponent()
 
 std::string CppScriptComponent::getFilename() const
 {
-	return StringUtilities::lastRight(getFilenameWithPath(), '\\');
+    return m_lib != nullptr ? m_lib->getFilename() : "";
 }
 
 // ----------------------------------------------------------------------------
@@ -132,21 +130,7 @@ void CppScriptComponent::reload()
 		if (retCode == 0)
 		{
 			if (FileUtilities::copy((filename + ms_swapSuffix).c_str(), filename.c_str()))
-			{
-#ifdef _DEBUG
-				std::string pdbFilename = filename;
-				StringUtilities::replace(pdbFilename, ms_extension, ms_debugExtension);
-				retCode = std::remove(pdbFilename.c_str());
-				if (retCode == 0)
-				{
-					if (!FileUtilities::copy((pdbFilename + ms_swapSuffix).c_str(), pdbFilename.c_str()))
-						std::cout << "Could not copy file '" << pdbFilename << ms_swapSuffix << "' to '" << pdbFilename << "'" << std::endl;
-				}
-				else
-					std::cout << "Could not remove file: " << pdbFilename << std::endl;
-#endif
 				load(filename.c_str());
-			}
 			else
 				std::cout << "Could not copy file '" << filename << ms_swapSuffix << "' to '" << filename << "'" << std::endl;
 		}
@@ -157,9 +141,9 @@ void CppScriptComponent::reload()
 
 // ============================================================================
 
-void * CppScriptComponent::getMethodPtr(const char * name) const
+void * CppScriptComponent::getMethodPtr(const char * const name) const
 {
-	void * methodPtr = GetProcAddress(m_lib, name);
+    void * methodPtr = m_lib->getMethodPtr(name);
 	if (methodPtr == nullptr)
 		warnMissing(getFilename().c_str(), name);
 	return methodPtr;
@@ -174,24 +158,9 @@ void * CppScriptComponent::getMemoryPtr() const
 
 // ----------------------------------------------------------------------------
 
-std::string CppScriptComponent::getFilenameWithPath() const
-{
-	std::string filename;
-	{
-		static const uint32 bufferSize = 128;
-		char buffer[bufferSize];
-		GetModuleFileName(m_lib, buffer, bufferSize);
-		filename = buffer;
-	}
-
-	return filename;
-}
-
-// ----------------------------------------------------------------------------
-
 void CppScriptComponent::load(const char * filename)
 {
-	m_lib = LoadLibrary(filename);
+    m_lib = SharedLibrary::load(filename);
 	if (m_lib == nullptr)
 		std::cout << "Error loading script: " << filename << std::endl;
 	else
@@ -209,7 +178,7 @@ void CppScriptComponent::unload()
 	auto clean = (Cleaner)getMethodPtr("clean");
 	if (clean != nullptr)
 		clean(getOwner());
-	FreeLibrary(m_lib);
+    m_lib.reset();
 }
 
 // ============================================================================

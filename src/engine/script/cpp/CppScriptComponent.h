@@ -3,18 +3,14 @@
 
 #include "engine/component/Component.h"
 
+#include <memory>
 #include <string>
-
-#ifndef _WINDEF_
-struct HINSTANCE__;
-typedef HINSTANCE__* HINSTANCE;
-typedef HINSTANCE HMODULE;
-#endif
 
 namespace Violet
 {
 	class Deserializer;
 	class Serializer;
+    class SharedLibrary;
 
 	class VIOLET_API CppScriptComponent : public ComponentBase<CppScriptComponent>
 	{
@@ -47,7 +43,7 @@ namespace Violet
 
 	public:
 
-		static Tag getTag();
+		static Tag getStaticTag();
 
 	public:
 
@@ -65,7 +61,6 @@ namespace Violet
 		CppScriptComponent(const CppScriptComponent &) = delete;
 		CppScriptComponent & operator=(const CppScriptComponent &) = delete;
 
-		std::string getFilenameWithPath() const;
 		void * getMethodPtr(const char * name) const;
 		void * getMemoryPtr() const;
 
@@ -74,7 +69,7 @@ namespace Violet
 
 	private:
 
-		HMODULE m_lib;
+        std::shared_ptr<SharedLibrary> m_lib;
 		Allocator m_allocator;
 	};
 

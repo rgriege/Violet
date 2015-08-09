@@ -3,6 +3,9 @@
 
 #include "engine/serialization/Deserializer.h"
 
+#include <fstream>
+#include <streambuf>
+
 namespace Violet
 {
 	template <class StreamDeserializer>

@@ -36,7 +36,7 @@ uint32 Violet::ComponentBase<Derived>::getFlag()
 template <typename Derived>
 Violet::Tag Violet::ComponentBase<Derived>::getTag() const
 {
-	return Derived::getTag();
+	return Derived::getStaticTag();
 }
 
 // ============================================================================

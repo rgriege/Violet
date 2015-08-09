@@ -9,7 +9,7 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag UpdateComponent::getTag()
+Tag UpdateComponent::getStaticTag()
 {
 	return Tag('u', 'p', 'd', 't');
 }

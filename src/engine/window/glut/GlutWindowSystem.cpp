@@ -39,7 +39,8 @@ std::unique_ptr<System> GlutWindowSystem::init(Deserializer & deserializer)
 	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
 
 	int argc = 0;
-	char * argv = "";
+	char arr[1] = { '\0' };
+    char * argv = arr;
 	int const x = settingsSegment->getInt("x");
 	int const y = settingsSegment->getInt("y");
 	int const width = settingsSegment->getInt("width");

@@ -175,7 +175,7 @@ Deserializer & Violet::operator>>(Deserializer & deserializer, Color & color)
 Serializer & Violet::operator<<(Serializer & serializer, const Color & color)
 {
 	char hexString[11];
-	sprintf(hexString, "0x%.2x%.2x%.2x%.2x", color.r, color.g, color.b, color.a);
+	sprintf(hexString, "0x%.2x%.2x%.2x%.2x", color.r.asUint(), color.g.asUint(), color.b.asUint(), color.a.asUint());
 	hexString[10] = 0;
 	serializer.writeString(ms_segmentLabel, hexString);
 	return serializer;

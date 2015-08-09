@@ -344,6 +344,9 @@
     <ClInclude Include="..\..\..\src\engine\script\cpp\CppScriptComponent.h">
       <Filter>script\cpp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\script\cpp\SharedLibrary.h">
+      <Filter>script\cpp</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\engine\script\ScriptMethod.h">
       <Filter>script</Filter>
     </ClInclude>
@@ -507,6 +510,9 @@
       <Filter>script\lua</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp">
+      <Filter>script\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\script\cpp\WindowsSharedLibrary.cpp">
       <Filter>script\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaLibrary.cpp">

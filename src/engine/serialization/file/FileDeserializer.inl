@@ -2,7 +2,7 @@
 
 template <class StreamDeserializer>
 Violet::FileDeserializer<StreamDeserializer>::FileDeserializer(std::filebuf && file) :
-	m_file(std::move(file)),
+	m_file(static_cast<std::filebuf&&>(file)),
 	m_stream(&m_file),
 	m_deserializer(m_stream)
 {

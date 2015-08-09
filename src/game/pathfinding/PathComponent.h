@@ -11,7 +11,7 @@ class VIOLET_GAME_API PathComponent : public Violet::ComponentBase<PathComponent
 {
 public:
 
-	static Violet::Tag getTag();
+	static Violet::Tag getStaticTag();
 
 public:
 

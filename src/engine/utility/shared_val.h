@@ -8,8 +8,8 @@ namespace Violet
 	template <typename T>
 	class shared_val
 	{
-		template <typename T, typename ... Args>
-		friend shared_val<T> make_shared_val(Args && ... args);
+		template <typename U, typename ... Args>
+		friend shared_val<U> make_shared_val(Args && ... args);
 
 		template <typename U>
 		friend class shared_val;

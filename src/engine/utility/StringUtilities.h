@@ -3,6 +3,7 @@
 
 #include "engine/Defines.h"
 
+#include <cstring>
 #include <string>
 
 namespace Violet

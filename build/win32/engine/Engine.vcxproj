@@ -125,6 +125,7 @@
     <ClInclude Include="..\..\..\src\engine\scene\Scene.h" />
     <ClInclude Include="..\..\..\src\engine\scene\SceneUtilities.h" />
     <ClInclude Include="..\..\..\src\engine\script\cpp\CppScriptComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\script\cpp\SharedLibrary.h" />
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaLibrary.h" />
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaScript.h" />
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaScriptComponent.h" />
@@ -201,6 +202,7 @@
     <ClCompile Include="..\..\..\src\engine\scene\Scene.cpp" />
     <ClCompile Include="..\..\..\src\engine\scene\SceneUtilities.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\cpp\WindowsSharedLibrary.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaLibrary.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaScript.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaScriptComponent.cpp" />

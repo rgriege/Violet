@@ -14,7 +14,7 @@ class VIOLET_GAME_API PathfindingComponent : public Violet::ComponentBase<Pathfi
 {
 public:
 
-	static Violet::Tag getTag();
+	static Violet::Tag getStaticTag();
 
 public:
 

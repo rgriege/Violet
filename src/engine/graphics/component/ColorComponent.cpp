@@ -10,7 +10,7 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag ColorComponent::getTag()
+Tag ColorComponent::getStaticTag()
 {
 	return Tag('c', 'o', 'l', 'r');
 }

@@ -227,7 +227,7 @@ void PhysicsSystemNamespace::CollideTask::execute() const
 	const auto entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
 	if (entity != nullptr)
 	{
-		auto & physicsComponent = entity->getComponent<PhysicsComponent>();
+		const auto & physicsComponent = entity->getComponent<PhysicsComponent>();
 		if (physicsComponent != nullptr)
 		{
 			physicsComponent->m_angularVelocity += m_angularImpulse;

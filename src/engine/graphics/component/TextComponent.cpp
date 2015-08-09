@@ -11,7 +11,7 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag TextComponent::getTag()
+Tag TextComponent::getStaticTag()
 {
 	return Tag('t', 'e', 'x', 't');
 }

@@ -26,7 +26,11 @@ const Violet::Matrix3<T> Violet::Matrix3<T>::Identity = {
 // ----------------------------------------------------------------------------
 
 template <typename T>
-const Violet::Matrix3<T> Violet::Matrix3<T>::Zero;
+const Violet::Matrix3<T> Violet::Matrix3<T>::Zero = {
+	0.f, 0.f, 0.f,
+	0.f, 0.f, 0.f,
+	0.f, 0.f, 0.f
+};
 
 // ============================================================================
 
