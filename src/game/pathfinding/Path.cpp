@@ -73,7 +73,7 @@ Path Path::create(const Vec2f & start, const Vec2f & goal, const Map & map)
 		}
 	}
 
-	openSet.push({ firstNode, map.getNode(firstNode).m_position, minStartDistance, -1 });
+	openSet.push({ firstNode, map.getNode(firstNode).m_position, minStartDistance, std::numeric_limits<uint32>::max() });
 	while (!openSet.empty() && (closedSet.empty() || closedSet.back().m_node != lastNode)) {
 		closedSet.push_back(openSet.top());
 		const AStarNode & currentNode = closedSet.back();
@@ -98,7 +98,7 @@ Path Path::create(const Vec2f & start, const Vec2f & goal, const Map & map)
 						}
 					}
 					else {
-						AStarNode node = { edge.m_destination, nextIntersection.m_position, currentNode.m_cost + (nextIntersection.m_position - currentIntersection.m_position).magnitude(), closedSet.size() - 1 };
+						AStarNode node = { edge.m_destination, nextIntersection.m_position, currentNode.m_cost + (nextIntersection.m_position - currentIntersection.m_position).magnitude(), static_cast<uint32>(closedSet.size() - 1) };
 						openSet.push(node);
 					}
 				}

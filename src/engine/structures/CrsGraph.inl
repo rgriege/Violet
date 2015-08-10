@@ -33,7 +33,7 @@ typename Violet::CrsGraph<NodeType, EdgeType>::NodeIterator & Violet::CrsGraph<N
 // ----------------------------------------------------------------------------
 
 template <class NodeType, class EdgeType>
-bool typename Violet::CrsGraph<NodeType, EdgeType>::NodeIterator::operator!=(const NodeIterator & other) const
+bool Violet::CrsGraph<NodeType, EdgeType>::NodeIterator::operator!=(const NodeIterator & other) const
 {
 	return m_index != other.m_index;
 }
@@ -182,7 +182,7 @@ void Violet::CrsGraph<NodeType, EdgeType>::addEdge(const EdgeType & edge) {
     if (!m_edges.empty() && m_edges.back().getSource() <= edge.getSource()) {
         m_edges.push_back(edge);
     } else {
-        typename EdgeIterator it = std::upper_bound(m_edges.begin(),
+        const auto it = std::upper_bound(m_edges.begin(),
             m_edges.end(), edge, compareEdges);
         m_edges.insert(it, edge);
     }
@@ -203,11 +203,11 @@ void Violet::CrsGraph<NodeType, EdgeType>::addEdges(const Edges & edges) {
         return;
 
     /* Add the edges */
-    for (typename EdgeIterator it = edges.begin(); it != edges.end(); ++it) {
+    for (auto it = edges.begin(); it != edges.end(); ++it) {
         if (!m_edges.empty() && m_edges.back().getSource() <= it->getSource()) {
             m_edges.push_back(*it);
         } else {
-            typename EdgeIterator pos = upper_bound(m_edges.begin(), m_edges.end(), *it, compareEdges);
+            const auto pos = upper_bound(m_edges.begin(), m_edges.end(), *it, compareEdges);
             m_edges.insert(pos, *it);
         }
     }
