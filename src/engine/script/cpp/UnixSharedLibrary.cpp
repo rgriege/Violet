@@ -5,12 +5,20 @@
 #include <cstdio>
 #include <dlfcn.h>
 
-using namespace Violet
+using namespace Violet;
 
 // ============================================================================
 
 class SharedLibrary::Implementation
 {
+public:
+
+    Implementation(void * handle, std::string filename) :
+        m_handle(handle),
+        m_filename(std::move(filename))
+    {
+    }
+
 public:
 
     void * m_handle;

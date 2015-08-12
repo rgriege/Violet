@@ -1,13 +1,14 @@
 #ifndef VIOLET_SharedLibrary_H
 #define VIOLET_SharedLibrary_H
 
+#include "engine/Defines.h"
 #include "engine/utility/unique_val.h"
 
 #include <memory>
 
 namespace Violet
 {
-    class SharedLibrary
+    class VIOLET_API SharedLibrary
     {
     private:
 
