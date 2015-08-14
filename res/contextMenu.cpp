@@ -31,7 +31,7 @@ public:
         if (deserializer != nullptr && *deserializer)
         {
             Entity & menu = m_engine.getCurrentScene().getRoot().addChild(*deserializer);
-            auto & transformComponent = menu.getComponent<TransformComponent>();
+            auto transformComponent = menu.getComponent<TransformComponent>();
             if (transformComponent != nullptr)
                 transformComponent->m_position = m_position;
             m_mem.menu = menu.getHandle();
@@ -71,7 +71,7 @@ bool activeMenu(Mem & mem);
 void createMenu(Mem & mem, const Engine & engine, const Vec2f & position);
 void removeMenu(Mem & mem, const Engine & engine);
 
-extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
+VIOLET_SCRIPT_EXPORT void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
 {
     Mem * mem = allocator.allocate<Mem>();
     mem->menu = Handle::ms_invalid;
@@ -80,7 +80,7 @@ extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & alloc
     MouseDownMethod::assign(entity, std::bind(onMouseDown, _1, _2, _3, mem));
 }
 
-extern "C" __declspec(dllexport) void clean(const Entity & entity)
+VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
 {
     MouseDownMethod::remove(entity);
 }

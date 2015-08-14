@@ -31,7 +31,7 @@ public:
         const auto entity = m_engine.getCurrentScene().getEntity(m_entityHandle);
         if (entity != nullptr)
         {
-            auto & colorComponent = entity->getComponent<ColorComponent>();
+            auto colorComponent = entity->getComponent<ColorComponent>();
             if (colorComponent != nullptr)
                 colorComponent->m_color = m_color;
         }
@@ -49,7 +49,7 @@ void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem);
 
 void update(const Entity & entity, const Engine & engine, float dt, Mem * mem);
 
-extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
+VIOLET_SCRIPT_EXPORT void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
 {
     Mem * mem = allocator.allocate<Mem>();
     mem->opacity = 0xCC;
@@ -61,7 +61,7 @@ extern "C" __declspec(dllexport) void init(CppScriptComponent::Allocator & alloc
     UpdateMethod::assign(entity, std::bind(update, _1, _2, _3, mem));
 }
 
-extern "C" __declspec(dllexport) void clean(const Entity & entity)
+VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
 {
     MouseInMethod::remove(entity);
     MouseOutMethod::remove(entity);
@@ -82,7 +82,7 @@ void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem)
 
 void update(const Entity & entity, const Engine & engine, const float dt, Mem * mem)
 {
-    auto & colorComponent = entity.getComponent<ColorComponent>();
+    auto colorComponent = entity.getComponent<ColorComponent>();
     if (colorComponent != nullptr)
     {
         if (colorComponent->m_color.a != mem->opacity)
