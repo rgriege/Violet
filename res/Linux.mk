@@ -7,6 +7,7 @@ all: $(foreach TARGET, $(TARGETS), $(TARGET).so)
 
 install: all
 	cp *.json $(DST) 2>/dev/null || :
+	sed -i 's/\.dll/so/g' $(DST)/*.json
 	cp *.ttf $(DST) 2>/dev/null || :
 	cp *.vert $(DST) 2>/dev/null || :
 	cp *.frag $(DST) 2>/dev/null || :
