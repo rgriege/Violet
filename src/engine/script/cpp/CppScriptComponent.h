@@ -81,7 +81,7 @@ namespace Violet
 #ifdef _WIN32
 #define VIOLET_SCRIPT_EXPORT extern "C" __declspec(dllexport)
 #else
-#define VIOLET_SCRIPT_EXPORT 
+#define VIOLET_SCRIPT_EXPORT extern "C"
 #endif
 
 #endif
