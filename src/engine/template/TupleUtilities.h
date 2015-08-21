@@ -3,8 +3,9 @@
 
 #include "engine/template/TemplateUtilities.h"
 
-#include <tuple>
 #include <functional>
+#include <ostream>
+#include <tuple>
 
 namespace Violet
 {
@@ -357,14 +358,14 @@ namespace Violet
 		template <typename Predicate, typename... Args>
 		size_t first(Predicate pr, std::tuple<Args...> & tup, Index<0>)
 		{
-			return std::tuple_size(tup);
+			return std::tuple_size<std::tuple<Args...>>::value;
 		}
 
 		template <typename Predicate, typename... Args, size_t N>
 		size_t first(Predicate pr, std::tuple<Args...> & tup, Index<N>)
 		{
 			auto currentResult = first(pr, tup, Index<N - 1>());
-			return currentResult != std::tuple_size(tup) ?
+			return currentResult != std::tuple_size<std::tuple<Args...>>::value ?
 				currentResult :
 				pr(std::get<N - 1>(tup)) ?
 					N - 1 :

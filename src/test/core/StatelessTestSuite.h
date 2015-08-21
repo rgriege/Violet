@@ -10,13 +10,17 @@ namespace Violet
 	{
 	public:
 
-		StatelessTestSuite(const char * name, std::tuple<Tests...> tests) :
+		StatelessTestSuite(const char * name, std::tuple<Tests...> && tests) :
 			m_name(name),
-			m_tests(tests)
+			m_tests(std::move(tests))
 		{
 		}
 
-		StatelessTestSuite(const StatelessTestSuite &) = delete;
+        StatelessTestSuite(StatelessTestSuite && rhs) :
+            m_name(rhs.m_name),
+            m_tests(std::move(rhs.m_tests))
+        {
+        }
 
 		template <typename Evaluator>
 		bool evaluate(Evaluator & evaluator) const
@@ -54,6 +58,10 @@ namespace Violet
 				return std::get<0>(t).evaluate(evaluator);
 			}
 		};
+
+    private:
+
+		StatelessTestSuite(const StatelessTestSuite &) = delete;
 
 	private:
 

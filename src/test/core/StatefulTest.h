@@ -17,7 +17,12 @@ namespace Violet
 		{
 		}
 
-		StatefulTest(const StatefulTest &) = delete;
+        StatefulTest(StatefulTest && rhs) :
+            m_name(rhs.m_name),
+            m_desired(std::move(rhs.m_desired)),
+            m_predicate(std::move(rhs.m_predicate))
+        {
+        }
 
 		template <typename TestEvaluator>
 		bool evaluate(TestEvaluator & evaluator, State & state) const 
@@ -25,6 +30,10 @@ namespace Violet
 			ResultType const actual = m_predicate(state);
 			return evaluator.evaluate(m_name, m_desired, actual);
 		}
+
+    private:
+
+		StatefulTest(const StatefulTest &) = delete;
 
 	private:
 
