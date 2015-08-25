@@ -6,12 +6,19 @@
 
 #include <Windows.h>
 
-using namespace Violet
+using namespace Violet;
 
 // ============================================================================
 
 class SharedLibrary::Implementation
 {
+public:
+
+	Implementation(HMODULE handle) :
+		m_handle(handle)
+	{
+	}
+
 public:
 
     HMODULE m_handle;
@@ -40,7 +47,7 @@ std::string SharedLibrary::getFilename() const
 	{
 		static const uint32 bufferSize = 128;
 		char buffer[bufferSize];
-		GetModuleFileName(m_lib, buffer, bufferSize);
+		GetModuleFileName(m_impl->m_handle, buffer, bufferSize);
 		filename = buffer;
 	}
 

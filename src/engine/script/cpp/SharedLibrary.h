@@ -5,6 +5,7 @@
 #include "engine/utility/unique_val.h"
 
 #include <memory>
+#include <string>
 
 namespace Violet
 {
