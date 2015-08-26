@@ -31,6 +31,11 @@ namespace Violet
 			std::cout << "method bound for " << entity.getHandle().getId() << std::endl;
 		}
 
+		static bool has(const Entity & entity)
+		{
+			return ms_delegates.find(entity.getHandle()) != ms_delegates.end();
+		}
+
 		static ResultType run(const Entity & entity, Args && ... args)
 		{
 			const auto it = ms_delegates.find(entity.getHandle());
