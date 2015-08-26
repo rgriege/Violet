@@ -50,6 +50,7 @@ namespace Violet
 	DEFINE_METHOD(KeyUpMethod, void(const Entity &, const Engine &, unsigned char));
 	DEFINE_METHOD(MouseDownMethod, InputResult(const Entity &, const Engine &, const InputSystem::MouseButtonEvent &));
 	DEFINE_METHOD(MouseUpMethod, InputResult(const Entity &, const Engine &, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseMoveMethod, void(const Entity &, const Engine &, const InputSystem::MouseMotionEvent &));
 	DEFINE_METHOD(MouseInMethod, void(const Entity &, const Engine &));
 	DEFINE_METHOD(MouseOutMethod, void(const Entity &, const Engine &));
 }

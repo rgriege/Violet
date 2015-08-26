@@ -240,6 +240,8 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 					MouseOutMethod::run(entity, entity, engine);
 			}
 		}
+
+		MouseMoveMethod::run(entity, entity, engine, event);
 	}
 
 	return InputResult::Pass;
