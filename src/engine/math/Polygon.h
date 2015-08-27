@@ -18,6 +18,8 @@ namespace Violet
 		bool contains(const Vec2f & point) const;
 		AABB getBoundingBox() const;
 
+		FloatInterval project(const Vec2f & axis) const;
+
 	public:
 
 		std::vector<Vec2f> m_vertices;

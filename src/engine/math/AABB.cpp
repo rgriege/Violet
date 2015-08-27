@@ -8,6 +8,37 @@ using namespace Violet;
 
 // ============================================================================
 
+AABB AABB::createFromLine(const Vec2f & start, const Vec2f & end)
+{
+	float minX, maxX, minY, maxY;
+
+	if (start.x < end.x)
+	{
+		minX = start.x;
+		maxX = end.x;
+	}
+	else
+	{
+		minX = end.x;
+		maxX = start.x;
+	}
+
+	if (start.y < end.y)
+	{
+		minY = start.y;
+		maxY = end.y;
+	}
+	else
+	{
+		minY = end.y;
+		maxY = start.y;
+	}
+
+	return AABB(minX, maxY, maxX, minY);
+}
+
+// ============================================================================
+
 AABB::AABB() :
 	m_topLeft(),
 	m_bottomRight()

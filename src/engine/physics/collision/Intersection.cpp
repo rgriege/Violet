@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "engine/physics/collision/Intersection.h"
 
 #include <vector>
@@ -5,15 +7,71 @@
 
 using namespace Violet;
 
+// ============================================================================
+
 namespace IntersectionNamespace
 {
 	const float ms_impactTimeDiffThreshold = 0.01f;
 	const float ms_overlapThreshold = 0.2f;
+
+	void getEdgePerpendiculars(const std::vector<Vec2f> & vertices, std::vector<Vec2f> & perpendiculars);
 }
 
 using namespace IntersectionNamespace;
 
 #define ROTATION 0
+
+// ============================================================================
+
+bool Intersection::test(const Vec2f & start1, const Vec2f & end1, const Vec2f & start2, const Vec2f & end2)
+{
+	/*
+	 * y = (y1b - y1a) / (x1b - x1a) * (x - x1a) + y1a
+	 * a1 = y1a - m1 * x1a
+	 * y = m1 * x + a1
+	 * m2 * x + a2 = m1 * x + a1
+	 * x = (a2 - a1) / (m1 - m2)
+	 */
+
+	float const slope1 = (end1.y - start1.y) / (end1.x - start1.x);
+	float const slope2 = (end2.y - start2.y) / (end2.x - start2.x);
+
+	float const a1 = end1.y + slope1 * end1.x;
+	float const a2 = end2.y + slope2 * end2.x;
+
+	float const x = (a2 - a1) / (slope1 - slope2);
+	Vec2f const intersection(x, slope1 * x + start1.y);
+
+	return AABB::createFromLine(start1, end1).contains(intersection) && AABB::createFromLine(start2, end2).contains(intersection);
+}
+
+// ----------------------------------------------------------------------------
+
+bool Intersection::test(const Polygon & poly1, const Polygon & poly2)
+{
+	if (!poly1.project(Vec2f::X_AXIS).overlaps(poly2.project(Vec2f::X_AXIS))
+		|| !poly1.project(Vec2f::Y_AXIS).overlaps(poly2.project(Vec2f::Y_AXIS)))
+		return false;
+
+	std::vector<Vec2f> intersectionAxes;
+	getEdgePerpendiculars(poly1.m_vertices, intersectionAxes);
+	getEdgePerpendiculars(poly2.m_vertices, intersectionAxes);
+
+	for (auto & axis : intersectionAxes)
+		axis.normalize();
+
+	for (uint32 i = 0, size = intersectionAxes.size(); i < size; ++i)
+	{
+		const Vec2f & axis = intersectionAxes[i];
+		float overlap = abs(poly1.project(axis).overlap(poly2.project(axis)));
+		if (overlap == 0)
+			return false;
+	}
+
+	return true;
+}
+
+// ============================================================================
 
 Intersection::Intersection(RigidBody && rb1, RigidBody && rb2, const float frameTime) :
 	m_rb1(rb1),
@@ -179,3 +237,17 @@ Vec2f Intersection::findImpactVector() const
 	std::sort(begin(closestVertices), end(closestVertices), [&](const Vec2f & lhs, const Vec2f & rhs){ return lhs.dot(perp) < rhs.dot(perp); });
 	return (closestVertices[1] + closestVertices[2]) / 2.f;
 }
+
+// ============================================================================
+
+void IntersectionNamespace::getEdgePerpendiculars(const std::vector<Vec2f> & vertices, std::vector<Vec2f> & perpendiculars)
+{
+	perpendiculars.emplace_back((vertices.front() - vertices.back()).perpendicular());
+	for (uint32 i = 1, end = vertices.size(); i < end; ++i)
+	{
+		const Vec2f side = vertices[i] - vertices[i - 1];
+		perpendiculars.push_back(side.perpendicular());
+	}
+}
+
+// ============================================================================

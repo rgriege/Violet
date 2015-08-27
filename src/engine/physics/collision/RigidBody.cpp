@@ -82,15 +82,7 @@ void RigidBody::applyImpulse(Vec2f impulse, const Vec2f & location)
 FloatInterval RigidBody::project(const Vec2f & axis) const
 {
 	const Vec2f & unitAxis = axis.isUnit() ? axis : axis.getUnit();
-	FloatInterval projection;
-	for (const auto & vertex : m_polygon.m_vertices)
-	{
-		const float dp = vertex.dot(unitAxis);
-		if (dp < projection.m_left)
-			projection.m_left = dp;
-		else if (dp > projection.m_right)
-			projection.m_right = dp;
-	}
+	FloatInterval projection = m_polygon.project(unitAxis);
 	const float dp = m_center.dot(unitAxis);
 	projection.m_left += dp;
 	projection.m_right += dp;

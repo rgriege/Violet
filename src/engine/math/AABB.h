@@ -11,6 +11,10 @@ namespace Violet
 	{
 	public:
 
+		static AABB createFromLine(const Vec2f & start, const Vec2f & end);
+
+	public:
+
 		AABB();
 		AABB(const Vec2f & center, const Vec2f & halfDim);
 		AABB(float left, float top, float right, float bottom);

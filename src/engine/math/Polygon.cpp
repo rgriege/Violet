@@ -71,6 +71,23 @@ AABB Polygon::getBoundingBox() const
 	return result;
 }
 
+// ----------------------------------------------------------------------------
+
+FloatInterval Polygon::project(const Vec2f & axis) const
+{
+	const Vec2f & unitAxis = axis.isUnit() ? axis : axis.getUnit();
+	FloatInterval projection;
+	for (const auto & vertex : m_vertices)
+	{
+		const float dp = vertex.dot(unitAxis);
+		if (dp < projection.m_left)
+			projection.m_left = dp;
+		else if (dp > projection.m_right)
+			projection.m_right = dp;
+	}
+	return projection;
+}
+
 // ============================================================================
 
 Serializer & Violet::operator<<(Serializer & serializer, const Polygon & poly)
