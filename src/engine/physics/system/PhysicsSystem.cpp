@@ -3,7 +3,7 @@
 #include "engine/physics/system/PhysicsSystem.h"
 
 #include "engine/Engine.h"
-#include "engine/scene/SceneUtilities.h"
+#include "engine/scene/SceneProcessor.h"
 #include "engine/entity/Entity.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/structures/QuadTree.h"
@@ -108,8 +108,8 @@ void PhysicsSystem::update(const float dt, const Engine & engine)
 	QuadTree<std::reference_wrapper<const Entity>> tree(boundary, 4);
 
 	{
-		SceneUtilities::Processor processor;
-		processor.addDelegate(SceneUtilities::Processor::Filter::create<TransformComponent, PhysicsComponent>(), [&](const Entity & entity, const float dt)
+		SceneProcessor processor;
+		processor.addDelegate(SceneProcessor::Filter::create<TransformComponent, PhysicsComponent>(), [&](const Entity & entity, const float dt)
 		{
 			auto & transformComponent = *entity.getComponent<TransformComponent>();
 			auto & physicsComponent = *entity.getComponent<PhysicsComponent>();
@@ -120,8 +120,8 @@ void PhysicsSystem::update(const float dt, const Engine & engine)
 	}
 
 	{
-		SceneUtilities::Processor processor;
-		processor.addDelegate(SceneUtilities::Processor::Filter::create<TransformComponent, PhysicsComponent>(), [&](const Entity & entity, const float dt)
+		SceneProcessor processor;
+		processor.addDelegate(SceneProcessor::Filter::create<TransformComponent, PhysicsComponent>(), [&](const Entity & entity, const float dt)
 		{
 			auto & transformComponent = *entity.getComponent<TransformComponent>();
 			auto & physicsComponent = *entity.getComponent<PhysicsComponent>();

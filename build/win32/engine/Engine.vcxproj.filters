@@ -305,9 +305,6 @@
     <ClInclude Include="..\..\..\src\engine\math\Vec2.inl">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\scene\SceneUtilities.h">
-      <Filter>scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\engine\utility\Profiler.h">
       <Filter>utility</Filter>
     </ClInclude>
@@ -373,6 +370,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponentData.h">
       <Filter>graphics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\engine\scene\SceneProcessor.h">
+      <Filter>scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -482,9 +482,6 @@
     <ClCompile Include="..\..\..\src\engine\system\System.cpp">
       <Filter>system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\scene\SceneUtilities.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\engine\math\AABB.cpp">
       <Filter>math</Filter>
     </ClCompile>
@@ -532,6 +529,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponentData.cpp">
       <Filter>graphics\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\engine\scene\SceneProcessor.cpp">
+      <Filter>scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

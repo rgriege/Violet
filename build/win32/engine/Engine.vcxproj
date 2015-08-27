@@ -123,7 +123,7 @@
     <ClInclude Include="..\..\..\src\engine\physics\component\PhysicsComponent.h" />
     <ClInclude Include="..\..\..\src\engine\physics\system\PhysicsSystem.h" />
     <ClInclude Include="..\..\..\src\engine\scene\Scene.h" />
-    <ClInclude Include="..\..\..\src\engine\scene\SceneUtilities.h" />
+    <ClInclude Include="..\..\..\src\engine\scene\SceneProcessor.h" />
     <ClInclude Include="..\..\..\src\engine\script\cpp\CppScriptComponent.h" />
     <ClInclude Include="..\..\..\src\engine\script\cpp\SharedLibrary.h" />
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaLibrary.h" />
@@ -200,7 +200,7 @@
     <ClCompile Include="..\..\..\src\engine\physics\component\PhysicsComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\physics\system\PhysicsSystem.cpp" />
     <ClCompile Include="..\..\..\src\engine\scene\Scene.cpp" />
-    <ClCompile Include="..\..\..\src\engine\scene\SceneUtilities.cpp" />
+    <ClCompile Include="..\..\..\src\engine\scene\SceneProcessor.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\cpp\WindowsSharedLibrary.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaLibrary.cpp" />

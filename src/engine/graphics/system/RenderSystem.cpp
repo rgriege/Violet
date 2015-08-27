@@ -7,7 +7,7 @@
 #include "engine/graphics/component/ColorComponent.h"
 #include "engine/graphics/component/TextComponent.h"
 #include "engine/graphics/component/TextureComponent.h"
-#include "engine/scene/SceneUtilities.h"
+#include "engine/scene/SceneProcessor.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/system/SystemFactory.h"
 #include "engine/transform/component/TransformComponent.h"

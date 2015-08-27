@@ -7,7 +7,7 @@
 #include "engine/input/component/KeyInputComponent.h"
 #include "engine/input/component/MouseInputComponent.h"
 #include "engine/math/Matrix3.h"
-#include "engine/scene/SceneUtilities.h"
+#include "engine/scene/SceneProcessor.h"
 #include "engine/system/SystemFactory.h"
 #include "engine/transform/component/TransformComponent.h"
 #include "engine/window/WindowSystem.h"
