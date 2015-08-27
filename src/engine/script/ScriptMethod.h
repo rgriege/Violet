@@ -62,7 +62,17 @@ namespace Violet
 	template <typename Derived, typename ResultType, typename ... Args>
 	std::unordered_map<Handle, typename ScriptMethod<Derived, ResultType(Args...)>::Delegate> ScriptMethod<Derived, ResultType(Args...)>::ms_delegates;
 
-#define DEFINE_METHOD(Method, Signature) class VIOLET_API Method : public ScriptMethod<Method, Signature> \
+#ifdef WIN32
+#ifdef VIOLET_SCRIPT
+#define SCRIPT_API __declspec(dllimport)
+#else
+#define SCRIPT_API __declspec(dllexport)
+#endif
+#else
+#define SCRIPT_API
+#endif
+
+#define DEFINE_METHOD(Method, Signature) class SCRIPT_API Method : public Violet::ScriptMethod<Method, Signature> \
 	{ \
 	public: \
 		static const char * getName() { return #Method; } \
