@@ -13,7 +13,11 @@ namespace Violet
 		Interval();
 		Interval(T left, T right);
 		Interval(const Interval & other);
+
+		Interval & slide(T delta);
+
 		T length() const;
+		
 		bool contains(T x) const;
 		bool contains(const Interval & other) const;
 		bool overlaps(const Interval & other) const;

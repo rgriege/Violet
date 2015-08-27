@@ -31,6 +31,15 @@ Violet::Interval<T>::Interval(const Interval & other) :
 }
 
 // ----------------------------------------------------------------------------
+template<typename T>
+Violet::Interval<T> & Violet::Interval<T>::slide(const T delta)
+{
+	m_left += delta;
+	m_right += delta;
+	return *this;
+}
+
+// ----------------------------------------------------------------------------
 
 template<typename T>
 T Violet::Interval<T>::length() const

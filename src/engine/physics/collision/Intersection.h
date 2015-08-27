@@ -11,6 +11,7 @@ namespace Violet
 
 		static bool test(const Vec2f & start1, const Vec2f & end1, const Vec2f & start2, const Vec2f & end2);
 		static bool test(const Polygon & poly1, const Polygon & poly2);
+		static bool test(const Polygon & poly1, const Polygon & poly2, const Vec2f & centerToCenter);
 
 	public:
 

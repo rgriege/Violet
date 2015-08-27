@@ -49,8 +49,15 @@ bool Intersection::test(const Vec2f & start1, const Vec2f & end1, const Vec2f & 
 
 bool Intersection::test(const Polygon & poly1, const Polygon & poly2)
 {
-	if (!poly1.project(Vec2f::X_AXIS).overlaps(poly2.project(Vec2f::X_AXIS))
-		|| !poly1.project(Vec2f::Y_AXIS).overlaps(poly2.project(Vec2f::Y_AXIS)))
+	return test(poly1, poly2, Vec2f::ZERO);
+}
+
+// ----------------------------------------------------------------------------
+
+bool Intersection::test(const Polygon & poly1, const Polygon & poly2, const Vec2f & centerToCenter)
+{
+	if (!poly1.project(Vec2f::X_AXIS).overlaps(poly2.project(Vec2f::X_AXIS).slide(centerToCenter.dot(Vec2f::X_AXIS)))
+		|| !poly1.project(Vec2f::Y_AXIS).overlaps(poly2.project(Vec2f::Y_AXIS).slide(centerToCenter.dot(Vec2f::Y_AXIS))))
 		return false;
 
 	std::vector<Vec2f> intersectionAxes;
@@ -63,7 +70,7 @@ bool Intersection::test(const Polygon & poly1, const Polygon & poly2)
 	for (uint32 i = 0, size = intersectionAxes.size(); i < size; ++i)
 	{
 		const Vec2f & axis = intersectionAxes[i];
-		float overlap = abs(poly1.project(axis).overlap(poly2.project(axis)));
+		float overlap = abs(poly1.project(axis).overlap(poly2.project(axis).slide(centerToCenter.dot(axis))));
 		if (overlap == 0)
 			return false;
 	}

@@ -18,6 +18,8 @@ namespace Violet
 		bool contains(const Vec2f & point) const;
 		AABB getBoundingBox() const;
 
+		void translate(const Vec2f delta);
+
 		FloatInterval project(const Vec2f & axis) const;
 
 	public:
