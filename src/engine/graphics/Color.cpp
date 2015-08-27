@@ -15,6 +15,8 @@ namespace ColorNamespace
 
 	float convert(uint8 value);
 	uint8 convert(float value);
+
+	void deserializeFromHexString(Color & color, const char * hexString);
 }
 
 using namespace ColorNamespace;
@@ -152,6 +154,14 @@ Color::Color(Deserializer & deserializer) :
 
 // ----------------------------------------------------------------------------
 
+Color::Color(const char * const hexString) :
+	Color()
+{
+	deserializeFromHexString(*this, hexString);
+}
+
+// ----------------------------------------------------------------------------
+
 std::array<float, 4> Color::as4fv() const
 {
 	return { r, g, b, a };
@@ -162,11 +172,7 @@ std::array<float, 4> Color::as4fv() const
 Deserializer & Violet::operator>>(Deserializer & deserializer, Color & color)
 {
 	const char * hexString = deserializer.getString(ms_segmentLabel);
-	uint32 rgba = strtoul(hexString, nullptr, 16);
-	color.r = static_cast<uint8>((rgba >> 24) & 0xff);
-	color.g = static_cast<uint8>((rgba >> 16) & 0xff);
-	color.b = static_cast<uint8>((rgba >> 8) & 0xff);
-	color.a = static_cast<uint8>(rgba & 0xff);
+	deserializeFromHexString(color, hexString);
 	return deserializer;
 }
 
@@ -193,6 +199,17 @@ float ColorNamespace::convert(const uint8 value)
 uint8 ColorNamespace::convert(const float value)
 {
 	return static_cast<uint8>(value * 255);
+}
+
+// ----------------------------------------------------------------------------
+
+void ColorNamespace::deserializeFromHexString(Color & color, const char * const hexString)
+{
+	uint32 rgba = strtoul(hexString, nullptr, 16);
+	color.r = static_cast<uint8>((rgba >> 24) & 0xff);
+	color.g = static_cast<uint8>((rgba >> 16) & 0xff);
+	color.b = static_cast<uint8>((rgba >> 8) & 0xff);
+	color.a = static_cast<uint8>(rgba & 0xff);
 }
 
 // ============================================================================
