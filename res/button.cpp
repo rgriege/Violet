@@ -12,6 +12,7 @@ using namespace Violet;
 
 struct Mem
 {
+    Mem(uint8 _opacity) : opacity(_opacity), disappearing(true) {}
     uint8 opacity;
     bool disappearing;
 };
@@ -43,22 +44,20 @@ private:
     const Color m_color;
 };
 
-void onMouseIn(const Entity & entity, const Engine & engine, Mem * mem);
+void onMouseIn(const Entity & entity, const Engine & engine, Mem & mem);
 
-void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem);
+void onMouseOut(const Entity & entity, const Engine & engine, Mem & mem);
 
-void update(const Entity & entity, const Engine & engine, float dt, Mem * mem);
+void update(const Entity & entity, const Engine & engine, float dt, Mem & mem);
 
 VIOLET_SCRIPT_EXPORT void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
 {
-    Mem * mem = allocator.allocate<Mem>();
-    mem->opacity = 0xCC;
-    mem->disappearing = false;
+    Mem * mem = allocator.allocate<Mem>(0xCC);
 
     using namespace std::placeholders;
-    MouseInMethod::assign(entity, std::bind(onMouseIn, _1, _2, mem));
-    MouseOutMethod::assign(entity, std::bind(onMouseOut, _1, _2, mem));
-    UpdateMethod::assign(entity, std::bind(update, _1, _2, _3, mem));
+    MouseInMethod::assign(entity, std::bind(onMouseIn, _1, _2, std::ref(*mem)));
+    MouseOutMethod::assign(entity, std::bind(onMouseOut, _1, _2, std::ref(*mem)));
+    UpdateMethod::assign(entity, std::bind(update, _1, _2, _3, std::ref(*mem)));
 }
 
 VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
@@ -68,30 +67,30 @@ VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
     UpdateMethod::remove(entity);
 }
 
-void onMouseIn(const Entity & entity, const Engine & engine, Mem * mem)
+void onMouseIn(const Entity & entity, const Engine & engine, Mem & mem)
 {
-    mem->opacity = 0xCC;
-    mem->disappearing = false;
+    mem.opacity = 0xCC;
+    mem.disappearing = false;
 }
 
-void onMouseOut(const Entity & entity, const Engine & engine, Mem * mem)
+void onMouseOut(const Entity & entity, const Engine & engine, Mem & mem)
 {
-    mem->opacity = 0x33;
-    mem->disappearing = true;
+    mem.opacity = 0x33;
+    mem.disappearing = true;
 }
 
-void update(const Entity & entity, const Engine & engine, const float dt, Mem * mem)
+void update(const Entity & entity, const Engine & engine, const float dt, Mem & mem)
 {
     auto colorComponent = entity.getComponent<ColorComponent>();
     if (colorComponent != nullptr)
     {
-        if (colorComponent->m_color.a != mem->opacity)
+        if (colorComponent->m_color.a != mem.opacity)
         {
             Color newColor(colorComponent->m_color);
-            if (mem->disappearing)
-                newColor.a = std::max<uint8>(newColor.a.asUint() - 5u, mem->opacity);
+            if (mem.disappearing)
+                newColor.a = std::max<uint8>(newColor.a.asUint() - 5u, mem.opacity);
             else
-                newColor.a = std::min<uint8>(newColor.a.asUint() + 5u, mem->opacity);
+                newColor.a = std::min<uint8>(newColor.a.asUint() + 5u, mem.opacity);
             engine.addTask(std::make_unique<ChangeColorTask>(engine, entity.getHandle(), newColor));
         }
     }

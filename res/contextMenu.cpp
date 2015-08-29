@@ -11,6 +11,7 @@ using namespace Violet;
 
 struct Mem
 {
+    Mem() : menu(Handle::ms_invalid) {}
     Handle menu;
 };
 
@@ -65,7 +66,7 @@ private:
     Mem & m_mem;
 };
 
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem * mem);
+InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem);
 
 bool activeMenu(Mem & mem);
 void createMenu(Mem & mem, const Engine & engine, const Vec2f & position);
@@ -74,10 +75,9 @@ void removeMenu(Mem & mem, const Engine & engine);
 VIOLET_SCRIPT_EXPORT void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
 {
     Mem * mem = allocator.allocate<Mem>();
-    mem->menu = Handle::ms_invalid;
 
     using namespace std::placeholders;
-    MouseDownMethod::assign(entity, std::bind(onMouseDown, _1, _2, _3, mem));
+    MouseDownMethod::assign(entity, std::bind(onMouseDown, _1, _2, _3, std::ref(*mem)));
 }
 
 VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
@@ -85,20 +85,20 @@ VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
     MouseDownMethod::remove(entity);
 }
 
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem * mem)
+InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem)
 {
     if (event.button == MB_Right)
     {
-        if (activeMenu(*mem))
+        if (activeMenu(mem))
         {
-            removeMenu(*mem, engine);
-            createMenu(*mem, engine, event.position);
+            removeMenu(mem, engine);
+            createMenu(mem, engine, event.position);
         }
         else
-            createMenu(*mem, engine, event.position);
+            createMenu(mem, engine, event.position);
     }
-    else if (activeMenu(*mem))
-        removeMenu(*mem, engine);
+    else if (activeMenu(mem))
+        removeMenu(mem, engine);
     else
         return InputResult::Pass;
 

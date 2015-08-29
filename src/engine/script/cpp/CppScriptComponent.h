@@ -25,8 +25,10 @@ namespace Violet
 			Allocator & operator=(Allocator && other);
 			~Allocator();
 
+			template <typename T, typename ... Args>
+			T * allocate(Args && ... args);
 			template <typename T>
-			T * allocate();
+			void deallocate();
 			void * fetch() const;
 
 		private:
