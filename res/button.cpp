@@ -60,11 +60,13 @@ VIOLET_SCRIPT_EXPORT void init(CppScriptComponent::Allocator & allocator, const 
     UpdateMethod::assign(entity, std::bind(update, _1, _2, _3, std::ref(*mem)));
 }
 
-VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
+VIOLET_SCRIPT_EXPORT void clean(CppScriptComponent::Allocator & allocator, const Entity & entity)
 {
     MouseInMethod::remove(entity);
     MouseOutMethod::remove(entity);
     UpdateMethod::remove(entity);
+
+    allocator.deallocate<Mem>();
 }
 
 void onMouseIn(const Entity & entity, const Engine & engine, Mem & mem)

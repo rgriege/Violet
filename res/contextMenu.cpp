@@ -80,9 +80,11 @@ VIOLET_SCRIPT_EXPORT void init(CppScriptComponent::Allocator & allocator, const 
     MouseDownMethod::assign(entity, std::bind(onMouseDown, _1, _2, _3, std::ref(*mem)));
 }
 
-VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
+VIOLET_SCRIPT_EXPORT void clean(CppScriptComponent::Allocator & allocator, const Entity & entity)
 {
     MouseDownMethod::remove(entity);
+
+    allocator.deallocate<Mem>();
 }
 
 InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem)

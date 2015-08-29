@@ -8,6 +8,7 @@
 #include "engine/utility/FileUtilities.h"
 #include "engine/utility/StringUtilities.h"
 
+#include <assert.h>
 #include <iostream>
 #include <set>
 
@@ -18,7 +19,7 @@ using namespace Violet;
 namespace CppScriptComponentNamespace
 {
 	typedef void(*Initializer)(CppScriptComponent::Allocator & allocator, const Entity & entity);
-	typedef void(*Cleaner)(const Entity & entity);
+	typedef void(*Cleaner)(CppScriptComponent::Allocator & allocator, const Entity & entity);
 
 	const char * const ms_swapSuffix = ".swp";
 
@@ -54,8 +55,7 @@ CppScriptComponent::Allocator & CppScriptComponent::Allocator::operator=(Allocat
 
 CppScriptComponent::Allocator::~Allocator()
 {
-	if (m_memory != nullptr)
-		free(m_memory);
+	assert(m_memory == nullptr);
 }
 
 // ----------------------------------------------------------------------------
@@ -177,7 +177,7 @@ void CppScriptComponent::unload()
 {
 	auto clean = (Cleaner)getMethodPtr("clean");
 	if (clean != nullptr)
-		clean(getOwner());
+		clean(m_allocator, getOwner());
     m_lib.reset();
 }
 

@@ -13,6 +13,7 @@ template <typename T>
 void Violet::CppScriptComponent::Allocator::deallocate()
 {
 	static_cast<T *>(m_memory)->~T();
+	m_memory = nullptr;
 }
 
 // ============================================================================
