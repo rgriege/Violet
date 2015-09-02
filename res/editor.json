@@ -270,5 +270,44 @@
       }
     },
     "chld": {}
+  },
+  "ntty": {
+    "ref": false,
+    "cpnt": {
+      "tsfm": {
+        "vec": {
+          "x": -300,
+          "y": 0
+        }
+      },
+      "colr": {
+        "shader": "poly",
+        "poly": {
+          "n": 4,
+          "vec": {
+            "x": -100,
+            "y": -200
+          },
+          "vec": {
+            "x": 100,
+            "y": -200
+          },
+          "vec": {
+            "x": 100,
+            "y": 200
+          },
+          "vec": {
+            "x": -100,
+            "y": 200
+          }
+        },
+        "color": "0x2C302ECC"
+      },
+      "scpt": {
+        "file": "entityList.dll"
+      },
+      "updt": {}
+    },
+    "chld": {}
   }
 }

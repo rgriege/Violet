@@ -31,6 +31,8 @@ namespace Violet
 		~Entity();
 
 		Handle getHandle() const;
+		Scene & getScene();
+		const Scene & getScene() const;
 
 		Entity & addChild();
 		Entity & addChild(unique_val<Entity> && child);

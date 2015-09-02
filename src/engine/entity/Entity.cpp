@@ -72,6 +72,20 @@ Handle Entity::getHandle() const
 
 // ----------------------------------------------------------------------------
 
+Scene & Entity::getScene()
+{
+	return m_scene;
+}
+
+// ----------------------------------------------------------------------------
+
+const Scene & Entity::getScene() const
+{
+	return m_scene;
+}
+
+// ----------------------------------------------------------------------------
+
 Entity & Entity::addChild()
 {
 	return addChild(make_unique_val<Entity>(m_scene));

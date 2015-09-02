@@ -1,0 +1,23 @@
+{
+  "ntty": {
+    "ref": false,
+    "cpnt": {
+      "tsfm": {
+        "vec": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      "text": {
+        "shader": "text",
+        "poly": {
+          "n": 0
+        },
+        "str": "An entity!",
+        "font": "Vera.ttf",
+        "size": 18
+      }
+    },
+    "chld": {}
+  }
+}

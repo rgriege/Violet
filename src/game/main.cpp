@@ -1,3 +1,4 @@
+#include "editor/EditorSystem.h"
 #include "engine/Engine.h"
 #include "engine/graphics/component/ColorComponent.h"
 #include "engine/graphics/component/TextComponent.h"
@@ -53,6 +54,7 @@ Violet::SystemFactory setup()
 	Violet::RenderSystem::install(factory);
 	Violet::InputSystem::install(factory);
 	Violet::UpdateSystem::install(factory);
+	Violet::EditorSystem::install(factory);
 	PathfindingSystem::install(factory);
 	WorldSystem::install(factory);
 

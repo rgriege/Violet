@@ -150,6 +150,7 @@
     <ClInclude Include="..\..\..\src\engine\template\TupleUtilities.h" />
     <ClInclude Include="..\..\..\src\engine\time\Time.h" />
     <ClInclude Include="..\..\..\src\engine\transform\component\TransformComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\ui\UiList.h" />
     <ClInclude Include="..\..\..\src\engine\update\component\UpdateComponent.h" />
     <ClInclude Include="..\..\..\src\engine\update\system\UpdateSystem.h" />
     <ClInclude Include="..\..\..\src\engine\utility\Buffer.h" />
@@ -221,6 +222,7 @@
     <ClCompile Include="..\..\..\src\engine\system\System.cpp" />
     <ClCompile Include="..\..\..\src\engine\time\Time.cpp" />
     <ClCompile Include="..\..\..\src\engine\transform\component\TransformComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\ui\UiList.cpp" />
     <ClCompile Include="..\..\..\src\engine\update\component\UpdateComponent.cpp" />
     <ClCompile Include="..\..\..\src\engine\update\system\UpdateSystem.cpp" />
     <ClCompile Include="..\..\..\src\engine\utility\FileUtilities.cpp" />
