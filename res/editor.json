@@ -53,7 +53,7 @@
         }
       },
       "updt": {},
-      "cpps": {
+      "scpt": {
         "file": "button.dll"
       }
     },
@@ -265,7 +265,7 @@
           }
         }
       },
-      "cpps": {
+      "scpt": {
         "file": "contextMenu.dll"
       }
     },

@@ -4,6 +4,7 @@
 
 #include "engine/Engine.h"
 #include "engine/scene/SceneProcessor.h"
+#include "engine/script/ScriptComponent.h"
 #include "engine/serialization/Deserializer.h"
 #include "engine/system/SystemFactory.h"
 #include "engine/update/component/UpdateComponent.h"
@@ -45,8 +46,8 @@ UpdateSystem::UpdateSystem(UpdateSystem && other) :
 void UpdateSystem::update(const float dt, const Engine & engine)
 {
 	SceneProcessor processor;
-	processor.addDelegate(SceneProcessor::Filter::create<UpdateComponent>(), [&](const Entity & entity, float dt) {
-		UpdateMethod::run(entity, entity, engine, std::move(dt));
+	processor.addDelegate(SceneProcessor::Filter::create<UpdateComponent, ScriptComponent>(), [&engine](const Entity & entity, float dt) {
+		UpdateMethod::run(*entity.getComponent<ScriptComponent>()->m_script, entity, engine, std::move(dt));
 	});
 	processor.process(engine.getCurrentScene(), dt);
 }

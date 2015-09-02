@@ -2,6 +2,7 @@
 
 #include "engine/script/lua/LuaScript.h"
 
+#include "engine/script/ScriptFactory.h"
 #include "engine/script/lua/LuaLibrary.h"
 
 #include <assert.h>
@@ -37,9 +38,20 @@ namespace LuaScriptNamespace
 	};
 
 	// ----------------------------------------------------------------------------
+
+	std::unique_ptr<Script> createFromFile(const char * fileName);
+
+	// ----------------------------------------------------------------------------
 }
 
 using namespace LuaScriptNamespace;
+
+// ============================================================================
+
+void LuaScript::install()
+{
+	ScriptFactory::assign("lua", createFromFile);
+}
 
 // ============================================================================
 
@@ -72,7 +84,7 @@ LuaScript::~LuaScript()
 
 // ----------------------------------------------------------------------------
 
-std::string const & LuaScript::getFilename() const
+std::string const & LuaScript::getFileName() const
 {
 	return m_source->getName();
 }
@@ -181,6 +193,14 @@ const char * LuaScriptNamespace::BlockStreamReader::readChunk(lua_State * /*lua*
 {
 	auto reader = static_cast<BlockStreamReader *>(data);
 	return reader->read(*size);
+}
+
+// ============================================================================
+
+std::unique_ptr<Script> LuaScriptNamespace::createFromFile(const char * const fileName)
+{
+	auto file = make_shared_val<FileResource>(fileName);
+	return std::make_unique<LuaScript>(file);
 }
 
 // ============================================================================

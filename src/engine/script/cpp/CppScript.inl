@@ -1,25 +1,7 @@
 // ============================================================================
 
-template <typename T, typename ... Args>
-T * Violet::CppScriptComponent::Allocator::allocate(Args && ... args)
-{
-	m_memory = new T(std::forward<Args>(args)...);
-	return (T *) m_memory;
-}
-
-// ----------------------------------------------------------------------------
-
-template <typename T>
-void Violet::CppScriptComponent::Allocator::deallocate()
-{
-	static_cast<T *>(m_memory)->~T();
-	m_memory = nullptr;
-}
-
-// ============================================================================
-
 template <typename ResultType, typename... Args>
-ResultType Violet::CppScriptComponent::run(const char * method, Args&&... args) const
+ResultType Violet::CppScript::run(const char * method, Args&&... args) const
 {
 	void * methodPtr = getMethodPtr(method);
 	if (methodPtr != nullptr)

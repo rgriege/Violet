@@ -32,14 +32,6 @@ using namespace EngineNamespace;
 
 // ============================================================================
 
-Engine::Task::Task(const Engine & engine, const uint32 priority) :
-	Violet::Task(priority),
-	m_engine(const_cast<Engine &>(engine))
-{
-}
-
-// ============================================================================
-
 std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & deserializer)
 {
 	bool succeeded = true;

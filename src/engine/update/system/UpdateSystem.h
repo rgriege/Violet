@@ -2,13 +2,15 @@
 #define VIOLET_UpdateSystem_H
 
 #include "engine/system/System.h"
-#include "engine/script/ScriptMethod.h"
+#include "engine/script/Script.h"
 
 #include <memory>
 
 namespace Violet
 {
 	class Deserializer;
+	class Engine;
+	class Entity;
 	class SystemFactory;
 
 	class VIOLET_API UpdateSystem : public System

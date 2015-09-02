@@ -2,6 +2,7 @@
 #define VIOLET_LuaScript_H
 
 #include "engine/Defines.h"
+#include "engine/script/Script.h"
 #include "engine/utility/TextResource.h"
 #include "engine/utility/shared_val.h"
 
@@ -12,17 +13,22 @@ struct lua_State;
 
 namespace Violet
 {
-	class VIOLET_API LuaScript
+	class VIOLET_API LuaScript : public Script
 	{
+	public:
+
+		static void install();
+
 	public:
 
 		LuaScript(shared_val<TextResource> source);
 		LuaScript(LuaScript && other);
-		~LuaScript();
+		virtual ~LuaScript() override;
 
-		std::string const & getFilename() const;
-		bool isValid() const;
-		void reload();
+		virtual std::string const & getFileName() const override;
+		virtual bool isValid() const override;
+		virtual void reload() override;
+
 		template <typename ResultType, typename... Args>
 		ResultType run(const char * method, Args && ... args) const;
 

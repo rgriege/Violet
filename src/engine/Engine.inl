@@ -1,5 +1,28 @@
 // ============================================================================
 
+#include "engine/template/TupleUtilities.h"
+
+// ============================================================================
+
+template <typename Writable, typename ... Args>
+Violet::Engine::WriteTask<void(Writable &, Args...)>::WriteTask(const Writable & writable, Delegate fn, Args ... args) :
+	Violet::Task(),
+	m_writable(writable),
+	m_fn(fn),
+	m_args(args...)
+{
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Writable, typename ... Args>
+void Violet::Engine::WriteTask<void(Writable &, Args...)>::execute() const
+{
+	m_fn(const_cast<Writable &>(m_writable), Violet::get<Args>(m_args)...);
+}
+
+// ============================================================================
+
 template <typename SystemType>
 const std::unique_ptr<SystemType> & Violet::Engine::getSystem()
 {
@@ -22,6 +45,14 @@ const std::unique_ptr<const SystemType> & Violet::Engine::getSystem() const
 
 	static std::unique_ptr<const SystemType> s_null;
 	return s_null;
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Writable, typename Delegate, typename ... Args>
+void Violet::Engine::addWriteTask(const Writable & writable, Delegate fn, Args... args) const
+{
+	addTask(std::make_unique<WriteTask<void(Writable &, Args...)>>(writable, fn, args...));
 }
 
 // ============================================================================

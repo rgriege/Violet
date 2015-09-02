@@ -28,17 +28,6 @@ namespace RenderSystemNamespace
 {
 	// ----------------------------------------------------------------------------
 
-	class RenderTask : public Engine::Task
-	{
-	public:
-
-		RenderTask(const Engine & engine);
-
-		virtual void execute() const override;
-	};
-
-	// ----------------------------------------------------------------------------
-
 	void process(const Entity & entity, const Matrix3f & view, const Matrix3f & localToWorld, float opacity);
 	void draw(const TransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view, const Matrix3f & localToWorld, float opacity);
 	void draw(const TransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view, const Matrix3f & localToWorld);
@@ -111,7 +100,7 @@ void RenderSystem::update(float const dt, const Engine & engine)
 		process(*child, viewMatrix, Matrix3f::Identity, 1.f);
 	
 	glFlush();
-	engine.addTask(std::make_unique<RenderTask>(engine));
+	engine.addWriteTask(engine, [](Engine & engine) { engine.getSystem<WindowSystem>()->render(); });
 }
 
 // ============================================================================
@@ -119,20 +108,6 @@ void RenderSystem::update(float const dt, const Engine & engine)
 RenderSystem::RenderSystem() :
 	System("rndr")
 {
-}
-
-// ============================================================================
-
-RenderSystemNamespace::RenderTask::RenderTask(const Engine & engine) :
-	Engine::Task(engine, 64)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-void RenderSystemNamespace::RenderTask::execute() const
-{
-	m_engine.getSystem<WindowSystem>()->render();
 }
 
 // ============================================================================

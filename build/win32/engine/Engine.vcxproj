@@ -124,12 +124,13 @@
     <ClInclude Include="..\..\..\src\engine\physics\system\PhysicsSystem.h" />
     <ClInclude Include="..\..\..\src\engine\scene\Scene.h" />
     <ClInclude Include="..\..\..\src\engine\scene\SceneProcessor.h" />
-    <ClInclude Include="..\..\..\src\engine\script\cpp\CppScriptComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\script\cpp\CppScript.h" />
     <ClInclude Include="..\..\..\src\engine\script\cpp\SharedLibrary.h" />
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaLibrary.h" />
     <ClInclude Include="..\..\..\src\engine\script\lua\LuaScript.h" />
-    <ClInclude Include="..\..\..\src\engine\script\lua\LuaScriptComponent.h" />
-    <ClInclude Include="..\..\..\src\engine\script\ScriptMethod.h" />
+    <ClInclude Include="..\..\..\src\engine\script\Script.h" />
+    <ClInclude Include="..\..\..\src\engine\script\ScriptComponent.h" />
+    <ClInclude Include="..\..\..\src\engine\script\ScriptFactory.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\binary\BinarySerializer.h" />
     <ClInclude Include="..\..\..\src\engine\serialization\Deserializer.h" />
@@ -201,11 +202,13 @@
     <ClCompile Include="..\..\..\src\engine\physics\system\PhysicsSystem.cpp" />
     <ClCompile Include="..\..\..\src\engine\scene\Scene.cpp" />
     <ClCompile Include="..\..\..\src\engine\scene\SceneProcessor.cpp" />
-    <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\cpp\CppScript.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\cpp\WindowsSharedLibrary.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaLibrary.cpp" />
     <ClCompile Include="..\..\..\src\engine\script\lua\LuaScript.cpp" />
-    <ClCompile Include="..\..\..\src\engine\script\lua\LuaScriptComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\Script.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\ScriptComponent.cpp" />
+    <ClCompile Include="..\..\..\src\engine\script\ScriptFactory.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\binary\BinarySerializer.cpp" />
     <ClCompile Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.cpp" />
@@ -248,9 +251,12 @@
     <None Include="..\..\..\src\engine\component\Component.inl" />
     <None Include="..\..\..\src\engine\Engine.inl" />
     <None Include="..\..\..\src\engine\entity\Entity.inl" />
-    <None Include="..\..\..\src\engine\script\cpp\CppScriptComponent.inl" />
+    <None Include="..\..\..\src\engine\script\cpp\CppScript.inl" />
     <None Include="..\..\..\src\engine\script\lua\LuaLibrary.inl" />
     <None Include="..\..\..\src\engine\script\lua\LuaScript.inl" />
+    <ClInclude Include="..\..\..\src\engine\script\Script.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
     <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.inl" />
     <None Include="..\..\..\src\engine\serialization\file\FileSerializer.inl" />

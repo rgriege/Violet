@@ -7,8 +7,9 @@
 #include "engine/input/component/MouseInputComponent.h"
 #include "engine/input/system/InputSystem.h"
 #include "engine/physics/system/PhysicsSystem.h"
-#include "engine/script/cpp/CppScriptComponent.h"
-#include "engine/script/lua/LuaScriptComponent.h"
+#include "engine/script/ScriptComponent.h"
+#include "engine/script/cpp/CppScript.h"
+#include "engine/script/lua/LuaScript.h"
 #include "engine/serialization/file/FileDeserializerFactory.h"
 #include "engine/serialization/json/JsonDeserializer.h"
 #include "engine/system/SystemFactory.h"
@@ -33,14 +34,17 @@ Violet::SystemFactory setup()
 	Violet::Entity::installComponent<Violet::MouseInputComponent>();
 	Violet::Entity::installComponent<Violet::KeyInputComponent>();
 	Violet::Entity::installComponent<Violet::PhysicsComponent>();
-	Violet::Entity::installComponent<Violet::CppScriptComponent>();
-	Violet::Entity::installComponent<Violet::LuaScriptComponent>();
+	Violet::Entity::installComponent<Violet::ScriptComponent>();
 	Violet::Entity::installComponent<Violet::UpdateComponent>();
 	Violet::Entity::installComponent<MapComponent>();
 	Violet::Entity::installComponent<PathComponent>();
 	Violet::Entity::installComponent<PathfindingComponent>();
 
 	Violet::JsonDeserializer::install();
+	// Violet::BinaryDeserializer::install();
+
+	Violet::LuaScript::install();
+	Violet::CppScript::install();
 
 	Violet::SystemFactory factory;
 	// Violet::GlutWindowSystem::install(factory);

@@ -8,6 +8,7 @@
 #include "engine/input/component/MouseInputComponent.h"
 #include "engine/math/Matrix3.h"
 #include "engine/scene/SceneProcessor.h"
+#include "engine/script/ScriptComponent.h"
 #include "engine/system/SystemFactory.h"
 #include "engine/transform/component/TransformComponent.h"
 #include "engine/window/WindowSystem.h"
@@ -18,26 +19,6 @@ using namespace Violet;
 
 namespace InputSystemNamespace
 {
-	// ----------------------------------------------------------------------------
-
-	class ProcessEventsTask : public Engine::Task
-	{
-	public:
-
-		ProcessEventsTask(const Engine & engine);
-
-		virtual void execute() const override;
-	};
-
-	class StopTask : public Engine::Task
-	{
-	public:
-
-		StopTask(const Engine & engine);
-
-		virtual void execute() const override;
-	};
-
 	// ----------------------------------------------------------------------------
 
 	void processEvent(const Entity & entity, const WindowSystem::KeyEvent & event, WindowSystem::EventType type, const Engine & engine);
@@ -84,7 +65,44 @@ InputSystem::InputSystem(InputSystem && other) :
 
 void InputSystem::update(const float dt, const Engine & engine)
 {
-	engine.addTask(std::make_unique<ProcessEventsTask>(engine));
+	engine.addWriteTask(*engine.getSystem<WindowSystem>(), [&engine](WindowSystem & windowSystem) {
+		WindowSystem::Event event;
+		const Vec2i windowDimensions(windowSystem.getWidth(), windowSystem.getHeight());
+
+		std::vector<WindowSystem::Event> events;
+		while (windowSystem.getEvent(static_cast<WindowSystem::EventType>(~0), &event))
+		{
+			switch (event.type)
+			{
+			case WindowSystem::ET_KeyDown:
+			case WindowSystem::ET_KeyUp:
+				for (auto const & child : engine.getCurrentScene().getRoot().getChildren())
+					processEvent(*child, event.key, event.type, engine);
+				break;
+
+			case WindowSystem::ET_MouseDown:
+			case WindowSystem::ET_MouseUp:
+				{
+					InputSystem::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button };
+					for (auto const & child : engine.getCurrentScene().getRoot().getChildren())
+						processEvent(*child, worldEvent, event.type, Matrix3f::Identity, engine);
+				}
+				break;
+
+			case WindowSystem::ET_MouseMove:
+				{
+					InputSystem::MouseMotionEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.motion.x - event.motion.xrel, event.motion.y - event.motion.yrel), computeWorldCoordinates(windowDimensions, event.motion.x, event.motion.y) };
+					for (auto const & child : engine.getCurrentScene().getRoot().getChildren())
+						processEvent(*child, worldEvent, Matrix3f::Identity, engine);
+				}
+				break;
+
+			case WindowSystem::ET_Quit:
+				engine.addWriteTask(engine, [](Engine & engine) { engine.stop(); });
+				break;
+			}
+		}
+	});
 }
 
 // ============================================================================
@@ -96,81 +114,17 @@ InputSystem::InputSystem() :
 
 // ============================================================================
 
-InputSystemNamespace::StopTask::StopTask(const Engine & engine) :
-	Engine::Task(engine)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-void InputSystemNamespace::StopTask::execute() const
-{
-	m_engine.stop();
-}
-
-// ============================================================================
-
-InputSystemNamespace::ProcessEventsTask::ProcessEventsTask(const Engine & engine) :
-	Engine::Task(engine)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-void InputSystemNamespace::ProcessEventsTask::execute() const
-{
-	WindowSystem::Event event;
-	const auto & windowSystem = m_engine.getSystem<WindowSystem>();
-	const Vec2i windowDimensions(windowSystem->getWidth(), windowSystem->getHeight());
-
-	std::vector<WindowSystem::Event> events;
-	while (windowSystem->getEvent(static_cast<WindowSystem::EventType>(~0), &event))
-	{
-		switch (event.type)
-		{
-		case WindowSystem::ET_KeyDown:
-		case WindowSystem::ET_KeyUp:
-			for (auto const & child : m_engine.getCurrentScene().getRoot().getChildren())
-				processEvent(*child, event.key, event.type, m_engine);
-			break;
-
-		case WindowSystem::ET_MouseDown:
-		case WindowSystem::ET_MouseUp:
-		{
-			InputSystem::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button };
-			for (auto const & child : m_engine.getCurrentScene().getRoot().getChildren())
-				processEvent(*child, worldEvent, event.type, Matrix3f::Identity, m_engine);
-		}
-		break;
-
-		case WindowSystem::ET_MouseMove:
-		{
-			InputSystem::MouseMotionEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.motion.x - event.motion.xrel, event.motion.y - event.motion.yrel), computeWorldCoordinates(windowDimensions, event.motion.x, event.motion.y) };
-			for (auto const & child : m_engine.getCurrentScene().getRoot().getChildren())
-				processEvent(*child, worldEvent, Matrix3f::Identity, m_engine);
-		}
-		break;
-
-		case WindowSystem::ET_Quit:
-			m_engine.addTask(std::make_unique<StopTask>(m_engine));
-			break;
-		}
-	}
-}
-
-// ============================================================================
-
 void InputSystemNamespace::processEvent(const Entity & entity, const WindowSystem::KeyEvent & event, const WindowSystem::EventType type, const Engine & engine)
 {
 	for (auto const & child : entity.getChildren())
 		processEvent(*child, event, type, engine);
 
-	if (entity.hasComponents<KeyInputComponent>())
+	if (entity.hasComponents<KeyInputComponent, ScriptComponent>())
 	{
 		if (type == WindowSystem::ET_KeyDown)
 		{
 			unsigned char code = event.code;
-			KeyDownMethod::run(entity, entity, engine, std::move(code));
+			KeyDownMethod::run(*entity.getComponent<ScriptComponent>()->m_script, entity, engine, std::move(code));
 		}
 	}
 }
@@ -191,16 +145,20 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 		};
 		const Matrix3f localToWorld = parentToWorld * transform;
 
-		if (mouseComponent.m_mesh.getBoundingBox().transform(localToWorld).contains(event.position))
+		if (entity.hasComponent<ScriptComponent>())
 		{
-			for (auto const & child : entity.getChildren())
-				if (processEvent(*child, event, type, localToWorld, engine) == InputResult::Block)
-					return InputResult::Block;
+			auto const & script = *entity.getComponent<ScriptComponent>()->m_script;
+			if (mouseComponent.m_mesh.getBoundingBox().transform(localToWorld).contains(event.position))
+			{
+				for (auto const & child : entity.getChildren())
+					if (processEvent(*child, event, type, localToWorld, engine) == InputResult::Block)
+						return InputResult::Block;
 
-			if (type == WindowSystem::ET_MouseDown)
-				MouseDownMethod::run(entity, entity, engine, event);
-			else
-				MouseUpMethod::run(entity, entity, engine, event);
+				if (type == WindowSystem::ET_MouseDown)
+					MouseDownMethod::run(script, entity, engine, event);
+				else
+					MouseUpMethod::run(script, entity, engine, event);
+			}
 		}
 	}
 
@@ -226,22 +184,27 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 		const bool contained = worldBoundary.contains(event.from);
 		const bool contains = worldBoundary.contains(event.to);
 
-		if (contained || contains)
+		if (entity.hasComponent<ScriptComponent>())
 		{
-			for (auto const & child : entity.getChildren())
-				if (processEvent(*child, event, localToWorld, engine) == InputResult::Block)
-					return InputResult::Block;
+			auto const & script = *entity.getComponent<ScriptComponent>()->m_script;
 
-			if (contained ^ contains)
+			if (contained || contains)
 			{
-				if (contains)
-					MouseInMethod::run(entity, entity, engine);
-				else
-					MouseOutMethod::run(entity, entity, engine);
-			}
-		}
+				for (auto const & child : entity.getChildren())
+					if (processEvent(*child, event, localToWorld, engine) == InputResult::Block)
+						return InputResult::Block;
 
-		MouseMoveMethod::run(entity, entity, engine, event);
+				if (contained ^ contains)
+				{
+					if (contains)
+						MouseInMethod::run(script, entity, engine);
+					else
+						MouseOutMethod::run(script, entity, engine);
+				}
+			}
+
+			MouseMoveMethod::run(script, entity, engine, event);
+		}
 	}
 
 	return InputResult::Pass;

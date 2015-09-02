@@ -3,7 +3,7 @@
 
 #include "engine/math/Vec2.h"
 #include "engine/input/InputResult.h"
-#include "engine/script/ScriptMethod.h"
+#include "engine/script/Script.h"
 #include "engine/system/System.h"
 #include "engine/window/MouseButton.h"
 

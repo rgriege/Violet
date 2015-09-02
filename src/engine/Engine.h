@@ -20,18 +20,30 @@ namespace Violet
 
 	class VIOLET_API Engine
 	{
-	public:
+	private:
 
-		class VIOLET_API Task : public Violet::Task
+		template <typename Signature>
+		class WriteTask;
+
+		template <typename Writable, typename ... Args>
+		class WriteTask<void(Writable &, Args...)> : public Task
 		{
 		public:
 
-			Task(const Engine & engine, uint32 priority = ms_defaultPriority);
-			virtual ~Task() override = default;
+			typedef std::function<void(Writable &, Args...)> Delegate;
 
-		protected:
+		public:
 
-			Engine & m_engine;
+			WriteTask(const Writable & writable, Delegate fn, Args ... args);
+			virtual ~WriteTask() override = default;
+
+			virtual void execute() const override;
+
+		private:
+
+			const Writable & m_writable;
+			Delegate m_fn;
+			std::tuple<Args...> m_args;
 		};
 
 	public:
@@ -53,6 +65,9 @@ namespace Violet
 		const std::unique_ptr<const SystemType> & getSystem() const;
 
 		void addTask(std::unique_ptr<Task> && task) const;
+
+		template <typename Writable, typename Delegate, typename ... Args>
+		void addWriteTask(const Writable & writable, Delegate fn, Args... args) const;
 
 	private:
 
