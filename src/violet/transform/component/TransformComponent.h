@@ -1,0 +1,37 @@
+#ifndef VIOLET_TransformComponent_H
+#define VIOLET_TransformComponent_H
+
+#include "violet/component/Component.h"
+
+#include "violet/math/Vec2.h"
+
+namespace Violet
+{
+	class Deserializer;
+	class Serializer;
+
+	class VIOLET_API TransformComponent : public ComponentBase<TransformComponent>
+	{
+	public:
+
+		static Tag getStaticTag();
+
+	public:
+
+		TransformComponent(const Entity & owner);
+		TransformComponent(const Entity & owner, Deserializer & deserializer);
+		TransformComponent(const Entity & owner, Vec2f position, float rotation);
+		TransformComponent(TransformComponent && other);
+		//TransformComponent & operator=(TransformComponent && other);
+
+	public:
+
+		Vec2f m_position;
+		float m_rotation;
+	};
+
+	Deserializer & operator>>(Deserializer & deserializer, TransformComponent & component);
+	Serializer & operator<<(Serializer & serializer, const TransformComponent & component);
+}
+
+#endif

@@ -1,8 +1,8 @@
 #include "editor/EditorSystem.h"
-#include "engine/Engine.h"
-#include "engine/script/cpp/CppScript.h"
-#include "engine/ui/UiList.h"
-#include "engine/update/system/UpdateSystem.h"
+#include "violet/Engine.h"
+#include "violet/script/cpp/CppScript.h"
+#include "violet/ui/UiList.h"
+#include "violet/update/system/UpdateSystem.h"
 
 #include <functional>
 
@@ -10,7 +10,7 @@ using namespace Violet;
 
 struct Mem : public CppScript::Memory
 {
-    Mem(Script & script, const char * elementFile) : list(script, elementFile) {}
+    Mem(const char * elementFile) : list(elementFile) {}
     virtual ~Mem() override = default;
     UiList list;
 };
@@ -19,7 +19,7 @@ void onUpdate(const Entity & entity, const Engine & engine, Mem & mem);
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
 {
-    auto m = std::make_unique<Mem>(script, "entityListElement.json");
+    auto m = std::make_unique<Mem>("entityListElement.json");
 
     using namespace std::placeholders;
     UpdateMethod::assign(script, std::bind(onUpdate, _1, _2, std::ref(*m)));

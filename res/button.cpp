@@ -1,10 +1,10 @@
 #include "editor/EditorSystem.h"
-#include "engine/Engine.h"
-#include "engine/input/system/InputSystem.h"
-#include "engine/graphics/Color.h"
-#include "engine/graphics/component/ColorComponent.h"
-#include "engine/script/cpp/CppScript.h"
-#include "engine/update/system/UpdateSystem.h"
+#include "violet/Engine.h"
+#include "violet/input/system/InputSystem.h"
+#include "violet/graphics/Color.h"
+#include "violet/graphics/component/ColorComponent.h"
+#include "violet/script/cpp/CppScript.h"
+#include "violet/update/system/UpdateSystem.h"
 
 #include <algorithm>
 #include <functional>

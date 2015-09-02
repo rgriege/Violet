@@ -2,9 +2,9 @@
 
 #include "game/pathfinding/MapComponent.h"
 
-#include "engine/Engine.h"
-#include "engine/math/Polygon.h"
-#include "engine/serialization/SerializationUtilities.h"
+#include "violet/Engine.h"
+#include "violet/math/Polygon.h"
+#include "violet/serialization/SerializationUtilities.h"
 
 // ============================================================================
 

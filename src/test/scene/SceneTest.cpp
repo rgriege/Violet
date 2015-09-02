@@ -1,9 +1,9 @@
 #include "test/scene/SceneTest.h"
 
-#include "engine/entity/Entity.h"
-#include "engine/scene/Scene.h"
-#include "engine/transform/component/TransformComponent.h"
-#include "engine/update/component/UpdateComponent.h"
+#include "violet/entity/Entity.h"
+#include "violet/scene/Scene.h"
+#include "violet/transform/component/TransformComponent.h"
+#include "violet/update/component/UpdateComponent.h"
 #include "test/core/TestEvaluator.h"
 #include "test/core/TestFactory.h"
 

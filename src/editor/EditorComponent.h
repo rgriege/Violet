@@ -1,8 +1,8 @@
 #ifndef VIOLET_EditorComponent_H
 #define VIOLET_EditorComponent_H
 
-#include "engine/component/Component.h"
-#include "engine/utility/handle/Handle.h"
+#include "violet/component/Component.h"
+#include "violet/utility/handle/Handle.h"
 
 #include "editor/EditorConfig.h"
 

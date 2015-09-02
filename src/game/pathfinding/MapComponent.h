@@ -1,8 +1,8 @@
 #ifndef GAME_MapComponent_H
 #define GAME_MapComponent_H
 
-#include "engine/component/Component.h"
-#include "engine/entity/Entity.h"
+#include "violet/component/Component.h"
+#include "violet/entity/Entity.h"
 #include "game/Config.h"
 #include "game/pathfinding/Map.h"
 

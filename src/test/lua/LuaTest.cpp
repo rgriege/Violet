@@ -2,8 +2,8 @@
 
 #include "test/lua/LuaTest.h"
 
-#include "engine/script/lua/LuaLibrary.h"
-#include "engine/script/lua/LuaScript.h"
+#include "violet/script/lua/LuaLibrary.h"
+#include "violet/script/lua/LuaScript.h"
 #include "test/core/TestEvaluator.h"
 #include "test/core/TestFactory.h"
 

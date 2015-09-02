@@ -1,7 +1,7 @@
 #ifndef GAME_PathComponent_H
 #define GAME_PathComponent_H
 
-#include "engine/component/Component.h"
+#include "violet/component/Component.h"
 #include "game/Config.h"
 #include "game/pathfinding/Path.h"
 

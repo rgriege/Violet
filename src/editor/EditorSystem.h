@@ -1,7 +1,7 @@
 #ifndef VIOLET_EditorSystem_H
 #define VIOLET_EditorSystem_H
 
-#include "engine/system/System.h"
+#include "violet/system/System.h"
 
 #include "editor/EditorConfig.h"
 
