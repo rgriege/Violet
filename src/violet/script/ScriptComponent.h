@@ -21,6 +21,7 @@ namespace Violet
 	public:
 
 		ScriptComponent(const Entity & owner, Deserializer & deserializer);
+		ScriptComponent(const Entity & owner, const char * fileName);
 		ScriptComponent(ScriptComponent && other);
 
 	public:

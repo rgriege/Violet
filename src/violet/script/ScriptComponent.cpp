@@ -18,9 +18,17 @@ Tag ScriptComponent::getStaticTag()
 // ============================================================================
 
 ScriptComponent::ScriptComponent(const Entity & owner, Deserializer & deserializer) :
-	ComponentBase<ScriptComponent>(owner),
-	m_script(ScriptFactory::create(deserializer.getString("file")))
+	ScriptComponent(owner, deserializer.getString("file"))
 {
+}
+
+// ----------------------------------------------------------------------------
+
+ScriptComponent::ScriptComponent(const Entity & owner, const char * const fileName) :
+	ComponentBase<ScriptComponent>(owner),
+	m_script(ScriptFactory::create(fileName))
+{
+
 }
 
 // ----------------------------------------------------------------------------
