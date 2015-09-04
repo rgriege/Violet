@@ -21,6 +21,8 @@ namespace Violet
 		void translate(const Vec2f delta);
 
 		FloatInterval project(const Vec2f & axis) const;
+		Vec2f getCenter() const;
+
 
 	public:
 

@@ -88,6 +88,16 @@ FloatInterval Polygon::project(const Vec2f & axis) const
 	return projection;
 }
 
+// ----------------------------------------------------------------------------
+
+Vec2f Polygon::getCenter() const
+{
+	Vec2f center;
+	for (auto const & vertex : m_vertices)
+		center += vertex;
+	return center / static_cast<float>(m_vertices.size());
+}
+
 // ============================================================================
 
 Serializer & Violet::operator<<(Serializer & serializer, const Polygon & poly)

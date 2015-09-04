@@ -102,6 +102,24 @@ bool Violet::Vec2<T>::isUnit() const
 // ----------------------------------------------------------------------------
 
 template<typename T>
+Violet::Vec2<T> & Violet::Vec2<T>::scale(const T scaleX, const T scaleY)
+{
+	x *= scaleX;
+	y *= scaleY;
+	return *this;
+}
+
+// ----------------------------------------------------------------------------
+
+template<typename T>
+Violet::Vec2<T> & Violet::Vec2<T>::scale(const Vec2 & scales)
+{
+	return scale(scales.x, scales.y);
+}
+
+// ----------------------------------------------------------------------------
+
+template<typename T>
 Violet::Vec2<T> & Violet::Vec2<T>::operator+=(const Vec2 & other)
 {
 	x += other.x;

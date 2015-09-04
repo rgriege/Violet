@@ -25,6 +25,8 @@ namespace Violet
 		Vec2<T> & normalize();
 		Vec2<T> getUnit() const;
 		bool isUnit() const;
+		Vec2<T> & scale(T scaleX, T scaleY);
+		Vec2<T> & scale(const Vec2<T> & scale);
 
 		Vec2<T> & operator+=(const Vec2<T> & other);
 		Vec2<T> & operator-=(const Vec2<T> & other);

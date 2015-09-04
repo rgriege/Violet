@@ -47,9 +47,25 @@ bool Intersection::test(const Vec2f & start1, const Vec2f & end1, const Vec2f & 
 
 // ----------------------------------------------------------------------------
 
+bool Intersection::test(const Polygon & poly, const Vec2f & start, const Vec2f & end)
+{
+	if (test(poly.m_vertices.back(), poly.m_vertices.front(), start, end))
+		return true;
+
+	for (uint32 i = 1, last = poly.m_vertices.size(); i < last; ++i)
+	{
+		if (test(poly.m_vertices[i - 1], poly.m_vertices[i], start, end))
+			return true;
+	}
+
+	return false;
+}
+
+// ----------------------------------------------------------------------------
+
 bool Intersection::test(const Polygon & poly1, const Polygon & poly2)
 {
-	return test(poly1, poly2, Vec2f::ZERO);
+	return test(poly1, poly2, poly2.getCenter() - poly1.getCenter());
 }
 
 // ----------------------------------------------------------------------------
