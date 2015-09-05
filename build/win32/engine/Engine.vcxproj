@@ -151,6 +151,7 @@
     <ClInclude Include="..\..\..\src\violet\template\TupleUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\time\Time.h" />
     <ClInclude Include="..\..\..\src\violet\transform\component\TransformComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\transform\Transform.h" />
     <ClInclude Include="..\..\..\src\violet\ui\UiList.h" />
     <ClInclude Include="..\..\..\src\violet\update\component\UpdateComponent.h" />
     <ClInclude Include="..\..\..\src\violet\update\system\UpdateSystem.h" />
@@ -224,6 +225,7 @@
     <ClCompile Include="..\..\..\src\violet\system\System.cpp" />
     <ClCompile Include="..\..\..\src\violet\time\Time.cpp" />
     <ClCompile Include="..\..\..\src\violet\transform\component\TransformComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\transform\Transform.cpp" />
     <ClCompile Include="..\..\..\src\violet\ui\UiList.cpp" />
     <ClCompile Include="..\..\..\src\violet\update\component\UpdateComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\update\system\UpdateSystem.cpp" />

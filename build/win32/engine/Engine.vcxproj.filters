@@ -386,6 +386,9 @@
     <ClInclude Include="..\..\..\src\violet\ui\UiList.h">
       <Filter>ui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\transform\Transform.h">
+      <Filter>transform</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -556,6 +559,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\math\Matrix3.cpp">
       <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\transform\Transform.cpp">
+      <Filter>transform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
