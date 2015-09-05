@@ -102,9 +102,13 @@ void CppScript::reload()
 
 void * CppScript::getMethodPtr(const char * const name) const
 {
-    void * methodPtr = m_lib->getMethodPtr(name);
-	if (methodPtr == nullptr)
-		warn(name, "");
+	void * methodPtr = nullptr;
+	if (isValid())
+	{
+		methodPtr = m_lib->getMethodPtr(name);
+		if (methodPtr == nullptr)
+			warn(name, "");
+	}
 	return methodPtr;
 }
 
