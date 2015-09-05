@@ -10,8 +10,8 @@ using namespace Violet;
 // ============================================================================
 
 RigidBody::RigidBody(const TransformComponent & transform, const PhysicsComponent & physics) :
-	m_center(transform.m_position),
-	m_rotation(transform.m_rotation),
+	m_center(transform.m_transform[0][2], transform.m_transform[1][2]),
+	m_rotation(0),
 	m_polygon(physics.m_polygon),
 	m_mass(physics.m_mass),
 	m_velocity(physics.m_velocity),

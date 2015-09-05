@@ -34,7 +34,7 @@ void UiList::update(const Entity & entity, const Engine & engine, const uint32 e
 				auto child = make_unique_val<Entity>(entity.getScene(), *deserializer);
 				auto & transform = child->getComponent<TransformComponent>();
 				if (transform != nullptr)
-					transform->m_position.y += i * 20;
+					transform->m_transform[1][2] += i * 20;
 				entity.addChild(std::move(child));
 			}
 		});

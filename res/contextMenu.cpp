@@ -72,7 +72,10 @@ void createMenu(Mem & mem, const Engine & engine, const Vec2f & position)
                 Entity & menu = scene.getRoot().addChild(*deserializer);
                 auto transformComponent = menu.getComponent<TransformComponent>();
                 if (transformComponent != nullptr)
-                    transformComponent->m_position = position;
+                {
+                    transformComponent->m_transform[0][2] = position.x;
+                    transformComponent->m_transform[1][2] = position.y;
+                }
                 mem.menu = menu.getHandle();
             }
         });

@@ -138,11 +138,7 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 		auto const & transformComponent = *entity.getComponent<TransformComponent>();
 		auto const & mouseComponent = *entity.getComponent<MouseInputComponent>();
 
-		const Matrix3f transform = {
-			1.f, 0.f, transformComponent.m_position.x,
-			0.f, 1.f, transformComponent.m_position.y,
-			0.f, 0.f, 1.f
-		};
+		const Matrix3f & transform = transformComponent.m_transform;
 		const Matrix3f localToWorld = parentToWorld * transform;
 
 		if (entity.hasComponent<ScriptComponent>())
@@ -174,11 +170,7 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 		auto const & transformComponent = *entity.getComponent<TransformComponent>();
 		auto const & mouseComponent = *entity.getComponent<MouseInputComponent>();
 
-		const Matrix3f transform = {
-			1.f, 0.f, transformComponent.m_position.x,
-			0.f, 1.f, transformComponent.m_position.y,
-			0.f, 0.f, 1.f
-		};
+		const Matrix3f & transform = transformComponent.m_transform;
 		const Matrix3f localToWorld = parentToWorld * transform;
 		const AABB worldBoundary = mouseComponent.m_mesh.getBoundingBox().transform(localToWorld);
 		const bool contained = worldBoundary.contains(event.from);

@@ -3,7 +3,7 @@
 
 #include "violet/component/Component.h"
 
-#include "violet/math/Vec2.h"
+#include "violet/math/Matrix3.h"
 
 namespace Violet
 {
@@ -20,14 +20,12 @@ namespace Violet
 
 		TransformComponent(const Entity & owner);
 		TransformComponent(const Entity & owner, Deserializer & deserializer);
-		TransformComponent(const Entity & owner, Vec2f position, float rotation);
+		TransformComponent(const Entity & owner, const Matrix3f & transform);
 		TransformComponent(TransformComponent && other);
-		//TransformComponent & operator=(TransformComponent && other);
 
 	public:
 
-		Vec2f m_position;
-		float m_rotation;
+		Matrix3f m_transform;
 	};
 
 	Deserializer & operator>>(Deserializer & deserializer, TransformComponent & component);

@@ -111,16 +111,13 @@ RenderSystem::RenderSystem() :
 }
 
 // ============================================================================
+
 void RenderSystemNamespace::process(const Entity & entity, const Matrix3f & view, const Matrix3f & parentToWorld, const float opacity)
 {
 	if (entity.hasComponent<TransformComponent>())
 	{
 		auto const & transformComponent = *entity.getComponent<TransformComponent>();
-		const Matrix3f transform = {
-			1.f, 0.f, transformComponent.m_position.x,
-			0.f, 1.f, transformComponent.m_position.y,
-			0.f, 0.f, 1.f
-		};
+		const Matrix3f & transform = transformComponent.m_transform;
 
 		float newOpacity = opacity;
 		if ((entity.getComponentFlags() & Component::gatherFlags<ColorComponent, TextComponent, TextureComponent>()) != 0)
@@ -148,11 +145,7 @@ void RenderSystemNamespace::process(const Entity & entity, const Matrix3f & view
 
 void RenderSystemNamespace::draw(const TransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view, const Matrix3f & parentToWorld, const float opacity)
 {
-	const Matrix3f transform = {
-		1.f, 0.f, transformComponent.m_position.x,
-		0.f, 1.f, transformComponent.m_position.y,
-		0.f, 0.f, 1.f
-	};
+	const Matrix3f & transform = transformComponent.m_transform;
 
 	const GLint colorAttrib = colorComponent.m_shader->getUniformLocation("color");
 	const GLint modelAttrib = colorComponent.m_shader->getUniformLocation("model");
@@ -175,17 +168,18 @@ void RenderSystemNamespace::draw(const TransformComponent & transformComponent, 
 void RenderSystemNamespace::draw(const TransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view, const Matrix3f & parentToWorld)
 {
 	const float scale = static_cast<float>(textComponent.m_size) / Font::getFontImageSize();
-	const Matrix3f transform = {
-		scale, 0.f, transformComponent.m_position.x,
-		0.f, scale, transformComponent.m_position.y,
-		0.f, 0.f, 1.f
+	const Matrix3f scaleMat = {
+		scale, 0, 0,
+		0, scale, 0,
+		0, 0, 1.f
 	};
+	const Matrix3f & transform = transformComponent.m_transform;
 
 	const GLint modelAttrib = textComponent.m_shader->getUniformLocation("model");
 	const GLint viewAttribute = textComponent.m_shader->getUniformLocation("view");
 
 	const Guard<ShaderProgram> shaderGuard(*textComponent.m_shader);
-	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * transform).data());
+	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * (transform * scaleMat)).data());
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
 	textComponent.m_font->render(textComponent.m_text, *textComponent.m_shader);
@@ -195,11 +189,7 @@ void RenderSystemNamespace::draw(const TransformComponent & transformComponent, 
 
 void RenderSystemNamespace::draw(const TransformComponent & transformComponent, const TextureComponent & textureComponent, const Matrix3f & view, const Matrix3f & parentToWorld)
 {
-	const Matrix3f transform = {
-		1.f, 0.f, transformComponent.m_position.x,
-		0.f, 1.f, transformComponent.m_position.y,
-		0.f, 0.f, 1.f
-	};
+	const Matrix3f & transform = transformComponent.m_transform;
 
 	const GLint modelAttrib = textureComponent.m_shader->getUniformLocation("model");
 	const GLint viewAttribute = textureComponent.m_shader->getUniformLocation("view");

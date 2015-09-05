@@ -45,6 +45,30 @@ namespace Violet
 
 	template <typename T>
 	Vec2<T> operator*(const Matrix3<T> & lhs, const Vec2<T> & rhs);
+
+
+
+	template<typename T>
+	Serializer & operator<<(Serializer & serializer, const Matrix3<T> & vec);
+	template<>
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Matrix3<int> & vec);
+	template<>
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Matrix3<uint32> & vec);
+	template<>
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Matrix3<float> & vec);
+	template<>
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Matrix3<double> & vec);
+
+	template<typename T>
+	Deserializer & operator>>(Deserializer & deserializer, Matrix3<T> & vec);
+	template<>
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Matrix3<int> & vec);
+	template<>
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Matrix3<uint32> & vec);
+	template<>
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Matrix3<float> & vec);
+	template<>
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Matrix3<double> & vec);
 }
 
 #include "violet/math/Matrix3.inl"

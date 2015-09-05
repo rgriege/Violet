@@ -554,6 +554,9 @@
     <ClCompile Include="..\..\..\src\violet\ui\UiList.cpp">
       <Filter>ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\math\Matrix3.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\violet\serialization\SerializationUtilities.inl">

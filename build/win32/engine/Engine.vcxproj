@@ -196,6 +196,7 @@
     <ClCompile Include="..\..\..\src\violet\input\system\InputSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\AABB.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\Circle.cpp" />
+    <ClCompile Include="..\..\..\src\violet\math\Matrix3.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\Polygon.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\Vec2.cpp" />
     <ClCompile Include="..\..\..\src\violet\physics\collision\Intersection.cpp" />

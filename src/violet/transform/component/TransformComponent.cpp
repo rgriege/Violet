@@ -16,24 +16,23 @@ Tag TransformComponent::getStaticTag()
 // ============================================================================
 
 TransformComponent::TransformComponent(const Entity & owner) :
-	TransformComponent(owner, Vec2f::ZERO, 0)
+	TransformComponent(owner, Matrix3f::Identity)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 TransformComponent::TransformComponent(const Entity & owner, Deserializer & deserializer) :
-	TransformComponent(owner, Vec2f::ZERO, 0)
+	TransformComponent(owner, Matrix3f::Identity)
 {
 	deserializer >> *this;
 }
 
 // ----------------------------------------------------------------------------
 
-TransformComponent::TransformComponent(const Entity & owner, const Vec2f position, const float rotation) :
+TransformComponent::TransformComponent(const Entity & owner, const Matrix3f & transform) :
 	ComponentBase<TransformComponent>(owner),
-	m_position(position),
-	m_rotation(rotation)
+	m_transform(transform)
 {
 }
 
@@ -41,33 +40,22 @@ TransformComponent::TransformComponent(const Entity & owner, const Vec2f positio
 
 TransformComponent::TransformComponent(TransformComponent && other) :
 	ComponentBase<TransformComponent>(std::move(other)),
-	m_position(std::move(other.m_position)),
-	m_rotation(other.m_rotation)
+	m_transform(std::move(other.m_transform))
 {
 }
-
-// ----------------------------------------------------------------------------
-
-//TransformComponent & TransformComponent::operator=(TransformComponent && other)
-//{
-//	Component::operator=(std::move(other));
-//	m_position = std::move(other.m_position);
-//	m_rotation = other.m_rotation;
-//	return *this;
-//}
 
 // ============================================================================
 
 Deserializer & Violet::operator>>(Deserializer & deserializer, TransformComponent & component)
 {
-	return deserializer >> component.m_position;
+	return deserializer >> component.m_transform;
 }
 
 // ----------------------------------------------------------------------------
 
 Serializer & Violet::operator<<(Serializer & serializer, const TransformComponent & component)
 {
-	return serializer << component.m_position;
+	return serializer << component.m_transform;
 }
 
 // ============================================================================
