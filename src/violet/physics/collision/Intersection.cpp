@@ -25,36 +25,66 @@ using namespace IntersectionNamespace;
 
 bool Intersection::test(const Vec2f & start1, const Vec2f & end1, const Vec2f & start2, const Vec2f & end2)
 {
+	Vec2f intersection;
+	return test(start1, end1, start2, end2, intersection);
+}
+
+// ----------------------------------------------------------------------------
+
+bool Intersection::test(const Vec2f & start1, const Vec2f & end1, const Vec2f & start2, const Vec2f & end2, Vec2f & intersection)
+{
 	/*
-	 * y = (y1b - y1a) / (x1b - x1a) * (x - x1a) + y1a
-	 * a1 = y1a - m1 * x1a
-	 * y = m1 * x + a1
-	 * m2 * x + a2 = m1 * x + a1
-	 * x = (a2 - a1) / (m1 - m2)
+	 * (Uppercase = vector, lowercase = scalar)
+	 * The two lines PR and QS intersect if there exists scalars t & u such that
+	 * P + tR = Q + uS
+	 *
+	 * (P + tR) x S = (Q + uS) x S
+	 * t = (Q - P) X S / (R x S)
+	 * u = (Q - P) X R / (R X S)
 	 */
 
-	float const slope1 = (end1.y - start1.y) / (end1.x - start1.x);
-	float const slope2 = (end2.y - start2.y) / (end2.x - start2.x);
+	const Vec2f & p = start1;
+	const Vec2f & r = end1 - start1;
+	const Vec2f & q = start2;
+	const Vec2f & s = end2 - start2;
 
-	float const a1 = end1.y + slope1 * end1.x;
-	float const a2 = end2.y + slope2 * end2.x;
+	const Vec2f & qmp = start2 - start1;
+	const float rxs = r.cross(s);
 
-	float const x = (a2 - a1) / (slope1 - slope2);
-	Vec2f const intersection(x, slope1 * x + start1.y);
+	if (rxs == 0)
+	{
+		// parallel or collinear
+		// treating collinear lines as not intersecting
+		return false;
+	}
+	else
+	{
+		const float t = qmp.cross(s) / rxs;
+		const float u = qmp.cross(r) / rxs;
 
-	return AABB::createFromLine(start1, end1).contains(intersection) && AABB::createFromLine(start2, end2).contains(intersection);
+		intersection = p + t * r;
+		return 0 < u && u < 1 && 0 < t && t < 1;
+	}
 }
 
 // ----------------------------------------------------------------------------
 
 bool Intersection::test(const Polygon & poly, const Vec2f & start, const Vec2f & end)
 {
-	if (test(poly.m_vertices.back(), poly.m_vertices.front(), start, end))
+	Vec2f intersection;
+	return test(poly, start, end, intersection);
+}
+
+// ----------------------------------------------------------------------------
+
+bool Intersection::test(const Polygon & poly, const Vec2f & start, const Vec2f & end, Vec2f & intersection)
+{
+	if (test(poly.m_vertices.back(), poly.m_vertices.front(), start, end, intersection))
 		return true;
 
 	for (uint32 i = 1, last = poly.m_vertices.size(); i < last; ++i)
 	{
-		if (test(poly.m_vertices[i - 1], poly.m_vertices[i], start, end))
+		if (test(poly.m_vertices[i - 1], poly.m_vertices[i], start, end, intersection))
 			return true;
 	}
 
