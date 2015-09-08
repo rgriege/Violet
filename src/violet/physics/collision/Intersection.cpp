@@ -69,15 +69,15 @@ bool Intersection::test(const Vec2f & start1, const Vec2f & end1, const Vec2f & 
 
 // ----------------------------------------------------------------------------
 
-bool Intersection::test(const Polygon & poly, const Vec2f & start, const Vec2f & end)
+bool Intersection::test(const Polygon & poly, const Vec2f & start, const Vec2f & end, const bool hollow)
 {
 	Vec2f intersection;
-	return test(poly, start, end, intersection);
+	return test(poly, start, end, intersection, hollow);
 }
 
 // ----------------------------------------------------------------------------
 
-bool Intersection::test(const Polygon & poly, const Vec2f & start, const Vec2f & end, Vec2f & intersection)
+bool Intersection::test(const Polygon & poly, const Vec2f & start, const Vec2f & end, Vec2f & intersection, const bool hollow)
 {
 	if (test(poly.m_vertices.back(), poly.m_vertices.front(), start, end, intersection))
 		return true;
@@ -88,7 +88,7 @@ bool Intersection::test(const Polygon & poly, const Vec2f & start, const Vec2f &
 			return true;
 	}
 
-	return false;
+	return !hollow && poly.contains(start);
 }
 
 // ----------------------------------------------------------------------------
