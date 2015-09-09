@@ -162,6 +162,13 @@ Color::Color(const char * const hexString) :
 
 // ----------------------------------------------------------------------------
 
+bool Color::operator!=(const Color & rhs) const
+{
+	return r != rhs.r || g != rhs.g || b != rhs.b || a != rhs.a;
+}
+
+// ----------------------------------------------------------------------------
+
 std::array<float, 4> Color::as4fv() const
 {
 	return { r, g, b, a };

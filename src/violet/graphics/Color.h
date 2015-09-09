@@ -62,6 +62,8 @@ namespace Violet
 		Color(Deserializer & deserializer);
 		Color(const char * hexString);
 
+		bool operator!=(const Color & rhs) const;
+
 		std::array<float, 4> as4fv() const;
 
 	public:
