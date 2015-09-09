@@ -26,6 +26,8 @@ namespace Violet
 
 		std::string m_elementFileName;
 	};
+
+	DEFINE_METHOD(AssignIndexMethod, void(const Entity &, const Engine &, uint32 index));
 }
 
 #endif
