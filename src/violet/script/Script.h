@@ -2,6 +2,7 @@
 #define VIOLET_Script_H
 
 #include "violet/Defines.h"
+#include "violet/Engine.h"
 
 #include <functional>
 #include <string>
@@ -10,8 +11,6 @@
 
 namespace Violet
 {
-	class Engine;
-
 	class VIOLET_API Script
 	{
 	public:

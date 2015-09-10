@@ -1,7 +1,7 @@
 # Create project
 project (Engine)
 
-set (Engine_ROOT ${Violet_SRC}/engine)
+set (Engine_ROOT ${Violet_SRC}/violet)
 
 # define header and source files for the library
 set (HEADER_FILES
@@ -36,13 +36,14 @@ set (HEADER_FILES
     ${Engine_ROOT}/physics/component/PhysicsComponent.h
     ${Engine_ROOT}/physics/system/PhysicsSystem.h
     ${Engine_ROOT}/scene/Scene.h
-    ${Engine_ROOT}/scene/SceneUtilities.h
-    ${Engine_ROOT}/script/cpp/CppScriptComponent.h
+    ${Engine_ROOT}/scene/SceneProcessor.h
+    ${Engine_ROOT}/script/Script.h
+    ${Engine_ROOT}/script/ScriptComponent.h
+    ${Engine_ROOT}/script/ScriptFactory.h
+    ${Engine_ROOT}/script/cpp/CppScript.h
     ${Engine_ROOT}/script/cpp/SharedLibrary.h
     ${Engine_ROOT}/script/lua/LuaLibrary.h
-    ${Engine_ROOT}/script/lua/LuaScriptComponent.h
     ${Engine_ROOT}/script/lua/LuaScript.h
-    ${Engine_ROOT}/script/ScriptMethod.h
     ${Engine_ROOT}/serialization/binary/BinaryDeserializer.h
     ${Engine_ROOT}/serialization/binary/BinarySerializer.h
     ${Engine_ROOT}/serialization/Deserializer.h
@@ -107,6 +108,7 @@ set (SOURCE_FILES
     ${Engine_ROOT}/input/system/InputSystem.cpp
     ${Engine_ROOT}/math/AABB.cpp
     ${Engine_ROOT}/math/Circle.cpp
+    ${Engine_ROOT}/math/Matrix3.cpp
     ${Engine_ROOT}/math/Polygon.cpp
     ${Engine_ROOT}/math/Vec2.cpp
     ${Engine_ROOT}/physics/collision/Intersection.cpp
@@ -114,11 +116,13 @@ set (SOURCE_FILES
     ${Engine_ROOT}/physics/component/PhysicsComponent.cpp
     ${Engine_ROOT}/physics/system/PhysicsSystem.cpp
     ${Engine_ROOT}/scene/Scene.cpp
-    ${Engine_ROOT}/scene/SceneUtilities.cpp
-    ${Engine_ROOT}/script/cpp/CppScriptComponent.cpp
+    ${Engine_ROOT}/scene/SceneProcessor.cpp
+    ${Engine_ROOT}/script/Script.cpp
+    ${Engine_ROOT}/script/ScriptComponent.cpp
+    ${Engine_ROOT}/script/ScriptFactory.cpp
+    ${Engine_ROOT}/script/cpp/CppScript.cpp
     ${Engine_ROOT}/script/cpp/UnixSharedLibrary.cpp
     ${Engine_ROOT}/script/lua/LuaLibrary.cpp
-    ${Engine_ROOT}/script/lua/LuaScriptComponent.cpp
     ${Engine_ROOT}/script/lua/LuaScript.cpp
     ${Engine_ROOT}/serialization/binary/BinaryDeserializer.cpp
     ${Engine_ROOT}/serialization/binary/BinarySerializer.cpp
