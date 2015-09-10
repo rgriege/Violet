@@ -44,25 +44,29 @@ namespace Violet
 
 	public:
 
-		static std::unique_ptr<Font> load(const char * filename);
-		typedef ResourceCache<Font, &Font::load> Cache;
+		static std::unique_ptr<Font> load(const char * filename, uint32 size);
+		typedef ResourceCache<Font, const char *, uint32> Cache;
 		static Cache & getCache();
-		static uint32 getFontImageSize();
 
 	public:
 
 		void render(std::string const & str, ShaderProgram & program);
 		const char * getFilename() const;
+		uint32 getSize() const;
 
 	private:
 
-		Font(const char * filename, std::map<char, Glyph> && glyphs, uint32 spaceWidth);
+		Font(const char * filename, uint32 size, std::map<char, Glyph> && glyphs, uint32 spaceWidth);
+
+		Font(const Font &) = delete;
+		Font & operator=(const Font &) = delete;
 
 	private:
 
 		const std::string m_filename;
+		const uint32 m_size;
 		std::map<char, Glyph> m_glyphs;
-		uint32 m_spaceWidth;
+		const uint32 m_spaceWidth;
 	};
 }
 

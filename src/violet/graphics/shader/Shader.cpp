@@ -2,6 +2,7 @@
 
 #include "violet/Defines.h"
 #include "violet/utility/Buffer.h"
+#include "violet/utility/StringUtilities.h"
 
 #include <GL/glew.h>
 #include <fstream>
@@ -114,7 +115,7 @@ std::unique_ptr<ShaderProgram> ShaderProgram::create(std::shared_ptr<Shader> ver
 
 ShaderProgram::Cache & ShaderProgram::getCache()
 {
-	static Cache s_cache;
+	static Cache s_cache(&ShaderProgram::load);
 	return s_cache;
 }
 

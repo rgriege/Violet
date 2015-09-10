@@ -42,9 +42,11 @@ void Texture::unbind()
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+// ----------------------------------------------------------------------------
+
 Texture::Cache & Texture::getCache()
 {
-	static Cache s_cache;
+	static Cache s_cache(&Texture::loadPng);
 	return s_cache;
 }
 

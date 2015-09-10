@@ -1,26 +1,36 @@
 #ifndef RESOURCE_CACHE_H
 #define RESOURCE_CACHE_H
 
-#include "violet/utility/StringUtilities.h"
+#include "violet/template/TupleUtilities.h"
 
-#include <map>
+#include <unordered_map>
 #include <memory>
 
 namespace Violet
 {
-	template <typename Resource, std::unique_ptr<Resource>(*Loader)(const char *)>
+	template <typename Resource, typename ... Args>
 	class ResourceCache
 	{
 	public:
 
-		std::shared_ptr<Resource> fetch(const char * filename)
+		typedef std::unique_ptr<Resource>(*Loader)(Args ...);
+
+	public:
+
+		ResourceCache(Loader loader) :
+			m_loader(loader)
+		{
+		}
+
+		std::shared_ptr<Resource> fetch(Args ... args)
 		{
 			std::shared_ptr<Resource> resource;
-			auto const it = m_resources.find(filename);
+			const auto key = std::make_tuple(args...);
+			const auto it = m_resources.find(key);
 			if (it == m_resources.end())
 			{
-				resource.reset(Loader(filename).release());
-				m_resources.emplace_hint(it, std::make_pair(filename, resource));
+				resource.reset(m_loader(get<Args>(key)...).release());
+				m_resources.emplace_hint(it, std::make_pair(key, resource));
 			}
 			else
 				resource = it->second;
@@ -34,7 +44,8 @@ namespace Violet
 
 	private:
 
-		std::map<const char *, std::shared_ptr<Resource>, StringUtilities::Less> m_resources;
+		Loader m_loader;
+		std::unordered_map<std::tuple<Args...>, std::shared_ptr<Resource>> m_resources;
 	};
 }
 

@@ -19,8 +19,6 @@ using namespace Violet;
 namespace FontNamespace
 {
 	FT_Library ms_freetypeLibrary;
-
-	uint32 ms_fontImageSize = 60;
 };
 
 using namespace FontNamespace;
@@ -86,7 +84,7 @@ int Font::Glyph::getAdvance() const
 
 // ============================================================================
 
-std::unique_ptr<Font> Font::load(const char * filename)
+std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 {
 	if (ms_freetypeLibrary == nullptr)
 	{
@@ -113,7 +111,7 @@ std::unique_ptr<Font> Font::load(const char * filename)
 		return nullptr;
 	}
 
-	ftError = FT_Set_Char_Size(face, 0, ms_fontImageSize * 64, 0, 0);
+	ftError = FT_Set_Char_Size(face, 0, size * 64, 0, 0);
 	if (ftError != FT_Err_Ok)
 	{
 		std::cout << "FT_Set_Char_Size error: " << ftError << std::endl;
@@ -121,7 +119,7 @@ std::unique_ptr<Font> Font::load(const char * filename)
 	}
 
 	std::map<char, Glyph> glyphs;
-	uint32 spaceWidth = ms_fontImageSize;
+	uint32 spaceWidth = size;
 
 	FT_ULong charcode;
 	FT_UInt glyphIndex;
@@ -199,22 +197,16 @@ std::unique_ptr<Font> Font::load(const char * filename)
 		return nullptr;
 	}
 
-	return std::unique_ptr<Font>(new Font(filename, std::move(glyphs), spaceWidth));
+	return std::unique_ptr<Font>(new Font(filename, size, std::move(glyphs), spaceWidth));
 }
 
 // ----------------------------------------------------------------------------
 
 Font::Cache & Font::getCache()
 {
-	static Cache s_cache;
+	std::unique_ptr<Font>(*s_loader)(const char *, uint32) = &Font::load;
+	static Cache s_cache(s_loader);
 	return s_cache;
-}
-
-// ----------------------------------------------------------------------------
-
-uint32 Font::getFontImageSize()
-{
-	return ms_fontImageSize;
 }
 
 // ============================================================================
@@ -251,10 +243,18 @@ const char * Font::getFilename() const
 	return m_filename.c_str();
 }
 
+// ----------------------------------------------------------------------------
+
+uint32 Font::getSize() const
+{
+	return m_size;
+}
+
 // ============================================================================
 
-Font::Font(const char * filename, std::map<char, Glyph> && glyphs, const uint32 spaceWidth) :
+Font::Font(const char * filename, const uint32 size, std::map<char, Glyph> && glyphs, const uint32 spaceWidth) :
 	m_filename(filename),
+	m_size(size),
 	m_glyphs(std::move(glyphs)),
 	m_spaceWidth(spaceWidth)
 {

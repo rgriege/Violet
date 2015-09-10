@@ -18,7 +18,7 @@ namespace Violet
 		static void bind(const Texture & texture);
 		static void unbind();
 
-		typedef ResourceCache<Texture, &Texture::loadPng> Cache;
+		typedef ResourceCache<Texture, const char *> Cache;
 		static Cache & getCache();
 
 	public:

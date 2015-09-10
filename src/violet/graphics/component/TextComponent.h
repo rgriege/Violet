@@ -33,7 +33,6 @@ namespace Violet
 
 		std::string m_text;
 		std::shared_ptr<Font> m_font;
-		uint32 m_size;
 	};
 
 	Deserializer & operator>>(Deserializer & deserializer, TextComponent & component);
