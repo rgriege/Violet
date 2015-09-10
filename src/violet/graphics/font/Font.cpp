@@ -214,6 +214,7 @@ Font::Cache & Font::getCache()
 void Font::render(std::string const & str, ShaderProgram & program)
 {
 	float xOffset = 0;
+	std::vector<std::pair<const Glyph &, float>> glyphOffsets;
 	// Only God knows why ranged for doesn't work here...
 	for (uint32 i = 0, end = str.size(); i < end; ++i)
 	{
@@ -222,17 +223,23 @@ void Font::render(std::string const & str, ShaderProgram & program)
 			xOffset += m_spaceWidth;
 		else
 		{
-			auto const it = m_glyphs.find(character);
+			const auto it = m_glyphs.find(character);
 			if (it != m_glyphs.end())
 			{
-				const GLint advanceAttrib = program.getUniformLocation("advance");
-				glUniform1f(advanceAttrib, xOffset);
-				it->second.render(program);
+				glyphOffsets.emplace_back(it->second, xOffset);
 				xOffset += it->second.getAdvance();
 			}
 			else
 				std::cout << "unknown character: " << character << std::endl;
 		}
+	}
+
+	float const halfWidth = xOffset / 2.f;
+	for (const auto & glyphOffset : glyphOffsets)
+	{
+		const GLint advanceAttrib = program.getUniformLocation("advance");
+		glUniform1f(advanceAttrib, glyphOffset.second - halfWidth);
+		glyphOffset.first.render(program);
 	}
 }
 
