@@ -1,7 +1,7 @@
 #include "test/template/TemplateTest.h"
 
-#include "engine/template/TemplateUtilities.h"
-#include "engine/template/TupleUtilities.h"
+#include "violet/template/TemplateUtilities.h"
+#include "violet/template/TupleUtilities.h"
 #include "test/core/TestEvaluator.h"
 #include "test/core/TestFactory.h"
 

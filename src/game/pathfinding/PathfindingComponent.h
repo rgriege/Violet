@@ -1,7 +1,7 @@
 #ifndef GAME_PathfindingComponent_H
 #define GAME_PathfindingComponent_H
 
-#include "engine/component/Component.h"
+#include "violet/component/Component.h"
 #include "game/Config.h"
 
 namespace Violet

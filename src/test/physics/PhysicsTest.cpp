@@ -1,7 +1,7 @@
 #include "test/physics/PhysicsTest.h"
 
-#include "engine/math/Polygon.h"
-#include "engine/physics/collision/Intersection.h"
+#include "violet/math/Polygon.h"
+#include "violet/physics/collision/Intersection.h"
 #include "test/core/TestEvaluator.h"
 #include "test/core/TestFactory.h"
 

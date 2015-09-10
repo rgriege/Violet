@@ -2,10 +2,10 @@
 
 #include "game/pathfinding/PathfindingSystem.h"
 
-#include "engine/Engine.h"
-#include "engine/scene/SceneUtilities.h"
-#include "engine/system/SystemFactory.h"
-#include "engine/transform/component/TransformComponent.h"
+#include "violet/Engine.h"
+#include "violet/scene/SceneProcessor.h"
+#include "violet/system/SystemFactory.h"
+#include "violet/transform/component/TransformComponent.h"
 #include "game/world/WorldSystem.h"
 #include "game/pathfinding/MapComponent.h"
 #include "game/pathfinding/PathComponent.h"
@@ -58,8 +58,8 @@ PathfindingSystem::~PathfindingSystem()
 
 void PathfindingSystem::update(const float dt, const Violet::Engine & engine)
 {
-	/*Violet::SceneUtilities::Processor processor;
-	processor.addDelegate(Violet::SceneUtilities::Processor::Filter::create<PathComponent>(), [&](const Violet::Entity & entity, const float dt) {
+	/*Violet::SceneProcessor processor;
+	processor.addDelegate(Violet::SceneProcessor::Filter::create<PathComponent>(), [&](const Violet::Entity & entity, const float dt) {
 		PathComponent & pathComponent = *entity.getComponent<PathComponent>();
 		if (!updateComponent(pathComponent, dt, engine))
 			engine.getCurrentScene().getRoot().removeChild(entity);

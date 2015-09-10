@@ -87,7 +87,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Engine.lib;lib_json.lib;Game.lib;lua_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Violet.lib;lib_json.lib;Game.lib;lua_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>E:\Documents\alottabit\violet\bin\Debug;E:\Libraries\jsoncpp\lib\Debug;E:\Libraries\lua-5.2.3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

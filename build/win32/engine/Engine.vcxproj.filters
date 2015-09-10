@@ -118,462 +118,498 @@
     <Filter Include="script\cpp">
       <UniqueIdentifier>{3e4d76e7-2dca-45a5-b6ae-8f0dba4d30eb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ui">
+      <UniqueIdentifier>{2f89d04e-b7d1-40b4-abe8-bec4f3e39e93}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\engine\graphics\Color.h">
+    <ClInclude Include="..\..\..\src\violet\graphics\Color.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\Mesh.h">
+    <ClInclude Include="..\..\..\src\violet\graphics\Mesh.h">
       <Filter>graphics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\component\TextComponent.h">
+    <ClInclude Include="..\..\..\src\violet\graphics\component\TextComponent.h">
       <Filter>graphics\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\font\Font.h">
+    <ClInclude Include="..\..\..\src\violet\graphics\font\Font.h">
       <Filter>graphics\font</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\texture\Texture.h">
+    <ClInclude Include="..\..\..\src\violet\graphics\texture\Texture.h">
       <Filter>graphics\texture</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\shader\Shader.h">
+    <ClInclude Include="..\..\..\src\violet\graphics\shader\Shader.h">
       <Filter>graphics\shader</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\system\RenderSystem.h">
+    <ClInclude Include="..\..\..\src\violet\graphics\system\RenderSystem.h">
       <Filter>graphics\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\input\InputResult.h">
+    <ClInclude Include="..\..\..\src\violet\input\InputResult.h">
       <Filter>input</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\input\system\InputSystem.h">
+    <ClInclude Include="..\..\..\src\violet\input\system\InputSystem.h">
       <Filter>input\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\physics\collision\Intersection.h">
+    <ClInclude Include="..\..\..\src\violet\physics\collision\Intersection.h">
       <Filter>physics\collision</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\physics\collision\RigidBody.h">
+    <ClInclude Include="..\..\..\src\violet\physics\collision\RigidBody.h">
       <Filter>physics\collision</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\physics\component\PhysicsComponent.h">
+    <ClInclude Include="..\..\..\src\violet\physics\component\PhysicsComponent.h">
       <Filter>physics\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\physics\system\PhysicsSystem.h">
+    <ClInclude Include="..\..\..\src\violet\physics\system\PhysicsSystem.h">
       <Filter>physics\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Circle.h">
+    <ClInclude Include="..\..\..\src\violet\math\Circle.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Constants.h">
+    <ClInclude Include="..\..\..\src\violet\math\Constants.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Interval.h">
+    <ClInclude Include="..\..\..\src\violet\math\Interval.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Matrix2.h">
+    <ClInclude Include="..\..\..\src\violet\math\Matrix2.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Matrix3.h">
+    <ClInclude Include="..\..\..\src\violet\math\Matrix3.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Polygon.h">
+    <ClInclude Include="..\..\..\src\violet\math\Polygon.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Vec2.h">
+    <ClInclude Include="..\..\..\src\violet\math\Vec2.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\entity\Entity.h">
+    <ClInclude Include="..\..\..\src\violet\entity\Entity.h">
       <Filter>entity</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\component\Component.h">
+    <ClInclude Include="..\..\..\src\violet\component\Component.h">
       <Filter>component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\Deserializer.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\Deserializer.h">
       <Filter>serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\SerializationUtilities.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\SerializationUtilities.h">
       <Filter>serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\Serializer.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\Serializer.h">
       <Filter>serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\binary\BinaryDeserializer.h">
       <Filter>serialization\binary</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\binary\BinarySerializer.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\binary\BinarySerializer.h">
       <Filter>serialization\binary</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\file\FileDeserializer.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\file\FileDeserializer.h">
       <Filter>serialization\file</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\file\FileDeserializerFactory.h">
       <Filter>serialization\file</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\file\FileSerializer.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\file\FileSerializer.h">
       <Filter>serialization\file</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\file\FileSerializerFactory.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\file\FileSerializerFactory.h">
       <Filter>serialization\file</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\json\JsonDeserializer.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\json\JsonDeserializer.h">
       <Filter>serialization\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\serialization\json\JsonSerializer.h">
+    <ClInclude Include="..\..\..\src\violet\serialization\json\JsonSerializer.h">
       <Filter>serialization\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\structures\CrsGraph.h">
+    <ClInclude Include="..\..\..\src\violet\structures\CrsGraph.h">
       <Filter>structures</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\system\System.h">
+    <ClInclude Include="..\..\..\src\violet\system\System.h">
       <Filter>system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\system\SystemFactory.h">
+    <ClInclude Include="..\..\..\src\violet\system\SystemFactory.h">
       <Filter>system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\template\TemplateUtilities.h">
+    <ClInclude Include="..\..\..\src\violet\template\TemplateUtilities.h">
       <Filter>template</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\template\TupleUtilities.h">
+    <ClInclude Include="..\..\..\src\violet\template\TupleUtilities.h">
       <Filter>template</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\time\Time.h">
+    <ClInclude Include="..\..\..\src\violet\time\Time.h">
       <Filter>time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\transform\component\TransformComponent.h">
+    <ClInclude Include="..\..\..\src\violet\transform\component\TransformComponent.h">
       <Filter>transform\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\Buffer.h">
+    <ClInclude Include="..\..\..\src\violet\utility\Buffer.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\Factory.h">
+    <ClInclude Include="..\..\..\src\violet\utility\Factory.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\FileUtilities.h">
+    <ClInclude Include="..\..\..\src\violet\utility\FileUtilities.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\FormattedString.h">
+    <ClInclude Include="..\..\..\src\violet\utility\FormattedString.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\FreeList.h">
+    <ClInclude Include="..\..\..\src\violet\utility\FreeList.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\Guard.h">
+    <ClInclude Include="..\..\..\src\violet\utility\Guard.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\ResourceCache.h">
+    <ClInclude Include="..\..\..\src\violet\utility\ResourceCache.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\StringUtilities.h">
+    <ClInclude Include="..\..\..\src\violet\utility\StringUtilities.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\unique_val.h">
+    <ClInclude Include="..\..\..\src\violet\utility\unique_val.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\window\MouseButton.h">
+    <ClInclude Include="..\..\..\src\violet\window\MouseButton.h">
       <Filter>window</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\window\WindowSystem.h">
+    <ClInclude Include="..\..\..\src\violet\window\WindowSystem.h">
       <Filter>window</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\window\glut\GlutWindowSystem.h">
+    <ClInclude Include="..\..\..\src\violet\window\glut\GlutWindowSystem.h">
       <Filter>window\glut</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\window\sdl\SDLWindowSystem.h">
+    <ClInclude Include="..\..\..\src\violet\window\sdl\SDLWindowSystem.h">
       <Filter>window\sdl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\Defines.h" />
-    <ClInclude Include="..\..\..\src\engine\Engine.h" />
-    <ClInclude Include="..\..\..\src\engine\update\component\UpdateComponent.h">
+    <ClInclude Include="..\..\..\src\violet\Defines.h" />
+    <ClInclude Include="..\..\..\src\violet\Engine.h" />
+    <ClInclude Include="..\..\..\src\violet\update\component\UpdateComponent.h">
       <Filter>update\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\update\system\UpdateSystem.h">
+    <ClInclude Include="..\..\..\src\violet\update\system\UpdateSystem.h">
       <Filter>update\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\scene\Scene.h">
+    <ClInclude Include="..\..\..\src\violet\scene\Scene.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\Tag.h">
+    <ClInclude Include="..\..\..\src\violet\utility\Tag.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Matrix2.inl">
+    <ClInclude Include="..\..\..\src\violet\math\Matrix2.inl">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Interval.inl">
+    <ClInclude Include="..\..\..\src\violet\math\Interval.inl">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Matrix3.inl">
+    <ClInclude Include="..\..\..\src\violet\math\Matrix3.inl">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\Vec2.inl">
+    <ClInclude Include="..\..\..\src\violet\math\Vec2.inl">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\scene\SceneUtilities.h">
-      <Filter>scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\Profiler.h">
+    <ClInclude Include="..\..\..\src\violet\utility\Profiler.h">
       <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\structures\QuadTree.h">
+    <ClInclude Include="..\..\..\src\violet\structures\QuadTree.h">
       <Filter>structures</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\math\AABB.h">
+    <ClInclude Include="..\..\..\src\violet\math\AABB.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\structures\QuadTree.inl">
+    <ClInclude Include="..\..\..\src\violet\structures\QuadTree.inl">
       <Filter>structures</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\input\component\KeyInputComponent.h">
+    <ClInclude Include="..\..\..\src\violet\input\component\KeyInputComponent.h">
       <Filter>input\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\input\component\MouseInputComponent.h">
+    <ClInclude Include="..\..\..\src\violet\input\component\MouseInputComponent.h">
       <Filter>input\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\task\Task.h">
+    <ClInclude Include="..\..\..\src\violet\utility\task\Task.h">
       <Filter>utility\task</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\task\TaskScheduler.h">
+    <ClInclude Include="..\..\..\src\violet\utility\task\TaskScheduler.h">
       <Filter>utility\task</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\handle\Handle.h">
+    <ClInclude Include="..\..\..\src\violet\utility\handle\Handle.h">
       <Filter>utility\handle</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\handle\HandleManager.h">
+    <ClInclude Include="..\..\..\src\violet\utility\handle\HandleManager.h">
       <Filter>utility\handle</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\lua\LuaScriptComponent.h">
+    <ClInclude Include="..\..\..\src\violet\script\cpp\SharedLibrary.h">
+      <Filter>script\cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\utility\lent_ptr.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\script\lua\LuaLibrary.h">
       <Filter>script\lua</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\cpp\CppScriptComponent.h">
-      <Filter>script\cpp</Filter>
+    <ClInclude Include="..\..\..\src\violet\script\lua\LuaScript.h">
+      <Filter>script\lua</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\cpp\SharedLibrary.h">
-      <Filter>script\cpp</Filter>
+    <ClInclude Include="..\..\..\src\violet\utility\TextResource.h">
+      <Filter>utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\ScriptMethod.h">
+    <ClInclude Include="..\..\..\src\violet\utility\shared_val.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\graphics\component\ColorComponent.h">
+      <Filter>graphics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\graphics\component\TextureComponent.h">
+      <Filter>graphics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\graphics\component\RenderComponentData.h">
+      <Filter>graphics\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\scene\SceneProcessor.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\script\ScriptComponent.h">
       <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\lent_ptr.h">
-      <Filter>utility</Filter>
+    <ClInclude Include="..\..\..\src\violet\script\Script.h">
+      <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\lua\LuaLibrary.h">
-      <Filter>script\lua</Filter>
+    <ClInclude Include="..\..\..\src\violet\script\ScriptFactory.h">
+      <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\script\lua\LuaScript.h">
-      <Filter>script\lua</Filter>
+    <ClInclude Include="..\..\..\src\violet\script\cpp\CppScript.h">
+      <Filter>script\cpp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\TextResource.h">
-      <Filter>utility</Filter>
+    <ClInclude Include="..\..\..\src\violet\script\Script.inl">
+      <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\utility\shared_val.h">
-      <Filter>utility</Filter>
+    <ClInclude Include="..\..\..\src\violet\ui\UiList.h">
+      <Filter>ui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\component\ColorComponent.h">
-      <Filter>graphics\component</Filter>
+    <ClInclude Include="..\..\..\src\violet\transform\Transform.h">
+      <Filter>transform</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\component\TextureComponent.h">
-      <Filter>graphics\component</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\engine\graphics\component\RenderComponentData.h">
-      <Filter>graphics\component</Filter>
+    <ClInclude Include="..\..\..\src\violet\ui\UiListElementComponent.h">
+      <Filter>ui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\engine\graphics\Color.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\Mesh.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\Mesh.cpp">
       <Filter>graphics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\component\TextComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\component\TextComponent.cpp">
       <Filter>graphics\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\font\Font.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\font\Font.cpp">
       <Filter>graphics\font</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\texture\Texture.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\texture\Texture.cpp">
       <Filter>graphics\texture</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\shader\Shader.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\shader\Shader.cpp">
       <Filter>graphics\shader</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\system\RenderSystem.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\system\RenderSystem.cpp">
       <Filter>graphics\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\input\system\InputSystem.cpp">
+    <ClCompile Include="..\..\..\src\violet\input\system\InputSystem.cpp">
       <Filter>input\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\physics\collision\Intersection.cpp">
+    <ClCompile Include="..\..\..\src\violet\physics\collision\Intersection.cpp">
       <Filter>physics\collision</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\physics\collision\RigidBody.cpp">
+    <ClCompile Include="..\..\..\src\violet\physics\collision\RigidBody.cpp">
       <Filter>physics\collision</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\physics\component\PhysicsComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\physics\component\PhysicsComponent.cpp">
       <Filter>physics\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\physics\system\PhysicsSystem.cpp">
+    <ClCompile Include="..\..\..\src\violet\physics\system\PhysicsSystem.cpp">
       <Filter>physics\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\math\Circle.cpp">
+    <ClCompile Include="..\..\..\src\violet\math\Circle.cpp">
       <Filter>math</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\math\Polygon.cpp">
+    <ClCompile Include="..\..\..\src\violet\math\Polygon.cpp">
       <Filter>math</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\math\Vec2.cpp">
+    <ClCompile Include="..\..\..\src\violet\math\Vec2.cpp">
       <Filter>math</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\entity\Entity.cpp">
+    <ClCompile Include="..\..\..\src\violet\entity\Entity.cpp">
       <Filter>entity</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\serialization\binary\BinaryDeserializer.cpp">
+    <ClCompile Include="..\..\..\src\violet\serialization\binary\BinaryDeserializer.cpp">
       <Filter>serialization\binary</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\serialization\binary\BinarySerializer.cpp">
+    <ClCompile Include="..\..\..\src\violet\serialization\binary\BinarySerializer.cpp">
       <Filter>serialization\binary</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.cpp">
+    <ClCompile Include="..\..\..\src\violet\serialization\file\FileDeserializerFactory.cpp">
       <Filter>serialization\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\serialization\file\FileSerializerFactory.cpp">
+    <ClCompile Include="..\..\..\src\violet\serialization\file\FileSerializerFactory.cpp">
       <Filter>serialization\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\serialization\json\JsonDeserializer.cpp">
+    <ClCompile Include="..\..\..\src\violet\serialization\json\JsonDeserializer.cpp">
       <Filter>serialization\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\serialization\json\JsonSerializer.cpp">
+    <ClCompile Include="..\..\..\src\violet\serialization\json\JsonSerializer.cpp">
       <Filter>serialization\json</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\time\Time.cpp">
+    <ClCompile Include="..\..\..\src\violet\time\Time.cpp">
       <Filter>time</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\transform\component\TransformComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\transform\component\TransformComponent.cpp">
       <Filter>transform\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\FileUtilities.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\FileUtilities.cpp">
       <Filter>utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\FreeList.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\FreeList.cpp">
       <Filter>utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\StringUtilities.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\StringUtilities.cpp">
       <Filter>utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\window\glut\GlutWindowSystem.cpp">
+    <ClCompile Include="..\..\..\src\violet\window\glut\GlutWindowSystem.cpp">
       <Filter>window\glut</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\window\sdl\SDLWindowSystem.cpp">
+    <ClCompile Include="..\..\..\src\violet\window\sdl\SDLWindowSystem.cpp">
       <Filter>window\sdl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\Engine.cpp" />
-    <ClCompile Include="..\..\..\src\engine\update\component\UpdateComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\Engine.cpp" />
+    <ClCompile Include="..\..\..\src\violet\update\component\UpdateComponent.cpp">
       <Filter>update\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\update\system\UpdateSystem.cpp">
+    <ClCompile Include="..\..\..\src\violet\update\system\UpdateSystem.cpp">
       <Filter>update\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\component\Component.cpp">
+    <ClCompile Include="..\..\..\src\violet\component\Component.cpp">
       <Filter>component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\scene\Scene.cpp">
+    <ClCompile Include="..\..\..\src\violet\scene\Scene.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\Tag.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\Tag.cpp">
       <Filter>utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\system\System.cpp">
+    <ClCompile Include="..\..\..\src\violet\system\System.cpp">
       <Filter>system</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\scene\SceneUtilities.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\math\AABB.cpp">
+    <ClCompile Include="..\..\..\src\violet\math\AABB.cpp">
       <Filter>math</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\input\component\KeyInputComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\input\component\KeyInputComponent.cpp">
       <Filter>input\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\input\component\MouseInputComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\input\component\MouseInputComponent.cpp">
       <Filter>input\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\task\Task.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\task\Task.cpp">
       <Filter>utility\task</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\task\TaskScheduler.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\task\TaskScheduler.cpp">
       <Filter>utility\task</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\handle\Handle.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\handle\Handle.cpp">
       <Filter>utility\handle</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\handle\HandleManager.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\handle\HandleManager.cpp">
       <Filter>utility\handle</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\script\lua\LuaScriptComponent.cpp">
-      <Filter>script\lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\script\cpp\CppScriptComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\script\cpp\WindowsSharedLibrary.cpp">
       <Filter>script\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\script\cpp\WindowsSharedLibrary.cpp">
-      <Filter>script\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\script\lua\LuaLibrary.cpp">
+    <ClCompile Include="..\..\..\src\violet\script\lua\LuaLibrary.cpp">
       <Filter>script\lua</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\script\lua\LuaScript.cpp">
+    <ClCompile Include="..\..\..\src\violet\script\lua\LuaScript.cpp">
       <Filter>script\lua</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\utility\Profiler.cpp">
+    <ClCompile Include="..\..\..\src\violet\utility\Profiler.cpp">
       <Filter>utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\component\ColorComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\component\ColorComponent.cpp">
       <Filter>graphics\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\component\TextureComponent.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\component\TextureComponent.cpp">
       <Filter>graphics\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\engine\graphics\component\RenderComponentData.cpp">
+    <ClCompile Include="..\..\..\src\violet\graphics\component\RenderComponentData.cpp">
       <Filter>graphics\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\scene\SceneProcessor.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\script\ScriptFactory.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\script\ScriptComponent.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\script\cpp\CppScript.cpp">
+      <Filter>script\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\script\Script.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\ui\UiList.cpp">
+      <Filter>ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\math\Matrix3.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\transform\Transform.cpp">
+      <Filter>transform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\ui\UiListElementComponent.cpp">
+      <Filter>ui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\engine\serialization\SerializationUtilities.inl">
+    <None Include="..\..\..\src\violet\serialization\SerializationUtilities.inl">
       <Filter>serialization</Filter>
     </None>
-    <None Include="..\..\..\src\engine\serialization\file\FileDeserializer.inl">
+    <None Include="..\..\..\src\violet\serialization\file\FileDeserializer.inl">
       <Filter>serialization\file</Filter>
     </None>
-    <None Include="..\..\..\src\engine\serialization\file\FileSerializer.inl">
+    <None Include="..\..\..\src\violet\serialization\file\FileSerializer.inl">
       <Filter>serialization\file</Filter>
     </None>
-    <None Include="..\..\..\src\engine\serialization\file\FileDeserializerFactory.inl">
+    <None Include="..\..\..\src\violet\serialization\file\FileDeserializerFactory.inl">
       <Filter>serialization\file</Filter>
     </None>
-    <None Include="..\..\..\src\engine\structures\CrsGraph.inl">
+    <None Include="..\..\..\src\violet\structures\CrsGraph.inl">
       <Filter>structures</Filter>
     </None>
-    <None Include="..\..\..\src\engine\Engine.inl" />
-    <None Include="..\..\..\src\engine\entity\Entity.inl">
+    <None Include="..\..\..\src\violet\Engine.inl" />
+    <None Include="..\..\..\src\violet\entity\Entity.inl">
       <Filter>entity</Filter>
     </None>
-    <None Include="..\..\..\src\engine\component\Component.inl">
+    <None Include="..\..\..\src\violet\component\Component.inl">
       <Filter>component</Filter>
     </None>
-    <None Include="..\..\..\src\engine\script\cpp\CppScriptComponent.inl">
+    <None Include="..\..\..\src\violet\utility\unique_val.inl">
+      <Filter>utility</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\utility\lent_ptr.inl">
+      <Filter>utility</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\script\lua\LuaLibrary.inl">
+      <Filter>script\lua</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\utility\shared_val.inl">
+      <Filter>utility</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\script\lua\LuaScript.inl">
+      <Filter>script\lua</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\script\cpp\CppScript.inl">
       <Filter>script\cpp</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\utility\unique_val.inl">
-      <Filter>utility</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\utility\lent_ptr.inl">
-      <Filter>utility</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\script\lua\LuaLibrary.inl">
-      <Filter>script\lua</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\utility\shared_val.inl">
-      <Filter>utility</Filter>
-    </None>
-    <None Include="..\..\..\src\engine\script\lua\LuaScript.inl">
-      <Filter>script\lua</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 #include "test/serialization/JsonSerializationTest.h"
 
-#include "engine/serialization/json/JsonDeserializer.h"
+#include "violet/serialization/json/JsonDeserializer.h"
 #include "test/core/TestEvaluator.h"
 #include "test/core/TestFactory.h"
 

@@ -1,9 +1,9 @@
 #include "test/math/MathTest.h"
 
-#include "engine/math/Interval.h"
-#include "engine/math/Matrix2.h"
-#include "engine/math/Polygon.h"
-#include "engine/math/Vec2.h"
+#include "violet/math/Interval.h"
+#include "violet/math/Matrix2.h"
+#include "violet/math/Polygon.h"
+#include "violet/math/Vec2.h"
 #include "test/core/TestEvaluator.h"
 #include "test/core/TestFactory.h"
 

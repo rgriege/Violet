@@ -2,8 +2,8 @@
 
 #include "game/pathfinding/PathComponent.h"
 
-#include "engine/serialization/Deserializer.h"
-#include "engine/serialization/Serializer.h"
+#include "violet/serialization/Deserializer.h"
+#include "violet/serialization/Serializer.h"
 
 // ============================================================================
 

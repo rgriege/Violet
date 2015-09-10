@@ -1,7 +1,7 @@
 #ifndef GAME_Path_H
 #define GAME_Path_H
 
-#include "engine/math/Vec2.h"
+#include "violet/math/Vec2.h"
 #include "game/Config.h"
 
 #include <vector>

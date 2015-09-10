@@ -1,104 +1,56 @@
-#include "engine/Engine.h"
-#include "engine/input/InputResult.h"
-#include "engine/input/system/InputSystem.h"
-#include "engine/script/cpp/CppScriptComponent.h"
-#include "engine/serialization/file/FileDeserializerFactory.h"
-#include "engine/transform/component/TransformComponent.h"
+#include "violet/Engine.h"
+#include "violet/input/InputResult.h"
+#include "violet/input/system/InputSystem.h"
+#include "violet/script/cpp/CppScript.h"
+#include "violet/serialization/file/FileDeserializerFactory.h"
+#include "violet/transform/component/TransformComponent.h"
 
 #include <functional>
 
 using namespace Violet;
 
-struct Mem
+struct Mem : public CppScript::Memory
 {
+    Mem() : menu(Handle::ms_invalid) {}
+    virtual ~Mem() override = default;
     Handle menu;
 };
 
-class AddMenuTask : public Engine::Task
-{
-public:
-
-    AddMenuTask(const Engine & engine, const Vec2f & position, Mem & mem) :
-        Engine::Task(engine),
-        m_position(position),
-        m_mem(mem)
-    {
-    }
-
-    virtual void execute() const override
-    {
-        auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
-        if (deserializer != nullptr && *deserializer)
-        {
-            Entity & menu = m_engine.getCurrentScene().getRoot().addChild(*deserializer);
-            auto transformComponent = menu.getComponent<TransformComponent>();
-            if (transformComponent != nullptr)
-                transformComponent->m_position = m_position;
-            m_mem.menu = menu.getHandle();
-        }
-    }
-
-private:
-
-    const Vec2f m_position;
-    Mem & m_mem;
-};
-
-class RemoveMenuTask : public Engine::Task
-{
-public:
-
-    RemoveMenuTask(const Engine & engine, Mem & mem) :
-        Engine::Task(engine),
-        m_mem(mem)
-    {
-    }
-
-    virtual void execute() const override
-    {
-        m_engine.getCurrentScene().getRoot().removeChild(m_mem.menu);
-        m_mem.menu = Handle::ms_invalid;
-    }
-
-private:
-
-    Mem & m_mem;
-};
-
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem * mem);
+InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem);
 
 bool activeMenu(Mem & mem);
 void createMenu(Mem & mem, const Engine & engine, const Vec2f & position);
 void removeMenu(Mem & mem, const Engine & engine);
 
-VIOLET_SCRIPT_EXPORT void init(CppScriptComponent::Allocator & allocator, const Entity & entity)
+VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
 {
-    Mem * mem = allocator.allocate<Mem>();
-    mem->menu = Handle::ms_invalid;
+    auto m = std::make_unique<Mem>();
 
     using namespace std::placeholders;
-    MouseDownMethod::assign(entity, std::bind(onMouseDown, _1, _2, _3, mem));
+    MouseDownMethod::assign(script, std::bind(onMouseDown, _1, _2, _3, std::ref(*m)));
+
+    mem = std::move(m);
 }
 
-VIOLET_SCRIPT_EXPORT void clean(const Entity & entity)
+VIOLET_SCRIPT_EXPORT void clean(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
 {
-    MouseDownMethod::remove(entity);
+    MouseDownMethod::remove(script);
 }
 
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem * mem)
+InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem)
 {
     if (event.button == MB_Right)
     {
-        if (activeMenu(*mem))
+        if (activeMenu(mem))
         {
-            removeMenu(*mem, engine);
-            createMenu(*mem, engine, event.position);
+            removeMenu(mem, engine);
+            createMenu(mem, engine, event.position);
         }
         else
-            createMenu(*mem, engine, event.position);
+            createMenu(mem, engine, event.position);
     }
-    else if (activeMenu(*mem))
-        removeMenu(*mem, engine);
+    else if (activeMenu(mem))
+        removeMenu(mem, engine);
     else
         return InputResult::Pass;
 
@@ -112,11 +64,27 @@ bool activeMenu(Mem & mem)
 
 void createMenu(Mem & mem, const Engine & engine, const Vec2f & position)
 {
-    engine.addTask(std::make_unique<AddMenuTask>(engine, position, mem));
+    engine.addWriteTask(engine.getCurrentScene(), [position, &mem](Scene & scene)
+        {
+            auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
+            if (deserializer != nullptr && *deserializer)
+            {
+                Entity & menu = scene.getRoot().addChild(*deserializer);
+                auto transformComponent = menu.getComponent<TransformComponent>();
+                if (transformComponent != nullptr)
+                {
+                    transformComponent->m_transform[0][2] = position.x;
+                    transformComponent->m_transform[1][2] = position.y;
+                }
+                mem.menu = menu.getHandle();
+            }
+        });
 }
 
 void removeMenu(Mem & mem, const Engine & engine)
 {
-    engine.addTask(std::make_unique<RemoveMenuTask>(engine, mem));
+    auto & menu = mem.menu;
+    engine.addWriteTask(engine.getCurrentScene(), [menu](Scene & scene) { scene.getRoot().removeChild(menu); });
+    menu = Handle::ms_invalid;
 }
 
