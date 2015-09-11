@@ -26,11 +26,12 @@ using namespace FontNamespace;
 
 // ============================================================================
 
-Font::Glyph::Glyph(const uint32 vertexArrayBuffer, Texture && texture, Mesh && mesh, Mesh && texCoords, const uint32 advance) :
+Font::Glyph::Glyph(const uint32 vertexArrayBuffer, Texture && texture, Mesh && mesh, Mesh && texCoords, const Vec2f & offset, const uint32 advance) :
 	m_vertexArrayBuffer(vertexArrayBuffer),
 	m_texture(std::move(texture)),
 	m_mesh(std::move(mesh)),
 	m_texCoords(std::move(texCoords)),
+	m_offset(offset),
 	m_advance(advance)
 {
 }
@@ -42,6 +43,7 @@ Font::Glyph::Glyph(Glyph && other) :
 	m_texture(std::move(other.m_texture)),
 	m_mesh(std::move(other.m_mesh)),
 	m_texCoords(std::move(other.m_texCoords)),
+	m_offset(other.m_offset),
 	m_advance(other.m_advance)
 {
 	other.m_vertexArrayBuffer = 0;
@@ -78,9 +80,16 @@ void Font::Glyph::render(ShaderProgram & program) const
 
 // ----------------------------------------------------------------------------
 
-int Font::Glyph::getAdvance() const
+uint32 Font::Glyph::getAdvance() const
 {
 	return m_advance;
+}
+
+// ----------------------------------------------------------------------------
+
+const Vec2f & Font::Glyph::getOffset() const
+{
+	return m_offset;
 }
 
 // ============================================================================
@@ -161,25 +170,24 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 
 			Texture texture(filename, texWidth, texHeight, pixels, GL_ALPHA);
 
-			const float width = static_cast<float>(bitmap.width);
-			const float height = static_cast<float>(bitmap.rows);
+			printf("%c: %d x %d (%d x %d)\n", static_cast<char>(charcode), bitmap.width, bitmap.rows, texWidth, texHeight);
+
+			const float width = static_cast<float>(texWidth);
+			const float height = static_cast<float>(texHeight);
 			Mesh mesh({
 				{ 0, 0 },
 				{ 0, height },
 				{ width, height },
 				{ width, 0 }
 			});
-
-			const float uMaxTexCoord = static_cast<float>(bitmap.width) / texWidth;
-			const float vMaxTexCoord = static_cast<float>(bitmap.rows) / texHeight;
 			Mesh texCoords({
-				{ 0.f, vMaxTexCoord },
+				{ 0.f, 1.f },
 				{ 0.f, 0.f },
-				{ uMaxTexCoord, 0.f },
-				{ uMaxTexCoord, vMaxTexCoord }
+				{ 1.f, 0.f },
+				{ 1.f, 1.f }
 			});
 
-			glyphs.emplace(static_cast<char>(charcode), Glyph(vertexArrayBuffer, std::move(texture), std::move(mesh), std::move(texCoords), face->glyph->advance.x >> 6));
+			glyphs.emplace(static_cast<char>(charcode), Glyph(vertexArrayBuffer, std::move(texture), std::move(mesh), std::move(texCoords), Vec2f(static_cast<float>(face->glyph->bitmap_left), static_cast<float>(face->glyph->bitmap_top - static_cast<int>(texHeight))), face->glyph->advance.x >> 6));
 
 			delete[] pixels;
 		}
@@ -215,7 +223,7 @@ Font::Cache & Font::getCache()
 void Font::render(std::string const & str, ShaderProgram & program)
 {
 	float xOffset = 0;
-	std::vector<std::pair<const Glyph &, float>> glyphOffsets;
+	std::vector<std::pair<const Glyph &, Vec2f>> glyphOffsets;
 	// Only God knows why ranged for doesn't work here...
 	for (uint32 i = 0, end = str.size(); i < end; ++i)
 	{
@@ -227,7 +235,7 @@ void Font::render(std::string const & str, ShaderProgram & program)
 			const auto it = m_glyphs.find(character);
 			if (it != m_glyphs.end())
 			{
-				glyphOffsets.emplace_back(it->second, xOffset);
+				glyphOffsets.emplace_back(it->second, it->second.getOffset() + Vec2f(xOffset, 0.f));
 				xOffset += it->second.getAdvance();
 			}
 			else
@@ -238,8 +246,9 @@ void Font::render(std::string const & str, ShaderProgram & program)
 	float const halfWidth = xOffset / 2.f;
 	for (const auto & glyphOffset : glyphOffsets)
 	{
-		const GLint advanceAttrib = program.getUniformLocation("advance");
-		glUniform1f(advanceAttrib, glyphOffset.second - halfWidth);
+		// looks bad if offset not rounded
+		const GLint offsetAttrib = program.getUniformLocation("offset");
+		glUniform2f(offsetAttrib, std::round(glyphOffset.second.x - halfWidth), glyphOffset.second.y);
 		glyphOffset.first.render(program);
 	}
 }

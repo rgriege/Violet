@@ -21,12 +21,13 @@ namespace Violet
 		{
 		public:
 
-			Glyph(uint32 vertexArrayBuffer, Texture && texture, Mesh && mesh, Mesh && texCoords, uint32 advance);
+			Glyph(uint32 vertexArrayBuffer, Texture && texture, Mesh && mesh, Mesh && texCoords, const Vec2f & offset, uint32 advance);
 			Glyph(Glyph && other);
 			~Glyph();
 
 			void render(ShaderProgram & program) const;
-			int getAdvance() const;
+			const Vec2f & getOffset() const;
+			uint32 getAdvance() const;
 
 		private:
 
@@ -39,7 +40,8 @@ namespace Violet
 			Texture m_texture;
 			Mesh m_mesh;
 			Mesh m_texCoords;
-			uint32 m_advance;
+			const Vec2f m_offset;
+			const uint32 m_advance;
 		};
 
 	public:
