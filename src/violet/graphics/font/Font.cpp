@@ -6,6 +6,7 @@
 #include "violet/utility/Guard.h"
 #include "violet/graphics/shader/Shader.h"
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <GL/glew.h>
@@ -143,7 +144,7 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 		if (bitmap.buffer != nullptr)
 		{
 			const uint32 texHeight = static_cast<uint32>(pow(2, ceil(log2(bitmap.rows))));
-			const uint32 texWidth = static_cast<uint32>(pow(2, ceil(log2(bitmap.width))));
+			const uint32 texWidth = std::max(4u, static_cast<uint32>(pow(2, ceil(log2(bitmap.width))))); // For some reason 2 doesn't work...
 			uint8 * pixels = new uint8[texHeight * texWidth];
 
 			for (int i = 0; i < bitmap.rows; ++i)
