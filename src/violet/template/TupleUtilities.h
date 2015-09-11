@@ -408,14 +408,17 @@ namespace Violet
 			hash_combine(seed, std::get<N>(tuple));
 		}
 	}
+}
 
+namespace std
+{
 	template <typename... Args>
-	struct std::hash<std::tuple<Args...>>
+	struct hash<std::tuple<Args...>>
 	{
 		size_t operator()(const std::tuple<Args...> & tuple)
 		{
 			size_t seed = 0;
-			detail::hash_combine(seed, tuple, detail::Index<sizeof...(Args) - 1>());
+			Violet::detail::hash_combine(seed, tuple, Violet::detail::Index<sizeof...(Args)-1>());
 			return seed;
 		}
 	};
