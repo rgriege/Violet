@@ -204,7 +204,7 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 
 Font::Cache & Font::getCache()
 {
-	std::unique_ptr<Font>(*s_loader)(const char *, uint32) = &Font::load;
+	static std::unique_ptr<Font>(*s_loader)(const char *, uint32) = &Font::load;
 	static Cache s_cache(s_loader);
 	return s_cache;
 }
