@@ -16,7 +16,7 @@ namespace Violet
 	{
 	public:
 
-		UiList(const char * elementFileName);
+		UiList(const char * elementFileName, uint32 elementHeight);
 
 		void update(const Entity & entity, const Engine & engine, uint32 elementCount);
 
@@ -25,6 +25,7 @@ namespace Violet
 	private:
 
 		std::string m_elementFileName;
+		const uint32 m_elementHeight;
 	};
 
 	DEFINE_METHOD(AssignIndexMethod, void(const Entity &, const Engine &, uint32 index));

@@ -10,7 +10,8 @@ using namespace Violet;
 
 struct Mem : public CppScript::Memory
 {
-    Mem(const char * elementFile) : list(elementFile) {}
+    Mem(const char * elementFile, uint32 elementHeight) :
+        list(elementFile, elementHeight) {}
     virtual ~Mem() override = default;
     UiList list;
 };
@@ -19,7 +20,7 @@ void onUpdate(const Entity & entity, const Engine & engine, Mem & mem);
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
 {
-    auto m = std::make_unique<Mem>("entityListElement.json");
+    auto m = std::make_unique<Mem>("entityListElement.json", 30);
 
     using namespace std::placeholders;
     UpdateMethod::assign(script, std::bind(onUpdate, _1, _2, std::ref(*m)));

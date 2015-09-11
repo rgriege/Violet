@@ -13,8 +13,9 @@ using namespace Violet;
 
 // ============================================================================
 
-UiList::UiList(const char * const elementFileName) :
-	m_elementFileName(elementFileName)
+UiList::UiList(const char * const elementFileName, const uint32 elementHeight) :
+	m_elementFileName(elementFileName),
+	m_elementHeight(elementHeight)
 {
 }
 
@@ -25,10 +26,11 @@ void UiList::update(const Entity & entity, const Engine & engine, const uint32 e
 	const auto & children = entity.getChildren();
 	const auto childCount = children.size();
 	const auto & elementFileName = m_elementFileName;
+	const uint32 elementHeight = m_elementHeight;
 
 	for (uint32 i = childCount; i < elementCount; ++i)
 	{
-		engine.addWriteTask(entity, [&elementFileName, i, &engine](Entity & entity)
+		engine.addWriteTask(entity, [&elementFileName, i, elementHeight, &engine](Entity & entity)
 		{
 			auto const deserializer = FileDeserializerFactory::getInstance().create(elementFileName.c_str());
 			if (deserializer != nullptr)
@@ -36,7 +38,7 @@ void UiList::update(const Entity & entity, const Engine & engine, const uint32 e
 				auto child = make_unique_val<Entity>(entity.getScene(), *deserializer);
 				auto & transform = child->getComponent<TransformComponent>();
 				if (transform != nullptr)
-					transform->m_transform[1][2] -= i * 20;
+					transform->m_transform[1][2] -= i * elementHeight;
 
 				child->addComponent<UiListElementComponent>(i);
 				auto & script = child->getComponent<ScriptComponent>();
