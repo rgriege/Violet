@@ -170,8 +170,6 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 
 			Texture texture(filename, texWidth, texHeight, pixels, GL_ALPHA);
 
-			printf("%c: %d x %d (%d x %d)\n", static_cast<char>(charcode), bitmap.width, bitmap.rows, texWidth, texHeight);
-
 			const float width = static_cast<float>(texWidth);
 			const float height = static_cast<float>(texHeight);
 			Mesh mesh({
