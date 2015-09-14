@@ -4,6 +4,7 @@
 
 #include "violet/utility/Buffer.h"
 
+#include <cstring>
 #include <GL/glew.h>
 #include <png.h>
 

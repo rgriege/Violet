@@ -390,19 +390,19 @@ namespace Violet
 	namespace detail
 	{
 		template <typename T>
-		void hash_combine(uint32 & seed, const T & t)
+		void hash_combine(size_t & seed, const T & t)
 		{
 			seed ^= std::hash<T>()(t) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 		}
 
 		template <typename... Args>
-		void hash_combine(uint32 & seed, const std::tuple<Args...> & tuple, Index<0>)
+		void hash_combine(size_t & seed, const std::tuple<Args...> & tuple, Index<0>)
 		{
 			hash_combine(seed, std::get<0>(tuple));
 		}
 
 		template <typename... Args, size_t N>
-		void hash_combine(uint32 & seed, const std::tuple<Args...> & tuple, Index<N>)
+		void hash_combine(size_t & seed, const std::tuple<Args...> & tuple, Index<N>)
 		{
 			hash_combine(seed, tuple, Index<N - 1>());
 			hash_combine(seed, std::get<N>(tuple));
@@ -415,7 +415,7 @@ namespace std
 	template <typename... Args>
 	struct hash<std::tuple<Args...>>
 	{
-		size_t operator()(const std::tuple<Args...> & tuple)
+		size_t operator()(const std::tuple<Args...> & tuple) const
 		{
 			size_t seed = 0;
 			Violet::detail::hash_combine(seed, tuple, Violet::detail::Index<sizeof...(Args)-1>());
