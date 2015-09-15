@@ -21,7 +21,7 @@ namespace Violet
 
 	public:
 
-		TextComponent(const Entity & owner, Deserializer & deserializer);
+		TextComponent(Entity & owner, Deserializer & deserializer);
 		TextComponent(TextComponent && other);
 
 	private:

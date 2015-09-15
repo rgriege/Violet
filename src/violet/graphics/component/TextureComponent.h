@@ -20,8 +20,8 @@ namespace Violet
 
 	public:
 
-		TextureComponent(const Entity & owner, Deserializer & deserializer);
-		TextureComponent(const Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords);
+		TextureComponent(Entity & owner, Deserializer & deserializer);
+		TextureComponent(Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords);
 		TextureComponent(TextureComponent && other);
 
 	private:

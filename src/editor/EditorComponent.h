@@ -19,7 +19,7 @@ namespace Violet
 
 	public:
 
-		EditorComponent(const Entity & owner, Handle handle);
+		EditorComponent(Entity & owner, Handle handle);
 		EditorComponent(EditorComponent && other);
 
 	public:

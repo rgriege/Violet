@@ -16,14 +16,14 @@ Tag UpdateComponent::getStaticTag()
 
 // ============================================================================
 
-UpdateComponent::UpdateComponent(const Entity & owner) :
+UpdateComponent::UpdateComponent(Entity & owner) :
 	ComponentBase<UpdateComponent>(owner)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-UpdateComponent::UpdateComponent(const Entity & owner, Deserializer & /*deserializer*/) :
+UpdateComponent::UpdateComponent(Entity & owner, Deserializer & /*deserializer*/) :
 	ComponentBase<UpdateComponent>(owner)
 {
 }

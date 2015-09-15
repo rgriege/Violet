@@ -18,9 +18,9 @@ namespace Violet
 
 	public:
 
-		TransformComponent(const Entity & owner);
-		TransformComponent(const Entity & owner, Deserializer & deserializer);
-		TransformComponent(const Entity & owner, const Matrix3f & transform);
+		TransformComponent(Entity & owner);
+		TransformComponent(Entity & owner, Deserializer & deserializer);
+		TransformComponent(Entity & owner, const Matrix3f & transform);
 		TransformComponent(TransformComponent && other);
 
 	public:

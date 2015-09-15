@@ -13,7 +13,7 @@ Tag UiListElementComponent::getStaticTag()
 
 // ============================================================================
 
-UiListElementComponent::UiListElementComponent(const Entity & owner, const uint32 index) :
+UiListElementComponent::UiListElementComponent(Entity & owner, const uint32 index) :
 	ComponentBase<UiListElementComponent>(owner),
 	m_index(index)
 {

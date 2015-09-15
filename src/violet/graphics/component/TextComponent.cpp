@@ -18,7 +18,7 @@ Tag TextComponent::getStaticTag()
 
 // ============================================================================
 
-TextComponent::TextComponent(const Entity & owner, Deserializer & deserializer) :
+TextComponent::TextComponent(Entity & owner, Deserializer & deserializer) :
 	ComponentBase<TextComponent>(owner),
 	RenderComponentData(deserializer),
 	m_text(deserializer.getString("str")),

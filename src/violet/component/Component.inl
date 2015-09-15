@@ -42,7 +42,7 @@ Violet::Tag Violet::ComponentBase<Derived>::getTag() const
 // ============================================================================
 
 template <typename Derived>
-Violet::ComponentBase<Derived>::ComponentBase(const Entity & owner) :
+Violet::ComponentBase<Derived>::ComponentBase(Entity & owner) :
 	Component(owner)
 {
 }

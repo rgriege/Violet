@@ -29,7 +29,7 @@ Tag PhysicsComponent::getStaticTag()
 
 // ============================================================================
 
-PhysicsComponent::PhysicsComponent(const Entity & owner, Deserializer & deserializer) :
+PhysicsComponent::PhysicsComponent(Entity & owner, Deserializer & deserializer) :
 	ComponentBase<PhysicsComponent>(owner),
 	m_polygon(deserializer),
 	m_mass(),

@@ -16,7 +16,7 @@ namespace Violet
 
 	public:
 
-		KeyInputComponent(const Entity & owner, Deserializer & deserializer);
+		KeyInputComponent(Entity & owner, Deserializer & deserializer);
 		KeyInputComponent(KeyInputComponent && other);
 		//KeyInputComponent & operator=(KeyInputComponent && other);
 	};

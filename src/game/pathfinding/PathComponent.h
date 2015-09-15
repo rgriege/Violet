@@ -18,8 +18,8 @@ public:
 
 public:
 
-	PathComponent(const Violet::Entity & owner, Violet::Deserializer & deserializer);
-	PathComponent(const Violet::Entity & owner, float speed, Path && path);
+	PathComponent(Violet::Entity & owner, Violet::Deserializer & deserializer);
+	PathComponent(Violet::Entity & owner, float speed, Path && path);
 	PathComponent(PathComponent && other);
 	//PathComponent & operator=(PathComponent && other);
 

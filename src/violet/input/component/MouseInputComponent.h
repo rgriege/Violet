@@ -20,7 +20,7 @@ namespace Violet
 
 	public:
 
-		MouseInputComponent(const Entity & owner, Deserializer & deserializer);
+		MouseInputComponent(Entity & owner, Deserializer & deserializer);
 		MouseInputComponent(MouseInputComponent && other);
 		//MouseInputComponent & operator=(MouseInputComponent && other);
 

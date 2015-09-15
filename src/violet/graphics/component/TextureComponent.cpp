@@ -31,7 +31,7 @@ Tag TextureComponent::getStaticTag()
 
 // ============================================================================
 
-TextureComponent::TextureComponent(const Entity & owner, Deserializer & deserializer) :
+TextureComponent::TextureComponent(Entity & owner, Deserializer & deserializer) :
 	ComponentBase<TextureComponent>(owner),
 	RenderComponentData(deserializer),
 	m_texture(Texture::getCache().fetch(deserializer.getString("texture"))),
@@ -47,7 +47,7 @@ TextureComponent::TextureComponent(const Entity & owner, Deserializer & deserial
 
 // ----------------------------------------------------------------------------
 
-TextureComponent::TextureComponent(const Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords) :
+TextureComponent::TextureComponent(Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords) :
 	ComponentBase<TextureComponent>(owner),
 	RenderComponentData(poly, shader),
 	m_texture(std::move(texture)),
