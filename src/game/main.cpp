@@ -15,6 +15,7 @@
 #include "violet/serialization/json/JsonDeserializer.h"
 #include "violet/system/SystemFactory.h"
 #include "violet/transform/component/TransformComponent.h"
+#include "violet/ui/UiStateComponent.h"
 #include "violet/update/component/UpdateComponent.h"
 #include "violet/update/system/UpdateSystem.h"
 #include "violet/window/glut/GlutWindowSystem.h"
@@ -36,6 +37,7 @@ Violet::SystemFactory setup()
 	Violet::Entity::installComponent<Violet::KeyInputComponent>();
 	Violet::Entity::installComponent<Violet::PhysicsComponent>();
 	Violet::Entity::installComponent<Violet::ScriptComponent>();
+	Violet::Entity::installComponent<Violet::UiStateComponent>();
 	Violet::Entity::installComponent<Violet::UpdateComponent>();
 	Violet::Entity::installComponent<MapComponent>();
 	Violet::Entity::installComponent<PathComponent>();
