@@ -6,6 +6,7 @@
 #include "violet/input/system/InputSystem.h"
 #include "violet/ui/UiListElementComponent.h"
 #include "violet/script/ScriptComponent.h"
+#include "violet/serialization/file/FileDeserializerFactory.h"
 
 #include <functional>
 

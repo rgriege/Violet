@@ -21,7 +21,7 @@ namespace Violet
 
 	private:
 
-		Transform();
+		Transform() = delete;
 	};
 }
 
