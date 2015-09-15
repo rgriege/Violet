@@ -16,7 +16,7 @@ namespace Violet
 
 	public:
 
-		UiListElementComponent(const Entity & owner, uint32 index);
+		UiListElementComponent(Entity & owner, uint32 index);
 		UiListElementComponent(UiListElementComponent && other);
 
 	public:

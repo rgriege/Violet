@@ -15,14 +15,14 @@ Tag TransformComponent::getStaticTag()
 
 // ============================================================================
 
-TransformComponent::TransformComponent(const Entity & owner) :
+TransformComponent::TransformComponent(Entity & owner) :
 	TransformComponent(owner, Matrix3f::Identity)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-TransformComponent::TransformComponent(const Entity & owner, Deserializer & deserializer) :
+TransformComponent::TransformComponent(Entity & owner, Deserializer & deserializer) :
 	TransformComponent(owner, Matrix3f::Identity)
 {
 	deserializer >> *this;
@@ -30,7 +30,7 @@ TransformComponent::TransformComponent(const Entity & owner, Deserializer & dese
 
 // ----------------------------------------------------------------------------
 
-TransformComponent::TransformComponent(const Entity & owner, const Matrix3f & transform) :
+TransformComponent::TransformComponent(Entity & owner, const Matrix3f & transform) :
 	ComponentBase<TransformComponent>(owner),
 	m_transform(transform)
 {

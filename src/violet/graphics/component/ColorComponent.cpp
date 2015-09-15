@@ -17,7 +17,7 @@ Tag ColorComponent::getStaticTag()
 
 // ============================================================================
 
-ColorComponent::ColorComponent(const Entity & owner, Deserializer & deserializer) :
+ColorComponent::ColorComponent(Entity & owner, Deserializer & deserializer) :
 	ComponentBase<ColorComponent>(owner),
 	RenderComponentData(deserializer),
 	m_color(deserializer)
@@ -26,7 +26,7 @@ ColorComponent::ColorComponent(const Entity & owner, Deserializer & deserializer
 
 // ----------------------------------------------------------------------------
 
-ColorComponent::ColorComponent(const Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, const Color color) :
+ColorComponent::ColorComponent(Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, const Color color) :
 	ComponentBase<ColorComponent>(owner),
 	RenderComponentData(poly, shader),
 	m_color(color)

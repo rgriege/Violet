@@ -30,7 +30,7 @@ Component::~Component()
 
 // ============================================================================
 
-Component::Component(const Entity & owner) :
+Component::Component(Entity & owner) :
 	m_owner(owner)
 {
 }

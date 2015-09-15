@@ -18,7 +18,7 @@ namespace Violet
 
 	public:
 
-		PhysicsComponent(const Entity & owner, Deserializer & deserializer);
+		PhysicsComponent(Entity & owner, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
 		PhysicsComponent & operator=(PhysicsComponent && other);
 

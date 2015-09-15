@@ -37,16 +37,16 @@ namespace Violet
 
 	protected:
 
-		Component(const Entity & owner);
+		Component(Entity & owner);
 
 		Component(const Component &) = delete;
 		Component & operator=(const Component &) = delete;
 
 		Component(Component &&);
 
-	private:
+	protected:
 
-		const Entity & m_owner;
+		Entity & m_owner;
 	};
 
 	template <typename Derived>
@@ -62,7 +62,7 @@ namespace Violet
 
 	protected:
 
-		ComponentBase(const Entity & owner);
+		ComponentBase(Entity & owner);
 		ComponentBase(ComponentBase && other);
 	};
 }

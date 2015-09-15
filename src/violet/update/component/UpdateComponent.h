@@ -16,8 +16,8 @@ namespace Violet
 
 	public:
 
-		UpdateComponent(const Entity & owner);
-		UpdateComponent(const Entity & owner, Deserializer & deserializer);
+		UpdateComponent(Entity & owner);
+		UpdateComponent(Entity & owner, Deserializer & deserializer);
 		UpdateComponent(UpdateComponent && other);
 	};
 

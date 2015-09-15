@@ -15,7 +15,7 @@ Tag MouseInputComponent::getStaticTag()
 
 // ============================================================================
 
-MouseInputComponent::MouseInputComponent(const Entity & owner, Deserializer & deserializer) :
+MouseInputComponent::MouseInputComponent(Entity & owner, Deserializer & deserializer) :
 	ComponentBase<MouseInputComponent>(owner),
 	m_mesh(deserializer)
 {

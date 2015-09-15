@@ -20,8 +20,8 @@ namespace Violet
 
 	public:
 
-		ColorComponent(const Entity & owner, Deserializer & deserializer);
-		ColorComponent(const Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, Color color);
+		ColorComponent(Entity & owner, Deserializer & deserializer);
+		ColorComponent(Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, Color color);
 		ColorComponent(ColorComponent && other);
 
 	private:
