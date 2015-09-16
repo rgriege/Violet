@@ -140,6 +140,20 @@ lent_ptr<const Entity> Entity::getChild(const Handle handle) const
 
 // ----------------------------------------------------------------------------
 
+lent_ptr<Entity> Entity::getChild(const uint32 index)
+{
+	return index < m_children.size() ? m_children[index].ptr() : nullptr;
+}
+
+// ----------------------------------------------------------------------------
+
+lent_ptr<const Entity> Entity::getChild(const uint32 index) const
+{
+	return index < m_children.size() ? m_children[index].ptr() : nullptr;
+}
+
+// ----------------------------------------------------------------------------
+
 bool Entity::removeChild(const Handle handle)
 {
 	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });

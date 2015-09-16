@@ -41,6 +41,8 @@ namespace Violet
 		const std::vector<unique_val<Entity>> & getChildren() const;
 		lent_ptr<Entity> getChild(Handle handle);
 		lent_ptr<const Entity> getChild(Handle handle) const;
+		lent_ptr<Entity> getChild(uint32 index);
+		lent_ptr<const Entity> getChild(uint32 index) const;
 		bool removeChild(Handle handle);
 
 		template <typename ComponentType>
@@ -56,6 +58,8 @@ namespace Violet
 		template <typename ComponentType>
 		lent_ptr<const ComponentType> getComponent() const;
 		uint32 getComponentFlags() const;
+		template <typename ComponentType>
+		bool removeComponent();
 
 		lent_ptr<Entity> getParent();
 

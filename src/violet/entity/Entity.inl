@@ -80,6 +80,18 @@ Violet::lent_ptr<const ComponentType> Violet::Entity::getComponent() const
 	return nullptr;
 }
 
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+bool Violet::Entity::removeComponent()
+{
+	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getTag() == ComponentType::getStaticTag(); });
+	const bool found = it != m_components.end();
+	if (found)
+		m_components.erase(it);
+	return found;
+}
+
 // ============================================================================
 
 template <typename ComponentType>
