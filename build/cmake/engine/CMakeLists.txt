@@ -63,6 +63,9 @@ set (HEADER_FILES
     ${Engine_ROOT}/template/TupleUtilities.h
     ${Engine_ROOT}/time/Time.h
     ${Engine_ROOT}/transform/component/TransformComponent.h
+    ${Engine_ROOT}/ui/UiList.h
+    ${Engine_ROOT}/ui/UiListElementComponent.h
+    ${Engine_ROOT}/ui/UiStateComponent.h
     ${Engine_ROOT}/update/component/UpdateComponent.h
     ${Engine_ROOT}/update/system/UpdateSystem.h
     ${Engine_ROOT}/utility/Buffer.h
@@ -133,6 +136,9 @@ set (SOURCE_FILES
     ${Engine_ROOT}/system/System.cpp
     ${Engine_ROOT}/time/Time.cpp
     ${Engine_ROOT}/transform/component/TransformComponent.cpp
+    ${Engine_ROOT}/ui/UiList.cpp
+    ${Engine_ROOT}/ui/UiListElementComponent.cpp
+    ${Engine_ROOT}/ui/UiStateComponent.cpp
     ${Engine_ROOT}/update/component/UpdateComponent.cpp
     ${Engine_ROOT}/update/system/UpdateSystem.cpp
     ${Engine_ROOT}/utility/FileUtilities.cpp

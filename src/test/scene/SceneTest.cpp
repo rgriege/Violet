@@ -55,12 +55,6 @@ namespace SceneTestNamespace
 
 using namespace SceneTestNamespace;
 
-#ifdef WIN32
-#define U u
-#else
-#define U ul
-#endif
-
 void SceneTest::run(TestEvaluator & evaluator)
 {
 	TestFactory::makeStatelessSuite("scene tests", std::forward_as_tuple(
@@ -68,17 +62,17 @@ void SceneTest::run(TestEvaluator & evaluator)
 			TestFactory::makeStateful<Scene>("entity check", true, [](Scene & scene) { return scene.getRoot().getChildren().empty(); })
 		)),
 		TestFactory::makeStatefulSuite("single entity w/ 1 component", SceneBuilder().addEntity<TransformComponent>().create(), std::forward_as_tuple(
-			TestFactory::makeStateful<Scene>("has entity", 1U, [](Scene & scene) { return scene.getRoot().getChildren().size(); }),
+			TestFactory::makeStateful<Scene>("has entity", (size_t)1, [](Scene & scene) { return scene.getRoot().getChildren().size(); }),
 			TestFactory::makeStateful<Scene>("has component", true, [](Scene & scene) { auto entity = tryGet(scene, 0); return entity != nullptr ? entity->hasComponent<TransformComponent>() : false; }),
 			TestFactory::makeStateful<Scene>("access component", true, [](Scene & scene) { auto entity = tryGet(scene, 0); auto tc = entity != nullptr ? entity->getComponent<TransformComponent>() : nullptr; return tc != nullptr; })
 		)),
 		TestFactory::makeStatefulSuite("single entity w/ 2 components", SceneBuilder().addEntity<TransformComponent, UpdateComponent>().create(), std::forward_as_tuple(
-			TestFactory::makeStateful<Scene>("has entity", 1U, [](Scene & scene) { return scene.getRoot().getChildren().size(); }),
+			TestFactory::makeStateful<Scene>("has entity", (size_t)1, [](Scene & scene) { return scene.getRoot().getChildren().size(); }),
 			TestFactory::makeStateful<Scene>("has 1st component", true, [](Scene & scene) { auto entity = tryGet(scene, 0); return entity->hasComponent<TransformComponent>(); }),
 			TestFactory::makeStateful<Scene>("has 2nd component", true, [](Scene & scene) { auto entity = tryGet(scene, 0); return entity->hasComponent<UpdateComponent>(); })
 		)),
 		TestFactory::makeStatefulSuite("2 entities w/ different components", SceneBuilder().addEntity<TransformComponent>().addEntity<UpdateComponent>().create(), std::forward_as_tuple(
-			TestFactory::makeStateful<Scene>("has entities", 2U, [](Scene & scene) { return scene.getRoot().getChildren().size(); }),
+			TestFactory::makeStateful<Scene>("has entities", (size_t)2, [](Scene & scene) { return scene.getRoot().getChildren().size(); }),
 			TestFactory::makeStateful<Scene>("1st entity has component", true, [](Scene & scene) { auto entity = tryGet(scene, 0); return entity->hasComponent<TransformComponent>(); }),
 			TestFactory::makeStateful<Scene>("2nd entity has component", true, [](Scene & scene) { auto entity = tryGet(scene, 1); return entity->hasComponent<UpdateComponent>(); })
 		))

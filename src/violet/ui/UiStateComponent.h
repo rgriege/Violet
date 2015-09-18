@@ -3,6 +3,7 @@
 
 #include "violet/component/Component.h"
 
+#include <string>
 #include <vector>
 
 namespace Violet
@@ -33,6 +34,9 @@ namespace Violet
 		uint32 m_currentIndex;
 		std::vector<std::string> m_states;
 	};
+
+    Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
+    Deserializer & operator>>(Deserializer & deserializer, UiStateComponent & component);
 }
 
 #endif

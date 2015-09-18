@@ -37,12 +37,12 @@ void UiList::update(const Entity & entity, const Engine & engine, const uint32 e
 			if (deserializer != nullptr)
 			{
 				auto child = make_unique_val<Entity>(entity.getScene(), *deserializer);
-				auto & transform = child->getComponent<TransformComponent>();
+				auto transform = child->getComponent<TransformComponent>();
 				if (transform != nullptr)
 					transform->m_transform[1][2] -= i * elementHeight;
 
 				child->addComponent<UiListElementComponent>(i);
-				auto & script = child->getComponent<ScriptComponent>();
+				auto script = child->getComponent<ScriptComponent>();
 				if (script != nullptr)
 				{
 					uint32 index = i;
