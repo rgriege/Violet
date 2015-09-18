@@ -39,7 +39,7 @@ CppScript::Memory::~Memory()
 
 void CppScript::install()
 {
-	ScriptFactory::assign("dll", create);
+	ScriptFactory::assign(SharedLibrary::getSuffix(), create);
 }
 
 // ============================================================================

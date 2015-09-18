@@ -3,11 +3,13 @@ DST = ../bin
 %.so:
 	g++ -std=c++1y -shared -fPIC -o $*.so $*.cpp -I../src -L$(DST) -lEngine -lGame
 
+TARGETS = button contextMenu entityList
+
 all: $(foreach TARGET, $(TARGETS), $(TARGET).so)
 
 install: all
 	cp *.json $(DST) 2>/dev/null || :
-	sed -i 's/\.dll/so/g' $(DST)/*.json
+	sed -i 's/\.dll/\.so/g' $(DST)/*.json
 	cp *.ttf $(DST) 2>/dev/null || :
 	cp *.vert $(DST) 2>/dev/null || :
 	cp *.frag $(DST) 2>/dev/null || :

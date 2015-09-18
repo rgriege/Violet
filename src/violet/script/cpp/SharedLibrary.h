@@ -18,6 +18,7 @@ namespace Violet
     public:
 
         static std::shared_ptr<SharedLibrary> load(const char * filename);
+        static const char * getSuffix();
 
     public:
 

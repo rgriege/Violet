@@ -32,6 +32,13 @@ std::shared_ptr<SharedLibrary> SharedLibrary::load(const char * const filename)
     return handle != nullptr ? std::shared_ptr<SharedLibrary>(new SharedLibrary(make_unique_val<SharedLibrary::Implementation>(handle))) : nullptr;
 }
 
+// ----------------------------------------------------------------------------
+
+const char * SharedLibrary::getSuffix()
+{
+    return "dll";
+}
+
 // ============================================================================
 
 SharedLibrary::~SharedLibrary()
