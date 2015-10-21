@@ -141,15 +141,15 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 		const Matrix3f & transform = transformComponent.m_transform;
 		const Matrix3f localToWorld = parentToWorld * transform;
 
-		if (entity.hasComponent<ScriptComponent>())
+		if (mouseComponent.m_mesh.getBoundingBox().transform(localToWorld).contains(event.position))
 		{
-			auto const & script = *entity.getComponent<ScriptComponent>()->m_script;
-			if (mouseComponent.m_mesh.getBoundingBox().transform(localToWorld).contains(event.position))
-			{
-				for (auto const & child : entity.getChildren())
-					if (processEvent(*child, event, type, localToWorld, engine) == InputResult::Block)
-						return InputResult::Block;
+			for (auto const & child : entity.getChildren())
+				if (processEvent(*child, event, type, localToWorld, engine) == InputResult::Block)
+					return InputResult::Block;
 
+			if (entity.hasComponent<ScriptComponent>())
+			{
+				auto const & script = *entity.getComponent<ScriptComponent>()->m_script;
 				if (type == WindowSystem::ET_MouseDown)
 					MouseDownMethod::run(script, entity, engine, event);
 				else
@@ -176,23 +176,23 @@ InputResult InputSystemNamespace::processEvent(const Entity & entity, const Inpu
 		const bool contained = worldBoundary.contains(event.from);
 		const bool contains = worldBoundary.contains(event.to);
 
+		if (contained || contains)
+		{
+			for (auto const & child : entity.getChildren())
+				if (processEvent(*child, event, localToWorld, engine) == InputResult::Block)
+					return InputResult::Block;
+		}
+
 		if (entity.hasComponent<ScriptComponent>())
 		{
 			auto const & script = *entity.getComponent<ScriptComponent>()->m_script;
 
-			if (contained || contains)
+			if (contained ^ contains)
 			{
-				for (auto const & child : entity.getChildren())
-					if (processEvent(*child, event, localToWorld, engine) == InputResult::Block)
-						return InputResult::Block;
-
-				if (contained ^ contains)
-				{
-					if (contains)
-						MouseInMethod::run(script, entity, engine);
-					else
-						MouseOutMethod::run(script, entity, engine);
-				}
+				if (contains)
+					MouseInMethod::run(script, entity, engine);
+				else
+					MouseOutMethod::run(script, entity, engine);
 			}
 
 			MouseMoveMethod::run(script, entity, engine, event);
