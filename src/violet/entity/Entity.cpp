@@ -165,6 +165,20 @@ bool Entity::removeChild(const Handle handle)
 
 // ----------------------------------------------------------------------------
 
+bool Entity::stealChild(Handle const handle, unique_val<Entity> && child)
+{
+	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });
+	const bool found = it != m_children.end();
+	if (found)
+	{
+		std::swap(*it, child);
+		m_children.erase(it);
+	}
+	return found;
+}
+
+// ----------------------------------------------------------------------------
+
 uint32 Entity::getComponentFlags() const
 {
 	return m_componentFlags;
@@ -173,6 +187,13 @@ uint32 Entity::getComponentFlags() const
 // ----------------------------------------------------------------------------
 
 lent_ptr<Entity> Entity::getParent()
+{
+	return m_parent;
+}
+
+// ----------------------------------------------------------------------------
+
+lent_ptr<const Entity> Entity::getParent() const
 {
 	return m_parent;
 }

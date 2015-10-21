@@ -44,6 +44,7 @@ namespace Violet
 		lent_ptr<Entity> getChild(uint32 index);
 		lent_ptr<const Entity> getChild(uint32 index) const;
 		bool removeChild(Handle handle);
+		bool stealChild(Handle handle, unique_val<Entity> && child);
 
 		template <typename ComponentType>
 		void addComponent(unique_val<ComponentType> && component);
@@ -62,6 +63,7 @@ namespace Violet
 		bool removeComponent();
 
 		lent_ptr<Entity> getParent();
+		lent_ptr<const Entity> getParent() const;
 
 	private:
 

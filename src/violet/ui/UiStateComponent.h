@@ -2,6 +2,8 @@
 #define VIOLET_UiStateComponent_H
 
 #include "violet/component/Component.h"
+#include "violet/utility/unique_val.h"
+#include "violet/utility/handle/Handle.h"
 
 #include <string>
 #include <vector>
@@ -32,7 +34,8 @@ namespace Violet
 	private:
 
 		uint32 m_currentIndex;
-		std::vector<std::string> m_states;
+		Handle m_currentHandle;
+		std::vector<unique_val<Entity>> m_states;
 	};
 
     Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
