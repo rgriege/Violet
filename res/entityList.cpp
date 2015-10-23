@@ -20,7 +20,7 @@ void onUpdate(const Entity & entity, const Engine & engine, Mem & mem);
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
 {
-    auto m = std::make_unique<Mem>("entityListElement.json", 30);
+    auto m = std::make_unique<Mem>("entityListElement.json", 20);
 
     using namespace std::placeholders;
     UpdateMethod::assign(script, std::bind(onUpdate, _1, _2, std::ref(*m)));

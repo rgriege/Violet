@@ -59,7 +59,9 @@ void onMouseIn(const Entity & entity, const Engine & engine, Mem & mem)
 
 InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem)
 {
-    engine.getSystem<EditorSystem>()->loadScene("editor.json", engine);
+    auto const & editor = engine.getSystem<EditorSystem>();
+    if (editor->getScene() == nullptr)
+        editor->loadScene("editor.json", engine);
     return InputResult::Block;
 }
 

@@ -20,9 +20,12 @@
         "poly": {
           "n": 0
         },
-        "str": "An entity!",
+        "str": "Entity X",
         "font": "Vera.ttf",
         "size": 18
+      },
+      "scpt": {
+        "file": "entityListElement.dll"
       }
     },
     "chld": {}

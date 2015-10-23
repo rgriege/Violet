@@ -3,7 +3,7 @@ DST = ..\bin\Debug
 %.dll:
 	cl /EHsc /I"..\src" /I"E:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include" /MDd /DWIN32 /DVIOLET_SCRIPT $*.cpp /link /out:$*.dll /DLL /Debug "$(DST)\Violet.lib" "$(DST)\Editor.lib" "$(DST)\Game.lib" /LIBPATH:"E:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\lib;C:\Program Files (x86)\Windows Kits\8.1\Lib\winv6.3\um\x86;$(DST)"
 
-TARGETS = button contextMenu entityList
+TARGETS = button contextMenu entityList entityListElement
 
 all: $(foreach TARGET, $(TARGETS), $(TARGET).dll)
 
