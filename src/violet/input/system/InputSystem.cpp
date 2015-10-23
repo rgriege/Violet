@@ -126,6 +126,11 @@ void InputSystemNamespace::processEvent(const Entity & entity, const WindowSyste
 			unsigned char code = event.code;
 			KeyDownMethod::run(*entity.getComponent<ScriptComponent>()->m_script, entity, engine, std::move(code));
 		}
+		else if (type == WindowSystem::ET_KeyUp)
+		{
+			unsigned char code = event.code;
+			KeyUpMethod::run(*entity.getComponent<ScriptComponent>()->m_script, entity, engine, std::move(code));
+		}
 	}
 }
 
