@@ -395,6 +395,9 @@
     <ClInclude Include="..\..\..\src\violet\ui\UiStateComponent.h">
       <Filter>ui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\input\Key.h">
+      <Filter>input</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -574,6 +577,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\ui\UiStateComponent.cpp">
       <Filter>ui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\input\Key.cpp">
+      <Filter>input</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

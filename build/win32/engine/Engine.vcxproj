@@ -110,6 +110,7 @@
     <ClInclude Include="..\..\..\src\violet\input\component\MouseInputComponent.h" />
     <ClInclude Include="..\..\..\src\violet\input\component\KeyInputComponent.h" />
     <ClInclude Include="..\..\..\src\violet\input\InputResult.h" />
+    <ClInclude Include="..\..\..\src\violet\input\Key.h" />
     <ClInclude Include="..\..\..\src\violet\input\system\InputSystem.h" />
     <ClInclude Include="..\..\..\src\violet\math\AABB.h" />
     <ClInclude Include="..\..\..\src\violet\math\Circle.h" />
@@ -196,6 +197,7 @@
     <ClCompile Include="..\..\..\src\violet\graphics\texture\Texture.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\component\MouseInputComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\component\KeyInputComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\input\Key.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\system\InputSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\AABB.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\Circle.cpp" />

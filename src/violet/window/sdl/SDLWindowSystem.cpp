@@ -247,10 +247,19 @@ SDLWindowSystem::SDLWindowSystem(SDL_Window * window, SDL_GLContext context) :
 
 // ============================================================================
 
-char SDLWindowSystemNamespace::convertKey(SDL_Keycode key)
+char SDLWindowSystemNamespace::convertKey(SDL_Keycode const key)
 {
-	static char keys[1 + SDLK_z - SDLK_a] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
-	return (key >= SDLK_a && key <= SDLK_z) ? keys[key - SDLK_a] : 0;
+	if (key == 10)
+		return 13;
+	else if (key >= 0 && key <= 255)
+		return key;
+	else if (key >= SDLK_KP_1 && key <= SDLK_KP_0)
+	{
+		static char keys[1 + SDLK_KP_0 - SDLK_KP_1] = { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
+		return keys[key - SDLK_KP_1];
+	}
+
+	return 0;
 }
 
 // ----------------------------------------------------------------------------
