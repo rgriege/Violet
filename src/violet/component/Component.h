@@ -29,6 +29,7 @@ namespace Violet
 
 	public:
 
+		Entity & getOwner();
 		const Entity & getOwner() const;
 
 		virtual Tag getTag() const = 0;

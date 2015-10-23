@@ -18,10 +18,8 @@ Entity::Entity(Scene & scene) :
 	m_children(),
 	m_componentFlags(),
 	m_scene(scene),
-	m_handle(scene.createHandle()),
 	m_parent()
 {
-	scene.index(*this);
 }
 
 // ----------------------------------------------------------------------------
@@ -32,16 +30,9 @@ Entity::Entity(Scene & scene, Deserializer & deserializer) :
 	m_children(),
 	m_componentFlags(0),
 	m_scene(scene),
-	m_handle(),
 	m_parent()
 {
 	auto entitySegment = deserializer.enterSegment("ntty");
-	const bool referenced = entitySegment->getBoolean("ref");
-	if (referenced)
-		m_handle = scene.createHandle(Handle(entitySegment->getUint("id"), 0));
-	else
-		m_handle = scene.createHandle();
-	scene.index(*this);
 	auto componentsSegment = entitySegment->enterSegment("cpnt");
 	while (*componentsSegment)
 	{
@@ -60,14 +51,6 @@ Entity::Entity(Scene & scene, Deserializer & deserializer) :
 Entity::~Entity()
 {
 	m_components.clear();
-	m_scene.deindex(m_handle);
-}
-
-// ----------------------------------------------------------------------------
-
-Handle Entity::getHandle() const
-{
-	return m_handle;
 }
 
 // ----------------------------------------------------------------------------
@@ -124,22 +107,6 @@ const std::vector<unique_val<Entity>> & Entity::getChildren() const
 
 // ----------------------------------------------------------------------------
 
-lent_ptr<Entity> Entity::getChild(const Handle handle)
-{
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });
-	return it != m_children.end() ? it->ptr() : nullptr;
-}
-
-// ----------------------------------------------------------------------------
-
-lent_ptr<const Entity> Entity::getChild(const Handle handle) const
-{
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });
-	return it != m_children.end() ? it->ptr() : nullptr;
-}
-
-// ----------------------------------------------------------------------------
-
 lent_ptr<Entity> Entity::getChild(const uint32 index)
 {
 	return index < m_children.size() ? m_children[index].ptr() : nullptr;
@@ -154,27 +121,14 @@ lent_ptr<const Entity> Entity::getChild(const uint32 index) const
 
 // ----------------------------------------------------------------------------
 
-bool Entity::removeChild(const Handle handle)
+bool Entity::removeChild(const uint32 index)
 {
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });
-	const bool found = it != m_children.end();
-	if (found)
-		m_children.erase(it);
-	return found;
-}
-
-// ----------------------------------------------------------------------------
-
-bool Entity::stealChild(Handle const handle, unique_val<Entity> && child)
-{
-	const auto it = std::find_if(m_children.begin(), m_children.end(), [=](const unique_val<Entity> & child) { return child->getHandle() == handle; });
-	const bool found = it != m_children.end();
-	if (found)
+	if (index < m_children.size())
 	{
-		std::swap(*it, child);
-		m_children.erase(it);
+		m_children.erase(m_children.begin() + index);
+		return true;
 	}
-	return found;
+	return false;
 }
 
 // ----------------------------------------------------------------------------

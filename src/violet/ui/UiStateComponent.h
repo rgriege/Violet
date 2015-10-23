@@ -3,7 +3,7 @@
 
 #include "violet/component/Component.h"
 #include "violet/utility/unique_val.h"
-#include "violet/utility/handle/Handle.h"
+#include "violet/handle/Handle.h"
 
 #include <string>
 #include <vector>

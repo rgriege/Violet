@@ -44,6 +44,13 @@ Component::Component(Component && other) :
 
 // ----------------------------------------------------------------------------
 
+Entity & Component::getOwner()
+{
+	return m_owner;
+}
+
+// ----------------------------------------------------------------------------
+
 const Entity & Component::getOwner() const
 {
 	return m_owner;

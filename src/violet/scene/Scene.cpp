@@ -35,9 +35,8 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 Scene::Scene() :
 	m_lookupMap(),
 	m_handleManager(),
-	m_root()
+	m_root(make_unique_val<Entity>(*this))
 {
-	m_root = std::make_unique<Entity>(*this);
 }
 
 // ----------------------------------------------------------------------------
@@ -94,17 +93,26 @@ Handle Scene::createHandle(const Handle desiredHandle)
 
 // ----------------------------------------------------------------------------
 
-void Scene::index(Entity & entity)
+void Scene::index(HandleComponent & handleComponent)
 {
-	m_lookupMap.emplace(entity.getHandle(), entity);
+#ifdef _DEBUG
+	assert(m_lookupMap.find(handleComponent.getHandle()) == m_lookupMap.end());
+#endif
+
+	m_lookupMap.emplace(handleComponent.getHandle(), handleComponent.getOwner());
 }
 
 // ----------------------------------------------------------------------------
 
-bool Scene::deindex(const Handle handle)
+bool Scene::deindex(HandleComponent & handleComponent)
 {
-	m_handleManager.free(handle);
-	return m_lookupMap.erase(handle) > 0;
+#ifdef _DEBUG
+	auto const it = m_lookupMap.find(handleComponent.getHandle());
+	assert(it != m_lookupMap.end() && &it->second.get() == &handleComponent.getOwner());
+#endif
+
+	m_handleManager.free(handleComponent.getHandle());
+	return m_lookupMap.erase(handleComponent.getHandle()) > 0;
 }
 
 // ============================================================================

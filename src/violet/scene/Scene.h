@@ -1,8 +1,10 @@
 #ifndef VIOLET_Scene_H
 #define VIOLET_Scene_H
 
-#include "violet/utility/handle/HandleManager.h"
+#include "violet/handle/HandleComponent.h"
+#include "violet/handle/HandleManager.h"
 #include "violet/utility/lent_ptr.h"
+#include "violet/utility/unique_val.h"
 
 #include <memory>
 #include <unordered_map>
@@ -31,8 +33,8 @@ namespace Violet
 		lent_ptr<const Entity> getEntity(Handle handle) const;
 
 		Handle createHandle(Handle desiredHandle = Handle::ms_invalid);
-		void index(Entity & entity);
-		bool deindex(Handle handle);
+		void index(HandleComponent & handleComponent);
+		bool deindex(HandleComponent & handleComponent);
 
 	private:
 
@@ -43,7 +45,7 @@ namespace Violet
 
 		std::unordered_map<Handle, std::reference_wrapper<Entity>> m_lookupMap;
 		HandleManager m_handleManager;
-		std::unique_ptr<Entity> m_root;
+		unique_val<Entity> m_root;
 	};
 }
 

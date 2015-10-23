@@ -1,7 +1,7 @@
 #ifndef VIOLET_HandleManager_H
 #define VIOLET_HandleManager_H
 
-#include "violet/utility/handle/Handle.h"
+#include "violet/handle/Handle.h"
 
 #include <queue>
 #include <vector>

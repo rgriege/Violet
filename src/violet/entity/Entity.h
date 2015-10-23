@@ -4,7 +4,6 @@
 #include "violet/Defines.h"
 #include "violet/component/Component.h"
 #include "violet/utility/Factory.h"
-#include "violet/utility/handle/Handle.h"
 #include "violet/utility/unique_val.h"
 #include "violet/utility/lent_ptr.h"
 
@@ -30,7 +29,6 @@ namespace Violet
 		Entity(Scene & scene, Deserializer & deserializer);
 		~Entity();
 
-		Handle getHandle() const;
 		Scene & getScene();
 		const Scene & getScene() const;
 
@@ -39,12 +37,9 @@ namespace Violet
 		Entity & addChild(Deserializer & deserializer);
 		std::vector<unique_val<Entity>> & getChildren();
 		const std::vector<unique_val<Entity>> & getChildren() const;
-		lent_ptr<Entity> getChild(Handle handle);
-		lent_ptr<const Entity> getChild(Handle handle) const;
 		lent_ptr<Entity> getChild(uint32 index);
 		lent_ptr<const Entity> getChild(uint32 index) const;
-		bool removeChild(Handle handle);
-		bool stealChild(Handle handle, unique_val<Entity> && child);
+		bool removeChild(uint32 index);
 
 		template <typename ComponentType>
 		void addComponent(unique_val<ComponentType> && component);
@@ -79,7 +74,6 @@ namespace Violet
 
 	private:
 
-		Handle m_handle;
 		std::vector<unique_val<Component>> m_components;
 		uint32 m_componentFlags;
 		std::vector<unique_val<Entity>> m_children;

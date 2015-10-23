@@ -107,6 +107,9 @@
     <ClInclude Include="..\..\..\src\violet\graphics\shader\Shader.h" />
     <ClInclude Include="..\..\..\src\violet\graphics\system\RenderSystem.h" />
     <ClInclude Include="..\..\..\src\violet\graphics\texture\Texture.h" />
+    <ClInclude Include="..\..\..\src\violet\handle\Handle.h" />
+    <ClInclude Include="..\..\..\src\violet\handle\HandleComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\handle\HandleManager.h" />
     <ClInclude Include="..\..\..\src\violet\input\component\MouseInputComponent.h" />
     <ClInclude Include="..\..\..\src\violet\input\component\KeyInputComponent.h" />
     <ClInclude Include="..\..\..\src\violet\input\InputResult.h" />
@@ -164,8 +167,6 @@
     <ClInclude Include="..\..\..\src\violet\utility\FormattedString.h" />
     <ClInclude Include="..\..\..\src\violet\utility\FreeList.h" />
     <ClInclude Include="..\..\..\src\violet\utility\Guard.h" />
-    <ClInclude Include="..\..\..\src\violet\utility\handle\Handle.h" />
-    <ClInclude Include="..\..\..\src\violet\utility\handle\HandleManager.h" />
     <ClInclude Include="..\..\..\src\violet\utility\lent_ptr.h" />
     <ClInclude Include="..\..\..\src\violet\utility\Profiler.h" />
     <ClInclude Include="..\..\..\src\violet\utility\ResourceCache.h" />
@@ -195,6 +196,9 @@
     <ClCompile Include="..\..\..\src\violet\graphics\shader\Shader.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\system\RenderSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\texture\Texture.cpp" />
+    <ClCompile Include="..\..\..\src\violet\handle\Handle.cpp" />
+    <ClCompile Include="..\..\..\src\violet\handle\HandleComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\handle\HandleManager.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\component\MouseInputComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\component\KeyInputComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\Key.cpp" />
@@ -237,8 +241,6 @@
     <ClCompile Include="..\..\..\src\violet\update\system\UpdateSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\FileUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\FreeList.cpp" />
-    <ClCompile Include="..\..\..\src\violet\utility\handle\Handle.cpp" />
-    <ClCompile Include="..\..\..\src\violet\utility\handle\HandleManager.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\Profiler.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\StringUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\Tag.cpp" />

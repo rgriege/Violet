@@ -109,9 +109,6 @@
     <Filter Include="utility\task">
       <UniqueIdentifier>{dbc5b38d-0507-40bd-9a29-82841c960e36}</UniqueIdentifier>
     </Filter>
-    <Filter Include="utility\handle">
-      <UniqueIdentifier>{308526e8-6260-43a3-92ee-1d259babd847}</UniqueIdentifier>
-    </Filter>
     <Filter Include="script\lua">
       <UniqueIdentifier>{8252673d-c9e8-4213-b883-81428f6cbf43}</UniqueIdentifier>
     </Filter>
@@ -120,6 +117,9 @@
     </Filter>
     <Filter Include="ui">
       <UniqueIdentifier>{2f89d04e-b7d1-40b4-abe8-bec4f3e39e93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="handle">
+      <UniqueIdentifier>{4c340cb3-2606-47fa-8153-dd7009810019}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -332,12 +332,6 @@
     <ClInclude Include="..\..\..\src\violet\utility\task\TaskScheduler.h">
       <Filter>utility\task</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\utility\handle\Handle.h">
-      <Filter>utility\handle</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\utility\handle\HandleManager.h">
-      <Filter>utility\handle</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\script\cpp\SharedLibrary.h">
       <Filter>script\cpp</Filter>
     </ClInclude>
@@ -397,6 +391,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\input\Key.h">
       <Filter>input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\handle\Handle.h">
+      <Filter>handle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\handle\HandleComponent.h">
+      <Filter>handle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\handle\HandleManager.h">
+      <Filter>handle</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -521,12 +524,6 @@
     <ClCompile Include="..\..\..\src\violet\utility\task\TaskScheduler.cpp">
       <Filter>utility\task</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\utility\handle\Handle.cpp">
-      <Filter>utility\handle</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\utility\handle\HandleManager.cpp">
-      <Filter>utility\handle</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\script\cpp\WindowsSharedLibrary.cpp">
       <Filter>script\cpp</Filter>
     </ClCompile>
@@ -580,6 +577,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\input\Key.cpp">
       <Filter>input</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\handle\Handle.cpp">
+      <Filter>handle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\handle\HandleComponent.cpp">
+      <Filter>handle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\handle\HandleManager.cpp">
+      <Filter>handle</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
