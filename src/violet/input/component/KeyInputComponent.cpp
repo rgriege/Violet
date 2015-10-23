@@ -15,8 +15,15 @@ Tag KeyInputComponent::getStaticTag()
 
 // ============================================================================
 
-KeyInputComponent::KeyInputComponent(Entity & owner, Deserializer & deserializer) :
+KeyInputComponent::KeyInputComponent(Entity & owner) :
 	ComponentBase<KeyInputComponent>(owner)
+{
+}
+
+// ----------------------------------------------------------------------------
+
+KeyInputComponent::KeyInputComponent(Entity & owner, Deserializer & deserializer) :
+	KeyInputComponent(owner)
 {
 }
 
