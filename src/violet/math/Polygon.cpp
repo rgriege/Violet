@@ -98,6 +98,34 @@ Vec2f Polygon::getCenter() const
 	return center / static_cast<float>(m_vertices.size());
 }
 
+// ----------------------------------------------------------------------------
+
+Vec2f & Polygon::operator[](uint32 const index)
+{
+	return m_vertices[index];
+}
+
+// ----------------------------------------------------------------------------
+
+const Vec2f & Polygon::operator[](uint32 const index) const
+{
+	return m_vertices[index];
+}
+
+// ----------------------------------------------------------------------------
+
+Polygon::Vertices::iterator Polygon::begin()
+{
+	return m_vertices.begin();
+}
+
+// ----------------------------------------------------------------------------
+
+Polygon::Vertices::iterator Polygon::end()
+{
+	return m_vertices.end();
+}
+
 // ============================================================================
 
 Serializer & Violet::operator<<(Serializer & serializer, const Polygon & poly)

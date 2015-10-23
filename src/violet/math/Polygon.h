@@ -12,6 +12,10 @@ namespace Violet
 	{
 	public:
 
+		typedef std::vector<Vec2f> Vertices;
+
+	public:
+
 		explicit Polygon(std::vector<Vec2f> && vertices);
 		explicit Polygon(Deserializer & deserializer);
 
@@ -23,10 +27,15 @@ namespace Violet
 		FloatInterval project(const Vec2f & axis) const;
 		Vec2f getCenter() const;
 
+		Vec2f & operator[](uint32 index);
+		const Vec2f & operator[](uint32 index) const;
+
+		Vertices::iterator begin();
+		Vertices::iterator end();
 
 	public:
 
-		std::vector<Vec2f> m_vertices;
+		Vertices m_vertices;
 	};
 
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const Polygon & poly);
