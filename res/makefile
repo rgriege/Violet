@@ -5,6 +5,4 @@ else
 endif
 include $(PLATFORM).mk
 
-TARGETS = button contextMenu
-
 print-%: ; @echo $*=$($*)

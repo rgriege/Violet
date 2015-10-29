@@ -1,9 +1,7 @@
 DST = ../bin
 
-%.so:
-	g++ -std=c++1y -shared -fPIC -o $*.so $*.cpp -I../src -L$(DST) -lEngine -lGame
-
-TARGETS = button contextMenu entityList
+%.so: %.cpp
+	g++ -std=c++1y -shared -fPIC -o $*.so $*.cpp -I../src -L$(DST) -lViolet -lEditor -lGame
 
 all: $(foreach TARGET, $(TARGETS), $(TARGET).so)
 
