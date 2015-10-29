@@ -41,9 +41,8 @@ namespace Violet
 
 		private:
 
-			const Writable & m_writable;
 			Delegate m_fn;
-			std::tuple<Args...> m_args;
+			std::tuple<Writable &, Args...> m_args;
 		};
 
 	public:

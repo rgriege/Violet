@@ -7,9 +7,8 @@
 template <typename Writable, typename ... Args>
 Violet::Engine::WriteTask<void(Writable &, Args...)>::WriteTask(const Writable & writable, Delegate fn, Args ... args) :
 	Violet::Task(),
-	m_writable(writable),
 	m_fn(fn),
-	m_args(args...)
+	m_args(const_cast<Writable &>(writable), args...)
 {
 }
 
@@ -18,7 +17,7 @@ Violet::Engine::WriteTask<void(Writable &, Args...)>::WriteTask(const Writable &
 template <typename Writable, typename ... Args>
 void Violet::Engine::WriteTask<void(Writable &, Args...)>::execute() const
 {
-	m_fn(const_cast<Writable &>(m_writable), Violet::get<Args>(m_args)...);
+	Violet::for_all(m_fn, m_args);
 }
 
 // ============================================================================
