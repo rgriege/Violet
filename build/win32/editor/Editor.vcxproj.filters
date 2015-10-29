@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\src\editor\EditorSystem.h" />
     <ClInclude Include="..\..\..\src\editor\EditorConfig.h" />
-    <ClInclude Include="..\..\..\src\editor\EditorComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\editor\EditorSystem.cpp" />
