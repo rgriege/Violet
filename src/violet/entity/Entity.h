@@ -20,8 +20,16 @@ namespace Violet
 	{
 	public:
 
+		typedef Factory<std::string, void(Entity &, Deserializer &)> ComponentFactory;
+	public:
+
 		template <typename ComponentType>
 		static void installComponent();
+		static void installComponent(Tag const tag, ComponentFactory::Producer producer);
+
+		template <typename ComponentType>
+		static void uninstallComponent();
+		static void uninstallComponent(Tag const tag);
 
 	public:
 
@@ -60,9 +68,11 @@ namespace Violet
 		lent_ptr<Entity> getParent();
 		lent_ptr<const Entity> getParent() const;
 
+		void removeFromParent();
+
 	private:
 
-		static Factory<std::string, void(Entity &, Deserializer &)> ms_componentFactory;
+		static ComponentFactory ms_componentFactory;
 
 		template <typename ComponentType>
 		static void factoryCreateComponent(Entity & entity, Deserializer & deserializer);

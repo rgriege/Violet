@@ -18,6 +18,7 @@ namespace Violet
 
 		explicit Polygon(std::vector<Vec2f> && vertices);
 		explicit Polygon(Deserializer & deserializer);
+		Polygon(Polygon && rhs);
 
 		bool contains(const Vec2f & point) const;
 		AABB getBoundingBox() const;

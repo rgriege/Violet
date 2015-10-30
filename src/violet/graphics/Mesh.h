@@ -12,7 +12,7 @@ namespace Violet
 	class Polygon;
 	class Serializer;
 
-	class Mesh
+	class VIOLET_API Mesh
 	{
 	public:
 

@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename Derived>
-uint32 Violet::Component::getFlag()
+uint32 Violet::Component::getStaticFlag()
 {
 	static const uint32 s_flag = getNextFlag();
 	return s_flag;
@@ -12,7 +12,7 @@ uint32 Violet::Component::getFlag()
 template <typename ComponentType>
 uint32 Violet::Component::gatherFlags()
 {
-	return ComponentType::getFlag();
+	return ComponentType::getStaticFlag();
 }
 
 // ----------------------------------------------------------------------------
@@ -26,9 +26,9 @@ uint32 Violet::Component::gatherFlags()
 // ============================================================================
 
 template <typename Derived>
-uint32 Violet::ComponentBase<Derived>::getFlag()
+uint32 Violet::ComponentBase<Derived>::getStaticFlag()
 {
-	return Component::getFlag<Derived>();
+	return Component::getStaticFlag<Derived>();
 }
 
 // ============================================================================
@@ -37,6 +37,14 @@ template <typename Derived>
 Violet::Tag Violet::ComponentBase<Derived>::getTag() const
 {
 	return Derived::getStaticTag();
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Derived>
+uint32 Violet::ComponentBase<Derived>::getFlag() const
+{
+	return getStaticFlag();
 }
 
 // ============================================================================

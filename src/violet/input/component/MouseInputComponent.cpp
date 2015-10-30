@@ -23,6 +23,14 @@ MouseInputComponent::MouseInputComponent(Entity & owner, Deserializer & deserial
 
 // ----------------------------------------------------------------------------
 
+MouseInputComponent::MouseInputComponent(Entity & owner, Polygon && mesh) :
+	ComponentBase<MouseInputComponent>(owner),
+	m_mesh(std::move(mesh))
+{
+}
+
+// ----------------------------------------------------------------------------
+
 MouseInputComponent::MouseInputComponent(MouseInputComponent && other) :
 	ComponentBase<MouseInputComponent>(std::move(other)),
 	m_mesh(std::move(other.m_mesh))

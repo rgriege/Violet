@@ -37,8 +37,8 @@ VIOLET_SCRIPT_EXPORT void clean(CppScript & script, std::unique_ptr<CppScript::M
 
 void onUpdate(const Entity & entity, const Engine & engine, Mem & mem)
 {
-    const auto & scene = engine.getSystem<EditorSystem>()->getScene();
-    if (scene != nullptr)
-        mem.list.update(entity, engine, scene->getRoot().getChildren().size());
+    const auto & root = engine.getSystem<EditorSystem>()->getSceneRoot(engine);
+    if (root != nullptr)
+        mem.list.update(entity, engine, root->getChildren().size());
 }
 

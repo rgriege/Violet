@@ -22,10 +22,7 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 	else if (!*deserializer)
 		std::cout << "Failed to parse scene file " << filename << std::endl;
 	else
-	{
-		while (*deserializer)
-			scene->m_root->addChild(make_unique_val<Entity>(*scene, *deserializer));
-	}
+		scene->m_root = make_unique_val<Entity>(*scene, *deserializer);
 
 	return scene;
 }

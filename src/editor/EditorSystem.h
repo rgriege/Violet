@@ -3,13 +3,17 @@
 
 #include "violet/system/System.h"
 
+#include "violet/handle/Handle.h"
+#include "violet/utility/lent_ptr.h"
 #include "editor/EditorConfig.h"
 
 #include <memory>
+#include <string>
 
 namespace Violet
 {
 	class Deserializer;
+	class Entity;
 	class Scene;
 	class SystemFactory;
 
@@ -26,17 +30,19 @@ namespace Violet
 		virtual ~EditorSystem() override = default;
 		virtual void update(float dt, const Engine & engine) override;
 
-		void loadScene(const char * filename, const Engine & engine) const;
+		void loadScene(const char * filename, const Engine & engine);
 
-		const std::unique_ptr<Scene> & getScene() const;
+		bool hasScene() const;
+		const lent_ptr<const Entity> & getSceneRoot(const Engine & engine) const;
 
 	private:
 
-		EditorSystem();
+		EditorSystem(std::string && editScriptFileName);
 		
 	private:
 
-		mutable std::unique_ptr<Scene> m_scene;
+		Handle m_rootSceneHandle;
+		std::string m_editScriptFileName;
 	};
 }
 

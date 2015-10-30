@@ -1,6 +1,5 @@
 {
   "ntty": {
-    "ref": false,
     "cpnt": {
       "tsfm": {
         "mat": {
@@ -23,6 +22,27 @@
         "str": "Entity X",
         "font": "Vera.ttf",
         "size": 18
+      },
+      "mipt": {
+        "poly": {
+          "n": 4,
+          "vec": {
+            "x": -50,
+            "y": -10
+          },
+          "vec": {
+            "x": 50,
+            "y": -10
+          },
+          "vec": {
+            "x": 50,
+            "y": 10
+          },
+          "vec": {
+            "x": -50,
+            "y": 10
+          }
+        }
       },
       "scpt": {
         "file": "entityListElement.dll"

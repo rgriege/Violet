@@ -34,6 +34,11 @@ namespace Violet
 			m_producers[label] = producer;
 		}
 
+		bool has(Label label)
+		{
+			return m_producers.find(label) != m_producers.end();
+		}
+
 		void remove(Label label)
 		{
 			m_producers.erase(label);

@@ -21,7 +21,7 @@ namespace Violet
 	protected:
 
 		template <typename Derived>
-		static uint32 getFlag();
+		static uint32 getStaticFlag();
 
 	private:
 
@@ -33,6 +33,7 @@ namespace Violet
 		const Entity & getOwner() const;
 
 		virtual Tag getTag() const = 0;
+		virtual uint32 getFlag() const = 0;
 
 		virtual ~Component() = 0;
 
@@ -55,11 +56,12 @@ namespace Violet
 	{
 	public:
 
-		static uint32 getFlag();
+		static uint32 getStaticFlag();
 
 	public:
 
 		virtual Tag getTag() const override;
+		virtual uint32 getFlag() const override;
 
 	protected:
 

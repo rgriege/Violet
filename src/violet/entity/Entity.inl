@@ -1,24 +1,17 @@
 // ============================================================================
 
-#ifdef _DEBUG
-#include <set>
-#endif
-
-// ============================================================================
-
 template <typename ComponentType>
 void Violet::Entity::installComponent()
 {
-#ifdef _DEBUG
-	std::set<Tag> s_tags;
-	const auto result = s_tags.insert(ComponentType::getStaticTag());
-	if (!result.second)
-	{
-		std::cout << "Tag ";
-		std::cout.write(result.first->asString(), 4) << " already used for a component" << std::endl;
-	}
-#endif
-	ms_componentFactory.assign(std::string(ComponentType::getStaticTag().asString(), 4), &Entity::factoryCreateComponent<ComponentType>);
+	installComponent(ComponentType::getStaticTag(), &Entity::factoryCreateComponent<ComponentType>);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+void Violet::Entity::uninstallComponent()
+{
+	uninstallComponent(ComponentType::getStaticTag());
 }
 
 // ============================================================================
@@ -26,8 +19,9 @@ void Violet::Entity::installComponent()
 template <typename ComponentType>
 void Violet::Entity::addComponent(unique_val<ComponentType> && component)
 {
+	assert((m_componentFlags & ComponentType::getStaticFlag()) == 0);
 	m_components.emplace_back(std::move(component));
-	m_componentFlags |= ComponentType::getFlag();
+	m_componentFlags |= ComponentType::getStaticFlag();
 }
 
 // ----------------------------------------------------------------------------
@@ -35,8 +29,7 @@ void Violet::Entity::addComponent(unique_val<ComponentType> && component)
 template <typename ComponentType, typename ... Args>
 void Violet::Entity::addComponent(Args && ... args)
 {
-	m_components.emplace_back(make_unique_val<ComponentType>(*this, std::forward<Args>(args)...));
-	m_componentFlags |= ComponentType::getFlag();
+	addComponent<ComponentType>(make_unique_val<ComponentType>(*this, std::forward<Args>(args)...));
 }
 
 // ----------------------------------------------------------------------------
@@ -44,7 +37,7 @@ void Violet::Entity::addComponent(Args && ... args)
 template <typename ComponentType>
 bool Violet::Entity::hasComponent() const
 {
-	return (m_componentFlags & ComponentType::getFlag()) != 0;
+	return (m_componentFlags & ComponentType::getStaticFlag()) != 0;
 }
 
 // ----------------------------------------------------------------------------
@@ -61,7 +54,7 @@ bool Violet::Entity::hasComponents() const
 template <typename ComponentType>
 Violet::lent_ptr<ComponentType> Violet::Entity::getComponent()
 {
-	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getTag() == ComponentType::getStaticTag(); });
+	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getFlag() == ComponentType::getStaticFlag(); });
 	if (it != m_components.end())
 		return lent_ptr<ComponentType>(static_cast<ComponentType *>(it->ptr()));
 
@@ -73,7 +66,7 @@ Violet::lent_ptr<ComponentType> Violet::Entity::getComponent()
 template <typename ComponentType>
 Violet::lent_ptr<const ComponentType> Violet::Entity::getComponent() const
 {
-	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getTag() == ComponentType::getStaticTag(); });
+	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getFlag() == ComponentType::getStaticFlag(); });
 	if (it != m_components.end())
 		return lent_ptr<const ComponentType>(static_cast<const ComponentType *>(it->ptr()));
 
@@ -85,12 +78,12 @@ Violet::lent_ptr<const ComponentType> Violet::Entity::getComponent() const
 template <typename ComponentType>
 bool Violet::Entity::removeComponent()
 {
-	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getTag() == ComponentType::getStaticTag(); });
+	const auto it = std::find_if(m_components.begin(), m_components.end(), [](const unique_val<Component> & component) { return component->getFlag() == ComponentType::getStaticFlag(); });
 	const bool found = it != m_components.end();
 	if (found)
 	{
 		m_components.erase(it);
-		m_componentFlags &= ~ComponentType::getFlag();
+		m_componentFlags &= ~ComponentType::getStaticFlag();
 	}
 	return found;
 }

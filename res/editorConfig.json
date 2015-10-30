@@ -3,8 +3,8 @@
     "wndw": {
       "x": 50,
       "y": 50,
-      "width": 800,
-      "height": 600,
+      "width": 1400,
+      "height": 800,
       "title": "Editor"
     },
     "rndr": {
@@ -12,7 +12,9 @@
     },
     "inpt": {},
     "updt": {},
-    "edtr": {}
+    "edtr": {
+      "editScriptFileName": "editEntity.dll"
+    }
   },
   "opts": {
     "firstScene": "editor.json",

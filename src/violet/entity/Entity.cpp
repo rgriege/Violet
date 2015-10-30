@@ -2,10 +2,35 @@
 
 #include "violet/component/Component.h"
 #include "violet/entity/Entity.h"
+#include "violet/input/component/KeyInputComponent.h"
 #include "violet/scene/Scene.h"
 #include "violet/serialization/Deserializer.h"
 
+#include <iostream>
+
 using namespace Violet;
+
+// ============================================================================
+
+void Violet::Entity::installComponent(const Tag tag, const ComponentFactory::Producer producer)
+{
+	const std::string label(tag.asString(), 4);
+#ifdef _DEBUG
+	assert(!ms_componentFactory.has(label));
+#endif
+	ms_componentFactory.assign(label, producer);
+}
+
+// ----------------------------------------------------------------------------
+
+void Violet::Entity::uninstallComponent(const Tag tag)
+{
+	const std::string label(tag.asString(), 4);
+#ifdef _DEBUG
+	assert(ms_componentFactory.has(label));
+#endif
+	ms_componentFactory.remove(label);
+}
 
 // ============================================================================
 
@@ -50,7 +75,6 @@ Entity::Entity(Scene & scene, Deserializer & deserializer) :
 
 Entity::~Entity()
 {
-	m_components.clear();
 }
 
 // ----------------------------------------------------------------------------
@@ -150,6 +174,19 @@ lent_ptr<Entity> Entity::getParent()
 lent_ptr<const Entity> Entity::getParent() const
 {
 	return m_parent;
+}
+
+// ----------------------------------------------------------------------------
+
+void Entity::removeFromParent()
+{
+	if (m_parent != nullptr)
+	{
+		auto & children = m_parent->getChildren();
+		const auto & it = std::find_if(children.begin(), children.end(), [=](const unique_val<Entity> & child) { return child.ptr() == this; });
+		if (it != children.end())
+			m_parent->removeChild(std::distance(children.begin(), it));
+	}
 }
 
 // ============================================================================
