@@ -1,5 +1,5 @@
-#ifndef FILE_UTILITIES_H
-#define FILE_UTILITIES_H
+#ifndef VIOLET_FileUtilities_H
+#define VIOLET_FileUtilities_H
 
 namespace Violet
 {
@@ -7,6 +7,7 @@ namespace Violet
 	{
 	public:
 
+		static bool exists(const char * fileName);
 		static bool copy(const char * src, const char * dst);
 	};
 }

@@ -1,3 +1,5 @@
+// ============================================================================
+
 #include "violet/utility/FileUtilities.h"
 
 #include "violet/Defines.h"
@@ -7,6 +9,16 @@
 #include <iterator>
 
 using namespace Violet;
+
+// ============================================================================
+
+bool FileUtilities::exists(const char * const fileName)
+{
+	std::ifstream stream(fileName, std::ios_base::binary);
+	return !stream.fail();
+}
+
+// ----------------------------------------------------------------------------
 
 bool FileUtilities::copy(const char * src, const char * dst)
 {
@@ -27,3 +39,5 @@ bool FileUtilities::copy(const char * src, const char * dst)
 	std::copy(srcBegin, srcEnd, dstBegin);
 	return true;
 }
+
+// ============================================================================

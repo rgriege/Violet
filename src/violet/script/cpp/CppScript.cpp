@@ -94,14 +94,18 @@ bool CppScript::isValid() const
 
 void CppScript::reload()
 {
-	if (isValid())
-		unload();
+	const std::string swapFileName = m_fileName + ms_swapSuffix;
+	if (FileUtilities::exists(swapFileName.c_str()))
+	{
+		if (isValid())
+			unload();
 
-	std::remove(m_fileName.c_str());
-	if (FileUtilities::copy((m_fileName + ms_swapSuffix).c_str(), m_fileName.c_str()))
-		load();
-	else
-		std::cout << "Could not copy file '" << m_fileName << ms_swapSuffix << "' to '" << m_fileName << "'" << std::endl;
+		std::remove(m_fileName.c_str());
+		if (FileUtilities::copy(swapFileName.c_str(), m_fileName.c_str()))
+			load();
+		else
+			std::cout << "Could not copy file '" << m_fileName << ms_swapSuffix << "' to '" << m_fileName << "'" << std::endl;
+	}
 }
 
 // ============================================================================
