@@ -145,20 +145,6 @@ void Engine::addTask(std::unique_ptr<Task> && task) const
 	m_taskScheduler.addTask(std::move(task));
 }
 
-// ----------------------------------------------------------------------------
-
-EventContext & Engine::getEventContext()
-{
-	return m_eventContext;
-}
-
-// ----------------------------------------------------------------------------
-
-const EventContext & Engine::getEventContext() const
-{
-	return m_eventContext;
-}
-
 // ============================================================================
 
 Engine::Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && scene, const uint32 workerCount) :

@@ -419,6 +419,9 @@
     <ClInclude Include="..\..\..\src\violet\event\EventContext.inl">
       <Filter>event</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\event\EventContextOwner.h">
+      <Filter>event</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -609,6 +612,9 @@
       <Filter>component</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\event\EventContext.cpp">
+      <Filter>event</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\event\EventContextOwner.cpp">
       <Filter>event</Filter>
     </ClCompile>
   </ItemGroup>

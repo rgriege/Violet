@@ -3,7 +3,7 @@
 
 #include "violet/Defines.h"
 #include "violet/entity/Entity.h"
-#include "violet/event/EventContext.h"
+#include "violet/event/EventContextOwner.h"
 #include "violet/scene/Scene.h"
 #include "violet/system/System.h"
 #include "violet/utility/task/TaskScheduler.h"
@@ -19,7 +19,7 @@ namespace Violet
 	class System;
 	class SystemFactory;
 
-	class VIOLET_API Engine
+	class VIOLET_API Engine : public EventContextOwner
 	{
 	private:
 
@@ -69,9 +69,6 @@ namespace Violet
 		template <typename Writable, typename Delegate, typename ... Args>
 		void addWriteTask(const Writable & writable, Delegate fn, Args... args) const;
 
-		EventContext & getEventContext();
-		const EventContext & getEventContext() const;
-
 	private:
 
 		Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && scene, uint32 workerCount);
@@ -84,7 +81,6 @@ namespace Violet
 		std::string m_nextSceneFileName;
 		std::vector<std::unique_ptr<System>> m_systems;
 		std::unique_ptr<Scene> m_scene;
-		EventContext m_eventContext;
 		mutable TaskScheduler m_taskScheduler;
 		bool m_running;
 	};

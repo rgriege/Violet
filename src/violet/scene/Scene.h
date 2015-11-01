@@ -1,6 +1,7 @@
 #ifndef VIOLET_Scene_H
 #define VIOLET_Scene_H
 
+#include "violet/event/EventContextOwner.h"
 #include "violet/handle/HandleComponent.h"
 #include "violet/handle/HandleManager.h"
 #include "violet/utility/lent_ptr.h"
@@ -14,7 +15,7 @@ namespace Violet
 	class Deserializer;
 	class Entity;
 
-	class VIOLET_API Scene
+	class VIOLET_API Scene : public EventContextOwner
 	{
 	public:
 
@@ -46,6 +47,7 @@ namespace Violet
 		std::unordered_map<Handle, std::reference_wrapper<Entity>> m_lookupMap;
 		HandleManager m_handleManager;
 		unique_val<Entity> m_root;
+		EventContext m_eventContext;
 	};
 }
 

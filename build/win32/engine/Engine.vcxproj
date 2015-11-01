@@ -100,6 +100,7 @@
     <ClInclude Include="..\..\..\src\violet\entity\Entity.h" />
     <ClInclude Include="..\..\..\src\violet\event\Event.h" />
     <ClInclude Include="..\..\..\src\violet\event\EventContext.h" />
+    <ClInclude Include="..\..\..\src\violet\event\EventContextOwner.h" />
     <ClInclude Include="..\..\..\src\violet\graphics\Color.h" />
     <ClInclude Include="..\..\..\src\violet\graphics\component\ColorComponent.h" />
     <ClInclude Include="..\..\..\src\violet\graphics\component\RenderComponentData.h" />
@@ -191,6 +192,7 @@
     <ClCompile Include="..\..\..\src\violet\Engine.cpp" />
     <ClCompile Include="..\..\..\src\violet\entity\Entity.cpp" />
     <ClCompile Include="..\..\..\src\violet\event\EventContext.cpp" />
+    <ClCompile Include="..\..\..\src\violet\event\EventContextOwner.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\component\ColorComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\component\RenderComponentData.cpp" />

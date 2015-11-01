@@ -32,7 +32,8 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 Scene::Scene() :
 	m_lookupMap(),
 	m_handleManager(),
-	m_root(make_unique_val<Entity>(*this))
+	m_root(make_unique_val<Entity>(*this)),
+	m_eventContext()
 {
 }
 
