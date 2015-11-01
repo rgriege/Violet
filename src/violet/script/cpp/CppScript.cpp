@@ -19,8 +19,7 @@ using namespace Violet;
 
 namespace CppScriptNamespace
 {
-	typedef void(*Initializer)(CppScript & script, std::unique_ptr<CppScript::Memory> & memory);
-	typedef void(*Cleaner)(CppScript & script, std::unique_ptr<CppScript::Memory> & memory);
+	typedef void(*Initializer)(CppScript & script, std::unique_ptr<CppScript::Instance> & instance);
 
 	const char * const ms_swapSuffix = ".swp";
 
@@ -31,7 +30,14 @@ using namespace CppScriptNamespace;
 
 // ============================================================================
 
-CppScript::Memory::~Memory()
+CppScript::Instance::Instance(CppScript & script)
+	: m_script(script)
+{
+}
+
+// ----------------------------------------------------------------------------
+
+CppScript::Instance::~Instance()
 {
 }
 
@@ -47,7 +53,7 @@ void CppScript::install()
 CppScript::CppScript(const char * const fileName) :
 	m_fileName(fileName),
 	m_lib(),
-	m_memory()
+	m_instance()
 {
 	load();
 }
@@ -57,10 +63,10 @@ CppScript::CppScript(const char * const fileName) :
 CppScript::CppScript(CppScript && other) :
 	m_fileName(std::move(other.m_fileName)),
 	m_lib(std::move(other.m_lib)),
-	m_memory(std::move(other.m_memory))
+	m_instance(std::move(other.m_instance))
 {
 	other.m_lib.reset();
-	other.m_memory = nullptr;
+	other.m_instance = nullptr;
 }
 
 // ----------------------------------------------------------------------------
@@ -123,7 +129,10 @@ void CppScript::load()
 	{
 		auto init = (Initializer)getMethodPtr("init");
 		if (init != nullptr)
-			init(*this, m_memory);
+		{
+			init(*this, m_instance);
+			assert(m_instance != nullptr);
+		}
 	}
 }
 
@@ -131,10 +140,7 @@ void CppScript::load()
 
 void CppScript::unload()
 {
-	auto clean = (Cleaner)getMethodPtr("clean");
-	if (clean != nullptr)
-		clean(*this, m_memory);
-	m_memory.reset();
+	m_instance.reset();
     m_lib.reset();
 }
 

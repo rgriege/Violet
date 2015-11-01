@@ -8,37 +8,41 @@
 
 using namespace Violet;
 
-struct Mem : public CppScript::Memory
+class Instance : public CppScript::Instance
 {
-    Mem(const char * elementFile, uint32 elementHeight) :
-        list(elementFile, elementHeight) {}
-    virtual ~Mem() override = default;
-    UiList list;
+public:
+
+    Instance(CppScript & script, const char * elementFile, uint32 elementHeight) :
+        CppScript::Instance(script),
+        m_list(elementFile, elementHeight)
+    {
+        using namespace std::placeholders;
+        UpdateMethod::assign(script, std::bind(&Instance::onUpdate, this, _1, _2));
+    }
+
+    virtual ~Instance() override
+    {
+        UpdateMethod::remove(m_script);
+        m_list.clean(m_script);
+    }
+
+private:
+
+    void onUpdate(const Entity & entity, const Engine & engine)
+    {
+        const auto & root = engine.getSystem<EditorSystem>()->getSceneRoot(engine);
+        if (root != nullptr)
+            m_list.update(entity, engine, root->getChildren().size());
+    }
+
+private:
+
+    UiList m_list;
 };
 
-void onUpdate(const Entity & entity, const Engine & engine, Mem & mem);
-
-VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
+VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
 {
-    auto m = std::make_unique<Mem>("entityListElement.json", 20);
-
-    using namespace std::placeholders;
-    UpdateMethod::assign(script, std::bind(onUpdate, _1, _2, std::ref(*m)));
-
-    mem = std::move(m);
+    instance = std::make_unique<Instance>(script, "entityListElement.json", 20);
 }
 
-VIOLET_SCRIPT_EXPORT void clean(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
-{
-    UpdateMethod::remove(script);
-
-    dynamic_cast<Mem &>(*mem).list.clean(script);
-}
-
-void onUpdate(const Entity & entity, const Engine & engine, Mem & mem)
-{
-    const auto & root = engine.getSystem<EditorSystem>()->getSceneRoot(engine);
-    if (root != nullptr)
-        mem.list.update(entity, engine, root->getChildren().size());
-}
 

@@ -10,90 +10,90 @@
 
 using namespace Violet;
 
-struct Mem : public CppScript::Memory
+class Instance : public CppScript::Instance
 {
-    Mem() : menuHandle(Handle::ms_invalid) {}
-    virtual ~Mem() override = default;
-    Handle menuHandle;
-};
+public:
 
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem);
-
-bool activeMenu(Mem & mem);
-void createMenu(Mem & mem, const Engine & engine, const Vec2f & position);
-void removeMenu(Mem & mem, const Engine & engine);
-
-VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
-{
-    auto m = std::make_unique<Mem>();
-
-    using namespace std::placeholders;
-    MouseDownMethod::assign(script, std::bind(onMouseDown, _1, _2, _3, std::ref(*m)));
-
-    mem = std::move(m);
-}
-
-VIOLET_SCRIPT_EXPORT void clean(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
-{
-    MouseDownMethod::remove(script);
-}
-
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem)
-{
-    if (event.button == MB_Right)
+    Instance(CppScript & script) :
+        CppScript::Instance(script),
+        m_menuHandle(Handle::ms_invalid)
     {
-        if (activeMenu(mem))
-        {
-            removeMenu(mem, engine);
-            createMenu(mem, engine, event.position);
-        }
-        else
-            createMenu(mem, engine, event.position);
+        using namespace std::placeholders;
+        MouseDownMethod::assign(script, std::bind(&Instance::onMouseDown, this, _1, _2, _3));
     }
-    else if (activeMenu(mem))
-        removeMenu(mem, engine);
-    else
-        return InputResult::Pass;
 
-    return InputResult::Block;
-}
-
-bool activeMenu(Mem & mem)
-{
-    return mem.menuHandle.isValid();
-}
-
-void createMenu(Mem & mem, const Engine & engine, const Vec2f & position)
-{
-    engine.addWriteTask(engine.getCurrentScene(), [position, &mem](Scene & scene)
-        {
-            auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
-            if (deserializer != nullptr && *deserializer)
-            {
-                Entity & menuHandle = scene.getRoot().addChild(*deserializer);
-                auto transformComponent = menuHandle.getComponent<TransformComponent>();
-                if (transformComponent != nullptr)
-                {
-                    transformComponent->m_transform[0][2] = position.x;
-                    transformComponent->m_transform[1][2] = position.y;
-                }
-                menuHandle.addComponent<HandleComponent>();
-                mem.menuHandle = menuHandle.getComponent<HandleComponent>()->getHandle();
-            }
-        });
-}
-
-void removeMenu(Mem & mem, const Engine & engine)
-{
-    auto & menuHandle = mem.menuHandle;
-    auto const & menu = engine.getCurrentScene().getEntity(menuHandle);
-    if (menu != nullptr)
+    virtual ~Instance() override
     {
-        engine.addWriteTask(*menu, [](Entity & menu)
+        MouseDownMethod::remove(m_script);
+    }
+
+private:
+
+    InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
+    {
+        if (event.button == MB_Right)
+        {
+            if (activeMenu())
             {
-                menu.removeFromParent();
+                removeMenu(engine);
+                createMenu(engine, event.position);
+            }
+            else
+                createMenu(engine, event.position);
+        }
+        else if (activeMenu())
+            removeMenu(engine);
+        else
+            return InputResult::Pass;
+
+        return InputResult::Block;
+    }
+
+    bool activeMenu()
+    {
+        return m_menuHandle.isValid();
+    }
+
+    void createMenu(const Engine & engine, const Vec2f & position)
+    {
+        engine.addWriteTask(engine.getCurrentScene(), [position, this](Scene & scene)
+            {
+                auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
+                if (deserializer != nullptr && *deserializer)
+                {
+                    Entity & menu = scene.getRoot().addChild(*deserializer);
+                    auto transformComponent = menu.getComponent<TransformComponent>();
+                    if (transformComponent != nullptr)
+                    {
+                        transformComponent->m_transform[0][2] = position.x;
+                        transformComponent->m_transform[1][2] = position.y;
+                    }
+                    menu.addComponent<HandleComponent>();
+                    m_menuHandle = menu.getComponent<HandleComponent>()->getHandle();
+                }
             });
     }
-    menuHandle = Handle::ms_invalid;
+
+    void removeMenu(const Engine & engine)
+    {
+        auto const & menu = engine.getCurrentScene().getEntity(m_menuHandle);
+        if (menu != nullptr)
+        {
+            engine.addWriteTask(*menu, [](Entity & menu)
+                {
+                    menu.removeFromParent();
+                });
+        }
+        m_menuHandle = Handle::ms_invalid;
+    }
+
+private:
+
+    Handle m_menuHandle;
+};
+
+VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
+{
+    instance = std::make_unique<Instance>(script);
 }
 

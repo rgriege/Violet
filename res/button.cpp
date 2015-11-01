@@ -11,90 +11,92 @@
 
 using namespace Violet;
 
-struct Mem : public CppScript::Memory
-{
-    Mem(uint8 _opacity) : opacity(_opacity), disappearing(true) {}
-    virtual ~Mem() override = default;
-    uint8 opacity;
-    bool disappearing;
-};
-
 const uint8 ms_maxOpacity = 0xCC;
 const uint8 ms_minOpacity = 0x33;
 const int8 ms_transitionDelta = 5;
 
-void onMouseIn(const Entity & entity, const Engine & engine, Mem & mem);
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem);
-void onMouseOut(const Entity & entity, const Engine & engine, Mem & mem);
-void update(const Entity & entity, const Engine & engine, float dt, Mem & mem);
-
-void adjustOpacity(const Entity & entity, const Engine & engine, Mem & mem, int diff);
-
-VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
+class Instance : public CppScript::Instance
 {
-    auto m = std::make_unique<Mem>(ms_minOpacity);
+public:
 
-    using namespace std::placeholders;
-    MouseInMethod::assign(script, std::bind(onMouseIn, _1, _2, std::ref(*m)));
-    MouseDownMethod::assign(script, std::bind(onMouseDown, _1, _2, _3, std::ref(*m)));
-    MouseOutMethod::assign(script, std::bind(onMouseOut, _1, _2, std::ref(*m)));
-    UpdateMethod::assign(script, std::bind(update, _1, _2, _3, std::ref(*m)));
-
-    mem = std::move(m);
-}
-
-VIOLET_SCRIPT_EXPORT void clean(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
-{
-    MouseInMethod::remove(script);
-    MouseDownMethod::remove(script);
-    MouseOutMethod::remove(script);
-    UpdateMethod::remove(script);
-}
-
-void onMouseIn(const Entity & entity, const Engine & engine, Mem & mem)
-{
-    mem.opacity = ms_maxOpacity;
-    adjustOpacity(entity, engine, mem, mem.opacity);
-}
-
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event, Mem & mem)
-{
-    auto const & editor = engine.getSystem<EditorSystem>();
-    if (!editor->hasScene())
+    Instance(CppScript & script, const uint8 _m_opacity) :
+        CppScript::Instance(script),
+        m_opacity(_m_opacity),
+        m_disappearing(true)
     {
-        engine.addWriteTask(*editor, [&](EditorSystem & editor)
-            {
-                editor.loadScene("testScene.json", engine);
-            });
+        using namespace std::placeholders;
+        MouseInMethod::assign(script, std::bind(&Instance::onMouseIn, this, _1, _2));
+        MouseDownMethod::assign(script, std::bind(&Instance::onMouseDown, this, _1, _2, _3));
+        MouseOutMethod::assign(script, std::bind(&Instance::onMouseOut, this, _1, _2));
+        UpdateMethod::assign(script, std::bind(&Instance::update, this, _1, _2, _3));
     }
-    return InputResult::Block;
-}
 
-void onMouseOut(const Entity & entity, const Engine & engine, Mem & mem)
-{
-    mem.opacity = ms_minOpacity;
-    mem.disappearing = true;
-}
-
-void update(const Entity & entity, const Engine & engine, const float dt, Mem & mem)
-{
-    if (mem.disappearing)
-        adjustOpacity(entity, engine, mem, -ms_transitionDelta);
-}
-
-void adjustOpacity(const Entity & entity, const Engine & engine, Mem & mem, int diff)
-{
-    auto colorComponent = entity.getComponent<ColorComponent>();
-    if (colorComponent != nullptr)
+    virtual ~Instance() override
     {
-        if (colorComponent->m_color.a != mem.opacity)
-        {
-            Color newColor(colorComponent->m_color);
-            newColor.a = std::min<uint8>(std::max<uint8>(newColor.a.asUint() + diff, ms_minOpacity), ms_maxOpacity);
-            engine.addWriteTask(*colorComponent, [newColor](ColorComponent & colorComponent) { colorComponent.m_color = newColor; });
+        MouseInMethod::remove(m_script);
+        MouseDownMethod::remove(m_script);
+        MouseOutMethod::remove(m_script);
+        UpdateMethod::remove(m_script);
+    }
 
-            if (newColor.a.asUint() == mem.opacity)
-                mem.disappearing = false;
+private:
+
+    void onMouseIn(const Entity & entity, const Engine & engine)
+    {
+        m_opacity = ms_maxOpacity;
+        adjustOpacity(entity, engine, m_opacity);
+    }
+
+    InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
+    {
+        auto const & editor = engine.getSystem<EditorSystem>();
+        if (!editor->hasScene())
+        {
+            engine.addWriteTask(*editor, [&](EditorSystem & editor)
+                {
+                    editor.loadScene("testScene.json", engine);
+                });
+        }
+        return InputResult::Block;
+    }
+
+    void onMouseOut(const Entity & entity, const Engine & engine)
+    {
+        m_opacity = ms_minOpacity;
+        m_disappearing = true;
+    }
+
+    void update(const Entity & entity, const Engine & engine, const float dt)
+    {
+        if (m_disappearing)
+            adjustOpacity(entity, engine, -ms_transitionDelta);
+    }
+
+    void adjustOpacity(const Entity & entity, const Engine & engine, int diff)
+    {
+        auto colorComponent = entity.getComponent<ColorComponent>();
+        if (colorComponent != nullptr)
+        {
+            if (colorComponent->m_color.a != m_opacity)
+            {
+                Color newColor(colorComponent->m_color);
+                newColor.a = std::min<uint8>(std::max<uint8>(newColor.a.asUint() + diff, ms_minOpacity), ms_maxOpacity);
+                engine.addWriteTask(*colorComponent, [newColor](ColorComponent & colorComponent) { colorComponent.m_color = newColor; });
+
+                if (newColor.a.asUint() == m_opacity)
+                    m_disappearing = false;
+            }
         }
     }
+
+private:
+
+    uint8 m_opacity;
+    bool m_disappearing;
+};
+
+VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
+{
+    instance = std::make_unique<Instance>(script, ms_minOpacity);
 }
+

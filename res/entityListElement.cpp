@@ -8,35 +8,38 @@
 
 using namespace Violet;
 
-struct Mem : public CppScript::Memory
+class Instance : public CppScript::Instance
 {
-    Mem(const char * elementFile, uint32 elementHeight) :
-        list(elementFile, elementHeight) {}
-    UiList list;
+public:
+    Instance(CppScript & script) :
+        CppScript::Instance(script)
+    {
+        AssignIndexMethod::assign(m_script, &Instance::onAssignIndex);
+        MouseDownMethod::assign(m_script, &Instance::onMouseDown);
+    }
+
+    virtual ~Instance() override
+    {
+        AssignIndexMethod::remove(m_script);
+        MouseDownMethod::remove(m_script);
+    }
+
+private:
+
+    static void onAssignIndex(const Entity & entity, const Engine & engine, const uint32 index)
+    {
+        engine.addWriteTask(*entity.getComponent<TextComponent>(),
+            [=](TextComponent & tc) { tc.m_text = "Entity"; });
+    }
+
+    static InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
+    {
+        return InputResult::Block;
+    }
 };
 
-void onAssignIndex(const Entity & entity, const Engine & engine, uint32 index);
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event);
-
-VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
+VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
 {
-    AssignIndexMethod::assign(script, onAssignIndex);
-    MouseDownMethod::assign(script, onMouseDown);
+    instance = std::make_unique<Instance>(script);
 }
 
-VIOLET_SCRIPT_EXPORT void clean(CppScript & script, std::unique_ptr<CppScript::Memory> & mem)
-{
-    AssignIndexMethod::remove(script);
-    MouseDownMethod::remove(script);
-}
-
-void onAssignIndex(const Entity & entity, const Engine & engine, const uint32 index)
-{
-    engine.addWriteTask(*entity.getComponent<TextComponent>(),
-        [=](TextComponent & tc) { tc.m_text = "Entity"; });
-}
-
-InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
-{
-    return InputResult::Block;
-}

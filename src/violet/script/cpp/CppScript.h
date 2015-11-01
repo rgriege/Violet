@@ -13,11 +13,16 @@ namespace Violet
 	{
 	public:
 
-		class VIOLET_API Memory
+		class VIOLET_API Instance
 		{
 		public:
 
-			virtual ~Memory() = 0;
+			Instance(CppScript & script);
+			virtual ~Instance() = 0;
+
+		protected:
+
+			CppScript & m_script;
 		};
 
 	public:
@@ -51,7 +56,7 @@ namespace Violet
 
 		std::string m_fileName;
 		std::shared_ptr<SharedLibrary> m_lib;
-		std::unique_ptr<Memory> m_memory;
+		std::unique_ptr<Instance> m_instance;
 	};
 }
 
