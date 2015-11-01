@@ -121,6 +121,9 @@
     <Filter Include="handle">
       <UniqueIdentifier>{4c340cb3-2606-47fa-8153-dd7009810019}</UniqueIdentifier>
     </Filter>
+    <Filter Include="event">
+      <UniqueIdentifier>{49bffbe3-3975-4cc3-a4c0-22d1b077fc52}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\graphics\Color.h">
@@ -401,6 +404,21 @@
     <ClInclude Include="..\..\..\src\violet\handle\HandleManager.h">
       <Filter>handle</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\component\MappedDataComponent.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\event\Event.h">
+      <Filter>event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\event\EventContext.h">
+      <Filter>event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\event\Event.inl">
+      <Filter>event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\event\EventContext.inl">
+      <Filter>event</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -586,6 +604,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\handle\HandleManager.cpp">
       <Filter>handle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\component\MappedDataComponent.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\event\EventContext.cpp">
+      <Filter>event</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

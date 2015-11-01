@@ -1,6 +1,7 @@
-#ifndef PHYSICS_SYSTEM_H
-#define PHYSICS_SYSTEM_H
+#ifndef VIOLET_PhysicsSystem_H
+#define VIOLET_PhysicsSystem_H
 
+#include "violet/event/Event.h"
 #include "violet/math/Vec2.h"
 #include "violet/system/System.h"
 #include "violet/physics/component/PhysicsComponent.h"
@@ -34,6 +35,8 @@ namespace Violet
 		float m_drag;
 		Vec2f m_gravity;
 	};
+
+	DEFINE_EVENT(CollisionEvent, void(const Entity & e1, const Entity & e2));
 }
 
 #endif

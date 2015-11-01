@@ -111,6 +111,7 @@ void PhysicsSystem::update(const float dt, const Engine & engine)
 						(1 / physicsComponent.m_mass + 1 / otherPhysicsComponent.m_mass);
 					resolveCollisionForEntity(engine, transformComponent, physicsComponent, intersection, impulseMagnitude);
 					resolveCollisionForEntity(engine, otherTransformComponent, otherPhysicsComponent, intersection, impulseMagnitude);
+					CollisionEvent::emit(engine.getEventContext(), entity, otherEntity.get());
 				}
 			}
 		});
