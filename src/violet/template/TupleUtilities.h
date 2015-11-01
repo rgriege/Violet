@@ -262,14 +262,14 @@ namespace Violet
 	namespace detail
 	{
 		template <typename Predicate, typename... Args, size_t... N>
-		std::result_of_t<Predicate(Args...)> for_all(Predicate pr, const std::tuple<Args...> & tup, sequence<N...> seq)
+		std::result_of_t<Predicate(Args...)> for_all(const Predicate & pr, const std::tuple<Args...> & tup, sequence<N...> seq)
 		{
 			return pr(std::get<N>(tup)...);
 		}
 	}
 
 	template <typename Predicate, typename... Args>
-	std::result_of_t<Predicate(Args...)> for_all(Predicate pr, const std::tuple<Args...> & tup)
+	std::result_of_t<Predicate(Args...)> for_all(const Predicate & pr, const std::tuple<Args...> & tup)
 	{
 		return detail::for_all(pr, tup, typename sequence_generator<sizeof...(Args)>::type());
 	}
@@ -277,14 +277,14 @@ namespace Violet
 	namespace detail
 	{
 		template <typename Type, typename Predicate, typename... Args, size_t... N>
-		std::result_of_t<Predicate(Type, Args...)> for_all(Type & type, Predicate pr, const std::tuple<Args...> & tup, sequence<N...> seq)
+		std::result_of_t<Predicate(Type, Args...)> for_all(Type & type, const Predicate & pr, const std::tuple<Args...> & tup, sequence<N...> seq)
 		{
 			return (type.*pr)(std::get<N>(tup)...);
 		}
 	}
 
 	template <typename Type, typename Predicate, typename... Args>
-	std::result_of_t<Predicate(Type, Args...)> for_all(Type & type, Predicate pr, const std::tuple<Args...> & tup)
+	std::result_of_t<Predicate(Type, Args...)> for_all(Type & type, const Predicate & pr, const std::tuple<Args...> & tup)
 	{
 		return detail::for_all(type, pr, tup, typename sequence_generator<sizeof...(Args)>::type());
 	}
@@ -301,12 +301,12 @@ namespace Violet
 		template <size_t> struct Index {};
 
 		template <typename Predicate, typename... Args>
-		void for_each(Predicate pr, std::tuple<Args...> & tup, Index<0>)
+		void for_each(const Predicate & pr, std::tuple<Args...> & tup, Index<0>)
 		{
 		}
 
 		template <typename Predicate, typename... Args, size_t N>
-		void for_each(Predicate pr, std::tuple<Args...> & tup, Index<N>)
+		void for_each(const Predicate & pr, std::tuple<Args...> & tup, Index<N>)
 		{
 			for_each(pr, tup, Index<N - 1>());
 			pr(std::get<N - 1>(tup));
@@ -314,7 +314,7 @@ namespace Violet
 	}
 
 	template <typename Predicate, typename... Args>
-	void for_each(Predicate pr, std::tuple<Args...> & tup)
+	void for_each(const Predicate & pr, std::tuple<Args...> & tup)
 	{
 		detail::for_each(pr, tup, detail::Index<sizeof...(Args)>());
 	}
@@ -329,12 +329,12 @@ namespace Violet
 	namespace detail
 	{
 		template <typename Predicate, typename... Args>
-		void for_each(Predicate pr, const std::tuple<Args...> & tup, Index<0>)
+		void for_each(const Predicate & pr, const std::tuple<Args...> & tup, Index<0>)
 		{
 		}
 
 		template <typename Predicate, typename... Args, size_t N>
-		void for_each(Predicate pr, const std::tuple<Args...> & tup, Index<N>)
+		void for_each(const Predicate & pr, const std::tuple<Args...> & tup, Index<N>)
 		{
 			for_each(pr, tup, Index<N - 1>());
 			pr(std::get<N - 1>(tup));
@@ -342,7 +342,7 @@ namespace Violet
 	}
 
 	template <typename Predicate, typename... Args>
-	void for_each(Predicate pr, const std::tuple<Args...> & tup)
+	void for_each(const Predicate & pr, const std::tuple<Args...> & tup)
 	{
 		detail::for_each(pr, tup, detail::Index<sizeof...(Args)>());
 	}
@@ -357,13 +357,13 @@ namespace Violet
 	namespace detail
 	{
 		template <typename Predicate, typename... Args>
-		size_t first(Predicate pr, std::tuple<Args...> & tup, Index<0>)
+		size_t first(const Predicate & pr, std::tuple<Args...> & tup, Index<0>)
 		{
 			return std::tuple_size<std::tuple<Args...>>::value;
 		}
 
 		template <typename Predicate, typename... Args, size_t N>
-		size_t first(Predicate pr, std::tuple<Args...> & tup, Index<N>)
+		size_t first(const Predicate & pr, std::tuple<Args...> & tup, Index<N>)
 		{
 			auto currentResult = first(pr, tup, Index<N - 1>());
 			return currentResult != std::tuple_size<std::tuple<Args...>>::value ?
@@ -375,7 +375,7 @@ namespace Violet
 	}
 
 	template <typename Predicate, typename... Args>
-	size_t first(Predicate pr, std::tuple<Args...> & tup)
+	size_t first(const Predicate & pr, std::tuple<Args...> & tup)
 	{
 		return detail::first(pr, tup, detail::Index<sizeof...(Args)>());
 	}
