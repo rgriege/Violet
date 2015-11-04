@@ -10,7 +10,7 @@ namespace Violet
 	{
 	public:
 
-		class Column
+		class Row
 		{
 		public:
 
@@ -29,15 +29,15 @@ namespace Violet
 
 	public:
 
-		Column & operator[](size_t i);
-		Column const & operator[](size_t i) const;
+		Row & operator[](size_t i);
+		Row const & operator[](size_t i) const;
 
 		T * data();
 		const T * data() const;
 
 	public:
 
-		Column m_rows[3];
+		Row m_rows[3];
 	};
 
 	template <typename T>

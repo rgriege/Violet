@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename T>
-T & Violet::Matrix3<T>::Column::operator[](const size_t i)
+T & Violet::Matrix3<T>::Row::operator[](const size_t i)
 {
 	return m_entries[i];
 }
@@ -9,7 +9,7 @@ T & Violet::Matrix3<T>::Column::operator[](const size_t i)
 // ----------------------------------------------------------------------------
 
 template <typename T>
-const T & Violet::Matrix3<T>::Column::operator[](const size_t i) const
+const T & Violet::Matrix3<T>::Row::operator[](const size_t i) const
 {
 	return m_entries[i];
 }
@@ -35,7 +35,7 @@ const Violet::Matrix3<T> Violet::Matrix3<T>::Zero = {
 // ============================================================================
 
 template <typename T>
-typename Violet::Matrix3<T>::Column & Violet::Matrix3<T>::operator[](const size_t i)
+typename Violet::Matrix3<T>::Row & Violet::Matrix3<T>::operator[](const size_t i)
 {
 	return m_rows[i];
 }
@@ -43,7 +43,7 @@ typename Violet::Matrix3<T>::Column & Violet::Matrix3<T>::operator[](const size_
 // ----------------------------------------------------------------------------
 
 template <typename T>
-typename Violet::Matrix3<T>::Column const & Violet::Matrix3<T>::operator[](const size_t i) const
+typename Violet::Matrix3<T>::Row const & Violet::Matrix3<T>::operator[](const size_t i) const
 {
 	return m_rows[i];
 }
