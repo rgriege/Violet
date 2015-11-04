@@ -9,6 +9,14 @@ uint32 Violet::Event<Derived, void(Args...)>::subscribe(EventContext & eventCont
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
+uint32 Violet::Event<Derived, void(Args...)>::subscribe(EventContextOwner & eventContextOwner, const Delegate & func)
+{
+	return subscribe(eventContextOwner.getEventContext(), func);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Derived, typename ... Args>
 void Violet::Event<Derived, void(Args...)>::emit(const EventContext & eventContext, Args && ... args)
 {
 	eventContext.emit(Derived::getName(), std::forward<Args>(args)...);
@@ -17,9 +25,25 @@ void Violet::Event<Derived, void(Args...)>::emit(const EventContext & eventConte
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
+void Violet::Event<Derived, void(Args...)>::emit(const EventContextOwner & eventContextOwner, Args && ... args)
+{
+	emit(eventContextOwner.getEventContext(), std::forward<Args>(args)...);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Derived, typename ... Args>
 void Violet::Event<Derived, void(Args...)>::unsubscribe(EventContext & eventContext, const uint32 delegateId)
 {
 	eventContext.unsubscribe(Derived::getName(), delegateId);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Derived, typename ... Args>
+void Violet::Event<Derived, void(Args...)>::unsubscribe(EventContextOwner & eventContextOwner, const uint32 delegateId)
+{
+	unsubscribe(eventContextOwner.getEventContext(), delegateId);
 }
 
 // ============================================================================

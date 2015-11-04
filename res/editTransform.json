@@ -1,0 +1,699 @@
+{
+  "ntty": {
+    "cpnt": {
+      "tsfm": {
+        "mat": {
+          "a": 1,
+          "b": 0,
+          "c": 0,
+          "d": 0,
+          "e": 1,
+          "f": 0,
+          "g": 0,
+          "h": 0,
+          "i": 1
+        }
+      },
+      "mipt": {
+        "poly": {
+          "n": 4,
+          "vec": {
+            "x": -100,
+            "y": -50
+          },
+          "vec": {
+            "x": -100,
+            "y": 50
+          },
+          "vec": {
+            "x": 100,
+            "y": 50
+          },
+          "vec": {
+            "x": 100,
+            "y": -50
+          }
+        }
+      }
+    },
+    "chld": {
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": -60,
+              "d": 0,
+              "e": 1,
+              "f": 10,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mipt": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            }
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "0",
+            "key": "column",
+            "value": "0"
+          }
+        }
+      },
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": 0,
+              "d": 0,
+              "e": 1,
+              "f": 10,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mipt": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            }
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "0",
+            "key": "column",
+            "value": "1"
+          }
+        }
+      },
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": 60,
+              "d": 0,
+              "e": 1,
+              "f": 10,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mipt": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            }
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "0",
+            "key": "column",
+            "value": "2"
+          }
+        }
+      },
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": -60,
+              "d": 0,
+              "e": 1,
+              "f": -20,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mipt": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            }
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "1",
+            "key": "column",
+            "value": "0"
+          }
+        }
+      },
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": 0,
+              "d": 0,
+              "e": 1,
+              "f": -20,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mipt": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            }
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "1",
+            "key": "column",
+            "value": "1"
+          }
+        }
+      },
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": 60,
+              "d": 0,
+              "e": 1,
+              "f": -20,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mipt": {
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            }
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "1",
+            "key": "column",
+            "value": "2"
+          }
+        }
+      },
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": -60,
+              "d": 0,
+              "e": 1,
+              "f": -50,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "2",
+            "key": "column",
+            "value": "0"
+          }
+        }
+      },
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": 0,
+              "d": 0,
+              "e": 1,
+              "f": -50,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "2",
+            "key": "column",
+            "value": "1"
+          }
+        }
+      },
+      "ntty": {
+        "cpnt": {
+          "tsfm": {
+            "mat": {
+              "a": 1,
+              "b": 0,
+              "c": 60,
+              "d": 0,
+              "e": 1,
+              "f": -50,
+              "g": 0,
+              "h": 0,
+              "i": 1
+            }
+          },
+          "colr": {
+            "shader": "poly",
+            "poly": {
+              "n": 4,
+              "vec": {
+                "x": -25,
+                "y": -8
+              },
+              "vec": {
+                "x": -25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": 16
+              },
+              "vec": {
+                "x": 25,
+                "y": -8
+              }
+            },
+            "color": "0x2C302EFF"
+          },
+          "text": {
+            "shader": "text",
+            "poly": {
+              "n": 0
+            },
+            "str": "0",
+            "font": "Vera.ttf",
+            "size": 14
+          },
+          "scpt": {
+            "file": "editTransform.dll"
+          },
+          "mapd": {
+            "n": 2,
+            "key": "row",
+            "value": "2",
+            "key": "column",
+            "value": "2"
+          }
+        }
+      }
+    }
+  }
+}

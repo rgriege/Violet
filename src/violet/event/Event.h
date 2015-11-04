@@ -7,6 +7,8 @@
 
 namespace Violet
 {
+	class EventContextOwner;
+
 	template <typename Derived, typename Signature>
 	class Event;
 
@@ -16,6 +18,7 @@ namespace Violet
 	public:
 
 		typedef std::function<void(Args...)> Delegate;
+
 	private:
 
 		struct StoredDelegate
@@ -26,9 +29,12 @@ namespace Violet
 
 	public:
 
-		static uint32 subscribe(EventContext & eventContext, const Delegate & func);
+		static uint32 subscribe(EventContext & eventContextOwner, const Delegate & func);
+		static uint32 subscribe(EventContextOwner & eventContext, const Delegate & func);
 		static void emit(const EventContext & eventContext, Args && ... args);
+		static void emit(const EventContextOwner & eventContextOwner, Args && ... args);
 		static void unsubscribe(EventContext & eventContext, uint32 delegateId);
+		static void unsubscribe(EventContextOwner & eventContextOwner, uint32 delegateId);
 
 	private:
 
@@ -37,19 +43,19 @@ namespace Violet
 
 #ifdef WIN32
 #ifdef VIOLET_SCRIPT
-#define SCRIPT_API __declspec(dllimport)
+#define EVENT_API __declspec(dllimport)
 #else
-#define SCRIPT_API __declspec(dllexport)
+#define EVENT_API __declspec(dllexport)
 #endif
 #else
-#define SCRIPT_API
+#define EVENT_API
 #endif
 
-#define DEFINE_EVENT(EventName, Signature) class SCRIPT_API EventName : public Violet::Event<EventName, Signature> \
+#define DEFINE_EVENT(EventName, Signature) class EVENT_API EventName : public Violet::Event<EventName, Signature> \
 	{ \
 	public: \
 		static const char * getName() { return #EventName; } \
-	}
+		}
 }
 
 #include "violet/event/Event.inl"

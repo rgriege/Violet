@@ -1,4 +1,5 @@
 TARGETS = button \
     contextMenu \
     entityList \
-    entityListElement
+    entityListElement \
+    editTransform

@@ -3,6 +3,7 @@
 
 #include "violet/system/System.h"
 
+#include "violet/event/Event.h"
 #include "violet/handle/Handle.h"
 #include "violet/utility/lent_ptr.h"
 #include "editor/EditorConfig.h"
@@ -44,6 +45,8 @@ namespace Violet
 		Handle m_rootSceneHandle;
 		std::string m_editScriptFileName;
 	};
+
+	DEFINE_EVENT(EntitySelectedEvent, void(const Entity & entity, const Engine & engine));
 }
 
 #endif

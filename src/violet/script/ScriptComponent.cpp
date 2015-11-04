@@ -28,7 +28,7 @@ ScriptComponent::ScriptComponent(Entity & owner, const char * const fileName) :
 	ComponentBase<ScriptComponent>(owner),
 	m_script(ScriptFactory::create(fileName))
 {
-
+	BindToComponentMethod::run(*m_script, owner);
 }
 
 // ----------------------------------------------------------------------------
@@ -37,6 +37,13 @@ ScriptComponent::ScriptComponent(ScriptComponent && other) :
 	ComponentBase<ScriptComponent>(std::move(other)),
 	m_script(std::move(other.m_script))
 {
+}
+
+// ----------------------------------------------------------------------------
+
+ScriptComponent::~ScriptComponent()
+{
+	UnbindFromComponentMethod::run(*m_script, m_owner);
 }
 
 // ============================================================================

@@ -23,6 +23,7 @@ namespace Violet
 		ScriptComponent(Entity & owner, Deserializer & deserializer);
 		ScriptComponent(Entity & owner, const char * fileName);
 		ScriptComponent(ScriptComponent && other);
+		virtual ~ScriptComponent() override;
 
 	public:
 
@@ -30,6 +31,9 @@ namespace Violet
 	};
 
 	Serializer & operator<<(Serializer & serializer, const ScriptComponent & component);
+
+	DEFINE_METHOD(BindToComponentMethod, void(Entity & owner));
+	DEFINE_METHOD(UnbindFromComponentMethod, void(Entity & owner));
 }
 
 #endif

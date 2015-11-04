@@ -1,9 +1,11 @@
 #include "editor/EditorSystem.h"
 #include "violet/Engine.h"
+#include "violet/component/MappedDataComponent.h"
 #include "violet/graphics/component/ColorComponent.h"
 #include "violet/graphics/component/TextComponent.h"
 #include "violet/graphics/component/TextureComponent.h"
 #include "violet/graphics/system/RenderSystem.h"
+#include "violet/handle/HandleComponent.h"
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
 #include "violet/input/system/InputSystem.h"
@@ -29,14 +31,16 @@
 
 Violet::SystemFactory setup()
 {
-	Violet::Entity::installComponent<Violet::TransformComponent>();
 	Violet::Entity::installComponent<Violet::ColorComponent>();
-	Violet::Entity::installComponent<Violet::TextComponent>();
-	Violet::Entity::installComponent<Violet::TextureComponent>();
-	Violet::Entity::installComponent<Violet::MouseInputComponent>();
+	Violet::Entity::installComponent<Violet::HandleComponent>();
 	Violet::Entity::installComponent<Violet::KeyInputComponent>();
+	Violet::Entity::installComponent<Violet::MappedDataComponent>();
+	Violet::Entity::installComponent<Violet::MouseInputComponent>();
 	Violet::Entity::installComponent<Violet::PhysicsComponent>();
 	Violet::Entity::installComponent<Violet::ScriptComponent>();
+	Violet::Entity::installComponent<Violet::TextComponent>();
+	Violet::Entity::installComponent<Violet::TextureComponent>();
+	Violet::Entity::installComponent<Violet::TransformComponent>();
 	Violet::Entity::installComponent<Violet::UiStateComponent>();
 	Violet::Entity::installComponent<Violet::UpdateComponent>();
 	Violet::Entity::installComponent<MapComponent>();
