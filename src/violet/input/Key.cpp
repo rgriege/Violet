@@ -6,7 +6,7 @@ using namespace Violet;
 
 // ============================================================================
 
-bool Key::isNumeric(unsigned const char key)
+bool Key::isNumeric(const unsigned char key)
 {
 	switch (key)
 	{
@@ -24,6 +24,13 @@ bool Key::isNumeric(unsigned const char key)
 	default:
 		return false;
 	}
+}
+
+// ----------------------------------------------------------------------------
+
+bool Key::isNumericInput(const unsigned char key)
+{
+	return isNumeric(key) || key == '-' || key == '.';
 }
 
 // ============================================================================

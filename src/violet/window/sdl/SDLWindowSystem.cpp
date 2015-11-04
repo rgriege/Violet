@@ -253,10 +253,10 @@ char SDLWindowSystemNamespace::convertKey(SDL_Keycode const key)
 		return 13;
 	else if (key >= 0 && key <= 255)
 		return key;
-	else if (key >= SDLK_KP_1 && key <= SDLK_KP_0)
+	else if (key >= SDLK_KP_DIVIDE && key <= SDLK_KP_PERIOD)
 	{
-		static char keys[1 + SDLK_KP_0 - SDLK_KP_1] = { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' };
-		return keys[key - SDLK_KP_1];
+		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = { '/', '*', '-', '+', 13, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.' };
+		return keys[key - SDLK_KP_DIVIDE];
 	}
 
 	return 0;

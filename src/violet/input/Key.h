@@ -21,6 +21,7 @@ namespace Violet
 	public:
 
 		static bool isNumeric(unsigned char key);
+		static bool isNumericInput(unsigned char key);
 	};
 }
 

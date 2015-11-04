@@ -61,7 +61,7 @@ private:
 
     void onKeyUp(const Entity & entity, const Engine & engine, const unsigned char key)
     {
-        if (Key::isNumeric(key))
+        if (Key::isNumericInput(key))
         {
             const auto & tc = entity.getComponent<TextComponent>();
             if (tc != nullptr)
