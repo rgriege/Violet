@@ -37,7 +37,9 @@ std::vector<const char *> Script::getBoundMethodNames() const
 void Script::warn(const char * const procedureName, const char * const context) const
 {
 	static std::set<std::string> s_warnings;
+	static std::mutex s_mutex;
 
+	const std::lock_guard<std::mutex> guard(s_mutex);
 	std::string warning = getFileName() + "(" + procedureName + "): " + context;
 	auto it = s_warnings.find(warning);
 	if (it == s_warnings.end())
