@@ -23,6 +23,14 @@ namespace Violet
 
 	public:
 
+		Factory() = default;
+
+		Factory(const Factory & rhs) :
+			m_producers(rhs.m_producers),
+			m_mutex()
+		{
+		}
+
 		ReturnType create(const Label & label, Args ... args) const
 		{
 			const std::lock_guard<std::mutex> guard(m_mutex);
@@ -52,7 +60,7 @@ namespace Violet
 	private:
 
 		std::map<Label, Producer> m_producers;
-		std::mutex m_mutex;
+		mutable std::mutex m_mutex;
 	};
 
 	template <typename ReturnType, typename... Args>
@@ -63,6 +71,14 @@ namespace Violet
 		typedef std::function<ReturnType(Args ...)> Producer;
 
 	public:
+
+		Factory() = default;
+
+		Factory(const Factory & rhs) :
+			m_producers(rhs.m_producers),
+			m_mutex()
+		{
+		}
 
 		ReturnType create(const char * const label, Args ... args) const
 		{
@@ -93,7 +109,7 @@ namespace Violet
 	private:
 
 		std::map<const char *, Producer, StringUtilities::Less> m_producers;
-		std::mutex m_mutex;
+		mutable std::mutex m_mutex;
 	};
 }
 
