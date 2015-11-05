@@ -1,7 +1,7 @@
-#ifndef FACTORY_H
-#define FACTORY_H
+#ifndef VIOLET_Factory_H
+#define VIOLET_Factory_H
 
-#include "violet/Defines.h"
+// #include "violet/Defines.h"
 #include "violet/utility/StringUtilities.h"
 
 #include <assert.h>
@@ -22,24 +22,24 @@ namespace Violet
 
 	public:
 
-		ReturnType create(Label label, Args ... args)
+		ReturnType create(const Label & label, Args ... args) const
 		{
 			auto it = m_producers.find(label);
 			assert(it != m_producers.end());
 			return (it->second)(std::forward<Args>(args)...);
 		}
 
-		void assign(Label label, const Producer & producer)
+		void assign(const Label & label, const Producer & producer)
 		{
 			m_producers[label] = producer;
 		}
 
-		bool has(Label label)
+		bool has(const Label & label) const
 		{
 			return m_producers.find(label) != m_producers.end();
 		}
 
-		void remove(Label label)
+		void remove(const Label & label)
 		{
 			m_producers.erase(label);
 		}
@@ -58,18 +58,24 @@ namespace Violet
 
 	public:
 
-		ReturnType create(const char * label, Args ... args)
+		ReturnType create(const char * const label, Args ... args) const
 		{
-			auto producer = m_producers[label];
-			return producer(std::forward<Args>(args)...);
+			auto it = m_producers.find(label);
+			assert(it != m_producers.end());
+			return (it->second)(std::forward<Args>(args)...);
 		}
 
-		void assign(const char * label, const Producer & producer)
+		void assign(const char * const label, const Producer & producer)
 		{
 			m_producers[label] = producer;
 		}
 
-		void remove(const char * label)
+		bool has(const char * const label) const
+		{
+			return m_producers.find(label) != m_producers.end();
+		}
+
+		void remove(const char * const label)
 		{
 			m_producers.erase(label);
 		}
