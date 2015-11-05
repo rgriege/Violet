@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <functional>
 #include <map>
+#include <mutex>
 
 namespace Violet
 {
@@ -24,6 +25,7 @@ namespace Violet
 
 		ReturnType create(const Label & label, Args ... args) const
 		{
+			const std::lock_guard<std::mutex> guard(m_mutex);
 			auto it = m_producers.find(label);
 			assert(it != m_producers.end());
 			return (it->second)(std::forward<Args>(args)...);
@@ -31,22 +33,26 @@ namespace Violet
 
 		void assign(const Label & label, const Producer & producer)
 		{
+			const std::lock_guard<std::mutex> guard(m_mutex);
 			m_producers[label] = producer;
 		}
 
 		bool has(const Label & label) const
 		{
+			const std::lock_guard<std::mutex> guard(m_mutex);
 			return m_producers.find(label) != m_producers.end();
 		}
 
 		void remove(const Label & label)
 		{
+			const std::lock_guard<std::mutex> guard(m_mutex);
 			m_producers.erase(label);
 		}
 
 	private:
 
 		std::map<Label, Producer> m_producers;
+		std::mutex m_mutex;
 	};
 
 	template <typename ReturnType, typename... Args>
@@ -60,6 +66,7 @@ namespace Violet
 
 		ReturnType create(const char * const label, Args ... args) const
 		{
+			const std::lock_guard<std::mutex> guard(m_mutex);
 			auto it = m_producers.find(label);
 			assert(it != m_producers.end());
 			return (it->second)(std::forward<Args>(args)...);
@@ -67,22 +74,26 @@ namespace Violet
 
 		void assign(const char * const label, const Producer & producer)
 		{
+			const std::lock_guard<std::mutex> guard(m_mutex);
 			m_producers[label] = producer;
 		}
 
 		bool has(const char * const label) const
 		{
+			const std::lock_guard<std::mutex> guard(m_mutex);
 			return m_producers.find(label) != m_producers.end();
 		}
 
 		void remove(const char * const label)
 		{
+			const std::lock_guard<std::mutex> guard(m_mutex);
 			m_producers.erase(label);
 		}
 
 	private:
 
 		std::map<const char *, Producer, StringUtilities::Less> m_producers;
+		std::mutex m_mutex;
 	};
 }
 
