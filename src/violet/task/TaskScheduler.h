@@ -8,7 +8,7 @@
 #include <thread>
 
 #include "violet/Defines.h"
-#include "violet/utility/task/Task.h"
+#include "violet/task/Task.h"
 
 namespace Violet
 {

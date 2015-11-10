@@ -6,8 +6,8 @@
 #include "violet/event/EventContextOwner.h"
 #include "violet/scene/Scene.h"
 #include "violet/system/System.h"
-#include "violet/utility/task/TaskScheduler.h"
-#include "violet/utility/task/Task.h"
+#include "violet/task/TaskScheduler.h"
+#include "violet/task/Task.h"
 
 #include <memory>
 #include <vector>

@@ -106,9 +106,6 @@
     <Filter Include="update\system">
       <UniqueIdentifier>{90110065-8ad8-485c-af53-ce40f837b18c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="utility\task">
-      <UniqueIdentifier>{dbc5b38d-0507-40bd-9a29-82841c960e36}</UniqueIdentifier>
-    </Filter>
     <Filter Include="script\lua">
       <UniqueIdentifier>{8252673d-c9e8-4213-b883-81428f6cbf43}</UniqueIdentifier>
     </Filter>
@@ -123,6 +120,9 @@
     </Filter>
     <Filter Include="event">
       <UniqueIdentifier>{49bffbe3-3975-4cc3-a4c0-22d1b077fc52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="task">
+      <UniqueIdentifier>{c001cb34-8c5b-49dd-98a6-8936e0cfa09f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -329,12 +329,6 @@
     <ClInclude Include="..\..\..\src\violet\input\component\MouseInputComponent.h">
       <Filter>input\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\utility\task\Task.h">
-      <Filter>utility\task</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\utility\task\TaskScheduler.h">
-      <Filter>utility\task</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\script\cpp\SharedLibrary.h">
       <Filter>script\cpp</Filter>
     </ClInclude>
@@ -421,6 +415,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\event\EventContextOwner.h">
       <Filter>event</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\task\Task.h">
+      <Filter>task</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\task\TaskScheduler.h">
+      <Filter>task</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -539,12 +539,6 @@
     <ClCompile Include="..\..\..\src\violet\input\component\MouseInputComponent.cpp">
       <Filter>input\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\utility\task\Task.cpp">
-      <Filter>utility\task</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\utility\task\TaskScheduler.cpp">
-      <Filter>utility\task</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\script\cpp\WindowsSharedLibrary.cpp">
       <Filter>script\cpp</Filter>
     </ClCompile>
@@ -616,6 +610,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\event\EventContextOwner.cpp">
       <Filter>event</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\task\Task.cpp">
+      <Filter>task</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\task\TaskScheduler.cpp">
+      <Filter>task</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
