@@ -12,6 +12,8 @@ namespace Violet
 		static Vec2f getPosition(const Matrix3f & mat);
 		static void setPosition(Matrix3f & mat, const Vec2f & position);
 
+		static void rotate(Matrix3f & mat, float radians);
+
 		// applied scale -> rotation -> translation
 		static Matrix3f create(const Vec2f & position, float rotation = 0.f, const Vec2f & scale = NoScale);
 

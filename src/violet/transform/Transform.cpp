@@ -25,6 +25,13 @@ void Transform::setPosition(Matrix3f & mat, const Vec2f & position)
 
 // ----------------------------------------------------------------------------
 
+void Transform::rotate(Matrix3f & mat, float const radians)
+{
+	mat = mat * Matrix3f::createRotation(radians);
+}
+
+// ----------------------------------------------------------------------------
+
 Matrix3f Transform::create(const Vec2f & position, const float rotation, const Vec2f & scale)
 {
 	const Matrix3f result = {

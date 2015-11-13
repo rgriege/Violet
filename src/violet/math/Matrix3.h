@@ -24,6 +24,10 @@ namespace Violet
 
 	public:
 
+		static Matrix3<T> createRotation(float radians);
+
+	public:
+
 		static const Matrix3<T> Identity;
 		static const Matrix3<T> Zero;
 
