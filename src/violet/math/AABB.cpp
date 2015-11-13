@@ -2,6 +2,8 @@
 
 #include "violet/math/AABB.h"
 
+#include "violet/math/Polygon.h"
+
 #include <algorithm>
 
 using namespace Violet;
@@ -117,8 +119,13 @@ AABB & AABB::translate(const Vec2f & offset)
 
 AABB & AABB::transform(const Matrix3f & transformation)
 {
-	m_topLeft = transformation * m_topLeft;
-	m_bottomRight = transformation * m_bottomRight;
+	*this = Polygon{ {
+			transformation * m_topLeft,
+			transformation * Vec2f{ m_bottomRight.x, m_topLeft.y },
+			transformation * m_bottomRight,
+			transformation * Vec2f{ m_topLeft.x, m_bottomRight.y }
+		} }.getBoundingBox();
+
 	return *this;
 }
 

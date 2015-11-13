@@ -72,7 +72,7 @@ bool Polygon::contains(const Vec2f & point) const
 
 AABB Polygon::getBoundingBox() const
 {
-	AABB result;
+	AABB result{ getCenter(), Vec2f::ZERO };
 	for (auto const & vertex : m_vertices)
 		result.extend(vertex);
 	return result;
