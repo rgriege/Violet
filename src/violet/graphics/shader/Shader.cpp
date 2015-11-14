@@ -1,12 +1,14 @@
 #include "violet/graphics/shader/Shader.h"
 
 #include "violet/Defines.h"
+#include "violet/log/Log.h"
+#include "violet/utility/Buffer.h"
+#include "violet/utility/FormattedString.h"
 #include "violet/utility/Buffer.h"
 #include "violet/utility/StringUtilities.h"
 
 #include <GL/glew.h>
 #include <fstream>
-#include <iostream>
 #include <map>
 #include <string>
 
@@ -24,7 +26,7 @@ std::unique_ptr<Shader> Shader::create(const char * filename, Type type)
 	std::ifstream stream(filename, std::ios_base::binary);
 	if (!stream)
 	{
-		std::cout << "Could not open shader file " << filename << std::endl;
+		Log::log(FormattedString<128>().sprintf("Could not open shader file '%s'", filename));
 		return nullptr;
 	}
 
@@ -46,11 +48,9 @@ std::unique_ptr<Shader> Shader::create(const char * filename, Type type)
 	{
 		GLint length;
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-		char * log = static_cast<char *>(malloc(length));
+		HeapBuffer<char> log(length);
 		glGetShaderInfoLog(shader, length, nullptr, log);
-		std::cout << "Compilation error in shader file " << filename << ":" << std::endl;
-		std::cout << log;
-		free(log);
+		Log::log(FormattedString<1024>().sprintf("Compilation error in shader file '%s': %s", filename, log));
 		return nullptr;
 	}
 
@@ -102,11 +102,9 @@ std::unique_ptr<ShaderProgram> ShaderProgram::create(std::shared_ptr<Shader> ver
 	{
 		GLint length;
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
-		char * log = static_cast<char *>(malloc(length));
+		HeapBuffer<char> log(length);
 		glGetProgramInfoLog(program, length, nullptr, log);
-		std::cout << "Link error in shader program using " << ms_shaderFilenames[vertexShader->m_handle] << " and " << ms_shaderFilenames[fragmentShader->m_handle] << ":" << std::endl;
-		std::cout << log;
-		free(log);
+		Log::log(FormattedString<1024>().sprintf("Link error in shader program using '%s' and '%s': %s", ms_shaderFilenames[vertexShader->m_handle].c_str(), ms_shaderFilenames[fragmentShader->m_handle].c_str(), log));
 		return 0;
 	}
 	

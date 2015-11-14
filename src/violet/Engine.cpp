@@ -2,33 +2,19 @@
 
 #include "violet/Engine.h"
 
+#include "violet/log/Log.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/serialization/file/FileSerializerFactory.h"
 #include "violet/serialization/Serializer.h"
 #include "violet/system/System.h"
 #include "violet/system/SystemFactory.h"
+#include "violet/utility/FormattedString.h"
 #include "violet/utility/Profiler.h"
 
-#include <iostream>
 #include <algorithm>
 
 using namespace Violet;
-
-// ============================================================================
-
-namespace EngineNamespace
-{
-	void printWarning(const char * msg)
-	{
-		std::cout << msg << std::endl;
-		char c;
-		std::cin >> c;
-		exit(1);
-	}
-}
-
-using namespace EngineNamespace;
 
 // ============================================================================
 
@@ -47,7 +33,7 @@ std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & des
 				systems.emplace_back(std::move(system));
 			else
 			{
-				std::cout << "failed to init " << systemLabel << " system" << std::endl;
+				Log::log(FormattedString<128>().sprintf("failed to init %s system", systemLabel));
 				succeeded = false;
 			}
 		}
@@ -89,7 +75,7 @@ void Engine::begin()
 		}
 		else
 		{
-			printf("frame time: %.3f\n", frameTime / 1000.f);
+			Log::log(FormattedString<128>().sprintf("frame time: %.3f\n", frameTime / 1000.f));
 			previousFrameTime = frameTime;
 		}
 	}

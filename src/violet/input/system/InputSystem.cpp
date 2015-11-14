@@ -13,8 +13,6 @@
 #include "violet/transform/component/TransformComponent.h"
 #include "violet/window/WindowSystem.h"
 
-#include <iostream>
-
 using namespace Violet;
 
 namespace InputSystemNamespace

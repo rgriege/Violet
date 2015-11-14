@@ -2,7 +2,8 @@
 
 #include "violet/handle/HandleManager.h"
 
-#include <iostream>
+#include "violet/log/Log.h"
+#include "violet/utility/FormattedString.h"
 
 using namespace Violet;
 
@@ -85,7 +86,7 @@ Handle HandleManager::create(const uint32 desiredId)
 	else
 	{
 		const Handle result = create();
-		std::cout << "Could not create entity with id " << desiredId << ", using " << result.getId() << " instead" << std::endl;
+		Log::log(FormattedString<1024>().sprintf("Could not create handle %d, using %d instead", desiredId, result.getId()));
 		return result;
 	}
 }

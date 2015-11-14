@@ -6,8 +6,6 @@
 #include "violet/scene/Scene.h"
 #include "violet/serialization/Deserializer.h"
 
-#include <iostream>
-
 using namespace Violet;
 
 // ============================================================================

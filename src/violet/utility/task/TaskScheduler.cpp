@@ -5,8 +5,9 @@
 #include <assert.h>
 
 #if 0
-#include <iostream>
-#define LOG(message) std::cout << std::this_thread::get_id() << " " << message << std::endl
+#include "violet/log/Log.h"
+#include "violet/utility/FormattedString.h"
+#define LOG(message) Log::log(FormattedString<1024>().sprintf("%d: %s", std::this_thread::get_id(), message));
 #else
 #define LOG(message) (void(0))
 #endif

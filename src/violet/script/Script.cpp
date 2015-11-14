@@ -2,6 +2,8 @@
 
 #include "violet/script/Script.h"
 
+#include "violet/log/Log.h"
+
 #include <assert.h>
 #include <set>
 
@@ -42,7 +44,7 @@ void Script::warn(const char * const procedureName, const char * const context) 
 	auto it = s_warnings.find(warning);
 	if (it == s_warnings.end())
 	{
-		std::cout << warning << std::endl;
+		Log::log(warning.c_str());
 		s_warnings.insert(warning);
 	}
 }

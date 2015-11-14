@@ -1,9 +1,5 @@
 // ============================================================================
 
-#include <iostream>
-
-// ============================================================================
-
 template <typename Derived, typename ResultType, typename ... Args>
 void Violet::Script::Method<Derived, ResultType(Args...)>::assign(Script & script, const Delegate & func)
 {

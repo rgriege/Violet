@@ -124,6 +124,9 @@
     <Filter Include="event">
       <UniqueIdentifier>{49bffbe3-3975-4cc3-a4c0-22d1b077fc52}</UniqueIdentifier>
     </Filter>
+    <Filter Include="log">
+      <UniqueIdentifier>{ddc98aad-fdf9-4dd2-baae-022fc5cdef57}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\graphics\Color.h">
@@ -422,6 +425,15 @@
     <ClInclude Include="..\..\..\src\violet\event\EventContextOwner.h">
       <Filter>event</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\log\Log.h">
+      <Filter>log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\log\LogTarget.h">
+      <Filter>log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\log\ConsoleLogTarget.h">
+      <Filter>log</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -616,6 +628,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\event\EventContextOwner.cpp">
       <Filter>event</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\log\Log.cpp">
+      <Filter>log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\log\LogTarget.cpp">
+      <Filter>log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\log\ConsoleLogTarget.cpp">
+      <Filter>log</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

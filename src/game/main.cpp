@@ -9,6 +9,8 @@
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
 #include "violet/input/system/InputSystem.h"
+#include "violet/log/Log.h"
+#include "violet/log/ConsoleLogTarget.h"
 #include "violet/physics/system/PhysicsSystem.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/script/cpp/CppScript.h"
@@ -26,8 +28,6 @@
 #include "game/pathfinding/PathComponent.h"
 #include "game/pathfinding/PathfindingSystem.h"
 #include "game/world/WorldSystem.h"
-
-#include <iostream>
 
 Violet::SystemFactory setup()
 {
@@ -69,12 +69,14 @@ Violet::SystemFactory setup()
 
 int main(int /*argc*/, char ** /*argv*/)
 {
+	const Violet::LogTarget::Guard consoleLogGuard(Violet::Log::installTarget(Violet::make_unique_val<Violet::ConsoleLogTarget>()));
+
 	auto factory = setup();
 
 	auto deserializer = Violet::FileDeserializerFactory::getInstance().create("editorConfig.json");
 	if (deserializer == nullptr || !*deserializer)
 	{
-		std::cout << "failed to read config file" << std::endl;
+		Violet::Log::log("failed to read config file");
 		char c;
 		std::cin >> c;
 		exit(1);
@@ -83,7 +85,7 @@ int main(int /*argc*/, char ** /*argv*/)
 	auto engine = Violet::Engine::init(factory, *deserializer);
 	if (engine == nullptr)
 	{
-		std::cout << "failed to init engine" << std::endl;
+		Violet::Log::log("failed to init engine");
 		char c;
 		std::cin >> c;
 		exit(1);

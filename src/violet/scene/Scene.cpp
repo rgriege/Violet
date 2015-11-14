@@ -3,10 +3,10 @@
 #include "violet/scene/Scene.h"
 
 #include "violet/entity/Entity.h"
+#include "violet/log/Log.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
-
-#include <iostream>
+#include "violet/utility/FormattedString.h"
 
 using namespace Violet;
 
@@ -18,9 +18,9 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
-		std::cout << "Could not open scene file " << filename << std::endl;
+		Log::log(FormattedString<128>().sprintf("Could not open scene file '%s'", filename));
 	else if (!*deserializer)
-		std::cout << "Failed to parse scene file " << filename << std::endl;
+		Log::log(FormattedString<128>().sprintf("Failed to parse scene file '%s'", filename));
 	else
 		scene->m_root = make_unique_val<Entity>(*scene, *deserializer);
 

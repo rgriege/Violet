@@ -8,12 +8,14 @@
 #include "violet/graphics/component/TextureComponent.h"
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
+#include "violet/log/Log.h"
 #include "violet/scene/Scene.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
 #include "violet/update/component/UpdateComponent.h"
+#include "violet/utility/FormattedString.h"
 
 using namespace Violet;
 
@@ -111,9 +113,9 @@ void EditorSystem::loadScene(const char * const filename, const Engine & engine)
 			Entity * newSceneRoot = nullptr;
 			auto deserializer = FileDeserializerFactory::getInstance().create(sceneFileName.c_str());
 			if (deserializer == nullptr)
-				std::cout << "Could not open scene file " << sceneFileName << std::endl;
+				Log::log(FormattedString<128>().sprintf("Could not open scene file '%s'", sceneFileName.c_str()));
 			else if (!*deserializer)
-				std::cout << "Failed to parse scene file " << sceneFileName << std::endl;
+				Log::log(FormattedString<128>().sprintf("Failed to parse scene file '%s'", sceneFileName.c_str()));
 			else
 				newSceneRoot = &root.addChild(*deserializer);
 

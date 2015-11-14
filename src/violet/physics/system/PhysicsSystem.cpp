@@ -12,9 +12,6 @@
 #include "violet/physics/collision/Intersection.h"
 #include "violet/window/WindowSystem.h"
 
-#include <iostream>
-#include <cstdio>
-
 using namespace Violet;
 
 namespace PhysicsSystemNamespace

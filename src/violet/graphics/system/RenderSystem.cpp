@@ -7,16 +7,17 @@
 #include "violet/graphics/component/ColorComponent.h"
 #include "violet/graphics/component/TextComponent.h"
 #include "violet/graphics/component/TextureComponent.h"
+#include "violet/log/Log.h"
 #include "violet/scene/SceneProcessor.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
 #include "violet/transform/component/TransformComponent.h"
+#include "violet/utility/FormattedString.h"
 #include "violet/utility/Guard.h"
 #include "violet/window/WindowSystem.h"
 #include "violet/graphics/font/Font.h"
 #include "violet/graphics/shader/Shader.h"
 
-#include <iostream>
 #include <fstream>
 #include <GL/glew.h>
 #include <ft2build.h>
@@ -63,11 +64,11 @@ std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
 	GLenum glewError = glewInit();
 	if (glewError != GLEW_OK)
 	{
-		std::cout << "glewInit error: " << glewGetErrorString(glewError);
+		Log::log(FormattedString<1024>().sprintf("glewInit error: %s", glewGetErrorString(glewError)));
 		return nullptr;
 	}
 
-	std::cout << "GL version: " << glGetString(GL_VERSION) << std::endl;
+	Log::log(FormattedString<32>().sprintf("GL version: %s", glGetString(GL_VERSION)));
 	
 	glClearColor(color.r, color.g, color.b, color.a);
 	glEnable(GL_BLEND);

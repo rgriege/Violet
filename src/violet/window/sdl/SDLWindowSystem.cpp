@@ -4,13 +4,14 @@
 
 #include "violet/Engine.h"
 #include "violet/graphics/system/RenderSystem.h"
+#include "violet/log/Log.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
+#include "violet/utility/FormattedString.h"
 
 #include <SDL.h>
 
 #include <assert.h>
-#include <iostream>
 
 using namespace Violet;
 
@@ -40,7 +41,7 @@ std::unique_ptr<System> SDLWindowSystem::init(Deserializer & deserializer)
 	SDL_SetMainReady();
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
-		std::cout << "SDL_Init(VIDEO) failed: " << SDL_GetError() << std::endl;
+		Log::log(FormattedString<1024>().sprintf("SDL_Init(VIDEO) failed: %s", SDL_GetError()));
 		return nullptr;
 	}
 
@@ -59,14 +60,14 @@ std::unique_ptr<System> SDLWindowSystem::init(Deserializer & deserializer)
 	SDL_Window * window = SDL_CreateWindow(title, x, y, width, height, SDL_WINDOW_OPENGL);
 	if (window == nullptr)
 	{
-		std::cout << "SDL_CreateWindow failed: " << SDL_GetError() << std::endl;
+		Log::log(FormattedString<1024>().sprintf("SDL_CreateWindow failed: %s", SDL_GetError()));
 		return nullptr;
 	}
 
 	SDL_GLContext glContext = SDL_GL_CreateContext(window);
 	if (glContext == nullptr)
 	{
-		std::cout << "SDL_CreateContext failed: " << SDL_GetError() << std::endl;
+		Log::log(FormattedString<128>().sprintf("SDL_CreateContext failed: ", SDL_GetError()));
 		return nullptr;
 	}
 

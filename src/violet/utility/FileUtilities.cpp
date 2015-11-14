@@ -5,7 +5,6 @@
 #include "violet/Defines.h"
 
 #include <fstream>
-#include <iostream>
 #include <iterator>
 
 using namespace Violet;

@@ -3,11 +3,12 @@
 #include "violet/graphics/font/Font.h"
 
 #include "violet/Defines.h"
-#include "violet/utility/Guard.h"
+#include "violet/log/Log.h"
 #include "violet/graphics/shader/Shader.h"
+#include "violet/utility/FormattedString.h"
+#include "violet/utility/Guard.h"
 
 #include <algorithm>
-#include <iostream>
 #include <map>
 #include <GL/glew.h>
 #include <ft2build.h>
@@ -101,7 +102,7 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 		auto ftError = FT_Init_FreeType(&ms_freetypeLibrary);
 		if (ftError != FT_Err_Ok)
 		{
-			std::cout << "FT_Init_FreeType error: " << ftError << std::endl;
+			Log::log(FormattedString<64>().sprintf("FT_Init_FreeType error: %d", ftError));
 			return nullptr;
 		}
 	}
@@ -110,21 +111,21 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 	auto ftError = FT_New_Face(ms_freetypeLibrary, filename, 0, &face);
 	if (ftError != FT_Err_Ok)
 	{
-		std::cout << "FT_New_Face error: " << ftError << std::endl;
+		Log::log(FormattedString<64>().sprintf("FT_New_Face error: %d", ftError));
 		return nullptr;
 	}
 
 	ftError = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 	if (ftError != FT_Err_Ok)
 	{
-		std::cout << "FT_Select_Charmap error: " << ftError << std::endl;
+		Log::log(FormattedString<64>().sprintf("FT_Select_Charmap error: %d", ftError));
 		return nullptr;
 	}
 
 	ftError = FT_Set_Char_Size(face, 0, size * 64, 0, 0);
 	if (ftError != FT_Err_Ok)
 	{
-		std::cout << "FT_Set_Char_Size error: " << ftError << std::endl;
+		Log::log(FormattedString<64>().sprintf("FT_Set_Char_Size error: %d", ftError));
 		return nullptr;
 	}
 
@@ -145,7 +146,7 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 		ftError = FT_Load_Glyph(face, glyphIndex, FT_LOAD_RENDER);
 		if (ftError != FT_Err_Ok)
 		{
-			std::cout << "FT_Load_Glyph error: " << ftError << std::endl;
+			Log::log(FormattedString<64>().sprintf("FT_Load_Glyph error: ", ftError));
 			return nullptr;
 		}
 
@@ -192,7 +193,7 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 		else if (charcode == 32)
 			spaceWidth = face->glyph->advance.x >> 6;
 		else
-			std::cout << "Charcode has no bitmap: " << charcode << std::endl;
+			Log::log(FormattedString<64>().sprintf("Charcode has no bitmap: %lu", charcode));
 
 		charcode = FT_Get_Next_Char(face, charcode, &glyphIndex);
 	}
@@ -200,7 +201,7 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 	ftError = FT_Done_Face(face);
 	if (ftError != FT_Err_Ok)
 	{
-		std::cout << "FT_Done_Face error: " << ftError << std::endl;
+		Log::log(FormattedString<64>().sprintf("FT_Done_Face error: %d", ftError));
 		return nullptr;
 	}
 
@@ -237,7 +238,7 @@ void Font::render(std::string const & str, ShaderProgram & program)
 				xOffset += it->second.getAdvance();
 			}
 			else
-				std::cout << "unknown character: " << character << std::endl;
+				Log::log(FormattedString<64>().sprintf("unknown character: %c", character));
 		}
 	}
 

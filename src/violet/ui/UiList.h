@@ -4,8 +4,6 @@
 #include "violet/input/system/InputSystem.h"
 #include "violet/transform/component/TransformComponent.h"
 
-#include <iostream>
-
 namespace Violet
 {
 	class Engine;

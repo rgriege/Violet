@@ -2,15 +2,16 @@
 
 #include "violet/script/cpp/CppScript.h"
 
+#include "violet/log/Log.h"
 #include "violet/script/ScriptFactory.h"
 #include "violet/script/cpp/SharedLibrary.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/serialization/Serializer.h"
 #include "violet/utility/FileUtilities.h"
+#include "violet/utility/FormattedString.h"
 #include "violet/utility/StringUtilities.h"
 
 #include <assert.h>
-#include <iostream>
 #include <set>
 
 using namespace Violet;
@@ -104,7 +105,7 @@ void CppScript::reload()
 		if (FileUtilities::copy(swapFileName.c_str(), m_fileName.c_str()))
 			load();
 		else
-			std::cout << "Could not copy file '" << m_fileName << ms_swapSuffix << "' to '" << m_fileName << "'" << std::endl;
+			Log::log(FormattedString<256>().sprintf("Could not copy file '%s%s' to '%s'", m_fileName.c_str(), ms_swapSuffix, m_fileName.c_str()));
 	}
 }
 
@@ -128,7 +129,7 @@ void CppScript::load()
 {
 	m_lib = SharedLibrary::load(m_fileName.c_str());
 	if (!isValid())
-		std::cout << "Error loading script: " << m_fileName << std::endl;
+		Log::log(FormattedString<128>().sprintf("Error loading script: '%s'", m_fileName.c_str()));
 	else
 	{
 		auto init = (Initializer)getMethodPtr("init");
