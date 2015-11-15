@@ -32,11 +32,11 @@ namespace Violet
 		EventContext();
 		EventContext(EventContext && other);
 
-		uint32 subscribe(const char * eventName, void * delegate);
-		void unsubscribe(const char * eventName, uint32 delegateId);
+		uint32 subscribe(uint32 eventId, void * delegate);
+		void unsubscribe(uint32 eventId, uint32 delegateId);
 
 		template <typename ... Args>
-		void emit(const char * eventName, Args && ... args) const;
+		void emit(uint32 eventId, Args && ... args) const;
 
 	private:
 
@@ -45,7 +45,7 @@ namespace Violet
 
 	private:
 
-		std::unordered_map<const char *, SubscriberGroup> m_subscriberGroups;
+		std::unordered_map<uint32, SubscriberGroup> m_subscriberGroups;
 	};
 }
 

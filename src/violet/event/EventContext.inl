@@ -1,9 +1,9 @@
 // ============================================================================
 
 template <typename ... Args>
-void Violet::EventContext::emit(const char * const eventName, Args && ... args) const
+void Violet::EventContext::emit(const uint32 eventId, Args && ... args) const
 {
-	const auto subscriberGroupsIt = m_subscriberGroups.find(eventName);
+	const auto subscriberGroupsIt = m_subscriberGroups.find(eventId);
 	if (subscriberGroupsIt != m_subscriberGroups.end())
 	{
 		const auto & subscribers = subscriberGroupsIt->second.m_subscribers;

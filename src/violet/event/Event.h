@@ -55,7 +55,15 @@ namespace Violet
 	{ \
 	public: \
 		static const char * getName() { return #EventName; } \
-		}
+		static uint32 getIdentifier() { return std::hash<std::string>()(getName()); } \
+	}
+
+#define DEFINE_EXTERNAL_EVENT(EventName, Signature) class EventName : public Violet::Event<EventName, Signature> \
+	{ \
+	public: \
+		static const char * getName() { return #EventName; } \
+		static uint32 getIdentifier() { return std::hash<std::string>()(getName()); } \
+	}
 }
 
 #include "violet/event/Event.inl"

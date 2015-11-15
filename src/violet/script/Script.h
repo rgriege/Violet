@@ -45,7 +45,7 @@ namespace Violet
 
 	private:
 
-		static void addHook(Script & script, const char * name, void * hook);
+		static void addHook(Script & script, uint32 id, void * hook);
 
 	public:
 
@@ -55,11 +55,7 @@ namespace Violet
 		virtual std::string const & getFileName() const = 0;
 		virtual bool isValid() const = 0;
 		virtual void reload() = 0;
-
-	public:
-
-		std::vector<const char *> getBoundMethodNames() const;
-
+		
 	protected:
 
 		void warn(const char * procedureName, const char * context) const;
@@ -71,7 +67,7 @@ namespace Violet
 
 	private:
 
-		std::unordered_map<const char *, void *> m_boundMethods;
+		std::unordered_map<uint32, void *> m_boundMethods;
 	};
 
 #ifdef WIN32
@@ -88,6 +84,14 @@ namespace Violet
 	{ \
 	public: \
 		static const char * getName() { return #MethodName; } \
+		static uint32 getIdentifier() { return std::hash<std::string>()(getName()); } \
+	}
+
+#define DEFINE_EXTERNAL_METHOD(MethodName, Signature) class MethodName : public Violet::Script::Method<MethodName, Signature> \
+	{ \
+	public: \
+		static const char * getName() { return #MethodName; } \
+		static uint32 getIdentifier() { return std::hash<std::string>()(getName()); } \
 	}
 }
 

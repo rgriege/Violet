@@ -3,7 +3,7 @@
 template <typename Derived, typename ... Args>
 uint32 Violet::Event<Derived, void(Args...)>::subscribe(EventContext & eventContext, const Delegate & func)
 {
-	return eventContext.subscribe(Derived::getName(), new Delegate(func));
+	return eventContext.subscribe(Derived::getIdentifier(), new Delegate(func));
 }
 
 // ----------------------------------------------------------------------------
@@ -19,7 +19,7 @@ uint32 Violet::Event<Derived, void(Args...)>::subscribe(EventContextOwner & even
 template <typename Derived, typename ... Args>
 void Violet::Event<Derived, void(Args...)>::emit(const EventContext & eventContext, Args && ... args)
 {
-	eventContext.emit(Derived::getName(), std::forward<Args>(args)...);
+	eventContext.emit(Derived::getIdentifier(), std::forward<Args>(args)...);
 }
 
 // ----------------------------------------------------------------------------
@@ -35,7 +35,7 @@ void Violet::Event<Derived, void(Args...)>::emit(const EventContextOwner & event
 template <typename Derived, typename ... Args>
 void Violet::Event<Derived, void(Args...)>::unsubscribe(EventContext & eventContext, const uint32 delegateId)
 {
-	eventContext.unsubscribe(Derived::getName(), delegateId);
+	eventContext.unsubscribe(Derived::getIdentifier(), delegateId);
 }
 
 // ----------------------------------------------------------------------------

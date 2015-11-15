@@ -11,9 +11,9 @@ using namespace Violet;
 
 // ============================================================================
 
-void Script::addHook(Script & script, const char * const name, void * hook)
+void Script::addHook(Script & script, const uint32 id, void * hook)
 {
-	script.m_boundMethods.emplace(name, hook);
+	script.m_boundMethods.emplace(id, hook);
 }
 
 // ============================================================================
@@ -21,17 +21,6 @@ void Script::addHook(Script & script, const char * const name, void * hook)
 Script::~Script()
 {
 	assert(m_boundMethods.empty());
-}
-
-// ============================================================================
-
-std::vector<const char *> Script::getBoundMethodNames() const
-{
-	std::vector<const char *> result;
-	result.reserve(m_boundMethods.size());
-	for (auto const & boundMethod : m_boundMethods)
-		result.emplace_back(boundMethod.first);
-	return result;
 }
 
 // ============================================================================

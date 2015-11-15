@@ -28,18 +28,18 @@ EventContext::EventContext(EventContext && other) :
 
 // ----------------------------------------------------------------------------
 
-uint32 EventContext::subscribe(const char * const eventName, void * delegate)
+uint32 EventContext::subscribe(const uint32 eventId, void * delegate)
 {
-	auto & subscriberGroup = m_subscriberGroups[eventName];
+	auto & subscriberGroup = m_subscriberGroups[eventId];
 	subscriberGroup.m_subscribers.emplace_back(subscriberGroup.m_idList.reserve(), delegate);
 	return subscriberGroup.m_subscribers.back().m_id;
 }
 
 // ----------------------------------------------------------------------------
 
-void EventContext::unsubscribe(const char * const eventName, const uint32 delegateId)
+void EventContext::unsubscribe(const uint32 eventId, const uint32 delegateId)
 {
-	const auto subscriberGroupsIt = m_subscriberGroups.find(eventName);
+	const auto subscriberGroupsIt = m_subscriberGroups.find(eventId);
 	if (subscriberGroupsIt != m_subscriberGroups.end())
 	{
 		auto & subscriberGroup = subscriberGroupsIt->second;
