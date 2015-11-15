@@ -143,6 +143,7 @@
     <ClInclude Include="..\..\..\src\violet\script\Script.h" />
     <ClInclude Include="..\..\..\src\violet\script\ScriptComponent.h" />
     <ClInclude Include="..\..\..\src\violet\script\ScriptFactory.h" />
+    <ClInclude Include="..\..\..\src\violet\script\ScriptUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\serialization\binary\BinaryDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\serialization\binary\BinarySerializer.h" />
     <ClInclude Include="..\..\..\src\violet\serialization\Deserializer.h" />

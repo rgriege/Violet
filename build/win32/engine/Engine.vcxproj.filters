@@ -434,6 +434,9 @@
     <ClInclude Include="..\..\..\src\violet\log\ConsoleLogTarget.h">
       <Filter>log</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\script\ScriptUtilities.h">
+      <Filter>script</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">

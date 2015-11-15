@@ -1,6 +1,8 @@
 TARGETS = button \
     contextMenu \
+    editTransform \
     entityList \
     entityListElement \
     entityListElementArrow \
-    editTransform
+    log \
+    logEntry
