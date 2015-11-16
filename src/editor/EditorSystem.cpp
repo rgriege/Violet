@@ -77,7 +77,7 @@ void EditorSystem::install(SystemFactory & factory)
 
 std::unique_ptr<System> EditorSystem::init(Deserializer & deserializer)
 {
-	auto & segment = deserializer.enterSegment(getStaticLabel());
+	auto segment = deserializer.enterSegment(getStaticLabel());
 	std::string editScriptFileName = segment->getString("editScriptFileName");
 	return std::unique_ptr<EditorSystem>(new EditorSystem(std::move(editScriptFileName)));
 }
@@ -148,7 +148,7 @@ bool EditorSystem::hasScene() const
 
 // ----------------------------------------------------------------------------
 
-const lent_ptr<const Entity> & EditorSystem::getSceneRoot(const Engine & engine) const
+lent_ptr<const Entity> EditorSystem::getSceneRoot(const Engine & engine) const
 {
 	return engine.getCurrentScene().getEntity(m_rootSceneHandle);
 }
@@ -168,7 +168,7 @@ void EditorSystemNamespace::prepareForEditor(Entity & entity, std::string const 
 {
 	if (!editScriptFileName.empty())
 	{
-		Polygon & renderArea = getRenderArea(entity);
+		Polygon renderArea = getRenderArea(entity);
 		if (!renderArea.m_vertices.empty())
 		{
 			entity.addComponent<ScriptComponent>(editScriptFileName.c_str());

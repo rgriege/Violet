@@ -2,6 +2,8 @@
 
 #include "violet/event/EventContext.h"
 
+#include <algorithm>
+
 using namespace Violet;
 
 // ============================================================================

@@ -127,8 +127,8 @@ bool Intersection::test(const Polygon & poly1, const Polygon & poly2, const Vec2
 // ============================================================================
 
 Intersection::Intersection(RigidBody && rb1, RigidBody && rb2, const float frameTime) :
-	m_rb1(rb1),
-	m_rb2(rb2),
+	m_rb1(std::move(rb1)),
+	m_rb2(std::move(rb2)),
 	m_frameTime(frameTime),
 	m_tested(false),
 	m_axisFromShape1(true),

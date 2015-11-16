@@ -20,7 +20,6 @@ namespace Violet
 
 		PhysicsComponent(Entity & owner, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
-		PhysicsComponent & operator=(PhysicsComponent && other);
 
 	public:
 
