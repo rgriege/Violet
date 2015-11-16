@@ -36,6 +36,7 @@ namespace Violet
 		}
 
 		operator T* () { return m_data; }
+        T* data() { return m_data; }
 
 	private:
 
