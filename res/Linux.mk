@@ -1,7 +1,9 @@
 DST = ../bin
 
+include Targets.mk
+
 %.so: %.cpp
-	g++ -std=c++1y -shared -fPIC -o $*.so $*.cpp -I../src -L$(DST) -lViolet -lEditor -lGame
+	g++ -std=c++1y -shared -fPIC -o $*.so $*.cpp -I../src -L$(DST) -lEngine -lEditor -lGame
 
 all: $(foreach TARGET, $(TARGETS), $(TARGET).so)
 
