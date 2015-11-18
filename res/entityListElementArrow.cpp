@@ -1,12 +1,12 @@
 #include "editor/EditorSystem.h"
 #include "violet/Engine.h"
 #include "violet/input/system/InputSystem.h"
-#include "violet/graphics/Color.h"
-#include "violet/graphics/component/ColorComponent.h"
+#include "violet/script/ScriptUtilities.h"
 #include "violet/script/cpp/CppScript.h"
 #include "violet/transform/Transform.h"
 #include "violet/transform/component/TransformComponent.h"
-#include "violet/update/system/UpdateSystem.h"
+
+#include "entityListElementMethods.h"
 
 #include <algorithm>
 #include <functional>
@@ -43,8 +43,14 @@ private:
                 {
                     Transform::rotate(transformComponent.m_transform, radians);
                 });
-            m_active = !m_active;
         }
+
+        if (m_active)
+            ScriptUtilities::runOnAncestor<ShrinkMethod>(entity);
+        else
+            ScriptUtilities::runOnAncestor<ExpandMethod>(entity);
+
+        m_active = !m_active;
 
         return InputResult::Block;
     }

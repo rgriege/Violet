@@ -1,16 +1,18 @@
 #include "editor/EditorSystem.h"
 #include "violet/Engine.h"
-#include "violet/graphics/component/TextComponent.h"
-#include "violet/input/system/InputSystem.h"
+#include "violet/log/Log.h"
 #include "violet/script/cpp/CppScript.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
+#include "violet/transform/Transform.h"
+#include "violet/transform/component/TransformComponent.h"
 #include "violet/ui/UiList.h"
+#include "violet/update/system/UpdateSystem.h"
 #include "violet/utility/FormattedString.h"
 
-#include "editor/EditorSystem.h"
+#include "entityListElementMethods.h"
 
+#include <algorithm>
 #include <functional>
-#include <iostream>
 
 using namespace Violet;
 
@@ -24,13 +26,17 @@ public:
     {
         using namespace std::placeholders;
         AssignIndexMethod::assign(m_script, std::bind(&Instance::onAssignIndex, this, _1, _2, _3));
-        MouseDownMethod::assign(m_script, std::bind(&Instance::onMouseDown, this, _1, _2, _3));
+        DescribeMethod::assign(script, std::bind(&Instance::onDescribe, this, _1));
+        ExpandMethod::assign(script, std::bind(&Instance::onExpand, this));
+        ShrinkMethod::assign(script, std::bind(&Instance::onShrink, this));
     }
 
     virtual ~Instance() override
     {
         AssignIndexMethod::remove(m_script);
-        MouseDownMethod::remove(m_script);
+        DescribeMethod::remove(m_script);
+        ExpandMethod::remove(m_script);
+        ShrinkMethod::remove(m_script);
     }
 
 private:
@@ -38,32 +44,35 @@ private:
     void onAssignIndex(const Entity & entity, const Engine & engine, const uint32 index)
     {
         m_index = index;
-        engine.addWriteTask(*entity.getComponent<TextComponent>(),
-            [=](TextComponent & tc) { tc.m_text = "Entity"; });
     }
 
-    InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
+    void onDescribe(const Engine & engine)
     {
-        if (event.button == MB_Left)
+        Log::log("describing");
+        const auto & root = engine.getSystem<EditorSystem>()->getSceneRoot(engine);
+        if (root != nullptr)
         {
-            const auto & root = engine.getSystem<EditorSystem>()->getSceneRoot(engine);
-            if (root != nullptr)
+            const auto & children = root->getChildren();
+            if (m_index < children.size())
             {
-                const auto & children = root->getChildren();
-                if (m_index < children.size())
-                {
-                    const auto & child = *children[m_index];
-                    createComponentMenu(engine, child);
-                    engine.addWriteTask(entity, [&](Entity & entity)
-                        {
-                            EntitySelectedEvent::emit(entity.getScene(), child, engine);
-                        });
-                }
+                const auto & child = *children[m_index];
+                createComponentMenu(engine, child);
+                engine.addWriteTask(engine.getCurrentScene(), [&](Scene & scene)
+                    {
+                        EntitySelectedEvent::emit(scene, child, engine);
+                    });
             }
-            return InputResult::Block;
         }
+    }
 
-        return InputResult::Pass;
+    void onExpand()
+    {
+        Log::log("expanding");
+    }
+
+    void onShrink()
+    {
+        Log::log("shrinking");
     }
 
     void createComponentMenu(const Engine & engine, const Entity & entity)

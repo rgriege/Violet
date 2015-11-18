@@ -37,6 +37,9 @@
         },
         "color": "0x2C302EFF"
       },
+      "scpt": {
+        "file": "entityListElement.dll"
+      },
       "mipt": {
         "poly": {
           "n": 4,
@@ -163,7 +166,7 @@
             }
           },
           "scpt": {
-            "file": "entityListElement.dll"
+            "file": "entityListElementButton.dll"
           }
         },
         "chld": {}

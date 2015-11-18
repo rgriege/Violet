@@ -4,5 +4,6 @@ TARGETS = button \
     entityList \
     entityListElement \
     entityListElementArrow \
+    entityListElementButton \
     log \
     logEntry
