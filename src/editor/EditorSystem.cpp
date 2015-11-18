@@ -14,8 +14,10 @@
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
+#include "violet/transform/component/TransformComponent.h"
 #include "violet/update/component/UpdateComponent.h"
 #include "violet/utility/FormattedString.h"
+#include "violet/window/WindowSystem.h"
 
 using namespace Violet;
 
@@ -131,7 +133,16 @@ void EditorSystem::loadScene(const char * const filename, const Engine & engine)
 
 			if (newSceneRoot != nullptr)
 			{
+				const float halfWidth = engine.getSystem<WindowSystem>()->getWidth() / 2.f;
+				const float halfHeight = engine.getSystem<WindowSystem>()->getHeight() / 2.f;
 				newSceneRoot->addComponent<HandleComponent>();
+				newSceneRoot->addComponent<TransformComponent>();
+				newSceneRoot->addComponent<MouseInputComponent>(Polygon{ {
+					{ -halfWidth, -halfHeight },
+					{ -halfWidth, halfHeight },
+					{ halfWidth, halfHeight },
+					{ halfWidth, -halfHeight }
+					} });
 				m_rootSceneHandle = newSceneRoot->getComponent<HandleComponent>()->getHandle();
 				for (auto & child : newSceneRoot->getChildren())
 					prepareForEditor(child, editScriptFileName);
