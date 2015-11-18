@@ -87,8 +87,8 @@ void UiStateComponent::setCurrentIndex(const uint32 index)
 		if (it != children.end())
 		{
 			auto & child = *it;
-			std::swap(child, std::move(m_states[m_currentIndex]));
-			std::swap(std::move(m_states[index]), child);
+			std::swap(child, m_states[m_currentIndex]);
+			std::swap(m_states[index], child);
 			m_currentHandle = child->getComponent<HandleComponent>()->getHandle();
 			m_currentIndex = index;
 		}

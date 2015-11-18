@@ -56,20 +56,6 @@ PhysicsComponent::PhysicsComponent(PhysicsComponent && other) :
 {
 }
 
-// ----------------------------------------------------------------------------
-
-PhysicsComponent & PhysicsComponent::operator=(PhysicsComponent && other)
-{
-	m_polygon = std::move(other.m_polygon);
-	m_mass = other.m_mass;
-	m_velocity = other.m_velocity;
-	m_force = other.m_force;
-	m_momentOfInertia = other.m_momentOfInertia;
-	m_angularVelocity = other.m_angularVelocity;
-	m_torque = other.m_torque;
-	return *this;
-}
-
 // ============================================================================
 
 Deserializer & Violet::operator>>(Deserializer & deserializer, PhysicsComponent & component)

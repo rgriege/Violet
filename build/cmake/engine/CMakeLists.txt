@@ -6,9 +6,13 @@ set (Engine_ROOT ${Violet_SRC}/violet)
 # define header and source files for the library
 set (HEADER_FILES
     ${Engine_ROOT}/component/Component.h
+    ${Engine_ROOT}/component/MappedDataComponent.h
     ${Engine_ROOT}/Defines.h
     ${Engine_ROOT}/Engine.h
     ${Engine_ROOT}/entity/Entity.h
+    ${Engine_ROOT}/event/Event.h
+    ${Engine_ROOT}/event/EventContext.h
+    ${Engine_ROOT}/event/EventContextOwner.h
     ${Engine_ROOT}/graphics/Color.h
     ${Engine_ROOT}/graphics/component/ColorComponent.h
     ${Engine_ROOT}/graphics/component/RenderComponentData.h
@@ -19,10 +23,16 @@ set (HEADER_FILES
     ${Engine_ROOT}/graphics/shader/Shader.h
     ${Engine_ROOT}/graphics/system/RenderSystem.h
     ${Engine_ROOT}/graphics/texture/Texture.h
+    ${Engine_ROOT}/handle/Handle.h
+    ${Engine_ROOT}/handle/HandleManager.h
     ${Engine_ROOT}/input/component/KeyInputComponent.h
     ${Engine_ROOT}/input/component/MouseInputComponent.h
     ${Engine_ROOT}/input/InputResult.h
+    ${Engine_ROOT}/input/Key.h
     ${Engine_ROOT}/input/system/InputSystem.h
+    ${Engine_ROOT}/log/ConsoleLogTarget.h
+    ${Engine_ROOT}/log/Log.h
+    ${Engine_ROOT}/log/LogTarget.h
     ${Engine_ROOT}/math/AABB.h
     ${Engine_ROOT}/math/Circle.h
     ${Engine_ROOT}/math/Constants.h
@@ -74,8 +84,6 @@ set (HEADER_FILES
     ${Engine_ROOT}/utility/FormattedString.h
     ${Engine_ROOT}/utility/FreeList.h
     ${Engine_ROOT}/utility/Guard.h
-    ${Engine_ROOT}/utility/handle/Handle.h
-    ${Engine_ROOT}/utility/handle/HandleManager.h
     ${Engine_ROOT}/utility/lent_ptr.h
     ${Engine_ROOT}/utility/Profiler.h
     ${Engine_ROOT}/utility/ResourceCache.h
@@ -94,8 +102,11 @@ set (HEADER_FILES
 
 set (SOURCE_FILES
     ${Engine_ROOT}/component/Component.cpp
+    ${Engine_ROOT}/component/MappedDataComponent.cpp
     ${Engine_ROOT}/Engine.cpp
     ${Engine_ROOT}/entity/Entity.cpp
+    ${Engine_ROOT}/event/EventContext.cpp
+    ${Engine_ROOT}/event/EventContextOwner.cpp
     ${Engine_ROOT}/graphics/Color.cpp
     ${Engine_ROOT}/graphics/component/ColorComponent.cpp
     ${Engine_ROOT}/graphics/component/RenderComponentData.cpp
@@ -106,9 +117,16 @@ set (SOURCE_FILES
     ${Engine_ROOT}/graphics/shader/Shader.cpp
     ${Engine_ROOT}/graphics/system/RenderSystem.cpp
     ${Engine_ROOT}/graphics/texture/Texture.cpp
+    ${Engine_ROOT}/handle/Handle.cpp
+    ${Engine_ROOT}/handle/HandleComponent.cpp
+    ${Engine_ROOT}/handle/HandleManager.cpp
+    ${Engine_ROOT}/input/Key.cpp
     ${Engine_ROOT}/input/component/KeyInputComponent.cpp
     ${Engine_ROOT}/input/component/MouseInputComponent.cpp
     ${Engine_ROOT}/input/system/InputSystem.cpp
+    ${Engine_ROOT}/log/ConsoleLogTarget.cpp
+    ${Engine_ROOT}/log/Log.cpp
+    ${Engine_ROOT}/log/LogTarget.cpp
     ${Engine_ROOT}/math/AABB.cpp
     ${Engine_ROOT}/math/Circle.cpp
     ${Engine_ROOT}/math/Matrix3.cpp
@@ -143,8 +161,6 @@ set (SOURCE_FILES
     ${Engine_ROOT}/update/system/UpdateSystem.cpp
     ${Engine_ROOT}/utility/FileUtilities.cpp
     ${Engine_ROOT}/utility/FreeList.cpp
-    ${Engine_ROOT}/utility/handle/Handle.cpp
-    ${Engine_ROOT}/utility/handle/HandleManager.cpp
     ${Engine_ROOT}/utility/Profiler.cpp
     ${Engine_ROOT}/utility/StringUtilities.cpp
     ${Engine_ROOT}/utility/Tag.cpp

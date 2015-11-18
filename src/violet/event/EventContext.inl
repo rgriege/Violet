@@ -1,5 +1,9 @@
 // ============================================================================
 
+#include <functional>
+
+// ============================================================================
+
 template <typename ... Args>
 void Violet::EventContext::emit(const uint32 eventId, Args && ... args) const
 {

@@ -50,7 +50,7 @@ std::unique_ptr<Shader> Shader::create(const char * filename, Type type)
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 		HeapBuffer<char> log(length);
 		glGetShaderInfoLog(shader, length, nullptr, log);
-		Log::log(FormattedString<1024>().sprintf("Compilation error in shader file '%s': %s", filename, log));
+		Log::log(FormattedString<1024>().sprintf("Compilation error in shader file '%s': %s", filename, log.data()));
 		return nullptr;
 	}
 

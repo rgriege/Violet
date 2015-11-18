@@ -39,6 +39,9 @@ namespace Violet
 
 		Handle m_handle;
 	};
+
+    Deserializer & operator>>(Deserializer & deserializer, HandleComponent & component);
+    Serializer & operator<<(Serializer & serializer, const HandleComponent & component);
 }
 
 #endif

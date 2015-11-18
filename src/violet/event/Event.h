@@ -2,13 +2,12 @@
 #define VIOLET_Event_H
 
 #include "violet/event/EventContext.h"
+#include "violet/event/EventContextOwner.h"
 
 #include <functional>
 
 namespace Violet
 {
-	class EventContextOwner;
-
 	template <typename Derived, typename Signature>
 	class Event;
 
