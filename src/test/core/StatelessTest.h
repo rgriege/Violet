@@ -21,7 +21,7 @@ namespace Violet
 		}
 
         StatelessTest(StatelessTest && rhs) :
-            m_name(rhs.m_name),
+            m_name(std::move(rhs.m_name)),
             m_desired(std::move(rhs.m_desired)),
             m_predicate(std::move(rhs.m_predicate)),
 			m_negated(rhs.m_negated)
@@ -32,7 +32,7 @@ namespace Violet
 		bool evaluate(TestEvaluator & evaluator) const
 		{
 			ResultType const actual = m_predicate();
-			return evaluator.evaluate(m_name, m_desired, actual, m_negated);
+			return evaluator.evaluate(m_name.c_str(), m_desired, actual, m_negated);
 		}
 
     private:
@@ -41,7 +41,7 @@ namespace Violet
 
 	private:
 
-		const char * m_name;
+		std::string m_name;
 		ResultType m_desired;
 		Predicate m_predicate;
 		bool m_negated;
