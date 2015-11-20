@@ -1,6 +1,8 @@
 #ifndef STATEFUL_TEST_H
 #define STATEFUL_TEST_H
 
+#include <functional>
+
 namespace Violet
 {
 	template <typename ResultType, typename State>
@@ -8,9 +10,9 @@ namespace Violet
 	{
 	public:
 
-		typedef ResultType (*Predicate)(State &);
+		typedef std::function<ResultType(State &)> Predicate;
 
-		StatefulTest(const char * name, const ResultType & desired, Predicate predicate, const bool negated = false) :
+		StatefulTest(const char * name, const ResultType & desired, const Predicate & predicate, const bool negated = false) :
 			m_name(name),
 			m_desired(desired),
 			m_predicate(predicate),
