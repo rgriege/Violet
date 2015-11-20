@@ -13,13 +13,13 @@ namespace Violet
 	public:
 
 		template <typename ResultType>
-		static StatelessTest<ResultType> makeStateless(const char * name, const ResultType & desired, typename StatelessTest<ResultType>::Predicate predicate)
+		static StatelessTest<ResultType> makeStateless(const char * name, const ResultType & desired, typename StatelessTest<ResultType>::Predicate predicate, const bool negated = false)
 		{
-			return StatelessTest<ResultType>(name, desired, predicate);
+			return StatelessTest<ResultType>(name, desired, predicate, negated);
 		}
 
 		template <typename State, typename ResultType>
-		static StatefulTest<ResultType, State> makeStateful(const char * name, const ResultType & desired, typename StatefulTest<ResultType, State>::Predicate predicate)
+		static StatefulTest<ResultType, State> makeStateful(const char * name, const ResultType & desired, typename StatefulTest<ResultType, State>::Predicate predicate, const bool negated = false)
 		{
 			return StatefulTest<ResultType, State>(name, desired, predicate);
 		}
