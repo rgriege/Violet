@@ -6,6 +6,7 @@
 #include "test/physics/PhysicsTest.h"
 #include "test/scene/SceneTest.h"
 #include "test/serialization/JsonSerializationTest.h"
+#include "test/task/TaskTest.h"
 #include "test/template/TemplateTest.h"
 
 #include <iostream>
@@ -24,6 +25,7 @@ int main(int argc, char** argv)
 		TemplateTests::run(evaluator);
 		SceneTest::run(evaluator);
 		PathfindingTest::run(evaluator);
+		TaskTest::run(evaluator);
 	}
 
 	std::cout << "Done." << std::endl;

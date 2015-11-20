@@ -1,6 +1,7 @@
 #ifndef VIOLET_TaskScheduler_H
 #define VIOLET_TaskScheduler_H
 
+#include <atomic>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -12,37 +13,37 @@
 
 namespace Violet
 {
-	class TaskScheduler final
+	class VIOLET_API TaskScheduler final
 	{
 	private:
 
-		static void executeTasks(TaskScheduler & taskScheduler);
+		static void executeTasks(TaskScheduler & taskScheduler, uint32 index);
 
 	public:
 
 		TaskScheduler(uint32 workerCount);
 		~TaskScheduler();
 
-		void addTask(std::unique_ptr<Task> && task);
-		void clear();
+		void addTask(std::unique_ptr<Task> && task, int thread = -1);
 		void finishCurrentTasks();
 
 	private:
 
-		std::unique_ptr<Task> checkOut();
+		void addTask(std::unique_ptr<Task> && task, uint32 thread, bool isStopTask);
+
+		std::unique_ptr<Task> checkout(uint32 thread);
 
 		TaskScheduler(const TaskScheduler &) = delete;
 		TaskScheduler & operator=(const TaskScheduler &) = delete;
 
 	private:
 
-		std::vector<std::thread> m_threads;
-		std::queue<std::unique_ptr<Task>> m_queue;
-		std::mutex m_queueMutex;
-		std::mutex m_idleThreadCountMutex;
-		std::condition_variable m_tasksAvailableCondition;
-		std::condition_variable m_tasksCompleteCondition;
-		uint32 m_idleThreadCount;
+		struct Worker;
+		std::vector<std::unique_ptr<Worker>> m_workers;
+		std::atomic_uint m_nextTaskWorkerIndex;
+		std::atomic_uint m_stopCount;
+		std::atomic_uint m_stopCountGoal;
+		std::atomic_bool m_quit;
 	};
 }
 
