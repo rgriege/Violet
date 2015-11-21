@@ -88,7 +88,8 @@ TaskScheduler::TaskScheduler(const uint32 workerCount) :
 	m_nextTaskWorkerIndex(),
 	m_stopCount(),
 	m_stopCountGoal(),
-	m_quit()
+	m_quit(),
+	m_mainThreadTaskQueue()
 {
 	m_nextTaskWorkerIndex = 0;
 	m_stopCount = 0;
@@ -122,7 +123,7 @@ void TaskScheduler::addTask(std::unique_ptr<Task> && task, const int thread)
 	if (!m_workers.empty())
 		addTask(std::move(task), (thread >= 0 && thread < static_cast<int>(m_workers.size())) ? thread : (++m_nextTaskWorkerIndex % m_workers.size()), false);
 	else
-		task->execute();
+		m_mainThreadTaskQueue.emplace(std::move(task));
 }
 
 // ----------------------------------------------------------------------------
@@ -141,6 +142,14 @@ void TaskScheduler::finishCurrentTasks()
 			;
 
 		m_stopCountGoal = 0;
+	}
+	else
+	{
+		while (!m_mainThreadTaskQueue.empty())
+		{
+			m_mainThreadTaskQueue.front()->execute();
+			m_mainThreadTaskQueue.pop();
+		}
 	}
 }
 

@@ -44,6 +44,7 @@ namespace Violet
 		std::atomic_uint m_stopCount;
 		std::atomic_uint m_stopCountGoal;
 		std::atomic_bool m_quit;
+		std::queue<std::unique_ptr<Task>> m_mainThreadTaskQueue;
 	};
 }
 
