@@ -130,7 +130,11 @@ void EditorSystem::loadScene(const char * const filename, const Engine & engine)
 			if (newSceneRoot != nullptr)
 			{
 				newSceneRoot->addComponent<HandleComponent>();
-				m_rootSceneHandle = newSceneRoot->getComponent<HandleComponent>()->getHandle();
+				engine.addWriteTask(*newSceneRoot->getComponent<HandleComponent>(),
+					[this](HandleComponent & handleComponent)
+					{
+						m_rootSceneHandle = handleComponent.getHandle();
+					});
 				for (auto & child : newSceneRoot->getChildren())
 					prepareForEditor(child, editScriptFileName);
 			}

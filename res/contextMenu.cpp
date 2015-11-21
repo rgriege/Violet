@@ -56,12 +56,12 @@ private:
 
     void createMenu(const Engine & engine, const Vec2f & position)
     {
-        engine.addWriteTask(engine.getCurrentScene(), [position, this](Scene & scene)
+        engine.addWriteTask(engine.getCurrentScene().getRoot(), [position, this](Entity & root)
             {
                 auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
                 if (deserializer != nullptr && *deserializer)
                 {
-                    Entity & menu = scene.getRoot().addChild(*deserializer);
+                    Entity & menu = root.addChild(*deserializer);
                     auto transformComponent = menu.getComponent<TransformComponent>();
                     if (transformComponent != nullptr)
                     {

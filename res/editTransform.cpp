@@ -112,13 +112,22 @@ private:
 
     void onBindToComponent(Entity & entity)
     {
-        m_entitySelectedDelegateId = EntitySelectedEvent::subscribe(entity.getScene().getEventContext(), std::bind(&Instance::onEntitySelected, this, _1, _2));
+        Engine::getInstance().addWriteTask(entity.getScene().getEventContext(),
+            [=](EventContext & context)
+            {
+                m_entitySelectedDelegateId = EntitySelectedEvent::subscribe(context, std::bind(&Instance::onEntitySelected, this, _1, _2));
+            });
         m_entity = &entity;
     }
 
     void onUnbindFromComponent(Entity & entity)
     {
-        EntitySelectedEvent::unsubscribe(entity.getScene().getEventContext(), m_entitySelectedDelegateId);
+        const uint32 delegateId = m_entitySelectedDelegateId;
+        Engine::getInstance().addWriteTask(entity.getScene().getEventContext(),
+            [=](EventContext & context)
+            {
+                EntitySelectedEvent::unsubscribe(context, delegateId);
+            });
         m_entity = nullptr;
     }
 

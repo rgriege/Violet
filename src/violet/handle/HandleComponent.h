@@ -14,6 +14,8 @@ namespace Violet
 	{
 	public:
 
+		friend class Scene;
+
 		friend Deserializer & operator>>(Deserializer & deserializer, HandleComponent & component);
 		friend Serializer & operator<<(Serializer & serializer, const HandleComponent & component);
 

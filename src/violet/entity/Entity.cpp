@@ -38,7 +38,7 @@ Factory<std::string, void(Entity &, Deserializer &)> Entity::ms_componentFactory
 
 // ============================================================================
 
-Entity::Entity(Scene & scene) :
+Entity::Entity(const Scene & scene) :
 	m_components(),
 	m_children(),
 	m_componentFlags(),
@@ -50,7 +50,7 @@ Entity::Entity(Scene & scene) :
 // ----------------------------------------------------------------------------
 
 
-Entity::Entity(Scene & scene, Deserializer & deserializer) :
+Entity::Entity(const Scene & scene, Deserializer & deserializer) :
 	m_components(),
 	m_children(),
 	m_componentFlags(0),
@@ -75,13 +75,6 @@ Entity::Entity(Scene & scene, Deserializer & deserializer) :
 
 Entity::~Entity()
 {
-}
-
-// ----------------------------------------------------------------------------
-
-Scene & Entity::getScene()
-{
-	return m_scene;
 }
 
 // ----------------------------------------------------------------------------
