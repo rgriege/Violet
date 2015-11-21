@@ -22,4 +22,7 @@ typedef long long int64;
 #define VIOLET_API
 #endif
 
+#define thread_const const
+#define thread_mutable mutable
+
 #endif

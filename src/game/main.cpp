@@ -70,24 +70,11 @@ Violet::SystemFactory setup()
 int main(int /*argc*/, char ** /*argv*/)
 {
 	auto factory = setup();
-
-	auto deserializer = Violet::FileDeserializerFactory::getInstance().create("editorConfig.json");
-	if (deserializer == nullptr || !*deserializer)
-	{
-		std::cout << "failed to read config file" << std::endl;
-		char c;
-		std::cin >> c;
-		exit(1);
-	}
-
-	auto engine = Violet::Engine::init(factory, *deserializer);
-	if (engine == nullptr)
+	if (!Violet::Engine::bootstrap(factory, "editorConfig.json"))
 	{
 		std::cout << "failed to init engine" << std::endl;
 		char c;
 		std::cin >> c;
 		exit(1);
 	}
-
-	engine->begin();
 }

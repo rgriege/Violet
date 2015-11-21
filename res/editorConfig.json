@@ -1,4 +1,7 @@
 {
+  "opts": {
+    "workerCount": 0
+  },
   "sysv": {
     "wndw": {
       "x": 50,
@@ -16,8 +19,5 @@
       "editScriptFileName": "editEntity.dll"
     }
   },
-  "opts": {
-    "firstScene": "editor.json",
-    "workerCount": 0
-  }
+  "firstScene": "editor.json"
 }

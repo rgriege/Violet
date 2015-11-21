@@ -48,12 +48,12 @@ namespace Violet
 
 	public:
 
-		static std::unique_ptr<Engine> init(SystemFactory & factory, Deserializer & deserializer);
+		static bool bootstrap(const SystemFactory & factory, const char * configFileName);
+
+		static const Engine & getInstance();
 
 	public:
 
-		void begin();
-		void runFrame(float frameTime);
 		void switchScene(const char * filename);
 		Scene & getCurrentScene();
 		const Scene & getCurrentScene() const;
@@ -64,24 +64,27 @@ namespace Violet
 		template <typename SystemType>
 		const std::unique_ptr<const SystemType> & getSystem() const;
 
-		void addTask(std::unique_ptr<Task> && task) const;
+		void addTask(std::unique_ptr<Task> && task) thread_const;
 
 		template <typename Writable, typename Delegate, typename ... Args>
-		void addWriteTask(const Writable & writable, Delegate fn, Args... args) const;
+		void addWriteTask(const Writable & writable, Delegate fn, Args... args) thread_const;
 
 	private:
 
-		Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && scene, uint32 workerCount);
+		Engine(uint32 workerCount);
+
+		void begin();
+		void runFrame(float frameTime);
 
 		Engine(const Engine &) = delete;
 		Engine & operator=(const Engine &) = delete;
 
 	private:
 
-		std::string m_nextSceneFileName;
+		thread_mutable TaskScheduler m_taskScheduler;
 		std::vector<std::unique_ptr<System>> m_systems;
-		std::unique_ptr<Scene> m_scene;
-		mutable TaskScheduler m_taskScheduler;
+		std::unique_ptr<Scene, void(*)(Scene *)> m_scene;
+		std::string m_nextSceneFileName;
 		bool m_running;
 	};
 }
