@@ -15,9 +15,7 @@ using namespace Violet;
 void Violet::Entity::installComponent(const Tag tag, const ComponentFactory::Producer producer)
 {
 	const std::string label(tag.asString(), 4);
-#ifdef _DEBUG
 	assert(!ms_componentFactory.has(label));
-#endif
 	ms_componentFactory.assign(label, producer);
 }
 
@@ -26,9 +24,7 @@ void Violet::Entity::installComponent(const Tag tag, const ComponentFactory::Pro
 void Violet::Entity::uninstallComponent(const Tag tag)
 {
 	const std::string label(tag.asString(), 4);
-#ifdef _DEBUG
 	assert(ms_componentFactory.has(label));
-#endif
 	ms_componentFactory.remove(label);
 }
 
