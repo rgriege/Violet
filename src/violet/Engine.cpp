@@ -48,12 +48,14 @@ bool Engine::bootstrap(const SystemFactory & factory, const char * const configF
 		return false;
 	}
 
+	// start the thread pool
 	{
 		auto optionsSegment = deserializer->enterSegment("opts");
 		const uint32 workerCount = optionsSegment->getUint("workerCount");
 		ms_instance.reset(new Engine(workerCount));
 	}
 
+	// create the systems
 	{
 		auto systemsSegment = deserializer->enterSegment("sysv");
 		if (systemsSegment != nullptr)
@@ -61,32 +63,37 @@ bool Engine::bootstrap(const SystemFactory & factory, const char * const configF
 			while (*systemsSegment)
 			{
 				const char * systemLabel = systemsSegment->nextLabel();
-				auto system = factory.create(systemLabel, *systemsSegment);
-				if (system != nullptr)
-					ms_instance->m_systems.emplace_back(std::move(system));
-				else
-				{
-					std::cout << "failed to init " << systemLabel << " system" << std::endl;
-					ms_instance.reset();
-					return false;
-				}
+				factory.create(systemLabel, *systemsSegment);
 			}
 		}
 	}
 
-	ms_instance->m_scene = Scene::create(deserializer->getString("firstScene"));
-	if (ms_instance->m_scene == nullptr)
+	ms_instance->m_taskScheduler.finishCurrentTasks();
+
+	// create the first scene if systems initalized properly
+	if (ms_instance->m_running)
 	{
-		std::cout << "initial scene is invalid" << std::endl;
-		ms_instance.reset();
-		return false;
+		ms_instance->m_scene = Scene::create(deserializer->getString("firstScene"));
+		if (ms_instance->m_scene == nullptr)
+		{
+			std::cout << "initial scene is invalid" << std::endl;
+			ms_instance.reset();
+			return false;
+		}
+
+		// run
+		ms_instance->begin();
 	}
 
-	ms_instance->begin();
-
+	// cleanup
 	ms_instance->m_scene.reset();
 	ms_instance->m_systems.clear();
-	ms_instance->m_taskScheduler.finishCurrentTasks();
+
+	// clear any pending scene change
+	ms_instance->m_nextSceneFileName.clear();
+
+	// run another frame to handle cleanup tasks
+	ms_instance->runFrame(0.f);
 
 	ms_instance.reset();
 	return true;
@@ -122,9 +129,24 @@ void Engine::stop()
 
 // ----------------------------------------------------------------------------
 
-void Engine::addTask(std::unique_ptr<Task> && task) const
+void Engine::addSystem(std::unique_ptr<System> && system)
 {
-	m_taskScheduler.addTask(std::move(task));
+	assert(system != nullptr);
+	m_systems.emplace_back(std::move(system));
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::addReadTask(std::unique_ptr<Task> && task, const Thread thread) thread_const
+{
+	addTask(std::move(task), thread, FrameStage::Read);
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::addDeleteTask(std::unique_ptr<Task> && task, const Thread thread) thread_const
+{
+	addTask(std::move(task), thread, FrameStage::Delete);
 }
 
 // ============================================================================
@@ -134,7 +156,9 @@ Engine::Engine(const uint32 workerCount) :
 	m_systems(),
 	m_scene(nullptr, Scene::destroy),
 	m_taskScheduler(workerCount),
-	m_running(true)
+	m_taskQueues(),
+	m_running(true),
+	m_frameStage(FrameStage::Read)
 {
 }
 
@@ -179,7 +203,39 @@ void Engine::runFrame(const float frameTime)
 		m_nextSceneFileName.clear();
 	}
 
+	while (m_frameStage != FrameStage::Last)
+		performCurrentFrameStage();
+	performCurrentFrameStage();
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::performCurrentFrameStage()
+{
 	m_taskScheduler.finishCurrentTasks();
+
+	const bool addPendingTasks = m_frameStage != FrameStage::Last;
+	m_frameStage = static_cast<FrameStage>((static_cast<int>(m_frameStage)+1) % static_cast<int>(FrameStage::Count));
+
+	if (addPendingTasks)
+	{
+		auto & tasks = m_taskQueues[static_cast<int>(m_frameStage)].m_tasks;
+		while (!tasks.empty())
+		{
+			m_taskScheduler.addTask(std::move(tasks.front().first), static_cast<int>(tasks.front().second));
+			tasks.pop();
+		}
+	}
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::addTask(std::unique_ptr<Task> && task, const Thread thread, const FrameStage frameStage) thread_const
+{
+	if (frameStage == m_frameStage)
+		m_taskScheduler.addTask(std::move(task), static_cast<int>(thread));
+	else
+		m_taskQueues[static_cast<int>(frameStage)].m_tasks.emplace(std::move(task), thread);
 }
 
 // ============================================================================

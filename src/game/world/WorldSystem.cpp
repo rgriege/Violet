@@ -1,6 +1,7 @@
 #include "game/world/WorldSystem.h"
 
 #include "violet/component/Component.h"
+#include "violet/Engine.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
 
@@ -17,11 +18,16 @@ void WorldSystem::install(Violet::SystemFactory & factory)
 	factory.assign(ms_label, init);
 }
 
-std::unique_ptr<Violet::System> WorldSystem::init(Violet::Deserializer & deserializer)
+void WorldSystem::init(Violet::Deserializer & deserializer)
 {
 	auto const settingsSegment = deserializer.enterSegment(ms_label);
 	const float timeScale = settingsSegment->getFloat("timeScale");
-	return std::unique_ptr<System>(new WorldSystem(timeScale));
+
+	Violet::Engine::getInstance().addWriteTask(Violet::Engine::getInstance(),
+		[=](Violet::Engine & engine)
+		{
+			engine.addSystem(std::unique_ptr<System>(new WorldSystem(timeScale)));
+		});
 }
 
 const char * WorldSystem::getStaticLabel()

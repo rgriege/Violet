@@ -1,6 +1,6 @@
 {
   "opts": {
-    "workerCount": 0
+    "workerCount": 2
   },
   "sysv": {
     "wndw": {

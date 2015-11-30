@@ -23,7 +23,7 @@ namespace PhysicsSystemNamespace
 
 	void resolveCollisionForEntity(const Engine & engine, const TransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, float impulseMagnitude);
 
-	void move(PhysicsComponent & physics, const Engine & engine, const TransformComponent & transform, const Vec2f & gravity, float drag, float dt);
+	void move(PhysicsComponent & physics, const TransformComponent & transform, const Vec2f & gravity, float drag, float dt);
 	void collide(PhysicsComponent & physics, const Vec2f & impulse, float angularImpulse);
 
 	// ----------------------------------------------------------------------------
@@ -52,12 +52,17 @@ void PhysicsSystem::install(SystemFactory & factory)
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<System> PhysicsSystem::init(Deserializer & deserializer)
+void PhysicsSystem::init(Deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
 	float const drag = settingsSegment->getFloat("drag");
-	auto system = new PhysicsSystem(drag, Vec2f(*settingsSegment->enterSegment("gravity")));
-	return std::unique_ptr<System>(system);
+	Vec2f const gravity(*settingsSegment->enterSegment("gravity"));
+
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[=](Engine & engine)
+		{
+			engine.addSystem(std::unique_ptr<System>(new PhysicsSystem(drag, gravity)));
+		});
 }
 
 // ============================================================================
@@ -84,7 +89,11 @@ void PhysicsSystem::update(const float dt, const Engine & engine)
 			auto & transformComponent = *entity.getComponent<TransformComponent>();
 			auto & physicsComponent = *entity.getComponent<PhysicsComponent>();
 			tree.insert(entity, physicsComponent.m_polygon.getBoundingBox().transform(transformComponent.m_transform));
-			engine.addWriteTask(physicsComponent, move, std::cref(engine), std::cref(transformComponent), m_gravity, m_drag, dt);
+			engine.addWriteTask(physicsComponent,
+				[&transformComponent, this, dt](PhysicsComponent & physics)
+				{
+					move(physics, transformComponent, m_gravity, m_drag, dt);
+				});
 		});
 		processor.process(engine.getCurrentScene(), dt);
 	}
@@ -137,12 +146,16 @@ void PhysicsSystemNamespace::resolveCollisionForEntity(const Engine & engine, co
 	if (impulse.dot(location) > 0)
 		impulse.invert();
 
-	engine.addWriteTask(physics, collide, impulse / physics.m_mass, -location.cross(impulse) / physics.m_momentOfInertia);
+	engine.addWriteTask(physics,
+		[=](PhysicsComponent & physicsComponent)
+		{
+			collide(physicsComponent, impulse / physicsComponent.m_mass, -location.cross(impulse) / physicsComponent.m_momentOfInertia);
+		});
 }
 
 // ============================================================================
 
-void PhysicsSystemNamespace::move(PhysicsComponent & physicsComponent, const Engine & engine, const TransformComponent & transformComponent, const Vec2f & gravity, const float drag, const float dt)
+void PhysicsSystemNamespace::move(PhysicsComponent & physicsComponent, const TransformComponent & transformComponent, const Vec2f & gravity, const float drag, const float dt)
 {
 	Vec2f const oldPosition = { transformComponent.m_transform[0][2], transformComponent.m_transform[1][2] };
 	Vec2f newPosition = oldPosition;
@@ -172,7 +185,7 @@ void PhysicsSystemNamespace::move(PhysicsComponent & physicsComponent, const Eng
 
 	if (newPosition != oldPosition)
 	{
-		engine.addWriteTask(transformComponent, [newPosition](TransformComponent & transformComponent)
+		Engine::getInstance().addWriteTask(transformComponent, [newPosition](TransformComponent & transformComponent)
 			{
 				transformComponent.m_transform[0][2] = newPosition.x;
 				transformComponent.m_transform[1][2] = newPosition.y;

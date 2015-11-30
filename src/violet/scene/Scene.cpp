@@ -35,7 +35,7 @@ void Scene::destroy(Scene * scene)
 	if (scene != nullptr)
 	{
 		scene->m_root.reset();
-		Engine::getInstance().addTask(std::make_unique<DelegateTask>([=]() { delete scene; }));
+		Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>([=]() { delete scene; }));
 	}
 }
 

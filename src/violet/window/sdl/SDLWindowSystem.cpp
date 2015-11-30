@@ -33,55 +33,68 @@ void SDLWindowSystem::install(SystemFactory & factory)
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<System> SDLWindowSystem::init(Deserializer & deserializer)
+void SDLWindowSystem::init(Deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
 
-	SDL_SetMainReady();
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
-	{
-		std::cout << "SDL_Init(VIDEO) failed: " << SDL_GetError() << std::endl;
-		return nullptr;
-	}
+	const int x = settingsSegment->getInt("x");
+	const int y = settingsSegment->getInt("y");
+	const int width = settingsSegment->getInt("width");
+	const int height = settingsSegment->getInt("height");
+	const std::string title = settingsSegment->getString("title");
 
-	int const x = settingsSegment->getInt("x");
-	int const y = settingsSegment->getInt("y");
-	int const width = settingsSegment->getInt("width");
-	int const height = settingsSegment->getInt("height");
-	const char * title = settingsSegment->getString("title");
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[=](Engine & engine)
+		{
+			SDL_SetMainReady();
+			if (SDL_Init(SDL_INIT_VIDEO) < 0)
+			{
+				std::cout << "SDL_Init(VIDEO) failed: " << SDL_GetError() << std::endl;
+				engine.stop();
+				return;
+			}
 
-	//Use OpenGL 3.1 core
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+			//Use OpenGL 3.1 core
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+			//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-	SDL_Window * window = SDL_CreateWindow(title, x, y, width, height, SDL_WINDOW_OPENGL);
-	if (window == nullptr)
-	{
-		std::cout << "SDL_CreateWindow failed: " << SDL_GetError() << std::endl;
-		return nullptr;
-	}
+			SDL_Window * window = SDL_CreateWindow(title.c_str(), x, y, width, height, SDL_WINDOW_OPENGL);
+			if (window == nullptr)
+			{
+				std::cout << "SDL_CreateWindow failed: " << SDL_GetError() << std::endl;
+				engine.stop();
+				return;
+			}
 
-	SDL_GLContext glContext = SDL_GL_CreateContext(window);
-	if (glContext == nullptr)
-	{
-		std::cout << "SDL_CreateContext failed: " << SDL_GetError() << std::endl;
-		return nullptr;
-	}
+			SDL_GLContext glContext = SDL_GL_CreateContext(window);
+			if (glContext == nullptr)
+			{
+				std::cout << "SDL_CreateContext failed: " << SDL_GetError() << std::endl;
+				engine.stop();
+				return;
+			}
 
-	SDL_SetEventFilter(filterEvent, nullptr);
+			SDL_SetEventFilter(filterEvent, nullptr);
 
-	return std::unique_ptr<System>(new SDLWindowSystem(window, glContext));
+			engine.addSystem(std::unique_ptr<System>(new SDLWindowSystem(window, glContext)));
+		}, Engine::Thread::Window);
 }
 
 // ============================================================================
 
 SDLWindowSystem::~SDLWindowSystem()
 {
-	SDL_GL_DeleteContext(m_glContext);
-	SDL_DestroyWindow(m_window);
-	SDL_Quit();
+	const auto glContext = m_glContext;
+	const auto window = m_window;
+	Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
+		[=]()
+		{
+			SDL_GL_DeleteContext(glContext);
+			SDL_DestroyWindow(window);
+			SDL_Quit();
+		}), Engine::Thread::Window);
 }
 
 // ----------------------------------------------------------------------------
