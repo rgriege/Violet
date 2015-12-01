@@ -2,6 +2,7 @@
 
 #include "violet/graphics/component/RenderComponentData.h"
 
+#include "violet/Engine.h"
 #include "violet/graphics/shader/Shader.h"
 #include "violet/math/Polygon.h"
 #include "violet/serialization/Deserializer.h"
@@ -14,33 +15,51 @@ using namespace Violet;
 
 // ============================================================================
 
-namespace RenderComponentDataNamespace
-{
-	GLuint initVertexArrayBuffer();
-};
-
-using namespace RenderComponentDataNamespace;
-
-// ============================================================================
-
 RenderComponentData::RenderComponentData(Deserializer & deserializer) :
-	RenderComponentData(Polygon(deserializer), ShaderProgram::getCache().fetch(deserializer.getString("shader")))
+	m_vertexArrayBuffer(-1),
+	m_mesh(),
+	m_shader()
 {
+	const std::string shaderName = deserializer.getString("shader");
+	const Polygon poly(deserializer);
+
+	Engine::getInstance().addWriteTask(*this,
+		[=](RenderComponentData & data)
+		{
+			data.m_shader = ShaderProgram::getCache().fetch(shaderName.c_str());
+			data.m_mesh = std::make_unique<Mesh>(poly);
+
+			glGenVertexArrays(1, &data.m_vertexArrayBuffer);
+			glBindVertexArray(data.m_vertexArrayBuffer);
+			const Guard<Mesh> meshGuard(*data.m_mesh);
+			const GLint positionAttribute = data.m_shader->getAttributeLocation("position");
+			glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(positionAttribute);
+
+			glBindVertexArray(0);
+		}, Engine::Thread::Window);
 }
 
 // ----------------------------------------------------------------------------
 
 RenderComponentData::RenderComponentData(const Polygon & poly, std::shared_ptr<ShaderProgram> shader) :
-	m_vertexArrayBuffer(initVertexArrayBuffer()),
-	m_mesh(poly),
+	m_vertexArrayBuffer(-1),
+	m_mesh(),
 	m_shader(std::move(shader))
 {
-	const Guard<Mesh> meshGuard(m_mesh);
-	const GLint positionAttribute = m_shader->getAttributeLocation("position");
-	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(positionAttribute);
+	Engine::getInstance().addWriteTask(*this,
+		[=](RenderComponentData & data)
+		{
+			data.m_mesh = std::make_unique<Mesh>(poly);
+			glGenVertexArrays(1, &data.m_vertexArrayBuffer);
+			glBindVertexArray(data.m_vertexArrayBuffer);
+			const Guard<Mesh> meshGuard(*data.m_mesh);
+			const GLint positionAttribute = data.m_shader->getAttributeLocation("position");
+			glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(positionAttribute);
 
-	glBindVertexArray(0);
+			glBindVertexArray(0);
+		}, Engine::Thread::Window);
 }
 
 // ----------------------------------------------------------------------------
@@ -58,14 +77,28 @@ RenderComponentData::RenderComponentData(RenderComponentData && other) :
 RenderComponentData::~RenderComponentData()
 {
 	if (m_vertexArrayBuffer != 0)
-		glDeleteVertexArrays(1, &m_vertexArrayBuffer);
+	{
+		const auto vertexArrayBuffer = m_vertexArrayBuffer;
+		Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
+			[=]()
+			{
+				glDeleteVertexArrays(1, &vertexArrayBuffer);
+			}), Engine::Thread::Window);
+	}
+
+	const auto mesh = m_mesh.release();
+	Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
+		[=]()
+		{
+			delete mesh;
+		}), Engine::Thread::Window);
 }
 
 // ============================================================================
 
 Deserializer & Violet::operator>>(Deserializer & deserializer, RenderComponentData & component)
 {
-	deserializer >> component.m_mesh;
+	deserializer >> *component.m_mesh;
 	component.m_shader = ShaderProgram::getCache().fetch(deserializer.getString("shader"));
 	return deserializer;
 }
@@ -74,19 +107,9 @@ Deserializer & Violet::operator>>(Deserializer & deserializer, RenderComponentDa
 
 Serializer & Violet::operator<<(Serializer & serializer, const RenderComponentData & component)
 {
-	serializer << component.m_mesh;
+	serializer << *component.m_mesh;
 	serializer.writeString("shader", component.m_shader->getName().c_str());
 	return serializer;
-}
-
-// ============================================================================
-
-GLuint RenderComponentDataNamespace::initVertexArrayBuffer()
-{
-	GLuint vertexArrayBuffer;
-	glGenVertexArrays(1, &vertexArrayBuffer);
-	glBindVertexArray(vertexArrayBuffer);
-	return vertexArrayBuffer;
 }
 
 // ============================================================================

@@ -35,10 +35,15 @@ void PathfindingSystem::install(Violet::SystemFactory & factory)
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<Violet::System> PathfindingSystem::init(Violet::Deserializer & deserializer)
+void PathfindingSystem::init(Violet::Deserializer & deserializer)
 {
 	deserializer.enterSegment(getStaticLabel());
-	return std::unique_ptr<Violet::System>(new PathfindingSystem);
+
+	Violet::Engine::getInstance().addWriteTask(Violet::Engine::getInstance(),
+		[=](Violet::Engine & engine)
+		{
+			engine.addSystem(std::unique_ptr<System>(new PathfindingSystem));
+		});
 }
 
 // ============================================================================

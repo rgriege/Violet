@@ -57,7 +57,7 @@ namespace Violet
 		~TestEvaluator();
 
 		template <typename ResultType>
-		bool evaluate(const char * name, const ResultType & desired, const ResultType & actual);
+		bool evaluate(const char * name, const ResultType & desired, const ResultType & actual, bool negated = false);
 		void enterSuite();
 		void exitSuite();
 
@@ -69,15 +69,15 @@ namespace Violet
 	};
 
 	template <typename ResultType>
-	bool TestEvaluator::evaluate(const char * name, const ResultType & desired, const ResultType & actual)
+	bool TestEvaluator::evaluate(const char * name, const ResultType & desired, const ResultType & actual, const bool negated)
 	{
-		const bool result = (desired == actual);
+		const bool result = (desired == actual) ^ negated;
 		std::stringstream ss;
 		ss << name << ": ";
 		if (result)
 			ss << "passed";
 		else
-			ss << "failed (expected " << desired << ", got " << actual << ")";
+			ss << "failed (" << (negated ? "didn't expect " : "expected ") << desired << ", got " << actual << ")";
 		m_currentBuffer->addEntry(ss.str());
 		return result;
 	}

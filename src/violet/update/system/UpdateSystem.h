@@ -19,7 +19,7 @@ namespace Violet
 
 		static const char * getStaticLabel();
 		static void install(SystemFactory & factory);
-		static std::unique_ptr<System> init(Deserializer & deserializer);
+		static void init(Deserializer & deserializer);
 
 	public:
 

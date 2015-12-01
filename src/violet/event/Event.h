@@ -33,7 +33,9 @@ namespace Violet
 		static void emit(const EventContext & eventContext, Args && ... args);
 		static void emit(const EventContextOwner & eventContextOwner, Args && ... args);
 		static void unsubscribe(EventContext & eventContext, uint32 delegateId);
+		static void unsubscribe(const EventContext & eventContext, uint32 delegateId);
 		static void unsubscribe(EventContextOwner & eventContextOwner, uint32 delegateId);
+		static void unsubscribe(const EventContextOwner & eventContextOwner, uint32 delegateId);
 
 	private:
 

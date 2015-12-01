@@ -27,11 +27,15 @@ void UpdateSystem::install(SystemFactory & factory)
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<System> UpdateSystem::init(Deserializer & deserializer)
+void UpdateSystem::init(Deserializer & deserializer)
 {
 	deserializer.enterSegment(getStaticLabel());
-	auto system = new UpdateSystem;
-	return std::unique_ptr<System>(system);
+
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[](Engine & engine)
+		{
+			engine.addSystem(std::unique_ptr<System>(new UpdateSystem));
+		});
 }
 
 // ============================================================================

@@ -2,6 +2,7 @@
 
 #include "violet/graphics/component/TextureComponent.h"
 
+#include "violet/Engine.h"
 #include "violet/graphics/shader/Shader.h"
 #include "violet/math/AABB.h"
 #include "violet/math/Polygon.h"
@@ -34,15 +35,22 @@ Tag TextureComponent::getStaticTag()
 TextureComponent::TextureComponent(Entity & owner, Deserializer & deserializer) :
 	ComponentBase<TextureComponent>(owner),
 	RenderComponentData(deserializer),
-	m_texture(Texture::getCache().fetch(deserializer.getString("texture"))),
-	m_texCoords(createTexCoordsFromMesh(m_mesh))
+	m_texture(),
+	m_texCoords()
 {
-	glBindVertexArray(m_vertexArrayBuffer);
-	const Guard<Mesh> texCoordGuard(m_texCoords);
-	const GLuint texCoordAttrib = m_shader->getAttributeLocation("texCoord");
-	glEnableVertexAttribArray(texCoordAttrib);
-	glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glBindVertexArray(0);
+	const std::string textureName = deserializer.getString("texture");
+	Engine::getInstance().addWriteTask(*this,
+		[=](TextureComponent & component)
+		{
+			component.m_texture = Texture::getCache().fetch(textureName.c_str());
+			component.m_texCoords = std::make_unique<Mesh>(createTexCoordsFromMesh(*component.m_mesh));
+			glBindVertexArray(component.m_vertexArrayBuffer);
+			const Guard<Mesh> texCoordGuard(*component.m_texCoords);
+			const GLuint texCoordAttrib = component.m_shader->getAttributeLocation("texCoord");
+			glEnableVertexAttribArray(texCoordAttrib);
+			glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+			glBindVertexArray(0);
+		}, Engine::Thread::Window);
 }
 
 // ----------------------------------------------------------------------------
@@ -51,9 +59,8 @@ TextureComponent::TextureComponent(Entity & owner, const Polygon & poly, std::sh
 	ComponentBase<TextureComponent>(owner),
 	RenderComponentData(poly, shader),
 	m_texture(std::move(texture)),
-	m_texCoords(texCoords)
+	m_texCoords(std::make_unique<Mesh>(texCoords))
 {
-	const GLint textureAttrib = m_shader->getUniformLocation("tex");
 }
 
 // ----------------------------------------------------------------------------
@@ -65,6 +72,18 @@ TextureComponent::TextureComponent(TextureComponent && other) :
 	m_texCoords(std::move(other.m_texCoords))
 {
 	m_texture.swap(other.m_texture);
+}
+
+// ----------------------------------------------------------------------------
+
+TextureComponent::~TextureComponent()
+{
+	const auto texCoords = m_texCoords.release();
+	Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
+		[=]()
+		{
+			delete texCoords;
+		}), Engine::Thread::Window);
 }
 
 // ============================================================================

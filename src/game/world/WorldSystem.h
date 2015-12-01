@@ -20,7 +20,7 @@ class VIOLET_GAME_API WorldSystem : public Violet::System
 public:
 
 	static void install(Violet::SystemFactory & factory);
-	static std::unique_ptr<System> init(Violet::Deserializer & deserializer);
+	static void init(Violet::Deserializer & deserializer);
 	static const char * getStaticLabel();
 
 public:

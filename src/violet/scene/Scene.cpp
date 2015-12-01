@@ -2,6 +2,7 @@
 
 #include "violet/scene/Scene.h"
 
+#include "violet/Engine.h"
 #include "violet/entity/Entity.h"
 #include "violet/log/Log.h"
 #include "violet/serialization/Deserializer.h"
@@ -12,9 +13,9 @@ using namespace Violet;
 
 // ============================================================================
 
-std::unique_ptr<Scene> Scene::create(const char * filename)
+std::unique_ptr<Scene, void(*)(Scene *)> Scene::create(const char * filename)
 {
-	auto scene = std::make_unique<Scene>();
+	auto scene = std::unique_ptr<Scene, void(*)(Scene *)>(new Scene, Scene::destroy);
 
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
@@ -22,9 +23,20 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 	else if (!*deserializer)
 		Log::log(FormattedString<128>().sprintf("Failed to parse scene file '%s'", filename));
 	else
-		scene->m_root = make_unique_val<Entity>(*scene, *deserializer);
+		scene->m_root = std::make_unique<Entity>(*scene, *deserializer);
 
 	return scene;
+}
+
+// ----------------------------------------------------------------------------
+
+void Scene::destroy(Scene * scene)
+{
+	if (scene != nullptr)
+	{
+		scene->m_root.reset();
+		Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>([=]() { delete scene; }));
+	}
 }
 
 // ============================================================================
@@ -32,31 +44,8 @@ std::unique_ptr<Scene> Scene::create(const char * filename)
 Scene::Scene() :
 	m_lookupMap(),
 	m_handleManager(),
-	m_root(make_unique_val<Entity>(*this)),
-	m_eventContext()
+	m_root(std::make_unique<Entity>(*this))
 {
-}
-
-// ----------------------------------------------------------------------------
-
-Scene::~Scene()
-{
-}
-
-// ----------------------------------------------------------------------------
-
-Scene::Scene(Scene && other) :
-	m_lookupMap(std::move(other.m_lookupMap)),
-	m_handleManager(std::move(other.m_handleManager)),
-	m_root(std::move(other.m_root))
-{
-}
-
-// ----------------------------------------------------------------------------
-
-Entity & Scene::getRoot()
-{
-	return *m_root;
 }
 
 // ----------------------------------------------------------------------------
@@ -64,14 +53,6 @@ Entity & Scene::getRoot()
 const Entity & Scene::getRoot() const
 {
 	return *m_root;
-}
-
-// ----------------------------------------------------------------------------
-
-lent_ptr<Entity> Scene::getEntity(const Handle handle)
-{
-	const auto it = m_lookupMap.find(handle);
-	return it != m_lookupMap.end() ? &it->second.get() : nullptr;
 }
 
 // ----------------------------------------------------------------------------
@@ -84,33 +65,43 @@ lent_ptr<const Entity> Scene::getEntity(const Handle handle) const
 
 // ----------------------------------------------------------------------------
 
-Handle Scene::createHandle(const Handle desiredHandle)
+void Scene::index(const HandleComponent & handleComponent) thread_const
 {
-	return desiredHandle.isValid() ? m_handleManager.create(desiredHandle.getId()) : m_handleManager.create();
+	Engine::getInstance().addWriteTask(*this,
+		[&](Scene & scene)
+		{
+			const Handle handle = handleComponent.getHandle().isValid() ? scene.m_handleManager.create(handleComponent.getHandle().getId()) : scene.m_handleManager.create();
+			scene.m_lookupMap.emplace(handle, handleComponent.getOwner());
+
+			Engine::getInstance().addWriteTask(handleComponent,
+				[handle](HandleComponent & handleComponent)
+			{
+				handleComponent.m_handle = handle;
+			});
+		});
 }
 
 // ----------------------------------------------------------------------------
 
-void Scene::index(HandleComponent & handleComponent)
+void Scene::deindex(const HandleComponent & handleComponent) thread_const
 {
-#ifdef _DEBUG
-	assert(m_lookupMap.find(handleComponent.getHandle()) == m_lookupMap.end());
-#endif
+	assert(m_lookupMap.find(handleComponent.getHandle()) != m_lookupMap.end() && &m_lookupMap.find(handleComponent.getHandle())->second.get() == &handleComponent.getOwner());
 
-	m_lookupMap.emplace(handleComponent.getHandle(), handleComponent.getOwner());
+	const Handle handle = handleComponent.getHandle();
+	Engine::getInstance().addWriteTask(*this,
+		[=](Scene & scene)
+		{
+			scene.m_handleManager.free(handle);
+			scene.m_lookupMap.erase(handle);
+		});
 }
 
-// ----------------------------------------------------------------------------
+// ============================================================================
 
-bool Scene::deindex(HandleComponent & handleComponent)
+Scene::~Scene()
 {
-#ifdef _DEBUG
-	auto const it = m_lookupMap.find(handleComponent.getHandle());
-	assert(it != m_lookupMap.end() && &it->second.get() == &handleComponent.getOwner());
-#endif
-
-	m_handleManager.free(handleComponent.getHandle());
-	return m_lookupMap.erase(handleComponent.getHandle()) > 0;
+	assert(m_root == nullptr);
+	assert(m_lookupMap.empty());
 }
 
 // ============================================================================

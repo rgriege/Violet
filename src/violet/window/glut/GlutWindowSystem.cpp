@@ -2,6 +2,7 @@
 
 #include "violet/window/glut/GlutWindowSystem.h"
 
+#include "violet/Engine.h"
 #include "violet/math/Vec2.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
@@ -34,36 +35,44 @@ void GlutWindowSystem::install(SystemFactory & factory)
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<System> GlutWindowSystem::init(Deserializer & deserializer)
+void GlutWindowSystem::init(Deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
 
-	int argc = 0;
-	char arr[1] = { '\0' };
-    char * argv = arr;
 	int const x = settingsSegment->getInt("x");
 	int const y = settingsSegment->getInt("y");
 	int const width = settingsSegment->getInt("width");
 	int const height = settingsSegment->getInt("height");
 	const char * title = settingsSegment->getString("title");
 
-	glutInit(&argc, &argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-	glutInitWindowSize(width, height);
-	glutInitWindowPosition(x, y);
-	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
-	const int id = glutCreateWindow(title);
-	if (id == 0)
-		return nullptr;
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[=](Engine & engine)
+		{
+			int argc = 0;
+			char arr[1] = { '\0' };
+			char * argv = arr;
 
-	glutCloseFunc(close);
-	glutDisplayFunc(display);
-	glutMouseFunc(onMouseButton);
-	glutMotionFunc(onMouseMove);
-	glutKeyboardFunc(onKeyboardDown);
-	glutKeyboardUpFunc(onKeyboardUp);
+			glutInit(&argc, &argv);
+			glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+			glutInitWindowSize(width, height);
+			glutInitWindowPosition(x, y);
+			glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+			const int id = glutCreateWindow(title);
+			if (id == 0)
+			{
+				engine.stop();
+				return;
+			}
 
-	return std::unique_ptr<System>(new GlutWindowSystem(id, width, height));
+			glutCloseFunc(close);
+			glutDisplayFunc(display);
+			glutMouseFunc(onMouseButton);
+			glutMotionFunc(onMouseMove);
+			glutKeyboardFunc(onKeyboardDown);
+			glutKeyboardUpFunc(onKeyboardUp);
+
+			engine.addSystem(std::unique_ptr<System>(new GlutWindowSystem(id, width, height)));
+		}, Engine::Thread::Window);
 }
 
 // ============================================================================

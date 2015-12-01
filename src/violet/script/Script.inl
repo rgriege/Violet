@@ -19,7 +19,12 @@ void Violet::Script::Method<Derived, ResultType(Args...)>::assign(const Engine &
 	if (it != script.m_boundMethods.end())
 		script.warn(Derived::getName(), "delegate already bound");
 
-	engine.addWriteTask(script, addHook, Derived::getIdentifier(), new Delegate(func));
+	const auto delegate = new Delegate(func);
+	engine.addWriteTask(script,
+		[=](Script & script)
+		{
+			addHook(script, Derived::getIdentifier(), delegate);
+		});
 }
 
 // ----------------------------------------------------------------------------

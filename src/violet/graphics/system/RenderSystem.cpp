@@ -55,53 +55,67 @@ void RenderSystem::install(SystemFactory & factory)
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<System> RenderSystem::init(Deserializer & deserializer)
+void RenderSystem::init(Deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enterSegment(getStaticLabel());
 
 	Color const color(*settingsSegment);
 
-	GLenum glewError = glewInit();
-	if (glewError != GLEW_OK)
-	{
-		Log::log(FormattedString<1024>().sprintf("glewInit error: %s", glewGetErrorString(glewError)));
-		return nullptr;
-	}
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[=](Engine & engine)
+		{
+			GLenum glewError = glewInit();
+			if (glewError != GLEW_OK)
+			{
+                Log::log(FormattedString<1024>().sprintf("glewInit error: %s", glewGetErrorString(glewError)));
+				engine.stop();
+				return;
+			}
 
-	Log::log(FormattedString<32>().sprintf("GL version: %s", glGetString(GL_VERSION)));
+            Log::log(FormattedString<32>().sprintf("GL version: %s", glGetString(GL_VERSION)));
 	
-	glClearColor(color.r, color.g, color.b, color.a);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glClearColor(color.r, color.g, color.b, color.a);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
-	return std::unique_ptr<System>(new RenderSystem);
+			engine.addSystem(std::unique_ptr<RenderSystem>(new RenderSystem));
+		}, Engine::Thread::Window);
 }
 
 // ============================================================================
 
 RenderSystem::~RenderSystem()
 {
-	ShaderProgram::getCache().clear();
-	Font::getCache().clear();
+	Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
+		[]()
+		{
+			ShaderProgram::getCache().clear();
+			Font::getCache().clear();
+		}), Engine::Thread::Window);
 }
 
 void process(const Entity &, float);
 
 // ----------------------------------------------------------------------------
 
-void RenderSystem::update(float const dt, const Engine & engine)
+void RenderSystem::update(float const /*dt*/, const Engine & engine)
 {
-	glClear(GL_COLOR_BUFFER_BIT);
-	const auto & windowSystem = engine.getSystem<WindowSystem>();
-	Matrix3f viewMatrix = Matrix3f::Identity;
-	viewMatrix[0][0] = 2.f / windowSystem->getWidth();
-	viewMatrix[1][1] = 2.f / windowSystem->getHeight();
+	engine.addReadTask(std::make_unique<DelegateTask>(
+		[]()
+		{
+			const auto & engine = Engine::getInstance();
+			glClear(GL_COLOR_BUFFER_BIT);
+			const auto & windowSystem = engine.getSystem<WindowSystem>();
+			Matrix3f viewMatrix = Matrix3f::Identity;
+			viewMatrix[0][0] = 2.f / windowSystem->getWidth();
+			viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 
-	for (auto const & child : engine.getCurrentScene().getRoot().getChildren())
-		process(*child, viewMatrix, Matrix3f::Identity, 1.f);
-	
-	glFlush();
-	engine.addWriteTask(engine, [](Engine & engine) { engine.getSystem<WindowSystem>()->render(); });
+			for (auto const & child : engine.getCurrentScene().getRoot().getChildren())
+				process(*child, viewMatrix, Matrix3f::Identity, 1.f);
+
+			glFlush();
+			engine.addWriteTask(engine, [](Engine & engine) { engine.getSystem<WindowSystem>()->render(); }, Engine::Thread::Window);
+		}), Engine::Thread::Window);
 }
 
 // ============================================================================
@@ -160,7 +174,7 @@ void RenderSystemNamespace::draw(const TransformComponent & transformComponent, 
 	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * transform).data());
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
-	glDrawArrays(GL_TRIANGLE_FAN, 0, colorComponent.m_mesh.m_size);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, colorComponent.m_mesh->m_size);
 	glBindVertexArray(0);
 }
 
@@ -195,7 +209,7 @@ void RenderSystemNamespace::draw(const TransformComponent & transformComponent, 
 	glUniformMatrix3fv(modelAttrib, 1, true, (parentToWorld * transform).data());
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
-	glDrawArrays(GL_TRIANGLE_FAN, 0, textureComponent.m_mesh.m_size);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, textureComponent.m_mesh->m_size);
 	glBindVertexArray(0);
 }
 

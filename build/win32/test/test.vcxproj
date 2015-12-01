@@ -19,6 +19,7 @@
     <ClCompile Include="..\..\..\src\test\physics\PhysicsTest.cpp" />
     <ClCompile Include="..\..\..\src\test\scene\SceneTest.cpp" />
     <ClCompile Include="..\..\..\src\test\serialization\JsonSerializationTest.cpp" />
+    <ClCompile Include="..\..\..\src\test\task\TaskTest.cpp" />
     <ClCompile Include="..\..\..\src\test\template\TemplateTest.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -34,6 +35,7 @@
     <ClInclude Include="..\..\..\src\test\physics\PhysicsTest.h" />
     <ClInclude Include="..\..\..\src\test\scene\SceneTest.h" />
     <ClInclude Include="..\..\..\src\test\serialization\JsonSerializationTest.h" />
+    <ClInclude Include="..\..\..\src\test\task\TaskTest.h" />
     <ClInclude Include="..\..\..\src\test\template\TemplateTest.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

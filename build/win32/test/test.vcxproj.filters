@@ -26,6 +26,9 @@
     <ClCompile Include="..\..\..\src\test\lua\LuaTest.cpp">
       <Filter>lua</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\test\task\TaskTest.cpp">
+      <Filter>task</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="serialization">
@@ -51,6 +54,9 @@
     </Filter>
     <Filter Include="lua">
       <UniqueIdentifier>{b612fcda-f4d3-49d2-befc-62ea763ca20b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="task">
+      <UniqueIdentifier>{08fb9f97-804c-4a01-9b19-c507dfe53fbf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -92,6 +98,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\test\lua\LuaTest.h">
       <Filter>lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\test\task\TaskTest.h">
+      <Filter>task</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

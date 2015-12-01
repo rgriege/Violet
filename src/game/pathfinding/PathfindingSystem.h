@@ -18,7 +18,7 @@ public:
 
 	static const char * getStaticLabel();
 	static void install(Violet::SystemFactory & factory);
-	static std::unique_ptr<Violet::System> init(Violet::Deserializer & deserializer);
+	static void init(Violet::Deserializer & deserializer);
 
 public:
 
