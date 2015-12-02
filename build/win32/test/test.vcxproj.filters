@@ -20,9 +20,6 @@
       <Filter>template</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\test\main.cpp" />
-    <ClCompile Include="..\..\..\src\test\scene\SceneTest.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\test\lua\LuaTest.cpp">
       <Filter>lua</Filter>
     </ClCompile>
@@ -48,9 +45,6 @@
     </Filter>
     <Filter Include="game">
       <UniqueIdentifier>{a2952f37-e4f7-4607-9a3f-1d88428bfc18}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="scene">
-      <UniqueIdentifier>{5d581245-3860-4e6e-9743-1552940e790b}</UniqueIdentifier>
     </Filter>
     <Filter Include="lua">
       <UniqueIdentifier>{b612fcda-f4d3-49d2-befc-62ea763ca20b}</UniqueIdentifier>
@@ -92,9 +86,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\test\template\TemplateTest.h">
       <Filter>template</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\test\scene\SceneTest.h">
-      <Filter>scene</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\test\lua\LuaTest.h">
       <Filter>lua</Filter>
