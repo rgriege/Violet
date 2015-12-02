@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <thread>
 
 #include "violet/Defines.h"
@@ -15,6 +16,11 @@ namespace Violet
 {
 	class VIOLET_API TaskScheduler final
 	{
+	private:
+
+		class TaskGuard;
+		struct Worker;
+
 	private:
 
 		static void executeTasks(TaskScheduler & taskScheduler, uint32 index);
@@ -31,20 +37,23 @@ namespace Violet
 
 		void addTask(std::unique_ptr<Task> && task, uint32 thread, bool isStopTask);
 
-		std::unique_ptr<Task> checkout(uint32 thread);
+		TaskGuard checkout(uint32 thread);
+		void checkin(uint64 dependency);
 
 		TaskScheduler(const TaskScheduler &) = delete;
 		TaskScheduler & operator=(const TaskScheduler &) = delete;
 
 	private:
 
-		struct Worker;
 		std::vector<std::unique_ptr<Worker>> m_workers;
 		std::atomic_uint m_nextTaskWorkerIndex;
 		std::atomic_uint m_stopCount;
 		std::atomic_uint m_stopCountGoal;
 		std::atomic_bool m_quit;
 		std::queue<std::unique_ptr<Task>> m_mainThreadTaskQueue;
+		std::set<uint64> m_busyDependencies;
+		std::mutex m_busyDependenciesMutex;
+		std::condition_variable m_busyDependenciesCv;
 	};
 }
 

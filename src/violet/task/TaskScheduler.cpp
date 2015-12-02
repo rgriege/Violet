@@ -60,17 +60,69 @@ struct TaskScheduler::Worker
 
 // ============================================================================
 
+class TaskScheduler::TaskGuard
+{
+public:
+
+	TaskGuard(TaskScheduler & scheduler, std::unique_ptr<Task> && task) :
+		m_scheduler(scheduler),
+		m_task(std::move(task))
+	{
+	}
+
+	TaskGuard(TaskGuard && rhs) :
+		m_scheduler(rhs.m_scheduler),
+		m_task(std::move(rhs.m_task))
+	{
+	}
+
+	TaskGuard & operator=(TaskGuard && rhs)
+	{
+		if (m_task != nullptr)
+			m_scheduler.checkin(m_task->getDependency());
+
+		m_task = std::move(rhs.m_task);
+		return *this;
+	}
+
+	~TaskGuard()
+	{
+		if (m_task != nullptr)
+			m_scheduler.checkin(m_task->getDependency());
+	}
+
+	const std::unique_ptr<Task> & getTask() const
+	{
+		return m_task;
+	}
+
+private:
+
+	TaskGuard(const TaskGuard &) = delete;
+	TaskGuard & operator=(const TaskGuard &) = delete;
+
+private:
+
+	TaskScheduler & m_scheduler;
+	std::unique_ptr<Task> m_task;
+};
+
+// ============================================================================
+
 void TaskScheduler::executeTasks(TaskScheduler & taskScheduler, const uint32 index)
 {
 #ifdef DEBUG_THREAD
 	try
 	{
 #endif
-		auto task = taskScheduler.checkout(index);
-		while (task != nullptr)
+		bool outOfTasks = false;
+		while (!outOfTasks)
 		{
-			task->execute();
-			task = taskScheduler.checkout(index);
+			auto taskGuard = taskScheduler.checkout(index);
+			if (taskGuard.getTask() != nullptr)
+				taskGuard.getTask()->execute();
+			else
+				outOfTasks = true;
 		}
 #ifdef DEBUG_THREAD
 	}
@@ -172,21 +224,43 @@ void TaskScheduler::addTask(std::unique_ptr<Task> && task, const uint32 thread, 
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<Task> TaskScheduler::checkout(const uint32 thread)
+TaskScheduler::TaskGuard TaskScheduler::checkout(const uint32 thread)
 {
 	auto & worker = m_workers[thread];
+	std::unique_ptr<Task> task;
 
-	std::unique_lock<std::mutex> queueLock(worker->m_queueMutex);
-	worker->m_tasksAvailableCondition.wait(queueLock, [&]() { return !worker->m_queue.empty() || m_quit; });
-
-	if (!worker->m_queue.empty())
 	{
-		std::unique_ptr<Task> task = std::move(worker->m_queue.front());
-		worker->m_queue.pop();
-		return task;
+		std::unique_lock<std::mutex> queueLock(worker->m_queueMutex);
+		worker->m_tasksAvailableCondition.wait(queueLock, [&]() { return !worker->m_queue.empty() || m_quit; });
+
+		if (!worker->m_queue.empty())
+		{
+			task = std::move(worker->m_queue.front());
+			worker->m_queue.pop();
+		}
 	}
-	else
-		return nullptr;
+
+	if (task != nullptr && task->getDependency() != Task::ms_nullDependency)
+	{
+		std::unique_lock<std::mutex> busyDependenciesLock(m_busyDependenciesMutex);
+		m_busyDependenciesCv.wait(busyDependenciesLock, [&]() { return m_busyDependencies.emplace(task->getDependency()).second; });
+	}
+
+	return TaskGuard(*this, std::move(task));
+}
+
+// ----------------------------------------------------------------------------
+
+void TaskScheduler::checkin(const uint64 dependency)
+{
+	if (dependency != Task::ms_nullDependency)
+	{
+		{
+			const std::lock_guard<std::mutex> guard(m_busyDependenciesMutex);
+			assert(m_busyDependencies.erase(dependency) == 1);
+		}
+		m_busyDependenciesCv.notify_all();
+	}
 }
 
 // ============================================================================

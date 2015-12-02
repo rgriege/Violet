@@ -1,8 +1,12 @@
 // ============================================================================
 
+#include "violet/template/TupleUtilities.h"
+
+// ============================================================================
+
 template <typename Writable>
 Violet::Engine::WriteTask<void(Writable &)>::WriteTask(const Writable & writable, Delegate fn) :
-	Violet::Task(),
+	Violet::Task(reinterpret_cast<uint64>(&writable)),
 	m_fn(fn),
 	m_writable(const_cast<Writable &>(writable))
 {
