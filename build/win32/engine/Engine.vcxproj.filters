@@ -383,9 +383,6 @@
     <ClInclude Include="..\..\..\src\violet\transform\Transform.h">
       <Filter>transform</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\ui\UiListElementComponent.h">
-      <Filter>ui</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\ui\UiStateComponent.h">
       <Filter>ui</Filter>
     </ClInclude>
@@ -598,9 +595,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\transform\Transform.cpp">
       <Filter>transform</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\ui\UiListElementComponent.cpp">
-      <Filter>ui</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\ui\UiStateComponent.cpp">
       <Filter>ui</Filter>
