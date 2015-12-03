@@ -213,20 +213,16 @@ void Engine::runFrame(const float frameTime)
 
 void Engine::performCurrentFrameStage()
 {
+	auto & tasks = m_taskQueues[static_cast<int>(m_frameStage)].m_tasks;
+	while (!tasks.empty())
+	{
+		m_taskScheduler.addTask(std::move(tasks.front().first), static_cast<int>(tasks.front().second));
+		tasks.pop();
+	}
+
 	m_taskScheduler.finishCurrentTasks();
 
-	const bool addPendingTasks = m_frameStage != FrameStage::Last;
 	m_frameStage = static_cast<FrameStage>((static_cast<int>(m_frameStage)+1) % static_cast<int>(FrameStage::Count));
-
-	if (addPendingTasks)
-	{
-		auto & tasks = m_taskQueues[static_cast<int>(m_frameStage)].m_tasks;
-		while (!tasks.empty())
-		{
-			m_taskScheduler.addTask(std::move(tasks.front().first), static_cast<int>(tasks.front().second));
-			tasks.pop();
-		}
-	}
 }
 
 // ----------------------------------------------------------------------------
