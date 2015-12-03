@@ -17,8 +17,8 @@ namespace Violet
 	{
 	public:
 
-		friend Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
-		friend Deserializer & operator>>(Deserializer & deserializer, UiStateComponent & component);
+		VIOLET_API friend Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
+		VIOLET_API friend Deserializer & operator>>(Deserializer & deserializer, UiStateComponent & component);
 
 	public:
 
@@ -38,8 +38,8 @@ namespace Violet
 		std::vector<unique_val<Entity>> m_states;
 	};
 
-    Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
-    Deserializer & operator>>(Deserializer & deserializer, UiStateComponent & component);
+    VIOLET_API Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, UiStateComponent & component);
 }
 
 #endif

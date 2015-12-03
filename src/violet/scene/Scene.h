@@ -12,6 +12,7 @@
 namespace Violet
 {
 	class Deserializer;
+	class Serializer;
 	class Entity;
 
 	class VIOLET_API Scene : public EventContextOwner
@@ -30,6 +31,8 @@ namespace Violet
 
 		void index(const HandleComponent & handleComponent) thread_const;
 		void deindex(const HandleComponent & handleComponent) thread_const;
+
+		void save(Serializer & serializer) const;
 
 	private:
 

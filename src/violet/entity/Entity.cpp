@@ -5,6 +5,7 @@
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/scene/Scene.h"
 #include "violet/serialization/Deserializer.h"
+#include "violet/serialization/Serializer.h"
 
 using namespace Violet;
 
@@ -174,6 +175,20 @@ void Entity::removeFromParent()
 		if (it != children.end())
 			m_parent->removeChild(std::distance(children.begin(), it));
 	}
+}
+
+// ----------------------------------------------------------------------------
+
+void Entity::save(Serializer & serializer) const
+{
+	auto entitySegment = serializer.createSegment("ntty");
+	auto componentsSegment = entitySegment->createSegment("cpnt");
+	for (auto const & component : m_components)
+		component->save(*componentsSegment);
+
+	auto childrenSegment = entitySegment->createSegment("chld");
+	for (auto const & child : m_children)
+		child->save(*childrenSegment);
 }
 
 // ============================================================================

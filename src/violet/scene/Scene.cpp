@@ -96,6 +96,13 @@ void Scene::deindex(const HandleComponent & handleComponent) thread_const
 		});
 }
 
+// ----------------------------------------------------------------------------
+
+void Scene::save(Serializer & serializer) const
+{
+	
+}
+
 // ============================================================================
 
 Scene::~Scene()

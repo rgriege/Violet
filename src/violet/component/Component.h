@@ -8,6 +8,7 @@
 namespace Violet
 {
 	class Entity;
+	class Serializer;
 
 	class VIOLET_API Component
 	{
@@ -34,6 +35,7 @@ namespace Violet
 
 		virtual Tag getTag() const = 0;
 		virtual uint32 getFlag() const = 0;
+		virtual void save(Serializer & serializer) const = 0;
 
 		virtual ~Component() = 0;
 
@@ -62,6 +64,7 @@ namespace Violet
 
 		virtual Tag getTag() const override;
 		virtual uint32 getFlag() const override;
+		virtual void save(Serializer & serializer) const override;
 
 	protected:
 

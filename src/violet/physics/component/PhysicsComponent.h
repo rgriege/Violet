@@ -32,8 +32,8 @@ namespace Violet
 		float m_torque;
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, PhysicsComponent & component);
-	Serializer & operator<<(Serializer & serializer, const PhysicsComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, PhysicsComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const PhysicsComponent & component);
 }
 
 #endif

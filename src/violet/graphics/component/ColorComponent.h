@@ -34,8 +34,8 @@ namespace Violet
 		Color m_color;
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, ColorComponent & component);
-	Serializer & operator<<(Serializer & serializer, const ColorComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, ColorComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const ColorComponent & component);
 }
 
 #endif

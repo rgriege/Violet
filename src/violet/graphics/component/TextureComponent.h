@@ -36,8 +36,8 @@ namespace Violet
 		std::unique_ptr<Mesh> m_texCoords;
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, TextureComponent & component);
-	Serializer & operator<<(Serializer & serializer, const TextureComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, TextureComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const TextureComponent & component);
 }
 
 #endif

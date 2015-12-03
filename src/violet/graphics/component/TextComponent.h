@@ -35,8 +35,8 @@ namespace Violet
 		std::shared_ptr<Font> m_font;
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, TextComponent & component);
-	Serializer & operator<<(Serializer & serializer, const TextComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, TextComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const TextComponent & component);
 }
 
 #endif

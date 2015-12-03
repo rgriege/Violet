@@ -15,12 +15,14 @@ namespace Violet
 {
 	class Deserializer;
 	class Scene;
+	class Serializer;
 
 	class VIOLET_API Entity
 	{
 	public:
 
 		typedef Factory<std::string, void(Entity &, Deserializer &)> ComponentFactory;
+
 	public:
 
 		template <typename ComponentType>
@@ -68,6 +70,8 @@ namespace Violet
 		lent_ptr<const Entity> getParent() const;
 
 		void removeFromParent();
+
+		void save(Serializer & serializer) const;
 
 	private:
 

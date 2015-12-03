@@ -16,8 +16,8 @@ namespace Violet
 
 		friend class Scene;
 
-		friend Deserializer & operator>>(Deserializer & deserializer, HandleComponent & component);
-		friend Serializer & operator<<(Serializer & serializer, const HandleComponent & component);
+		VIOLET_API friend Deserializer & operator>>(Deserializer & deserializer, HandleComponent & component);
+		VIOLET_API friend Serializer & operator<<(Serializer & serializer, const HandleComponent & component);
 
 	public:
 
@@ -42,8 +42,8 @@ namespace Violet
 		Handle m_handle;
 	};
 
-    Deserializer & operator>>(Deserializer & deserializer, HandleComponent & component);
-    Serializer & operator<<(Serializer & serializer, const HandleComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, HandleComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const HandleComponent & component);
 }
 
 #endif

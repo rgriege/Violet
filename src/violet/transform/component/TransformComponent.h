@@ -28,8 +28,8 @@ namespace Violet
 		Matrix3f m_transform;
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, TransformComponent & component);
-	Serializer & operator<<(Serializer & serializer, const TransformComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, TransformComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const TransformComponent & component);
 }
 
 #endif

@@ -30,7 +30,7 @@ namespace Violet
 		std::unique_ptr<Script> m_script;
 	};
 
-	Serializer & operator<<(Serializer & serializer, const ScriptComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const ScriptComponent & component);
 
 	DEFINE_METHOD(BindToComponentMethod, void(Entity & owner));
 	DEFINE_METHOD(UnbindFromComponentMethod, void(Entity & owner));

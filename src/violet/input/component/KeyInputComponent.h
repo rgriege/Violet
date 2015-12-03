@@ -22,8 +22,8 @@ namespace Violet
 		//KeyInputComponent & operator=(KeyInputComponent && other);
 	};
 
-	Serializer & operator<<(Serializer & serializer, const KeyInputComponent & component);
-	Deserializer & operator>>(Deserializer & deserializer, KeyInputComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const KeyInputComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, KeyInputComponent & component);
 }
 
 #endif

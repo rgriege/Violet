@@ -34,7 +34,7 @@ namespace Violet
 		void loadScene(const char * filename, const Engine & engine);
 
 		bool hasScene() const;
-		lent_ptr<const Entity> getSceneRoot(const Engine & engine) const;
+		lent_ptr<const Entity> getSceneRoot() const;
 
 	private:
 
