@@ -17,6 +17,7 @@
 #include "violet/script/lua/LuaScript.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/serialization/json/JsonDeserializer.h"
+#include "violet/serialization/json/JsonSerializer.h"
 #include "violet/system/SystemFactory.h"
 #include "violet/transform/component/TransformComponent.h"
 #include "violet/ui/UiStateComponent.h"
@@ -48,6 +49,7 @@ Violet::SystemFactory setup()
 	Violet::Entity::installComponent<PathfindingComponent>();
 
 	Violet::JsonDeserializer::install();
+	Violet::JsonSerializer::install();
 	// Violet::BinaryDeserializer::install();
 
 	Violet::LuaScript::install();

@@ -11,11 +11,11 @@
 
 namespace Violet
 {
-	class FileSerializerFactory
+	class VIOLET_API FileSerializerFactory
 	{
 	public:
 
-		static VIOLET_API FileSerializerFactory & getInstance();
+		static FileSerializerFactory & getInstance();
 
 	private:
 
