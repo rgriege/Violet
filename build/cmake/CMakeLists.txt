@@ -75,7 +75,7 @@ if (MSVC)
   set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH:NO")
   set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SAFESEH:NO")
 elseif (UNIX)
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -g")
 endif ()
 
 add_subdirectory (engine)
