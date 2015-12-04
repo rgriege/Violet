@@ -238,7 +238,7 @@ void Font::render(std::string const & str, ShaderProgram & program)
 				xOffset += it->second.getAdvance();
 			}
 			else
-				Log::log(FormattedString<64>().sprintf("unknown character: %c", character));
+				Log::log(FormattedString<64>().sprintf("unknown character: '%x'", character));
 		}
 	}
 
