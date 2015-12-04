@@ -3,6 +3,7 @@
 #include "violet/component/MappedDataComponent.h"
 
 #include "violet/serialization/Deserializer.h"
+#include "violet/serialization/Serializer.h"
 
 using namespace Violet;
 
@@ -41,6 +42,19 @@ MappedDataComponent::MappedDataComponent(MappedDataComponent && other) :
 	ComponentBase<MappedDataComponent>(std::move(other)),
 	m_data(std::move(other.m_data))
 {
+}
+
+// ============================================================================
+
+Serializer & Violet::operator<<(Serializer & serializer, const MappedDataComponent & component)
+{
+	serializer.writeUint("n", component.m_data.size());
+	for (auto const & kvp : component.m_data)
+	{
+		serializer.writeString("key", kvp.first.c_str());
+		serializer.writeString("value", kvp.second.c_str());
+	}
+	return serializer;
 }
 
 // ============================================================================

@@ -4,7 +4,6 @@
 
 #include "violet/Engine.h"
 #include "violet/input/system/InputSystem.h"
-#include "violet/ui/UiListElementComponent.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 
@@ -41,7 +40,6 @@ void UiList::update(const Entity & entity, const Engine & engine, const uint32 e
 				if (transform != nullptr)
 					transform->m_transform[1][2] -= i * elementHeight;
 
-				child->addComponent<UiListElementComponent>(i);
 				auto script = child->getComponent<ScriptComponent>();
 				if (script != nullptr)
 				{

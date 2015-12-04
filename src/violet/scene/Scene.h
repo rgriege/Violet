@@ -5,7 +5,6 @@
 #include "violet/handle/HandleComponent.h"
 #include "violet/handle/HandleManager.h"
 #include "violet/utility/lent_ptr.h"
-#include "violet/utility/unique_val.h"
 
 #include <memory>
 #include <unordered_map>
@@ -13,41 +12,40 @@
 namespace Violet
 {
 	class Deserializer;
+	class Serializer;
 	class Entity;
 
 	class VIOLET_API Scene : public EventContextOwner
 	{
 	public:
 
-		static std::unique_ptr<Scene> create(const char * filename);
+		static std::unique_ptr<Scene, void(*)(Scene *)> create(const char * filename);
+		static void destroy(Scene * scene);
 
 	public:
 
 		Scene();
-		~Scene();
 
-		Scene(Scene && other);
-
-		Entity & getRoot();
 		const Entity & getRoot() const;
-		lent_ptr<Entity> getEntity(Handle handle);
 		lent_ptr<const Entity> getEntity(Handle handle) const;
 
-		Handle createHandle(Handle desiredHandle = Handle::ms_invalid);
-		void index(HandleComponent & handleComponent);
-		bool deindex(HandleComponent & handleComponent);
+		void index(const HandleComponent & handleComponent) thread_const;
+		void deindex(const HandleComponent & handleComponent) thread_const;
+
+		void save(Serializer & serializer) const;
 
 	private:
+
+		~Scene();
 
 		Scene(const Scene &) = delete;
 		Scene & operator=(const Scene &) = delete;
 
 	private:
 
-		std::unordered_map<Handle, std::reference_wrapper<Entity>> m_lookupMap;
+		std::unordered_map<Handle, std::reference_wrapper<const Entity>> m_lookupMap;
 		HandleManager m_handleManager;
-		unique_val<Entity> m_root;
-		EventContext m_eventContext;
+		std::unique_ptr<Entity> m_root;
 	};
 }
 

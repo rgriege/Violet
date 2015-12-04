@@ -29,4 +29,6 @@ public:
 	uint32 m_id;
 };
 
+Violet::Serializer & operator<<(Violet::Serializer & serializer, const MapComponent & component);
+
 #endif

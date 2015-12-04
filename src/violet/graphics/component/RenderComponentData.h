@@ -26,7 +26,7 @@ namespace Violet
 	public:
 
 		uint32 m_vertexArrayBuffer;
-		Mesh m_mesh;
+		std::unique_ptr<Mesh> m_mesh;
 		std::shared_ptr<ShaderProgram> m_shader;
 	};
 

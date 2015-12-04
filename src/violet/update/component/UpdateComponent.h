@@ -21,8 +21,8 @@ namespace Violet
 		UpdateComponent(UpdateComponent && other);
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, UpdateComponent & component);
-	Serializer & operator<<(Serializer & serializer, const UpdateComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, UpdateComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const UpdateComponent & component);
 }
 
 #endif

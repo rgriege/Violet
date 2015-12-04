@@ -41,3 +41,27 @@ MapComponent::MapComponent(Violet::Entity & owner, Violet::Deserializer & deseri
 }
 
 // ============================================================================
+
+Violet::Serializer & operator<<(Violet::Serializer & serializer, const MapComponent & component)
+{
+	serializer.writeUint("id", component.m_id);
+	{
+		auto nodesSegment = serializer.createSegment("nodes");
+		std::vector<Vec2f> nodes;
+		for (auto const & node : component.m_graph.getNodes())
+			nodes.emplace_back(node.second.m_position);
+		Violet::SerializationUtilities::serializeElements(*nodesSegment, nodes);
+	}
+	{
+		auto edgesSegment = serializer.createSegment("edges");
+		edgesSegment->writeUint("n", std::distance(component.m_graph.getEdges().begin(), component.m_graph.getEdges().end()));
+		for (auto const & edge : component.m_graph.getEdges())
+		{
+			edgesSegment->writeUint("src", edge.m_src);
+			edgesSegment->writeUint("dst", edge.m_destination);
+		}
+	}
+	return serializer;
+}
+
+// ============================================================================

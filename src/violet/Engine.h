@@ -6,9 +6,10 @@
 #include "violet/event/EventContextOwner.h"
 #include "violet/scene/Scene.h"
 #include "violet/system/System.h"
-#include "violet/utility/task/TaskScheduler.h"
-#include "violet/utility/task/Task.h"
+#include "violet/task/TaskScheduler.h"
+#include "violet/task/Task.h"
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -21,21 +22,29 @@ namespace Violet
 
 	class VIOLET_API Engine : public EventContextOwner
 	{
+	public:
+
+		enum class Thread
+		{
+			Any = -1,
+			Window
+		};
+
 	private:
 
 		template <typename Signature>
 		class WriteTask;
 
-		template <typename Writable, typename ... Args>
-		class WriteTask<void(Writable &, Args...)> : public Task
+		template <typename Writable>
+		class WriteTask<void(Writable &)> : public Task
 		{
 		public:
 
-			typedef std::function<void(Writable &, Args...)> Delegate;
+			typedef std::function<void(Writable &)> Delegate;
 
 		public:
 
-			WriteTask(const Writable & writable, Delegate fn, Args ... args);
+			WriteTask(const Writable & writable, Delegate fn);
 			virtual ~WriteTask() override = default;
 
 			virtual void execute() const override;
@@ -43,46 +52,70 @@ namespace Violet
 		private:
 
 			Delegate m_fn;
-			std::tuple<Writable &, Args...> m_args;
+			Writable & m_writable;
+		};
+
+		enum class FrameStage
+		{
+			Read,
+			Write,
+			Delete,
+			Last = Delete,
+			Count = Last + 1
+		};
+
+		struct TaskQueue
+		{
+			std::queue<std::pair<std::unique_ptr<Task>, Thread>> m_tasks;
+			std::mutex m_mutex;
 		};
 
 	public:
 
-		static std::unique_ptr<Engine> init(SystemFactory & factory, Deserializer & deserializer);
+		static bool bootstrap(const SystemFactory & factory, const char * configFileName);
+
+		static const Engine & getInstance();
 
 	public:
 
-		void begin();
-		void runFrame(float frameTime);
 		void switchScene(const char * filename);
 		Scene & getCurrentScene();
 		const Scene & getCurrentScene() const;
 		void stop();
 
+		void addSystem(std::unique_ptr<System> && system);
 		template <typename SystemType>
 		const std::unique_ptr<SystemType> & getSystem();
 		template <typename SystemType>
 		const std::unique_ptr<const SystemType> & getSystem() const;
 
-		void addTask(std::unique_ptr<Task> && task) const;
-
-		template <typename Writable, typename Delegate, typename ... Args>
-		void addWriteTask(const Writable & writable, Delegate fn, Args... args) const;
+		void addReadTask(std::unique_ptr<Task> && task, Thread thread = Thread::Any) thread_const;
+		template <typename Writable, typename Delegate>
+		void addWriteTask(const Writable & writable, Delegate fn, Thread thread = Thread::Any) thread_const;
+		void addDeleteTask(std::unique_ptr<Task> && task, Thread thread = Thread::Any) thread_const;
 
 	private:
 
-		Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && scene, uint32 workerCount);
+		Engine(uint32 workerCount);
+
+		void begin();
+		void runFrame(float frameTime);
+		void performCurrentFrameStage();
+
+		void addTask(std::unique_ptr<Task> && task, Thread thread, FrameStage frameStage) thread_const;
 
 		Engine(const Engine &) = delete;
 		Engine & operator=(const Engine &) = delete;
 
 	private:
 
-		std::string m_nextSceneFileName;
+		thread_mutable TaskScheduler m_taskScheduler;
+		thread_mutable std::array<TaskQueue, static_cast<int>(FrameStage::Count)> m_taskQueues;
 		std::vector<std::unique_ptr<System>> m_systems;
-		std::unique_ptr<Scene> m_scene;
-		mutable TaskScheduler m_taskScheduler;
+		std::unique_ptr<Scene, void(*)(Scene *)> m_scene;
+		std::string m_nextSceneFileName;
 		bool m_running;
+		FrameStage m_frameStage;
 	};
 }
 

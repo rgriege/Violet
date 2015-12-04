@@ -5,6 +5,7 @@
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/scene/Scene.h"
 #include "violet/serialization/Deserializer.h"
+#include "violet/serialization/Serializer.h"
 
 using namespace Violet;
 
@@ -13,9 +14,7 @@ using namespace Violet;
 void Violet::Entity::installComponent(const Tag tag, const ComponentFactory::Producer producer)
 {
 	const std::string label(tag.asString(), 4);
-#ifdef _DEBUG
 	assert(!ms_componentFactory.has(label));
-#endif
 	ms_componentFactory.assign(label, producer);
 }
 
@@ -24,9 +23,7 @@ void Violet::Entity::installComponent(const Tag tag, const ComponentFactory::Pro
 void Violet::Entity::uninstallComponent(const Tag tag)
 {
 	const std::string label(tag.asString(), 4);
-#ifdef _DEBUG
 	assert(ms_componentFactory.has(label));
-#endif
 	ms_componentFactory.remove(label);
 }
 
@@ -36,7 +33,7 @@ Factory<std::string, void(Entity &, Deserializer &)> Entity::ms_componentFactory
 
 // ============================================================================
 
-Entity::Entity(Scene & scene) :
+Entity::Entity(const Scene & scene) :
 	m_components(),
 	m_children(),
 	m_componentFlags(),
@@ -48,7 +45,7 @@ Entity::Entity(Scene & scene) :
 // ----------------------------------------------------------------------------
 
 
-Entity::Entity(Scene & scene, Deserializer & deserializer) :
+Entity::Entity(const Scene & scene, Deserializer & deserializer) :
 	m_components(),
 	m_children(),
 	m_componentFlags(0),
@@ -73,13 +70,6 @@ Entity::Entity(Scene & scene, Deserializer & deserializer) :
 
 Entity::~Entity()
 {
-}
-
-// ----------------------------------------------------------------------------
-
-Scene & Entity::getScene()
-{
-	return m_scene;
 }
 
 // ----------------------------------------------------------------------------
@@ -185,6 +175,20 @@ void Entity::removeFromParent()
 		if (it != children.end())
 			m_parent->removeChild(std::distance(children.begin(), it));
 	}
+}
+
+// ----------------------------------------------------------------------------
+
+void Entity::save(Serializer & serializer) const
+{
+	auto entitySegment = serializer.createSegment("ntty");
+	auto componentsSegment = entitySegment->createSegment("cpnt");
+	for (auto const & component : m_components)
+		component->save(*componentsSegment);
+
+	auto childrenSegment = entitySegment->createSegment("chld");
+	for (auto const & child : m_children)
+		child->save(*childrenSegment);
 }
 
 // ============================================================================

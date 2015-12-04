@@ -24,7 +24,7 @@ namespace Violet
 
 		static const char * getStaticLabel();
 		static void install(SystemFactory & factory);
-		static std::unique_ptr<System> init(Deserializer & deserializer);
+		static void init(Deserializer & deserializer);
 
 	public:
 
@@ -34,11 +34,11 @@ namespace Violet
 		void loadScene(const char * filename, const Engine & engine);
 
 		bool hasScene() const;
-		lent_ptr<const Entity> getSceneRoot(const Engine & engine) const;
+		lent_ptr<const Entity> getSceneRoot() const;
 
 	private:
 
-		EditorSystem(std::string && editScriptFileName);
+		EditorSystem(std::string editScriptFileName);
 		
 	private:
 

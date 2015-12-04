@@ -17,6 +17,7 @@
 #include "violet/script/lua/LuaScript.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/serialization/json/JsonDeserializer.h"
+#include "violet/serialization/json/JsonSerializer.h"
 #include "violet/system/SystemFactory.h"
 #include "violet/transform/component/TransformComponent.h"
 #include "violet/ui/UiStateComponent.h"
@@ -48,6 +49,7 @@ Violet::SystemFactory setup()
 	Violet::Entity::installComponent<PathfindingComponent>();
 
 	Violet::JsonDeserializer::install();
+	Violet::JsonSerializer::install();
 	// Violet::BinaryDeserializer::install();
 
 	Violet::LuaScript::install();
@@ -72,24 +74,11 @@ int main(int /*argc*/, char ** /*argv*/)
 	const Violet::LogTarget::Guard consoleLogGuard(Violet::Log::installTarget(Violet::make_unique_val<Violet::ConsoleLogTarget>()));
 
 	auto factory = setup();
-
-	auto deserializer = Violet::FileDeserializerFactory::getInstance().create("editorConfig.json");
-	if (deserializer == nullptr || !*deserializer)
-	{
-		Violet::Log::log("failed to read config file");
-		char c;
-		std::cin >> c;
-		exit(1);
-	}
-
-	auto engine = Violet::Engine::init(factory, *deserializer);
-	if (engine == nullptr)
+	if (!Violet::Engine::bootstrap(factory, "editorConfig.json"))
 	{
 		Violet::Log::log("failed to init engine");
 		char c;
 		std::cin >> c;
 		exit(1);
 	}
-
-	engine->begin();
 }

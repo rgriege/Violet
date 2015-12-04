@@ -2,6 +2,7 @@
 
 #include "violet/handle/HandleComponent.h"
 
+#include "violet/Engine.h"
 #include "violet/entity/Entity.h"
 #include "violet/scene/Scene.h"
 #include "violet/serialization/Deserializer.h"
@@ -20,7 +21,7 @@ Tag HandleComponent::getStaticTag()
 
 HandleComponent::HandleComponent(Entity & owner) :
 	ComponentBase<HandleComponent>(owner),
-	m_handle(owner.getScene().createHandle())
+	m_handle()
 {
 	owner.getScene().index(*this);
 }
@@ -32,7 +33,6 @@ HandleComponent::HandleComponent(Entity & owner, Deserializer & deserializer) :
 	m_handle()
 {
 	deserializer >> *this;
-	m_handle = owner.getScene().createHandle(m_handle);
 	owner.getScene().index(*this);
 }
 
@@ -42,12 +42,7 @@ HandleComponent::HandleComponent(HandleComponent && other) :
 	ComponentBase<HandleComponent>(std::move(other)),
 	m_handle(std::move(other.m_handle))
 {
-	if (m_handle.isValid())
-	{
-		m_owner.getScene().deindex(other);
-		m_owner.getScene().index(*this);
-		other.m_handle = Handle::ms_invalid;
-	}
+	other.m_handle = Handle::ms_invalid;
 }
 
 // ----------------------------------------------------------------------------

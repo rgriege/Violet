@@ -25,6 +25,8 @@ namespace Violet
 
 		std::map<std::string, std::string> m_data;
 	};
+
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const MappedDataComponent & component);
 }
 
 #endif

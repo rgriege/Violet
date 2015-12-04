@@ -20,11 +20,11 @@
       <Filter>template</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\test\main.cpp" />
-    <ClCompile Include="..\..\..\src\test\scene\SceneTest.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\test\lua\LuaTest.cpp">
       <Filter>lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\test\task\TaskTest.cpp">
+      <Filter>task</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -46,11 +46,11 @@
     <Filter Include="game">
       <UniqueIdentifier>{a2952f37-e4f7-4607-9a3f-1d88428bfc18}</UniqueIdentifier>
     </Filter>
-    <Filter Include="scene">
-      <UniqueIdentifier>{5d581245-3860-4e6e-9743-1552940e790b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="lua">
       <UniqueIdentifier>{b612fcda-f4d3-49d2-befc-62ea763ca20b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="task">
+      <UniqueIdentifier>{08fb9f97-804c-4a01-9b19-c507dfe53fbf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -87,11 +87,11 @@
     <ClInclude Include="..\..\..\src\test\template\TemplateTest.h">
       <Filter>template</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\test\scene\SceneTest.h">
-      <Filter>scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\test\lua\LuaTest.h">
       <Filter>lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\test\task\TaskTest.h">
+      <Filter>task</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

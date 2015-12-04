@@ -4,6 +4,7 @@
 #include "violet/graphics/Color.h"
 #include "violet/graphics/component/ColorComponent.h"
 #include "violet/script/cpp/CppScript.h"
+#include "violet/serialization/file/FileSerializerFactory.h"
 #include "violet/update/system/UpdateSystem.h"
 
 #include <algorithm>
@@ -56,6 +57,12 @@ private:
                 {
                     editor.loadScene("testScene.json", engine);
                 });
+        }
+        else
+        {
+            auto serializer = FileSerializerFactory::getInstance().create("testScene2.json");
+            if (serializer != nullptr)
+                editor->getSceneRoot()->save(*serializer);
         }
         return InputResult::Block;
     }

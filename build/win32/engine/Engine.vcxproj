@@ -159,13 +159,14 @@
     <ClInclude Include="..\..\..\src\violet\structures\QuadTree.h" />
     <ClInclude Include="..\..\..\src\violet\system\System.h" />
     <ClInclude Include="..\..\..\src\violet\system\SystemFactory.h" />
+    <ClInclude Include="..\..\..\src\violet\task\Task.h" />
+    <ClInclude Include="..\..\..\src\violet\task\TaskScheduler.h" />
     <ClInclude Include="..\..\..\src\violet\template\TemplateUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\template\TupleUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\time\Time.h" />
     <ClInclude Include="..\..\..\src\violet\transform\component\TransformComponent.h" />
     <ClInclude Include="..\..\..\src\violet\transform\Transform.h" />
     <ClInclude Include="..\..\..\src\violet\ui\UiList.h" />
-    <ClInclude Include="..\..\..\src\violet\ui\UiListElementComponent.h" />
     <ClInclude Include="..\..\..\src\violet\ui\UiStateComponent.h" />
     <ClInclude Include="..\..\..\src\violet\update\component\UpdateComponent.h" />
     <ClInclude Include="..\..\..\src\violet\update\system\UpdateSystem.h" />
@@ -181,8 +182,6 @@
     <ClInclude Include="..\..\..\src\violet\utility\shared_val.h" />
     <ClInclude Include="..\..\..\src\violet\utility\StringUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\utility\Tag.h" />
-    <ClInclude Include="..\..\..\src\violet\utility\task\TaskScheduler.h" />
-    <ClInclude Include="..\..\..\src\violet\utility\task\Task.h" />
     <ClInclude Include="..\..\..\src\violet\utility\TextResource.h" />
     <ClInclude Include="..\..\..\src\violet\utility\unique_val.h" />
     <ClInclude Include="..\..\..\src\violet\window\glut\GlutWindowSystem.h" />
@@ -245,11 +244,12 @@
       <FileType>CppCode</FileType>
     </ClInclude>
     <ClCompile Include="..\..\..\src\violet\system\System.cpp" />
+    <ClCompile Include="..\..\..\src\violet\task\Task.cpp" />
+    <ClCompile Include="..\..\..\src\violet\task\TaskScheduler.cpp" />
     <ClCompile Include="..\..\..\src\violet\time\Time.cpp" />
     <ClCompile Include="..\..\..\src\violet\transform\component\TransformComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\transform\Transform.cpp" />
     <ClCompile Include="..\..\..\src\violet\ui\UiList.cpp" />
-    <ClCompile Include="..\..\..\src\violet\ui\UiListElementComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\ui\UiStateComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\update\component\UpdateComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\update\system\UpdateSystem.cpp" />
@@ -258,8 +258,6 @@
     <ClCompile Include="..\..\..\src\violet\utility\Profiler.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\StringUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\Tag.cpp" />
-    <ClCompile Include="..\..\..\src\violet\utility\task\TaskScheduler.cpp" />
-    <ClCompile Include="..\..\..\src\violet\utility\task\Task.cpp" />
     <ClCompile Include="..\..\..\src\violet\window\glut\GlutWindowSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\window\sdl\SDLWindowSystem.cpp" />
   </ItemGroup>

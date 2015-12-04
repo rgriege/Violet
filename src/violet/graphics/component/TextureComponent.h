@@ -23,6 +23,7 @@ namespace Violet
 		TextureComponent(Entity & owner, Deserializer & deserializer);
 		TextureComponent(Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords);
 		TextureComponent(TextureComponent && other);
+		~TextureComponent();
 
 	private:
 
@@ -32,11 +33,11 @@ namespace Violet
 	public:
 
 		std::shared_ptr<Texture> m_texture;
-		Mesh m_texCoords;
+		std::unique_ptr<Mesh> m_texCoords;
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, TextureComponent & component);
-	Serializer & operator<<(Serializer & serializer, const TextureComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, TextureComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const TextureComponent & component);
 }
 
 #endif

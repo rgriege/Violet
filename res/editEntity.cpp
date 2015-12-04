@@ -32,10 +32,6 @@ private:
         if (event.button == MB_Left)
         {
             createComponentMenu(engine, entity);
-            engine.addWriteTask(engine.getCurrentScene(), [&](Scene & scene)
-                {
-                    EntitySelectedEvent::emit(scene, entity, engine);
-                });
             return InputResult::Block;
         }
 
@@ -49,11 +45,17 @@ private:
         {
             if (entity.hasComponent<TransformComponent>())
             {
-                engine.addWriteTask(*menu, [](Entity & m)
+                engine.addWriteTask(*menu, [&](Entity & m)
                     {
                         const auto & deserializer = FileDeserializerFactory::getInstance().create("editTransform.json");
                         if (deserializer != nullptr)
                             m.addChild(*deserializer);
+
+                        const auto & engine = Engine::getInstance();
+                        engine.addWriteTask(engine.getCurrentScene(), [&](Scene & scene)
+                            {
+                                EntitySelectedEvent::emit(scene, entity, engine);
+                            });
                     });
             }
         }

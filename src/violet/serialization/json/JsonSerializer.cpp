@@ -44,7 +44,7 @@ using namespace JsonSerializerNamespace;
 
 void JsonSerializer::install()
 {
-	// FileSerializerFactory::getInstance().assign<JsonSerializer>("json");
+	FileSerializerFactory::getInstance().assign<JsonSerializer>("json");
 }
 
 // ============================================================================

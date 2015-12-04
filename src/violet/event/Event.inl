@@ -41,7 +41,27 @@ void Violet::Event<Derived, void(Args...)>::unsubscribe(EventContext & eventCont
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
+void Violet::Event<Derived, void(Args...)>::unsubscribe(const EventContext & eventContext, const uint32 delegateId)
+{
+	Violet::Engine::getInstance().addWriteTask(eventContext,
+		[=](EventContext & eventContext)
+		{
+			eventContext.unsubscribe(Derived::getIdentifier(), delegateId);
+		});
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Derived, typename ... Args>
 void Violet::Event<Derived, void(Args...)>::unsubscribe(EventContextOwner & eventContextOwner, const uint32 delegateId)
+{
+	unsubscribe(eventContextOwner.getEventContext(), delegateId);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Derived, typename ... Args>
+void Violet::Event<Derived, void(Args...)>::unsubscribe(const EventContextOwner & eventContextOwner, const uint32 delegateId)
 {
 	unsubscribe(eventContextOwner.getEventContext(), delegateId);
 }

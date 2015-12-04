@@ -9,7 +9,7 @@ namespace Violet
 {
 	class Deserializer;
 	class System;
-	class VIOLET_API SystemFactory : public Factory<const char *, std::unique_ptr<System>(Deserializer &)> {};
+	class VIOLET_API SystemFactory : public Factory<const char *, void(Deserializer &)> {};
 }
 
 #endif

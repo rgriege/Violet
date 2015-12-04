@@ -30,8 +30,8 @@ namespace Violet
 		Polygon m_mesh;
 	};
 
-	Serializer & operator<<(Serializer & serializer, const MouseInputComponent & component);
-	Deserializer & operator>>(Deserializer & deserializer, MouseInputComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const MouseInputComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, MouseInputComponent & component);
 }
 
 #endif

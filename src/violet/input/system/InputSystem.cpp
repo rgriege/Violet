@@ -46,10 +46,15 @@ void InputSystem::install(SystemFactory & factory)
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<System> InputSystem::init(Deserializer & deserializer)
+void InputSystem::init(Deserializer & deserializer)
 {
 	deserializer.enterSegment(getStaticLabel());
-	return std::unique_ptr<System>(new InputSystem);
+
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[](Engine & engine)
+		{
+			engine.addSystem(std::unique_ptr<System>(new InputSystem));
+		});
 }
 
 // ============================================================================
@@ -100,7 +105,7 @@ void InputSystem::update(const float dt, const Engine & engine)
 				break;
 			}
 		}
-	});
+	}, Engine::Thread::Window);
 }
 
 // ============================================================================

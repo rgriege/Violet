@@ -4,20 +4,20 @@
 
 // ============================================================================
 
-template <typename Writable, typename ... Args>
-Violet::Engine::WriteTask<void(Writable &, Args...)>::WriteTask(const Writable & writable, Delegate fn, Args ... args) :
-	Violet::Task(),
+template <typename Writable>
+Violet::Engine::WriteTask<void(Writable &)>::WriteTask(const Writable & writable, Delegate fn) :
+	Violet::Task(reinterpret_cast<uint64>(&writable)),
 	m_fn(fn),
-	m_args(const_cast<Writable &>(writable), args...)
+	m_writable(const_cast<Writable &>(writable))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-template <typename Writable, typename ... Args>
-void Violet::Engine::WriteTask<void(Writable &, Args...)>::execute() const
+template <typename Writable>
+void Violet::Engine::WriteTask<void(Writable &)>::execute() const
 {
-	Violet::for_all(m_fn, m_args);
+	m_fn(m_writable);
 }
 
 // ============================================================================
@@ -48,10 +48,10 @@ const std::unique_ptr<const SystemType> & Violet::Engine::getSystem() const
 
 // ----------------------------------------------------------------------------
 
-template <typename Writable, typename Delegate, typename ... Args>
-void Violet::Engine::addWriteTask(const Writable & writable, Delegate fn, Args... args) const
+template <typename Writable, typename Delegate>
+void Violet::Engine::addWriteTask(const Writable & writable, Delegate fn, const Thread thread) const
 {
-	addTask(std::make_unique<WriteTask<void(Writable &, Args...)>>(writable, fn, args...));
+	addTask(std::make_unique<WriteTask<void(Writable &)>>(writable, fn), thread, FrameStage::Write);
 }
 
 // ============================================================================

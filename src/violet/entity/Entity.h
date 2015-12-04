@@ -15,12 +15,14 @@ namespace Violet
 {
 	class Deserializer;
 	class Scene;
+	class Serializer;
 
 	class VIOLET_API Entity
 	{
 	public:
 
 		typedef Factory<std::string, void(Entity &, Deserializer &)> ComponentFactory;
+
 	public:
 
 		template <typename ComponentType>
@@ -33,11 +35,10 @@ namespace Violet
 
 	public:
 
-		Entity(Scene & scene);
-		Entity(Scene & scene, Deserializer & deserializer);
+		Entity(const Scene & scene);
+		Entity(const Scene & scene, Deserializer & deserializer);
 		~Entity();
 
-		Scene & getScene();
 		const Scene & getScene() const;
 
 		Entity & addChild();
@@ -70,6 +71,8 @@ namespace Violet
 
 		void removeFromParent();
 
+		void save(Serializer & serializer) const;
+
 	private:
 
 		static ComponentFactory ms_componentFactory;
@@ -87,7 +90,7 @@ namespace Violet
 		std::vector<unique_val<Component>> m_components;
 		uint32 m_componentFlags;
 		std::vector<unique_val<Entity>> m_children;
-		Scene & m_scene;
+		const Scene & m_scene;
 		Entity * m_parent;
 	};
 }

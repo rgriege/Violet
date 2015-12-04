@@ -11,11 +11,11 @@
 
 namespace Violet
 {
-	class FileDeserializerFactory
+	class VIOLET_API FileDeserializerFactory
 	{
 	public:
 
-		static VIOLET_API FileDeserializerFactory & getInstance();
+		static FileDeserializerFactory & getInstance();
 
 	private:
 
@@ -26,12 +26,12 @@ namespace Violet
 
 		template <typename T>
 		void assign(const char * extension);
-		std::unique_ptr<Deserializer> VIOLET_API create(const char * filename);
-		void VIOLET_API remove(const char * extension);
+		std::unique_ptr<Deserializer> create(const char * filename);
+		void remove(const char * extension);
 
 	private:
 
-		VIOLET_API FileDeserializerFactory();
+		FileDeserializerFactory();
 
 		FileDeserializerFactory(const FileDeserializerFactory &) = delete;
 		FileDeserializerFactory & operator=(const FileDeserializerFactory &) = delete;

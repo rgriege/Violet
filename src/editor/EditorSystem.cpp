@@ -54,7 +54,11 @@ namespace EditorSystemNamespace
 		ComponentType m_data;
 	};
 
-	Polygon getRenderArea(const Entity & entity);
+	template <typename ComponentType>
+	Serializer & operator<<(Serializer & serializer, const EditorComponentWrapper<ComponentType> & component)
+	{
+		return serializer << component.m_data;
+	}
 
 	void prepareForEditor(Entity & entity, std::string const & editScriptFileName);
 }
@@ -77,11 +81,16 @@ void EditorSystem::install(SystemFactory & factory)
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<System> EditorSystem::init(Deserializer & deserializer)
+void EditorSystem::init(Deserializer & deserializer)
 {
 	auto segment = deserializer.enterSegment(getStaticLabel());
-	std::string editScriptFileName = segment->getString("editScriptFileName");
-	return std::unique_ptr<EditorSystem>(new EditorSystem(std::move(editScriptFileName)));
+	const std::string editScriptFileName = segment->getString("editScriptFileName");
+
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[=](Engine & engine)
+		{
+			engine.addSystem(std::unique_ptr<System>(new EditorSystem(std::move(editScriptFileName))));
+		});
 }
 
 // ============================================================================
@@ -100,7 +109,9 @@ void EditorSystem::loadScene(const char * const filename, const Engine & engine)
 		assert(false);
 	}
 
-	engine.addWriteTask(engine.getCurrentScene().getRoot(), [&](Entity & root, const std::string & sceneFileName, const std::string & editScriptFileName)
+	const std::string sceneFileName(filename);
+	const std::string editScriptFileName = m_editScriptFileName;
+	engine.addWriteTask(engine.getCurrentScene().getRoot(), [=](Entity & root)
 		{
 			Entity::uninstallComponent<MouseInputComponent>();
 			Entity::uninstallComponent<KeyInputComponent>();
@@ -133,6 +144,7 @@ void EditorSystem::loadScene(const char * const filename, const Engine & engine)
 
 			if (newSceneRoot != nullptr)
 			{
+				const auto & engine = Engine::getInstance();
 				const float halfWidth = engine.getSystem<WindowSystem>()->getWidth() / 2.f;
 				const float halfHeight = engine.getSystem<WindowSystem>()->getHeight() / 2.f;
 				newSceneRoot->addComponent<HandleComponent>();
@@ -143,11 +155,15 @@ void EditorSystem::loadScene(const char * const filename, const Engine & engine)
 					{ halfWidth, halfHeight },
 					{ halfWidth, -halfHeight }
 					} });
-				m_rootSceneHandle = newSceneRoot->getComponent<HandleComponent>()->getHandle();
+				engine.addReadTask(std::make_unique<DelegateTask>(
+					[this, newSceneRoot]()
+					{
+						m_rootSceneHandle = newSceneRoot->getComponent<HandleComponent>()->getHandle();
+					}));
 				for (auto & child : newSceneRoot->getChildren())
 					prepareForEditor(child, editScriptFileName);
 			}
-		}, std::string(filename), m_editScriptFileName);
+		});
 }
 
 // ----------------------------------------------------------------------------
@@ -159,14 +175,14 @@ bool EditorSystem::hasScene() const
 
 // ----------------------------------------------------------------------------
 
-lent_ptr<const Entity> EditorSystem::getSceneRoot(const Engine & engine) const
+lent_ptr<const Entity> EditorSystem::getSceneRoot() const
 {
-	return engine.getCurrentScene().getEntity(m_rootSceneHandle);
+	return Engine::getInstance().getCurrentScene().getEntity(m_rootSceneHandle);
 }
 
 // ============================================================================
 
-EditorSystem::EditorSystem(std::string && editScriptFileName) :
+EditorSystem::EditorSystem(std::string editScriptFileName) :
 	System(getStaticLabel()),
 	m_rootSceneHandle(),
 	m_editScriptFileName(std::move(editScriptFileName))
@@ -179,27 +195,34 @@ void EditorSystemNamespace::prepareForEditor(Entity & entity, std::string const 
 {
 	if (!editScriptFileName.empty())
 	{
-		Polygon renderArea = getRenderArea(entity);
-		if (!renderArea.m_vertices.empty())
+		if (entity.hasComponent<ColorComponent>())
 		{
-			entity.addComponent<ScriptComponent>(editScriptFileName.c_str());
-			entity.addComponent<MouseInputComponent>(std::move(renderArea));
+			Engine::getInstance().addWriteTask(*entity.getComponent<ColorComponent>(),
+				[=](ColorComponent & component)
+				{
+					component.getOwner().addComponent<ScriptComponent>(editScriptFileName.c_str());
+					component.getOwner().addComponent<MouseInputComponent>(component.m_mesh->getPolygon());
+				}, Engine::Thread::Window);
+		}
+		else if (entity.hasComponent<TextComponent>())
+		{
+			Engine::getInstance().addWriteTask(*entity.getComponent<TextComponent>(),
+				[=](TextComponent & component)
+				{
+					component.getOwner().addComponent<ScriptComponent>(editScriptFileName.c_str());
+					component.getOwner().addComponent<MouseInputComponent>(component.m_mesh->getPolygon());
+				}, Engine::Thread::Window);
+		}
+		else if (entity.hasComponent<TextureComponent>())
+		{
+			Engine::getInstance().addWriteTask(*entity.getComponent<TextureComponent>(),
+				[=](TextureComponent & component)
+				{
+					component.getOwner().addComponent<ScriptComponent>(editScriptFileName.c_str());
+					component.getOwner().addComponent<MouseInputComponent>(component.m_mesh->getPolygon());
+				}, Engine::Thread::Window);
 		}
 	}
-}
-
-// ----------------------------------------------------------------------------
-
-Polygon EditorSystemNamespace::getRenderArea(const Entity & entity)
-{
-	if (entity.hasComponent<ColorComponent>())
-		return entity.getComponent<ColorComponent>()->m_mesh.getPolygon();
-	else if (entity.hasComponent<TextComponent>())
-		return entity.getComponent<TextComponent>()->m_mesh.getPolygon();
-	else if (entity.hasComponent<TextureComponent>())
-		return entity.getComponent<TextureComponent>()->m_mesh.getPolygon();
-	else
-		return Polygon(std::vector<Vec2f>());
 }
 
 // ============================================================================

@@ -18,41 +18,152 @@ using namespace Violet;
 
 // ============================================================================
 
-std::unique_ptr<Engine> Engine::init(SystemFactory & factory, Deserializer & deserializer)
+namespace EngineNamespace
 {
-	bool succeeded = true;
+	std::unique_ptr<Engine> ms_instance = nullptr;
+}
 
-	std::vector<std::unique_ptr<System>> systems;
+using namespace EngineNamespace;
+
+// ============================================================================
+
+const Engine & Engine::getInstance()
+{
+	// For now, just don't...
+	assert(ms_instance != nullptr);
+
+	return *ms_instance;
+}
+
+// ----------------------------------------------------------------------------
+
+bool Engine::bootstrap(const SystemFactory & factory, const char * const configFileName)
+{
+	// For now, just don't...
+	assert(ms_instance == nullptr);
+
+	auto deserializer = Violet::FileDeserializerFactory::getInstance().create(configFileName);
+	if (deserializer == nullptr || !*deserializer)
 	{
-		auto systemsSegment = deserializer.enterSegment("sysv");
-		while (*systemsSegment && succeeded)
+		Log::log("failed to read config file");
+		return false;
+	}
+
+	// start the thread pool
+	{
+		auto optionsSegment = deserializer->enterSegment("opts");
+		const uint32 workerCount = optionsSegment->getUint("workerCount");
+		ms_instance.reset(new Engine(workerCount));
+	}
+
+	// create the systems
+	{
+		auto systemsSegment = deserializer->enterSegment("sysv");
+		if (systemsSegment != nullptr)
 		{
-			const char * systemLabel = systemsSegment->nextLabel();
-			auto system = factory.create(systemLabel, *systemsSegment);
-			if (system != nullptr)
-				systems.emplace_back(std::move(system));
-			else
+			while (*systemsSegment)
 			{
-				Log::log(FormattedString<128>().sprintf("failed to init %s system", systemLabel));
-				succeeded = false;
+				const char * systemLabel = systemsSegment->nextLabel();
+				factory.create(systemLabel, *systemsSegment);
 			}
 		}
 	}
 
-	if (succeeded)
-	{
-		auto optionsSegment = deserializer.enterSegment("opts");
-		std::unique_ptr<Scene> scene = Scene::create(optionsSegment->getString("firstScene"));
-		const uint32 workerCount = optionsSegment->getUint("workerCount");
+	ms_instance->m_taskScheduler.finishCurrentTasks();
 
-		std::unique_ptr<Engine> engine(new Engine(std::move(systems), std::move(scene), workerCount));
-		return std::move(engine);
+	// create the first scene if systems initalized properly
+	if (ms_instance->m_running)
+	{
+		ms_instance->m_scene = Scene::create(deserializer->getString("firstScene"));
+		if (ms_instance->m_scene == nullptr)
+		{
+			Log::log("initial scene is invalid");
+			ms_instance.reset();
+			return false;
+		}
+
+		// run
+		ms_instance->begin();
 	}
 
-	return nullptr;
+	// cleanup
+	ms_instance->m_scene.reset();
+	ms_instance->m_systems.clear();
+
+	// clear any pending scene change
+	ms_instance->m_nextSceneFileName.clear();
+
+	// run another frame to handle cleanup tasks
+	ms_instance->runFrame(0.f);
+
+	ms_instance.reset();
+	return true;
 }
 
 // ============================================================================
+
+void Engine::switchScene(const char * filename)
+{
+	m_nextSceneFileName = filename;
+}
+
+// ----------------------------------------------------------------------------
+
+Scene & Engine::getCurrentScene()
+{
+	return *m_scene;
+}
+
+// ----------------------------------------------------------------------------
+
+const Scene & Engine::getCurrentScene() const
+{
+	return *m_scene;
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::stop()
+{
+	m_running = false;
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::addSystem(std::unique_ptr<System> && system)
+{
+	assert(system != nullptr);
+	m_systems.emplace_back(std::move(system));
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::addReadTask(std::unique_ptr<Task> && task, const Thread thread) thread_const
+{
+	addTask(std::move(task), thread, FrameStage::Read);
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::addDeleteTask(std::unique_ptr<Task> && task, const Thread thread) thread_const
+{
+	addTask(std::move(task), thread, FrameStage::Delete);
+}
+
+// ============================================================================
+
+Engine::Engine(const uint32 workerCount) :
+	m_nextSceneFileName(),
+	m_systems(),
+	m_scene(nullptr, Scene::destroy),
+	m_taskScheduler(workerCount),
+	m_taskQueues(),
+	m_running(true),
+	m_frameStage(FrameStage::Read)
+{
+}
+
+// ----------------------------------------------------------------------------
 
 void Engine::begin()
 {
@@ -93,53 +204,35 @@ void Engine::runFrame(const float frameTime)
 		m_nextSceneFileName.clear();
 	}
 
+	while (m_frameStage != FrameStage::Last)
+		performCurrentFrameStage();
+	performCurrentFrameStage();
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::performCurrentFrameStage()
+{
+	auto & tasks = m_taskQueues[static_cast<int>(m_frameStage)].m_tasks;
+	while (!tasks.empty())
+	{
+		m_taskScheduler.addTask(std::move(tasks.front().first), static_cast<int>(tasks.front().second));
+		tasks.pop();
+	}
+
 	m_taskScheduler.finishCurrentTasks();
+
+	m_frameStage = static_cast<FrameStage>((static_cast<int>(m_frameStage)+1) % static_cast<int>(FrameStage::Count));
 }
 
 // ----------------------------------------------------------------------------
 
-void Engine::switchScene(const char * filename)
+void Engine::addTask(std::unique_ptr<Task> && task, const Thread thread, const FrameStage frameStage) thread_const
 {
-	m_nextSceneFileName = filename;
-}
-
-// ----------------------------------------------------------------------------
-
-Scene & Engine::getCurrentScene()
-{
-	return *m_scene;
-}
-
-// ----------------------------------------------------------------------------
-
-const Scene & Engine::getCurrentScene() const
-{
-	return *m_scene;
-}
-
-// ----------------------------------------------------------------------------
-
-void Engine::stop()
-{
-	m_running = false;
-}
-
-// ----------------------------------------------------------------------------
-
-void Engine::addTask(std::unique_ptr<Task> && task) const
-{
-	m_taskScheduler.addTask(std::move(task));
-}
-
-// ============================================================================
-
-Engine::Engine(std::vector<std::unique_ptr<System>> && systems, std::unique_ptr<Scene> && scene, const uint32 workerCount) :
-	m_nextSceneFileName(),
-	m_systems(std::move(systems)),
-	m_scene(std::move(scene)),
-	m_taskScheduler(workerCount),
-	m_running(true)
-{
+	if (frameStage == m_frameStage)
+		m_taskScheduler.addTask(std::move(task), static_cast<int>(thread));
+	else
+		m_taskQueues[static_cast<int>(frameStage)].m_tasks.emplace(std::move(task), thread);
 }
 
 // ============================================================================
