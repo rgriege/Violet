@@ -1,5 +1,9 @@
 // ============================================================================
 
+#include "violet/Engine.h"
+
+// ============================================================================
+
 template <typename Derived, typename ... Args>
 uint32 Violet::Event<Derived, void(Args...)>::subscribe(EventContext & eventContext, const Delegate & func)
 {

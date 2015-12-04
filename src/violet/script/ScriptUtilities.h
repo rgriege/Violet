@@ -17,7 +17,7 @@ namespace Violet
 			while (parent != nullptr && !parent->hasComponent<ScriptComponent>())
 				parent = entity.getParent();
 
-			return parent != nullptr ? Method::run(*parent->getComponent<ScriptComponent>()->m_script, std::forward<Args>(args)...) : Method::Delegate::result_type();
+			return parent != nullptr ? Method::run(*parent->getComponent<ScriptComponent>()->m_script, std::forward<Args>(args)...) : typename Method::Delegate::result_type();
 		}
 	};
 }

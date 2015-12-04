@@ -69,12 +69,13 @@ set (HEADER_FILES
     ${Engine_ROOT}/structures/QuadTree.h
     ${Engine_ROOT}/system/SystemFactory.h
     ${Engine_ROOT}/system/System.h
+    ${Engine_ROOT}/task/Task.h
+    ${Engine_ROOT}/task/TaskScheduler.h
     ${Engine_ROOT}/template/TemplateUtilities.h
     ${Engine_ROOT}/template/TupleUtilities.h
     ${Engine_ROOT}/time/Time.h
     ${Engine_ROOT}/transform/component/TransformComponent.h
     ${Engine_ROOT}/ui/UiList.h
-    ${Engine_ROOT}/ui/UiListElementComponent.h
     ${Engine_ROOT}/ui/UiStateComponent.h
     ${Engine_ROOT}/update/component/UpdateComponent.h
     ${Engine_ROOT}/update/system/UpdateSystem.h
@@ -90,8 +91,6 @@ set (HEADER_FILES
     ${Engine_ROOT}/utility/shared_val.h
     ${Engine_ROOT}/utility/StringUtilities.h
     ${Engine_ROOT}/utility/Tag.h
-    ${Engine_ROOT}/utility/task/Task.h
-    ${Engine_ROOT}/utility/task/TaskScheduler.h
     ${Engine_ROOT}/utility/TextResource.h
     ${Engine_ROOT}/utility/unique_val.h
     ${Engine_ROOT}/window/glut/GlutWindowSystem.h
@@ -152,10 +151,11 @@ set (SOURCE_FILES
     ${Engine_ROOT}/serialization/json/JsonDeserializer.cpp
     ${Engine_ROOT}/serialization/json/JsonSerializer.cpp
     ${Engine_ROOT}/system/System.cpp
+    ${Engine_ROOT}/task/Task.cpp
+    ${Engine_ROOT}/task/TaskScheduler.cpp
     ${Engine_ROOT}/time/Time.cpp
     ${Engine_ROOT}/transform/component/TransformComponent.cpp
     ${Engine_ROOT}/ui/UiList.cpp
-    ${Engine_ROOT}/ui/UiListElementComponent.cpp
     ${Engine_ROOT}/ui/UiStateComponent.cpp
     ${Engine_ROOT}/update/component/UpdateComponent.cpp
     ${Engine_ROOT}/update/system/UpdateSystem.cpp
@@ -164,8 +164,6 @@ set (SOURCE_FILES
     ${Engine_ROOT}/utility/Profiler.cpp
     ${Engine_ROOT}/utility/StringUtilities.cpp
     ${Engine_ROOT}/utility/Tag.cpp
-    ${Engine_ROOT}/utility/task/Task.cpp
-    ${Engine_ROOT}/utility/task/TaskScheduler.cpp
     ${Engine_ROOT}/window/glut/GlutWindowSystem.cpp
     ${Engine_ROOT}/window/sdl/SDLWindowSystem.cpp
 )

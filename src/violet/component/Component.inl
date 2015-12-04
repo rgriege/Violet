@@ -2,6 +2,8 @@
 
 #include "violet/serialization/Serializer.h"
 
+#include <cstring>
+
 // ============================================================================
 
 template <typename Derived>
@@ -57,7 +59,7 @@ template <typename Derived>
 void Violet::ComponentBase<Derived>::save(Serializer & serializer) const
 {
 	char tag[5];
-	memcpy(tag, Derived::getStaticTag().asString(), 4);
+	std::memcpy(tag, Derived::getStaticTag().asString(), 4);
 	tag[4] = '\0';
 	auto componentSegment = serializer.createSegment(tag);
 	*componentSegment << *static_cast<const Derived *>(this);

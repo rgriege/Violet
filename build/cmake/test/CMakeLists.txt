@@ -15,8 +15,8 @@ set (HEADER_FILES
     ${Test_ROOT}/lua/LuaTest.h
     ${Test_ROOT}/math/MathTest.h
     ${Test_ROOT}/physics/PhysicsTest.h
-    ${Test_ROOT}/scene/SceneTest.h
     ${Test_ROOT}/serialization/JsonSerializationTest.h
+    ${Test_ROOT}/task/TaskTest.h
     ${Test_ROOT}/template/TemplateTest.h
 )
 
@@ -27,8 +27,8 @@ set (SOURCE_FILES
     ${Test_ROOT}/lua/LuaTest.cpp
     ${Test_ROOT}/math/MathTest.cpp
     ${Test_ROOT}/physics/PhysicsTest.cpp
-    ${Test_ROOT}/scene/SceneTest.cpp
     ${Test_ROOT}/serialization/JsonSerializationTest.cpp
+    ${Test_ROOT}/task/TaskTest.cpp
     ${Test_ROOT}/template/TemplateTest.cpp
 )
 
