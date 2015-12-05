@@ -190,27 +190,26 @@ Engine::Engine(const uint32 workerCount) :
 
 void Engine::begin()
 {
-	uint32 const targetFrameTime = 1000 / 60;
-	uint32 previousFrameTime = targetFrameTime;
-	uint32 framesSinceReport = 0;
+	float const targetFrameTime = 1.f / 60.f;
+	float previousFrameTime = targetFrameTime;
 
 	while (m_running)
 	{
 		{
-			Profiler::Block("frame");
-			runFrame(previousFrameTime / 1000.f);
+			const Profiler::Block block("frame");
+			runFrame(previousFrameTime);
 		}
 
-		auto const frameTime = static_cast<uint32>(Profiler::getInstance().report("frame"));
+		float const frameTime = Profiler::getInstance().report("frame") / 1000000.f;
 		if (frameTime < targetFrameTime)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(targetFrameTime - frameTime));
+			std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<uint32>((targetFrameTime - frameTime) * 1000)));
 			previousFrameTime = targetFrameTime;
 		}
 		else
 		{
-			Log::log(FormattedString<128>().sprintf("frame time: %.3f", frameTime / 1000.f));
 			previousFrameTime = frameTime;
+			Log::log(FormattedString<128>().sprintf("frame time: %.3f", previousFrameTime));
 		}
 	}
 }
@@ -238,7 +237,9 @@ void Engine::runFrame(const float frameTime)
 
 void Engine::performCurrentFrameStage()
 {
-	auto & tasks = m_taskQueues[static_cast<int>(m_frameStage)].m_tasks;
+	auto & taskQueue = m_taskQueues[static_cast<int>(m_frameStage)];
+	auto & tasks = taskQueue.m_tasks;
+	const std::lock_guard<std::mutex> lk(taskQueue.m_mutex);
 	while (!tasks.empty())
 	{
 		m_taskScheduler->addTask(std::move(tasks.front().first), static_cast<int>(tasks.front().second));
@@ -254,10 +255,15 @@ void Engine::performCurrentFrameStage()
 
 void Engine::addTask(std::unique_ptr<Task> && task, const Thread thread, const FrameStage frameStage) thread_const
 {
+	assert(task != nullptr);
 	if (frameStage == m_frameStage)
 		m_taskScheduler->addTask(std::move(task), static_cast<int>(thread));
 	else
-		m_taskQueues[static_cast<int>(frameStage)].m_tasks.emplace(std::move(task), thread);
+	{
+		auto & taskQueue = m_taskQueues[static_cast<int>(frameStage)];
+		const std::lock_guard<std::mutex> lk(taskQueue.m_mutex);
+		taskQueue.m_tasks.emplace(std::move(task), thread);
+	}
 }
 
 // ============================================================================

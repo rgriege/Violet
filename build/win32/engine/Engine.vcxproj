@@ -181,6 +181,7 @@
     <ClInclude Include="..\..\..\src\violet\utility\Guard.h" />
     <ClInclude Include="..\..\..\src\violet\utility\lent_ptr.h" />
     <ClInclude Include="..\..\..\src\violet\utility\Profiler.h" />
+    <ClInclude Include="..\..\..\src\violet\utility\Random.h" />
     <ClInclude Include="..\..\..\src\violet\utility\ResourceCache.h" />
     <ClInclude Include="..\..\..\src\violet\utility\shared_val.h" />
     <ClInclude Include="..\..\..\src\violet\utility\StringUtilities.h" />
@@ -259,6 +260,7 @@
     <ClCompile Include="..\..\..\src\violet\utility\FileUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\FreeList.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\Profiler.cpp" />
+    <ClCompile Include="..\..\..\src\violet\utility\Random.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\StringUtilities.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\Tag.cpp" />
     <ClCompile Include="..\..\..\src\violet\window\glut\GlutWindowSystem.cpp" />

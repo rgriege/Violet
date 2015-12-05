@@ -434,6 +434,9 @@
     <ClInclude Include="..\..\..\src\violet\task\TaskScheduler.h">
       <Filter>task</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\utility\Random.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -634,6 +637,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\task\TaskScheduler.cpp">
       <Filter>task</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\utility\Random.cpp">
+      <Filter>utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

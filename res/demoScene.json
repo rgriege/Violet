@@ -1,0 +1,16 @@
+{
+  "ntty": {
+    "cpnt": {},
+    "chld": {
+      "ntty": {
+        "cpnt": {
+          "updt": {},
+          "scpt": {
+            "file": "addSquares.dll"
+          }
+        },
+        "chld": {}
+      }
+    }
+  }
+}

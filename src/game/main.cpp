@@ -74,7 +74,7 @@ int main(int /*argc*/, char ** /*argv*/)
 	const Violet::LogTarget::Guard consoleLogGuard(Violet::Log::installTarget(Violet::make_unique_val<Violet::ConsoleLogTarget>()));
 
 	auto factory = setup();
-	if (!Violet::Engine::bootstrap(factory, "editorConfig.json"))
+	if (!Violet::Engine::bootstrap(factory, "demoConfig.json"))
 	{
 		Violet::Log::log("failed to init engine");
 		char c;
