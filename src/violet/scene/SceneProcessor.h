@@ -31,6 +31,7 @@ namespace Violet
 			Filter(uint32 componentFlags);
 
 			bool qualifies(const Entity & entity) const;
+			bool operator==(const Filter & rhs) const;
 
 		private:
 
@@ -41,7 +42,10 @@ namespace Violet
 
 	public:
 
-		void addDelegate(Filter filter, Delegate delegate);
+		~SceneProcessor();
+
+		void addDelegate(Filter filter, const Delegate & delegate);
+		void removeDelegate(Filter filter, const Delegate & delegate);
 
 		void process(const Scene & scene, float dt);
 

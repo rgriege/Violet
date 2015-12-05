@@ -77,7 +77,7 @@ void GlutWindowSystem::init(Deserializer & deserializer)
 
 // ============================================================================
 
-void GlutWindowSystem::update(float /*dt*/, const Engine & /*engine*/)
+void GlutWindowSystem::update(const float /*dt*/)
 {
 	m_eventQueue.clear();
 	glutSetWindow(m_id);

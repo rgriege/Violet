@@ -3,12 +3,14 @@
 #include "violet/Engine.h"
 
 #include "violet/log/Log.h"
+#include "violet/scene/Scene.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/serialization/file/FileSerializerFactory.h"
 #include "violet/serialization/Serializer.h"
 #include "violet/system/System.h"
 #include "violet/system/SystemFactory.h"
+#include "violet/task/TaskScheduler.h"
 #include "violet/utility/FormattedString.h"
 #include "violet/utility/Profiler.h"
 
@@ -69,7 +71,7 @@ bool Engine::bootstrap(const SystemFactory & factory, const char * const configF
 		}
 	}
 
-	ms_instance->m_taskScheduler.finishCurrentTasks();
+	ms_instance->m_taskScheduler->finishCurrentTasks();
 
 	// create the first scene if systems initalized properly
 	if (ms_instance->m_running)
@@ -102,6 +104,12 @@ bool Engine::bootstrap(const SystemFactory & factory, const char * const configF
 
 // ============================================================================
 
+Engine::~Engine()
+{
+}
+
+// ----------------------------------------------------------------------------
+
 void Engine::switchScene(const char * filename)
 {
 	m_nextSceneFileName = filename;
@@ -119,6 +127,20 @@ Scene & Engine::getCurrentScene()
 const Scene & Engine::getCurrentScene() const
 {
 	return *m_scene;
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::addSceneDelegate(const SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate)
+{
+	m_sceneProcessor->addDelegate(filter, delegate);
+}
+
+// ----------------------------------------------------------------------------
+
+void Engine::removeSceneDelegate(const SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate)
+{
+	m_sceneProcessor->removeDelegate(filter, delegate);
 }
 
 // ----------------------------------------------------------------------------
@@ -153,10 +175,11 @@ void Engine::addDeleteTask(std::unique_ptr<Task> && task, const Thread thread) t
 // ============================================================================
 
 Engine::Engine(const uint32 workerCount) :
-	m_nextSceneFileName(),
 	m_systems(),
 	m_scene(nullptr, Scene::destroy),
-	m_taskScheduler(workerCount),
+	m_sceneProcessor(std::make_unique<SceneProcessor>()),
+	m_nextSceneFileName(),
+	m_taskScheduler(std::make_unique<TaskScheduler>(workerCount)),
 	m_taskQueues(),
 	m_running(true),
 	m_frameStage(FrameStage::Read)
@@ -196,7 +219,9 @@ void Engine::begin()
 
 void Engine::runFrame(const float frameTime)
 {
-	std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(frameTime, *this); });
+	std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(frameTime); });
+	if (m_scene != nullptr)
+		m_sceneProcessor->process(*m_scene, frameTime);
 
 	if (!m_nextSceneFileName.empty())
 	{
@@ -216,11 +241,11 @@ void Engine::performCurrentFrameStage()
 	auto & tasks = m_taskQueues[static_cast<int>(m_frameStage)].m_tasks;
 	while (!tasks.empty())
 	{
-		m_taskScheduler.addTask(std::move(tasks.front().first), static_cast<int>(tasks.front().second));
+		m_taskScheduler->addTask(std::move(tasks.front().first), static_cast<int>(tasks.front().second));
 		tasks.pop();
 	}
 
-	m_taskScheduler.finishCurrentTasks();
+	m_taskScheduler->finishCurrentTasks();
 
 	m_frameStage = static_cast<FrameStage>((static_cast<int>(m_frameStage)+1) % static_cast<int>(FrameStage::Count));
 }
@@ -230,7 +255,7 @@ void Engine::performCurrentFrameStage()
 void Engine::addTask(std::unique_ptr<Task> && task, const Thread thread, const FrameStage frameStage) thread_const
 {
 	if (frameStage == m_frameStage)
-		m_taskScheduler.addTask(std::move(task), static_cast<int>(thread));
+		m_taskScheduler->addTask(std::move(task), static_cast<int>(thread));
 	else
 		m_taskQueues[static_cast<int>(frameStage)].m_tasks.emplace(std::move(task), thread);
 }

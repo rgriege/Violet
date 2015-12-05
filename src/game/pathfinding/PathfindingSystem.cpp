@@ -61,7 +61,7 @@ PathfindingSystem::~PathfindingSystem()
 
 // ----------------------------------------------------------------------------
 
-void PathfindingSystem::update(const float dt, const Violet::Engine & engine)
+void PathfindingSystem::update(const float dt)
 {
 	/*Violet::SceneProcessor processor;
 	processor.addDelegate(Violet::SceneProcessor::Filter::create<PathComponent>(), [&](const Violet::Entity & entity, const float dt) {

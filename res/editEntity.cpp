@@ -17,7 +17,7 @@ public:
         CppScript::Instance(script)
     {
         using namespace std::placeholders;
-        MouseDownMethod::assign(m_script, std::bind(&Instance::onMouseDown, this, _1, _2, _3));
+        MouseDownMethod::assign(m_script, std::bind(&Instance::onMouseDown, this, _1, _2));
     }
 
     virtual ~Instance() override
@@ -27,19 +27,20 @@ public:
 
 private:
 
-    InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
+    InputResult onMouseDown(const Entity & entity, const InputSystem::MouseButtonEvent & event)
     {
         if (event.button == MB_Left)
         {
-            createComponentMenu(engine, entity);
+            createComponentMenu(entity);
             return InputResult::Block;
         }
 
         return InputResult::Pass;
     }
 
-    void createComponentMenu(const Engine & engine, const Entity & entity)
+    void createComponentMenu(const Entity & entity)
     {
+        const auto & engine = Engine::getInstance();
         const auto & menu = engine.getCurrentScene().getEntity(Handle(4000, 0));
         if (menu != nullptr)
         {
@@ -54,7 +55,7 @@ private:
                         const auto & engine = Engine::getInstance();
                         engine.addWriteTask(engine.getCurrentScene(), [&](Scene & scene)
                             {
-                                EntitySelectedEvent::emit(scene, entity, engine);
+                                EntitySelectedEvent::emit(scene, entity);
                             });
                     });
             }

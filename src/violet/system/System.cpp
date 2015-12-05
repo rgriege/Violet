@@ -13,6 +13,13 @@ System::System(const char * label) :
 
 // ----------------------------------------------------------------------------
 
+void System::update(const float /*dt*/)
+{
+
+}
+
+// ----------------------------------------------------------------------------
+
 const char * System::getLabel() const
 {
 	return m_label;

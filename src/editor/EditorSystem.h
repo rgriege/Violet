@@ -29,9 +29,9 @@ namespace Violet
 	public:
 
 		virtual ~EditorSystem() override = default;
-		virtual void update(float dt, const Engine & engine) override;
 
-		void loadScene(const char * filename, const Engine & engine);
+		void loadScene(const char * filename);
+		void saveScene(const char * filename) const;
 
 		bool hasScene() const;
 		lent_ptr<const Entity> getSceneRoot() const;
@@ -46,7 +46,7 @@ namespace Violet
 		std::string m_editScriptFileName;
 	};
 
-	DEFINE_EVENT(EntitySelectedEvent, void(const Entity & entity, const Engine & engine));
+	DEFINE_EVENT(EntitySelectedEvent, void(const Entity & entity));
 }
 
 #endif

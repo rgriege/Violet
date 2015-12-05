@@ -13,14 +13,14 @@ void Violet::Script::Method<Derived, ResultType(Args...)>::assign(Script & scrip
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ResultType, typename ... Args>
-void Violet::Script::Method<Derived, ResultType(Args...)>::assign(const Engine & engine, const Script & script, const Delegate & func)
+void Violet::Script::Method<Derived, ResultType(Args...)>::assign(const Script & script, const Delegate & func)
 {
 	const auto it = script.m_boundMethods.find(Derived::getIdentifier());
 	if (it != script.m_boundMethods.end())
 		script.warn(Derived::getName(), "delegate already bound");
 
 	const auto delegate = new Delegate(func);
-	engine.addWriteTask(script,
+	Engine::getInstance().addWriteTask(script,
 		[=](Script & script)
 		{
 			addHook(script, Derived::getIdentifier(), delegate);
@@ -61,9 +61,9 @@ void Violet::Script::Method<Derived, ResultType(Args...)>::remove(Script & scrip
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ResultType, typename ... Args>
-void Violet::Script::Method<Derived, ResultType(Args...)>::remove(const Engine & engine, const Script & script)
+void Violet::Script::Method<Derived, ResultType(Args...)>::remove(const Script & script)
 {
-	engine.addWriteTask(script, removeHook);
+	Engine::getInstance().addWriteTask(script, removeHook);
 }
 
 // ============================================================================

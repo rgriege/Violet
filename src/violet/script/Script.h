@@ -28,11 +28,11 @@ namespace Violet
 		public:
 
 			static void assign(Script & script, const Delegate & func);
-			static void assign(const Engine & engine, const Script & script, const Delegate & func);
+			static void assign(const Script & script, const Delegate & func);
 			static bool has(const Script & script);
 			static ResultType run(const Script & script, Args && ... args);
 			static void remove(Script & script);
-			static void remove(const Engine & engine, const Script & script);
+			static void remove(const Script & script);
 			
 		private:
 

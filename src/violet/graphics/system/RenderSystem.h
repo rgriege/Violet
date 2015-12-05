@@ -20,7 +20,7 @@ namespace Violet
 	public:
 
 		virtual ~RenderSystem() override;
-		virtual void update(float dt, const Engine & engine) override;
+		virtual void update(float dt) override;
 
 	private:
 

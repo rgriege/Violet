@@ -19,7 +19,7 @@ public:
         m_menuHandle(Handle::ms_invalid)
     {
         using namespace std::placeholders;
-        MouseDownMethod::assign(script, std::bind(&Instance::onMouseDown, this, _1, _2, _3));
+        MouseDownMethod::assign(script, std::bind(&Instance::onMouseDown, this, _1, _2));
     }
 
     virtual ~Instance() override
@@ -29,20 +29,20 @@ public:
 
 private:
 
-    InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
+    InputResult onMouseDown(const Entity & entity, const InputSystem::MouseButtonEvent & event)
     {
         if (event.button == MB_Right)
         {
             if (activeMenu())
             {
-                removeMenu(engine);
-                createMenu(engine, event.position);
+                removeMenu();
+                createMenu(event.position);
             }
             else
-                createMenu(engine, event.position);
+                createMenu(event.position);
         }
         else if (activeMenu())
-            removeMenu(engine);
+            removeMenu();
         else
             return InputResult::Pass;
 
@@ -54,9 +54,9 @@ private:
         return m_menuHandle.isValid();
     }
 
-    void createMenu(const Engine & engine, const Vec2f & position)
+    void createMenu(const Vec2f & position)
     {
-        engine.addWriteTask(engine.getCurrentScene().getRoot(), [position, this](Entity & root)
+        Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene().getRoot(), [position, this](Entity & root)
             {
                 auto deserializer = FileDeserializerFactory::getInstance().create("block.json");
                 if (deserializer != nullptr && *deserializer)
@@ -74,12 +74,12 @@ private:
             });
     }
 
-    void removeMenu(const Engine & engine)
+    void removeMenu()
     {
-        auto const & menu = engine.getCurrentScene().getEntity(m_menuHandle);
+        auto const & menu = Engine::getInstance().getCurrentScene().getEntity(m_menuHandle);
         if (menu != nullptr)
         {
-            engine.addWriteTask(*menu, [](Entity & menu)
+            Engine::getInstance().addWriteTask(*menu, [](Entity & menu)
                 {
                     menu.removeFromParent();
                 });

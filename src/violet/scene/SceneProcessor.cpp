@@ -38,21 +38,46 @@ bool SceneProcessor::Filter::qualifies(const Entity & entity) const
 
 // ----------------------------------------------------------------------------
 
-SceneProcessor::Filter::Filter(uint32 componentFlags) :
+bool SceneProcessor::Filter::operator==(const Filter & rhs) const
+{
+	return m_componentFlags == rhs.m_componentFlags;
+}
+
+// ----------------------------------------------------------------------------
+
+SceneProcessor::Filter::Filter(const uint32 componentFlags) :
 	m_componentFlags(componentFlags)
 {
 }
 
 // ============================================================================
 
-void SceneProcessor::addDelegate(Filter filter, Delegate delegate)
+SceneProcessor::~SceneProcessor()
+{
+	assert(m_delegates.empty());
+}
+
+// ----------------------------------------------------------------------------
+
+void SceneProcessor::addDelegate(const Filter filter, const Delegate & delegate)
 {
 	m_delegates.emplace_back(std::make_pair(filter, delegate));
 }
 
 // ----------------------------------------------------------------------------
 
-void SceneProcessor::process(const Scene & scene, float dt)
+void SceneProcessor::removeDelegate(const Filter filter, const Delegate & delegate)
+{
+	m_delegates.erase(std::remove_if(m_delegates.begin(), m_delegates.end(),
+		[filter, &delegate](const std::pair<Filter, Delegate> & filteredDelegate)
+		{
+			return filteredDelegate.first == filter && *filteredDelegate.second.target<void(*)(const Entity &, float)>() == *delegate.target<void(*)(const Entity &, float)>();
+		}), m_delegates.end());
+}
+
+// ----------------------------------------------------------------------------
+
+void SceneProcessor::process(const Scene & scene, const float dt)
 {
 	std::stack<SiblingIterator> iterators;
 	auto const & rootChildren = scene.getRoot().getChildren();

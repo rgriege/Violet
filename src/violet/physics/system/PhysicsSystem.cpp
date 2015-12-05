@@ -18,7 +18,7 @@ namespace PhysicsSystemNamespace
 {
 	// ----------------------------------------------------------------------------
 
-	void resolveCollisionForEntity(const Engine & engine, const TransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, float impulseMagnitude);
+	void resolveCollisionForEntity(const TransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, float impulseMagnitude);
 
 	void move(PhysicsComponent & physics, const TransformComponent & transform, const Vec2f & gravity, float drag, float dt);
 	void collide(PhysicsComponent & physics, const Vec2f & impulse, float angularImpulse);
@@ -73,8 +73,9 @@ PhysicsSystem::PhysicsSystem(PhysicsSystem && other) :
 
 // ----------------------------------------------------------------------------
 
-void PhysicsSystem::update(const float dt, const Engine & engine)
+void PhysicsSystem::update(const float dt)
 {
+	const Engine & engine = Engine::getInstance();
 	const auto & windowSystem = engine.getSystem<WindowSystem>();
 	const AABB boundary(0, 0, static_cast<float>(windowSystem->getWidth()), static_cast<float>(windowSystem->getHeight()));
 	QuadTree<std::reference_wrapper<const Entity>> tree(boundary, 4);
@@ -115,8 +116,8 @@ void PhysicsSystem::update(const float dt, const Engine & engine)
 					//printf("collision!\n");
 					float const impulseMagnitude = (-(1 + ms_restitution) * (otherPhysicsComponent.m_velocity - physicsComponent.m_velocity).dot(intersection.getIntersectionAxis())) /
 						(1 / physicsComponent.m_mass + 1 / otherPhysicsComponent.m_mass);
-					resolveCollisionForEntity(engine, transformComponent, physicsComponent, intersection, impulseMagnitude);
-					resolveCollisionForEntity(engine, otherTransformComponent, otherPhysicsComponent, intersection, impulseMagnitude);
+					resolveCollisionForEntity(transformComponent, physicsComponent, intersection, impulseMagnitude);
+					resolveCollisionForEntity(otherTransformComponent, otherPhysicsComponent, intersection, impulseMagnitude);
 					CollisionEvent::emit(engine.getEventContext(), entity, otherEntity.get());
 				}
 			}
@@ -136,14 +137,14 @@ PhysicsSystem::PhysicsSystem(float drag, Vec2f gravity) :
 
 // ============================================================================
 
-void PhysicsSystemNamespace::resolveCollisionForEntity(const Engine & engine, const TransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, const float impulseMagnitude)
+void PhysicsSystemNamespace::resolveCollisionForEntity(const TransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, const float impulseMagnitude)
 {
 	Vec2f impulse = intersection.getIntersectionAxis() * impulseMagnitude / physics.m_mass;
 	Vec2f const location = intersection.getImpactLocation() - Vec2f(transform.m_transform[0][2], transform.m_transform[1][2]);
 	if (impulse.dot(location) > 0)
 		impulse.invert();
 
-	engine.addWriteTask(physics,
+	Engine::getInstance().addWriteTask(physics,
 		[=](PhysicsComponent & physicsComponent)
 		{
 			collide(physicsComponent, impulse / physicsComponent.m_mass, -location.cross(impulse) / physicsComponent.m_momentOfInertia);

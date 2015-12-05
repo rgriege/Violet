@@ -12,6 +12,7 @@
 #include "violet/scene/Scene.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
+#include "violet/serialization/file/FileSerializerFactory.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
 #include "violet/transform/component/TransformComponent.h"
@@ -95,13 +96,7 @@ void EditorSystem::init(Deserializer & deserializer)
 
 // ============================================================================
 
-void EditorSystem::update(const float /*dt*/, const Engine & /*engine*/)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-void EditorSystem::loadScene(const char * const filename, const Engine & engine)
+void EditorSystem::loadScene(const char * const filename)
 {
 	if (m_rootSceneHandle.isValid())
 	{
@@ -111,6 +106,7 @@ void EditorSystem::loadScene(const char * const filename, const Engine & engine)
 
 	const std::string sceneFileName(filename);
 	const std::string editScriptFileName = m_editScriptFileName;
+	auto & engine = Engine::getInstance();
 	engine.addWriteTask(engine.getCurrentScene().getRoot(), [=](Entity & root)
 		{
 			Entity::uninstallComponent<MouseInputComponent>();
@@ -164,6 +160,31 @@ void EditorSystem::loadScene(const char * const filename, const Engine & engine)
 					prepareForEditor(child, editScriptFileName);
 			}
 		});
+}
+
+// ----------------------------------------------------------------------------
+
+void EditorSystem::saveScene(const char * const filename) const
+{
+	assert(hasScene());
+
+	const std::string sceneFileName(filename);
+	auto & engine = Engine::getInstance();
+	engine.addWriteTask(*getSceneRoot(), [=](Entity & root)
+		{
+			root.removeComponent<HandleComponent>();
+			root.removeComponent<TransformComponent>();
+			root.removeComponent<MouseInputComponent>();
+
+			/*for (auto & child : root.getChildren())
+				prepareForSave(child);*/
+
+			auto serializer = FileSerializerFactory::getInstance().create(sceneFileName.c_str());
+			if (serializer != nullptr)
+				root.save(*serializer);
+			else
+				Log::log(FormattedString<128>().sprintf("Could not open scene file '%s'", sceneFileName.c_str()));
+		}, Engine::Thread::Window);
 }
 
 // ----------------------------------------------------------------------------

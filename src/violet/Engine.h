@@ -2,11 +2,8 @@
 #define VIOLET_Engine_H
 
 #include "violet/Defines.h"
-#include "violet/entity/Entity.h"
 #include "violet/event/EventContextOwner.h"
-#include "violet/scene/Scene.h"
-#include "violet/system/System.h"
-#include "violet/task/TaskScheduler.h"
+#include "violet/scene/SceneProcessor.h"
 #include "violet/task/Task.h"
 
 #include <array>
@@ -15,10 +12,10 @@
 
 namespace Violet
 {
-	class Deserializer;
-	class Entity;
+	class Scene;
 	class System;
 	class SystemFactory;
+	class TaskScheduler;
 
 	class VIOLET_API Engine : public EventContextOwner
 	{
@@ -78,9 +75,13 @@ namespace Violet
 
 	public:
 
+		~Engine();
+
 		void switchScene(const char * filename);
 		Scene & getCurrentScene();
 		const Scene & getCurrentScene() const;
+		void addSceneDelegate(SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate);
+		void removeSceneDelegate(SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate);
 		void stop();
 
 		void addSystem(std::unique_ptr<System> && system);
@@ -109,10 +110,11 @@ namespace Violet
 
 	private:
 
-		thread_mutable TaskScheduler m_taskScheduler;
+		thread_mutable std::unique_ptr<TaskScheduler> m_taskScheduler;
 		thread_mutable std::array<TaskQueue, static_cast<int>(FrameStage::Count)> m_taskQueues;
 		std::vector<std::unique_ptr<System>> m_systems;
 		std::unique_ptr<Scene, void(*)(Scene *)> m_scene;
+		std::unique_ptr<SceneProcessor> m_sceneProcessor;
 		std::string m_nextSceneFileName;
 		bool m_running;
 		FrameStage m_frameStage;

@@ -21,7 +21,7 @@ UiList::UiList(const char * const elementFileName, const uint32 elementHeight) :
 
 // ----------------------------------------------------------------------------
 
-void UiList::update(const Entity & entity, const Engine & engine, const uint32 elementCount)
+void UiList::update(const Entity & entity, const uint32 elementCount)
 {
 	const auto & children = entity.getChildren();
 	const auto childCount = children.size();
@@ -30,7 +30,7 @@ void UiList::update(const Entity & entity, const Engine & engine, const uint32 e
 
 	for (uint32 i = childCount; i < elementCount; ++i)
 	{
-		engine.addWriteTask(entity, [&elementFileName, i, elementHeight, &engine](Entity & entity)
+		Engine::getInstance().addWriteTask(entity, [&elementFileName, i, elementHeight](Entity & entity)
 		{
 			auto const deserializer = FileDeserializerFactory::getInstance().create(elementFileName.c_str());
 			if (deserializer != nullptr)
@@ -44,7 +44,7 @@ void UiList::update(const Entity & entity, const Engine & engine, const uint32 e
 				if (script != nullptr)
 				{
 					uint32 index = i;
-					AssignIndexMethod::run(*script->m_script, child, engine, std::move(index));
+					AssignIndexMethod::run(*script->m_script, child, std::move(index));
 				}
 
 				entity.addChild(std::move(child));

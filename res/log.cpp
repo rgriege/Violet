@@ -5,6 +5,7 @@
 #include "violet/script/cpp/CppScript.h"
 #include "violet/ui/UiList.h"
 #include "violet/update/system/UpdateSystem.h"
+#include "violet/utility/FormattedString.h"
 
 #include "log.h"
 
@@ -49,7 +50,7 @@ public:
     {
         using namespace std::placeholders;
         GetLogEntryMethod::assign(script, std::bind(&Instance::onGetLogEntry, this, _1));
-        UpdateMethod::assign(script, std::bind(&Instance::onUpdate, this, _1, _2));
+        UpdateMethod::assign(script, std::bind(&Instance::onUpdate, this, _1));
     }
 
     virtual ~Instance() override
@@ -67,9 +68,9 @@ private:
         return index < m_logEntries.size() ? m_logEntries[index] : s_empty;
     }
 
-    void onUpdate(const Entity & entity, const Engine & engine)
+    void onUpdate(const Entity & entity)
     {
-        m_list.update(entity, engine, m_logEntries.size());
+        m_list.update(entity, m_logEntries.size());
     }
 
 private:

@@ -26,10 +26,10 @@ public:
         m_disappearing(true)
     {
         using namespace std::placeholders;
-        MouseInMethod::assign(script, std::bind(&Instance::onMouseIn, this, _1, _2));
-        MouseDownMethod::assign(script, std::bind(&Instance::onMouseDown, this, _1, _2, _3));
-        MouseOutMethod::assign(script, std::bind(&Instance::onMouseOut, this, _1, _2));
-        UpdateMethod::assign(script, std::bind(&Instance::update, this, _1, _2, _3));
+        MouseInMethod::assign(script, std::bind(&Instance::onMouseIn, this, _1));
+        MouseDownMethod::assign(script, std::bind(&Instance::onMouseDown, this, _1, _2));
+        MouseOutMethod::assign(script, std::bind(&Instance::onMouseOut, this, _1));
+        UpdateMethod::assign(script, std::bind(&Instance::update, this, _1, _2));
     }
 
     virtual ~Instance() override
@@ -42,44 +42,40 @@ public:
 
 private:
 
-    void onMouseIn(const Entity & entity, const Engine & engine)
+    void onMouseIn(const Entity & entity)
     {
         m_opacity = ms_maxOpacity;
-        adjustOpacity(entity, engine, m_opacity);
+        adjustOpacity(entity, m_opacity);
     }
 
-    InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
+    InputResult onMouseDown(const Entity & entity, const InputSystem::MouseButtonEvent & event)
     {
-        auto const & editor = engine.getSystem<EditorSystem>();
+        auto const & editor = Engine::getInstance().getSystem<EditorSystem>();
         if (!editor->hasScene())
         {
-            engine.addWriteTask(*editor, [&](EditorSystem & editor)
+            Engine::getInstance().addWriteTask(*editor, [&](EditorSystem & editor)
                 {
-                    editor.loadScene("testScene.json", engine);
+                    editor.loadScene("testScene.json");
                 });
         }
         else
-        {
-            auto serializer = FileSerializerFactory::getInstance().create("testScene2.json");
-            if (serializer != nullptr)
-                editor->getSceneRoot()->save(*serializer);
-        }
+            editor->saveScene("testScene2.json");
         return InputResult::Block;
     }
 
-    void onMouseOut(const Entity & entity, const Engine & engine)
+    void onMouseOut(const Entity & entity)
     {
         m_opacity = ms_minOpacity;
         m_disappearing = true;
     }
 
-    void update(const Entity & entity, const Engine & engine, const float dt)
+    void update(const Entity & entity, const float dt)
     {
         if (m_disappearing)
-            adjustOpacity(entity, engine, -ms_transitionDelta);
+            adjustOpacity(entity, -ms_transitionDelta);
     }
 
-    void adjustOpacity(const Entity & entity, const Engine & engine, int diff)
+    void adjustOpacity(const Entity & entity, int diff)
     {
         auto colorComponent = entity.getComponent<ColorComponent>();
         if (colorComponent != nullptr)
@@ -88,7 +84,7 @@ private:
             {
                 Color newColor(colorComponent->m_color);
                 newColor.a = std::min<uint8>(std::max<uint8>(newColor.a.asUint() + diff, ms_minOpacity), ms_maxOpacity);
-                engine.addWriteTask(*colorComponent, [newColor](ColorComponent & colorComponent) { colorComponent.m_color = newColor; });
+                Engine::getInstance().addWriteTask(*colorComponent, [newColor](ColorComponent & colorComponent) { colorComponent.m_color = newColor; });
 
                 if (newColor.a.asUint() == m_opacity)
                     m_disappearing = false;

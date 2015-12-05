@@ -13,6 +13,15 @@ using namespace Violet;
 
 // ============================================================================
 
+namespace UpdateSystemNamespace
+{
+	void updateEntity(const Entity & entity, float dt);
+}
+
+using namespace UpdateSystemNamespace;
+
+// ============================================================================
+
 const char * UpdateSystem::getStaticLabel()
 {
 	return "updt";
@@ -35,6 +44,7 @@ void UpdateSystem::init(Deserializer & deserializer)
 		[](Engine & engine)
 		{
 			engine.addSystem(std::unique_ptr<System>(new UpdateSystem));
+			engine.addSceneDelegate(SceneProcessor::Filter::create<UpdateComponent, ScriptComponent>(), updateEntity);
 		});
 }
 
@@ -47,13 +57,13 @@ UpdateSystem::UpdateSystem(UpdateSystem && other) :
 
 // ----------------------------------------------------------------------------
 
-void UpdateSystem::update(const float dt, const Engine & engine)
+UpdateSystem::~UpdateSystem()
 {
-	SceneProcessor processor;
-	processor.addDelegate(SceneProcessor::Filter::create<UpdateComponent, ScriptComponent>(), [&engine](const Entity & entity, float dt) {
-		UpdateMethod::run(*entity.getComponent<ScriptComponent>()->m_script, entity, engine, std::move(dt));
-	});
-	processor.process(engine.getCurrentScene(), dt);
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[](Engine & engine)
+		{
+			engine.removeSceneDelegate(SceneProcessor::Filter::create<UpdateComponent, ScriptComponent>(), updateEntity);
+		});
 }
 
 // ============================================================================
@@ -61,6 +71,13 @@ void UpdateSystem::update(const float dt, const Engine & engine)
 UpdateSystem::UpdateSystem() :
 	System(getStaticLabel())
 {
+}
+
+// ============================================================================
+
+void UpdateSystemNamespace::updateEntity(const Entity & entity, float dt)
+{
+	UpdateMethod::run(*entity.getComponent<ScriptComponent>()->m_script, entity, std::move(dt));
 }
 
 // ============================================================================

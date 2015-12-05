@@ -39,20 +39,20 @@ namespace Violet
 		InputSystem(InputSystem && other);
 
 		virtual ~InputSystem() override = default;
-		virtual void update(float dt, const Engine & engine) override;
+		virtual void update(float dt) override;
 
 	private:
 
 		InputSystem();
 	};
 
-	DEFINE_METHOD(KeyDownMethod, void(const Entity &, const Engine &, unsigned char));
-	DEFINE_METHOD(KeyUpMethod, void(const Entity &, const Engine &, unsigned char));
-	DEFINE_METHOD(MouseDownMethod, InputResult(const Entity &, const Engine &, const InputSystem::MouseButtonEvent &));
-	DEFINE_METHOD(MouseUpMethod, InputResult(const Entity &, const Engine &, const InputSystem::MouseButtonEvent &));
-	DEFINE_METHOD(MouseMoveMethod, void(const Entity &, const Engine &, const InputSystem::MouseMotionEvent &));
-	DEFINE_METHOD(MouseInMethod, void(const Entity &, const Engine &));
-	DEFINE_METHOD(MouseOutMethod, void(const Entity &, const Engine &));
+	DEFINE_METHOD(KeyDownMethod, void(const Entity &, unsigned char));
+	DEFINE_METHOD(KeyUpMethod, void(const Entity &, unsigned char));
+	DEFINE_METHOD(MouseDownMethod, InputResult(const Entity &, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseUpMethod, InputResult(const Entity &, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseMoveMethod, void(const Entity &, const InputSystem::MouseMotionEvent &));
+	DEFINE_METHOD(MouseInMethod, void(const Entity &));
+	DEFINE_METHOD(MouseOutMethod, void(const Entity &));
 }
 
 #endif

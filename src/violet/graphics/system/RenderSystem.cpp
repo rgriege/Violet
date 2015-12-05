@@ -98,9 +98,9 @@ void process(const Entity &, float);
 
 // ----------------------------------------------------------------------------
 
-void RenderSystem::update(float const /*dt*/, const Engine & engine)
+void RenderSystem::update(float const /*dt*/)
 {
-	engine.addReadTask(std::make_unique<DelegateTask>(
+	Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
 		[]()
 		{
 			const auto & engine = Engine::getInstance();

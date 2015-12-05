@@ -22,8 +22,8 @@ public:
         m_index(0)
     {
         using namespace std::placeholders;
-        AssignIndexMethod::assign(script, std::bind(&Instance::onAssignIndex, this, _1, _2, _3));
-        UpdateMethod::assign(script, std::bind(&Instance::onUpdate, this, _1, _2));
+        AssignIndexMethod::assign(script, std::bind(&Instance::onAssignIndex, this, _1, _2));
+        UpdateMethod::assign(script, std::bind(&Instance::onUpdate, this, _1));
     }
 
     virtual ~Instance() override
@@ -34,18 +34,18 @@ public:
 
 private:
 
-    void onAssignIndex(const Entity & entity, const Engine & engine, const uint32 index)
+    void onAssignIndex(const Entity & entity, const uint32 index)
     {
         m_index = index;
     }
 
-    void onUpdate(const Entity & entity, const Engine & engine)
+    void onUpdate(const Entity & entity)
     {
         uint32 index = m_index;
         const auto & text = ScriptUtilities::runOnAncestor<GetLogEntryMethod>(entity, std::move(index));
 
         const auto & textC = entity.getComponent<TextComponent>();
-        engine.addWriteTask(*textC,
+        Engine::getInstance().addWriteTask(*textC,
             [text](TextComponent & textComponent)
             {
                 textComponent.m_text = text;

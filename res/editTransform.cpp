@@ -30,7 +30,7 @@ public:
         m_entitySelectedDelegateId(std::numeric_limits<uint32>::max())
     {
         BindToComponentMethod::assign(script, std::bind(&Instance::onBindToComponent, this, _1));
-        KeyUpMethod::assign(script, std::bind(&Instance::onKeyUp, this, _1, _2, _3));
+        KeyUpMethod::assign(script, std::bind(&Instance::onKeyUp, this, _1, _2));
         UnbindFromComponentMethod::assign(script, std::bind(&Instance::onUnbindFromComponent, this, _1));
     }
 
@@ -44,13 +44,13 @@ public:
 
 private:
 
-    InputResult onMouseDown(const Entity & entity, const Engine & engine, const InputSystem::MouseButtonEvent & event)
+    InputResult onMouseDown(const Entity & entity, const InputSystem::MouseButtonEvent & event)
     {
         std::cout << "md" << std::endl;
         if (!entity.hasComponent<KeyInputComponent>())
         {
             std::cout << "adding key input" << std::endl;
-            engine.addWriteTask(entity, [](Entity & entity)
+            Engine::getInstance().addWriteTask(entity, [](Entity & entity)
                 {
                     entity.addComponent<KeyInputComponent>();
                 });
@@ -59,8 +59,9 @@ private:
         return InputResult::Block;
     }
 
-    void onKeyUp(const Entity & entity, const Engine & engine, const unsigned char key)
+    void onKeyUp(const Entity & entity, const unsigned char key)
     {
+        const Engine & engine = Engine::getInstance();
         if (Key::isNumericInput(key))
         {
             const auto & tc = entity.getComponent<TextComponent>();
@@ -115,7 +116,7 @@ private:
         Engine::getInstance().addWriteTask(entity.getScene().getEventContext(),
             [=](EventContext & context)
             {
-                m_entitySelectedDelegateId = EntitySelectedEvent::subscribe(context, std::bind(&Instance::onEntitySelected, this, _1, _2));
+                m_entitySelectedDelegateId = EntitySelectedEvent::subscribe(context, std::bind(&Instance::onEntitySelected, this, _1));
             });
         m_entity = &entity;
     }
@@ -126,19 +127,19 @@ private:
         m_entity = nullptr;
     }
 
-    void onEntitySelected(const Entity & entity, const Engine & engine)
+    void onEntitySelected(const Entity & entity)
     {
         m_selectedEntity = &entity;
         if (m_entity != nullptr)
         {
-            MouseDownMethod::assign(m_script, std::bind(&Instance::onMouseDown, this, _1, _2, _3));
+            MouseDownMethod::assign(m_script, std::bind(&Instance::onMouseDown, this, _1, _2));
             const auto & transformC = entity.getComponent<TransformComponent>();
             const auto & textC = m_entity->getComponent<TextComponent>();
             if (transformC != nullptr && textC != nullptr)
             {
                 const std::pair<uint32, uint32> & index = getIndex();
                 const float value = transformC->m_transform[index.first][index.second];
-                engine.addWriteTask(*textC, [value](TextComponent & textC)
+                Engine::getInstance().addWriteTask(*textC, [value](TextComponent & textC)
                     {
                         textC.m_text = FormattedString<16>().sprintf("%.3f", value);
                     });

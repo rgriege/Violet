@@ -15,7 +15,7 @@ namespace Violet
 
 		UiList(const char * elementFileName, uint32 elementHeight);
 
-		void update(const Entity & entity, const Engine & engine, uint32 elementCount);
+		void update(const Entity & entity, uint32 elementCount);
 
 		void clean(Script & script);
 
@@ -25,7 +25,7 @@ namespace Violet
 		const uint32 m_elementHeight;
 	};
 
-	DEFINE_METHOD(AssignIndexMethod, void(const Entity &, const Engine &, uint32 index));
+	DEFINE_METHOD(AssignIndexMethod, void(const Entity &, uint32 index));
 }
 
 #endif

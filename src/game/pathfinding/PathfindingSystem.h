@@ -25,7 +25,7 @@ public:
 	PathfindingSystem(PathfindingSystem && other);
 
 	virtual ~PathfindingSystem() override;
-	void update(float dt, const Violet::Engine & engine) override;
+	void update(float dt) override;
 
 	void path(Violet::Scene & scene, Violet::Entity & entity, const Vec2f & goal);
 

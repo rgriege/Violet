@@ -25,15 +25,14 @@ namespace Violet
 
 		UpdateSystem(UpdateSystem && other);
 
-		virtual ~UpdateSystem() override = default;
-		virtual void update(float dt, const Engine & engine) override;
+		virtual ~UpdateSystem() override;
 
 	private:
 
 		UpdateSystem();
 	};
 
-	DEFINE_METHOD(UpdateMethod, void(const Entity &, const Engine &, float));
+	DEFINE_METHOD(UpdateMethod, void(const Entity &, float));
 }
 
 #endif

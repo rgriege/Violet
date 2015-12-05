@@ -107,12 +107,6 @@ void SDLWindowSystem::render()
 
 // ----------------------------------------------------------------------------
 
-void SDLWindowSystem::update(float /*dt*/, const Engine & /*engine*/)
-{
-}
-
-// ----------------------------------------------------------------------------
-
 bool SDLWindowSystem::getEvent(const EventType type, Event * const event)
 {
 	bool queueEmpty = false;
