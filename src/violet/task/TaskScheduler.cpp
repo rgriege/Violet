@@ -257,7 +257,8 @@ void TaskScheduler::checkin(const uint64 dependency)
 	{
 		{
 			const std::lock_guard<std::mutex> guard(m_busyDependenciesMutex);
-			assert(m_busyDependencies.erase(dependency) == 1);
+			const auto eraseCount = m_busyDependencies.erase(dependency);
+			assert(eraseCount == 1);
 		}
 		m_busyDependenciesCv.notify_all();
 	}
