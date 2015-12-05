@@ -2,6 +2,7 @@
 
 #include "violet/task/TaskScheduler.h"
 
+#include "violet/log/Log.h"
 #include "violet/utility/FormattedString.h"
 
 #include <assert.h>
@@ -111,10 +112,8 @@ private:
 
 void TaskScheduler::executeTasks(TaskScheduler & taskScheduler, const uint32 index)
 {
-#ifdef DEBUG_THREAD
 	try
 	{
-#endif
 		bool outOfTasks = false;
 		while (!outOfTasks)
 		{
@@ -124,13 +123,11 @@ void TaskScheduler::executeTasks(TaskScheduler & taskScheduler, const uint32 ind
 			else
 				outOfTasks = true;
 		}
-#ifdef DEBUG_THREAD
 	}
 	catch (std::exception const & e)
 	{
-		LOG(e.what());
+		Log::log(e.what());
 	}
-#endif
 }
 
 // ============================================================================
