@@ -170,10 +170,10 @@ Violet::Vec2<T> & Violet::Vec2<T>::operator=(const Vec2<T> & other)
 // ----------------------------------------------------------------------------
 
 template<typename T>
-void Violet::Vec2<T>::rotate(T radians) {
-	T oldX = x;
-	T c = cos(radians);
-	T s = sin(radians);
+void Violet::Vec2<T>::rotate(const T radians) {
+	const T oldX = x;
+	const T c = cos(radians);
+	const T s = sin(radians);
 	x = x * c - y * s;
 	y = oldX * s + y * c;
 }

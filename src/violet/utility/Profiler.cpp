@@ -46,7 +46,7 @@ Profiler::Block::~Block()
 
 // ============================================================================
 
-void Profiler::add(const std::string & key, int64 microseconds)
+void Profiler::add(const std::string & key, const int64 microseconds)
 {
 	m_counters[key] += microseconds;
 }
