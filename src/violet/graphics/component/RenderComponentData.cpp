@@ -98,8 +98,8 @@ RenderComponentData::~RenderComponentData()
 
 Deserializer & Violet::operator>>(Deserializer & deserializer, RenderComponentData & component)
 {
-	deserializer >> *component.m_mesh;
 	component.m_shader = ShaderProgram::getCache().fetch(deserializer.getString("shader"));
+	deserializer >> *component.m_mesh;
 	return deserializer;
 }
 
@@ -107,8 +107,8 @@ Deserializer & Violet::operator>>(Deserializer & deserializer, RenderComponentDa
 
 Serializer & Violet::operator<<(Serializer & serializer, const RenderComponentData & component)
 {
-	serializer << *component.m_mesh;
 	serializer.writeString("shader", component.m_shader->getName().c_str());
+	serializer << *component.m_mesh;
 	return serializer;
 }
 
