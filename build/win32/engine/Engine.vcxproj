@@ -123,6 +123,7 @@
     <ClInclude Include="..\..\..\src\violet\input\Key.h" />
     <ClInclude Include="..\..\..\src\violet\input\system\InputSystem.h" />
     <ClInclude Include="..\..\..\src\violet\log\ConsoleLogTarget.h" />
+    <ClInclude Include="..\..\..\src\violet\log\FileLogTarget.h" />
     <ClInclude Include="..\..\..\src\violet\log\Log.h" />
     <ClInclude Include="..\..\..\src\violet\log\LogTarget.h" />
     <ClInclude Include="..\..\..\src\violet\math\AABB.h" />
@@ -218,6 +219,7 @@
     <ClCompile Include="..\..\..\src\violet\input\Key.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\system\InputSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\log\ConsoleLogTarget.cpp" />
+    <ClCompile Include="..\..\..\src\violet\log\FileLogTarget.cpp" />
     <ClCompile Include="..\..\..\src\violet\log\Log.cpp" />
     <ClCompile Include="..\..\..\src\violet\log\LogTarget.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\AABB.cpp" />

@@ -437,6 +437,9 @@
     <ClInclude Include="..\..\..\src\violet\utility\Random.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\log\FileLogTarget.h">
+      <Filter>log</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -640,6 +643,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\utility\Random.cpp">
       <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\log\FileLogTarget.cpp">
+      <Filter>log</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

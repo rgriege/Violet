@@ -11,6 +11,7 @@
 #include "violet/input/system/InputSystem.h"
 #include "violet/log/Log.h"
 #include "violet/log/ConsoleLogTarget.h"
+#include "violet/log/FileLogTarget.h"
 #include "violet/physics/system/PhysicsSystem.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/script/cpp/CppScript.h"
@@ -71,7 +72,8 @@ Violet::SystemFactory setup()
 
 int main(int /*argc*/, char ** /*argv*/)
 {
-	const Violet::LogTarget::Guard consoleLogGuard(Violet::Log::installTarget(Violet::make_unique_val<Violet::ConsoleLogTarget>()));
+	const Violet::LogTarget::Guard consoleLogGuard(Violet::Log::installTarget(std::make_unique<Violet::ConsoleLogTarget>()));
+	const Violet::LogTarget::Guard fileLogGuard(Violet::Log::installTarget(Violet::FileLogTarget::create("log.txt")));
 
 	auto factory = setup();
 	if (!Violet::Engine::bootstrap(factory, "demoConfig.json"))

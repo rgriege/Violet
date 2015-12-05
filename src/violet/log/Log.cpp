@@ -13,7 +13,7 @@ using namespace Violet;
 
 namespace LogNamespace
 {
-	typedef std::pair<uint32, unique_val<LogTarget>> Target;
+	typedef std::pair<uint32, std::unique_ptr<LogTarget>> Target;
 	std::vector<Target> ms_targets;
 	std::mutex ms_targetMutex;
 	uint32 ms_nextId = 0;
@@ -23,7 +23,7 @@ using namespace LogNamespace;
 
 // ============================================================================
 
-uint32 Log::installTarget(unique_val<LogTarget> && logTarget)
+uint32 Log::installTarget(std::unique_ptr<LogTarget> && logTarget)
 {
 	const std::lock_guard<std::mutex> guard(ms_targetMutex);
 	ms_targets.emplace_back(ms_nextId++, std::move(logTarget));

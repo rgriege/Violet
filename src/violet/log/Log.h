@@ -2,7 +2,8 @@
 #define VIOLET_Log_H
 
 #include "violet/Defines.h"
-#include "violet/utility/unique_val.h"
+
+#include <memory>
 
 namespace Violet
 {
@@ -12,7 +13,7 @@ namespace Violet
 	{
 	public:
 
-		static uint32 installTarget(unique_val<LogTarget> && logTarget);
+		static uint32 installTarget(std::unique_ptr<LogTarget> && logTarget);
 		static void removeTarget(uint32 id);
 
 		static void log(const char * entry);

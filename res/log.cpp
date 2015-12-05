@@ -45,7 +45,7 @@ public:
     Instance(CppScript & script, const char * elementFile, uint32 elementHeight) :
         CppScript::Instance(script),
         m_logEntries(),
-        m_logTargetGuard(Log::installTarget(make_unique_val<LocalTarget>(m_logEntries))),
+        m_logTargetGuard(Log::installTarget(std::make_unique<LocalTarget>(m_logEntries))),
         m_list(elementFile, elementHeight)
     {
         using namespace std::placeholders;
