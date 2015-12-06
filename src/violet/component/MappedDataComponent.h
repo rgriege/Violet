@@ -2,6 +2,7 @@
 #define VIOLET_MappedDataComponent_H
 
 #include "violet/component/Component.h"
+#include "violet/task/Thread.h"
 
 #include <map>
 
@@ -14,11 +15,12 @@ namespace Violet
 	public:
 
 		static Tag getStaticTag();
+		static Thread getStaticThread();
 
 	public:
 
-		MappedDataComponent(Entity & owner);
-		MappedDataComponent(Entity & owner, Deserializer & deserializer);
+		MappedDataComponent(Handle entityId);
+		MappedDataComponent(Handle entityId, Deserializer & deserializer);
 		MappedDataComponent(MappedDataComponent && other);
 
 	public:

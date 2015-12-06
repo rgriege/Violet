@@ -2,6 +2,7 @@
 #define VIOLET_InputSystem_H
 
 #include "violet/math/Vec2.h"
+#include "violet/handle/Handle.h"
 #include "violet/input/InputResult.h"
 #include "violet/script/Script.h"
 #include "violet/system/System.h"
@@ -9,7 +10,6 @@
 
 namespace Violet
 {
-	class Entity;
 	class SystemFactory;
 
 	class VIOLET_API InputSystem : public System
@@ -46,13 +46,13 @@ namespace Violet
 		InputSystem();
 	};
 
-	DEFINE_METHOD(KeyDownMethod, void(const Entity &, unsigned char));
-	DEFINE_METHOD(KeyUpMethod, void(const Entity &, unsigned char));
-	DEFINE_METHOD(MouseDownMethod, InputResult(const Entity &, const InputSystem::MouseButtonEvent &));
-	DEFINE_METHOD(MouseUpMethod, InputResult(const Entity &, const InputSystem::MouseButtonEvent &));
-	DEFINE_METHOD(MouseMoveMethod, void(const Entity &, const InputSystem::MouseMotionEvent &));
-	DEFINE_METHOD(MouseInMethod, void(const Entity &));
-	DEFINE_METHOD(MouseOutMethod, void(const Entity &));
+	DEFINE_METHOD(KeyDownMethod, void(Handle entityId, unsigned char));
+	DEFINE_METHOD(KeyUpMethod, void(Handle entityId, unsigned char));
+	DEFINE_METHOD(MouseDownMethod, InputResult(Handle entityId, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseUpMethod, InputResult(Handle entityId, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseMoveMethod, void(Handle entityId, const InputSystem::MouseMotionEvent &));
+	DEFINE_METHOD(MouseInMethod, void(Handle entityId));
+	DEFINE_METHOD(MouseOutMethod, void(Handle entityId));
 }
 
 #endif

@@ -58,18 +58,15 @@ uint32 Violet::ComponentBase<Derived>::getFlag() const
 template <typename Derived>
 void Violet::ComponentBase<Derived>::save(Serializer & serializer) const
 {
-	char tag[5];
-	std::memcpy(tag, Derived::getStaticTag().asString(), 4);
-	tag[4] = '\0';
-	auto componentSegment = serializer.createSegment(tag);
+	auto componentSegment = serializer.createSegment(Derived::getStaticTag().asString().c_str());
 	*componentSegment << *static_cast<const Derived *>(this);
 }
 
 // ============================================================================
 
 template <typename Derived>
-Violet::ComponentBase<Derived>::ComponentBase(Entity & owner) :
-	Component(owner)
+Violet::ComponentBase<Derived>::ComponentBase(const Handle entityId) :
+	Component(entityId)
 {
 }
 

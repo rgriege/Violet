@@ -27,10 +27,17 @@ Tag PhysicsComponent::getStaticTag()
 	return Tag('p', 'h', 'y', 's');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread PhysicsComponent::getStaticThread()
+{
+	return Thread::Any;
+}
+
 // ============================================================================
 
-PhysicsComponent::PhysicsComponent(Entity & owner, Deserializer & deserializer) :
-	ComponentBase<PhysicsComponent>(owner),
+PhysicsComponent::PhysicsComponent(const Handle entityId, Deserializer & deserializer) :
+	ComponentBase<PhysicsComponent>(entityId),
 	m_polygon(deserializer),
 	m_mass(),
 	m_velocity(),

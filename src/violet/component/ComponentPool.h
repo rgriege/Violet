@@ -1,37 +1,49 @@
 #ifndef VIOLET_ComponentPool_H
 #define VIOLET_ComponentPool_H
 
-#include "engine/component/Component.h"
-#include "engine/entity/Entity.h"
+#include "violet/component/Component.h"
+#include "violet/Handle/Handle.h"
 
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 namespace Violet
 {
+	class Deserializer;
+	class Serializer;
+
 	class VIOLET_API ComponentPool
 	{
 	public:
 
-		template <typename ComponentType>
+		template <typename ComponentType, bool is_const>
 		class Iterator
 		{
 		public:
 
-			Iterator(ComponentType * ptr);
+			typedef std::conditional_t<is_const, const ComponentType *, ComponentType *> Pointer;
+			typedef std::conditional_t<is_const, const ComponentType &, ComponentType &> Reference;
 
-			Iterator<ComponentType> & operator++();
-			Iterator<ComponentType> & advanceTo(Entity entity, const Iterator<ComponentType> & end);
+		public:
 
-			ComponentType & operator*();
-			ComponentType * operator->();
+			explicit Iterator(Pointer ptr);
 
-			bool operator!=(const Iterator<ComponentType> & other) const;
+			Iterator<ComponentType, is_const> & operator++();
+			Iterator<ComponentType, is_const> & advanceTo(Handle entityId);
+
+			Reference operator*();
+			Pointer operator->();
+
+			operator bool() const;
+			bool operator!=(const Iterator<ComponentType, is_const> & other) const;
 
 		private:
 
-			ComponentType * m_ptr;
+			Pointer m_ptr;
 		};
+
+		template <typename T> using iterator = typename Iterator<T, false>;
+		template <typename T> using const_iterator = typename Iterator<T, true>;
 
 	public:
 
@@ -45,45 +57,65 @@ namespace Violet
 		ComponentPool(ComponentPool && other);
 		ComponentPool & operator=(ComponentPool && other);
 
-		Tag getTypeId() const;
+		Tag getComponentTag() const;
+
+		template <typename ComponentType>
+		void loadOne(Handle entityId, Deserializer & deserializer);
+		template <typename ComponentType>
+		void loadMany(Deserializer & deserializer);
+		template <typename ComponentType>
+		void save(Serializer & serailizer) const;
 
 		template <typename ComponentType, typename... Args>
-		ComponentType & create(Entity entity, Args&&... args);
+		ComponentType & create(Handle entityId, Args && ... args);
 
-		bool has(Entity entity) const;
-
-		template <typename ComponentType>
-		ComponentType * get(Entity entity);
+		bool has(Handle entityId) const;
 
 		template <typename ComponentType>
-		Iterator<ComponentType> begin();
+		ComponentType * get(Handle entityId);
 		template <typename ComponentType>
-		Iterator<ComponentType> end();
+		const ComponentType * get(Handle entityId) const;
 
-		bool remove(Entity entity);
+		template <typename ComponentType>
+		iterator<ComponentType> begin();
+		template <typename ComponentType>
+		const_iterator<ComponentType> begin() const;
+		template <typename ComponentType>
+		iterator<ComponentType> end();
+		template <typename ComponentType>
+		const_iterator<ComponentType> end() const;
+
+		uint32 size() const;
+
+		bool remove(Handle entityId);
 		void clear();
 
 	private:
 
-		ComponentPool(Tag typeId, uint32 componentSize);
+		ComponentPool(Tag componentTag, uint32 componentSize);
 
 		ComponentPool(const ComponentPool &) = delete;
 		ComponentPool & operator=(const ComponentPool &) = delete;
 
 		template <typename ComponentType>
 		ComponentType * get(uint32 index);
+		template <typename ComponentType>
+		const ComponentType * get(uint32 index) const;
+
+		uint32 getLastDataIndex() const;
+
+		std::pair<void *, bool> getLocation(Handle entityId);
+		void verify();
 
 	private:
 
-		Tag m_typeId;
-		uint32 m_componentSize;
+		const Tag m_componentTag;
+		const uint32 m_componentSize;
 		std::vector<ubyte> m_data;
-		std::unordered_map<Entity, uint32> m_lookupMap;
+		std::map<Handle, uint32> m_lookupMap;
 	};
-
-	template <typename T> using ComponentPoolIterator = typename ComponentPool::Iterator<T>;
 }
 
-#include "engine/component/ComponentPool.inl"
+#include "violet/component/ComponentPool.inl"
 
 #endif

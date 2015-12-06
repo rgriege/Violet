@@ -72,7 +72,7 @@ void GlutWindowSystem::init(Deserializer & deserializer)
 			glutKeyboardUpFunc(onKeyboardUp);
 
 			engine.addSystem(std::unique_ptr<System>(new GlutWindowSystem(id, width, height)));
-		}, Engine::Thread::Window);
+		}, Thread::Window);
 }
 
 // ============================================================================

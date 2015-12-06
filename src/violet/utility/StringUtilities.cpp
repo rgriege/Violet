@@ -17,7 +17,7 @@ std::string StringUtilities::right(std::string const & str, char delimiter)
 
 const char * StringUtilities::right(const char * str, char delimiter)
 {
-	return strchr(str, delimiter) + 1;
+	return strrchr(str, delimiter) + 1;
 }
 
 std::string StringUtilities::lastRight(std::string const & str, char delimiter)

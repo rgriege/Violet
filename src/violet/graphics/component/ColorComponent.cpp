@@ -15,10 +15,17 @@ Tag ColorComponent::getStaticTag()
 	return Tag('c', 'o', 'l', 'r');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread ColorComponent::getStaticThread()
+{
+	return Thread::Window;
+}
+
 // ============================================================================
 
-ColorComponent::ColorComponent(Entity & owner, Deserializer & deserializer) :
-	ComponentBase<ColorComponent>(owner),
+ColorComponent::ColorComponent(const Handle entityId, Deserializer & deserializer) :
+	ComponentBase<ColorComponent>(entityId),
 	RenderComponentData(deserializer),
 	m_color(deserializer)
 {
@@ -26,8 +33,8 @@ ColorComponent::ColorComponent(Entity & owner, Deserializer & deserializer) :
 
 // ----------------------------------------------------------------------------
 
-ColorComponent::ColorComponent(Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, const Color color) :
-	ComponentBase<ColorComponent>(owner),
+ColorComponent::ColorComponent(const Handle entityId, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, const Color color) :
+	ComponentBase<ColorComponent>(entityId),
 	RenderComponentData(poly, shader),
 	m_color(color)
 {

@@ -1,8 +1,3 @@
-TARGETS = button \
+TARGETS = \
     addSquares \
-    contextMenu \
-    editEntity \
-    editTransform \
-    log \
-    logEntry \
     square

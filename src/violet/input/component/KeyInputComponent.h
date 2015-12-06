@@ -2,6 +2,7 @@
 #define VIOLET_KeyInputComponent_H
 
 #include "violet/component/Component.h"
+#include "violet/task/Thread.h"
 
 namespace Violet
 {
@@ -13,13 +14,13 @@ namespace Violet
 	public:
 
 		static Tag getStaticTag();
+		static Thread getStaticThread();
 
 	public:
 
-		KeyInputComponent(Entity & owner);
-		KeyInputComponent(Entity & owner, Deserializer & deserializer);
+		KeyInputComponent(Handle entityId);
+		KeyInputComponent(Handle entityId, Deserializer & deserializer);
 		KeyInputComponent(KeyInputComponent && other);
-		//KeyInputComponent & operator=(KeyInputComponent && other);
 	};
 
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const KeyInputComponent & component);

@@ -2,6 +2,7 @@
 #define VIOLET_ScriptComponent_H
 
 #include "violet/component/Component.h"
+#include "violet/task/Thread.h"
 
 #include "violet/script/Script.h"
 
@@ -17,11 +18,12 @@ namespace Violet
 	public:
 
 		static Tag getStaticTag();
+		static Thread getStaticThread();
 
 	public:
 
-		ScriptComponent(Entity & owner, Deserializer & deserializer);
-		ScriptComponent(Entity & owner, const char * fileName);
+		ScriptComponent(Handle entityId, Deserializer & deserializer);
+		ScriptComponent(Handle entityId, const char * fileName);
 		ScriptComponent(ScriptComponent && other);
 		virtual ~ScriptComponent() override;
 
@@ -32,8 +34,8 @@ namespace Violet
 
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const ScriptComponent & component);
 
-	DEFINE_METHOD(BindToComponentMethod, void(Entity & owner));
-	DEFINE_METHOD(UnbindFromComponentMethod, void(Entity & owner));
+	DEFINE_METHOD(BindToComponentMethod, void(Handle entityId));
+	DEFINE_METHOD(UnbindFromComponentMethod, void(Handle entityId));
 }
 
 #endif

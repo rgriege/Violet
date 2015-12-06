@@ -80,7 +80,7 @@ void SDLWindowSystem::init(Deserializer & deserializer)
 			SDL_SetEventFilter(filterEvent, nullptr);
 
 			engine.addSystem(std::unique_ptr<System>(new SDLWindowSystem(window, glContext)));
-		}, Engine::Thread::Window);
+		}, Thread::Window);
 }
 
 // ============================================================================
@@ -95,7 +95,7 @@ SDLWindowSystem::~SDLWindowSystem()
 			SDL_GL_DeleteContext(glContext);
 			SDL_DestroyWindow(window);
 			SDL_Quit();
-		}), Engine::Thread::Window);
+		}), Thread::Window);
 }
 
 // ----------------------------------------------------------------------------

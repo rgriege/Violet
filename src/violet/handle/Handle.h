@@ -41,7 +41,7 @@ namespace std
 	{
 		std::size_t operator()(const Violet::Handle handle) const
 		{
-			return std::hash<uint32>()(handle.getId() | handle.getVersion());
+			return std::hash<uint32>()((handle.getId() << 8) | handle.getVersion());
 		}
 	};
 }

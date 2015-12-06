@@ -20,8 +20,8 @@ Tag UiStateComponent::getStaticTag()
 
 // ============================================================================
 
-UiStateComponent::UiStateComponent(Entity & owner, Deserializer & deserializer) :
-	ComponentBase<UiStateComponent>(owner),
+UiStateComponent::UiStateComponent(const Handle entityId, Deserializer & deserializer) :
+	ComponentBase<UiStateComponent>(entityId),
 	m_currentIndex(deserializer.getUint("index")),
 	m_currentHandle(),
 	m_states()
@@ -35,15 +35,15 @@ UiStateComponent::UiStateComponent(Entity & owner, Deserializer & deserializer) 
 		{
 			if (index == m_currentIndex)
 			{
-				m_states.emplace_back(make_unique_val<Entity>(owner.getScene()));
-				auto & child = m_owner.addChild(make_unique_val<Entity>(owner.getScene(), *deserializer));
+				m_states.emplace_back(make_unique_val<Entity>(entityId.getScene()));
+				auto & child = m_entityId.addChild(make_unique_val<Entity>(entityId.getScene(), *deserializer));
 				if (!child.hasComponent<HandleComponent>())
 					child.addComponent<HandleComponent>();
 				m_currentHandle = child.getComponent<HandleComponent>()->getHandle();
 			}
 			else
 			{
-				m_states.emplace_back(make_unique_val<Entity>(owner.getScene(), *deserializer));
+				m_states.emplace_back(make_unique_val<Entity>(entityId.getScene(), *deserializer));
 				auto & child = *m_states.back();
 				if (!child.hasComponent<HandleComponent>())
 					child.addComponent<HandleComponent>();
@@ -51,7 +51,7 @@ UiStateComponent::UiStateComponent(Entity & owner, Deserializer & deserializer) 
 		}
 		else
 		{
-			m_states.emplace_back(make_unique_val<Entity>(owner.getScene()));
+			m_states.emplace_back(make_unique_val<Entity>(entityId.getScene()));
 			auto & child = *m_states.back();
 			child.addComponent<HandleComponent>();
 		}
@@ -61,8 +61,8 @@ UiStateComponent::UiStateComponent(Entity & owner, Deserializer & deserializer) 
 
 	if (!m_currentHandle.isValid())
 	{
-		m_currentHandle = m_owner.addChild(std::move(m_states[0])).getComponent<HandleComponent>()->getHandle();
-		m_states[0] = make_unique_val<Entity>(owner.getScene());
+		m_currentHandle = m_entityId.addChild(std::move(m_states[0])).getComponent<HandleComponent>()->getHandle();
+		m_states[0] = make_unique_val<Entity>(entityId.getScene());
 	}
 }
 
@@ -79,7 +79,7 @@ void UiStateComponent::setCurrentIndex(const uint32 index)
 {
 	if (m_currentIndex != index)
 	{
-		auto & children = m_owner.getChildren();
+		auto & children = m_entityId.getChildren();
 		const auto it = std::find_if(children.begin(), children.end(), [=](const unique_val<Entity> & child)
 			{
 				return child->hasComponent<HandleComponent>() && child->getComponent<HandleComponent>()->getHandle() == m_currentHandle;
@@ -92,8 +92,8 @@ void UiStateComponent::setCurrentIndex(const uint32 index)
 			m_currentHandle = child->getComponent<HandleComponent>()->getHandle();
 			m_currentIndex = index;
 		}
-		/*if (m_owner.stealChild(m_currentHandle, std::move(m_states[m_currentIndex])))
-			m_currentHandle = m_owner.addChild(std::move(m_states[index])).getComponent<HandleComponent>()->getHandle();*/
+		/*if (m_entityId.stealChild(m_currentHandle, std::move(m_states[m_currentIndex])))
+			m_currentHandle = m_entityId.addChild(std::move(m_states[index])).getComponent<HandleComponent>()->getHandle();*/
 	}
 }
 

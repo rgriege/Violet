@@ -2,6 +2,7 @@
 #define VIOLET_UpdateComponent_H
 
 #include "violet/component/Component.h"
+#include "violet/task/Thread.h"
 
 namespace Violet
 {
@@ -13,11 +14,12 @@ namespace Violet
 	public:
 
 		static Tag getStaticTag();
+		static Thread getStaticThread();
 
 	public:
 
-		UpdateComponent(Entity & owner);
-		UpdateComponent(Entity & owner, Deserializer & deserializer);
+		UpdateComponent(Handle entityId);
+		UpdateComponent(Handle entityId, Deserializer & deserializer);
 		UpdateComponent(UpdateComponent && other);
 	};
 

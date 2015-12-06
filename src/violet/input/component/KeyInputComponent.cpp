@@ -13,17 +13,24 @@ Tag KeyInputComponent::getStaticTag()
 	return Tag('k', 'i', 'p', 't');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread KeyInputComponent::getStaticThread()
+{
+	return Thread::Any;
+}
+
 // ============================================================================
 
-KeyInputComponent::KeyInputComponent(Entity & owner) :
-	ComponentBase<KeyInputComponent>(owner)
+KeyInputComponent::KeyInputComponent(const Handle entityId) :
+	ComponentBase<KeyInputComponent>(entityId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-KeyInputComponent::KeyInputComponent(Entity & owner, Deserializer & deserializer) :
-	KeyInputComponent(owner)
+KeyInputComponent::KeyInputComponent(const Handle entityId, Deserializer & deserializer) :
+	KeyInputComponent(entityId)
 {
 }
 
@@ -33,14 +40,6 @@ KeyInputComponent::KeyInputComponent(KeyInputComponent && other) :
 	ComponentBase<KeyInputComponent>(std::move(other))
 {
 }
-
-// ----------------------------------------------------------------------------
-
-//KeyInputComponent & KeyInputComponent::operator=(KeyInputComponent && other)
-//{
-//	m_mesh = std::move(other.m_mesh);
-//	return *this;
-//}
 
 // ============================================================================
 

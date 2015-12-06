@@ -44,7 +44,9 @@ void UpdateSystem::init(Deserializer & deserializer)
 		[](Engine & engine)
 		{
 			engine.addSystem(std::unique_ptr<System>(new UpdateSystem));
+#ifdef USE_SCENE_PROCESSOR
 			engine.addSceneDelegate(SceneProcessor::Filter::create<UpdateComponent, ScriptComponent>(), updateEntity);
+#endif
 		});
 }
 
@@ -59,11 +61,23 @@ UpdateSystem::UpdateSystem(UpdateSystem && other) :
 
 UpdateSystem::~UpdateSystem()
 {
+#ifdef USE_SCENE_PROCESSOR
 	Engine::getInstance().addWriteTask(Engine::getInstance(),
 		[](Engine & engine)
 		{
 			engine.removeSceneDelegate(SceneProcessor::Filter::create<UpdateComponent, ScriptComponent>(), updateEntity);
 		});
+#endif
+}
+
+// ---------------------------------------------------------------------------
+
+void UpdateSystem::update(float dt)
+{
+#ifndef USE_SCENE_PROCESSOR
+	for (auto entity : Engine::getInstance().getCurrentScene().getComponentManager().getEntityView<UpdateComponent, ScriptComponent>())
+		UpdateMethod::run(*std::get<1>(entity).m_script, std::get<0>(entity).getEntityId(), std::move(dt));
+#endif
 }
 
 // ============================================================================
@@ -71,13 +85,6 @@ UpdateSystem::~UpdateSystem()
 UpdateSystem::UpdateSystem() :
 	System(getStaticLabel())
 {
-}
-
-// ============================================================================
-
-void UpdateSystemNamespace::updateEntity(const Entity & entity, float dt)
-{
-	UpdateMethod::run(*entity.getComponent<ScriptComponent>()->m_script, entity, std::move(dt));
 }
 
 // ============================================================================

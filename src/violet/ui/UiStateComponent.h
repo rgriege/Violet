@@ -26,7 +26,7 @@ namespace Violet
 
 	public:
 
-		UiStateComponent(Entity & owner, Deserializer & deserializer);
+		UiStateComponent(Handle entityId, Deserializer & deserializer);
 
 		uint32 getCurrentIndex() const;
 		void setCurrentIndex(uint32 index);

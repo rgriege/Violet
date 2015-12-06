@@ -36,7 +36,7 @@ namespace Violet
 		Vec2f m_gravity;
 	};
 
-	DEFINE_EVENT(CollisionEvent, void(const Entity & e1, const Entity & e2));
+	DEFINE_EVENT(CollisionEvent, void(Handle e1, Handle e2));
 }
 
 #endif

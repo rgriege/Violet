@@ -1,22 +1,6 @@
 // ============================================================================
 
 template <typename ComponentType>
-void Violet::Entity::installComponent()
-{
-	installComponent(ComponentType::getStaticTag(), &Entity::factoryCreateComponent<ComponentType>);
-}
-
-// ----------------------------------------------------------------------------
-
-template <typename ComponentType>
-void Violet::Entity::uninstallComponent()
-{
-	uninstallComponent(ComponentType::getStaticTag());
-}
-
-// ============================================================================
-
-template <typename ComponentType>
 void Violet::Entity::addComponent(unique_val<ComponentType> && component)
 {
 	assert((m_componentFlags & ComponentType::getStaticFlag()) == 0);
@@ -86,14 +70,6 @@ bool Violet::Entity::removeComponent()
 		m_componentFlags &= ~ComponentType::getStaticFlag();
 	}
 	return found;
-}
-
-// ============================================================================
-
-template <typename ComponentType>
-void Violet::Entity::factoryCreateComponent(Entity & entity, Deserializer & deserializer)
-{
-	entity.addComponent<ComponentType>(deserializer);
 }
 
 // ============================================================================

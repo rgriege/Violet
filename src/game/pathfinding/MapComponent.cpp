@@ -15,8 +15,8 @@ Violet::Tag MapComponent::getStaticTag()
 
 // ============================================================================
 
-MapComponent::MapComponent(Violet::Entity & owner, Violet::Deserializer & deserializer) :
-	ComponentBase<MapComponent>(owner),
+MapComponent::MapComponent(Violet::const Handle entityId, Violet::Deserializer & deserializer) :
+	ComponentBase<MapComponent>(entityId),
 	m_graph(),
 	m_id(0)
 {

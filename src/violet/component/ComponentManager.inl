@@ -1,177 +1,228 @@
 // ============================================================================
 
-#include "engine/template/TupleUtilities.h"
+#include "violet/template/TupleUtilities.h"
+
+#include <algorithm>
 
 // ============================================================================
 
-namespace ComponentManagerNamespace
+template <bool is_const, typename... ComponentTypes>
+Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::Iterator(iterator_tuple iterators) :
+	m_iterators(iterators),
+	m_entityId(Handle::ms_invalid)
 {
-	template <typename... ComponentTypes>
-	void advance(Violet::Entity & entity, std::tuple<Violet::ComponentPoolIterator<ComponentTypes>...> & iterators, std::tuple<Violet::ComponentPoolIterator<ComponentTypes>...> & ends);
-
-	template <uint32 Index, typename... ComponentTypes>
-	void advance(Violet::Entity & entity, uint32 & count, std::tuple<Violet::ComponentPoolIterator<ComponentTypes>...> & iterators, std::tuple<Violet::ComponentPoolIterator<ComponentTypes>...> & ends);
-}
-
-// ============================================================================
-
-template <typename... ComponentTypes>
-Violet::ComponentManager::Iterator<ComponentTypes...>::Iterator(const ComponentManager & manager, const bool begin) :
-	m_iterators(std::make_tuple(manager.getPool<ComponentTypes>().begin<ComponentTypes>()...)),
-	m_ends(std::make_tuple(manager.getPool<ComponentTypes>().end<ComponentTypes>()...)),
-	m_entity(Entity::INVALID)
-{
-	if (begin)
-		++*this;
-	else
-		m_iterators = m_ends;
 }
 
 // ----------------------------------------------------------------------------
 
-template <typename... ComponentTypes>
-Violet::ComponentManager::Iterator<ComponentTypes...> & Violet::ComponentManager::Iterator<ComponentTypes...>::operator++()
+template <bool is_const, typename... ComponentTypes>
+typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator & Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::operator++()
 {
-	m_entity = Entity(m_entity.getId() + 1, m_entity.getVersion());
-	ComponentManagerNamespace::advance(m_entity, m_iterators, m_ends);
+	m_entityId = Handle(m_entityId.getId() + 1, m_entityId.getVersion());
+	advance();
 	return *this;
 }
 
 // ----------------------------------------------------------------------------
 
-template <typename... ComponentTypes>
-std::tuple<ComponentTypes&...> Violet::ComponentManager::Iterator<ComponentTypes...>::operator*()
+template <bool is_const, typename... ComponentTypes>
+typename Violet::ComponentManager::View<is_const, ComponentTypes...>::component_tuple Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::operator*()
 {
-	return std::forward_as_tuple(*Violet::get<ComponentPoolIterator<ComponentTypes>>(m_iterators)...);
+	return std::forward_as_tuple(*Violet::get<ComponentPool::Iterator<ComponentTypes, is_const>>(m_iterators)...);
 }
 
 // ----------------------------------------------------------------------------
 
-template <typename... ComponentTypes>
-bool Violet::ComponentManager::Iterator<ComponentTypes...>::operator==(const Iterator<ComponentTypes...> & other) const
+template <bool is_const, typename... ComponentTypes>
+Violet::Handle Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::getEntityId() const
 {
-	return m_entity == other.m_entity;
+	return m_entityId;
 }
 
 // ----------------------------------------------------------------------------
 
-template <typename... ComponentTypes>
-bool Violet::ComponentManager::Iterator<ComponentTypes...>::operator!=(const Iterator<ComponentTypes...> & other) const
+template <bool is_const, typename... ComponentTypes>
+bool Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::operator==(const Iterator & other) const
+{
+	return m_entityId == other.m_entityId;
+}
+
+// ----------------------------------------------------------------------------
+
+template <bool is_const, typename... ComponentTypes>
+bool Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::operator!=(const Iterator & other) const
 {
 	return !(*this == other);
 }
 
 // ============================================================================
 
-template <typename... ComponentTypes>
-Violet::ComponentManager::View<ComponentTypes...>::View(const ComponentManager & manager) :
+template <bool is_const, typename... ComponentTypes>
+void Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::advance()
+{
+	uint32 count = 0;
+	advance<0>(count);
+}
+
+// ----------------------------------------------------------------------------
+
+template <bool is_const, typename... ComponentTypes>
+template <uint32 Index>
+void Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::advance(uint32 & count)
+{
+	if (count != sizeof...(ComponentTypes))
+	{
+		std::get<Index>(m_iterators).advanceTo(m_entityId);
+		if (std::get<Index>(m_iterators))
+		{
+			if (std::get<Index>(m_iterators)->getEntityId() != m_entityId)
+			{
+				count = 1;
+				m_entityId = std::get<Index>(m_iterators)->getEntityId();
+			}
+			else
+				++count;
+
+			advance<(Index + 1) % sizeof...(ComponentTypes)>(count);
+		}
+		else
+		{
+			count = sizeof...(ComponentTypes);
+			m_entityId = Violet::Handle::ms_invalid;
+		}
+	}
+}
+
+// ============================================================================
+
+template <bool is_const, typename... ComponentTypes>
+Violet::ComponentManager::View<is_const, ComponentTypes...>::View(const ComponentManager & manager) :
 	m_manager(manager)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-template <typename... ComponentTypes>
-Violet::ComponentManager::Iterator<ComponentTypes...> Violet::ComponentManager::View<ComponentTypes...>::begin()
+template <bool is_const, typename... ComponentTypes>
+typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator Violet::ComponentManager::View<is_const, ComponentTypes...>::begin()
 {
-	return Iterator<ComponentTypes...>(m_manager, true);
+	auto iterator = Iterator(std::make_tuple(m_manager.getPool<ComponentTypes>()->begin<ComponentTypes>()...));
+	++iterator;
+	return iterator;
 }
 
 // ----------------------------------------------------------------------------
 
-template <typename... ComponentTypes>
-Violet::ComponentManager::Iterator<ComponentTypes...> Violet::ComponentManager::View<ComponentTypes...>::end()
+template <bool is_const, typename... ComponentTypes>
+typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator Violet::ComponentManager::View<is_const, ComponentTypes...>::end()
 {
-	return Iterator<ComponentTypes...>(m_manager, false);
+	return Iterator(std::make_tuple(m_manager.getPool<ComponentTypes>()->end<ComponentTypes>()...));
 }
 
 // ============================================================================
 
 template <typename ComponentType, typename... Args>
-ComponentType & Violet::ComponentManager::create(const Entity entity, Args&&... args)
+ComponentType & Violet::ComponentManager::createComponent(const Handle entityId, Args &&... args)
 {
-	return getPool<ComponentType>().create<ComponentType, Args...>(entity, std::forward<Args>(args)...);
+	return getPool<ComponentType>()->create<ComponentType, Args...>(entityId, std::forward<Args>(args)...);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-bool Violet::ComponentManager::has(const Entity entity) const
+Violet::ComponentPool * Violet::ComponentManager::getPool()
 {
-	return getPool<ComponentType>().has(entity);
+	return getPool(ComponentType::getStaticTag());
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-ComponentType * Violet::ComponentManager::get(const Entity entity) const
+const Violet::ComponentPool * Violet::ComponentManager::getPool() const
 {
-	return getPool<ComponentType>().get<ComponentType>(entity);
+	return getPool(ComponentType::getStaticTag());
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+bool Violet::ComponentManager::hasComponent(const Handle entityId) const
+{
+	return getPool<ComponentType>()->has(entityId);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+ComponentType * Violet::ComponentManager::getComponent(const Handle entityId)
+{
+	return getPool<ComponentType>()->get<ComponentType>(entityId);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+const ComponentType * Violet::ComponentManager::getComponent(const Handle entityId) const
+{
+	return getPool<ComponentType>()->get<ComponentType>(entityId);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-Violet::ComponentManager::View<ComponentTypes...> Violet::ComponentManager::getView() const
+Violet::ComponentManager::View<true, ComponentTypes...> Violet::ComponentManager::getEntityView() const
 {
-	return View<ComponentTypes...>(*this);
+	return View<true, ComponentTypes...>(*this);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-bool Violet::ComponentManager::remove(const Entity entity)
+bool Violet::ComponentManager::remove(const Handle entityId)
 {
-	return getPool<ComponentType>().remove(entity);
+	return getPool<ComponentType>()->remove(entityId);
 }
 
 // ============================================================================
 
 template <typename ComponentType>
-Violet::ComponentPool & Violet::ComponentManager::getPool() const
+void Violet::ComponentManager::installComponent()
 {
-	auto it = std::find_if(m_pools.begin(), m_pools.end(), [](ComponentPool & pool) { return pool.getTypeId() == ComponentType::getTypeId(); });
-	bool const added = it == m_pools.end();
-	if (added)
-		m_pools.emplace_back(ComponentPool::create<ComponentType>());
-	return added ? m_pools.back() : *it;
-}
-
-// ============================================================================
-
-template <typename... ComponentTypes>
-void ComponentManagerNamespace::advance(Violet::Entity & entity, std::tuple<Violet::ComponentPoolIterator<ComponentTypes>...> & iterators, std::tuple<Violet::ComponentPoolIterator<ComponentTypes>...> & ends)
-{
-	uint32 count = 0;
-	advance<0>(entity, count, iterators, ends);
+	installComponent(ComponentType::getStaticTag(), &ComponentManager::factoryCreatePool<ComponentType>, &ComponentManager::factoryCreateComponent<ComponentType>, &ComponentManager::factoryCreateComponents<ComponentType>, ComponentType::getStaticThread());
 }
 
 // ----------------------------------------------------------------------------
 
-template <uint32 Index, typename... ComponentTypes>
-void ComponentManagerNamespace::advance(Violet::Entity & entity, uint32 & count, std::tuple<Violet::ComponentPoolIterator<ComponentTypes>...> & iterators, std::tuple<Violet::ComponentPoolIterator<ComponentTypes>...> & ends)
+template <typename ComponentType>
+void Violet::ComponentManager::uninstallComponent()
 {
-	if (count != sizeof...(ComponentTypes))
-	{
-		std::get<Index>(iterators).advanceTo(entity, std::get<Index>(ends));
-		if (std::get<Index>(iterators) != std::get<Index>(ends))
-		{
-			if (std::get<Index>(iterators)->getEntity() != entity)
-			{
-				count = 1;
-				entity = std::get<Index>(iterators)->getEntity();
-			}
-			else
-				++count;
+	uninstallComponent(ComponentType::getStaticTag());
+}
 
-			advance<(Index + 1) % sizeof...(ComponentTypes)>(entity, count, iterators, ends);
-		}
-		else
-		{
-			count = sizeof...(ComponentTypes);
-			entity = Violet::Entity::INVALID;
-		}
-	}
+// ============================================================================
+
+template <typename ComponentType>
+Violet::ComponentPool Violet::ComponentManager::factoryCreatePool(ComponentManager & manager)
+{
+	return ComponentPool::create<ComponentType>();
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+void Violet::ComponentManager::factoryCreateComponent(ComponentManager & manager, Deserializer & deserializer, const Handle entityId)
+{
+	ComponentPool * pool = manager.getPool<ComponentType>();
+	pool->loadOne<ComponentType>(entityId, deserializer);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+void Violet::ComponentManager::factoryCreateComponents(ComponentManager & manager, Deserializer & deserializer)
+{
+	ComponentPool * pool = manager.getPool<ComponentType>();
+	pool->loadMany<ComponentType>(deserializer);
 }
 
 // ============================================================================

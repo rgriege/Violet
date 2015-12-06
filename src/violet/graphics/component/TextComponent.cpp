@@ -17,21 +17,24 @@ Tag TextComponent::getStaticTag()
 	return Tag('t', 'e', 'x', 't');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread TextComponent::getStaticThread()
+{
+	return Thread::Window;
+}
+
 // ============================================================================
 
-TextComponent::TextComponent(Entity & owner, Deserializer & deserializer) :
-	ComponentBase<TextComponent>(owner),
+TextComponent::TextComponent(const Handle entityId, Deserializer & deserializer) :
+	ComponentBase<TextComponent>(entityId),
 	RenderComponentData(deserializer),
 	m_text(deserializer.getString("str")),
 	m_font()
 {
-	const std::string filename = deserializer.getString("font");
+	const char * filename = deserializer.getString("font");
 	const uint32 size = deserializer.getUint("size");
-	Engine::getInstance().addWriteTask(*this,
-		[=](TextComponent & component)
-		{
-			component.m_font = Font::getCache().fetch(filename.c_str(), size);
-		}, Engine::Thread::Window);
+	m_font = Font::getCache().fetch(filename, size);
 }
 
 // ----------------------------------------------------------------------------

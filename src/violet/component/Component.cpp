@@ -30,30 +30,23 @@ Component::~Component()
 
 // ============================================================================
 
-Component::Component(Entity & owner) :
-	m_owner(owner)
+Component::Component(const Handle entityId) :
+	m_entityId(entityId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 Component::Component(Component && other) :
-	m_owner(other.m_owner)
+	m_entityId(other.m_entityId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-Entity & Component::getOwner()
+Handle Component::getEntityId() const
 {
-	return m_owner;
-}
-
-// ----------------------------------------------------------------------------
-
-const Entity & Component::getOwner() const
-{
-	return m_owner;
+	return m_entityId;
 }
 
 // ============================================================================

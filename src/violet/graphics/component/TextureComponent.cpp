@@ -30,33 +30,33 @@ Tag TextureComponent::getStaticTag()
 	return Tag('t', 'e', 'x', 'u');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread TextureComponent::getStaticThread()
+{
+	return Thread::Window;
+}
+
 // ============================================================================
 
-TextureComponent::TextureComponent(Entity & owner, Deserializer & deserializer) :
-	ComponentBase<TextureComponent>(owner),
+TextureComponent::TextureComponent(const Handle entityId, Deserializer & deserializer) :
+	ComponentBase<TextureComponent>(entityId),
 	RenderComponentData(deserializer),
-	m_texture(),
-	m_texCoords()
+	m_texture(Texture::getCache().fetch(deserializer.getString("texture"))),
+	m_texCoords(std::make_unique<Mesh>(createTexCoordsFromMesh(*m_mesh)))
 {
-	const std::string textureName = deserializer.getString("texture");
-	Engine::getInstance().addWriteTask(*this,
-		[=](TextureComponent & component)
-		{
-			component.m_texture = Texture::getCache().fetch(textureName.c_str());
-			component.m_texCoords = std::make_unique<Mesh>(createTexCoordsFromMesh(*component.m_mesh));
-			glBindVertexArray(component.m_vertexArrayBuffer);
-			const Guard<Mesh> texCoordGuard(*component.m_texCoords);
-			const GLuint texCoordAttrib = component.m_shader->getAttributeLocation("texCoord");
-			glEnableVertexAttribArray(texCoordAttrib);
-			glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-			glBindVertexArray(0);
-		}, Engine::Thread::Window);
+	glBindVertexArray(m_vertexArrayBuffer);
+	const Guard<Mesh> texCoordGuard(*m_texCoords);
+	const GLuint texCoordAttrib = m_shader->getAttributeLocation("texCoord");
+	glEnableVertexAttribArray(texCoordAttrib);
+	glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindVertexArray(0);
 }
 
 // ----------------------------------------------------------------------------
 
-TextureComponent::TextureComponent(Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords) :
-	ComponentBase<TextureComponent>(owner),
+TextureComponent::TextureComponent(const Handle entityId, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords) :
+	ComponentBase<TextureComponent>(entityId),
 	RenderComponentData(poly, shader),
 	m_texture(std::move(texture)),
 	m_texCoords(std::make_unique<Mesh>(texCoords))
@@ -78,12 +78,6 @@ TextureComponent::TextureComponent(TextureComponent && other) :
 
 TextureComponent::~TextureComponent()
 {
-	const auto texCoords = m_texCoords.release();
-	Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
-		[=]()
-		{
-			delete texCoords;
-		}), Engine::Thread::Window);
 }
 
 // ============================================================================

@@ -3,6 +3,9 @@
 
 #include "violet/Defines.h"
 
+#include <array>
+#include <string>
+
 namespace Violet
 {
 	class VIOLET_API Tag
@@ -10,10 +13,11 @@ namespace Violet
 	public:
 
 		Tag(char a, char b, char c, char d);
+		explicit Tag(const char * tag);
 
 	public:
 
-		const char * asString() const;
+		std::string asString() const;
 
 		bool operator<(const Tag other) const;
 		bool operator==(const Tag other) const;
@@ -21,7 +25,7 @@ namespace Violet
 
 	private:
 
-		char m_data[4];
+		std::array<char, 4> m_data;
 	};
 }
 

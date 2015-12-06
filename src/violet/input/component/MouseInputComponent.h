@@ -3,6 +3,7 @@
 
 #include "violet/component/Component.h"
 #include "violet/math/Polygon.h"
+#include "violet/task/Thread.h"
 
 #include <functional>
 
@@ -17,13 +18,13 @@ namespace Violet
 	public:
 
 		static Tag getStaticTag();
+		static Thread getStaticThread();
 
 	public:
 
-		MouseInputComponent(Entity & owner, Deserializer & deserializer);
-		MouseInputComponent(Entity & owner, Polygon && mesh);
+		MouseInputComponent(Handle entityId, Deserializer & deserializer);
+		MouseInputComponent(Handle entityId, Polygon && mesh);
 		MouseInputComponent(MouseInputComponent && other);
-		//MouseInputComponent & operator=(MouseInputComponent && other);
 
 	public:
 

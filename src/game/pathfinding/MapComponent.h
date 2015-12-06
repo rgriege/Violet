@@ -20,7 +20,7 @@ public:
 
 public:
 
-	MapComponent(Violet::Entity & owner, Violet::Deserializer & deserializer);
+	MapComponent(Violet::Handle entityId, Violet::Deserializer & deserializer);
 	MapComponent(MapComponent && other);
 
 public:

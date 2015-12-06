@@ -1,19 +1,19 @@
 // ============================================================================
 
-#include "engine/component/ComponentPool.h"
+#include "violet/component/ComponentPool.h"
 
 using namespace Violet;
 
 // ============================================================================
 
-Violet::ComponentPool::~ComponentPool()
+ComponentPool::~ComponentPool()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-Violet::ComponentPool::ComponentPool(ComponentPool && other) :
-	m_typeId(other.m_typeId),
+ComponentPool::ComponentPool(ComponentPool && other) :
+	m_componentTag(other.m_componentTag),
 	m_componentSize(other.m_componentSize),
 	m_data(std::move(other.m_data)),
 	m_lookupMap(std::move(other.m_lookupMap))
@@ -22,10 +22,10 @@ Violet::ComponentPool::ComponentPool(ComponentPool && other) :
 
 // ----------------------------------------------------------------------------
 
-Violet::ComponentPool & Violet::ComponentPool::operator=(ComponentPool && other)
+ComponentPool & ComponentPool::operator=(ComponentPool && other)
 {
-	std::swap(m_typeId, other.m_typeId);
-	std::swap(m_componentSize, other.m_componentSize);
+	assert(m_componentTag == other.m_componentTag);
+	assert(m_componentSize == other.m_componentSize);
 	std::swap(m_data, other.m_data);
 	std::swap(m_lookupMap, other.m_lookupMap);
 	return *this;
@@ -33,29 +33,37 @@ Violet::ComponentPool & Violet::ComponentPool::operator=(ComponentPool && other)
 
 // ----------------------------------------------------------------------------
 
-Violet::Tag Violet::ComponentPool::getTypeId() const
+Tag ComponentPool::getComponentTag() const
 {
-	return m_typeId;
+	return m_componentTag;
 }
 
 // ----------------------------------------------------------------------------
 
-bool Violet::ComponentPool::has(const Entity entity) const
+bool ComponentPool::has(const Handle entityId) const
 {
-	return m_lookupMap.find(entity) != m_lookupMap.end();
+	return m_lookupMap.find(entityId) != m_lookupMap.end();
 }
 
 // ----------------------------------------------------------------------------
 
-bool Violet::ComponentPool::remove(const Entity entity)
+uint32 ComponentPool::size() const
 {
-	const auto it = m_lookupMap.find(entity);
+	return m_data.size() / m_componentSize;
+}
+
+// ----------------------------------------------------------------------------
+
+bool ComponentPool::remove(const Handle entityId)
+{
+	assert(entityId.isValid());
+	const auto it = m_lookupMap.find(entityId);
 	const bool found = it != m_lookupMap.end();
 	if (found)
 	{
-		reinterpret_cast<BaseComponent *>(m_data.data() + it->second)->~BaseComponent();
+		reinterpret_cast<Component *>(m_data.data() + it->second)->~Component();
 		m_data.erase(m_data.begin() + it->second, m_data.begin() + it->second + m_componentSize);
-		m_lookupMap.erase(entity);
+		m_lookupMap.erase(entityId);
 	}
 
 	return found;
@@ -63,22 +71,49 @@ bool Violet::ComponentPool::remove(const Entity entity)
 
 // ----------------------------------------------------------------------------
 
-void Violet::ComponentPool::clear()
+void ComponentPool::clear()
 {
 	for (uint32 i = 0, end = m_data.size(); i < end; i += m_componentSize)
-		reinterpret_cast<BaseComponent *>(&m_data[i])->~BaseComponent();
+		reinterpret_cast<Component *>(&m_data[i])->~Component();
 	m_data.clear();
+	m_data.resize(8);
+	*reinterpret_cast<uint32 *>(&m_data[0]) = ((Handle::ms_invalid.getId() << 8) | Handle::ms_invalid.getVersion());
 	m_lookupMap.clear();
 }
 
-// ----------------------------------------------------------------------------
+// ============================================================================
 
-Violet::ComponentPool::ComponentPool(const Tag typeId, const uint32 componentSize) :
-	m_typeId(typeId),
+ComponentPool::ComponentPool(const Tag typeId, const uint32 componentSize) :
+	m_componentTag(typeId),
 	m_componentSize(componentSize),
 	m_data(),
 	m_lookupMap()
 {
+	m_data.resize(8);
+	*reinterpret_cast<uint32 *>(&m_data[4]) = ((Handle::ms_invalid.getId() << 8) | Handle::ms_invalid.getVersion());
+}
+
+// ----------------------------------------------------------------------------
+
+uint32 ComponentPool::getLastDataIndex() const
+{
+	return m_data.size() - 8;
+}
+
+// ----------------------------------------------------------------------------
+
+std::pair<void *, bool>  ComponentPool::getLocation(const Handle entityId)
+{
+	const auto lookupEntry = m_lookupMap.lower_bound(entityId);
+	bool const maxId = lookupEntry == m_lookupMap.end();
+	if (!maxId && lookupEntry->first.getId() == entityId.getId())
+		return std::make_pair(&m_data[lookupEntry->second], true);
+
+	auto const componentIt = m_data.insert(m_data.begin() + (maxId ? getLastDataIndex() : lookupEntry->second), m_componentSize, 0);
+	for (auto it = lookupEntry, end = m_lookupMap.end(); it != end; ++it)
+		it->second += m_componentSize;
+	m_lookupMap[entityId] = std::distance(m_data.begin(), componentIt);
+	return std::make_pair(&*componentIt, false);
 }
 
 // ============================================================================

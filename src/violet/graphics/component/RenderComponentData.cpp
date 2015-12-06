@@ -18,48 +18,37 @@ using namespace Violet;
 RenderComponentData::RenderComponentData(Deserializer & deserializer) :
 	m_vertexArrayBuffer(-1),
 	m_mesh(),
-	m_shader()
+	m_shader(ShaderProgram::getCache().fetch(deserializer.getString("shader")))
 {
-	const std::string shaderName = deserializer.getString("shader");
 	const Polygon poly(deserializer);
 
-	Engine::getInstance().addWriteTask(*this,
-		[=](RenderComponentData & data)
-		{
-			data.m_shader = ShaderProgram::getCache().fetch(shaderName.c_str());
-			data.m_mesh = std::make_unique<Mesh>(poly);
+	m_mesh = std::make_unique<Mesh>(poly);
 
-			glGenVertexArrays(1, &data.m_vertexArrayBuffer);
-			glBindVertexArray(data.m_vertexArrayBuffer);
-			const Guard<Mesh> meshGuard(*data.m_mesh);
-			const GLint positionAttribute = data.m_shader->getAttributeLocation("position");
-			glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
-			glEnableVertexAttribArray(positionAttribute);
+	glGenVertexArrays(1, &m_vertexArrayBuffer);
+	glBindVertexArray(m_vertexArrayBuffer);
+	const Guard<Mesh> meshGuard(*m_mesh);
+	const GLint positionAttribute = m_shader->getAttributeLocation("position");
+	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(positionAttribute);
 
-			glBindVertexArray(0);
-		}, Engine::Thread::Window);
+	glBindVertexArray(0);
 }
 
 // ----------------------------------------------------------------------------
 
 RenderComponentData::RenderComponentData(const Polygon & poly, std::shared_ptr<ShaderProgram> shader) :
 	m_vertexArrayBuffer(-1),
-	m_mesh(),
+	m_mesh(std::make_unique<Mesh>(poly)),
 	m_shader(std::move(shader))
 {
-	Engine::getInstance().addWriteTask(*this,
-		[=](RenderComponentData & data)
-		{
-			data.m_mesh = std::make_unique<Mesh>(poly);
-			glGenVertexArrays(1, &data.m_vertexArrayBuffer);
-			glBindVertexArray(data.m_vertexArrayBuffer);
-			const Guard<Mesh> meshGuard(*data.m_mesh);
-			const GLint positionAttribute = data.m_shader->getAttributeLocation("position");
-			glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
-			glEnableVertexAttribArray(positionAttribute);
+	glGenVertexArrays(1, &m_vertexArrayBuffer);
+	glBindVertexArray(m_vertexArrayBuffer);
+	const Guard<Mesh> meshGuard(*m_mesh);
+	const GLint positionAttribute = m_shader->getAttributeLocation("position");
+	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(positionAttribute);
 
-			glBindVertexArray(0);
-		}, Engine::Thread::Window);
+	glBindVertexArray(0);
 }
 
 // ----------------------------------------------------------------------------
@@ -77,21 +66,7 @@ RenderComponentData::RenderComponentData(RenderComponentData && other) :
 RenderComponentData::~RenderComponentData()
 {
 	if (m_vertexArrayBuffer != 0)
-	{
-		const auto vertexArrayBuffer = m_vertexArrayBuffer;
-		Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
-			[=]()
-			{
-				glDeleteVertexArrays(1, &vertexArrayBuffer);
-			}), Engine::Thread::Window);
-	}
-
-	const auto mesh = m_mesh.release();
-	Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
-		[=]()
-		{
-			delete mesh;
-		}), Engine::Thread::Window);
+		glDeleteVertexArrays(1, &m_vertexArrayBuffer);
 }
 
 // ============================================================================

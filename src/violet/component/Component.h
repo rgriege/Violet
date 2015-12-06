@@ -2,12 +2,12 @@
 #define VIOLET_Component_H
 
 #include "violet/utility/Tag.h"
+#include "violet/handle/Handle.h"
 
 #include <utility>
 
 namespace Violet
 {
-	class Entity;
 	class Serializer;
 
 	class VIOLET_API Component
@@ -30,8 +30,7 @@ namespace Violet
 
 	public:
 
-		Entity & getOwner();
-		const Entity & getOwner() const;
+		Handle getEntityId() const;
 
 		virtual Tag getTag() const = 0;
 		virtual uint32 getFlag() const = 0;
@@ -41,7 +40,7 @@ namespace Violet
 
 	protected:
 
-		Component(Entity & owner);
+		Component(Handle entityId);
 
 		Component(const Component &) = delete;
 		Component & operator=(const Component &) = delete;
@@ -50,7 +49,7 @@ namespace Violet
 
 	protected:
 
-		Entity & m_owner;
+		Handle m_entityId;
 	};
 
 	template <typename Derived>
@@ -68,7 +67,7 @@ namespace Violet
 
 	protected:
 
-		ComponentBase(Entity & owner);
+		ComponentBase(Handle entityId);
 		ComponentBase(ComponentBase && other);
 	};
 }

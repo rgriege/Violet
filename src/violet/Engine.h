@@ -5,10 +5,13 @@
 #include "violet/event/EventContextOwner.h"
 #include "violet/scene/SceneProcessor.h"
 #include "violet/task/Task.h"
+#include "violet/task/Thread.h"
 
 #include <array>
 #include <memory>
 #include <vector>
+
+//#define USE_SCENE_PROCESSOR
 
 namespace Violet
 {
@@ -19,14 +22,6 @@ namespace Violet
 
 	class VIOLET_API Engine : public EventContextOwner
 	{
-	public:
-
-		enum class Thread
-		{
-			Any = -1,
-			Window
-		};
-
 	private:
 
 		template <typename Signature>
@@ -80,8 +75,10 @@ namespace Violet
 		void switchScene(const char * filename);
 		Scene & getCurrentScene();
 		const Scene & getCurrentScene() const;
+#ifdef USE_SCENE_PROCESSOR
 		void addSceneDelegate(SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate);
 		void removeSceneDelegate(SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate);
+#endif
 		void stop();
 
 		void addSystem(std::unique_ptr<System> && system);
@@ -113,8 +110,10 @@ namespace Violet
 		thread_mutable std::unique_ptr<TaskScheduler> m_taskScheduler;
 		thread_mutable std::array<TaskQueue, static_cast<int>(FrameStage::Count)> m_taskQueues;
 		std::vector<std::unique_ptr<System>> m_systems;
-		std::unique_ptr<Scene, void(*)(Scene *)> m_scene;
+		std::unique_ptr<Scene> m_scene;
+#ifdef USE_SCENE_PROCESSOR
 		std::unique_ptr<SceneProcessor> m_sceneProcessor;
+#endif
 		std::string m_nextSceneFileName;
 		bool m_running;
 		FrameStage m_frameStage;

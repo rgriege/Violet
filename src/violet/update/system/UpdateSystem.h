@@ -1,16 +1,13 @@
 #ifndef VIOLET_UpdateSystem_H
 #define VIOLET_UpdateSystem_H
 
+#include "violet/handle/Handle.h"
 #include "violet/system/System.h"
 #include "violet/script/Script.h"
-
-#include <memory>
 
 namespace Violet
 {
 	class Deserializer;
-	class Engine;
-	class Entity;
 	class SystemFactory;
 
 	class VIOLET_API UpdateSystem : public System
@@ -26,13 +23,14 @@ namespace Violet
 		UpdateSystem(UpdateSystem && other);
 
 		virtual ~UpdateSystem() override;
+		virtual void update(float dt) override;
 
 	private:
 
 		UpdateSystem();
 	};
 
-	DEFINE_METHOD(UpdateMethod, void(const Entity &, float));
+	DEFINE_METHOD(UpdateMethod, void(Handle, float));
 }
 
 #endif

@@ -13,18 +13,25 @@ Tag MouseInputComponent::getStaticTag()
 	return Tag('m', 'i', 'p', 't');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread MouseInputComponent::getStaticThread()
+{
+	return Thread::Any;
+}
+
 // ============================================================================
 
-MouseInputComponent::MouseInputComponent(Entity & owner, Deserializer & deserializer) :
-	ComponentBase<MouseInputComponent>(owner),
+MouseInputComponent::MouseInputComponent(const Handle entityId, Deserializer & deserializer) :
+	ComponentBase<MouseInputComponent>(entityId),
 	m_mesh(deserializer)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-MouseInputComponent::MouseInputComponent(Entity & owner, Polygon && mesh) :
-	ComponentBase<MouseInputComponent>(owner),
+MouseInputComponent::MouseInputComponent(const Handle entityId, Polygon && mesh) :
+	ComponentBase<MouseInputComponent>(entityId),
 	m_mesh(std::move(mesh))
 {
 }
@@ -36,14 +43,6 @@ MouseInputComponent::MouseInputComponent(MouseInputComponent && other) :
 	m_mesh(std::move(other.m_mesh))
 {
 }
-
-// ----------------------------------------------------------------------------
-
-//MouseInputComponent & MouseInputComponent::operator=(MouseInputComponent && other)
-//{
-//	m_mesh = std::move(other.m_mesh);
-//	return *this;
-//}
 
 // ============================================================================
 

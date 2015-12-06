@@ -15,7 +15,7 @@
 #include "violet/serialization/file/FileSerializerFactory.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
-#include "violet/transform/component/TransformComponent.h"
+// #include "violet/transform/component/TransformComponent.h"
 #include "violet/update/component/UpdateComponent.h"
 #include "violet/utility/FormattedString.h"
 #include "violet/window/WindowSystem.h"
@@ -40,9 +40,9 @@ namespace EditorSystemNamespace
 
 	public:
 
-		EditorComponentWrapper(Entity & owner, Deserializer & deserializer) :
-			ComponentBase<EditorComponentWrapper<ComponentType>>(owner),
-			m_data(owner, deserializer)
+		EditorComponentWrapper(const Handle entityId, Deserializer & deserializer) :
+			ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
+			m_data(entityId, deserializer)
 		{
 		}
 
@@ -98,7 +98,7 @@ void EditorSystem::init(Deserializer & deserializer)
 
 void EditorSystem::loadScene(const char * const filename)
 {
-	if (m_rootSceneHandle.isValid())
+	/*if (m_rootSceneHandle.isValid())
 	{
 		// cleanup
 		assert(false);
@@ -143,7 +143,6 @@ void EditorSystem::loadScene(const char * const filename)
 				const auto & engine = Engine::getInstance();
 				const float halfWidth = engine.getSystem<WindowSystem>()->getWidth() / 2.f;
 				const float halfHeight = engine.getSystem<WindowSystem>()->getHeight() / 2.f;
-				newSceneRoot->addComponent<HandleComponent>();
 				newSceneRoot->addComponent<TransformComponent>();
 				newSceneRoot->addComponent<MouseInputComponent>(Polygon{ {
 					{ -halfWidth, -halfHeight },
@@ -159,14 +158,14 @@ void EditorSystem::loadScene(const char * const filename)
 				for (auto & child : newSceneRoot->getChildren())
 					prepareForEditor(child, editScriptFileName);
 			}
-		});
+		});*/
 }
 
 // ----------------------------------------------------------------------------
 
 void EditorSystem::saveScene(const char * const filename) const
 {
-	assert(hasScene());
+	/*assert(hasScene());
 
 	const std::string sceneFileName(filename);
 	auto & engine = Engine::getInstance();
@@ -176,15 +175,15 @@ void EditorSystem::saveScene(const char * const filename) const
 			root.removeComponent<TransformComponent>();
 			root.removeComponent<MouseInputComponent>();
 
-			/*for (auto & child : root.getChildren())
-				prepareForSave(child);*/
+			for (auto & child : root.getChildren())
+				prepareForSave(child);
 
 			auto serializer = FileSerializerFactory::getInstance().create(sceneFileName.c_str());
 			if (serializer != nullptr)
 				root.save(*serializer);
 			else
 				Log::log(FormattedString<128>().sprintf("Could not open scene file '%s'", sceneFileName.c_str()));
-		}, Engine::Thread::Window);
+		}, Thread::Window);*/
 }
 
 // ----------------------------------------------------------------------------
@@ -198,7 +197,7 @@ bool EditorSystem::hasScene() const
 
 lent_ptr<const Entity> EditorSystem::getSceneRoot() const
 {
-	return Engine::getInstance().getCurrentScene().getEntity(m_rootSceneHandle);
+	return nullptr; // Engine::getInstance().getCurrentScene().getEntity(m_rootSceneHandle);
 }
 
 // ============================================================================
@@ -214,7 +213,7 @@ EditorSystem::EditorSystem(std::string editScriptFileName) :
 
 void EditorSystemNamespace::prepareForEditor(Entity & entity, std::string const & editScriptFileName)
 {
-	if (!editScriptFileName.empty())
+	/*if (!editScriptFileName.empty())
 	{
 		if (entity.hasComponent<ColorComponent>())
 		{
@@ -223,7 +222,7 @@ void EditorSystemNamespace::prepareForEditor(Entity & entity, std::string const 
 				{
 					component.getOwner().addComponent<ScriptComponent>(editScriptFileName.c_str());
 					component.getOwner().addComponent<MouseInputComponent>(component.m_mesh->getPolygon());
-				}, Engine::Thread::Window);
+				}, Thread::Window);
 		}
 		else if (entity.hasComponent<TextComponent>())
 		{
@@ -232,7 +231,7 @@ void EditorSystemNamespace::prepareForEditor(Entity & entity, std::string const 
 				{
 					component.getOwner().addComponent<ScriptComponent>(editScriptFileName.c_str());
 					component.getOwner().addComponent<MouseInputComponent>(component.m_mesh->getPolygon());
-				}, Engine::Thread::Window);
+				}, Thread::Window);
 		}
 		else if (entity.hasComponent<TextureComponent>())
 		{
@@ -241,9 +240,9 @@ void EditorSystemNamespace::prepareForEditor(Entity & entity, std::string const 
 				{
 					component.getOwner().addComponent<ScriptComponent>(editScriptFileName.c_str());
 					component.getOwner().addComponent<MouseInputComponent>(component.m_mesh->getPolygon());
-				}, Engine::Thread::Window);
+				}, Thread::Window);
 		}
-	}
+	}*/
 }
 
 // ============================================================================

@@ -2,14 +2,14 @@
 
 #include "violet/physics/collision/RigidBody.h"
 
-#include "violet/transform/component/TransformComponent.h"
+#include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/physics/component/PhysicsComponent.h"
 
 using namespace Violet;
 
 // ============================================================================
 
-RigidBody::RigidBody(const TransformComponent & transform, const PhysicsComponent & physics) :
+RigidBody::RigidBody(const WorldTransformComponent & transform, const PhysicsComponent & physics) :
 	m_center(transform.m_transform[0][2], transform.m_transform[1][2]),
 	m_rotation(0),
 	m_polygon(physics.m_polygon),

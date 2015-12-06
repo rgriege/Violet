@@ -14,8 +14,8 @@ Violet::Tag PathComponent::getStaticTag()
 
 // ============================================================================
 
-PathComponent::PathComponent(Violet::Entity & owner, Violet::Deserializer & deserializer) :
-	ComponentBase<PathComponent>(owner),
+PathComponent::PathComponent(Violet::const Handle entityId, Violet::Deserializer & deserializer) :
+	ComponentBase<PathComponent>(entityId),
 	m_path(),
 	m_lastIntersection(0),
 	m_speed(deserializer.getFloat("speed"))
@@ -24,8 +24,8 @@ PathComponent::PathComponent(Violet::Entity & owner, Violet::Deserializer & dese
 
 // ----------------------------------------------------------------------------
 
-PathComponent::PathComponent(Violet::Entity & owner, const float speed, Path && path) :
-	ComponentBase<PathComponent>(owner),
+PathComponent::PathComponent(Violet::const Handle entityId, const float speed, Path && path) :
+	ComponentBase<PathComponent>(entityId),
 	m_path(std::move(path)),
 	m_lastIntersection(0),
 	m_speed(speed)

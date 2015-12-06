@@ -2,7 +2,7 @@
 #include "violet/log/Log.h"
 #include "violet/script/cpp/CppScript.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
-#include "violet/transform/component/TransformComponent.h"
+#include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/update/system/UpdateSystem.h"
 #include "violet/utility/FormattedString.h"
 #include "violet/utility/Random.h"
@@ -33,16 +33,16 @@ public:
 
 private:
 
-    void onUpdate(const Entity & entity, const float dt)
+    void onUpdate(const Handle entityId, const float dt)
     {
-        auto transformC = entity.getComponent<TransformComponent>();
+        auto transformC = Engine::getInstance().getCurrentScene().getComponentManager().getComponent<WorldTransformComponent>(entityId);
         if (transformC != nullptr)
         {
             const auto & window = Engine::getInstance().getSystem<WindowSystem>();
             const float dx = m_speed.x * dt;
             const float dy = m_speed.y * dt;
             Engine::getInstance().addWriteTask(*transformC,
-                [=](TransformComponent & transformC)
+                [=](WorldTransformComponent & transformC)
                 {
                     transformC.m_transform[0][2] += dx;
                     transformC.m_transform[1][2] += dy;

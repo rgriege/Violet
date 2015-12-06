@@ -2,6 +2,7 @@
 #define VIOLET_PhysicsComponent_H
 
 #include "violet/component/Component.h"
+#include "violet/task/Thread.h"
 
 #include "violet/math/Polygon.h"
 
@@ -15,10 +16,11 @@ namespace Violet
 	public:
 
 		static Tag getStaticTag();
+		static Thread getStaticThread();
 
 	public:
 
-		PhysicsComponent(Entity & owner, Deserializer & deserializer);
+		PhysicsComponent(Handle entityId, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
 
 	public:

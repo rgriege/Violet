@@ -1,16 +1,12 @@
 {
-  "ntty": {
-    "cpnt": {},
-    "chld": {
-      "ntty": {
-        "cpnt": {
-          "updt": {},
-          "scpt": {
-            "file": "addSquares.dll"
-          }
-        },
-        "chld": {}
-      }
-    }
-  }
+  "cpnt": "wtfm",
+  "file": "demoScene.wtfm.json",
+  "cpnt": "colr",
+  "file": "demoScene.colr.json",
+  "cpnt": "updt",
+  "file": "demoScene.updt.json",
+  "cpnt": "scpt",
+  "file": "demoScene.scpt.json",
+  "cpnt": "kipt",
+  "file": "demoScene.kipt.json"
 }

@@ -3,6 +3,7 @@
 
 #include "violet/component/Component.h"
 #include "violet/graphics/component/RenderComponentData.h"
+#include "violet/task/Thread.h"
 
 #include "violet/graphics/texture/Texture.h"
 
@@ -17,11 +18,12 @@ namespace Violet
 	public:
 
 		static Tag getStaticTag();
+		static Thread getStaticThread();
 
 	public:
 
-		TextureComponent(Entity & owner, Deserializer & deserializer);
-		TextureComponent(Entity & owner, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords);
+		TextureComponent(Handle entityId, Deserializer & deserializer);
+		TextureComponent(Handle entityId, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords);
 		TextureComponent(TextureComponent && other);
 		~TextureComponent();
 

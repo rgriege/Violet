@@ -85,9 +85,6 @@
     <Filter Include="serialization\json">
       <UniqueIdentifier>{dd809d65-d84b-44b1-a5c2-c2cee66ffcfe}</UniqueIdentifier>
     </Filter>
-    <Filter Include="transform\component">
-      <UniqueIdentifier>{04a36eb9-0930-4bfc-ae0d-827766819f47}</UniqueIdentifier>
-    </Filter>
     <Filter Include="window\glut">
       <UniqueIdentifier>{2321e376-e87f-4548-ae98-4327432e1bbb}</UniqueIdentifier>
     </Filter>
@@ -126,6 +123,12 @@
     </Filter>
     <Filter Include="task">
       <UniqueIdentifier>{c001cb34-8c5b-49dd-98a6-8936e0cfa09f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="transform\system">
+      <UniqueIdentifier>{edc401c8-62e0-4f40-ae90-df2096c71eb3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="transform\component">
+      <UniqueIdentifier>{04a36eb9-0930-4bfc-ae0d-827766819f47}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -246,9 +249,6 @@
     <ClInclude Include="..\..\..\src\violet\time\Time.h">
       <Filter>time</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\transform\component\TransformComponent.h">
-      <Filter>transform\component</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\utility\Buffer.h">
       <Filter>utility</Filter>
     </ClInclude>
@@ -359,9 +359,6 @@
     <ClInclude Include="..\..\..\src\violet\graphics\component\RenderComponentData.h">
       <Filter>graphics\component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\scene\SceneProcessor.h">
-      <Filter>scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\script\ScriptComponent.h">
       <Filter>script</Filter>
     </ClInclude>
@@ -377,22 +374,13 @@
     <ClInclude Include="..\..\..\src\violet\script\Script.inl">
       <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\ui\UiList.h">
-      <Filter>ui</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\transform\Transform.h">
       <Filter>transform</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\ui\UiStateComponent.h">
-      <Filter>ui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\input\Key.h">
       <Filter>input</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\handle\Handle.h">
-      <Filter>handle</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\handle\HandleComponent.h">
       <Filter>handle</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\handle\HandleManager.h">
@@ -439,6 +427,24 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\log\FileLogTarget.h">
       <Filter>log</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\component\ComponentManager.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\component\ComponentPool.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\transform\component\LocalTransformComponent.h">
+      <Filter>transform\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\transform\component\WorldTransformComponent.h">
+      <Filter>transform\component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\transform\system\TransformSystem.h">
+      <Filter>transform\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\task\Thread.h">
+      <Filter>task</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -511,9 +517,6 @@
     <ClCompile Include="..\..\..\src\violet\time\Time.cpp">
       <Filter>time</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\transform\component\TransformComponent.cpp">
-      <Filter>transform\component</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\utility\FileUtilities.cpp">
       <Filter>utility</Filter>
     </ClCompile>
@@ -578,9 +581,6 @@
     <ClCompile Include="..\..\..\src\violet\graphics\component\RenderComponentData.cpp">
       <Filter>graphics\component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\scene\SceneProcessor.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\script\ScriptFactory.cpp">
       <Filter>script</Filter>
     </ClCompile>
@@ -593,25 +593,16 @@
     <ClCompile Include="..\..\..\src\violet\script\Script.cpp">
       <Filter>script</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\ui\UiList.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\math\Matrix3.cpp">
       <Filter>math</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\transform\Transform.cpp">
       <Filter>transform</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\ui\UiStateComponent.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\input\Key.cpp">
       <Filter>input</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\handle\Handle.cpp">
-      <Filter>handle</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\handle\HandleComponent.cpp">
       <Filter>handle</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\handle\HandleManager.cpp">
@@ -646,6 +637,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\log\FileLogTarget.cpp">
       <Filter>log</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\component\ComponentManager.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\component\ComponentPool.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\transform\component\LocalTransformComponent.cpp">
+      <Filter>transform\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\transform\component\WorldTransformComponent.cpp">
+      <Filter>transform\component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\transform\system\TransformSystem.cpp">
+      <Filter>transform\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -688,6 +694,12 @@
     </None>
     <None Include="..\..\..\src\violet\script\cpp\CppScript.inl">
       <Filter>script\cpp</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\component\ComponentManager.inl">
+      <Filter>component</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\component\ComponentPool.inl">
+      <Filter>component</Filter>
     </None>
   </ItemGroup>
 </Project>

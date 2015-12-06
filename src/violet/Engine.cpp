@@ -130,7 +130,7 @@ const Scene & Engine::getCurrentScene() const
 }
 
 // ----------------------------------------------------------------------------
-
+#ifdef USE_SCENE_PROCESSOR
 void Engine::addSceneDelegate(const SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate)
 {
 	m_sceneProcessor->addDelegate(filter, delegate);
@@ -142,7 +142,7 @@ void Engine::removeSceneDelegate(const SceneProcessor::Filter filter, const Scen
 {
 	m_sceneProcessor->removeDelegate(filter, delegate);
 }
-
+#endif
 // ----------------------------------------------------------------------------
 
 void Engine::stop()
@@ -176,8 +176,10 @@ void Engine::addDeleteTask(std::unique_ptr<Task> && task, const Thread thread) t
 
 Engine::Engine(const uint32 workerCount) :
 	m_systems(),
-	m_scene(nullptr, Scene::destroy),
+	m_scene(nullptr),
+#ifdef USE_SCENE_PROCESSOR
 	m_sceneProcessor(std::make_unique<SceneProcessor>()),
+#endif
 	m_nextSceneFileName(),
 	m_taskScheduler(std::make_unique<TaskScheduler>(workerCount)),
 	m_taskQueues(),
@@ -219,8 +221,10 @@ void Engine::begin()
 void Engine::runFrame(const float frameTime)
 {
 	std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<System> & system) { system->update(frameTime); });
+#ifdef USE_SCENE_PROCESSOR
 	if (m_scene != nullptr)
 		m_sceneProcessor->process(*m_scene, frameTime);
+#endif
 
 	if (!m_nextSceneFileName.empty())
 	{

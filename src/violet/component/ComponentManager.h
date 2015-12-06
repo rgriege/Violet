@@ -1,7 +1,10 @@
 #ifndef VIOLET_ComponentManager_H
 #define VIOLET_ComponentManager_H
 
-#include "engine/component/ComponentPool.h"
+#include "violet/component/ComponentPool.h"
+#include "violet/handle/Handle.h"
+#include "violet/task/Thread.h"
+#include "violet/utility/Factory.h"
 
 #include <iterator>
 #include <memory>
@@ -9,43 +12,57 @@
 
 namespace Violet
 {
+	class Deserializer;
+
 	class VIOLET_API ComponentManager
 	{
 	public:
-		
-		template <typename... ComponentTypes>
-		class Iterator : public std::iterator<std::input_iterator_tag, std::tuple<ComponentTypes&...>>
+
+		template <bool is_const, typename... ComponentTypes>
+		class View
 		{
 		public:
 
-			Iterator(const ComponentManager & manager, bool begin);
+			typedef std::conditional_t<is_const, std::tuple<const ComponentTypes&...>, std::tuple<ComponentTypes&...>> component_tuple;
+			typedef std::conditional_t<is_const,
+				std::tuple<ComponentPool::const_iterator<ComponentTypes>...>,
+				std::tuple<ComponentPool::iterator<ComponentTypes>...>> iterator_tuple;
 
-			Iterator<ComponentTypes...> & operator++();
-			std::tuple<ComponentTypes&...> operator*();
+			class Iterator : public std::iterator<std::input_iterator_tag, component_tuple>
+			{
+			public:
 
-			bool operator==(const Iterator<ComponentTypes...> & other) const;
-			bool operator!=(const Iterator<ComponentTypes...> & other) const;
+				explicit Iterator(iterator_tuple iterators);
 
-		private:
+				Iterator & operator++();
+				component_tuple operator*();
+				Handle getEntityId() const;
 
-			std::tuple<ComponentPoolIterator<ComponentTypes>...> m_iterators;
-			std::tuple<ComponentPoolIterator<ComponentTypes>...> m_ends;
-			Entity m_entity;
-		};
+				bool operator==(const Iterator & other) const;
+				bool operator!=(const Iterator & other) const;
 
-		template <typename... ComponentTypes>
-		class View
-		{
+			private:
+
+				void advance();
+				template <uint32 Index>
+				void advance(uint32 & count);
+
+			private:
+
+				iterator_tuple m_iterators;
+				Handle m_entityId;
+			};
+
 		private:
 
 			static const size_t N = sizeof...(ComponentTypes);
 
 		public:
 
-			View(const ComponentManager & manager);
+			explicit View(const ComponentManager & manager);
 
-			Iterator<ComponentTypes...> begin();
-			Iterator<ComponentTypes...> end();
+			Iterator begin();
+			Iterator end();
 
 		private:
 
@@ -54,41 +71,83 @@ namespace Violet
 
 	public:
 
-		ComponentManager() = default;
+		typedef Factory<std::string, ComponentPool(ComponentManager &)> PoolFactory;
+		typedef Factory<std::string, void(ComponentManager &, Deserializer &, Handle)> ComponentFactory;
+		typedef Factory<std::string, void(ComponentManager &, Deserializer &)> ComponentsFactory;
 
-		ComponentManager(ComponentManager && other);
-		ComponentManager & operator=(ComponentManager && other);
+	public:
+
+		template <typename ComponentType>
+		static void installComponent();
+		static void installComponent(Tag const tag, const PoolFactory::Producer & producer, const ComponentFactory::Producer & cProducer, const ComponentsFactory::Producer & csProducer, Thread thread);
+
+		template <typename ComponentType>
+		static void uninstallComponent();
+		static void uninstallComponent(Tag const tag);
+
+	public:
+
+		ComponentManager();
+
+		/*ComponentManager(ComponentManager && other);
+		ComponentManager & operator=(ComponentManager && other);*/
+
+		void load(const char * sceneName);
+		void loadEntity(Handle entityId, const char * entityName);
 
 		template <typename ComponentType, typename... Args>
-		ComponentType & create(Entity entity, Args&&... args);
+		ComponentType & createComponent(Handle entityId, Args &&... args);
 
 		template <typename ComponentType>
-		bool has(Entity entity) const;
+		ComponentPool * getPool();
+		template <typename ComponentType>
+		const ComponentPool * getPool() const;
 
 		template <typename ComponentType>
-		ComponentType * get(Entity entity) const;
+		bool hasComponent(Handle entityId) const;
+
+		template <typename ComponentType>
+		ComponentType * getComponent(Handle entityId);
+		template <typename ComponentType>
+		const ComponentType * getComponent(Handle entityId) const;
 		template <typename... ComponentTypes>
-		View<ComponentTypes...> getView() const;
+		View<true, ComponentTypes...> getEntityView() const;
 		
 		template <typename ComponentType>
-		bool remove(Entity entity);
-		bool removeAll(Entity entity);
+		bool remove(Handle entityId);
+		bool removeAll(Handle entityId);
 		void clear();
 
 	private:
 
 		template <typename ComponentType>
-		ComponentPool & getPool() const;
+		static ComponentPool factoryCreatePool(ComponentManager & manager);
+		template <typename ComponentType>
+		static void factoryCreateComponent(ComponentManager & manager, Deserializer & deserializer, Handle entityId);
+		template <typename ComponentType>
+		static void factoryCreateComponents(ComponentManager & manager, Deserializer & deserializer);
+
+	private:
+
+		ComponentPool * getPool(Tag componentTag);
+		const ComponentPool * getPool(Tag componentTag) const;
 
 		ComponentManager(const ComponentManager &) = delete;
 		ComponentManager & operator=(const ComponentManager &) = delete;
 
 	private:
 
-		mutable std::vector<ComponentPool> m_pools;
+		static PoolFactory ms_poolFactory;
+		static ComponentFactory ms_componentFactory;
+		static ComponentsFactory ms_componentsFactory;
+		static std::map<Tag, Thread> ms_poolThreads;
+
+	private:
+
+		std::vector<ComponentPool> m_pools;
 	};
 }
 
-#include "engine/component/ComponentManager.inl"
+#include "violet/component/ComponentManager.inl"
 
 #endif

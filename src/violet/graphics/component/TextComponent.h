@@ -3,6 +3,7 @@
 
 #include "violet/component/Component.h"
 #include "violet/graphics/component/RenderComponentData.h"
+#include "violet/task/Thread.h"
 
 #include <string>
 #include <memory>
@@ -18,10 +19,11 @@ namespace Violet
 	public:
 
 		static Tag getStaticTag();
+		static Thread getStaticThread();
 
 	public:
 
-		TextComponent(Entity & owner, Deserializer & deserializer);
+		TextComponent(Handle entityId, Deserializer & deserializer);
 		TextComponent(TextComponent && other);
 
 	private:

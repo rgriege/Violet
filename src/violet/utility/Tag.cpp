@@ -8,34 +8,38 @@ using namespace Violet;
 
 // ============================================================================
 
-Tag::Tag(char a, char b, char c, char d) :
-	m_data(/*{a, b, c, d}*/)
+Tag::Tag(const char a, const char b, const char c, const char d) :
+	m_data({a, b, c, d})
 {
-	m_data[0] = a;
-	m_data[1] = b;
-	m_data[2] = c;
-	m_data[3] = d;
 }
 
 // ----------------------------------------------------------------------------
 
-const char * Tag::asString() const
+Tag::Tag(const char * const str) :
+	m_data()
 {
-	return m_data;
+	strncpy(&m_data[0], str, 4);
+}
+
+// ----------------------------------------------------------------------------
+
+std::string Tag::asString() const
+{
+	return std::string(&m_data[0], 4);
 }
 
 // ----------------------------------------------------------------------------
 
 bool Tag::operator<(const Tag other) const
 {
-	return *reinterpret_cast<const uint32*>(m_data) < *reinterpret_cast<const uint32*>(other.m_data);
+	return *reinterpret_cast<const uint32*>(asString().c_str()) < *reinterpret_cast<const uint32*>(other.asString().c_str());
 }
 
 // ----------------------------------------------------------------------------
 
 bool Tag::operator==(const Tag other) const
 {
-	return *reinterpret_cast<const uint32*>(m_data) == *reinterpret_cast<const uint32*>(other.m_data);
+	return *reinterpret_cast<const uint32*>(asString().c_str()) == *reinterpret_cast<const uint32*>(other.asString().c_str());
 }
 
 // ----------------------------------------------------------------------------

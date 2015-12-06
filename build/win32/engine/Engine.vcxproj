@@ -84,7 +84,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;VIOLETCORE_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\boost_1_51_0;E:\Libraries\jsoncpp\include;E:\Libraries\lua-5.2.3\src;E:\Libraries\freetype-2.5.2\include;E:\Libraries\glew\include;E:\Libraries\SDL2\include;E:\Libraries\freeglut\include;E:\Libraries\lpng1617;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4251</DisableSpecificWarnings>
-      <AdditionalOptions>/Zo %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions> %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -97,6 +97,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\component\Component.h" />
+    <ClInclude Include="..\..\..\src\violet\component\ComponentManager.h" />
+    <ClInclude Include="..\..\..\src\violet\component\ComponentPool.h" />
     <ClInclude Include="..\..\..\src\violet\component\MappedDataComponent.h" />
     <ClInclude Include="..\..\..\src\violet\Defines.h" />
     <ClInclude Include="..\..\..\src\violet\Engine.h" />
@@ -115,7 +117,6 @@
     <ClInclude Include="..\..\..\src\violet\graphics\system\RenderSystem.h" />
     <ClInclude Include="..\..\..\src\violet\graphics\texture\Texture.h" />
     <ClInclude Include="..\..\..\src\violet\handle\Handle.h" />
-    <ClInclude Include="..\..\..\src\violet\handle\HandleComponent.h" />
     <ClInclude Include="..\..\..\src\violet\handle\HandleManager.h" />
     <ClInclude Include="..\..\..\src\violet\input\component\MouseInputComponent.h" />
     <ClInclude Include="..\..\..\src\violet\input\component\KeyInputComponent.h" />
@@ -139,7 +140,6 @@
     <ClInclude Include="..\..\..\src\violet\physics\component\PhysicsComponent.h" />
     <ClInclude Include="..\..\..\src\violet\physics\system\PhysicsSystem.h" />
     <ClInclude Include="..\..\..\src\violet\scene\Scene.h" />
-    <ClInclude Include="..\..\..\src\violet\scene\SceneProcessor.h" />
     <ClInclude Include="..\..\..\src\violet\script\cpp\CppScript.h" />
     <ClInclude Include="..\..\..\src\violet\script\cpp\SharedLibrary.h" />
     <ClInclude Include="..\..\..\src\violet\script\lua\LuaLibrary.h" />
@@ -165,13 +165,14 @@
     <ClInclude Include="..\..\..\src\violet\system\SystemFactory.h" />
     <ClInclude Include="..\..\..\src\violet\task\Task.h" />
     <ClInclude Include="..\..\..\src\violet\task\TaskScheduler.h" />
+    <ClInclude Include="..\..\..\src\violet\task\Thread.h" />
     <ClInclude Include="..\..\..\src\violet\template\TemplateUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\template\TupleUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\time\Time.h" />
-    <ClInclude Include="..\..\..\src\violet\transform\component\TransformComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\transform\component\LocalTransformComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\transform\component\WorldTransformComponent.h" />
+    <ClInclude Include="..\..\..\src\violet\transform\system\TransformSystem.h" />
     <ClInclude Include="..\..\..\src\violet\transform\Transform.h" />
-    <ClInclude Include="..\..\..\src\violet\ui\UiList.h" />
-    <ClInclude Include="..\..\..\src\violet\ui\UiStateComponent.h" />
     <ClInclude Include="..\..\..\src\violet\update\component\UpdateComponent.h" />
     <ClInclude Include="..\..\..\src\violet\update\system\UpdateSystem.h" />
     <ClInclude Include="..\..\..\src\violet\utility\Buffer.h" />
@@ -196,6 +197,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\component\Component.cpp" />
+    <ClCompile Include="..\..\..\src\violet\component\ComponentManager.cpp" />
+    <ClCompile Include="..\..\..\src\violet\component\ComponentPool.cpp" />
     <ClCompile Include="..\..\..\src\violet\component\MappedDataComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\Engine.cpp" />
     <ClCompile Include="..\..\..\src\violet\entity\Entity.cpp" />
@@ -212,7 +215,6 @@
     <ClCompile Include="..\..\..\src\violet\graphics\system\RenderSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\texture\Texture.cpp" />
     <ClCompile Include="..\..\..\src\violet\handle\Handle.cpp" />
-    <ClCompile Include="..\..\..\src\violet\handle\HandleComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\handle\HandleManager.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\component\MouseInputComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\component\KeyInputComponent.cpp" />
@@ -232,7 +234,6 @@
     <ClCompile Include="..\..\..\src\violet\physics\component\PhysicsComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\physics\system\PhysicsSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\scene\Scene.cpp" />
-    <ClCompile Include="..\..\..\src\violet\scene\SceneProcessor.cpp" />
     <ClCompile Include="..\..\..\src\violet\script\cpp\CppScript.cpp" />
     <ClCompile Include="..\..\..\src\violet\script\cpp\WindowsSharedLibrary.cpp" />
     <ClCompile Include="..\..\..\src\violet\script\lua\LuaLibrary.cpp" />
@@ -253,10 +254,10 @@
     <ClCompile Include="..\..\..\src\violet\task\Task.cpp" />
     <ClCompile Include="..\..\..\src\violet\task\TaskScheduler.cpp" />
     <ClCompile Include="..\..\..\src\violet\time\Time.cpp" />
-    <ClCompile Include="..\..\..\src\violet\transform\component\TransformComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\transform\component\LocalTransformComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\transform\component\WorldTransformComponent.cpp" />
+    <ClCompile Include="..\..\..\src\violet\transform\system\TransformSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\transform\Transform.cpp" />
-    <ClCompile Include="..\..\..\src\violet\ui\UiList.cpp" />
-    <ClCompile Include="..\..\..\src\violet\ui\UiStateComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\update\component\UpdateComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\update\system\UpdateSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\FileUtilities.cpp" />
@@ -282,6 +283,8 @@
       <FileType>Document</FileType>
     </ClInclude>
     <None Include="..\..\..\src\violet\component\Component.inl" />
+    <None Include="..\..\..\src\violet\component\ComponentManager.inl" />
+    <None Include="..\..\..\src\violet\component\ComponentPool.inl" />
     <None Include="..\..\..\src\violet\Engine.inl" />
     <None Include="..\..\..\src\violet\entity\Entity.inl" />
     <ClInclude Include="..\..\..\src\violet\event\Event.inl">

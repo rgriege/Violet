@@ -15,20 +15,27 @@ Tag ScriptComponent::getStaticTag()
 	return Tag('s', 'c', 'p', 't');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread ScriptComponent::getStaticThread()
+{
+	return Thread::Any;
+}
+
 // ============================================================================
 
-ScriptComponent::ScriptComponent(Entity & owner, Deserializer & deserializer) :
-	ScriptComponent(owner, deserializer.getString("file"))
+ScriptComponent::ScriptComponent(const Handle entityId, Deserializer & deserializer) :
+	ScriptComponent(entityId, deserializer.getString("file"))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-ScriptComponent::ScriptComponent(Entity & owner, const char * const fileName) :
-	ComponentBase<ScriptComponent>(owner),
+ScriptComponent::ScriptComponent(Handle entityId, const char * const fileName) :
+	ComponentBase<ScriptComponent>(entityId),
 	m_script(ScriptFactory::create(fileName))
 {
-	BindToComponentMethod::run(*m_script, owner);
+	BindToComponentMethod::run(*m_script, std::move(entityId));
 }
 
 // ----------------------------------------------------------------------------
@@ -43,7 +50,7 @@ ScriptComponent::ScriptComponent(ScriptComponent && other) :
 
 ScriptComponent::~ScriptComponent()
 {
-	UnbindFromComponentMethod::run(*m_script, m_owner);
+	UnbindFromComponentMethod::run(*m_script, std::move(m_entityId));
 }
 
 // ============================================================================

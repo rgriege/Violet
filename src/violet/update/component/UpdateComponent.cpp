@@ -14,17 +14,24 @@ Tag UpdateComponent::getStaticTag()
 	return Tag('u', 'p', 'd', 't');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread UpdateComponent::getStaticThread()
+{
+	return Thread::Any;
+}
+
 // ============================================================================
 
-UpdateComponent::UpdateComponent(Entity & owner) :
-	ComponentBase<UpdateComponent>(owner)
+UpdateComponent::UpdateComponent(const Handle entityId) :
+	ComponentBase<UpdateComponent>(entityId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-UpdateComponent::UpdateComponent(Entity & owner, Deserializer & /*deserializer*/) :
-	ComponentBase<UpdateComponent>(owner)
+UpdateComponent::UpdateComponent(const Handle entityId, Deserializer & /*deserializer*/) :
+	ComponentBase<UpdateComponent>(entityId)
 {
 }
 

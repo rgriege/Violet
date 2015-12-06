@@ -3,53 +3,19 @@
 
 #include "violet/Defines.h"
 #include "violet/component/Component.h"
-#include "violet/utility/Factory.h"
-#include "violet/utility/unique_val.h"
 #include "violet/utility/lent_ptr.h"
 
-#include <algorithm>
-#include <memory>
 #include <vector>
 
 namespace Violet
 {
-	class Deserializer;
-	class Scene;
-	class Serializer;
-
 	class VIOLET_API Entity
 	{
 	public:
 
-		typedef Factory<std::string, void(Entity &, Deserializer &)> ComponentFactory;
-
-	public:
-
-		template <typename ComponentType>
-		static void installComponent();
-		static void installComponent(Tag const tag, ComponentFactory::Producer producer);
-
-		template <typename ComponentType>
-		static void uninstallComponent();
-		static void uninstallComponent(Tag const tag);
-
-	public:
-
-		Entity(const Scene & scene);
-		Entity(const Scene & scene, Deserializer & deserializer);
+		Entity();
 		~Entity();
-
-		const Scene & getScene() const;
-
-		Entity & addChild();
-		Entity & addChild(unique_val<Entity> && child);
-		Entity & addChild(Deserializer & deserializer);
-		std::vector<unique_val<Entity>> & getChildren();
-		const std::vector<unique_val<Entity>> & getChildren() const;
-		lent_ptr<Entity> getChild(uint32 index);
-		lent_ptr<const Entity> getChild(uint32 index) const;
-		bool removeChild(uint32 index);
-
+		
 		template <typename ComponentType>
 		void addComponent(unique_val<ComponentType> && component);
 		template <typename ComponentType, typename ... Args>
@@ -66,20 +32,6 @@ namespace Violet
 		template <typename ComponentType>
 		bool removeComponent();
 
-		lent_ptr<Entity> getParent();
-		lent_ptr<const Entity> getParent() const;
-
-		void removeFromParent();
-
-		void save(Serializer & serializer) const;
-
-	private:
-
-		static ComponentFactory ms_componentFactory;
-
-		template <typename ComponentType>
-		static void factoryCreateComponent(Entity & entity, Deserializer & deserializer);
-
 	private:
 
 		Entity(const Entity &) = delete;
@@ -87,11 +39,8 @@ namespace Violet
 
 	private:
 
-		std::vector<unique_val<Component>> m_components;
+		std::vector<const Component *> m_components;
 		uint32 m_componentFlags;
-		std::vector<unique_val<Entity>> m_children;
-		const Scene & m_scene;
-		Entity * m_parent;
 	};
 }
 

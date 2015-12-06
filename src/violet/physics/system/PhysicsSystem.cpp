@@ -8,7 +8,7 @@
 #include "violet/serialization/Deserializer.h"
 #include "violet/structures/QuadTree.h"
 #include "violet/system/SystemFactory.h"
-#include "violet/transform/component/TransformComponent.h"
+#include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/physics/collision/Intersection.h"
 #include "violet/window/WindowSystem.h"
 
@@ -18,9 +18,9 @@ namespace PhysicsSystemNamespace
 {
 	// ----------------------------------------------------------------------------
 
-	void resolveCollisionForEntity(const TransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, float impulseMagnitude);
+	void resolveCollisionForEntity(const WorldTransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, float impulseMagnitude);
 
-	void move(PhysicsComponent & physics, const TransformComponent & transform, const Vec2f & gravity, float drag, float dt);
+	void move(PhysicsComponent & physics, const WorldTransformComponent & transform, const Vec2f & gravity, float drag, float dt);
 	void collide(PhysicsComponent & physics, const Vec2f & impulse, float angularImpulse);
 
 	// ----------------------------------------------------------------------------
@@ -78,51 +78,41 @@ void PhysicsSystem::update(const float dt)
 	const Engine & engine = Engine::getInstance();
 	const auto & windowSystem = engine.getSystem<WindowSystem>();
 	const AABB boundary(0, 0, static_cast<float>(windowSystem->getWidth()), static_cast<float>(windowSystem->getHeight()));
-	QuadTree<std::reference_wrapper<const Entity>> tree(boundary, 4);
+	QuadTree<RigidBody> tree(boundary, 4);
 
+	for (const auto entity : Engine::getInstance().getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, PhysicsComponent>())
 	{
-		SceneProcessor processor;
-		processor.addDelegate(SceneProcessor::Filter::create<TransformComponent, PhysicsComponent>(), [&](const Entity & entity, const float dt)
-		{
-			auto & transformComponent = *entity.getComponent<TransformComponent>();
-			auto & physicsComponent = *entity.getComponent<PhysicsComponent>();
-			tree.insert(entity, physicsComponent.m_polygon.getBoundingBox().transform(transformComponent.m_transform));
-			engine.addWriteTask(physicsComponent,
-				[&transformComponent, this, dt](PhysicsComponent & physics)
-				{
-					move(physics, transformComponent, m_gravity, m_drag, dt);
-				});
-		});
-		processor.process(engine.getCurrentScene(), dt);
-	}
-
-	{
-		SceneProcessor processor;
-		processor.addDelegate(SceneProcessor::Filter::create<TransformComponent, PhysicsComponent>(), [&](const Entity & entity, const float dt)
-		{
-			auto & transformComponent = *entity.getComponent<TransformComponent>();
-			auto & physicsComponent = *entity.getComponent<PhysicsComponent>();
-
-			std::vector<std::reference_wrapper<const Entity>> otherEntities;
-			tree.retrieve(otherEntities, physicsComponent.m_polygon.getBoundingBox().transform(transformComponent.m_transform));
-
-			for (auto & otherEntity : otherEntities)
+		auto & transformComponent = std::get<0>(entity);
+		auto & physicsComponent = std::get<1>(entity);
+		tree.insert(RigidBody(transformComponent, physicsComponent), physicsComponent.m_polygon.getBoundingBox().transform(transformComponent.m_transform));
+		engine.addWriteTask(physicsComponent,
+			[&transformComponent, this, dt](PhysicsComponent & physics)
 			{
-				auto & otherTransformComponent = *otherEntity.get().getComponent<TransformComponent>();
-				auto & otherPhysicsComponent = *otherEntity.get().getComponent<PhysicsComponent>();
-				Intersection intersection(RigidBody(transformComponent, physicsComponent), RigidBody(otherTransformComponent, otherPhysicsComponent), dt);
-				if (intersection.exists())
-				{
-					//printf("collision!\n");
-					float const impulseMagnitude = (-(1 + ms_restitution) * (otherPhysicsComponent.m_velocity - physicsComponent.m_velocity).dot(intersection.getIntersectionAxis())) /
-						(1 / physicsComponent.m_mass + 1 / otherPhysicsComponent.m_mass);
-					resolveCollisionForEntity(transformComponent, physicsComponent, intersection, impulseMagnitude);
-					resolveCollisionForEntity(otherTransformComponent, otherPhysicsComponent, intersection, impulseMagnitude);
-					CollisionEvent::emit(engine.getEventContext(), entity, otherEntity.get());
-				}
+				move(physics, transformComponent, m_gravity, m_drag, dt);
+			});
+	}
+	for (const auto entity : Engine::getInstance().getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, PhysicsComponent>())
+	{
+		auto & transformComponent = std::get<0>(entity);
+		auto & physicsComponent = std::get<1>(entity);
+		RigidBody body(transformComponent, physicsComponent);
+
+		std::vector<RigidBody> otherBodies;
+		tree.retrieve(otherBodies, physicsComponent.m_polygon.getBoundingBox().transform(transformComponent.m_transform));
+
+		for (auto & otherBody : otherBodies)
+		{
+			Intersection intersection(std::move(body), std::move(otherBody), dt);
+			if (intersection.exists())
+			{
+				printf("collision!\n");
+				/*float const impulseMagnitude = (-(1 + ms_restitution) * (otherPhysicsComponent.m_velocity - physicsComponent.m_velocity).dot(intersection.getIntersectionAxis())) /
+					(1 / physicsComponent.m_mass + 1 / otherPhysicsComponent.m_mass);
+				resolveCollisionForEntity(transformComponent, physicsComponent, intersection, impulseMagnitude);
+				resolveCollisionForEntity(otherWorldTransformComponent, otherPhysicsComponent, intersection, impulseMagnitude);
+				CollisionEvent::emit(engine.getEventContext(), entity, otherEntity.get());*/
 			}
-		});
-		processor.process(engine.getCurrentScene(), dt);
+		}
 	}
 }
 
@@ -137,7 +127,7 @@ PhysicsSystem::PhysicsSystem(float drag, Vec2f gravity) :
 
 // ============================================================================
 
-void PhysicsSystemNamespace::resolveCollisionForEntity(const TransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, const float impulseMagnitude)
+void PhysicsSystemNamespace::resolveCollisionForEntity(const WorldTransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, const float impulseMagnitude)
 {
 	Vec2f impulse = intersection.getIntersectionAxis() * impulseMagnitude / physics.m_mass;
 	Vec2f const location = intersection.getImpactLocation() - Vec2f(transform.m_transform[0][2], transform.m_transform[1][2]);
@@ -153,7 +143,7 @@ void PhysicsSystemNamespace::resolveCollisionForEntity(const TransformComponent 
 
 // ============================================================================
 
-void PhysicsSystemNamespace::move(PhysicsComponent & physicsComponent, const TransformComponent & transformComponent, const Vec2f & gravity, const float drag, const float dt)
+void PhysicsSystemNamespace::move(PhysicsComponent & physicsComponent, const WorldTransformComponent & transformComponent, const Vec2f & gravity, const float drag, const float dt)
 {
 	Vec2f const oldPosition = { transformComponent.m_transform[0][2], transformComponent.m_transform[1][2] };
 	Vec2f newPosition = oldPosition;
@@ -183,7 +173,7 @@ void PhysicsSystemNamespace::move(PhysicsComponent & physicsComponent, const Tra
 
 	if (newPosition != oldPosition)
 	{
-		Engine::getInstance().addWriteTask(transformComponent, [newPosition](TransformComponent & transformComponent)
+		Engine::getInstance().addWriteTask(transformComponent, [newPosition](WorldTransformComponent & transformComponent)
 			{
 				transformComponent.m_transform[0][2] = newPosition.x;
 				transformComponent.m_transform[1][2] = newPosition.y;

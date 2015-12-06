@@ -14,18 +14,25 @@ Tag MappedDataComponent::getStaticTag()
 	return Tag('m', 'a', 'p', 'd');
 }
 
+// ----------------------------------------------------------------------------
+
+Thread MappedDataComponent::getStaticThread()
+{
+	return Thread::Any;
+}
+
 // ============================================================================
 
-MappedDataComponent::MappedDataComponent(Entity & owner) :
-	ComponentBase<MappedDataComponent>(owner),
+MappedDataComponent::MappedDataComponent(const Handle entityId) :
+	ComponentBase<MappedDataComponent>(entityId),
 	m_data()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-MappedDataComponent::MappedDataComponent(Entity & owner, Deserializer & deserializer) :
-	ComponentBase<MappedDataComponent>(owner),
+MappedDataComponent::MappedDataComponent(const Handle entityId, Deserializer & deserializer) :
+	ComponentBase<MappedDataComponent>(entityId),
 	m_data()
 {
 	const uint32 n = deserializer.getUint("n");
