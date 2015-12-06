@@ -29,7 +29,7 @@ namespace RenderSystemNamespace
 {
 	// ----------------------------------------------------------------------------
 
-	void draw(const WorldTransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view, float opacity);
+	void draw(const WorldTransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view);
 	void draw(const WorldTransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view);
 	void draw(const WorldTransformComponent & transformComponent, const TextureComponent & textureComponent, const Matrix3f & view);
 
@@ -110,7 +110,7 @@ void RenderSystem::update(float const /*dt*/)
 			viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 
 			for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, ColorComponent>())
-				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix, 1.f);
+				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
 			for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, TextComponent>())
 				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
 			for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, TextureComponent>())
@@ -130,7 +130,7 @@ RenderSystem::RenderSystem() :
 
 // ----------------------------------------------------------------------------
 
-void RenderSystemNamespace::draw(const WorldTransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view, const float opacity)
+void RenderSystemNamespace::draw(const WorldTransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view)
 {
 	const Matrix3f & transform = transformComponent.m_transform;
 
@@ -140,9 +140,7 @@ void RenderSystemNamespace::draw(const WorldTransformComponent & transformCompon
 
 	glBindVertexArray(colorComponent.m_vertexArrayBuffer);
 	const Guard<ShaderProgram> shaderGuard(*colorComponent.m_shader);
-	Color color = colorComponent.m_color;
-	color.a = color.a.asFloat() * opacity;
-	glUniform4fv(colorAttrib, 1, color.as4fv().data());
+	glUniform4fv(colorAttrib, 1, colorComponent.m_color.as4fv().data());
 	glUniformMatrix3fv(modelAttrib, 1, true, transform.data());
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 
