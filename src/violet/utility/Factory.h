@@ -1,7 +1,6 @@
 #ifndef VIOLET_Factory_H
 #define VIOLET_Factory_H
 
-// #include "violet/Defines.h"
 #include "violet/utility/StringUtilities.h"
 
 #include <assert.h>
