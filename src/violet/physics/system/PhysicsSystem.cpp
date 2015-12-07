@@ -3,7 +3,7 @@
 #include "violet/physics/system/PhysicsSystem.h"
 
 #include "violet/Engine.h"
-#include "violet/scene/SceneProcessor.h"
+#include "violet/component/ComponentManager.h"
 #include "violet/entity/Entity.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/structures/QuadTree.h"
@@ -80,7 +80,7 @@ void PhysicsSystem::update(const float dt)
 	const AABB boundary(0, 0, static_cast<float>(windowSystem->getWidth()), static_cast<float>(windowSystem->getHeight()));
 	QuadTree<RigidBody> tree(boundary, 4);
 
-	for (const auto entity : Engine::getInstance().getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, PhysicsComponent>())
+	for (const auto entity : Engine::getInstance().getCurrentScene().getEntityView<WorldTransformComponent, PhysicsComponent>())
 	{
 		auto & transformComponent = std::get<0>(entity);
 		auto & physicsComponent = std::get<1>(entity);
@@ -91,7 +91,7 @@ void PhysicsSystem::update(const float dt)
 				move(physics, transformComponent, m_gravity, m_drag, dt);
 			});
 	}
-	for (const auto entity : Engine::getInstance().getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, PhysicsComponent>())
+	for (const auto entity : Engine::getInstance().getCurrentScene().getEntityView<WorldTransformComponent, PhysicsComponent>())
 	{
 		auto & transformComponent = std::get<0>(entity);
 		auto & physicsComponent = std::get<1>(entity);

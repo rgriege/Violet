@@ -139,7 +139,6 @@
     <ClInclude Include="..\..\..\src\violet\physics\collision\RigidBody.h" />
     <ClInclude Include="..\..\..\src\violet\physics\component\PhysicsComponent.h" />
     <ClInclude Include="..\..\..\src\violet\physics\system\PhysicsSystem.h" />
-    <ClInclude Include="..\..\..\src\violet\scene\Scene.h" />
     <ClInclude Include="..\..\..\src\violet\script\cpp\CppScript.h" />
     <ClInclude Include="..\..\..\src\violet\script\cpp\SharedLibrary.h" />
     <ClInclude Include="..\..\..\src\violet\script\lua\LuaLibrary.h" />
@@ -202,6 +201,7 @@
     <ClCompile Include="..\..\..\src\violet\component\MappedDataComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\Engine.cpp" />
     <ClCompile Include="..\..\..\src\violet\entity\Entity.cpp" />
+    <ClCompile Include="..\..\..\src\violet\event\Event.cpp" />
     <ClCompile Include="..\..\..\src\violet\event\EventContext.cpp" />
     <ClCompile Include="..\..\..\src\violet\event\EventContextOwner.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp" />
@@ -233,7 +233,6 @@
     <ClCompile Include="..\..\..\src\violet\physics\collision\RigidBody.cpp" />
     <ClCompile Include="..\..\..\src\violet\physics\component\PhysicsComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\physics\system\PhysicsSystem.cpp" />
-    <ClCompile Include="..\..\..\src\violet\scene\Scene.cpp" />
     <ClCompile Include="..\..\..\src\violet\script\cpp\CppScript.cpp" />
     <ClCompile Include="..\..\..\src\violet\script\cpp\WindowsSharedLibrary.cpp" />
     <ClCompile Include="..\..\..\src\violet\script\lua\LuaLibrary.cpp" />

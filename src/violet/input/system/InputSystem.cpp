@@ -3,6 +3,7 @@
 #include "violet/input/system/InputSystem.h"
 
 #include "violet/Engine.h"
+#include "violet/component/ComponentManager.h"
 #include "violet/input/InputResult.h"
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
@@ -82,7 +83,7 @@ void InputSystem::update(const float dt)
 				{
 				case WindowSystem::ET_KeyDown:
 				case WindowSystem::ET_KeyUp:
-					for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<KeyInputComponent, ScriptComponent>())
+					for (const auto entity : engine.getCurrentScene().getEntityView<KeyInputComponent, ScriptComponent>())
 						processEvent(std::get<1>(entity), event.key, event.type);
 					break;
 
@@ -90,7 +91,7 @@ void InputSystem::update(const float dt)
 				case WindowSystem::ET_MouseUp:
 					{
 						InputSystem::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button };
-						for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
+						for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
 							processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent, event.type);
 					}
 					break;
@@ -98,7 +99,7 @@ void InputSystem::update(const float dt)
 				case WindowSystem::ET_MouseMove:
 					{
 						InputSystem::MouseMotionEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.motion.x - event.motion.xrel, event.motion.y - event.motion.yrel), computeWorldCoordinates(windowDimensions, event.motion.x, event.motion.y) };
-						for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
+						for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
 							processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent);
 					}
 					break;

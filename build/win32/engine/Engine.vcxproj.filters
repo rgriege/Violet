@@ -91,9 +91,6 @@
     <Filter Include="window\sdl">
       <UniqueIdentifier>{9393980f-24d4-4022-a07b-c0ec03ebfd53}</UniqueIdentifier>
     </Filter>
-    <Filter Include="scene">
-      <UniqueIdentifier>{1287be17-2169-4394-925e-c7938ee50adb}</UniqueIdentifier>
-    </Filter>
     <Filter Include="update">
       <UniqueIdentifier>{6951ce98-620a-42ac-9cee-60bd0ce870e4}</UniqueIdentifier>
     </Filter>
@@ -108,9 +105,6 @@
     </Filter>
     <Filter Include="script\cpp">
       <UniqueIdentifier>{3e4d76e7-2dca-45a5-b6ae-8f0dba4d30eb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ui">
-      <UniqueIdentifier>{2f89d04e-b7d1-40b4-abe8-bec4f3e39e93}</UniqueIdentifier>
     </Filter>
     <Filter Include="handle">
       <UniqueIdentifier>{4c340cb3-2606-47fa-8153-dd7009810019}</UniqueIdentifier>
@@ -295,9 +289,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\update\system\UpdateSystem.h">
       <Filter>update\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\scene\Scene.h">
-      <Filter>scene</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\utility\Tag.h">
       <Filter>utility</Filter>
@@ -542,9 +533,6 @@
     <ClCompile Include="..\..\..\src\violet\component\Component.cpp">
       <Filter>component</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\scene\Scene.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\utility\Tag.cpp">
       <Filter>utility</Filter>
     </ClCompile>
@@ -652,6 +640,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\transform\system\TransformSystem.cpp">
       <Filter>transform\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\event\Event.cpp">
+      <Filter>event</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

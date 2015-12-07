@@ -2,8 +2,8 @@
 
 #include "violet/Engine.h"
 
+#include "violet/component/ComponentManager.h"
 #include "violet/log/Log.h"
-#include "violet/scene/Scene.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/serialization/file/FileSerializerFactory.h"
@@ -76,15 +76,7 @@ bool Engine::bootstrap(const SystemFactory & factory, const char * const configF
 	// create the first scene if systems initalized properly
 	if (ms_instance->m_running)
 	{
-		ms_instance->m_scene = Scene::create(deserializer->getString("firstScene"));
-		if (ms_instance->m_scene == nullptr)
-		{
-			Log::log("initial scene is invalid");
-			ms_instance.reset();
-			return false;
-		}
-
-		// run
+		ms_instance->m_scene->load(deserializer->getString("firstScene"));
 		ms_instance->begin();
 	}
 
@@ -117,14 +109,14 @@ void Engine::switchScene(const char * filename)
 
 // ----------------------------------------------------------------------------
 
-Scene & Engine::getCurrentScene()
+ComponentManager & Engine::getCurrentScene()
 {
 	return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
 
-const Scene & Engine::getCurrentScene() const
+const ComponentManager & Engine::getCurrentScene() const
 {
 	return *m_scene;
 }
@@ -176,7 +168,7 @@ void Engine::addDeleteTask(std::unique_ptr<Task> && task, const Thread thread) t
 
 Engine::Engine(const uint32 workerCount) :
 	m_systems(),
-	m_scene(nullptr),
+	m_scene(std::make_unique<ComponentManager>()),
 #ifdef USE_SCENE_PROCESSOR
 	m_sceneProcessor(std::make_unique<SceneProcessor>()),
 #endif
@@ -228,8 +220,8 @@ void Engine::runFrame(const float frameTime)
 
 	if (!m_nextSceneFileName.empty())
 	{
-		m_scene = Scene::create(m_nextSceneFileName.c_str());
-		m_nextSceneFileName.clear();
+		m_scene->clear();
+		m_scene->load(m_nextSceneFileName.c_str());
 	}
 
 	while (m_frameStage != FrameStage::Last)

@@ -3,19 +3,17 @@
 
 #include "violet/Defines.h"
 #include "violet/event/EventContextOwner.h"
-#include "violet/scene/SceneProcessor.h"
 #include "violet/task/Task.h"
 #include "violet/task/Thread.h"
 
 #include <array>
 #include <memory>
+#include <mutex>
 #include <vector>
-
-//#define USE_SCENE_PROCESSOR
 
 namespace Violet
 {
-	class Scene;
+	class ComponentManager;
 	class System;
 	class SystemFactory;
 	class TaskScheduler;
@@ -73,8 +71,8 @@ namespace Violet
 		~Engine();
 
 		void switchScene(const char * filename);
-		Scene & getCurrentScene();
-		const Scene & getCurrentScene() const;
+		ComponentManager & getCurrentScene();
+		const ComponentManager & getCurrentScene() const;
 #ifdef USE_SCENE_PROCESSOR
 		void addSceneDelegate(SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate);
 		void removeSceneDelegate(SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate);
@@ -110,10 +108,7 @@ namespace Violet
 		thread_mutable std::unique_ptr<TaskScheduler> m_taskScheduler;
 		thread_mutable std::array<TaskQueue, static_cast<int>(FrameStage::Count)> m_taskQueues;
 		std::vector<std::unique_ptr<System>> m_systems;
-		std::unique_ptr<Scene> m_scene;
-#ifdef USE_SCENE_PROCESSOR
-		std::unique_ptr<SceneProcessor> m_sceneProcessor;
-#endif
+		std::unique_ptr<ComponentManager> m_scene;
 		std::string m_nextSceneFileName;
 		bool m_running;
 		FrameStage m_frameStage;

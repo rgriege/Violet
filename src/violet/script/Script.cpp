@@ -5,6 +5,7 @@
 #include "violet/log/Log.h"
 
 #include <assert.h>
+#include <mutex>
 #include <set>
 
 using namespace Violet;

@@ -3,12 +3,12 @@
 #include "violet/graphics/system/RenderSystem.h"
 
 #include "violet/Engine.h"
+#include "violet/component/ComponentManager.h"
 #include "violet/entity/Entity.h"
 #include "violet/graphics/component/ColorComponent.h"
 #include "violet/graphics/component/TextComponent.h"
 #include "violet/graphics/component/TextureComponent.h"
 #include "violet/log/Log.h"
-#include "violet/scene/SceneProcessor.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
 #include "violet/transform/component/WorldTransformComponent.h"
@@ -93,8 +93,6 @@ RenderSystem::~RenderSystem()
 		}), Thread::Window);
 }
 
-void process(const Entity &, float);
-
 // ----------------------------------------------------------------------------
 
 void RenderSystem::update(float const /*dt*/)
@@ -109,11 +107,11 @@ void RenderSystem::update(float const /*dt*/)
 			viewMatrix[0][0] = 2.f / windowSystem->getWidth();
 			viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 
-			for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, ColorComponent>())
+			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, ColorComponent>())
 				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
-			for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, TextComponent>())
+			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextComponent>())
 				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
-			for (const auto entity : engine.getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent, TextureComponent>())
+			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextureComponent>())
 				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
 
 			glFlush();

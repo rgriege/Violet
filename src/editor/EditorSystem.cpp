@@ -9,7 +9,6 @@
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
 #include "violet/log/Log.h"
-#include "violet/scene/Scene.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/serialization/file/FileSerializerFactory.h"

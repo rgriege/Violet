@@ -3,22 +3,13 @@
 #include "violet/transform/system/TransformSystem.h"
 
 #include "violet/Engine.h"
-#include "violet/scene/SceneProcessor.h"
+#include "violet/component/ComponentManager.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
 #include "violet/transform/component/LocalTransformComponent.h"
 #include "violet/transform/component/WorldTransformComponent.h"
 
 using namespace Violet;
-
-// ============================================================================
-
-namespace TransformSystemNamespace
-{
-	void updateEntity(const Entity & entity, float dt);
-}
-
-using namespace TransformSystemNamespace;
 
 // ============================================================================
 
@@ -44,9 +35,6 @@ void TransformSystem::init(Deserializer & deserializer)
 		[](Engine & engine)
 		{
 			engine.addSystem(std::unique_ptr<System>(new TransformSystem));
-#ifdef USE_SCENE_PROCESSOR
-			engine.addSceneDelegate(SceneProcessor::Filter::create<LocalTransformComponent, WorldTransformComponent>(), updateEntity);
-#endif
 		});
 }
 
@@ -61,22 +49,14 @@ TransformSystem::TransformSystem(TransformSystem && other) :
 
 TransformSystem::~TransformSystem()
 {
-#ifdef USE_SCENE_PROCESSOR
-	Engine::getInstance().addWriteTask(Engine::getInstance(),
-		[](Engine & engine)
-		{
-			engine.removeSceneDelegate(SceneProcessor::Filter::create<LocalTransformComponent, WorldTransformComponent>(), updateEntity);
-		});
-#endif
 }
 
 // ---------------------------------------------------------------------------
 
 void TransformSystem::update(const float /*dt*/)
 {
-#ifndef USE_SCENE_PROCESSOR
-	/*auto localView = Engine::getInstance().getCurrentScene().getComponentManager().getEntityView<LocalTransformComponent>();
-	auto worldView = Engine::getInstance().getCurrentScene().getComponentManager().getEntityView<WorldTransformComponent>();
+	auto localView = Engine::getInstance().getCurrentScene().getEntityView<LocalTransformComponent>();
+	auto worldView = Engine::getInstance().getCurrentScene().getEntityView<WorldTransformComponent>();
 	auto localIt = localView.begin(), localEnd = localView.end();
 	auto worldIt = worldView.begin(), worldEnd = worldView.end();
 	while (localIt != localEnd)
@@ -88,10 +68,9 @@ void TransformSystem::update(const float /*dt*/)
 		}
 		else
 		{
-			Engine::addWriteTask(Engine::getInstance().getCurrentScene().getComponentManager());
+			// Engine::addWriteTask(Engine::getInstance().getCurrentScene());
 		}
-	}*/
-#endif
+	}
 }
 
 // ============================================================================
