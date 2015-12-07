@@ -87,8 +87,9 @@ bool Engine::bootstrap(const SystemFactory & factory, const char * const configF
 	// clear any pending scene change
 	ms_instance->m_nextSceneFileName.clear();
 
-	// run another frame to handle cleanup tasks
-	ms_instance->runFrame(0.f);
+	// run additional frames to handle cleanup tasks
+	while (ms_instance->hasTasks())
+		ms_instance->runFrame(0.f);
 
 	ms_instance.reset();
 	return true;
@@ -260,6 +261,16 @@ void Engine::addTask(std::unique_ptr<Task> && task, const Thread thread, const F
 		const std::lock_guard<std::mutex> lk(taskQueue.m_mutex);
 		taskQueue.m_tasks.emplace(std::move(task), thread);
 	}
+}
+
+// ----------------------------------------------------------------------------
+
+bool Engine::hasTasks() const
+{
+	for (auto const & taskQueue : m_taskQueues)
+		if (!taskQueue.m_tasks.empty())
+			return true;
+	return false;
 }
 
 // ============================================================================

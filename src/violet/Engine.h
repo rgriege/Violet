@@ -99,6 +99,7 @@ namespace Violet
 		void performCurrentFrameStage();
 
 		void addTask(std::unique_ptr<Task> && task, Thread thread, FrameStage frameStage) thread_const;
+		bool hasTasks() const;
 
 		Engine(const Engine &) = delete;
 		Engine & operator=(const Engine &) = delete;
