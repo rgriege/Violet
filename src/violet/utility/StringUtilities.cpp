@@ -31,6 +31,6 @@ void StringUtilities::replace(std::string & haystack, std::string const & needle
 	while (pos != std::string::npos)
 	{
 		haystack.replace(pos, needle.size(), replacement.c_str());
-		pos = haystack.find(needle.c_str());
+		pos = haystack.find(needle.c_str(), pos + replacement.size());
 	}
 }
