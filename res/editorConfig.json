@@ -14,10 +14,7 @@
       "color": "0xffffffff"
     },
     "inpt": {},
-    "updt": {},
-    "edtr": {
-      "editScriptFileName": "editEntity.dll"
-    }
+    "updt": {}
   },
-  "firstScene": "editor.json"
+  "firstScene": "editorScene.json"
 }

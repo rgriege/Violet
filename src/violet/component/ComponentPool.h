@@ -6,6 +6,7 @@
 
 #include <map>
 #include <vector>
+#include <unordered_map>
 
 namespace Violet
 {
@@ -60,9 +61,7 @@ namespace Violet
 		Tag getComponentTag() const;
 
 		template <typename ComponentType>
-		void loadOne(Handle entityId, Deserializer & deserializer);
-		template <typename ComponentType>
-		void loadMany(Deserializer & deserializer);
+		void load(Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap);
 		template <typename ComponentType>
 		void save(Serializer & serailizer) const;
 

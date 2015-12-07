@@ -17,8 +17,7 @@ using namespace Violet;
 std::unique_ptr<Scene> Scene::create(const char * const name)
 {
 	auto scene = std::unique_ptr<Scene>(new Scene);
-	scene->m_componentManager->load(name);
-	scene->m_handleManager.create(0);
+	scene->m_componentManager->load(scene->m_handleManager, name);
 	return scene;
 }
 
@@ -42,7 +41,7 @@ Scene::Scene() :
 
 void Scene::loadEntity(const char * entityName)
 {
-	m_componentManager->loadEntity(m_handleManager.create(), entityName);
+	m_componentManager->load(m_handleManager, entityName);
 }
 
 // ----------------------------------------------------------------------------

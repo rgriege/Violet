@@ -211,7 +211,7 @@ void Engine::begin()
 		else
 		{
 			previousFrameTime = frameTime;
-			Log::log(FormattedString<128>().sprintf("frame time: %.3f", previousFrameTime));
+			// Log::log(FormattedString<128>().sprintf("frame time: %.3f", previousFrameTime));
 		}
 	}
 }

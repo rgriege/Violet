@@ -1,4 +1,5 @@
 {
+  "id": 0,
   "shader": "poly",
   "poly": {
     "n": 4,

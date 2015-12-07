@@ -72,25 +72,18 @@ Violet::ComponentPool Violet::ComponentPool::create()
 	return ComponentPool(ComponentType::getStaticTag(), sizeof(ComponentType));
 }
 
-// ============================================================================
-
-template <typename ComponentType>
-void Violet::ComponentPool::loadOne(const Handle entityId, Deserializer & deserializer)
-{
-	assert(ComponentType::getStaticTag() == m_componentTag);
-	create<ComponentType>(entityId, deserializer);
-}
-
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentPool::loadMany(Deserializer & deserializer)
+void Violet::ComponentPool::load(Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap)
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
 	while (deserializer)
 	{
 		const uint32 entityId = deserializer.getUint("id");
-		create<ComponentType>(Handle(entityId, 0), deserializer);
+		const auto it = idMap.find(entityId);
+		const Handle & handle = it == idMap.end() ? Handle(entityId, 0) : it->second;
+		create<ComponentType>(handle, deserializer);
 	}
 }
 

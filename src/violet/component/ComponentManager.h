@@ -9,10 +9,12 @@
 #include <iterator>
 #include <memory>
 #include <tuple>
+#include <unordered_map>
 
 namespace Violet
 {
 	class Deserializer;
+	class HandleManager;
 
 	class VIOLET_API ComponentManager
 	{
@@ -72,14 +74,13 @@ namespace Violet
 	public:
 
 		typedef Factory<std::string, ComponentPool(ComponentManager &)> PoolFactory;
-		typedef Factory<std::string, void(ComponentManager &, Deserializer &, Handle)> ComponentFactory;
-		typedef Factory<std::string, void(ComponentManager &, Deserializer &)> ComponentsFactory;
+		typedef Factory<std::string, void(ComponentManager &, Deserializer &, const std::unordered_map<uint32, Handle> &)> ComponentsFactory;
 
 	public:
 
 		template <typename ComponentType>
 		static void installComponent();
-		static void installComponent(Tag const tag, const PoolFactory::Producer & producer, const ComponentFactory::Producer & cProducer, const ComponentsFactory::Producer & csProducer, Thread thread);
+		static void installComponent(Tag const tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, Thread thread);
 
 		template <typename ComponentType>
 		static void uninstallComponent();
@@ -92,8 +93,7 @@ namespace Violet
 		/*ComponentManager(ComponentManager && other);
 		ComponentManager & operator=(ComponentManager && other);*/
 
-		void load(const char * sceneName);
-		void loadEntity(Handle entityId, const char * entityName);
+		void load(HandleManager & handleManager, const char * sceneName);
 
 		template <typename ComponentType, typename... Args>
 		ComponentType & createComponent(Handle entityId, Args &&... args);
@@ -123,9 +123,7 @@ namespace Violet
 		template <typename ComponentType>
 		static ComponentPool factoryCreatePool(ComponentManager & manager);
 		template <typename ComponentType>
-		static void factoryCreateComponent(ComponentManager & manager, Deserializer & deserializer, Handle entityId);
-		template <typename ComponentType>
-		static void factoryCreateComponents(ComponentManager & manager, Deserializer & deserializer);
+		static void factoryCreateComponents(ComponentManager & manager, Deserializer & deserializer, const std::unordered_map<uint32, Handle> &);
 
 	private:
 
@@ -138,7 +136,6 @@ namespace Violet
 	private:
 
 		static PoolFactory ms_poolFactory;
-		static ComponentFactory ms_componentFactory;
 		static ComponentsFactory ms_componentsFactory;
 		static std::map<Tag, Thread> ms_poolThreads;
 

@@ -3,6 +3,7 @@
 #include "violet/component/ComponentManager.h"
 
 #include "violet/Engine.h"
+#include "violet/handle/HandleManager.h"
 #include "violet/log/Log.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/transform/component/WorldTransformComponent.h"
@@ -12,12 +13,11 @@ using namespace Violet;
 
 // ============================================================================
 
-void ComponentManager::installComponent(const Tag tag, const PoolFactory::Producer & producer, const ComponentFactory::Producer & cProducer, const ComponentsFactory::Producer & csProducer, const Thread thread)
+void ComponentManager::installComponent(const Tag tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, const Thread thread)
 {
 	const std::string & label = tag.asString();
 	assert(!ms_poolFactory.has(label));
 	ms_poolFactory.assign(label, producer);
-	ms_componentFactory.assign(label, cProducer);
 	ms_componentsFactory.assign(label, csProducer);
 	ms_poolThreads[tag] = thread;
 }
@@ -29,7 +29,6 @@ void ComponentManager::uninstallComponent(const Tag tag)
 	const std::string & label = tag.asString();
 	assert(ms_poolFactory.has(label));
 	ms_poolFactory.remove(label);
-	ms_componentFactory.remove(label);
 	ms_componentsFactory.remove(label);
 	ms_poolThreads.erase(tag);
 }
@@ -37,8 +36,7 @@ void ComponentManager::uninstallComponent(const Tag tag)
 // ============================================================================
 
 Factory<std::string, ComponentPool(ComponentManager &)> ComponentManager::ms_poolFactory;
-Factory<std::string, void(ComponentManager &, Deserializer &, Handle)> ComponentManager::ms_componentFactory;
-Factory<std::string, void(ComponentManager &, Deserializer &)> ComponentManager::ms_componentsFactory;
+Factory<std::string, void(ComponentManager &, Deserializer &, const std::unordered_map<uint32, Handle> &)> ComponentManager::ms_componentsFactory;
 std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 
 // ============================================================================
@@ -67,7 +65,7 @@ ComponentManager & ComponentManager::operator=(ComponentManager && other)
 
 // ----------------------------------------------------------------------------
 
-void ComponentManager::load(const char * const filename)
+void ComponentManager::load(HandleManager & handleManager, const char * const filename)
 {
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
@@ -76,52 +74,38 @@ void ComponentManager::load(const char * const filename)
 		Log::log(FormattedString<128>().sprintf("Failed to parse scene file '%s'", filename));
 	else
 	{
-		while (*deserializer)
+		const std::string idFileName = deserializer->getString("idFile");
+		auto idFileDeserializer = FileDeserializerFactory::getInstance().create(idFileName.c_str());
+		if (idFileDeserializer != nullptr && *idFileDeserializer)
 		{
-			const std::string poolTag = deserializer->getString("cpnt");
-			const std::string poolFileName = deserializer->getString("file");
-			auto threadIt = ms_poolThreads.find(Tag(poolTag.c_str()));
-			assert(threadIt != ms_poolThreads.end());
-			Engine::getInstance().addWriteTask(*this,
-				[=](ComponentManager & manager)
-				{
-					auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
-					if (poolDeserializer != nullptr)
-						ms_componentsFactory.create(poolTag, manager, *poolDeserializer);
-					else
-						Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
-				}, threadIt->second);
-		}
-	}
-}
+			auto handleReplacementMap = std::make_shared<std::unordered_map<uint32, Handle>>();
+			while (*idFileDeserializer)
+			{
+				const uint32 desiredId = idFileDeserializer->getUint("id");
+				const Handle actualHandle = handleManager.create(desiredId);
+				if (desiredId != actualHandle.getId())
+					(*handleReplacementMap)[desiredId] = actualHandle;
+			}
 
-// ----------------------------------------------------------------------------
-
-void ComponentManager::loadEntity(const Handle entityId, const char * const filename)
-{
-	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
-	if (deserializer == nullptr)
-		Log::log(FormattedString<128>().sprintf("Could not open scene file '%s'", filename));
-	else if (!*deserializer)
-		Log::log(FormattedString<128>().sprintf("Failed to parse scene file '%s'", filename));
-	else
-	{
-		while (*deserializer)
-		{
-			const std::string poolTag = deserializer->getString("cpnt");
-			const std::string poolFileName = deserializer->getString("file");
-			auto threadIt = ms_poolThreads.find(Tag(poolTag.c_str()));
-			assert(threadIt != ms_poolThreads.end());
-			Engine::getInstance().addWriteTask(*this,
-				[=](ComponentManager & manager)
-				{
-					auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
-					if (poolDeserializer != nullptr)
-						ms_componentFactory.create(poolTag, manager, *poolDeserializer, entityId);
-					else
-						Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
-				}, threadIt->second);
+			while (*deserializer)
+			{
+				const std::string poolTag = deserializer->getString("cpnt");
+				const std::string poolFileName = deserializer->getString("file");
+				auto threadIt = ms_poolThreads.find(Tag(poolTag.c_str()));
+				assert(threadIt != ms_poolThreads.end());
+				Engine::getInstance().addWriteTask(*this,
+					[=](ComponentManager & manager)
+					{
+						auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
+						if (poolDeserializer != nullptr)
+							ms_componentsFactory.create(poolTag, manager, *poolDeserializer, *handleReplacementMap);
+						else
+							Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
+					}, threadIt->second);
+			}
 		}
+		else
+			Log::log(FormattedString<128>().sprintf("Could not open scene id file '%s'", idFileName.c_str()));
 	}
 }
 
