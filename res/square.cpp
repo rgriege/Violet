@@ -1,7 +1,7 @@
 #include "violet/Engine.h"
+#include "violet/component/ComponentManager.h"
 #include "violet/log/Log.h"
 #include "violet/script/cpp/CppScript.h"
-#include "violet/serialization/file/FileDeserializerFactory.h"
 #include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/update/system/UpdateSystem.h"
 #include "violet/utility/FormattedString.h"
@@ -35,7 +35,7 @@ private:
 
     void onUpdate(const Handle entityId, const float dt)
     {
-        auto transformC = Engine::getInstance().getCurrentScene().getComponentManager().getComponent<WorldTransformComponent>(entityId);
+        auto transformC = Engine::getInstance().getCurrentScene().getComponent<WorldTransformComponent>(entityId);
         if (transformC != nullptr)
         {
             const auto & window = Engine::getInstance().getSystem<WindowSystem>();

@@ -1,0 +1,13 @@
+{
+  "idFile": "openDialog.hndl.json",
+  "cpnt": "wtfm",
+  "file": "openDialog.wtfm.json",
+  "cpnt": "colr",
+  "file": "openDialog.colr.json",
+  "cpnt": "scpt",
+  "file": "openDialog.scpt.json",
+  "cpnt": "text",
+  "file": "openDialog.text.json",
+  "cpnt": "mipt",
+  "file": "openDialog.mipt.json"
+}

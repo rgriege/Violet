@@ -1,0 +1,10 @@
+{
+  "id": 0,
+  "shader": "text",
+  "poly": {
+    "n": 0
+  },
+  "str": "square.json",
+  "font": "Vera.ttf",
+  "size": 18
+}

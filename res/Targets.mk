@@ -1,3 +1,4 @@
 TARGETS = \
     editorSceneManager \
+    openDialog \
     square
