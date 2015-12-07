@@ -3,6 +3,7 @@
 
 #include "violet/component/ComponentPool.h"
 #include "violet/handle/Handle.h"
+#include "violet/handle/HandleManager.h"
 #include "violet/task/Thread.h"
 #include "violet/utility/Factory.h"
 
@@ -14,7 +15,6 @@
 namespace Violet
 {
 	class Deserializer;
-	class HandleManager;
 
 	class VIOLET_API ComponentManager
 	{
@@ -89,11 +89,11 @@ namespace Violet
 	public:
 
 		ComponentManager();
+		ComponentManager(ComponentManager && other);
+		ComponentManager & operator=(ComponentManager && other);
+		~ComponentManager();
 
-		/*ComponentManager(ComponentManager && other);
-		ComponentManager & operator=(ComponentManager && other);*/
-
-		void load(HandleManager & handleManager, const char * sceneName);
+		void load(const char * sceneName);
 
 		template <typename ComponentType, typename... Args>
 		ComponentType & createComponent(Handle entityId, Args &&... args);
@@ -115,7 +115,8 @@ namespace Violet
 		
 		template <typename ComponentType>
 		bool remove(Handle entityId);
-		bool removeAll(Handle entityId);
+		void removeAll(Handle entityId);
+		void removeAll(Handle entityId) thread_const;
 		void clear();
 
 	private:
@@ -141,6 +142,7 @@ namespace Violet
 
 	private:
 
+		HandleManager m_handleManager;
 		std::vector<ComponentPool> m_pools;
 	};
 }

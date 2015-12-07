@@ -42,6 +42,7 @@ std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 // ============================================================================
 
 ComponentManager::ComponentManager() :
+	m_handleManager(),
 	m_pools()
 {
 	for (auto const & entry : ms_poolThreads)
@@ -50,7 +51,8 @@ ComponentManager::ComponentManager() :
 
 // ----------------------------------------------------------------------------
 
-/*ComponentManager::ComponentManager(ComponentManager && other) :
+ComponentManager::ComponentManager(ComponentManager && other) :
+	m_handleManager(std::move(other.m_handleManager)),
 	m_pools(std::move(other.m_pools))
 {
 }
@@ -59,13 +61,29 @@ ComponentManager::ComponentManager() :
 
 ComponentManager & ComponentManager::operator=(ComponentManager && other)
 {
+	std::swap(m_handleManager, other.m_handleManager);
 	std::swap(m_pools, other.m_pools);
 	return *this;
-}*/
+}
 
 // ----------------------------------------------------------------------------
 
-void ComponentManager::load(HandleManager & handleManager, const char * const filename)
+ComponentManager::~ComponentManager()
+{
+	for (auto & pool : m_pools)
+	{
+		ComponentPool * movedPool = new ComponentPool(std::move(pool));
+		Engine::getInstance().addDeleteTask(std::make_unique<DelegateTask>(
+			[=]()
+			{
+				delete movedPool;
+			}), ms_poolThreads[pool.getComponentTag()]);
+	}
+}
+
+// ----------------------------------------------------------------------------
+
+void ComponentManager::load(const char * const filename)
 {
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
@@ -82,7 +100,7 @@ void ComponentManager::load(HandleManager & handleManager, const char * const fi
 			while (*idFileDeserializer)
 			{
 				const uint32 desiredId = idFileDeserializer->getUint("id");
-				const Handle actualHandle = handleManager.create(desiredId);
+				const Handle actualHandle = m_handleManager.create(desiredId);
 				if (desiredId != actualHandle.getId())
 					(*handleReplacementMap)[desiredId] = actualHandle;
 			}
@@ -97,7 +115,7 @@ void ComponentManager::load(HandleManager & handleManager, const char * const fi
 					[=](ComponentManager & manager)
 					{
 						auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
-						if (poolDeserializer != nullptr)
+						if (poolDeserializer != nullptr && *poolDeserializer)
 							ms_componentsFactory.create(poolTag, manager, *poolDeserializer, *handleReplacementMap);
 						else
 							Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
@@ -111,13 +129,29 @@ void ComponentManager::load(HandleManager & handleManager, const char * const fi
 
 // ----------------------------------------------------------------------------
 
-bool ComponentManager::removeAll(const Handle entityId)
+void ComponentManager::removeAll(const Handle entityId)
 {
-	bool found = false;
 	for (auto & pool : m_pools)
-		found |= pool.remove(entityId);
+	{
+		Engine::getInstance().addWriteTask(pool,
+			[=](ComponentPool & pool)
+			{
+				pool.remove(entityId);
+			}, ms_poolThreads[pool.getComponentTag()]);
+	}
 
-	return found;
+	m_handleManager.free(entityId);
+}
+
+// ----------------------------------------------------------------------------
+
+void ComponentManager::removeAll(const Handle entityId) thread_const
+{
+	Engine::getInstance().addWriteTask(*this,
+		[=](ComponentManager & manager)
+		{
+			manager.removeAll(entityId);
+		});
 }
 
 // ----------------------------------------------------------------------------
@@ -126,6 +160,7 @@ void ComponentManager::clear()
 {
 	for (auto & pool : m_pools)
 		pool.clear();
+	m_handleManager.freeAll();
 }
 
 // ============================================================================

@@ -8,6 +8,11 @@ using namespace Violet;
 
 ComponentPool::~ComponentPool()
 {
+	if (!m_data.empty())
+	{
+		for (uint32 i = 0, end = getLastDataIndex(); i < end; i += m_componentSize)
+			get<Component>(i)->~Component();
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -61,9 +66,11 @@ bool ComponentPool::remove(const Handle entityId)
 	const bool found = it != m_lookupMap.end();
 	if (found)
 	{
-		reinterpret_cast<Component *>(m_data.data() + it->second)->~Component();
+		get<Component>(it->second)->~Component();
 		m_data.erase(m_data.begin() + it->second, m_data.begin() + it->second + m_componentSize);
 		m_lookupMap.erase(entityId);
+		for (auto it = m_lookupMap.upper_bound(entityId), end = m_lookupMap.end(); it != end; ++it)
+			it->second -= m_componentSize;
 	}
 
 	return found;
@@ -73,8 +80,8 @@ bool ComponentPool::remove(const Handle entityId)
 
 void ComponentPool::clear()
 {
-	for (uint32 i = 0, end = m_data.size(); i < end; i += m_componentSize)
-		reinterpret_cast<Component *>(&m_data[i])->~Component();
+	for (uint32 i = 0, end = getLastDataIndex(); i < end; i += m_componentSize)
+		get<Component>(i)->~Component();
 	m_data.clear();
 	m_data.resize(8);
 	*reinterpret_cast<uint32 *>(&m_data[0]) = ((Handle::ms_invalid.getId() << 8) | Handle::ms_invalid.getVersion());

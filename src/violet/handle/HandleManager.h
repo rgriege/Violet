@@ -21,6 +21,7 @@ namespace Violet
 		Handle create();
 		Handle create(uint32 desiredId);
 		void free(Handle handle);
+		void freeAll();
 
 	private:
 

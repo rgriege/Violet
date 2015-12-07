@@ -108,4 +108,13 @@ void HandleManager::free(const Handle entity)
 		assert(false);
 }
 
+// ----------------------------------------------------------------------------
+
+void HandleManager::freeAll()
+{
+	m_usedList.clear();
+	m_recycleList.emplace();
+	m_versions.clear();
+}
+
 // ============================================================================
