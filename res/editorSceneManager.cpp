@@ -14,6 +14,7 @@
 #include "violet/utility/StringUtilities.h"
 
 #include "dialog.h"
+#include "editor.h"
 
 #include <functional>
 
@@ -77,11 +78,7 @@ private:
             switch (m_dialog)
             {
                 case Load:
-                    Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
-                        [=](ComponentManager & scene)
-                        {
-                            scene.load(fileName.c_str());
-                        });
+                    load(fileName);
                     break;
 
                 case Save:
@@ -93,6 +90,18 @@ private:
             }
         }
         m_dialog = None;
+    }
+
+    void load(const std::string & fileName)
+    {
+        Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
+            [=](ComponentManager & scene)
+            {
+                std::map<Tag, Tag> tagMap = {
+                    { UpdateComponent::getStaticTag(), EditorComponentWrapper<UpdateComponent>::getStaticTag() }
+                };
+                scene.load(fileName.c_str(), tagMap);
+            });
     }
 
     template <typename ComponentType>
@@ -118,6 +127,7 @@ private:
 
     Dialog m_dialog = None;
     uint32 m_delegateId;
+    std::vector<Handle> m_entityIds;
 };
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)

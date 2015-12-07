@@ -28,6 +28,8 @@
 #include "violet/window/glut/GlutWindowSystem.h"
 #include "violet/window/sdl/SDLWindowSystem.h"
 
+#include "../res/editor.h"
+
 Violet::SystemFactory setup()
 {
 	Violet::ComponentManager::installComponent<Violet::ColorComponent>();
@@ -41,6 +43,7 @@ Violet::SystemFactory setup()
 	Violet::ComponentManager::installComponent<Violet::TextureComponent>();
 	Violet::ComponentManager::installComponent<Violet::UpdateComponent>();
 	Violet::ComponentManager::installComponent<Violet::WorldTransformComponent>();
+	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::UpdateComponent>>();
 
 	Violet::JsonDeserializer::install();
 	Violet::JsonSerializer::install();

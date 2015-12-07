@@ -81,7 +81,7 @@ ComponentManager::~ComponentManager()
 
 // ----------------------------------------------------------------------------
 
-void ComponentManager::load(const char * const filename)
+void ComponentManager::load(const char * const filename, const std::map<Tag, Tag> & tagMap)
 {
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
@@ -105,7 +105,9 @@ void ComponentManager::load(const char * const filename)
 
 			while (*deserializer)
 			{
-				const Tag poolTag = Tag(deserializer->getString("cpnt"));
+				const Tag componentTag = Tag(deserializer->getString("cpnt"));
+				const auto tagMapIt = tagMap.find(componentTag);
+				const Tag poolTag = tagMapIt != tagMap.end() ? tagMapIt->second : componentTag;
 				const std::string poolFileName = deserializer->getString("file");
 				auto threadIt = ms_poolThreads.find(poolTag);
 				assert(threadIt != ms_poolThreads.end());

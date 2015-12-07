@@ -93,7 +93,7 @@ namespace Violet
 		ComponentManager & operator=(ComponentManager && other);
 		~ComponentManager();
 
-		void load(const char * sceneName);
+		void load(const char * sceneName, const std::map<Tag, Tag> & tagMap = std::map<Tag, Tag>());
 
 		template <typename ComponentType, typename... Args>
 		ComponentType & createComponent(Handle entityId, Args &&... args);
