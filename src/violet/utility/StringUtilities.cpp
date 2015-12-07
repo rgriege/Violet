@@ -12,7 +12,7 @@ std::string StringUtilities::left(std::string const & str, char delimiter)
 
 std::string StringUtilities::right(std::string const & str, char delimiter)
 {
-	return str.substr(std::min(str.find(delimiter), str.size()), std::string::npos);
+	return str.substr(std::min(str.find(delimiter) + 1, str.size()), std::string::npos);
 }
 
 const char * StringUtilities::right(const char * str, char delimiter)
