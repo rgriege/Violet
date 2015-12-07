@@ -15,10 +15,9 @@ using namespace Violet;
 
 void ComponentManager::installComponent(const Tag tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, const Thread thread)
 {
-	const std::string & label = tag.asString();
-	assert(!ms_poolFactory.has(label));
-	ms_poolFactory.assign(label, producer);
-	ms_componentsFactory.assign(label, csProducer);
+	assert(!ms_poolFactory.has(tag));
+	ms_poolFactory.assign(tag, producer);
+	ms_componentsFactory.assign(tag, csProducer);
 	ms_poolThreads[tag] = thread;
 }
 
@@ -26,17 +25,16 @@ void ComponentManager::installComponent(const Tag tag, const PoolFactory::Produc
 
 void ComponentManager::uninstallComponent(const Tag tag)
 {
-	const std::string & label = tag.asString();
-	assert(ms_poolFactory.has(label));
-	ms_poolFactory.remove(label);
-	ms_componentsFactory.remove(label);
+	assert(ms_poolFactory.has(tag));
+	ms_poolFactory.remove(tag);
+	ms_componentsFactory.remove(tag);
 	ms_poolThreads.erase(tag);
 }
 
 // ============================================================================
 
-Factory<std::string, ComponentPool(ComponentManager &)> ComponentManager::ms_poolFactory;
-Factory<std::string, void(ComponentManager &, Deserializer &, const std::unordered_map<uint32, Handle> &)> ComponentManager::ms_componentsFactory;
+ComponentManager::PoolFactory ComponentManager::ms_poolFactory;
+ComponentManager::ComponentsFactory ComponentManager::ms_componentsFactory;
 std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 
 // ============================================================================
@@ -46,7 +44,7 @@ ComponentManager::ComponentManager() :
 	m_pools()
 {
 	for (auto const & entry : ms_poolThreads)
-		m_pools.emplace_back(ms_poolFactory.create(entry.first.asString(), *this));
+		m_pools.emplace_back(ms_poolFactory.create(entry.first));
 }
 
 // ----------------------------------------------------------------------------
@@ -107,16 +105,16 @@ void ComponentManager::load(const char * const filename)
 
 			while (*deserializer)
 			{
-				const std::string poolTag = deserializer->getString("cpnt");
+				const Tag poolTag = Tag(deserializer->getString("cpnt"));
 				const std::string poolFileName = deserializer->getString("file");
-				auto threadIt = ms_poolThreads.find(Tag(poolTag.c_str()));
+				auto threadIt = ms_poolThreads.find(poolTag);
 				assert(threadIt != ms_poolThreads.end());
-				Engine::getInstance().addWriteTask(*this,
-					[=](ComponentManager & manager)
+				Engine::getInstance().addWriteTask(*getPool(poolTag),
+					[=](ComponentPool & pool)
 					{
 						auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
 						if (poolDeserializer != nullptr && *poolDeserializer)
-							ms_componentsFactory.create(poolTag, manager, *poolDeserializer, *handleReplacementMap);
+							ms_componentsFactory.create(poolTag, pool, *poolDeserializer, *handleReplacementMap);
 						else
 							Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
 					}, threadIt->second);

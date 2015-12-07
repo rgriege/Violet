@@ -188,7 +188,7 @@ bool Violet::ComponentManager::remove(const Handle entityId)
 template <typename ComponentType>
 void Violet::ComponentManager::installComponent()
 {
-	installComponent(ComponentType::getStaticTag(), &ComponentManager::factoryCreatePool<ComponentType>, &ComponentManager::factoryCreateComponents<ComponentType>, ComponentType::getStaticThread());
+	installComponent(ComponentType::getStaticTag(), &ComponentManager::createPool<ComponentType>, &ComponentManager::createComponents<ComponentType>, ComponentType::getStaticThread());
 }
 
 // ----------------------------------------------------------------------------
@@ -202,7 +202,7 @@ void Violet::ComponentManager::uninstallComponent()
 // ============================================================================
 
 template <typename ComponentType>
-Violet::ComponentPool Violet::ComponentManager::factoryCreatePool(ComponentManager & manager)
+static Violet::ComponentPool Violet::ComponentManager::createPool()
 {
 	return ComponentPool::create<ComponentType>();
 }
@@ -210,9 +210,9 @@ Violet::ComponentPool Violet::ComponentManager::factoryCreatePool(ComponentManag
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentManager::factoryCreateComponents(ComponentManager & manager, Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap)
+void Violet::ComponentManager::createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap)
 {
-	manager.getPool<ComponentType>()->load<ComponentType>(deserializer, idMap);
+	pool.load<ComponentType>(deserializer, idMap);
 }
 
 // ============================================================================

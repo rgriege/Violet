@@ -73,8 +73,8 @@ namespace Violet
 
 	public:
 
-		typedef Factory<std::string, ComponentPool(ComponentManager &)> PoolFactory;
-		typedef Factory<std::string, void(ComponentManager &, Deserializer &, const std::unordered_map<uint32, Handle> &)> ComponentsFactory;
+		typedef Factory<Tag, ComponentPool()> PoolFactory;
+		typedef Factory<Tag, void(ComponentPool &, Deserializer &, const std::unordered_map<uint32, Handle> &)> ComponentsFactory;
 
 	public:
 
@@ -122,9 +122,9 @@ namespace Violet
 	private:
 
 		template <typename ComponentType>
-		static ComponentPool factoryCreatePool(ComponentManager & manager);
+		static ComponentPool createPool();
 		template <typename ComponentType>
-		static void factoryCreateComponents(ComponentManager & manager, Deserializer & deserializer, const std::unordered_map<uint32, Handle> &);
+		static void createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, Handle> &);
 
 	private:
 
