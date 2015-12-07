@@ -11,6 +11,7 @@
 #include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/update/component/UpdateComponent.h"
 #include "violet/utility/FormattedString.h"
+#include "violet/utility/StringUtilities.h"
 
 #include "dialog.h"
 
@@ -52,7 +53,7 @@ private:
                     Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
                         [](ComponentManager & scene)
                         {
-                            scene.load("openDialog.json");
+                            scene.load("dialog.json");
                         });
                     m_dialog = Load;
                     break;
@@ -61,7 +62,7 @@ private:
                     Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
                         [](ComponentManager & scene)
                         {
-                            scene.load("saveDialog.json");
+                            scene.load("dialog.json");
                         });
                     m_dialog = Save;
                     break;
@@ -69,7 +70,7 @@ private:
         }
     }
 
-    void onDialogClosed(const std::string const & fileName)
+    void onDialogClosed(const std::string & fileName)
     {
         if (!fileName.empty())
         {
@@ -84,11 +85,10 @@ private:
                     break;
 
                 case Save:
-                    save<UpdateComponent>("save.updt.json");
-                    save<WorldTransformComponent>("save.wtfm.json");
-                    save<ColorComponent>("save.colr.json");
-                    save<ScriptComponent>("save.scpt.json");
-                    save<TextComponent>("save.text.json");
+                    save<UpdateComponent>(fileName);
+                    save<WorldTransformComponent>(fileName);
+                    save<ColorComponent>(fileName);
+                    save<ScriptComponent>(fileName);
                     break;
             }
         }
@@ -96,10 +96,13 @@ private:
     }
 
     template <typename ComponentType>
-    void save(const char * filename)
+    void save(std::string const & fileName)
     {
+        const auto & name = StringUtilities::left(fileName, '.');
+        const auto & ext = StringUtilities::right(fileName, '.');
+        const std::string componentFileName = name + "." + ComponentType::getStaticTag().asString() + "." + ext;
         auto pool = Engine::getInstance().getCurrentScene().getPool<ComponentType>();
-        auto serializer = FileSerializerFactory::getInstance().create(filename);
+        auto serializer = FileSerializerFactory::getInstance().create(componentFileName.c_str());
         if (pool && serializer)
             pool->save<ComponentType>(*serializer);
     }
