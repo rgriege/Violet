@@ -4,6 +4,7 @@
 
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
+#include "violet/input/Key.h"
 #include "violet/input/InputResult.h"
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
@@ -89,13 +90,7 @@ void InputSystem::update(const float dt)
 							processEvent(std::get<1>(entity), event.key, event.type);
 					}
 					else
-					{
-						const auto * sc = engine.getCurrentScene().getComponent<ScriptComponent>(m_focussedEntityId);
-						if (sc != nullptr && engine.getCurrentScene().getComponent<KeyInputComponent>(m_focussedEntityId) != nullptr)
-							processEvent(*sc, event.key, event.type);
-						else
-							engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
-					}
+						processFocussedEvent(event.key, event.type);
 					break;
 
 				case WindowSystem::ET_MouseDown:
@@ -157,6 +152,28 @@ InputSystem::InputSystem() :
 	System(getStaticLabel()),
 	m_focussedEntityId()
 {
+}
+
+// ----------------------------------------------------------------------------
+
+void InputSystem::processFocussedEvent(const WindowSystem::KeyEvent & event, const WindowSystem::EventType type) thread_const
+{
+	const auto & engine = Engine::getInstance();
+	if (event.code != Key::Escape)
+	{
+		const auto * sc = engine.getCurrentScene().getComponent<ScriptComponent>(m_focussedEntityId);
+		if (sc != nullptr && engine.getCurrentScene().getComponent<KeyInputComponent>(m_focussedEntityId) != nullptr)
+			processEvent(*sc, event, type);
+		else
+			engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
+	}
+	else
+	{
+		const auto * sc = engine.getCurrentScene().getComponent<ScriptComponent>(m_focussedEntityId);
+		if (sc != nullptr)
+			FocusLostMethod::run(*sc->m_script, sc->getEntityId());
+		engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
+	}
 }
 
 // ----------------------------------------------------------------------------

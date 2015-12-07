@@ -49,6 +49,7 @@ namespace Violet
 
 		InputSystem();
 
+		void processFocussedEvent(const WindowSystem::KeyEvent & event, WindowSystem::EventType type) thread_const;
 		void processFocussedEvent(const MouseButtonEvent & worldEvent, WindowSystem::EventType type) thread_const;
 		void processFocussedEvent(const MouseMotionEvent & worldEvent) thread_const;
 
