@@ -5,6 +5,8 @@
 #include "violet/log/Log.h"
 #include "violet/utility/FormattedString.h"
 
+#include <assert.h>
+
 using namespace Violet;
 
 // ============================================================================
@@ -96,12 +98,14 @@ Handle HandleManager::create(const uint32 desiredId)
 void HandleManager::free(const Handle entity)
 {
 	const uint32 id = entity.getId();
-	if (id < m_usedList.size())
+	if (id < m_usedList.size() && m_usedList[id])
 	{
 		m_usedList[id] = false;
 		m_recycleList.push(id);
 		++m_versions[id];
 	}
+	else
+		assert(false);
 }
 
 // ============================================================================
