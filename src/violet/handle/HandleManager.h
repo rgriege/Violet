@@ -23,6 +23,8 @@ namespace Violet
 		void free(Handle handle);
 		void freeAll();
 
+		std::vector<Handle> getUsed() const;
+
 	private:
 
 		std::vector<bool> m_usedList;

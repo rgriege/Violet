@@ -188,7 +188,7 @@ bool Violet::ComponentManager::remove(const Handle entityId)
 template <typename ComponentType>
 void Violet::ComponentManager::installComponent()
 {
-	installComponent(ComponentType::getStaticTag(), &ComponentManager::createPool<ComponentType>, &ComponentManager::createComponents<ComponentType>, ComponentType::getStaticThread());
+	installComponent(ComponentType::getStaticTag(), &ComponentManager::createPool<ComponentType>, &ComponentManager::createComponents<ComponentType>, &ComponentManager::savePool<ComponentType>, ComponentType::getStaticThread());
 }
 
 // ----------------------------------------------------------------------------
@@ -213,6 +213,14 @@ template <typename ComponentType>
 void Violet::ComponentManager::createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap)
 {
 	pool.load<ComponentType>(deserializer, idMap);
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType>
+uint32 Violet::ComponentManager::savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<Handle> & entityIds)
+{
+	return pool.save<ComponentType>(serializer, entityIds);
 }
 
 // ============================================================================

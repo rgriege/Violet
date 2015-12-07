@@ -102,6 +102,25 @@ void Violet::ComponentPool::save(Serializer & serailizer) const
 
 // ----------------------------------------------------------------------------
 
+template <typename ComponentType>
+uint32 Violet::ComponentPool::save(Serializer & serailizer, const std::vector<Handle> & entityIds) const
+{
+	uint32 count = 0;
+	assert(ComponentType::getStaticTag() == m_componentTag);
+	for (auto it = begin<ComponentType>(), endIt = end<ComponentType>(); it != endIt; ++it)
+	{
+		if (std::binary_search(entityIds.cbegin(), entityIds.cend(), it->getEntityId()))
+		{
+			serailizer.writeUint("id", it->getEntityId().getId());
+			serailizer << *it;
+			++count;
+		}
+	}
+	return count;
+}
+
+// ----------------------------------------------------------------------------
+
 template <typename ComponentType, typename... Args>
 ComponentType & Violet::ComponentPool::create(const Handle entityId, Args && ... args)
 {

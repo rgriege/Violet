@@ -43,6 +43,9 @@ Violet::SystemFactory setup()
 	Violet::ComponentManager::installComponent<Violet::TextureComponent>();
 	Violet::ComponentManager::installComponent<Violet::UpdateComponent>();
 	Violet::ComponentManager::installComponent<Violet::WorldTransformComponent>();
+	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::ScriptComponent>>();
+	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::KeyInputComponent>>();
+	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::MouseInputComponent>>();
 	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::UpdateComponent>>();
 
 	Violet::JsonDeserializer::install();

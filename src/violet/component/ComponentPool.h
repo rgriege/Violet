@@ -64,6 +64,8 @@ namespace Violet
 		void load(Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap);
 		template <typename ComponentType>
 		void save(Serializer & serailizer) const;
+		template <typename ComponentType>
+		uint32 save(Serializer & serailizer, const std::vector<Handle> & entityIds) const;
 
 		template <typename ComponentType, typename... Args>
 		ComponentType & create(Handle entityId, Args && ... args);

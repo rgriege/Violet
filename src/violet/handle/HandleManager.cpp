@@ -117,4 +117,16 @@ void HandleManager::freeAll()
 	m_versions.clear();
 }
 
+// ----------------------------------------------------------------------------
+
+std::vector<Handle> HandleManager::getUsed() const
+{
+	std::vector<Handle> result;
+	result.reserve(m_usedList.size() - m_recycleList.size());
+	for (uint32 i = 0, end = m_usedList.size(); i < end; ++i)
+		if (m_usedList[i])
+			result.emplace_back(Handle(i, m_versions[i]));
+	return result;
+}
+
 // ============================================================================

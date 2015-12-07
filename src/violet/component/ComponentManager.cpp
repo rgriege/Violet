@@ -6,6 +6,7 @@
 #include "violet/handle/HandleManager.h"
 #include "violet/log/Log.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
+#include "violet/serialization/file/FileSerializerFactory.h"
 #include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/utility/FormattedString.h"
 
@@ -13,11 +14,44 @@ using namespace Violet;
 
 // ============================================================================
 
-void ComponentManager::installComponent(const Tag tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, const Thread thread)
+namespace ComponentManagerNamespace
+{
+	class SceneFileSaver
+	{
+	public:
+
+		SceneFileSaver(std::unique_ptr<Serializer> && serializer) :
+			m_serializer(std::move(serializer))
+		{
+		}
+
+		void onPoolSaved(const Tag componentTag, const std::string & poolFileName, const uint32 count)
+		{
+			if (count > 0)
+			{
+				const std::lock_guard<std::mutex> lk(m_mutex);
+				m_serializer->writeString("cpnt", componentTag.asString().c_str());
+				m_serializer->writeString("file", poolFileName.c_str());
+			}
+		}
+
+	private:
+
+		std::unique_ptr<Serializer> m_serializer;
+		std::mutex m_mutex;
+	};
+}
+
+using namespace ComponentManagerNamespace;
+
+// ============================================================================
+
+void ComponentManager::installComponent(const Tag tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, const PoolSaveFactory::Producer & sProducer, const Thread thread)
 {
 	assert(!ms_poolFactory.has(tag));
 	ms_poolFactory.assign(tag, producer);
 	ms_componentsFactory.assign(tag, csProducer);
+	ms_saveFactory.assign(tag, sProducer);
 	ms_poolThreads[tag] = thread;
 }
 
@@ -28,6 +62,7 @@ void ComponentManager::uninstallComponent(const Tag tag)
 	assert(ms_poolFactory.has(tag));
 	ms_poolFactory.remove(tag);
 	ms_componentsFactory.remove(tag);
+	ms_saveFactory.remove(tag);
 	ms_poolThreads.erase(tag);
 }
 
@@ -35,6 +70,7 @@ void ComponentManager::uninstallComponent(const Tag tag)
 
 ComponentManager::PoolFactory ComponentManager::ms_poolFactory;
 ComponentManager::ComponentsFactory ComponentManager::ms_componentsFactory;
+ComponentManager::PoolSaveFactory ComponentManager::ms_saveFactory;
 std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 
 // ============================================================================
@@ -81,8 +117,9 @@ ComponentManager::~ComponentManager()
 
 // ----------------------------------------------------------------------------
 
-void ComponentManager::load(const char * const filename, const std::map<Tag, Tag> & tagMap)
+std::vector<Handle> ComponentManager::load(const char * const filename, const TagMap & tagMap)
 {
+	std::vector<Handle> loadedEntityIds;
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
 		Log::log(FormattedString<128>().sprintf("Could not open scene file '%s'", filename));
@@ -98,15 +135,15 @@ void ComponentManager::load(const char * const filename, const std::map<Tag, Tag
 			while (*idFileDeserializer)
 			{
 				const uint32 desiredId = idFileDeserializer->getUint("id");
-				const Handle actualHandle = m_handleManager.create(desiredId);
-				if (desiredId != actualHandle.getId())
-					(*handleReplacementMap)[desiredId] = actualHandle;
+				loadedEntityIds.emplace_back(m_handleManager.create(desiredId));
+				if (desiredId != loadedEntityIds.back().getId())
+					(*handleReplacementMap)[desiredId] = loadedEntityIds.back();
 			}
 
 			while (*deserializer)
 			{
 				const Tag componentTag = Tag(deserializer->getString("cpnt"));
-				const auto tagMapIt = tagMap.find(componentTag);
+				const auto tagMapIt = std::find_if(tagMap.cbegin(), tagMap.cend(), [=](const std::pair<Tag, Tag> & p) { return p.first == componentTag; });
 				const Tag poolTag = tagMapIt != tagMap.end() ? tagMapIt->second : componentTag;
 				const std::string poolFileName = deserializer->getString("file");
 				auto threadIt = ms_poolThreads.find(poolTag);
@@ -120,6 +157,71 @@ void ComponentManager::load(const char * const filename, const std::map<Tag, Tag
 						else
 							Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
 					}, threadIt->second);
+			}
+		}
+		else
+			Log::log(FormattedString<128>().sprintf("Could not open scene id file '%s'", idFileName.c_str()));
+	}
+	Log::log(FormattedString<32>().sprintf("loaded %d entities", loadedEntityIds.size()));
+	return loadedEntityIds;
+}
+
+// ----------------------------------------------------------------------------
+
+void ComponentManager::save(const char * filename) const
+{
+	save(filename, std::make_shared<std::vector<Handle>>(m_handleManager.getUsed()));
+}
+
+// ----------------------------------------------------------------------------
+
+void ComponentManager::save(const char * filename, const std::shared_ptr<std::vector<Handle>> & entityIds, const TagMap & tagMap) const
+{
+	Log::log(FormattedString<32>().sprintf("saving %d entities", entityIds->size()));
+	auto serializer = FileSerializerFactory::getInstance().create(filename);
+	if (serializer == nullptr)
+		Log::log(FormattedString<128>().sprintf("Could not save scene file '%s'", filename));
+	else
+	{
+		std::string idFileName = filename;
+		StringUtilities::replace(idFileName, ".", ".hndl.");
+		serializer->writeString("idFile", idFileName.c_str());
+		auto idFileSerializer = FileSerializerFactory::getInstance().create(idFileName.c_str());
+		if (idFileSerializer != nullptr)
+		{
+			for (const auto & entityId : *entityIds)
+				idFileSerializer->writeUint("id", entityId.getId());
+			idFileSerializer.reset();
+
+			std::shared_ptr<SceneFileSaver> sceneFileSaver = std::make_shared<SceneFileSaver>(std::move(serializer));
+			for (const auto & pool : m_pools)
+			{
+				const Tag componentTag = pool.getComponentTag();
+				if (std::none_of(tagMap.cbegin(), tagMap.cend(), [=](const std::pair<Tag, Tag> & p) { return p.first == componentTag; }))
+				{
+					const auto tagMapIt = std::find_if(tagMap.cbegin(), tagMap.cend(), [=](const std::pair<Tag, Tag> & p) { return p.second == componentTag; });
+					const Tag poolTag = tagMapIt != tagMap.end() ? tagMapIt->first : pool.getComponentTag();
+					std::string poolFileName = filename;
+					StringUtilities::replace(poolFileName, ".", std::string(".") + poolTag.asString() + ".");
+
+					Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
+						[&pool, poolTag, poolFileName, entityIds, sceneFileSaver]()
+						{
+							auto poolSerializer = FileSerializerFactory::getInstance().create(poolFileName.c_str());
+							if (poolSerializer != nullptr)
+							{
+								const uint32 count = ms_saveFactory.create(pool.getComponentTag(), pool, *poolSerializer, *entityIds);
+								sceneFileSaver->onPoolSaved(poolTag, poolFileName, count);
+								if (count == 0)
+								{
+									poolSerializer.reset();
+									std::remove(poolFileName.c_str());
+								}
+							}
+							else
+								Log::log(FormattedString<128>().sprintf("Could not save component pool file '%s'", poolFileName.c_str()));
+						}), ms_poolThreads[pool.getComponentTag()]);
+				}
 			}
 		}
 		else

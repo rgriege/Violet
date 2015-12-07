@@ -1,17 +1,13 @@
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
-#include "violet/graphics/component/ColorComponent.h"
-#include "violet/graphics/component/TextComponent.h"
 #include "violet/input/system/InputSystem.h"
+#include "violet/input/component/KeyInputComponent.h"
+#include "violet/input/component/MouseInputComponent.h"
 #include "violet/log/Log.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/script/cpp/CppScript.h"
-#include "violet/serialization/file/FileDeserializerFactory.h"
-#include "violet/serialization/file/FileSerializerFactory.h"
-#include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/update/component/UpdateComponent.h"
 #include "violet/utility/FormattedString.h"
-#include "violet/utility/StringUtilities.h"
 
 #include "dialog.h"
 #include "editor.h"
@@ -20,12 +16,20 @@
 
 using namespace Violet;
 
+ComponentManager::TagMap ms_tagMap = {
+    { UpdateComponent::getStaticTag(), EditorComponentWrapper<UpdateComponent>::getStaticTag() },
+    { ScriptComponent::getStaticTag(), EditorComponentWrapper<ScriptComponent>::getStaticTag() },
+    { KeyInputComponent::getStaticTag(), EditorComponentWrapper<KeyInputComponent>::getStaticTag() },
+    { MouseInputComponent::getStaticTag(), EditorComponentWrapper<MouseInputComponent>::getStaticTag() }
+};
+
 class Instance : public CppScript::Instance
 {
 public:
 
     Instance(CppScript & script) :
-        CppScript::Instance(script)
+        CppScript::Instance(script),
+        m_entityIds(std::make_shared<std::vector<Handle>>())
     {
         using namespace std::placeholders;
         KeyUpMethod::assign(script, std::bind(&Instance::onKeyUp, this, _1, _2));
@@ -67,6 +71,11 @@ private:
                         });
                     m_dialog = Save;
                     break;
+
+                case 'c':
+                    for (const Handle entityId : *m_entityIds)
+                        Engine::getInstance().getCurrentScene().removeAll(entityId);
+                    break;
             }
         }
     }
@@ -82,10 +91,7 @@ private:
                     break;
 
                 case Save:
-                    save<UpdateComponent>(fileName);
-                    save<WorldTransformComponent>(fileName);
-                    save<ColorComponent>(fileName);
-                    save<ScriptComponent>(fileName);
+                    save(fileName);
                     break;
             }
         }
@@ -97,23 +103,14 @@ private:
         Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
             [=](ComponentManager & scene)
             {
-                std::map<Tag, Tag> tagMap = {
-                    { UpdateComponent::getStaticTag(), EditorComponentWrapper<UpdateComponent>::getStaticTag() }
-                };
-                scene.load(fileName.c_str(), tagMap);
+                auto entityIds = scene.load(fileName.c_str(), ms_tagMap);
+                m_entityIds = std::make_shared<std::vector<Handle>>(std::move(entityIds));
             });
     }
 
-    template <typename ComponentType>
-    void save(std::string const & fileName)
+    void save(const std::string & fileName)
     {
-        const auto & name = StringUtilities::left(fileName, '.');
-        const auto & ext = StringUtilities::right(fileName, '.');
-        const std::string componentFileName = name + "." + ComponentType::getStaticTag().asString() + "." + ext;
-        auto pool = Engine::getInstance().getCurrentScene().getPool<ComponentType>();
-        auto serializer = FileSerializerFactory::getInstance().create(componentFileName.c_str());
-        if (pool && serializer)
-            pool->save<ComponentType>(*serializer);
+        Engine::getInstance().getCurrentScene().save(fileName.c_str(), m_entityIds, ms_tagMap);
     }
 
 private:
@@ -127,7 +124,7 @@ private:
 
     Dialog m_dialog = None;
     uint32 m_delegateId;
-    std::vector<Handle> m_entityIds;
+    std::shared_ptr<std::vector<Handle>> m_entityIds;
 };
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)

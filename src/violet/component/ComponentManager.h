@@ -75,12 +75,15 @@ namespace Violet
 
 		typedef Factory<Tag, ComponentPool()> PoolFactory;
 		typedef Factory<Tag, void(ComponentPool &, Deserializer &, const std::unordered_map<uint32, Handle> &)> ComponentsFactory;
+		typedef Factory<Tag, uint32(const ComponentPool &, Serializer &, const std::vector<Handle> &)> PoolSaveFactory;
+
+		typedef std::vector<std::pair<Tag, Tag>> TagMap;
 
 	public:
 
 		template <typename ComponentType>
 		static void installComponent();
-		static void installComponent(Tag const tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, Thread thread);
+		static void installComponent(Tag const tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, const PoolSaveFactory::Producer & sProducer, Thread thread);
 
 		template <typename ComponentType>
 		static void uninstallComponent();
@@ -93,7 +96,9 @@ namespace Violet
 		ComponentManager & operator=(ComponentManager && other);
 		~ComponentManager();
 
-		void load(const char * sceneName, const std::map<Tag, Tag> & tagMap = std::map<Tag, Tag>());
+		std::vector<Handle> load(const char * sceneName, const TagMap & tagMap = TagMap());
+		void save(const char * sceneName) const;
+		void save(const char * sceneName, const std::shared_ptr<std::vector<Handle>> & entityIds, const TagMap & tagMap = TagMap()) const;
 
 		template <typename ComponentType, typename... Args>
 		ComponentType & createComponent(Handle entityId, Args &&... args);
@@ -125,6 +130,8 @@ namespace Violet
 		static ComponentPool createPool();
 		template <typename ComponentType>
 		static void createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, Handle> &);
+		template <typename ComponentType>
+		static uint32 savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<Handle> & entityIds);
 
 	private:
 
@@ -138,6 +145,7 @@ namespace Violet
 
 		static PoolFactory ms_poolFactory;
 		static ComponentsFactory ms_componentsFactory;
+		static PoolSaveFactory ms_saveFactory;
 		static std::map<Tag, Thread> ms_poolThreads;
 
 	private:
