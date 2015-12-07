@@ -13,7 +13,7 @@ namespace Violet
 {
 	class ShaderProgram;
 
-	class Font
+	class VIOLET_API Font
 	{
 	private:
 
