@@ -1,3 +1,3 @@
 TARGETS = \
-    addSquares \
+    editorSceneManager \
     square
