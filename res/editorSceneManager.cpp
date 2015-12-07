@@ -71,23 +71,26 @@ private:
 
     void onDialogClosed(const std::string const & fileName)
     {
-        switch (m_dialog)
+        if (!fileName.empty())
         {
-            case Load:
-                Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
-                    [=](ComponentManager & scene)
-                    {
-                        scene.load(fileName.c_str());
-                    });
-                break;
+            switch (m_dialog)
+            {
+                case Load:
+                    Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
+                        [=](ComponentManager & scene)
+                        {
+                            scene.load(fileName.c_str());
+                        });
+                    break;
 
-            case Save:
-                save<UpdateComponent>("save.updt.json");
-                save<WorldTransformComponent>("save.wtfm.json");
-                save<ColorComponent>("save.colr.json");
-                save<ScriptComponent>("save.scpt.json");
-                save<TextComponent>("save.text.json");
-                break;
+                case Save:
+                    save<UpdateComponent>("save.updt.json");
+                    save<WorldTransformComponent>("save.wtfm.json");
+                    save<ColorComponent>("save.colr.json");
+                    save<ScriptComponent>("save.scpt.json");
+                    save<TextComponent>("save.text.json");
+                    break;
+            }
         }
         m_dialog = None;
     }

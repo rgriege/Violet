@@ -70,7 +70,7 @@ void InputSystem::update(const float dt)
 {
 	const Engine & engine = Engine::getInstance();
 	engine.addWriteTask(*engine.getSystem<WindowSystem>(),
-		[](WindowSystem & windowSystem)
+		[=](WindowSystem & windowSystem)
 		{
 			const Engine & engine = Engine::getInstance();
 			WindowSystem::Event event;
@@ -83,24 +83,45 @@ void InputSystem::update(const float dt)
 				{
 				case WindowSystem::ET_KeyDown:
 				case WindowSystem::ET_KeyUp:
-					for (const auto entity : engine.getCurrentScene().getEntityView<KeyInputComponent, ScriptComponent>())
-						processEvent(std::get<1>(entity), event.key, event.type);
+					if (!m_focussedEntityId.isValid())
+					{
+						for (const auto entity : engine.getCurrentScene().getEntityView<KeyInputComponent, ScriptComponent>())
+							processEvent(std::get<1>(entity), event.key, event.type);
+					}
+					else
+					{
+						const auto * sc = engine.getCurrentScene().getComponent<ScriptComponent>(m_focussedEntityId);
+						if (sc != nullptr && engine.getCurrentScene().getComponent<KeyInputComponent>(m_focussedEntityId) != nullptr)
+							processEvent(*sc, event.key, event.type);
+						else
+							engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
+					}
 					break;
 
 				case WindowSystem::ET_MouseDown:
 				case WindowSystem::ET_MouseUp:
 					{
 						InputSystem::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button };
-						for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
-							processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent, event.type);
+						if (!m_focussedEntityId.isValid())
+						{
+							for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
+								processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent, event.type);
+						}
+						else
+							processFocussedEvent(worldEvent, event.type);
 					}
 					break;
 
 				case WindowSystem::ET_MouseMove:
 					{
 						InputSystem::MouseMotionEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.motion.x - event.motion.xrel, event.motion.y - event.motion.yrel), computeWorldCoordinates(windowDimensions, event.motion.x, event.motion.y) };
-						for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
-							processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent);
+						if (!m_focussedEntityId.isValid())
+						{
+							for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
+								processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent);
+						}
+						else
+							processFocussedEvent(worldEvent);
 					}
 					break;
 
@@ -112,11 +133,73 @@ void InputSystem::update(const float dt)
 		}, Thread::Window);
 }
 
+// ----------------------------------------------------------------------------
+
+void InputSystem::focus(const Handle entityId)
+{
+	assert(!m_focussedEntityId.isValid());
+	if (!m_focussedEntityId.isValid())
+		m_focussedEntityId = entityId;
+}
+
+// ----------------------------------------------------------------------------
+
+void InputSystem::unfocus(const Handle entityId)
+{
+	assert(m_focussedEntityId == entityId);
+	if (m_focussedEntityId == entityId)
+		m_focussedEntityId = Handle::ms_invalid;
+}
+
 // ============================================================================
 
 InputSystem::InputSystem() :
-	System(getStaticLabel())
+	System(getStaticLabel()),
+	m_focussedEntityId()
 {
+}
+
+// ----------------------------------------------------------------------------
+
+void InputSystem::processFocussedEvent(const MouseButtonEvent & worldEvent, const WindowSystem::EventType type) thread_const
+{
+	const auto & engine = Engine::getInstance();
+	const auto * sc = engine.getCurrentScene().getComponent<ScriptComponent>(m_focussedEntityId);
+	const auto * mc = engine.getCurrentScene().getComponent<MouseInputComponent>(m_focussedEntityId);
+	const auto * tc = engine.getCurrentScene().getComponent<WorldTransformComponent>(m_focussedEntityId);
+	if (sc && mc && tc)
+	{
+		auto const & script = *sc->m_script;
+
+		if (mc->m_mesh.getBoundingBox().transform(tc->m_transform).contains(worldEvent.position))
+		{
+			if (type == WindowSystem::ET_MouseDown)
+				MouseDownMethod::run(script, sc->getEntityId(), worldEvent);
+			else
+				MouseUpMethod::run(script, sc->getEntityId(), worldEvent);
+		}
+		else
+		{
+			FocusLostMethod::run(script, sc->getEntityId());
+			engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
+		}
+	}
+	else
+		engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
+}
+
+// ----------------------------------------------------------------------------
+
+void InputSystem::processFocussedEvent(const MouseMotionEvent & worldEvent) thread_const
+{
+	const auto & engine = Engine::getInstance();
+	const auto * sc = engine.getCurrentScene().getComponent<ScriptComponent>(m_focussedEntityId);
+	const auto * mc = engine.getCurrentScene().getComponent<MouseInputComponent>(m_focussedEntityId);
+	const auto * tc = engine.getCurrentScene().getComponent<WorldTransformComponent>(m_focussedEntityId);
+	if (sc && mc && tc)
+		processEvent(*tc, *mc, *sc, worldEvent);
+	else
+		engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
 }
 
 // ============================================================================

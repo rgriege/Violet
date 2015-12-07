@@ -23,31 +23,39 @@ public:
     Instance(CppScript & script) :
         CppScript::Instance(script)
     {
+        BindToComponentMethod::assign(script, std::bind(&Instance::onBindToComponent, this, _1));
+        FocusLostMethod::assign(script, std::bind(&Instance::onFocusLost, this, _1));
         KeyUpMethod::assign(script, std::bind(&Instance::onKeyUp, this, _1, _2));
-        MouseDownMethod::assign(script, std::bind(&Instance::onMouseDown, this, _1, _2));
     }
 
     virtual ~Instance() override
     {
-        MouseDownMethod::remove(m_script);
+        BindToComponentMethod::remove(m_script);
+        FocusLostMethod::remove(m_script);
         KeyUpMethod::remove(m_script);
     }
 
 private:
 
-    InputResult onMouseDown(const Handle entityId, const InputSystem::MouseButtonEvent & event)
+    void onBindToComponent(const Handle entityId)
     {
         const Engine & engine = Engine::getInstance();
-        if (!engine.getCurrentScene().hasComponent<KeyInputComponent>(entityId))
-        {
-            Engine::getInstance().addWriteTask(engine.getCurrentScene(),
-                [=](ComponentManager & scene)
-                {
-                    scene.createComponent<KeyInputComponent>(entityId);
-                });
-        }
+        engine.addWriteTask(*engine.getSystem<InputSystem>(),
+            [=](InputSystem & input)
+            {
+                input.focus(entityId);
+            });
+    }
 
-        return InputResult::Block;
+    void onFocusLost(const Handle entityId)
+    {
+        const auto & engine = Engine::getInstance();
+        DialogClosedEvent::emit(engine, std::string());
+        engine.addWriteTask(engine.getCurrentScene(),
+            [=](ComponentManager & manager)
+            {
+                Engine::getInstance().getCurrentScene().removeAll(entityId);
+            });
     }
 
     void onKeyUp(const Handle entityId, const unsigned char key)

@@ -9,5 +9,7 @@
   "cpnt": "text",
   "file": "openDialog.text.json",
   "cpnt": "mipt",
-  "file": "openDialog.mipt.json"
+  "file": "openDialog.mipt.json",
+  "cpnt": "kipt",
+  "file": "openDialog.kipt.json"
 }

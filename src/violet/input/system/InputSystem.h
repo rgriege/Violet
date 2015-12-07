@@ -7,6 +7,7 @@
 #include "violet/script/Script.h"
 #include "violet/system/System.h"
 #include "violet/window/MouseButton.h"
+#include "violet/window/WindowSystem.h"
 
 namespace Violet
 {
@@ -41,9 +42,19 @@ namespace Violet
 		virtual ~InputSystem() override = default;
 		virtual void update(float dt) override;
 
+		void focus(Handle entityId);
+		void unfocus(Handle entityId);
+
 	private:
 
 		InputSystem();
+
+		void processFocussedEvent(const MouseButtonEvent & worldEvent, WindowSystem::EventType type) thread_const;
+		void processFocussedEvent(const MouseMotionEvent & worldEvent) thread_const;
+
+	private:
+
+		Handle m_focussedEntityId;
 	};
 
 	DEFINE_METHOD(KeyDownMethod, void(Handle entityId, unsigned char));
@@ -53,6 +64,7 @@ namespace Violet
 	DEFINE_METHOD(MouseMoveMethod, void(Handle entityId, const InputSystem::MouseMotionEvent &));
 	DEFINE_METHOD(MouseInMethod, void(Handle entityId));
 	DEFINE_METHOD(MouseOutMethod, void(Handle entityId));
+	DEFINE_METHOD(FocusLostMethod, void(Handle entityId));
 }
 
 #endif
