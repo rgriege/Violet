@@ -8,11 +8,18 @@
 
 namespace Violet
 {
+	class VIOLET_API EventBase
+	{
+	protected:
+
+		static void unsubscribe(const EventContext & eventContext, uint32 identifier, uint32 delegateId);
+	};
+
 	template <typename Derived, typename Signature>
 	class Event;
 
 	template <typename Derived, typename ... Args>
-	class Event<Derived, void(Args...)>
+	class Event<Derived, void(Args...)> : public EventBase
 	{
 	public:
 

@@ -47,11 +47,7 @@ void Violet::Event<Derived, void(Args...)>::unsubscribe(EventContext & eventCont
 template <typename Derived, typename ... Args>
 void Violet::Event<Derived, void(Args...)>::unsubscribe(const EventContext & eventContext, const uint32 delegateId)
 {
-	Violet::Engine::getInstance().addWriteTask(eventContext,
-		[=](EventContext & eventContext)
-		{
-			eventContext.unsubscribe(Derived::getIdentifier(), delegateId);
-		});
+	Violet::EventBase::unsubscribe(eventContext, Derived::getIdentifier(), delegateId);
 }
 
 // ----------------------------------------------------------------------------
