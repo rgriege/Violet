@@ -32,18 +32,14 @@ public:
         m_entityIds(std::make_shared<std::vector<Handle>>())
     {
         using namespace std::placeholders;
-        KeyUpMethod::assign(script, std::bind(&Instance::onKeyUp, this, _1, _2));
-        Engine::getInstance().addWriteTask(Engine::getInstance(),
-            [=](Engine & engine)
-            {
-                m_delegateId = DialogClosedEvent::subscribe(engine, std::bind(&Instance::onDialogClosed, this, _1));
-            });
+        KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
+        DialogClosedEvent::subscribe(Engine::getInstance(), DialogClosedEvent::Subscriber::bind<Instance, &Instance::onDialogClosed>(this));
     }
 
     virtual ~Instance() override
     {
         KeyUpMethod::remove(m_script);
-        DialogClosedEvent::unsubscribe(Engine::getInstance(), m_delegateId);
+        DialogClosedEvent::unsubscribe(Engine::getInstance(), DialogClosedEvent::Subscriber::bind<Instance, &Instance::onDialogClosed>(this));
     }
 
 private:
@@ -123,7 +119,6 @@ private:
     };
 
     Dialog m_dialog = None;
-    uint32 m_delegateId;
     std::shared_ptr<std::vector<Handle>> m_entityIds;
 };
 

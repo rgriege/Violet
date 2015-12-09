@@ -437,6 +437,9 @@
     <ClInclude Include="..\..\..\src\violet\task\Thread.h">
       <Filter>task</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\utility\Delegate.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -614,9 +617,6 @@
     <ClCompile Include="..\..\..\src\violet\log\ConsoleLogTarget.cpp">
       <Filter>log</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\task\Task.cpp">
-      <Filter>task</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\task\TaskScheduler.cpp">
       <Filter>task</Filter>
     </ClCompile>
@@ -627,9 +627,6 @@
       <Filter>log</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\component\ComponentManager.cpp">
-      <Filter>component</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\component\ComponentPool.cpp">
       <Filter>component</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\transform\component\LocalTransformComponent.cpp">
@@ -643,6 +640,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\event\Event.cpp">
       <Filter>event</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\task\Task.cpp">
+      <Filter>task</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\component\ComponentPool.cpp">
+      <Filter>component</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

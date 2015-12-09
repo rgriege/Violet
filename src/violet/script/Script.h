@@ -3,8 +3,8 @@
 
 #include "violet/Defines.h"
 #include "violet/Engine.h"
+#include "violet/utility/Delegate.h"
 
-#include <functional>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -23,12 +23,12 @@ namespace Violet
 		{
 		public:
 
-			typedef std::function<ResultType(Args...)> Delegate;
+			typedef Delegate<ResultType(Args...)> Handler;
 
 		public:
 
-			static void assign(Script & script, const Delegate & func);
-			static void assign(const Script & script, const Delegate & func);
+			static void assign(Script & script, const Handler & func);
+			static void assign(const Script & script, const Handler & func);
 			static bool has(const Script & script);
 			static ResultType run(const Script & script, Args && ... args);
 			static void remove(Script & script);
@@ -45,7 +45,7 @@ namespace Violet
 
 	private:
 
-		static void addHook(Script & script, uint32 id, void * hook);
+		static void addHook(Script & script, uint32 id, const DelegateStore & func);
 
 	public:
 
@@ -67,7 +67,7 @@ namespace Violet
 
 	private:
 
-		std::unordered_map<uint32, void *> m_boundMethods;
+		std::unordered_map<uint32, DelegateStore> m_boundMethods;
 	};
 
 #ifdef WIN32

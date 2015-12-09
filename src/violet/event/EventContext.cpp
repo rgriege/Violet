@@ -8,14 +8,6 @@ using namespace Violet;
 
 // ============================================================================
 
-EventContext::Subscriber::Subscriber(const uint32 id, void * delegate) :
-	m_id(id),
-	m_delegate(delegate)
-{
-}
-
-// ============================================================================
-
 EventContext::EventContext() :
 	m_subscriberGroups()
 {
@@ -30,28 +22,22 @@ EventContext::EventContext(EventContext && other) :
 
 // ----------------------------------------------------------------------------
 
-uint32 EventContext::subscribe(const uint32 eventId, void * delegate)
+void EventContext::subscribe(const uint32 eventId, const DelegateStore & func)
 {
-	auto & subscriberGroup = m_subscriberGroups[eventId];
-	subscriberGroup.m_subscribers.emplace_back(subscriberGroup.m_idList.reserve(), delegate);
-	return subscriberGroup.m_subscribers.back().m_id;
+	m_subscriberGroups[eventId].emplace_back(func);
 }
 
 // ----------------------------------------------------------------------------
 
-void EventContext::unsubscribe(const uint32 eventId, const uint32 delegateId)
+void EventContext::unsubscribe(const uint32 eventId, const DelegateStore & func)
 {
 	const auto subscriberGroupsIt = m_subscriberGroups.find(eventId);
 	if (subscriberGroupsIt != m_subscriberGroups.end())
 	{
-		auto & subscriberGroup = subscriberGroupsIt->second;
-		auto & subscribers = subscriberGroup.m_subscribers;
-		const auto subscriberIt = std::find_if(subscribers.begin(), subscribers.end(), [=](const Subscriber & subscriber) { return subscriber.m_id == delegateId; });
+		auto & subscribers = subscriberGroupsIt->second;
+		const auto subscriberIt = std::find_if(subscribers.begin(), subscribers.end(), [=](const DelegateStore & subscriber) { return subscriber == func; });
 		if (subscriberIt != subscribers.end())
-		{
 			subscribers.erase(subscriberIt);
-			subscriberGroup.m_idList.free(delegateId);
-		}
 	}
 }
 

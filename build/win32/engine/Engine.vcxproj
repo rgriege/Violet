@@ -175,6 +175,7 @@
     <ClInclude Include="..\..\..\src\violet\update\component\UpdateComponent.h" />
     <ClInclude Include="..\..\..\src\violet\update\system\UpdateSystem.h" />
     <ClInclude Include="..\..\..\src\violet\utility\Buffer.h" />
+    <ClInclude Include="..\..\..\src\violet\utility\Delegate.h" />
     <ClInclude Include="..\..\..\src\violet\utility\Factory.h" />
     <ClInclude Include="..\..\..\src\violet\utility\FileUtilities.h" />
     <ClInclude Include="..\..\..\src\violet\utility\FormattedString.h" />

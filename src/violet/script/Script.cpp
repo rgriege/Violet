@@ -12,7 +12,7 @@ using namespace Violet;
 
 // ============================================================================
 
-void Script::addHook(Script & script, const uint32 id, void * hook)
+void Script::addHook(Script & script, const uint32 id, const DelegateStore & hook)
 {
 	script.m_boundMethods.emplace(id, hook);
 }

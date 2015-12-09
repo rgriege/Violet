@@ -3,8 +3,7 @@
 
 #include "violet/event/EventContext.h"
 #include "violet/event/EventContextOwner.h"
-
-#include <functional>
+#include "violet/utility/Delegate.h"
 
 namespace Violet
 {
@@ -12,7 +11,8 @@ namespace Violet
 	{
 	protected:
 
-		static void unsubscribe(const EventContext & eventContext, uint32 identifier, uint32 delegateId);
+		static void subscribe(const EventContext & eventContext, uint32 identifier, const DelegateStore & func);
+		static void unsubscribe(const EventContext & eventContext, uint32 identifier, const DelegateStore & func);
 	};
 
 	template <typename Derived, typename Signature>
@@ -23,26 +23,20 @@ namespace Violet
 	{
 	public:
 
-		typedef std::function<void(Args...)> Delegate;
-
-	private:
-
-		struct StoredDelegate
-		{
-			uint32 m_id;
-			Delegate * m_method;
-		};
+		typedef Delegate<void(Args...)> Subscriber;
 
 	public:
 
-		static uint32 subscribe(EventContext & eventContextOwner, const Delegate & func);
-		static uint32 subscribe(EventContextOwner & eventContext, const Delegate & func);
+		static void subscribe(EventContext & eventContextOwner, const Subscriber & func);
+		static void subscribe(const EventContext & eventContextOwner, const Subscriber & func);
+		static void subscribe(EventContextOwner & eventContext, const Subscriber & func);
+		static void subscribe(const EventContextOwner & eventContext, const Subscriber & func);
 		static void emit(const EventContext & eventContext, Args && ... args);
 		static void emit(const EventContextOwner & eventContextOwner, Args && ... args);
-		static void unsubscribe(EventContext & eventContext, uint32 delegateId);
-		static void unsubscribe(const EventContext & eventContext, uint32 delegateId);
-		static void unsubscribe(EventContextOwner & eventContextOwner, uint32 delegateId);
-		static void unsubscribe(const EventContextOwner & eventContextOwner, uint32 delegateId);
+		static void unsubscribe(EventContext & eventContext, const Subscriber & func);
+		static void unsubscribe(const EventContext & eventContext, const Subscriber & func);
+		static void unsubscribe(EventContextOwner & eventContextOwner, const Subscriber & func);
+		static void unsubscribe(const EventContextOwner & eventContextOwner, const Subscriber & func);
 
 	private:
 

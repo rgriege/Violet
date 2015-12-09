@@ -23,9 +23,9 @@ public:
     Instance(CppScript & script) :
         CppScript::Instance(script)
     {
-        BindToComponentMethod::assign(script, std::bind(&Instance::onBindToComponent, this, _1));
-        FocusLostMethod::assign(script, std::bind(&Instance::onFocusLost, this, _1));
-        KeyUpMethod::assign(script, std::bind(&Instance::onKeyUp, this, _1, _2));
+        BindToComponentMethod::assign(script, BindToComponentMethod::Handler::bind<Instance, &Instance::onBindToComponent>(this));
+        FocusLostMethod::assign(script, FocusLostMethod::Handler::bind<Instance, &Instance::onFocusLost>(this));
+        KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
     }
 
     virtual ~Instance() override

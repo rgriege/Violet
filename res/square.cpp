@@ -21,7 +21,7 @@ public:
         m_speed(100.f, 0)
     {
         using namespace std::placeholders;
-        UpdateMethod::assign(script, std::bind(&Instance::onUpdate, this, _1, _2));
+        UpdateMethod::assign(script, UpdateMethod::Handler::bind<Instance, &Instance::onUpdate>(this));
 
         m_speed.rotate(Random::ms_generator.generate0to1() * 3.141 * 2);
     }
