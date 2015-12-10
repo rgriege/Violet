@@ -22,7 +22,7 @@ namespace InputSystemNamespace
 
 	void processEvent(const ScriptComponent & scriptComponent, const WindowSystem::KeyEvent & event, WindowSystem::EventType type);
 	InputResult processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseButtonEvent & event, WindowSystem::EventType type);
-	InputResult processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseMotionEvent & event);
+	void processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseMotionEvent & event);
 
 	Vec2f computeWorldCoordinates(const Vec2i & windowDimensions, int x, int y);
 
@@ -100,7 +100,8 @@ void InputSystem::update(const float dt)
 						if (!m_focussedEntityId.isValid())
 						{
 							for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
-								processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent, event.type);
+								if (processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent, event.type) == InputResult::Block)
+									break;
 						}
 						else
 							processFocussedEvent(worldEvent, event.type);
@@ -121,6 +122,7 @@ void InputSystem::update(const float dt)
 					break;
 
 				case WindowSystem::ET_Quit:
+					QuitEvent::emit(Engine::getInstance());
 					engine.addWriteTask(engine, [](Engine & engine) { engine.stop(); });
 					break;
 				}
@@ -242,10 +244,9 @@ InputResult InputSystemNamespace::processEvent(const WorldTransformComponent & t
 	if (mc.m_mesh.getBoundingBox().transform(tc.m_transform).contains(event.position))
 	{
 		auto const & script = *sc.m_script;
-		if (type == WindowSystem::ET_MouseDown)
-			MouseDownMethod::run(script, sc.getEntityId(), event);
-		else
-			MouseUpMethod::run(script, sc.getEntityId(), event);
+		return type == WindowSystem::ET_MouseDown
+			? MouseDownMethod::run(script, sc.getEntityId(), event)
+			: MouseUpMethod::run(script, sc.getEntityId(), event);
 	}
 
 	return InputResult::Pass;
@@ -253,7 +254,7 @@ InputResult InputSystemNamespace::processEvent(const WorldTransformComponent & t
 
 // ----------------------------------------------------------------------------
 
-InputResult InputSystemNamespace::processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseMotionEvent & event)
+void InputSystemNamespace::processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseMotionEvent & event)
 {
 	const AABB worldBoundary = mc.m_mesh.getBoundingBox().transform(tc.m_transform);
 	const bool contained = worldBoundary.contains(event.from);
@@ -270,8 +271,6 @@ InputResult InputSystemNamespace::processEvent(const WorldTransformComponent & t
 	}
 
 	MouseMoveMethod::run(script, sc.getEntityId(), event);
-
-	return InputResult::Pass;
 }
 
 // ----------------------------------------------------------------------------

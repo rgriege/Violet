@@ -1,11 +1,13 @@
-#include "editor/EditorSystem.h"
 #include "violet/Engine.h"
+#include "violet/component/ComponentManager.h"
 #include "violet/input/system/InputSystem.h"
+#include "violet/log/Log.h"
 #include "violet/script/cpp/CppScript.h"
+#include "violet/script/ScriptComponent.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
-#include "violet/transform/component/TransformComponent.h"
-
-#include <functional>
+#include "violet/transform/component/WorldTransformComponent.h"
+#include "violet/transform/Transform.h"
+#include "violet/utility/FormattedString.h"
 
 using namespace Violet;
 
@@ -14,33 +16,64 @@ class Instance : public CppScript::Instance
 public:
 
     Instance(CppScript & script) :
-        CppScript::Instance(script)
+        CppScript::Instance(script),
+        m_dragging(false)
     {
-        using namespace std::placeholders;
-        MouseDownMethod::assign(m_script, std::bind(&Instance::onMouseDown, this, _1, _2));
+        MouseDownMethod::assign(m_script, MouseDownMethod::Handler::bind<Instance, &Instance::onMouseDown>(this));
+        MouseMoveMethod::assign(m_script, MouseMoveMethod::Handler::bind<Instance, &Instance::onMouseMove>(this));
+        MouseUpMethod::assign(m_script, MouseUpMethod::Handler::bind<Instance, &Instance::onMouseUp>(this));
     }
 
     virtual ~Instance() override
     {
         MouseDownMethod::remove(m_script);
+        MouseMoveMethod::remove(m_script);
+        MouseUpMethod::remove(m_script);
     }
 
 private:
 
-    InputResult onMouseDown(const Entity & entity, const InputSystem::MouseButtonEvent & event)
+    InputResult onMouseDown(const Handle entityId, const InputSystem::MouseButtonEvent & event)
     {
         if (event.button == MB_Left)
         {
-            createComponentMenu(entity);
+            createComponentMenu(entityId);
+            m_dragging = true;
             return InputResult::Block;
         }
 
         return InputResult::Pass;
     }
 
-    void createComponentMenu(const Entity & entity)
+    void onMouseMove(const Handle entityId, const InputSystem::MouseMotionEvent & event)
     {
-        const auto & engine = Engine::getInstance();
+        if (m_dragging)
+        {
+            const auto & engine = Engine::getInstance();
+            const auto & newPosition = event.to;
+            engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
+                [=](ComponentPool & pool)
+                {
+                    auto & transform = pool.get<WorldTransformComponent>(entityId)->m_transform;
+                    Transform::setPosition(transform, newPosition);
+                });
+        }
+    }
+
+    InputResult onMouseUp(const Handle entityId, const InputSystem::MouseButtonEvent & event)
+    {
+        if (event.button == MB_Left)
+        {
+            m_dragging = false;
+            return InputResult::Block;
+        }
+
+        return InputResult::Pass;
+    }
+
+    void createComponentMenu(const Handle entityId)
+    {
+        /*const auto & engine = Engine::getInstance();
         const auto & menu = engine.getCurrentScene().getEntity(Handle(4000, 0));
         if (menu != nullptr)
         {
@@ -59,8 +92,12 @@ private:
                             });
                     });
             }
-        }
+        }*/
     }
+
+private:
+
+    bool m_dragging;
 };
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)

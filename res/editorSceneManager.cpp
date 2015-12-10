@@ -1,5 +1,6 @@
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
+#include "violet/graphics/component/ColorComponent.h"
 #include "violet/input/system/InputSystem.h"
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
@@ -34,12 +35,14 @@ public:
         using namespace std::placeholders;
         KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
         DialogClosedEvent::subscribe(Engine::getInstance(), DialogClosedEvent::Subscriber::bind<Instance, &Instance::onDialogClosed>(this));
+        QuitEvent::subscribe(Engine::getInstance(), QuitEvent::Subscriber::bind<Instance, &Instance::onQuit>(this));
     }
 
     virtual ~Instance() override
     {
         KeyUpMethod::remove(m_script);
         DialogClosedEvent::unsubscribe(Engine::getInstance(), DialogClosedEvent::Subscriber::bind<Instance, &Instance::onDialogClosed>(this));
+        QuitEvent::unsubscribe(Engine::getInstance(), QuitEvent::Subscriber::bind<Instance, &Instance::onQuit>(this));
     }
 
 private:
@@ -94,13 +97,59 @@ private:
         m_dialog = None;
     }
 
+    void onQuit()
+    {
+        const auto & engine = Engine::getInstance();
+        for (auto const entityId : *m_entityIds)
+        {
+            engine.addWriteTask(*engine.getCurrentScene().getPool<ScriptComponent>(),
+                [=](ComponentPool & pool)
+                {
+                    pool.remove(entityId);
+                });
+            engine.addWriteTask(*engine.getCurrentScene().getPool<MouseInputComponent>(),
+                [=](ComponentPool & pool)
+                {
+                    pool.remove(entityId);
+                });
+        }
+    }
+
     void load(const std::string & fileName)
     {
         Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
             [=](ComponentManager & scene)
             {
                 auto entityIds = scene.load(fileName.c_str(), ms_tagMap);
-                m_entityIds = std::make_shared<std::vector<Handle>>(std::move(entityIds));
+                for (const auto entityId : entityIds)
+                    addEditBehavior(scene, entityId);
+                std::copy(entityIds.begin(), entityIds.end(), std::back_inserter(*m_entityIds));
+            });
+    }
+
+    static void addEditBehavior(const ComponentManager & scene, const Handle entityId)
+    {
+        Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
+            [&scene, entityId]()
+            {
+                if (scene.hasComponent<ColorComponent>(entityId))
+                {
+                    Engine::getInstance().addWriteTask(*scene.getPool<ScriptComponent>(),
+                        [=](ComponentPool & pool)
+                        {
+                            pool.create<ScriptComponent>(entityId, "editEntity.dll");
+                        });
+                    addMouseInput(scene, entityId, scene.getComponent<ColorComponent>(entityId)->m_mesh->getPolygon());
+                }
+            }), Thread::Window);
+    }
+
+    static void addMouseInput(const ComponentManager & scene, const Handle entityId, Polygon && poly)
+    {
+        Engine::getInstance().addWriteTask(*scene.getPool<MouseInputComponent>(),
+            [=](ComponentPool & pool) mutable
+            {
+                pool.create<MouseInputComponent>(entityId, std::move(poly));
             });
     }
 

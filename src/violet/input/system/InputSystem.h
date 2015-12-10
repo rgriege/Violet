@@ -2,6 +2,7 @@
 #define VIOLET_InputSystem_H
 
 #include "violet/math/Vec2.h"
+#include "violet/event/Event.h"
 #include "violet/handle/Handle.h"
 #include "violet/input/InputResult.h"
 #include "violet/script/Script.h"
@@ -66,6 +67,7 @@ namespace Violet
 	DEFINE_METHOD(MouseInMethod, void(Handle entityId));
 	DEFINE_METHOD(MouseOutMethod, void(Handle entityId));
 	DEFINE_METHOD(FocusLostMethod, void(Handle entityId));
+	DEFINE_EVENT(QuitEvent, void());
 }
 
 #endif
