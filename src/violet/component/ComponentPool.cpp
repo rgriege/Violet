@@ -96,6 +96,9 @@ ComponentPool::ComponentPool(const Tag typeId, const uint32 componentSize) :
 	m_data(),
 	m_lookupMap()
 {
+#if _ITERATOR_DEBUG_LEVEL > 0
+	m_data.reserve(m_componentSize * 100);
+#endif
 	m_data.resize(8);
 	*reinterpret_cast<uint32 *>(&m_data[4]) = ((Handle::ms_invalid.getId() << 8) | Handle::ms_invalid.getVersion());
 }
@@ -117,6 +120,9 @@ std::pair<void *, bool>  ComponentPool::getLocation(const Handle entityId)
 		return std::make_pair(&m_data[lookupEntry->second], true);
 
 	auto const componentIt = m_data.insert(m_data.begin() + (maxId ? getLastDataIndex() : lookupEntry->second), m_componentSize, 0);
+#if _ITERATOR_DEBUG_LEVEL > 0
+	assert(m_data.size() <= m_componentSize * 100);
+#endif
 	for (auto it = lookupEntry, end = m_lookupMap.end(); it != end; ++it)
 		it->second += m_componentSize;
 	m_lookupMap[entityId] = std::distance(m_data.begin(), componentIt);
