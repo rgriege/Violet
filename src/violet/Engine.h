@@ -9,6 +9,7 @@
 #include <array>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <vector>
 
 namespace Violet
