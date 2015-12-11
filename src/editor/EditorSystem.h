@@ -42,7 +42,7 @@ namespace Violet
 		
 	private:
 
-		Handle m_rootSceneHandle;
+		EntityId m_rootSceneHandle;
 		std::string m_editScriptFileName;
 	};
 

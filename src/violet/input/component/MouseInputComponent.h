@@ -22,8 +22,8 @@ namespace Violet
 
 	public:
 
-		MouseInputComponent(Handle entityId, Deserializer & deserializer);
-		MouseInputComponent(Handle entityId, Polygon && mesh);
+		MouseInputComponent(EntityId entityId, Deserializer & deserializer);
+		MouseInputComponent(EntityId entityId, Polygon && mesh);
 		MouseInputComponent(MouseInputComponent && other);
 
 	public:

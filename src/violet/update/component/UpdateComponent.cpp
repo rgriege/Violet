@@ -23,14 +23,14 @@ Thread UpdateComponent::getStaticThread()
 
 // ============================================================================
 
-UpdateComponent::UpdateComponent(const Handle entityId) :
+UpdateComponent::UpdateComponent(const EntityId entityId) :
 	ComponentBase<UpdateComponent>(entityId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-UpdateComponent::UpdateComponent(const Handle entityId, Deserializer & /*deserializer*/) :
+UpdateComponent::UpdateComponent(const EntityId entityId, Deserializer & /*deserializer*/) :
 	ComponentBase<UpdateComponent>(entityId)
 {
 }

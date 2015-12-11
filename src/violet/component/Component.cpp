@@ -30,7 +30,7 @@ Component::~Component()
 
 // ============================================================================
 
-Component::Component(const Handle entityId) :
+Component::Component(const EntityId entityId) :
 	m_entityId(entityId)
 {
 }
@@ -44,7 +44,7 @@ Component::Component(Component && other) :
 
 // ----------------------------------------------------------------------------
 
-Handle Component::getEntityId() const
+EntityId Component::getEntityId() const
 {
 	return m_entityId;
 }

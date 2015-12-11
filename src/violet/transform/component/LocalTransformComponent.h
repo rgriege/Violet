@@ -20,9 +20,9 @@ namespace Violet
 
 	public:
 
-		LocalTransformComponent(Handle entityId);
-		LocalTransformComponent(Handle entityId, Deserializer & deserializer);
-		LocalTransformComponent(Handle entityId, const Matrix3f & transform);
+		LocalTransformComponent(EntityId entityId);
+		LocalTransformComponent(EntityId entityId, Deserializer & deserializer);
+		LocalTransformComponent(EntityId entityId, const Matrix3f & transform);
 		LocalTransformComponent(LocalTransformComponent && other);
 
 	public:

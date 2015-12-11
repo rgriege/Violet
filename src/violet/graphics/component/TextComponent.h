@@ -23,7 +23,7 @@ namespace Violet
 
 	public:
 
-		TextComponent(Handle entityId, Deserializer & deserializer);
+		TextComponent(EntityId entityId, Deserializer & deserializer);
 		TextComponent(TextComponent && other);
 
 	private:

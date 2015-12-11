@@ -20,9 +20,9 @@ namespace Violet
 
 	public:
 
-		WorldTransformComponent(Handle entityId);
-		WorldTransformComponent(Handle entityId, Deserializer & deserializer);
-		WorldTransformComponent(Handle entityId, const Matrix3f & transform);
+		WorldTransformComponent(EntityId entityId);
+		WorldTransformComponent(EntityId entityId, Deserializer & deserializer);
+		WorldTransformComponent(EntityId entityId, const Matrix3f & transform);
 		WorldTransformComponent(WorldTransformComponent && other);
 
 	public:

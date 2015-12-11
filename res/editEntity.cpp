@@ -33,7 +33,7 @@ public:
 
 private:
 
-    InputResult onMouseDown(const Handle entityId, const InputSystem::MouseButtonEvent & event)
+    InputResult onMouseDown(const EntityId entityId, const InputSystem::MouseButtonEvent & event)
     {
         if (event.button == MB_Left)
         {
@@ -45,7 +45,7 @@ private:
         return InputResult::Pass;
     }
 
-    void onMouseMove(const Handle entityId, const InputSystem::MouseMotionEvent & event)
+    void onMouseMove(const EntityId entityId, const InputSystem::MouseMotionEvent & event)
     {
         if (m_dragging)
         {
@@ -60,7 +60,7 @@ private:
         }
     }
 
-    InputResult onMouseUp(const Handle entityId, const InputSystem::MouseButtonEvent & event)
+    InputResult onMouseUp(const EntityId entityId, const InputSystem::MouseButtonEvent & event)
     {
         if (event.button == MB_Left)
         {
@@ -71,10 +71,10 @@ private:
         return InputResult::Pass;
     }
 
-    void createComponentMenu(const Handle entityId)
+    void createComponentMenu(const EntityId entityId)
     {
         /*const auto & engine = Engine::getInstance();
-        const auto & menu = engine.getCurrentScene().getEntity(Handle(4000, 0));
+        const auto & menu = engine.getCurrentScene().getEntity(EntityId(4000, 0));
         if (menu != nullptr)
         {
             if (entity.hasComponent<TransformComponent>())

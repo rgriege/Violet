@@ -22,7 +22,7 @@ Thread MouseInputComponent::getStaticThread()
 
 // ============================================================================
 
-MouseInputComponent::MouseInputComponent(const Handle entityId, Deserializer & deserializer) :
+MouseInputComponent::MouseInputComponent(const EntityId entityId, Deserializer & deserializer) :
 	ComponentBase<MouseInputComponent>(entityId),
 	m_mesh(deserializer)
 {
@@ -30,7 +30,7 @@ MouseInputComponent::MouseInputComponent(const Handle entityId, Deserializer & d
 
 // ----------------------------------------------------------------------------
 
-MouseInputComponent::MouseInputComponent(const Handle entityId, Polygon && mesh) :
+MouseInputComponent::MouseInputComponent(const EntityId entityId, Polygon && mesh) :
 	ComponentBase<MouseInputComponent>(entityId),
 	m_mesh(std::move(mesh))
 {

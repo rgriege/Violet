@@ -117,9 +117,9 @@ ComponentManager::~ComponentManager()
 
 // ----------------------------------------------------------------------------
 
-std::vector<Handle> ComponentManager::load(const char * const filename, const TagMap & tagMap)
+std::vector<EntityId> ComponentManager::load(const char * const filename, const TagMap & tagMap)
 {
-	std::vector<Handle> loadedEntityIds;
+	std::vector<EntityId> loadedEntityIds;
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
 		Log::log(FormattedString<128>().sprintf("Could not open scene file '%s'", filename));
@@ -175,7 +175,7 @@ void ComponentManager::save(const char * filename) const
 
 // ----------------------------------------------------------------------------
 
-void ComponentManager::save(const char * filename, const std::shared_ptr<std::vector<Handle>> & entityIds, const TagMap & tagMap) const
+void ComponentManager::save(const char * filename, const std::shared_ptr<std::vector<EntityId>> & entityIds, const TagMap & tagMap) const
 {
 	Log::log(FormattedString<32>().sprintf("saving %d entities", entityIds->size()));
 	auto serializer = FileSerializerFactory::getInstance().create(filename);
@@ -231,7 +231,7 @@ void ComponentManager::save(const char * filename, const std::shared_ptr<std::ve
 
 // ----------------------------------------------------------------------------
 
-void ComponentManager::removeAll(const Handle entityId)
+void ComponentManager::removeAll(const EntityId entityId)
 {
 	for (auto & pool : m_pools)
 	{
@@ -247,7 +247,7 @@ void ComponentManager::removeAll(const Handle entityId)
 
 // ----------------------------------------------------------------------------
 
-void ComponentManager::removeAll(const Handle entityId) thread_const
+void ComponentManager::removeAll(const EntityId entityId) thread_const
 {
 	Engine::getInstance().addWriteTask(*this,
 		[=](ComponentManager & manager)

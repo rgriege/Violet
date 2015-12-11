@@ -45,7 +45,7 @@ Tag ComponentPool::getComponentTag() const
 
 // ----------------------------------------------------------------------------
 
-bool ComponentPool::has(const Handle entityId) const
+bool ComponentPool::has(const EntityId entityId) const
 {
 	return m_lookupMap.find(entityId) != m_lookupMap.end();
 }
@@ -59,7 +59,7 @@ uint32 ComponentPool::size() const
 
 // ----------------------------------------------------------------------------
 
-bool ComponentPool::remove(const Handle entityId)
+bool ComponentPool::remove(const EntityId entityId)
 {
 	assert(entityId.isValid());
 	const auto it = m_lookupMap.find(entityId);
@@ -84,7 +84,7 @@ void ComponentPool::clear()
 		get<Component>(i)->~Component();
 	m_data.clear();
 	m_data.resize(8);
-	*reinterpret_cast<uint32 *>(&m_data[0]) = ((Handle::ms_invalid.getId() << 8) | Handle::ms_invalid.getVersion());
+	*reinterpret_cast<uint32 *>(&m_data[0]) = EntityId::ms_invalid.getRaw();
 	m_lookupMap.clear();
 }
 
@@ -100,7 +100,7 @@ ComponentPool::ComponentPool(const Tag typeId, const uint32 componentSize) :
 	m_data.reserve(m_componentSize * 100);
 #endif
 	m_data.resize(8);
-	*reinterpret_cast<uint32 *>(&m_data[4]) = ((Handle::ms_invalid.getId() << 8) | Handle::ms_invalid.getVersion());
+	*reinterpret_cast<uint32 *>(&m_data[4]) = EntityId::ms_invalid.getRaw();
 }
 
 // ----------------------------------------------------------------------------
@@ -112,7 +112,7 @@ uint32 ComponentPool::getLastDataIndex() const
 
 // ----------------------------------------------------------------------------
 
-std::pair<void *, bool>  ComponentPool::getLocation(const Handle entityId)
+std::pair<void *, bool>  ComponentPool::getLocation(const EntityId entityId)
 {
 	const auto lookupEntry = m_lookupMap.lower_bound(entityId);
 	bool const maxId = lookupEntry == m_lookupMap.end();

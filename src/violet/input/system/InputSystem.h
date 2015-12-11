@@ -43,8 +43,8 @@ namespace Violet
 		virtual ~InputSystem() override = default;
 		virtual void update(float dt) override;
 
-		void focus(Handle entityId);
-		void unfocus(Handle entityId);
+		void focus(EntityId entityId);
+		void unfocus(EntityId entityId);
 
 	private:
 
@@ -56,17 +56,17 @@ namespace Violet
 
 	private:
 
-		Handle m_focussedEntityId;
+		EntityId m_focussedEntityId;
 	};
 
-	DEFINE_METHOD(KeyDownMethod, void(Handle entityId, unsigned char));
-	DEFINE_METHOD(KeyUpMethod, void(Handle entityId, unsigned char));
-	DEFINE_METHOD(MouseDownMethod, InputResult(Handle entityId, const InputSystem::MouseButtonEvent &));
-	DEFINE_METHOD(MouseUpMethod, InputResult(Handle entityId, const InputSystem::MouseButtonEvent &));
-	DEFINE_METHOD(MouseMoveMethod, void(Handle entityId, const InputSystem::MouseMotionEvent &));
-	DEFINE_METHOD(MouseInMethod, void(Handle entityId));
-	DEFINE_METHOD(MouseOutMethod, void(Handle entityId));
-	DEFINE_METHOD(FocusLostMethod, void(Handle entityId));
+	DEFINE_METHOD(KeyDownMethod, void(EntityId entityId, unsigned char));
+	DEFINE_METHOD(KeyUpMethod, void(EntityId entityId, unsigned char));
+	DEFINE_METHOD(MouseDownMethod, InputResult(EntityId entityId, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseUpMethod, InputResult(EntityId entityId, const InputSystem::MouseButtonEvent &));
+	DEFINE_METHOD(MouseMoveMethod, void(EntityId entityId, const InputSystem::MouseMotionEvent &));
+	DEFINE_METHOD(MouseInMethod, void(EntityId entityId));
+	DEFINE_METHOD(MouseOutMethod, void(EntityId entityId));
+	DEFINE_METHOD(FocusLostMethod, void(EntityId entityId));
 	DEFINE_EVENT(QuitEvent, void());
 }
 

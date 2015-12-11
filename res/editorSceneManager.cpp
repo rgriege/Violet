@@ -30,7 +30,7 @@ public:
 
     Instance(CppScript & script) :
         CppScript::Instance(script),
-        m_entityIds(std::make_shared<std::vector<Handle>>())
+        m_entityIds(std::make_shared<std::vector<EntityId>>())
     {
         using namespace std::placeholders;
         KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
@@ -47,7 +47,7 @@ public:
 
 private:
 
-    void onKeyUp(const Handle entityId, const unsigned char key)
+    void onKeyUp(const EntityId entityId, const unsigned char key)
     {
         if (m_dialog == None)
         {
@@ -72,7 +72,7 @@ private:
                     break;
 
                 case 'c':
-                    for (const Handle entityId : *m_entityIds)
+                    for (const EntityId entityId : *m_entityIds)
                         Engine::getInstance().getCurrentScene().removeAll(entityId);
                     break;
             }
@@ -127,7 +127,7 @@ private:
             });
     }
 
-    static void addEditBehavior(const ComponentManager & scene, const Handle entityId)
+    static void addEditBehavior(const ComponentManager & scene, const EntityId entityId)
     {
         Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
             [&scene, entityId]()
@@ -144,7 +144,7 @@ private:
             }), Thread::Window);
     }
 
-    static void addMouseInput(const ComponentManager & scene, const Handle entityId, Polygon && poly)
+    static void addMouseInput(const ComponentManager & scene, const EntityId entityId, Polygon && poly)
     {
         Engine::getInstance().addWriteTask(*scene.getPool<MouseInputComponent>(),
             [=](ComponentPool & pool) mutable
@@ -168,7 +168,7 @@ private:
     };
 
     Dialog m_dialog = None;
-    std::shared_ptr<std::vector<Handle>> m_entityIds;
+    std::shared_ptr<std::vector<EntityId>> m_entityIds;
 };
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)

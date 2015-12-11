@@ -22,14 +22,14 @@ Thread KeyInputComponent::getStaticThread()
 
 // ============================================================================
 
-KeyInputComponent::KeyInputComponent(const Handle entityId) :
+KeyInputComponent::KeyInputComponent(const EntityId entityId) :
 	ComponentBase<KeyInputComponent>(entityId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-KeyInputComponent::KeyInputComponent(const Handle entityId, Deserializer & deserializer) :
+KeyInputComponent::KeyInputComponent(const EntityId entityId, Deserializer & deserializer) :
 	KeyInputComponent(entityId)
 {
 }

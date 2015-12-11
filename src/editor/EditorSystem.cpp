@@ -39,7 +39,7 @@ namespace EditorSystemNamespace
 
 	public:
 
-		EditorComponentWrapper(const Handle entityId, Deserializer & deserializer) :
+		EditorComponentWrapper(const EntityId entityId, Deserializer & deserializer) :
 			ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
 			m_data(entityId, deserializer)
 		{

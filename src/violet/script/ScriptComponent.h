@@ -22,8 +22,8 @@ namespace Violet
 
 	public:
 
-		ScriptComponent(Handle entityId, Deserializer & deserializer);
-		ScriptComponent(Handle entityId, const char * fileName);
+		ScriptComponent(EntityId entityId, Deserializer & deserializer);
+		ScriptComponent(EntityId entityId, const char * fileName);
 		ScriptComponent(ScriptComponent && other);
 		virtual ~ScriptComponent() override;
 
@@ -34,8 +34,8 @@ namespace Violet
 
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const ScriptComponent & component);
 
-	DEFINE_METHOD(BindToComponentMethod, void(Handle entityId));
-	DEFINE_METHOD(UnbindFromComponentMethod, void(Handle entityId));
+	DEFINE_METHOD(BindToComponentMethod, void(EntityId entityId));
+	DEFINE_METHOD(UnbindFromComponentMethod, void(EntityId entityId));
 }
 
 #endif

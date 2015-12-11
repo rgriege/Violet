@@ -19,8 +19,8 @@ namespace Violet
 
 	public:
 
-		MappedDataComponent(Handle entityId);
-		MappedDataComponent(Handle entityId, Deserializer & deserializer);
+		MappedDataComponent(EntityId entityId);
+		MappedDataComponent(EntityId entityId, Deserializer & deserializer);
 		MappedDataComponent(MappedDataComponent && other);
 
 	public:

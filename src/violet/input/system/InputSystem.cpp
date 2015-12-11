@@ -132,7 +132,7 @@ void InputSystem::update(const float dt)
 
 // ----------------------------------------------------------------------------
 
-void InputSystem::focus(const Handle entityId)
+void InputSystem::focus(const EntityId entityId)
 {
 	assert(!m_focussedEntityId.isValid());
 	if (!m_focussedEntityId.isValid())
@@ -141,11 +141,11 @@ void InputSystem::focus(const Handle entityId)
 
 // ----------------------------------------------------------------------------
 
-void InputSystem::unfocus(const Handle entityId)
+void InputSystem::unfocus(const EntityId entityId)
 {
 	assert(m_focussedEntityId == entityId);
 	if (m_focussedEntityId == entityId)
-		m_focussedEntityId = Handle::ms_invalid;
+		m_focussedEntityId = EntityId::ms_invalid;
 }
 
 // ============================================================================

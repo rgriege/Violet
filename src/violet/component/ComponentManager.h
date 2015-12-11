@@ -2,7 +2,6 @@
 #define VIOLET_ComponentManager_H
 
 #include "violet/component/ComponentPool.h"
-#include "violet/handle/Handle.h"
 #include "violet/handle/HandleManager.h"
 #include "violet/task/Thread.h"
 #include "violet/utility/Factory.h"
@@ -38,7 +37,7 @@ namespace Violet
 
 				Iterator & operator++();
 				component_tuple operator*();
-				Handle getEntityId() const;
+				EntityId getEntityId() const;
 
 				bool operator==(const Iterator & other) const;
 				bool operator!=(const Iterator & other) const;
@@ -52,7 +51,7 @@ namespace Violet
 			private:
 
 				iterator_tuple m_iterators;
-				Handle m_entityId;
+				EntityId m_entityId;
 			};
 
 		private:
@@ -74,8 +73,8 @@ namespace Violet
 	public:
 
 		typedef Factory<Tag, ComponentPool()> PoolFactory;
-		typedef Factory<Tag, void(ComponentPool &, Deserializer &, const std::unordered_map<uint32, Handle> &)> ComponentsFactory;
-		typedef Factory<Tag, uint32(const ComponentPool &, Serializer &, const std::vector<Handle> &)> PoolSaveFactory;
+		typedef Factory<Tag, void(ComponentPool &, Deserializer &, const std::unordered_map<uint32, EntityId> &)> ComponentsFactory;
+		typedef Factory<Tag, uint32(const ComponentPool &, Serializer &, const std::vector<EntityId> &)> PoolSaveFactory;
 
 		typedef std::vector<std::pair<Tag, Tag>> TagMap;
 
@@ -96,12 +95,12 @@ namespace Violet
 		ComponentManager & operator=(ComponentManager && other);
 		~ComponentManager();
 
-		std::vector<Handle> load(const char * sceneName, const TagMap & tagMap = TagMap());
+		std::vector<EntityId> load(const char * sceneName, const TagMap & tagMap = TagMap());
 		void save(const char * sceneName) const;
-		void save(const char * sceneName, const std::shared_ptr<std::vector<Handle>> & entityIds, const TagMap & tagMap = TagMap()) const;
+		void save(const char * sceneName, const std::shared_ptr<std::vector<EntityId>> & entityIds, const TagMap & tagMap = TagMap()) const;
 
 		template <typename ComponentType, typename... Args>
-		ComponentType & createComponent(Handle entityId, Args &&... args);
+		ComponentType & createComponent(EntityId entityId, Args &&... args);
 
 		template <typename ComponentType>
 		ComponentPool * getPool();
@@ -109,19 +108,19 @@ namespace Violet
 		const ComponentPool * getPool() const;
 
 		template <typename ComponentType>
-		bool hasComponent(Handle entityId) const;
+		bool hasComponent(EntityId entityId) const;
 
 		template <typename ComponentType>
-		ComponentType * getComponent(Handle entityId);
+		ComponentType * getComponent(EntityId entityId);
 		template <typename ComponentType>
-		const ComponentType * getComponent(Handle entityId) const;
+		const ComponentType * getComponent(EntityId entityId) const;
 		template <typename... ComponentTypes>
 		View<true, ComponentTypes...> getEntityView() const;
 		
 		template <typename ComponentType>
-		bool remove(Handle entityId);
-		void removeAll(Handle entityId);
-		void removeAll(Handle entityId) thread_const;
+		bool remove(EntityId entityId);
+		void removeAll(EntityId entityId);
+		void removeAll(EntityId entityId) thread_const;
 		void clear();
 
 	private:
@@ -129,9 +128,9 @@ namespace Violet
 		template <typename ComponentType>
 		static ComponentPool createPool();
 		template <typename ComponentType>
-		static void createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, Handle> &);
+		static void createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, EntityId> &);
 		template <typename ComponentType>
-		static uint32 savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<Handle> & entityIds);
+		static uint32 savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<EntityId> & entityIds);
 
 	private:
 

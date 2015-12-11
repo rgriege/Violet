@@ -22,22 +22,15 @@ Thread LocalTransformComponent::getStaticThread()
 
 // ============================================================================
 
-LocalTransformComponent::LocalTransformComponent(const Handle entityId) :
-	LocalTransformComponent(entityId, Matrix3f::Identity)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-LocalTransformComponent::LocalTransformComponent(const Handle entityId, Deserializer & deserializer) :
-	LocalTransformComponent(entityId, Matrix3f::Identity)
+LocalTransformComponent::LocalTransformComponent(const EntityId entityId, Deserializer & deserializer) :
+	LocalTransformComponent(entityId, EntityId::ms_invalid, Matrix3f::Identity)
 {
 	deserializer >> *this;
 }
 
 // ----------------------------------------------------------------------------
 
-LocalTransformComponent::LocalTransformComponent(const Handle entityId, const Matrix3f & transform) :
+LocalTransformComponent::LocalTransformComponent(const EntityId entityId, const Matrix3f & transform) :
 	ComponentBase<LocalTransformComponent>(entityId),
 	m_transform(transform)
 {

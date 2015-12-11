@@ -22,14 +22,14 @@ Thread WorldTransformComponent::getStaticThread()
 
 // ============================================================================
 
-WorldTransformComponent::WorldTransformComponent(const Handle entityId) :
+WorldTransformComponent::WorldTransformComponent(const EntityId entityId) :
 	WorldTransformComponent(entityId, Matrix3f::Identity)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-WorldTransformComponent::WorldTransformComponent(const Handle entityId, Deserializer & deserializer) :
+WorldTransformComponent::WorldTransformComponent(const EntityId entityId, Deserializer & deserializer) :
 	WorldTransformComponent(entityId, Matrix3f::Identity)
 {
 	deserializer >> *this;
@@ -37,7 +37,7 @@ WorldTransformComponent::WorldTransformComponent(const Handle entityId, Deserial
 
 // ----------------------------------------------------------------------------
 
-WorldTransformComponent::WorldTransformComponent(const Handle entityId, const Matrix3f & transform) :
+WorldTransformComponent::WorldTransformComponent(const EntityId entityId, const Matrix3f & transform) :
 	ComponentBase<WorldTransformComponent>(entityId),
 	m_transform(transform)
 {

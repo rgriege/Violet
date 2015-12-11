@@ -18,8 +18,8 @@ namespace Violet
 
 	public:
 
-		KeyInputComponent(Handle entityId);
-		KeyInputComponent(Handle entityId, Deserializer & deserializer);
+		KeyInputComponent(EntityId entityId);
+		KeyInputComponent(EntityId entityId, Deserializer & deserializer);
 		KeyInputComponent(KeyInputComponent && other);
 	};
 

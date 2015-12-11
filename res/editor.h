@@ -21,7 +21,7 @@ public:
 
 public:
 
-    EditorComponentWrapper(const Handle entityId, Deserializer & deserializer) :
+    EditorComponentWrapper(const EntityId entityId, Deserializer & deserializer) :
         ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
         m_data(entityId, deserializer)
     {
@@ -33,7 +33,7 @@ public:
     {
     }
 
-    EditorComponentWrapper(const Handle entityId, ComponentType && other) :
+	EditorComponentWrapper(const EntityId entityId, ComponentType && other) :
         ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
         m_data(std::move(other))
     {

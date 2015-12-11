@@ -23,7 +23,7 @@ Thread MappedDataComponent::getStaticThread()
 
 // ============================================================================
 
-MappedDataComponent::MappedDataComponent(const Handle entityId) :
+MappedDataComponent::MappedDataComponent(const EntityId entityId) :
 	ComponentBase<MappedDataComponent>(entityId),
 	m_data()
 {
@@ -31,7 +31,7 @@ MappedDataComponent::MappedDataComponent(const Handle entityId) :
 
 // ----------------------------------------------------------------------------
 
-MappedDataComponent::MappedDataComponent(const Handle entityId, Deserializer & deserializer) :
+MappedDataComponent::MappedDataComponent(const EntityId entityId, Deserializer & deserializer) :
 	ComponentBase<MappedDataComponent>(entityId),
 	m_data()
 {

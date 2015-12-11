@@ -24,7 +24,7 @@ Violet::ComponentPool::Iterator<ComponentType, is_const> & Violet::ComponentPool
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool is_const>
-Violet::ComponentPool::Iterator<ComponentType, is_const> & Violet::ComponentPool::Iterator<ComponentType, is_const>::advanceTo(const Handle entityId)
+Violet::ComponentPool::Iterator<ComponentType, is_const> & Violet::ComponentPool::Iterator<ComponentType, is_const>::advanceTo(const EntityId entityId)
 {
 	while (*this && m_ptr->getEntityId() < entityId)
 		++m_ptr;
@@ -75,15 +75,15 @@ Violet::ComponentPool Violet::ComponentPool::create()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentPool::load(Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap)
+void Violet::ComponentPool::load(Deserializer & deserializer, const std::unordered_map<uint32, EntityId> & idMap)
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
 	while (deserializer)
 	{
-		const uint32 entityId = deserializer.getUint("id");
-		const auto it = idMap.find(entityId);
-		const Handle & handle = it == idMap.end() ? Handle(entityId, 0) : it->second;
-		create<ComponentType>(handle, deserializer);
+		const uint32 requestedEntityId = deserializer.getUint("id");
+		const auto it = idMap.find(requestedEntityId);
+		const EntityId & entityId = it == idMap.end() ? EntityId(requestedEntityId, 0) : it->second;
+		create<ComponentType>(entityId, deserializer);
 	}
 }
 
@@ -103,7 +103,7 @@ void Violet::ComponentPool::save(Serializer & serailizer) const
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-uint32 Violet::ComponentPool::save(Serializer & serailizer, const std::vector<Handle> & entityIds) const
+uint32 Violet::ComponentPool::save(Serializer & serailizer, const std::vector<EntityId> & entityIds) const
 {
 	uint32 count = 0;
 	assert(ComponentType::getStaticTag() == m_componentTag);
@@ -122,7 +122,7 @@ uint32 Violet::ComponentPool::save(Serializer & serailizer, const std::vector<Ha
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, typename... Args>
-ComponentType & Violet::ComponentPool::create(const Handle entityId, Args && ... args)
+ComponentType & Violet::ComponentPool::create(const EntityId entityId, Args && ... args)
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
 	auto result = getLocation(entityId);
@@ -136,7 +136,7 @@ ComponentType & Violet::ComponentPool::create(const Handle entityId, Args && ...
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-ComponentType * Violet::ComponentPool::get(const Handle entityId)
+ComponentType * Violet::ComponentPool::get(const EntityId entityId)
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
 	auto const it = m_lookupMap.find(entityId);
@@ -146,7 +146,7 @@ ComponentType * Violet::ComponentPool::get(const Handle entityId)
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-const ComponentType * Violet::ComponentPool::get(const Handle entityId) const
+const ComponentType * Violet::ComponentPool::get(const EntityId entityId) const
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
 	auto const it = m_lookupMap.find(entityId);

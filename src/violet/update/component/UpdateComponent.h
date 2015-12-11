@@ -18,8 +18,8 @@ namespace Violet
 
 	public:
 
-		UpdateComponent(Handle entityId);
-		UpdateComponent(Handle entityId, Deserializer & deserializer);
+		UpdateComponent(EntityId entityId);
+		UpdateComponent(EntityId entityId, Deserializer & deserializer);
 		UpdateComponent(UpdateComponent && other);
 	};
 

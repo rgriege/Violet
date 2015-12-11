@@ -20,7 +20,7 @@ namespace Violet
 
 	public:
 
-		PhysicsComponent(Handle entityId, Deserializer & deserializer);
+		PhysicsComponent(EntityId entityId, Deserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
 
 	public:

@@ -9,7 +9,7 @@
 template <bool is_const, typename... ComponentTypes>
 Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::Iterator(iterator_tuple iterators) :
 	m_iterators(iterators),
-	m_entityId(Handle::ms_invalid)
+	m_entityId()
 {
 }
 
@@ -18,7 +18,7 @@ Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::Iterator(
 template <bool is_const, typename... ComponentTypes>
 typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator & Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::operator++()
 {
-	m_entityId = Handle(m_entityId.getId() + 1, m_entityId.getVersion());
+	m_entityId = EntityId(m_entityId.getId() + 1, m_entityId.getVersion());
 	advance();
 	return *this;
 }
@@ -34,7 +34,7 @@ typename Violet::ComponentManager::View<is_const, ComponentTypes...>::component_
 // ----------------------------------------------------------------------------
 
 template <bool is_const, typename... ComponentTypes>
-Violet::Handle Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::getEntityId() const
+Violet::EntityId Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::getEntityId() const
 {
 	return m_entityId;
 }
@@ -88,7 +88,7 @@ void Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::adva
 		else
 		{
 			count = sizeof...(ComponentTypes);
-			m_entityId = Violet::Handle::ms_invalid;
+			m_entityId = Violet::EntityId::ms_invalid;
 		}
 	}
 }
@@ -122,7 +122,7 @@ typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator V
 // ============================================================================
 
 template <typename ComponentType, typename... Args>
-ComponentType & Violet::ComponentManager::createComponent(const Handle entityId, Args &&... args)
+ComponentType & Violet::ComponentManager::createComponent(const EntityId entityId, Args &&... args)
 {
 	return getPool<ComponentType>()->create<ComponentType, Args...>(entityId, std::forward<Args>(args)...);
 }
@@ -146,7 +146,7 @@ const Violet::ComponentPool * Violet::ComponentManager::getPool() const
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-bool Violet::ComponentManager::hasComponent(const Handle entityId) const
+bool Violet::ComponentManager::hasComponent(const EntityId entityId) const
 {
 	return getPool<ComponentType>()->has(entityId);
 }
@@ -154,7 +154,7 @@ bool Violet::ComponentManager::hasComponent(const Handle entityId) const
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-ComponentType * Violet::ComponentManager::getComponent(const Handle entityId)
+ComponentType * Violet::ComponentManager::getComponent(const EntityId entityId)
 {
 	return getPool<ComponentType>()->get<ComponentType>(entityId);
 }
@@ -162,7 +162,7 @@ ComponentType * Violet::ComponentManager::getComponent(const Handle entityId)
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-const ComponentType * Violet::ComponentManager::getComponent(const Handle entityId) const
+const ComponentType * Violet::ComponentManager::getComponent(const EntityId entityId) const
 {
 	return getPool<ComponentType>()->get<ComponentType>(entityId);
 }
@@ -178,7 +178,7 @@ Violet::ComponentManager::View<true, ComponentTypes...> Violet::ComponentManager
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-bool Violet::ComponentManager::remove(const Handle entityId)
+bool Violet::ComponentManager::remove(const EntityId entityId)
 {
 	return getPool<ComponentType>()->remove(entityId);
 }
@@ -210,7 +210,7 @@ static Violet::ComponentPool Violet::ComponentManager::createPool()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentManager::createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap)
+void Violet::ComponentManager::createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, EntityId> & idMap)
 {
 	pool.load<ComponentType>(deserializer, idMap);
 }
@@ -218,7 +218,7 @@ void Violet::ComponentManager::createComponents(ComponentPool & pool, Deserializ
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-uint32 Violet::ComponentManager::savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<Handle> & entityIds)
+uint32 Violet::ComponentManager::savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<EntityId> & entityIds)
 {
 	return pool.save<ComponentType>(serializer, entityIds);
 }

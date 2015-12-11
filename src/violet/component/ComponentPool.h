@@ -2,7 +2,6 @@
 #define VIOLET_ComponentPool_H
 
 #include "violet/component/Component.h"
-#include "violet/Handle/Handle.h"
 
 #include <map>
 #include <vector>
@@ -30,7 +29,7 @@ namespace Violet
 			explicit Iterator(Pointer ptr);
 
 			Iterator<ComponentType, is_const> & operator++();
-			Iterator<ComponentType, is_const> & advanceTo(Handle entityId);
+			Iterator<ComponentType, is_const> & advanceTo(EntityId entityId);
 
 			Reference operator*();
 			Pointer operator->();
@@ -61,21 +60,21 @@ namespace Violet
 		Tag getComponentTag() const;
 
 		template <typename ComponentType>
-		void load(Deserializer & deserializer, const std::unordered_map<uint32, Handle> & idMap);
+		void load(Deserializer & deserializer, const std::unordered_map<uint32, EntityId> & idMap);
 		template <typename ComponentType>
 		void save(Serializer & serailizer) const;
 		template <typename ComponentType>
-		uint32 save(Serializer & serailizer, const std::vector<Handle> & entityIds) const;
+		uint32 save(Serializer & serailizer, const std::vector<EntityId> & entityIds) const;
 
 		template <typename ComponentType, typename... Args>
-		ComponentType & create(Handle entityId, Args && ... args);
+		ComponentType & create(EntityId entityId, Args && ... args);
 
-		bool has(Handle entityId) const;
+		bool has(EntityId entityId) const;
 
 		template <typename ComponentType>
-		ComponentType * get(Handle entityId);
+		ComponentType * get(EntityId entityId);
 		template <typename ComponentType>
-		const ComponentType * get(Handle entityId) const;
+		const ComponentType * get(EntityId entityId) const;
 
 		template <typename ComponentType>
 		iterator<ComponentType> begin();
@@ -88,7 +87,7 @@ namespace Violet
 
 		uint32 size() const;
 
-		bool remove(Handle entityId);
+		bool remove(EntityId entityId);
 		void clear();
 
 	private:
@@ -105,7 +104,7 @@ namespace Violet
 
 		uint32 getLastDataIndex() const;
 
-		std::pair<void *, bool> getLocation(Handle entityId);
+		std::pair<void *, bool> getLocation(EntityId entityId);
 		void verify();
 
 	private:
@@ -113,7 +112,7 @@ namespace Violet
 		const Tag m_componentTag;
 		const uint32 m_componentSize;
 		std::vector<ubyte> m_data;
-		std::map<Handle, uint32> m_lookupMap;
+		std::map<EntityId, uint32> m_lookupMap;
 	};
 }
 

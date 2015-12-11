@@ -65,7 +65,7 @@ void Violet::ComponentBase<Derived>::save(Serializer & serializer) const
 // ============================================================================
 
 template <typename Derived>
-Violet::ComponentBase<Derived>::ComponentBase(const Handle entityId) :
+Violet::ComponentBase<Derived>::ComponentBase(const EntityId entityId) :
 	Component(entityId)
 {
 }

@@ -1,14 +1,13 @@
 #ifndef VIOLET_HandleManager_H
 #define VIOLET_HandleManager_H
 
-#include "violet/handle/Handle.h"
-
 #include <queue>
 #include <vector>
 
 namespace Violet
 {
-	class VIOLET_API HandleManager
+	template <typename Handle>
+	class HandleManager
 	{
 	public:
 
@@ -19,7 +18,7 @@ namespace Violet
 		HandleManager & operator=(HandleManager && other);
 
 		Handle create();
-		Handle create(uint32 desiredId);
+		Handle create(typename Handle::StorageType desiredId);
 		void free(Handle handle);
 		void freeAll();
 
@@ -28,9 +27,10 @@ namespace Violet
 	private:
 
 		std::vector<bool> m_usedList;
-		std::queue<uint32> m_recycleList;
-		std::vector<uint8> m_versions;
+		std::queue<typename Handle::StorageType> m_recycleList;
 	};
 }
+
+#include "violet/handle/HandleManager.inl"
 
 #endif

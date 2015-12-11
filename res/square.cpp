@@ -33,7 +33,7 @@ public:
 
 private:
 
-    void onUpdate(const Handle entityId, const float dt)
+    void onUpdate(const EntityId entityId, const float dt)
     {
         auto transformC = Engine::getInstance().getCurrentScene().getComponent<WorldTransformComponent>(entityId);
         if (transformC != nullptr)

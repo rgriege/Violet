@@ -37,7 +37,7 @@ public:
 
 private:
 
-    void onBindToComponent(const Handle entityId)
+    void onBindToComponent(const EntityId entityId)
     {
         const Engine & engine = Engine::getInstance();
         engine.addWriteTask(*engine.getSystem<InputSystem>(),
@@ -47,7 +47,7 @@ private:
             });
     }
 
-    void onFocusLost(const Handle entityId)
+    void onFocusLost(const EntityId entityId)
     {
         const auto & engine = Engine::getInstance();
         DialogClosedEvent::emit(engine, std::string());
@@ -58,7 +58,7 @@ private:
             });
     }
 
-    void onKeyUp(const Handle entityId, const unsigned char key)
+    void onKeyUp(const EntityId entityId, const unsigned char key)
     {
         const Engine & engine = Engine::getInstance();
         if (std::isalpha(key) || key == '.')

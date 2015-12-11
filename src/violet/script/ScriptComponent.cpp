@@ -24,14 +24,14 @@ Thread ScriptComponent::getStaticThread()
 
 // ============================================================================
 
-ScriptComponent::ScriptComponent(const Handle entityId, Deserializer & deserializer) :
+ScriptComponent::ScriptComponent(const EntityId entityId, Deserializer & deserializer) :
 	ScriptComponent(entityId, deserializer.getString("file"))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-ScriptComponent::ScriptComponent(Handle entityId, const char * const fileName) :
+ScriptComponent::ScriptComponent(EntityId entityId, const char * const fileName) :
 	ComponentBase<ScriptComponent>(entityId),
 	m_script(ScriptFactory::create(fileName))
 {

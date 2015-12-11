@@ -118,6 +118,7 @@
     <ClInclude Include="..\..\..\src\violet\graphics\texture\Texture.h" />
     <ClInclude Include="..\..\..\src\violet\handle\Handle.h" />
     <ClInclude Include="..\..\..\src\violet\handle\HandleManager.h" />
+    <ClInclude Include="..\..\..\src\violet\handle\VersionedHandleManager.h" />
     <ClInclude Include="..\..\..\src\violet\input\component\MouseInputComponent.h" />
     <ClInclude Include="..\..\..\src\violet\input\component\KeyInputComponent.h" />
     <ClInclude Include="..\..\..\src\violet\input\InputResult.h" />
@@ -131,6 +132,7 @@
     <ClInclude Include="..\..\..\src\violet\math\Circle.h" />
     <ClInclude Include="..\..\..\src\violet\math\Constants.h" />
     <ClInclude Include="..\..\..\src\violet\math\Interval.h" />
+    <ClInclude Include="..\..\..\src\violet\math\LogConst.h" />
     <ClInclude Include="..\..\..\src\violet\math\Matrix2.h" />
     <ClInclude Include="..\..\..\src\violet\math\Matrix3.h" />
     <ClInclude Include="..\..\..\src\violet\math\Polygon.h" />
@@ -215,8 +217,6 @@
     <ClCompile Include="..\..\..\src\violet\graphics\shader\Shader.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\system\RenderSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\graphics\texture\Texture.cpp" />
-    <ClCompile Include="..\..\..\src\violet\handle\Handle.cpp" />
-    <ClCompile Include="..\..\..\src\violet\handle\HandleManager.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\component\MouseInputComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\component\KeyInputComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\input\Key.cpp" />
@@ -270,6 +270,12 @@
     <ClCompile Include="..\..\..\src\violet\window\sdl\SDLWindowSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\violet\handle\Handle.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\handle\HandleManager.inl">
+      <FileType>Document</FileType>
+    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\math\Interval.inl">
       <FileType>Document</FileType>
     </ClInclude>
@@ -293,6 +299,7 @@
     <ClInclude Include="..\..\..\src\violet\event\EventContext.inl">
       <FileType>Document</FileType>
     </ClInclude>
+    <None Include="..\..\..\src\violet\handle\VersionedHandleManager.inl" />
     <None Include="..\..\..\src\violet\script\cpp\CppScript.inl" />
     <None Include="..\..\..\src\violet\script\lua\LuaLibrary.inl" />
     <None Include="..\..\..\src\violet\script\lua\LuaScript.inl" />

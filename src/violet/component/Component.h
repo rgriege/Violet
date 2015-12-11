@@ -1,8 +1,8 @@
 #ifndef VIOLET_Component_H
 #define VIOLET_Component_H
 
+#include "violet/Defines.h"
 #include "violet/utility/Tag.h"
-#include "violet/handle/Handle.h"
 
 #include <utility>
 
@@ -30,7 +30,7 @@ namespace Violet
 
 	public:
 
-		Handle getEntityId() const;
+		EntityId getEntityId() const;
 
 		virtual Tag getTag() const = 0;
 		virtual uint32 getFlag() const = 0;
@@ -40,7 +40,7 @@ namespace Violet
 
 	protected:
 
-		Component(Handle entityId);
+		Component(EntityId entityId);
 
 		Component(const Component &) = delete;
 		Component & operator=(const Component &) = delete;
@@ -49,7 +49,7 @@ namespace Violet
 
 	protected:
 
-		Handle m_entityId;
+		EntityId m_entityId;
 	};
 
 	template <typename Derived>
@@ -67,7 +67,7 @@ namespace Violet
 
 	protected:
 
-		ComponentBase(Handle entityId);
+		ComponentBase(EntityId entityId);
 		ComponentBase(ComponentBase && other);
 	};
 }

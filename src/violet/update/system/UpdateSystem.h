@@ -30,7 +30,7 @@ namespace Violet
 		UpdateSystem();
 	};
 
-	DEFINE_METHOD(UpdateMethod, void(Handle, float));
+	DEFINE_METHOD(UpdateMethod, void(EntityId, float));
 }
 
 #endif

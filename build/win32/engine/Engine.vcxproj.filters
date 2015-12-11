@@ -440,6 +440,18 @@
     <ClInclude Include="..\..\..\src\violet\utility\Delegate.h">
       <Filter>utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\math\LogConst.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\handle\Handle.inl">
+      <Filter>handle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\handle\HandleManager.inl">
+      <Filter>handle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\handle\VersionedHandleManager.h">
+      <Filter>handle</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -593,12 +605,6 @@
     <ClCompile Include="..\..\..\src\violet\input\Key.cpp">
       <Filter>input</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\handle\Handle.cpp">
-      <Filter>handle</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\handle\HandleManager.cpp">
-      <Filter>handle</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\src\violet\component\MappedDataComponent.cpp">
       <Filter>component</Filter>
     </ClCompile>
@@ -694,6 +700,9 @@
     </None>
     <None Include="..\..\..\src\violet\component\ComponentPool.inl">
       <Filter>component</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\handle\VersionedHandleManager.inl">
+      <Filter>handle</Filter>
     </None>
   </ItemGroup>
 </Project>
