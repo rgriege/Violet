@@ -84,7 +84,7 @@ void ComponentPool::clear()
 		get<Component>(i)->~Component();
 	m_data.clear();
 	m_data.resize(8);
-	*reinterpret_cast<uint32 *>(&m_data[0]) = EntityId::ms_invalid.getRaw();
+	*reinterpret_cast<uint32 *>(&m_data[4]) = EntityId::ms_invalid.getRaw();
 	m_lookupMap.clear();
 }
 
