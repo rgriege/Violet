@@ -18,7 +18,9 @@ public:
 
     Instance(CppScript & script) :
         CppScript::Instance(script),
-        m_dragging(false)
+        m_dragging(false),
+        m_mouseDownPos(),
+        m_startDragPos()
     {
         MouseDownMethod::assign(m_script, MouseDownMethod::Handler::bind<Instance, &Instance::onMouseDown>(this));
         MouseMoveMethod::assign(m_script, MouseMoveMethod::Handler::bind<Instance, &Instance::onMouseMove>(this));
@@ -38,8 +40,15 @@ private:
     {
         if (event.button == MB_Left)
         {
+            const auto & engine = Engine::getInstance();
             createComponentMenu(entityId);
             m_dragging = true;
+            m_mouseDownPos = event.position;
+            if (engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
+            {
+                const auto * ltc = engine.getCurrentScene().getComponent<LocalTransformComponent>(entityId);
+                m_startDragPos = Transform::getPosition(ltc->m_transform);
+            }
             return InputResult::Block;
         }
 
@@ -54,7 +63,7 @@ private:
             if (engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
             {
                 const auto * ltc = engine.getCurrentScene().getComponent<LocalTransformComponent>(entityId);
-                const auto & newPosition = Transform::getPosition(ltc->m_transform) + event.to - event.from;
+                const auto & newPosition = m_startDragPos + event.to - m_mouseDownPos;
                 
                 move<LocalTransformComponent>(entityId, newPosition);
             }
@@ -68,6 +77,8 @@ private:
         if (event.button == MB_Left)
         {
             m_dragging = false;
+            m_startDragPos = Vec2f::ZERO;
+            m_mouseDownPos = Vec2f::ZERO;
             return InputResult::Block;
         }
 
@@ -113,6 +124,8 @@ private:
 private:
 
     bool m_dragging;
+    Vec2f m_mouseDownPos;
+    Vec2f m_startDragPos;
 };
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
