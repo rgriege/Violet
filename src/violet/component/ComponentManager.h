@@ -73,7 +73,7 @@ namespace Violet
 	public:
 
 		typedef Factory<Tag, ComponentPool()> PoolFactory;
-		typedef Factory<Tag, void(ComponentPool &, Deserializer &, const std::unordered_map<uint32, EntityId> &)> ComponentsFactory;
+		typedef Factory<Tag, void(ComponentPool &, Deserializer &, EntityId::StorageType)> ComponentsFactory;
 		typedef Factory<Tag, uint32(const ComponentPool &, Serializer &, const std::vector<EntityId> &)> PoolSaveFactory;
 
 		typedef std::vector<std::pair<Tag, Tag>> TagMap;
@@ -128,7 +128,7 @@ namespace Violet
 		template <typename ComponentType>
 		static ComponentPool createPool();
 		template <typename ComponentType>
-		static void createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, EntityId> &);
+		static void createComponents(ComponentPool & pool, Deserializer & deserializer, EntityId::StorageType);
 		template <typename ComponentType>
 		static uint32 savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<EntityId> & entityIds);
 
@@ -149,7 +149,7 @@ namespace Violet
 
 	private:
 
-		HandleManager m_handleManager;
+		std::vector<HandleManager<EntityId>> m_handleManagers;
 		std::vector<ComponentPool> m_pools;
 	};
 }

@@ -2,8 +2,10 @@
 #define VIOLET_TransformSystem_H
 
 #include "violet/handle/Handle.h"
+#include "violet/math/Matrix3.h"
 #include "violet/system/System.h"
-#include "violet/script/Script.h"
+
+#include <map>
 
 namespace Violet
 {
@@ -28,6 +30,10 @@ namespace Violet
 	private:
 
 		TransformSystem();
+
+	private:
+
+		std::map<EntityId, Matrix3f> m_entityWorldTransformCache;
 	};
 }
 

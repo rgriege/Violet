@@ -75,15 +75,13 @@ Violet::ComponentPool Violet::ComponentPool::create()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentPool::load(Deserializer & deserializer, const std::unordered_map<uint32, EntityId> & idMap)
+void Violet::ComponentPool::load(Deserializer & deserializer, const EntityId::StorageType version)
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
 	while (deserializer)
 	{
-		const uint32 requestedEntityId = deserializer.getUint("id");
-		const auto it = idMap.find(requestedEntityId);
-		const EntityId & entityId = it == idMap.end() ? EntityId(requestedEntityId, 0) : it->second;
-		create<ComponentType>(entityId, deserializer);
+		const uint32 id = deserializer.getUint("id");
+		create<ComponentType>(EntityId(id, version), deserializer);
 	}
 }
 

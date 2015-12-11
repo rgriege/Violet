@@ -1,5 +1,7 @@
 {
   "idFile": "square.hndl.json",
+  "cpnt": "ltfm",
+  "file": "square.ltfm.json",
   "cpnt": "wtfm",
   "file": "square.wtfm.json",
   "cpnt": "colr",

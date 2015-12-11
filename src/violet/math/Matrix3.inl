@@ -97,4 +97,24 @@ Violet::Vec2<T> Violet::operator*(const Matrix3<T> & lhs, const Vec2<T> & rhs)
 	return Vec2<T>(lhs[0][0] * rhs.x + lhs[0][1] * rhs.y + lhs[0][2], lhs[1][0] * rhs.x + lhs[1][1] * rhs.y + lhs[1][2]);
 }
 
+// ----------------------------------------------------------------------------
+
+template <typename T>
+bool Violet::operator==(const Matrix3<T> & lhs, const Matrix3<T> & rhs)
+{
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			if (lhs[i][j] != rhs[i][j])
+				return false;
+	return true;
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename T>
+bool Violet::operator!=(const Matrix3<T> & lhs, const Matrix3<T> & rhs)
+{
+	return !(lhs == rhs);
+}
+
 // ============================================================================

@@ -55,20 +55,35 @@ TransformSystem::~TransformSystem()
 
 void TransformSystem::update(const float /*dt*/)
 {
-	auto localView = Engine::getInstance().getCurrentScene().getEntityView<LocalTransformComponent>();
-	auto worldView = Engine::getInstance().getCurrentScene().getEntityView<WorldTransformComponent>();
-	auto localIt = localView.begin(), localEnd = localView.end();
-	auto worldIt = worldView.begin(), worldEnd = worldView.end();
-	while (localIt != localEnd)
+	m_entityWorldTransformCache.clear();
+	const auto & engine = Engine::getInstance();
+	for (const auto & entity : engine.getCurrentScene().getEntityView<LocalTransformComponent, WorldTransformComponent>())
 	{
-		const auto & localTransformComponent = std::get<0>(*localIt);
-		if (worldIt != worldEnd)
+		const auto & localTransformComponent = std::get<0>(entity);
+		const auto & worldTransformComponent = std::get<1>(entity);
+		const EntityId entityId = localTransformComponent.getEntityId();
+
+		if (!localTransformComponent.m_parentId.isValid())
 		{
-			const auto & worldTransformComponent = std::get<0>(*worldIt);
+			m_entityWorldTransformCache[entityId] = localTransformComponent.m_transform;
+			if (localTransformComponent.m_transform != worldTransformComponent.m_transform)
+			{
+				engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
+					[=](ComponentPool & pool)
+					{
+						pool.get<WorldTransformComponent>(entityId)->m_transform = m_entityWorldTransformCache[entityId];
+					});
+			}
 		}
 		else
 		{
-			// Engine::addWriteTask(Engine::getInstance().getCurrentScene());
+			const Matrix3f & parentWorldTransform = m_entityWorldTransformCache[localTransformComponent.m_parentId];
+			m_entityWorldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
+			engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
+				[=](ComponentPool & pool)
+				{
+					pool.get<WorldTransformComponent>(entityId)->m_transform = m_entityWorldTransformCache[entityId];
+				});
 		}
 	}
 }
@@ -76,7 +91,8 @@ void TransformSystem::update(const float /*dt*/)
 // ============================================================================
 
 TransformSystem::TransformSystem() :
-	System(getStaticLabel())
+	System(getStaticLabel()),
+	m_entityWorldTransformCache()
 {
 }
 

@@ -111,10 +111,18 @@ void Violet::HandleManager<Handle>::freeAll()
 // ----------------------------------------------------------------------------
 
 template <typename Handle>
+uint32 Violet::HandleManager<Handle>::getUsedCount() const
+{
+	return m_usedList.size() - m_recycleList.size();
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Handle>
 std::vector<Handle> Violet::HandleManager<Handle>::getUsed() const
 {
 	std::vector<Handle> result;
-	result.reserve(m_usedList.size() - m_recycleList.size());
+	result.reserve(getUsedCount());
 	for (uint32 i = 0, end = m_usedList.size(); i < end; ++i)
 		if (m_usedList[i])
 			result.emplace_back(Handle(i, 0));

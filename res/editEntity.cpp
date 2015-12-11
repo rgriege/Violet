@@ -5,6 +5,7 @@
 #include "violet/script/cpp/CppScript.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
+#include "violet/transform/component/LocalTransformComponent.h"
 #include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/transform/Transform.h"
 #include "violet/utility/FormattedString.h"
@@ -50,13 +51,15 @@ private:
         if (m_dragging)
         {
             const auto & engine = Engine::getInstance();
-            const auto & newPosition = event.to;
-            engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
-                [=](ComponentPool & pool)
-                {
-                    auto & transform = pool.get<WorldTransformComponent>(entityId)->m_transform;
-                    Transform::setPosition(transform, newPosition);
-                });
+            if (engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
+            {
+                const auto * ltc = engine.getCurrentScene().getComponent<LocalTransformComponent>(entityId);
+                const auto & newPosition = Transform::getPosition(ltc->m_transform) + event.to - event.from;
+                
+                move<LocalTransformComponent>(entityId, newPosition);
+            }
+            else
+                move<WorldTransformComponent>(entityId, event.to);
         }
     }
 
@@ -69,6 +72,18 @@ private:
         }
 
         return InputResult::Pass;
+    }
+
+    template <typename ComponentType>
+    void move(const EntityId entityId, const Vec2f & position)
+    {
+        const auto & engine = Engine::getInstance();
+        engine.addWriteTask(*engine.getCurrentScene().getPool<ComponentType>(),
+            [=](ComponentPool & pool)
+            {
+                auto & transform = pool.get<ComponentType>(entityId)->m_transform;
+                Transform::setPosition(transform, position);
+            });
     }
 
     void createComponentMenu(const EntityId entityId)

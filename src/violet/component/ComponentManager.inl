@@ -18,7 +18,7 @@ Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::Iterator(
 template <bool is_const, typename... ComponentTypes>
 typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator & Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::operator++()
 {
-	m_entityId = EntityId(m_entityId.getId() + 1, m_entityId.getVersion());
+	m_entityId = m_entityId.isValid() ? EntityId(m_entityId.getId(), m_entityId.getVersion() + 1) : EntityId(0, 0);
 	advance();
 	return *this;
 }
@@ -210,9 +210,9 @@ static Violet::ComponentPool Violet::ComponentManager::createPool()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentManager::createComponents(ComponentPool & pool, Deserializer & deserializer, const std::unordered_map<uint32, EntityId> & idMap)
+void Violet::ComponentManager::createComponents(ComponentPool & pool, Deserializer & deserializer, const EntityId::StorageType version)
 {
-	pool.load<ComponentType>(deserializer, idMap);
+	pool.load<ComponentType>(deserializer, version);
 }
 
 // ----------------------------------------------------------------------------

@@ -60,7 +60,7 @@ namespace Violet
 		Tag getComponentTag() const;
 
 		template <typename ComponentType>
-		void load(Deserializer & deserializer, const std::unordered_map<uint32, EntityId> & idMap);
+		void load(Deserializer & deserializer, EntityId::StorageType version);
 		template <typename ComponentType>
 		void save(Serializer & serailizer) const;
 		template <typename ComponentType>

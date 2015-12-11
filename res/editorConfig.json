@@ -14,7 +14,8 @@
       "color": "0xffffffff"
     },
     "inpt": {},
-    "updt": {}
+    "updt": {},
+    "tsfm": {}
   },
   "firstScene": "editorScene.json"
 }

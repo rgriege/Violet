@@ -76,7 +76,7 @@ std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 // ============================================================================
 
 ComponentManager::ComponentManager() :
-	m_handleManager(),
+	m_handleManagers(),
 	m_pools()
 {
 	for (auto const & entry : ms_poolThreads)
@@ -86,7 +86,7 @@ ComponentManager::ComponentManager() :
 // ----------------------------------------------------------------------------
 
 ComponentManager::ComponentManager(ComponentManager && other) :
-	m_handleManager(std::move(other.m_handleManager)),
+	m_handleManagers(std::move(other.m_handleManagers)),
 	m_pools(std::move(other.m_pools))
 {
 }
@@ -95,7 +95,7 @@ ComponentManager::ComponentManager(ComponentManager && other) :
 
 ComponentManager & ComponentManager::operator=(ComponentManager && other)
 {
-	std::swap(m_handleManager, other.m_handleManager);
+	std::swap(m_handleManagers, other.m_handleManagers);
 	std::swap(m_pools, other.m_pools);
 	return *this;
 }
@@ -119,6 +119,11 @@ ComponentManager::~ComponentManager()
 
 std::vector<EntityId> ComponentManager::load(const char * const filename, const TagMap & tagMap)
 {
+	const uint32 sourceVersion = m_handleManagers.size();
+	assert(sourceVersion < EntityId::MaxVersion);
+	m_handleManagers.emplace_back();
+	auto & handleManager = m_handleManagers.back();
+
 	std::vector<EntityId> loadedEntityIds;
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
@@ -131,13 +136,12 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 		auto idFileDeserializer = FileDeserializerFactory::getInstance().create(idFileName.c_str());
 		if (idFileDeserializer != nullptr && *idFileDeserializer)
 		{
-			auto handleReplacementMap = std::make_shared<std::unordered_map<uint32, Handle>>();
 			while (*idFileDeserializer)
 			{
 				const uint32 desiredId = idFileDeserializer->getUint("id");
-				loadedEntityIds.emplace_back(m_handleManager.create(desiredId));
-				if (desiredId != loadedEntityIds.back().getId())
-					(*handleReplacementMap)[desiredId] = loadedEntityIds.back();
+				const EntityId createdHandle = handleManager.create(desiredId);
+				assert(createdHandle.getId() == desiredId);
+				loadedEntityIds.emplace_back(EntityId(createdHandle.getId(), sourceVersion));
 			}
 
 			while (*deserializer)
@@ -153,7 +157,7 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 					{
 						auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
 						if (poolDeserializer != nullptr && *poolDeserializer)
-							ms_componentsFactory.create(poolTag, pool, *poolDeserializer, *handleReplacementMap);
+							ms_componentsFactory.create(poolTag, pool, *poolDeserializer, sourceVersion);
 						else
 							Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
 					}, threadIt->second);
@@ -170,7 +174,13 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 
 void ComponentManager::save(const char * filename) const
 {
-	save(filename, std::make_shared<std::vector<Handle>>(m_handleManager.getUsed()));
+	auto allEntityIds = std::make_shared<std::vector<EntityId>>();
+	for (auto const & handleManager : m_handleManagers)
+	{
+		auto const & used = handleManager.getUsed();
+		std::copy(used.begin(), used.end(), std::back_inserter(*allEntityIds));
+	}
+	save(filename, allEntityIds);
 }
 
 // ----------------------------------------------------------------------------
@@ -242,7 +252,10 @@ void ComponentManager::removeAll(const EntityId entityId)
 			}, ms_poolThreads[pool.getComponentTag()]);
 	}
 
-	m_handleManager.free(entityId);
+	auto & handleManager = m_handleManagers[entityId.getVersion()];
+	handleManager.free(entityId);
+	if (handleManager.getUsedCount() == 0)
+		m_handleManagers.erase(m_handleManagers.begin() + entityId.getVersion());
 }
 
 // ----------------------------------------------------------------------------
@@ -262,7 +275,7 @@ void ComponentManager::clear()
 {
 	for (auto & pool : m_pools)
 		pool.clear();
-	m_handleManager.freeAll();
+	m_handleManagers.clear();
 }
 
 // ============================================================================

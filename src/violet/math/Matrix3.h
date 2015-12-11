@@ -50,6 +50,12 @@ namespace Violet
 	template <typename T>
 	Vec2<T> operator*(const Matrix3<T> & lhs, const Vec2<T> & rhs);
 
+	template <typename T>
+	bool operator==(const Matrix3<T> & lhs, const Matrix3<T> & rhs);
+
+	template <typename T>
+	bool operator!=(const Matrix3<T> & lhs, const Matrix3<T> & rhs);
+
 
 
 	template<typename T>
