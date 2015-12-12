@@ -116,7 +116,7 @@ std::pair<void *, bool>  ComponentPool::getLocation(const EntityId entityId)
 {
 	const auto lookupEntry = m_lookupMap.lower_bound(entityId);
 	bool const maxId = lookupEntry == m_lookupMap.end();
-	if (!maxId && lookupEntry->first.getId() == entityId.getId())
+	if (!maxId && lookupEntry->first == entityId)
 		return std::make_pair(&m_data[lookupEntry->second], true);
 
 	auto const componentIt = m_data.insert(m_data.begin() + (maxId ? getLastDataIndex() : lookupEntry->second), m_componentSize, 0);
