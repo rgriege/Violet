@@ -105,7 +105,7 @@ template <typename Handle>
 void Violet::HandleManager<Handle>::freeAll()
 {
 	m_usedList.clear();
-	m_recycleList.emplace();
+	m_recycleList = std::queue<typename Handle::StorageType>();
 }
 
 // ----------------------------------------------------------------------------

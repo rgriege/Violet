@@ -77,6 +77,7 @@ std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 
 ComponentManager::ComponentManager() :
 	m_handleManagers(),
+	m_handleManagerRecycleList(),
 	m_pools()
 {
 	for (auto const & entry : ms_poolThreads)
@@ -87,6 +88,7 @@ ComponentManager::ComponentManager() :
 
 ComponentManager::ComponentManager(ComponentManager && other) :
 	m_handleManagers(std::move(other.m_handleManagers)),
+	m_handleManagerRecycleList(std::move(other.m_handleManagerRecycleList)),
 	m_pools(std::move(other.m_pools))
 {
 }
@@ -96,6 +98,7 @@ ComponentManager::ComponentManager(ComponentManager && other) :
 ComponentManager & ComponentManager::operator=(ComponentManager && other)
 {
 	std::swap(m_handleManagers, other.m_handleManagers);
+	std::swap(m_handleManagerRecycleList, other.m_handleManagerRecycleList);
 	std::swap(m_pools, other.m_pools);
 	return *this;
 }
@@ -119,10 +122,19 @@ ComponentManager::~ComponentManager()
 
 std::vector<EntityId> ComponentManager::load(const char * const filename, const TagMap & tagMap)
 {
-	const uint32 sourceVersion = m_handleManagers.size();
+	uint32 sourceVersion;
+	if (!m_handleManagerRecycleList.empty())
+	{
+		sourceVersion = m_handleManagerRecycleList.back();
+		m_handleManagerRecycleList.pop_back();
+	}
+	else
+	{
+		sourceVersion = m_handleManagers.size();
+		m_handleManagers.emplace_back();
+	}
 	assert(sourceVersion < EntityId::MaxVersion);
-	m_handleManagers.emplace_back();
-	auto & handleManager = m_handleManagers.back();
+	auto & handleManager = m_handleManagers[sourceVersion];
 
 	std::vector<EntityId> loadedEntityIds;
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
@@ -255,7 +267,10 @@ void ComponentManager::removeAll(const EntityId entityId)
 	auto & handleManager = m_handleManagers[entityId.getVersion()];
 	handleManager.free(entityId);
 	if (handleManager.getUsedCount() == 0)
-		m_handleManagers.erase(m_handleManagers.begin() + entityId.getVersion());
+	{
+		handleManager.freeAll();
+		m_handleManagerRecycleList.emplace_back(entityId.getVersion());
+	}
 }
 
 // ----------------------------------------------------------------------------

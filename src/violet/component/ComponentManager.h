@@ -150,6 +150,7 @@ namespace Violet
 	private:
 
 		std::vector<HandleManager<EntityId>> m_handleManagers;
+		std::vector<uint32> m_handleManagerRecycleList;
 		std::vector<ComponentPool> m_pools;
 	};
 }
