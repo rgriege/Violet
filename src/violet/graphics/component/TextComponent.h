@@ -2,6 +2,7 @@
 #define VIOLET_TextComponent_H
 
 #include "violet/component/Component.h"
+#include "violet/graphics/Color.h"
 #include "violet/graphics/component/RenderComponentData.h"
 #include "violet/task/Thread.h"
 
@@ -35,6 +36,7 @@ namespace Violet
 
 		std::string m_text;
 		std::shared_ptr<Font> m_font;
+		Color m_color;
 	};
 
 	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, TextComponent & component);

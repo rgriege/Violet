@@ -152,10 +152,12 @@ void RenderSystemNamespace::draw(const WorldTransformComponent & transformCompon
 {
 	const Matrix3f & transform = transformComponent.m_transform;
 
+	const GLint colorAttrib = textComponent.m_shader->getUniformLocation("color");
 	const GLint modelAttrib = textComponent.m_shader->getUniformLocation("model");
 	const GLint viewAttribute = textComponent.m_shader->getUniformLocation("view");
 
 	const Guard<ShaderProgram> shaderGuard(*textComponent.m_shader);
+	glUniform4fv(colorAttrib, 1, textComponent.m_color.as4fv().data());
 	glUniformMatrix3fv(modelAttrib, 1, true, transform.data());
 	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
 

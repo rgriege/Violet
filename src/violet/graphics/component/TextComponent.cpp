@@ -30,11 +30,13 @@ TextComponent::TextComponent(const EntityId entityId, Deserializer & deserialize
 	ComponentBase<TextComponent>(entityId),
 	RenderComponentData(deserializer),
 	m_text(deserializer.getString("str")),
-	m_font()
+	m_font(),
+	m_color()
 {
 	const char * filename = deserializer.getString("font");
 	const uint32 size = deserializer.getUint("size");
 	m_font = Font::getCache().fetch(filename, size);
+	deserializer >> m_color;
 }
 
 // ----------------------------------------------------------------------------
@@ -43,7 +45,8 @@ TextComponent::TextComponent(TextComponent && other) :
 	ComponentBase<TextComponent>(std::move(other)),
 	RenderComponentData(std::move(other)),
 	m_text(std::move(other.m_text)),
-	m_font(std::move(other.m_font))
+	m_font(std::move(other.m_font)),
+	m_color(other.m_color)
 {
 }
 
@@ -56,6 +59,7 @@ Deserializer & Violet::operator>>(Deserializer & deserializer, TextComponent & c
 	const char * filename = deserializer.getString("font");
 	const uint32 size = deserializer.getUint("size");
 	component.m_font = Font::getCache().fetch(filename, size);
+	deserializer >> component.m_color;
 	return deserializer;
 }
 
@@ -67,6 +71,7 @@ Serializer & Violet::operator<<(Serializer & serializer, const TextComponent & c
 	serializer.writeString("str", component.m_text.c_str());
 	serializer.writeString("font", component.m_font->getFilename());
 	serializer.writeUint("size", component.m_font->getSize());
+	serializer << component.m_color;
 	return serializer;
 }
 
