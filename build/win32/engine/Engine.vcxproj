@@ -162,6 +162,7 @@
     <ClInclude Include="..\..\..\src\violet\serialization\Serializer.h" />
     <ClInclude Include="..\..\..\src\violet\structures\CrsGraph.h" />
     <ClInclude Include="..\..\..\src\violet\structures\QuadTree.h" />
+    <ClInclude Include="..\..\..\src\violet\structures\Vector.h" />
     <ClInclude Include="..\..\..\src\violet\system\System.h" />
     <ClInclude Include="..\..\..\src\violet\system\SystemFactory.h" />
     <ClInclude Include="..\..\..\src\violet\task\Task.h" />
@@ -311,6 +312,7 @@
     <None Include="..\..\..\src\violet\serialization\file\FileSerializer.inl" />
     <None Include="..\..\..\src\violet\serialization\SerializationUtilities.inl" />
     <None Include="..\..\..\src\violet\structures\CrsGraph.inl" />
+    <None Include="..\..\..\src\violet\structures\Vector.inl" />
     <None Include="..\..\..\src\violet\utility\lent_ptr.inl" />
     <None Include="..\..\..\src\violet\utility\shared_val.inl" />
     <None Include="..\..\..\src\violet\utility\unique_val.inl" />

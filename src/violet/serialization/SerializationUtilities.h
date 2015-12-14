@@ -3,8 +3,7 @@
 
 #include "violet/serialization/Deserializer.h"
 #include "violet/serialization/Serializer.h"
-
-#include <vector>
+#include "violet/structures/Vector.h"
 
 namespace Violet
 {
@@ -13,10 +12,10 @@ namespace Violet
 	public:
 
 		template <typename T>
-		static std::vector<T> deserializeElements(Deserializer & deserializer);
+		static Vector<T> deserializeElements(Deserializer & deserializer);
 
 		template <typename T>
-		static void serializeElements(Serializer & serializer, const std::vector<T> & elements);
+		static void serializeElements(Serializer & serializer, const Vector<T> & elements);
 	};
 }
 

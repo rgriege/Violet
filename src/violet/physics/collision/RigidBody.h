@@ -5,6 +5,8 @@
 #include "violet/math/Polygon.h"
 #include "violet/math/Vec2.h"
 
+#include <vector>
+
 namespace Violet
 {
 	class WorldTransformComponent;

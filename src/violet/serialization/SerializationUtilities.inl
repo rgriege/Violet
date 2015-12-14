@@ -7,9 +7,9 @@ namespace Violet
 		template <typename T>
 		struct VectorDeserializer
 		{
-			static std::vector<T> run(Deserializer & deserializer, const uint32 elementCount)
+			static Vector<T> run(Deserializer & deserializer, const uint32 elementCount)
 			{
-				std::vector<T> elements;
+				Vector<T> elements;
 				elements.reserve(elementCount);
 				for (uint32 i = 0; i < elementCount; ++i)
 					elements.emplace_back(deserializer);
@@ -20,9 +20,9 @@ namespace Violet
 		template <>
 		struct VectorDeserializer<std::string>
 		{
-			static std::vector<std::string> run(Deserializer & deserializer, const uint32 elementCount)
+			static Vector<std::string> run(Deserializer & deserializer, const uint32 elementCount)
 			{
-				std::vector<std::string> elements;
+				Vector<std::string> elements;
 				elements.reserve(elementCount);
 				for (uint32 i = 0; i < elementCount; ++i)
 					elements.emplace_back(deserializer.getString("str"));
@@ -35,7 +35,7 @@ namespace Violet
 // ============================================================================
 
 template <typename T>
-std::vector<T> Violet::SerializationUtilities::deserializeElements(Deserializer & deserializer)
+Violet::Vector<T> Violet::SerializationUtilities::deserializeElements(Deserializer & deserializer)
 {
 	return detail::VectorDeserializer<T>::run(deserializer, deserializer.getUint("n"));
 }
@@ -43,7 +43,7 @@ std::vector<T> Violet::SerializationUtilities::deserializeElements(Deserializer 
 // ----------------------------------------------------------------------------
 
 template <typename T>
-void Violet::SerializationUtilities::serializeElements(Serializer & serializer, const std::vector<T> & elements)
+void Violet::SerializationUtilities::serializeElements(Serializer & serializer, const Vector<T> & elements)
 {
 	serializer.writeUint("n", elements.size());
 	for (auto const & element : elements)

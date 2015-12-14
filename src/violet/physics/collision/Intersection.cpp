@@ -14,7 +14,7 @@ namespace IntersectionNamespace
 	const float ms_impactTimeDiffThreshold = 0.01f;
 	const float ms_overlapThreshold = 0.2f;
 
-	void getEdgePerpendiculars(const std::vector<Vec2f> & vertices, std::vector<Vec2f> & perpendiculars);
+	void getEdgePerpendiculars(const Vector<Vec2f> & vertices, std::vector<Vec2f> & perpendiculars);
 }
 
 using namespace IntersectionNamespace;
@@ -293,7 +293,7 @@ Vec2f Intersection::findImpactVector() const
 
 // ============================================================================
 
-void IntersectionNamespace::getEdgePerpendiculars(const std::vector<Vec2f> & vertices, std::vector<Vec2f> & perpendiculars)
+void IntersectionNamespace::getEdgePerpendiculars(const Vector<Vec2f> & vertices, std::vector<Vec2f> & perpendiculars)
 {
 	perpendiculars.emplace_back((vertices.front() - vertices.back()).perpendicular());
 	for (uint32 i = 1, end = vertices.size(); i < end; ++i)

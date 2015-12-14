@@ -19,7 +19,7 @@ using namespace PolygonNamespace;
 
 // ============================================================================
 
-Polygon::Polygon(std::vector<Vec2f> && vertices) :
+Polygon::Polygon(Vector<Vec2f> && vertices) :
 	m_vertices(std::move(vertices))
 {
 }

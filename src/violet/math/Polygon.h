@@ -1,10 +1,9 @@
 #ifndef VIOLET_Polygon_H
 #define VIOLET_Polygon_H
 
-#include <vector>
-
 #include "violet/math/Vec2.h"
 #include "violet/math/AABB.h"
+#include "violet/structures/Vector.h"
 
 namespace Violet
 {
@@ -12,11 +11,11 @@ namespace Violet
 	{
 	public:
 
-		typedef std::vector<Vec2f> Vertices;
+		typedef Vector<Vec2f> Vertices;
 
 	public:
 
-		explicit Polygon(std::vector<Vec2f> && vertices);
+		explicit Polygon(Vector<Vec2f> && vertices);
 		explicit Polygon(Deserializer & deserializer);
 		Polygon(const Polygon & rhs);
 		Polygon(Polygon && rhs);

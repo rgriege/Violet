@@ -3,8 +3,7 @@
 
 #include "violet/Defines.h"
 #include "violet/math/Vec2.h"
-
-#include <vector>
+#include "violet/structures/Vector.h"
 
 namespace Violet
 {
@@ -21,7 +20,7 @@ namespace Violet
 
 	public:
 
-		explicit Mesh(std::vector<Vec2f> && vertices);
+		explicit Mesh(Vector<Vec2f> && vertices);
 		explicit Mesh(const Polygon & poly);
 		explicit Mesh(Deserializer & deserializer);
 		explicit Mesh(const Mesh & other);

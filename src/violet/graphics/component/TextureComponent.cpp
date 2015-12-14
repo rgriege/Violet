@@ -18,7 +18,7 @@ using namespace Violet;
 
 namespace TextureComponentNamespace
 {
-	std::vector<Vec2f> createTexCoordsFromMesh(const Mesh & mesh);
+	Vector<Vec2f> createTexCoordsFromMesh(const Mesh & mesh);
 }
 
 using namespace TextureComponentNamespace;
@@ -100,7 +100,7 @@ Serializer & Violet::operator<<(Serializer & serializer, const TextureComponent 
 
 // ============================================================================
 
-std::vector<Vec2f> TextureComponentNamespace::createTexCoordsFromMesh(const Mesh & mesh)
+Vector<Vec2f> TextureComponentNamespace::createTexCoordsFromMesh(const Mesh & mesh)
 {
 	AABB extent;
 	const auto polygon = mesh.getPolygon();
@@ -109,7 +109,7 @@ std::vector<Vec2f> TextureComponentNamespace::createTexCoordsFromMesh(const Mesh
 	extent.translate(-extent.getMinimum());
 	const auto & max = extent.getMaximum();
 
-	std::vector<Vec2f> result;
+	Vector<Vec2f> result;
 	result.reserve(polygon.m_vertices.size());
 	for (const auto & vertex : polygon.m_vertices)
 		result.emplace_back(Vec2f(vertex.x / max.x, vertex.y / max.y));

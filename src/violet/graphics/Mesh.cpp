@@ -33,7 +33,7 @@ void Mesh::unbind()
 
 // ============================================================================
 
-Mesh::Mesh(std::vector<Vec2f> && vertices) :
+Mesh::Mesh(Vector<Vec2f> && vertices) :
 	Mesh(Polygon(std::move(vertices)))
 {
 }
@@ -92,7 +92,7 @@ Mesh::~Mesh()
 
 Polygon Mesh::getPolygon() const
 {
-	std::vector<Vec2f> vertices;
+	Vector<Vec2f> vertices;
 	vertices.resize(m_size);
 	Mesh::bind(*this);
 	glGetBufferSubData(GL_ARRAY_BUFFER, 0, m_size * sizeof(Vec2f), vertices.data());

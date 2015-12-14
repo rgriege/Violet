@@ -452,6 +452,9 @@
     <ClInclude Include="..\..\..\src\violet\handle\VersionedHandleManager.h">
       <Filter>handle</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\structures\Vector.h">
+      <Filter>structures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -703,6 +706,9 @@
     </None>
     <None Include="..\..\..\src\violet\handle\VersionedHandleManager.inl">
       <Filter>handle</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\structures\Vector.inl">
+      <Filter>structures</Filter>
     </None>
   </ItemGroup>
 </Project>
