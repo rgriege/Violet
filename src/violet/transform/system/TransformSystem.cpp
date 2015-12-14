@@ -78,12 +78,15 @@ void TransformSystem::update(const float /*dt*/)
 		else
 		{
 			const Matrix3f & parentWorldTransform = m_entityWorldTransformCache[localTransformComponent.m_parentId];
-			m_entityWorldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
-			engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
-				[=](ComponentPool & pool)
-				{
-					pool.get<WorldTransformComponent>(entityId)->m_transform = m_entityWorldTransformCache[entityId];
-				});
+			const Matrix3f & worldTransform = m_entityWorldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
+			if (worldTransformComponent.m_transform != worldTransform)
+			{
+				engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
+					[=](ComponentPool & pool)
+					{
+						pool.get<WorldTransformComponent>(entityId)->m_transform = m_entityWorldTransformCache[entityId];
+					});
+			}
 		}
 	}
 }
