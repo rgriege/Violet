@@ -2,7 +2,7 @@
 
 #include "violet/physics/component/PhysicsComponent.h"
 
-#include "violet/serialization/Deserializer.h"
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/serialization/Serializer.h"
 
 using namespace Violet;
@@ -15,7 +15,7 @@ namespace PhysicsComponentNamespace
 	const char * const ms_velocityLabel = "vel";
 
 	float calculateMomentOfInertia(const Polygon & polygon, float mass);
-	Deserializer & deserializeAllButPolygon(Deserializer & deserializer, PhysicsComponent & component);
+	ComponentDeserializer & deserializeAllButPolygon(ComponentDeserializer & deserializer, PhysicsComponent & component);
 }
 
 using namespace PhysicsComponentNamespace;
@@ -36,7 +36,7 @@ Thread PhysicsComponent::getStaticThread()
 
 // ============================================================================
 
-PhysicsComponent::PhysicsComponent(const EntityId entityId, Deserializer & deserializer) :
+PhysicsComponent::PhysicsComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
 	ComponentBase<PhysicsComponent>(entityId),
 	m_polygon(deserializer),
 	m_mass(),
@@ -65,7 +65,7 @@ PhysicsComponent::PhysicsComponent(PhysicsComponent && other) :
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, PhysicsComponent & component)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, PhysicsComponent & component)
 {
 	deserializer >> component.m_polygon;
 	return deserializeAllButPolygon(deserializer, component);
@@ -106,7 +106,7 @@ float PhysicsComponentNamespace::calculateMomentOfInertia(const Polygon & polygo
 
 // ----------------------------------------------------------------------------
 
-Deserializer & PhysicsComponentNamespace::deserializeAllButPolygon(Deserializer & deserializer, PhysicsComponent & component)
+ComponentDeserializer & PhysicsComponentNamespace::deserializeAllButPolygon(ComponentDeserializer & deserializer, PhysicsComponent & component)
 {
 	component.m_mass = deserializer.getFloat(ms_massLabel);
 	{

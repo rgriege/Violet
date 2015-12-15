@@ -2,6 +2,7 @@
 
 #include "violet/input/component/MouseInputComponent.h"
 
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/serialization/Serializer.h"
 
 using namespace Violet;
@@ -22,7 +23,7 @@ Thread MouseInputComponent::getStaticThread()
 
 // ============================================================================
 
-MouseInputComponent::MouseInputComponent(const EntityId entityId, Deserializer & deserializer) :
+MouseInputComponent::MouseInputComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
 	ComponentBase<MouseInputComponent>(entityId),
 	m_mesh(deserializer)
 {
@@ -53,9 +54,10 @@ Serializer & Violet::operator<<(Serializer & serializer, const MouseInputCompone
 
 // ----------------------------------------------------------------------------
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, MouseInputComponent & component)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, MouseInputComponent & component)
 {
-	return deserializer >> component.m_mesh;
+	deserializer >> component.m_mesh;
+	return deserializer;
 }
 
 // ============================================================================

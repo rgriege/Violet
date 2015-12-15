@@ -25,7 +25,7 @@ namespace Violet
 
 	private:
 
-		HandleManager m_manager;
+		HandleManager<Handle> m_manager;
 		std::vector<typename Handle::StorageType> m_versions;
 	};
 }

@@ -2,8 +2,7 @@
 
 #include "violet/graphics/component/TextComponent.h"
 
-#include "violet/Engine.h"
-#include "violet/serialization/Deserializer.h"
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/serialization/Serializer.h"
 #include "violet/graphics/font/Font.h"
 #include "violet/graphics/shader/Shader.h"
@@ -26,7 +25,7 @@ Thread TextComponent::getStaticThread()
 
 // ============================================================================
 
-TextComponent::TextComponent(const EntityId entityId, Deserializer & deserializer) :
+TextComponent::TextComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
 	ComponentBase<TextComponent>(entityId),
 	RenderComponentData(deserializer),
 	m_text(deserializer.getString("str")),
@@ -52,7 +51,7 @@ TextComponent::TextComponent(TextComponent && other) :
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, TextComponent & component)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, TextComponent & component)
 {
 	operator>>(deserializer, static_cast<RenderComponentData &>(component));
 	component.m_text = deserializer.getString("str");

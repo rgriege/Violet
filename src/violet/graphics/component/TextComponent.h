@@ -11,7 +11,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 	class Font;
 	class Serializer;
 
@@ -24,7 +24,7 @@ namespace Violet
 
 	public:
 
-		TextComponent(EntityId entityId, Deserializer & deserializer);
+		TextComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		TextComponent(TextComponent && other);
 
 	private:
@@ -39,7 +39,7 @@ namespace Violet
 		Color m_color;
 	};
 
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, TextComponent & component);
+	VIOLET_API ComponentDeserializer & operator>>(ComponentDeserializer & deserializer, TextComponent & component);
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const TextComponent & component);
 }
 

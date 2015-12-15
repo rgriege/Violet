@@ -1,6 +1,6 @@
 // ============================================================================
 
-#include "violet/serialization/Deserializer.h"
+#include "violet/component/ComponentDeserializer.h"
 
 #include <assert.h>
 
@@ -75,14 +75,11 @@ Violet::ComponentPool Violet::ComponentPool::create()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentPool::load(Deserializer & deserializer, const EntityId::StorageType version)
+void Violet::ComponentPool::load(ComponentDeserializer & deserializer)
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
 	while (deserializer)
-	{
-		const uint32 id = deserializer.getUint("id");
-		create<ComponentType>(EntityId(id, version), deserializer);
-	}
+		create<ComponentType>(deserializer.getEntityId("id"), deserializer);
 }
 
 // ----------------------------------------------------------------------------

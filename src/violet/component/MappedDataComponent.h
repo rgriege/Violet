@@ -8,7 +8,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 
 	class VIOLET_API MappedDataComponent : public ComponentBase<MappedDataComponent>
 	{
@@ -20,7 +20,7 @@ namespace Violet
 	public:
 
 		MappedDataComponent(EntityId entityId);
-		MappedDataComponent(EntityId entityId, Deserializer & deserializer);
+		MappedDataComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		MappedDataComponent(MappedDataComponent && other);
 
 	public:

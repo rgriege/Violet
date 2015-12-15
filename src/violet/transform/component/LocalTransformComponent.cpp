@@ -2,6 +2,7 @@
 
 #include "violet/transform/component/LocalTransformComponent.h"
 
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/serialization/Serializer.h"
 
 using namespace Violet;
@@ -22,7 +23,7 @@ Thread LocalTransformComponent::getStaticThread()
 
 // ============================================================================
 
-LocalTransformComponent::LocalTransformComponent(const EntityId entityId, Deserializer & deserializer) :
+LocalTransformComponent::LocalTransformComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
 	LocalTransformComponent(entityId, EntityId::ms_invalid, Matrix3f::Identity)
 {
 	deserializer >> *this;
@@ -48,10 +49,11 @@ LocalTransformComponent::LocalTransformComponent(LocalTransformComponent && othe
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, LocalTransformComponent & component)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, LocalTransformComponent & component)
 {
-	component.m_parentId = EntityId(deserializer.getUint("parentId"), component.getEntityId().getVersion());
-	return deserializer >> component.m_transform;
+	component.m_parentId = deserializer.getEntityId("parentId");
+	deserializer >> component.m_transform;
+	return deserializer;
 }
 
 // ----------------------------------------------------------------------------

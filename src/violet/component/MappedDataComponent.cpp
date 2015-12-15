@@ -2,7 +2,7 @@
 
 #include "violet/component/MappedDataComponent.h"
 
-#include "violet/serialization/Deserializer.h"
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/serialization/Serializer.h"
 
 using namespace Violet;
@@ -31,7 +31,7 @@ MappedDataComponent::MappedDataComponent(const EntityId entityId) :
 
 // ----------------------------------------------------------------------------
 
-MappedDataComponent::MappedDataComponent(const EntityId entityId, Deserializer & deserializer) :
+MappedDataComponent::MappedDataComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
 	ComponentBase<MappedDataComponent>(entityId),
 	m_data()
 {

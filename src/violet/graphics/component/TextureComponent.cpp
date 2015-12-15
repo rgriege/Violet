@@ -2,11 +2,10 @@
 
 #include "violet/graphics/component/TextureComponent.h"
 
-#include "violet/Engine.h"
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/graphics/shader/Shader.h"
 #include "violet/math/AABB.h"
 #include "violet/math/Polygon.h"
-#include "violet/serialization/Deserializer.h"
 #include "violet/serialization/Serializer.h"
 #include "violet/utility/Guard.h"
 
@@ -39,7 +38,7 @@ Thread TextureComponent::getStaticThread()
 
 // ============================================================================
 
-TextureComponent::TextureComponent(const EntityId entityId, Deserializer & deserializer) :
+TextureComponent::TextureComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
 	ComponentBase<TextureComponent>(entityId),
 	RenderComponentData(deserializer),
 	m_texture(Texture::getCache().fetch(deserializer.getString("texture"))),
@@ -82,7 +81,7 @@ TextureComponent::~TextureComponent()
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, TextureComponent & component)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, TextureComponent & component)
 {
 	operator>>(deserializer, static_cast<RenderComponentData &>(component));
 	component.m_texture = Texture::getCache().fetch(deserializer.getString("texture"));

@@ -3,6 +3,7 @@
 #include "violet/component/ComponentManager.h"
 
 #include "violet/Engine.h"
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/handle/HandleManager.h"
 #include "violet/log/Log.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
@@ -76,7 +77,7 @@ std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 // ============================================================================
 
 ComponentManager::ComponentManager() :
-	m_handleManagers(),
+	m_handleManager(),
 	m_handleManagerRecycleList(),
 	m_pools()
 {
@@ -87,7 +88,7 @@ ComponentManager::ComponentManager() :
 // ----------------------------------------------------------------------------
 
 ComponentManager::ComponentManager(ComponentManager && other) :
-	m_handleManagers(std::move(other.m_handleManagers)),
+	m_handleManager(std::move(other.m_handleManager)),
 	m_handleManagerRecycleList(std::move(other.m_handleManagerRecycleList)),
 	m_pools(std::move(other.m_pools))
 {
@@ -97,7 +98,7 @@ ComponentManager::ComponentManager(ComponentManager && other) :
 
 ComponentManager & ComponentManager::operator=(ComponentManager && other)
 {
-	std::swap(m_handleManagers, other.m_handleManagers);
+	std::swap(m_handleManager, other.m_handleManager);
 	std::swap(m_handleManagerRecycleList, other.m_handleManagerRecycleList);
 	std::swap(m_pools, other.m_pools);
 	return *this;
@@ -122,20 +123,6 @@ ComponentManager::~ComponentManager()
 
 std::vector<EntityId> ComponentManager::load(const char * const filename, const TagMap & tagMap)
 {
-	uint32 sourceVersion;
-	if (!m_handleManagerRecycleList.empty())
-	{
-		sourceVersion = m_handleManagerRecycleList.back();
-		m_handleManagerRecycleList.pop_back();
-	}
-	else
-	{
-		sourceVersion = m_handleManagers.size();
-		m_handleManagers.emplace_back();
-	}
-	assert(sourceVersion < EntityId::MaxVersion);
-	auto & handleManager = m_handleManagers[sourceVersion];
-
 	std::vector<EntityId> loadedEntityIds;
 	auto deserializer = FileDeserializerFactory::getInstance().create(filename);
 	if (deserializer == nullptr)
@@ -144,6 +131,7 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 		Log::log(FormattedString<128>().sprintf("Failed to parse scene file '%s'", filename));
 	else
 	{
+		auto handleIdMap = std::make_shared<std::unordered_map<uint32, EntityId>>();
 		const std::string idFileName = deserializer->getString("idFile");
 		auto idFileDeserializer = FileDeserializerFactory::getInstance().create(idFileName.c_str());
 		if (idFileDeserializer != nullptr && *idFileDeserializer)
@@ -151,9 +139,10 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 			while (*idFileDeserializer)
 			{
 				const uint32 desiredId = idFileDeserializer->getUint("id");
-				const EntityId createdHandle = handleManager.create(desiredId);
-				assert(createdHandle.getId() == desiredId);
-				loadedEntityIds.emplace_back(EntityId(createdHandle.getId(), sourceVersion));
+				const EntityId createdHandle = m_handleManager.create(desiredId);
+				if (createdHandle.getId() != desiredId)
+					(*handleIdMap)[desiredId] = createdHandle;
+				loadedEntityIds.emplace_back(createdHandle);
 			}
 
 			while (*deserializer)
@@ -169,7 +158,7 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 					{
 						auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
 						if (poolDeserializer != nullptr && *poolDeserializer)
-							ms_componentsFactory.create(poolTag, pool, *poolDeserializer, sourceVersion);
+							ms_componentsFactory.create(poolTag, pool, ComponentDeserializer(std::move(poolDeserializer), handleIdMap));
 						else
 							Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
 					}, threadIt->second);
@@ -186,20 +175,14 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 
 void ComponentManager::save(const char * filename) const
 {
-	auto allEntityIds = std::make_shared<std::vector<EntityId>>();
-	for (auto const & handleManager : m_handleManagers)
-	{
-		auto const & used = handleManager.getUsed();
-		std::copy(used.begin(), used.end(), std::back_inserter(*allEntityIds));
-	}
-	save(filename, allEntityIds);
+	save(filename, std::move(m_handleManager.getUsed()));
 }
 
 // ----------------------------------------------------------------------------
 
-void ComponentManager::save(const char * filename, const std::shared_ptr<std::vector<EntityId>> & entityIds, const TagMap & tagMap) const
+void ComponentManager::save(const char * filename, std::vector<EntityId> entityIds, const TagMap & tagMap) const
 {
-	Log::log(FormattedString<32>().sprintf("saving %d entities", entityIds->size()));
+	Log::log(FormattedString<32>().sprintf("saving %d entities", entityIds.size()));
 	auto serializer = FileSerializerFactory::getInstance().create(filename);
 	if (serializer == nullptr)
 		Log::log(FormattedString<128>().sprintf("Could not save scene file '%s'", filename));
@@ -211,10 +194,11 @@ void ComponentManager::save(const char * filename, const std::shared_ptr<std::ve
 		auto idFileSerializer = FileSerializerFactory::getInstance().create(idFileName.c_str());
 		if (idFileSerializer != nullptr)
 		{
-			for (const auto & entityId : *entityIds)
+			for (const auto & entityId : entityIds)
 				idFileSerializer->writeUint("id", entityId.getId());
 			idFileSerializer.reset();
 
+			auto sharedEntityIds = std::make_shared<std::vector<EntityId>>(std::move(entityIds));
 			std::shared_ptr<SceneFileSaver> sceneFileSaver = std::make_shared<SceneFileSaver>(std::move(serializer));
 			for (const auto & pool : m_pools)
 			{
@@ -227,12 +211,12 @@ void ComponentManager::save(const char * filename, const std::shared_ptr<std::ve
 					StringUtilities::replace(poolFileName, ".", std::string(".") + poolTag.asString() + ".");
 
 					Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
-						[&pool, poolTag, poolFileName, entityIds, sceneFileSaver]()
+						[&pool, poolTag, poolFileName, sharedEntityIds, sceneFileSaver]()
 						{
 							auto poolSerializer = FileSerializerFactory::getInstance().create(poolFileName.c_str());
 							if (poolSerializer != nullptr)
 							{
-								const uint32 count = ms_saveFactory.create(pool.getComponentTag(), pool, *poolSerializer, *entityIds);
+								const uint32 count = ms_saveFactory.create(pool.getComponentTag(), pool, *poolSerializer, *sharedEntityIds);
 								sceneFileSaver->onPoolSaved(poolTag, poolFileName, count);
 								if (count == 0)
 								{
@@ -264,13 +248,7 @@ void ComponentManager::removeAll(const EntityId entityId)
 			}, ms_poolThreads[pool.getComponentTag()]);
 	}
 
-	auto & handleManager = m_handleManagers[entityId.getVersion()];
-	handleManager.free(entityId);
-	if (handleManager.getUsedCount() == 0)
-	{
-		handleManager.freeAll();
-		m_handleManagerRecycleList.emplace_back(entityId.getVersion());
-	}
+	m_handleManager.free(entityId);
 }
 
 // ----------------------------------------------------------------------------
@@ -290,7 +268,7 @@ void ComponentManager::clear()
 {
 	for (auto & pool : m_pools)
 		pool.clear();
-	m_handleManagers.clear();
+	m_handleManager.freeAll();
 }
 
 // ============================================================================

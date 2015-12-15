@@ -9,7 +9,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 	class Serializer;
 
 	class VIOLET_API ComponentPool
@@ -60,7 +60,7 @@ namespace Violet
 		Tag getComponentTag() const;
 
 		template <typename ComponentType>
-		void load(Deserializer & deserializer, EntityId::StorageType version);
+		void load(ComponentDeserializer & deserializer);
 		template <typename ComponentType>
 		void save(Serializer & serailizer) const;
 		template <typename ComponentType>

@@ -30,7 +30,7 @@ public:
 
     Instance(CppScript & script) :
         CppScript::Instance(script),
-        m_entityIds(std::make_shared<std::vector<EntityId>>())
+        m_entityIds()
     {
         using namespace std::placeholders;
         KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
@@ -72,7 +72,7 @@ private:
                     break;
 
                 case 'c':
-                    for (const EntityId entityId : *m_entityIds)
+                    for (const EntityId entityId : m_entityIds)
                         Engine::getInstance().getCurrentScene().removeAll(entityId);
                     break;
             }
@@ -100,7 +100,7 @@ private:
     void onQuit()
     {
         const auto & engine = Engine::getInstance();
-        for (auto const entityId : *m_entityIds)
+        for (auto const entityId : m_entityIds)
         {
             engine.addWriteTask(*engine.getCurrentScene().getPool<ScriptComponent>(),
                 [=](ComponentPool & pool)
@@ -123,7 +123,7 @@ private:
                 auto entityIds = scene.load(fileName.c_str(), ms_tagMap);
                 for (const auto entityId : entityIds)
                     addEditBehavior(scene, entityId);
-                std::copy(entityIds.begin(), entityIds.end(), std::back_inserter(*m_entityIds));
+                std::copy(entityIds.begin(), entityIds.end(), std::back_inserter(m_entityIds));
             });
     }
 
@@ -168,7 +168,7 @@ private:
     };
 
     Dialog m_dialog = None;
-    std::shared_ptr<std::vector<EntityId>> m_entityIds;
+    std::vector<EntityId> m_entityIds;
 };
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)

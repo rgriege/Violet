@@ -2,7 +2,6 @@
 
 #include "violet/update/component/UpdateComponent.h"
 
-#include "violet/serialization/Deserializer.h"
 #include "violet/serialization/Serializer.h"
 
 using namespace Violet;
@@ -30,7 +29,7 @@ UpdateComponent::UpdateComponent(const EntityId entityId) :
 
 // ----------------------------------------------------------------------------
 
-UpdateComponent::UpdateComponent(const EntityId entityId, Deserializer & /*deserializer*/) :
+UpdateComponent::UpdateComponent(const EntityId entityId, ComponentDeserializer & /*deserializer*/) :
 	ComponentBase<UpdateComponent>(entityId)
 {
 }
@@ -44,7 +43,7 @@ UpdateComponent::UpdateComponent(UpdateComponent && other) :
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, UpdateComponent & /*component*/)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, UpdateComponent & /*component*/)
 {
 	return deserializer;
 }

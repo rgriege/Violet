@@ -2,8 +2,8 @@
 
 #include "violet/graphics/component/ColorComponent.h"
 
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/graphics/shader/Shader.h"
-#include "violet/serialization/Deserializer.h"
 #include "violet/serialization/Serializer.h"
 
 using namespace Violet;
@@ -24,7 +24,7 @@ Thread ColorComponent::getStaticThread()
 
 // ============================================================================
 
-ColorComponent::ColorComponent(const EntityId entityId, Deserializer & deserializer) :
+ColorComponent::ColorComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
 	ComponentBase<ColorComponent>(entityId),
 	RenderComponentData(deserializer),
 	m_color(deserializer)
@@ -52,7 +52,7 @@ ColorComponent::ColorComponent(ColorComponent && other) :
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, ColorComponent & component)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, ColorComponent & component)
 {
 	operator>>(deserializer, static_cast<RenderComponentData &>(component));
 	deserializer >> component.m_color;

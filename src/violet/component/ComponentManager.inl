@@ -210,9 +210,9 @@ static Violet::ComponentPool Violet::ComponentManager::createPool()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentManager::createComponents(ComponentPool & pool, Deserializer & deserializer, const EntityId::StorageType version)
+void Violet::ComponentManager::createComponents(ComponentPool & pool, ComponentDeserializer & deserializer)
 {
-	pool.load<ComponentType>(deserializer, version);
+	pool.load<ComponentType>(deserializer);
 }
 
 // ----------------------------------------------------------------------------

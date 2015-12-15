@@ -455,6 +455,9 @@
     <ClInclude Include="..\..\..\src\violet\structures\Vector.h">
       <Filter>structures</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\component\ComponentDeserializer.h">
+      <Filter>component</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -654,6 +657,9 @@
       <Filter>task</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\component\ComponentPool.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\component\ComponentDeserializer.cpp">
       <Filter>component</Filter>
     </ClCompile>
   </ItemGroup>

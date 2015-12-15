@@ -52,7 +52,7 @@ Handle Violet::VersionedHandleManager<Handle>::create(const typename Handle::Sto
 	const Handle handle = m_manager.create(desiredId);
 	if (handle.getId() >= m_versions.size())
 		m_versions.resize(handle.getId() + 1);
-	return Handle(handle.getId(), m_version[handle.getId()]);
+	return Handle(handle.getId(), m_versions[handle.getId()]);
 }
 
 // ----------------------------------------------------------------------------
@@ -80,7 +80,7 @@ std::vector<Handle> Violet::VersionedHandleManager<Handle>::getUsed() const
 {
 	std::vector<Handle> result = m_manager.getUsed();
 	for (auto & handle : result)
-		result = Handle(handle.getId(), m_versions[handle.getId()]);
+		handle = Handle(handle.getId(), m_versions[handle.getId()]);
 	return result;
 }
 

@@ -6,7 +6,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 	class Serializer;
 
 	class VIOLET_API KeyInputComponent : public ComponentBase<KeyInputComponent>
@@ -19,12 +19,12 @@ namespace Violet
 	public:
 
 		KeyInputComponent(EntityId entityId);
-		KeyInputComponent(EntityId entityId, Deserializer & deserializer);
+		KeyInputComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		KeyInputComponent(KeyInputComponent && other);
 	};
 
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const KeyInputComponent & component);
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, KeyInputComponent & component);
+	VIOLET_API ComponentDeserializer & operator>>(ComponentDeserializer & deserializer, KeyInputComponent & component);
 }
 
 #endif

@@ -5,12 +5,10 @@
 #include "violet/math/Polygon.h"
 #include "violet/task/Thread.h"
 
-#include <functional>
-
 namespace Violet
 {
 	class AlterContext;
-	class Deserializer;
+	class ComponentDeserializer;
 	class Serializer;
 
 	class VIOLET_API MouseInputComponent : public ComponentBase<MouseInputComponent>
@@ -22,7 +20,7 @@ namespace Violet
 
 	public:
 
-		MouseInputComponent(EntityId entityId, Deserializer & deserializer);
+		MouseInputComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		MouseInputComponent(EntityId entityId, Polygon && mesh);
 		MouseInputComponent(MouseInputComponent && other);
 
@@ -32,7 +30,7 @@ namespace Violet
 	};
 
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const MouseInputComponent & component);
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, MouseInputComponent & component);
+	VIOLET_API ComponentDeserializer & operator>>(ComponentDeserializer & deserializer, MouseInputComponent & component);
 }
 
 #endif

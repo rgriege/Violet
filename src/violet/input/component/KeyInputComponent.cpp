@@ -29,7 +29,7 @@ KeyInputComponent::KeyInputComponent(const EntityId entityId) :
 
 // ----------------------------------------------------------------------------
 
-KeyInputComponent::KeyInputComponent(const EntityId entityId, Deserializer & deserializer) :
+KeyInputComponent::KeyInputComponent(const EntityId entityId, ComponentDeserializer & /*deserializer*/) :
 	KeyInputComponent(entityId)
 {
 }
@@ -50,7 +50,7 @@ Serializer & Violet::operator<<(Serializer & serializer, const KeyInputComponent
 
 // ----------------------------------------------------------------------------
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, KeyInputComponent & component)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, KeyInputComponent & component)
 {
 	return deserializer;
 }

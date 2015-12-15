@@ -21,7 +21,7 @@ public:
 
 public:
 
-    EditorComponentWrapper(const EntityId entityId, Deserializer & deserializer) :
+    EditorComponentWrapper(const EntityId entityId, ComponentDeserializer & deserializer) :
         ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
         m_data(entityId, deserializer)
     {

@@ -8,7 +8,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 	class Serializer;
 
 	class VIOLET_API LocalTransformComponent : public ComponentBase<LocalTransformComponent>
@@ -20,7 +20,7 @@ namespace Violet
 
 	public:
 
-		LocalTransformComponent(EntityId entityId, Deserializer & deserializer);
+		LocalTransformComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		LocalTransformComponent(EntityId entityId, EntityId parentId, const Matrix3f & transform);
 		LocalTransformComponent(LocalTransformComponent && other);
 
@@ -30,7 +30,7 @@ namespace Violet
 		Matrix3f m_transform;
 	};
 
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, LocalTransformComponent & component);
+	VIOLET_API ComponentDeserializer & operator>>(ComponentDeserializer & deserializer, LocalTransformComponent & component);
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const LocalTransformComponent & component);
 }
 

@@ -8,7 +8,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 	class Serializer;
 
 	class VIOLET_API WorldTransformComponent : public ComponentBase<WorldTransformComponent>
@@ -21,7 +21,7 @@ namespace Violet
 	public:
 
 		WorldTransformComponent(EntityId entityId);
-		WorldTransformComponent(EntityId entityId, Deserializer & deserializer);
+		WorldTransformComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		WorldTransformComponent(EntityId entityId, const Matrix3f & transform);
 		WorldTransformComponent(WorldTransformComponent && other);
 
@@ -30,7 +30,7 @@ namespace Violet
 		Matrix3f m_transform;
 	};
 
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, WorldTransformComponent & component);
+	VIOLET_API ComponentDeserializer & operator>>(ComponentDeserializer & deserializer, WorldTransformComponent & component);
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const WorldTransformComponent & component);
 }
 

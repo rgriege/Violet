@@ -8,7 +8,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 	class Serializer;
 
 	class VIOLET_API PhysicsComponent : public ComponentBase<PhysicsComponent>
@@ -20,7 +20,7 @@ namespace Violet
 
 	public:
 
-		PhysicsComponent(EntityId entityId, Deserializer & deserializer);
+		PhysicsComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		PhysicsComponent(PhysicsComponent && other);
 
 	public:
@@ -34,7 +34,7 @@ namespace Violet
 		float m_torque;
 	};
 
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, PhysicsComponent & component);
+	VIOLET_API ComponentDeserializer & operator>>(ComponentDeserializer & deserializer, PhysicsComponent & component);
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const PhysicsComponent & component);
 }
 

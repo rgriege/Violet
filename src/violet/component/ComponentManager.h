@@ -2,7 +2,7 @@
 #define VIOLET_ComponentManager_H
 
 #include "violet/component/ComponentPool.h"
-#include "violet/handle/HandleManager.h"
+#include "violet/handle/VersionedHandleManager.h"
 #include "violet/task/Thread.h"
 #include "violet/utility/Factory.h"
 
@@ -13,7 +13,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 
 	class VIOLET_API ComponentManager
 	{
@@ -73,7 +73,7 @@ namespace Violet
 	public:
 
 		typedef Factory<Tag, ComponentPool()> PoolFactory;
-		typedef Factory<Tag, void(ComponentPool &, Deserializer &, EntityId::StorageType)> ComponentsFactory;
+		typedef Factory<Tag, void(ComponentPool &, ComponentDeserializer &)> ComponentsFactory;
 		typedef Factory<Tag, uint32(const ComponentPool &, Serializer &, const std::vector<EntityId> &)> PoolSaveFactory;
 
 		typedef std::vector<std::pair<Tag, Tag>> TagMap;
@@ -97,7 +97,7 @@ namespace Violet
 
 		std::vector<EntityId> load(const char * sceneName, const TagMap & tagMap = TagMap());
 		void save(const char * sceneName) const;
-		void save(const char * sceneName, const std::shared_ptr<std::vector<EntityId>> & entityIds, const TagMap & tagMap = TagMap()) const;
+		void save(const char * sceneName, std::vector<EntityId> entityIds, const TagMap & tagMap = TagMap()) const;
 
 		template <typename ComponentType, typename... Args>
 		ComponentType & createComponent(EntityId entityId, Args &&... args);
@@ -128,7 +128,7 @@ namespace Violet
 		template <typename ComponentType>
 		static ComponentPool createPool();
 		template <typename ComponentType>
-		static void createComponents(ComponentPool & pool, Deserializer & deserializer, EntityId::StorageType);
+		static void createComponents(ComponentPool & pool, ComponentDeserializer & deserializer);
 		template <typename ComponentType>
 		static uint32 savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<EntityId> & entityIds);
 
@@ -149,7 +149,7 @@ namespace Violet
 
 	private:
 
-		std::vector<HandleManager<EntityId>> m_handleManagers;
+		VersionedHandleManager<EntityId> m_handleManager;
 		std::vector<uint32> m_handleManagerRecycleList;
 		std::vector<ComponentPool> m_pools;
 	};

@@ -99,6 +99,7 @@
     <ClInclude Include="..\..\..\src\violet\component\Component.h" />
     <ClInclude Include="..\..\..\src\violet\component\ComponentManager.h" />
     <ClInclude Include="..\..\..\src\violet\component\ComponentPool.h" />
+    <ClInclude Include="..\..\..\src\violet\component\ComponentDeserializer.h" />
     <ClInclude Include="..\..\..\src\violet\component\MappedDataComponent.h" />
     <ClInclude Include="..\..\..\src\violet\Defines.h" />
     <ClInclude Include="..\..\..\src\violet\Engine.h" />
@@ -200,6 +201,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\component\Component.cpp" />
+    <ClCompile Include="..\..\..\src\violet\component\ComponentDeserializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\component\ComponentManager.cpp" />
     <ClCompile Include="..\..\..\src\violet\component\ComponentPool.cpp" />
     <ClCompile Include="..\..\..\src\violet\component\MappedDataComponent.cpp" />

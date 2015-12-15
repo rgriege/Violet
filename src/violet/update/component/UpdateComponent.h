@@ -6,7 +6,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 	class Serializer;
 
 	class VIOLET_API UpdateComponent : public ComponentBase<UpdateComponent>
@@ -19,11 +19,11 @@ namespace Violet
 	public:
 
 		UpdateComponent(EntityId entityId);
-		UpdateComponent(EntityId entityId, Deserializer & deserializer);
+		UpdateComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		UpdateComponent(UpdateComponent && other);
 	};
 
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, UpdateComponent & component);
+	VIOLET_API ComponentDeserializer & operator>>(ComponentDeserializer & deserializer, UpdateComponent & component);
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const UpdateComponent & component);
 }
 

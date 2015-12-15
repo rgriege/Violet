@@ -2,6 +2,7 @@
 
 #include "violet/transform/component/WorldTransformComponent.h"
 
+#include "violet/component/ComponentDeserializer.h"
 #include "violet/serialization/Serializer.h"
 
 using namespace Violet;
@@ -29,7 +30,7 @@ WorldTransformComponent::WorldTransformComponent(const EntityId entityId) :
 
 // ----------------------------------------------------------------------------
 
-WorldTransformComponent::WorldTransformComponent(const EntityId entityId, Deserializer & deserializer) :
+WorldTransformComponent::WorldTransformComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
 	WorldTransformComponent(entityId, Matrix3f::Identity)
 {
 	deserializer >> *this;
@@ -53,9 +54,10 @@ WorldTransformComponent::WorldTransformComponent(WorldTransformComponent && othe
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, WorldTransformComponent & component)
+ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, WorldTransformComponent & component)
 {
-	return deserializer >> component.m_transform;
+	deserializer >> component.m_transform;
+	return deserializer;
 }
 
 // ----------------------------------------------------------------------------

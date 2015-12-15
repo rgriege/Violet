@@ -9,7 +9,7 @@
 
 namespace Violet
 {
-	class Deserializer;
+	class ComponentDeserializer;
 	class Serializer;
 	class ShaderProgram;
 
@@ -22,7 +22,7 @@ namespace Violet
 
 	public:
 
-		ColorComponent(EntityId entityId, Deserializer & deserializer);
+		ColorComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		ColorComponent(EntityId entityId, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, Color color);
 		ColorComponent(ColorComponent && other);
 
@@ -36,7 +36,7 @@ namespace Violet
 		Color m_color;
 	};
 
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, ColorComponent & component);
+	VIOLET_API ComponentDeserializer & operator>>(ComponentDeserializer & deserializer, ColorComponent & component);
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const ColorComponent & component);
 }
 
