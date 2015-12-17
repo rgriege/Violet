@@ -25,7 +25,7 @@ namespace Violet
 		ScriptComponent(EntityId entityId, Deserializer & deserializer);
 		ScriptComponent(EntityId entityId, const char * fileName);
 		ScriptComponent(ScriptComponent && other);
-		virtual ~ScriptComponent() override;
+		~ScriptComponent();
 
 	public:
 

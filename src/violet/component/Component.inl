@@ -40,31 +40,6 @@ uint32 Violet::ComponentBase<Derived>::getStaticFlag()
 // ============================================================================
 
 template <typename Derived>
-Violet::Tag Violet::ComponentBase<Derived>::getTag() const
-{
-	return Derived::getStaticTag();
-}
-
-// ----------------------------------------------------------------------------
-
-template <typename Derived>
-uint32 Violet::ComponentBase<Derived>::getFlag() const
-{
-	return getStaticFlag();
-}
-
-// ----------------------------------------------------------------------------
-
-template <typename Derived>
-void Violet::ComponentBase<Derived>::save(Serializer & serializer) const
-{
-	auto componentSegment = serializer.createSegment(Derived::getStaticTag().asString().c_str());
-	*componentSegment << *static_cast<const Derived *>(this);
-}
-
-// ============================================================================
-
-template <typename Derived>
 Violet::ComponentBase<Derived>::ComponentBase(const EntityId entityId) :
 	Component(entityId)
 {

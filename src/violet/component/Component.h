@@ -31,13 +31,7 @@ namespace Violet
 	public:
 
 		EntityId getEntityId() const;
-
-		virtual Tag getTag() const = 0;
-		virtual uint32 getFlag() const = 0;
-		virtual void save(Serializer & serializer) const = 0;
-
-		virtual ~Component() = 0;
-
+		
 	protected:
 
 		Component(EntityId entityId);
@@ -58,12 +52,6 @@ namespace Violet
 	public:
 
 		static uint32 getStaticFlag();
-
-	public:
-
-		virtual Tag getTag() const override;
-		virtual uint32 getFlag() const override;
-		virtual void save(Serializer & serializer) const override;
 
 	protected:
 

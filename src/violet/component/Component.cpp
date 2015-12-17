@@ -24,12 +24,6 @@ uint32 Component::getNextFlag()
 
 // ============================================================================
 
-Component::~Component()
-{
-}
-
-// ============================================================================
-
 Component::Component(const EntityId entityId) :
 	m_entityId(entityId)
 {

@@ -83,8 +83,8 @@ void ComponentPool::clear()
 	for (uint32 i = 0, end = getLastDataIndex(); i < end; i += m_componentSize)
 		get<Component>(i)->~Component();
 	m_data.clear();
-	m_data.resize(8);
-	*reinterpret_cast<uint32 *>(&m_data[4]) = EntityId::ms_invalid.getRaw();
+	m_data.resize(4);
+	*reinterpret_cast<uint32 *>(&m_data[0]) = EntityId::ms_invalid.getRaw();
 	m_lookupMap.clear();
 }
 
@@ -96,15 +96,15 @@ ComponentPool::ComponentPool(const Tag typeId, const uint32 componentSize) :
 	m_data(),
 	m_lookupMap()
 {
-	m_data.resize(8);
-	*reinterpret_cast<uint32 *>(&m_data[4]) = EntityId::ms_invalid.getRaw();
+	m_data.resize(4);
+	*reinterpret_cast<uint32 *>(&m_data[0]) = EntityId::ms_invalid.getRaw();
 }
 
 // ----------------------------------------------------------------------------
 
 uint32 ComponentPool::getLastDataIndex() const
 {
-	return m_data.size() - 8;
+	return m_data.size() - 4;
 }
 
 // ----------------------------------------------------------------------------
