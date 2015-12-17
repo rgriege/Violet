@@ -18,20 +18,20 @@ namespace Violet
 			Delete = 127
 		};
 
-		enum class Modifier
+		enum Modifier
 		{
-			NONE = 0x00,
-			LSHIFT = 0x01,
-			RSHIFT = 0x02,
-			SHIFT = LSHIFT | RSHIFT,
-			LCTRL = 0x04,
-			RCTRL = 0x08,
-			CTRL = LCTRL | RCTRL,
-			LALT = 0x10,
-			RALT = 0x20,
-			ALT = LALT | RALT,
-			NUM = 0x40,
-			CAPS = 0x80
+			M_NONE = 0x00,
+			M_LSHIFT = 0x01,
+			M_RSHIFT = 0x02,
+			M_SHIFT = M_LSHIFT | M_RSHIFT,
+			M_LCTRL = 0x04,
+			M_RCTRL = 0x08,
+			M_CTRL = M_LCTRL | M_RCTRL,
+			M_LALT = 0x10,
+			M_RALT = 0x20,
+			M_ALT = M_LALT | M_RALT,
+			M_NUM = 0x40,
+			M_CAPS = 0x80
 		};
 
 	public:

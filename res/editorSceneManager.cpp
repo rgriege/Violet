@@ -72,7 +72,7 @@ private:
                     break;
 
                 case 'c':
-                    if (event.modifiers & Key::Modifier::CTRL == 0)
+                    if (event.modifiers & Key::Modifier::M_CTRL == 0)
                     {
                         for (const EntityId entityId : m_entityIds)
                             Engine::getInstance().getCurrentScene().removeAll(entityId);
