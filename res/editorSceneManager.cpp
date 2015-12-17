@@ -47,11 +47,11 @@ public:
 
 private:
 
-    void onKeyUp(const EntityId entityId, const unsigned char key)
+    void onKeyUp(const EntityId entityId, const WindowSystem::KeyEvent & event)
     {
         if (m_dialog == None)
         {
-            switch (key)
+            switch (event.code)
             {
                 case 'o':
                     Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
@@ -72,10 +72,14 @@ private:
                     break;
 
                 case 'c':
-                    for (const EntityId entityId : m_entityIds)
-                        Engine::getInstance().getCurrentScene().removeAll(entityId);
+                    if (event.modifiers & Key::Modifier::CTRL == 0)
+                    {
+                        for (const EntityId entityId : m_entityIds)
+                            Engine::getInstance().getCurrentScene().removeAll(entityId);
+                    }
                     break;
             }
+            printf("%x\n", event.modifiers);
         }
     }
 

@@ -59,8 +59,8 @@ namespace Violet
 		EntityId m_focussedEntityId;
 	};
 
-	DEFINE_METHOD(KeyDownMethod, void(EntityId entityId, unsigned char));
-	DEFINE_METHOD(KeyUpMethod, void(EntityId entityId, unsigned char));
+	DEFINE_METHOD(KeyDownMethod, void(EntityId entityId, const WindowSystem::KeyEvent &));
+	DEFINE_METHOD(KeyUpMethod, void(EntityId entityId, const WindowSystem::KeyEvent &));
 	DEFINE_METHOD(MouseDownMethod, InputResult(EntityId entityId, const InputSystem::MouseButtonEvent &));
 	DEFINE_METHOD(MouseUpMethod, InputResult(EntityId entityId, const InputSystem::MouseButtonEvent &));
 	DEFINE_METHOD(MouseMoveMethod, void(EntityId entityId, const InputSystem::MouseMotionEvent &));

@@ -2,6 +2,7 @@
 #define VIOLET_WindowSystem_H
 
 #include "violet/Defines.h"
+#include "violet/input/Key.h"
 #include "violet/system/System.h"
 #include "violet/window/MouseButton.h"
 
@@ -32,6 +33,7 @@ namespace Violet
 		struct KeyEvent
 		{
 			unsigned char code;
+			Key::Modifier modifiers;
 		};
 
 		struct MouseEvent

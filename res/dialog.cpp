@@ -58,8 +58,9 @@ private:
             });
     }
 
-    void onKeyUp(const EntityId entityId, const unsigned char key)
+    void onKeyUp(const EntityId entityId, const WindowSystem::KeyEvent & event)
     {
+        const unsigned char key = event.code;
         const Engine & engine = Engine::getInstance();
         if (std::isalpha(key) || key == '.')
         {

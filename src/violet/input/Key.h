@@ -18,6 +18,22 @@ namespace Violet
 			Delete = 127
 		};
 
+		enum class Modifier
+		{
+			NONE = 0x00,
+			LSHIFT = 0x01,
+			RSHIFT = 0x02,
+			SHIFT = LSHIFT | RSHIFT,
+			LCTRL = 0x04,
+			RCTRL = 0x08,
+			CTRL = LCTRL | RCTRL,
+			LALT = 0x10,
+			RALT = 0x20,
+			ALT = LALT | RALT,
+			NUM = 0x40,
+			CAPS = 0x80
+		};
+
 	public:
 
 		static bool isNumeric(unsigned char key);

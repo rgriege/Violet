@@ -4,6 +4,7 @@
 
 #include "violet/Engine.h"
 #include "violet/graphics/system/RenderSystem.h"
+#include "violet/input/Key.h"
 #include "violet/log/Log.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/system/SystemFactory.h"
@@ -20,6 +21,7 @@ using namespace Violet;
 namespace SDLWindowSystemNamespace
 {
 	char convertKey(SDL_Keycode key);
+	Key::Modifier convertKeyModifier(SDL_Keymod mod);
 	int filterEvent(void * userdata, SDL_Event * event);
 }
 
@@ -124,6 +126,7 @@ bool SDLWindowSystem::getEvent(const EventType type, Event * const event)
 				{
 					event->type = WindowSystem::ET_KeyDown;
 					event->key.code = convertKey(sdlEvent.key.keysym.sym);
+					event->key.modifiers = convertKeyModifier(SDL_GetModState());
 					foundEvent = true;
 				}
 				break;
@@ -133,6 +136,7 @@ bool SDLWindowSystem::getEvent(const EventType type, Event * const event)
 				{
 					event->type = WindowSystem::ET_KeyUp;
 					event->key.code = convertKey(sdlEvent.key.keysym.sym);
+					event->key.modifiers = convertKeyModifier(SDL_GetModState());
 					foundEvent = true;
 				}
 				break;
@@ -257,17 +261,24 @@ SDLWindowSystem::SDLWindowSystem(SDL_Window * window, SDL_GLContext context) :
 
 char SDLWindowSystemNamespace::convertKey(SDL_Keycode const key)
 {
-	if (key == 10)
-		return 13;
-	else if (key >= 0 && key <= 255)
+	if (key >= 0 && key <= 255)
 		return key;
 	else if (key >= SDLK_KP_DIVIDE && key <= SDLK_KP_PERIOD)
 	{
 		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = { '/', '*', '-', '+', 13, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.' };
 		return keys[key - SDLK_KP_DIVIDE];
 	}
+	else if (key == 10)
+		return Key::Return;
 
 	return 0;
+}
+
+// ----------------------------------------------------------------------------
+
+Key::Modifier SDLWindowSystemNamespace::convertKeyModifier(const SDL_Keymod mod)
+{
+	return static_cast<Key::Modifier>(mod & 0x3 | (mod & 0x3c0) >> 4 | (mod & 0x3000) >> 6);
 }
 
 // ----------------------------------------------------------------------------

@@ -228,12 +228,12 @@ void InputSystemNamespace::processEvent(const ScriptComponent & scriptComponent,
 	if (type == WindowSystem::ET_KeyDown)
 	{
 		unsigned char code = event.code;
-		KeyDownMethod::run(*scriptComponent.m_script, scriptComponent.getEntityId(), std::move(code));
+		KeyDownMethod::run(*scriptComponent.m_script, scriptComponent.getEntityId(), event);
 	}
 	else if (type == WindowSystem::ET_KeyUp)
 	{
 		unsigned char code = event.code;
-		KeyUpMethod::run(*scriptComponent.m_script, scriptComponent.getEntityId(), std::move(code));
+		KeyUpMethod::run(*scriptComponent.m_script, scriptComponent.getEntityId(), event);
 	}
 }
 
