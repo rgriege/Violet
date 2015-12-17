@@ -7,7 +7,7 @@ const Violet::Handle<MaxId, MaxVersion> Violet::Handle<MaxId, MaxVersion>::ms_in
 
 template <size_t MaxId, size_t MaxVersion>
 Violet::Handle<MaxId, MaxVersion>::Handle() :
-    Handle(~0, ~0)
+    Handle(~0, 0)
 {
 	static_assert(StorageSize <= sizeof(long long unsigned) * 8, "Exceeded storage size");
 }
@@ -42,7 +42,8 @@ typename Violet::Handle<MaxId, MaxVersion>::StorageType Violet::Handle<MaxId, Ma
 template <size_t MaxId, size_t MaxVersion>
 typename Violet::Handle<MaxId, MaxVersion>::StorageType Violet::Handle<MaxId, MaxVersion>::getRaw() const
 {
-	return ((m_id << VersionStorageSize) | m_version);
+	return ((m_version << VersionStorageSize) | m_id);
+	// return ((m_id << VersionStorageSize) | m_version);
 }
 
 // ----------------------------------------------------------------------------
@@ -58,7 +59,7 @@ bool Violet::Handle<MaxId, MaxVersion>::isValid() const
 template <size_t MaxId, size_t MaxVersion>
 bool Violet::operator<(const Handle<MaxId, MaxVersion> lhs, const Handle<MaxId, MaxVersion> rhs)
 {
-	return lhs.getRaw() < rhs.getRaw();
+	return lhs.getId() < rhs.getId();
 }
 
 // ----------------------------------------------------------------------------

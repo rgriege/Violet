@@ -18,7 +18,7 @@ Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::Iterator(
 template <bool is_const, typename... ComponentTypes>
 typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator & Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::operator++()
 {
-	m_entityId = m_entityId.isValid() ? EntityId(m_entityId.getId(), m_entityId.getVersion() + 1) : EntityId(0, 0);
+	m_entityId = m_entityId.isValid() ? EntityId(m_entityId.getId() + 1, m_entityId.getVersion()) : EntityId(0, 0);
 	advance();
 	return *this;
 }

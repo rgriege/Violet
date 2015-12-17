@@ -55,7 +55,7 @@ TransformSystem::~TransformSystem()
 
 void TransformSystem::update(const float /*dt*/)
 {
-	m_entityWorldTransformCache.clear();
+	m_entityWorldTransformCache = std::map<EntityId, Matrix3f>{ { EntityId::ms_invalid, Matrix3f::Identity } };
 	const auto & engine = Engine::getInstance();
 	for (const auto & entity : engine.getCurrentScene().getEntityView<LocalTransformComponent, WorldTransformComponent>())
 	{
@@ -63,30 +63,15 @@ void TransformSystem::update(const float /*dt*/)
 		const auto & worldTransformComponent = std::get<1>(entity);
 		const EntityId entityId = localTransformComponent.getEntityId();
 
-		if (!localTransformComponent.m_parentId.isValid())
+		const Matrix3f & parentWorldTransform = m_entityWorldTransformCache[localTransformComponent.m_parentId];
+		const Matrix3f & worldTransform = m_entityWorldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
+		if (worldTransformComponent.m_transform != worldTransform)
 		{
-			m_entityWorldTransformCache[entityId] = localTransformComponent.m_transform;
-			if (localTransformComponent.m_transform != worldTransformComponent.m_transform)
-			{
-				engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
-					[=](ComponentPool & pool)
-					{
-						pool.get<WorldTransformComponent>(entityId)->m_transform = m_entityWorldTransformCache[entityId];
-					});
-			}
-		}
-		else
-		{
-			const Matrix3f & parentWorldTransform = m_entityWorldTransformCache[localTransformComponent.m_parentId];
-			const Matrix3f & worldTransform = m_entityWorldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
-			if (worldTransformComponent.m_transform != worldTransform)
-			{
-				engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
-					[=](ComponentPool & pool)
-					{
-						pool.get<WorldTransformComponent>(entityId)->m_transform = m_entityWorldTransformCache[entityId];
-					});
-			}
+			engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
+				[=](ComponentPool & pool)
+				{
+					pool.get<WorldTransformComponent>(entityId)->m_transform = m_entityWorldTransformCache[entityId];
+				});
 		}
 	}
 }
