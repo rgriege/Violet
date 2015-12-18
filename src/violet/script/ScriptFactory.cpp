@@ -20,7 +20,7 @@ void ScriptFactory::assign(const char * const label, const FactoryType::Producer
 
 std::unique_ptr<Script> ScriptFactory::create(const char * const fileName)
 {
-	return ms_instance.create(StringUtilities::right(fileName, '.'), fileName);
+	return ms_instance.create(StringUtilities::rightOfLast(fileName, '.'), fileName);
 }
 
 // ----------------------------------------------------------------------------

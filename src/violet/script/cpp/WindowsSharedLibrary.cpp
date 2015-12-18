@@ -58,7 +58,7 @@ std::string SharedLibrary::getFilename() const
 		filename = buffer;
 	}
 
-	return StringUtilities::lastRight(filename, '\\');
+	return StringUtilities::rightOfLast(filename, '\\');
 }
 
 // ----------------------------------------------------------------------------

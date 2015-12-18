@@ -19,7 +19,7 @@ std::unique_ptr<Serializer> FileSerializerFactory::create(const char * filename)
 	if (!fb.open(filename, std::ios::out))
 		return nullptr;
 
-	return m_factory.create(StringUtilities::right(filename, '.'), std::move(fb));
+	return m_factory.create(StringUtilities::rightOfLast(filename, '.'), std::move(fb));
 }
 
 void FileSerializerFactory::remove(const char * extension)

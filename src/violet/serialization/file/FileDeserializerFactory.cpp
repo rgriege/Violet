@@ -20,7 +20,7 @@ std::unique_ptr<Deserializer> FileDeserializerFactory::create(const char * filen
 	if (!fb.open(filename, std::ios::in))
 		return nullptr;
 
-	return m_factory.create(StringUtilities::right(filename, '.'), std::move(fb));
+	return m_factory.create(StringUtilities::rightOfLast(filename, '.'), std::move(fb));
 }
 
 // ----------------------------------------------------------------------------

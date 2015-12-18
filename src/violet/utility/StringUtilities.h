@@ -28,9 +28,10 @@ namespace Violet
 	public:
 
 		static std::string left(std::string const & str, char delimiter);
-		static std::string right(std::string const & str, char delimiter);
-		static const char * right(const char * str, char delimiter);
-		static std::string lastRight(std::string const & str, char delimiter);
+		static std::string rightOfFirst(std::string const & str, char delimiter);
+		static const char * rightOfFirst(const char * str, char delimiter);
+		static std::string rightOfLast(std::string const & str, char delimiter);
+		static const char * rightOfLast(const char * str, char delimiter);
 		static void replace(std::string & haystack, std::string const & needle, std::string const & replacement);
 	};
 }

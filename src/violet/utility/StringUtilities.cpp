@@ -10,19 +10,24 @@ std::string StringUtilities::left(std::string const & str, char delimiter)
 	return str.substr(0, str.find(delimiter));
 }
 
-std::string StringUtilities::right(std::string const & str, char delimiter)
+std::string StringUtilities::rightOfFirst(std::string const & str, char delimiter)
 {
 	return str.substr(std::min(str.find(delimiter) + 1, str.size()), std::string::npos);
 }
 
-const char * StringUtilities::right(const char * str, char delimiter)
+const char * StringUtilities::rightOfFirst(const char * str, char delimiter)
 {
-	return strrchr(str, delimiter) + 1;
+	return strchr(str, delimiter) + 1;
 }
 
-std::string StringUtilities::lastRight(std::string const & str, char delimiter)
+std::string StringUtilities::rightOfLast(std::string const & str, char delimiter)
 {
 	return str.substr(std::min(str.find_last_of(delimiter) + 1, str.size()), std::string::npos);
+}
+
+const char * StringUtilities::rightOfLast(const char * str, char delimiter)
+{
+	return strrchr(str, delimiter) + 1;
 }
 
 void StringUtilities::replace(std::string & haystack, std::string const & needle, std::string const & replacement)
