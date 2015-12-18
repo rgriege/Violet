@@ -107,6 +107,7 @@ namespace Violet
 		template <typename ComponentType>
 		const ComponentPool * getPool() const;
 
+		bool exists(EntityId entityId) const;
 		template <typename ComponentType>
 		bool hasComponent(EntityId entityId) const;
 
@@ -150,7 +151,6 @@ namespace Violet
 	private:
 
 		VersionedHandleManager<EntityId> m_handleManager;
-		std::vector<uint32> m_handleManagerRecycleList;
 		std::vector<ComponentPool> m_pools;
 	};
 }

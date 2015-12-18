@@ -46,7 +46,7 @@ Handle Violet::HandleManager<Handle>::create()
 	if (!m_recycleList.empty())
 	{
 		id = m_recycleList.front();
-		m_recycleList.pop();
+		m_recycleList.pop_front();
 		m_usedList[id] = true;
 	}
 	else
@@ -60,28 +60,10 @@ Handle Violet::HandleManager<Handle>::create()
 // ----------------------------------------------------------------------------
 
 template <typename Handle>
-Handle Violet::HandleManager<Handle>::create(const typename Handle::StorageType desiredId)
+bool Violet::HandleManager<Handle>::used(const Handle handle) const
 {
-	const Handle::StorageType originalUsedListSize = m_usedList.size();
-	if (desiredId >= originalUsedListSize)
-	{
-		m_usedList.resize(desiredId + 1);
-		m_usedList[desiredId] = true;
-		for (Handle::StorageType id = originalUsedListSize; id < desiredId; ++id)
-			m_recycleList.emplace(id);
-		return Handle(desiredId, 0);
-	}
-	else if (!m_usedList[desiredId])
-	{
-		m_usedList[desiredId] = true;
-		return Handle(desiredId, 0);
-	}
-	else
-	{
-		const Handle result = create();
-		Log::log(FormattedString<1024>().sprintf("Could not create handle %d, using %d instead", desiredId, result.getId()));
-		return result;
-	}
+	const Handle::StorageType id = handle.getId();
+	return id < m_usedList.size() && m_usedList[id];
 }
 
 // ----------------------------------------------------------------------------
@@ -93,7 +75,8 @@ void Violet::HandleManager<Handle>::free(const Handle entity)
 	if (id < m_usedList.size() && m_usedList[id])
 	{
 		m_usedList[id] = false;
-		m_recycleList.push(id);
+		m_recycleList.emplace_back(id);
+		std::sort(m_recycleList.begin(), m_recycleList.end());
 	}
 	else
 		assert(false);
@@ -105,7 +88,7 @@ template <typename Handle>
 void Violet::HandleManager<Handle>::freeAll()
 {
 	m_usedList.clear();
-	m_recycleList = std::queue<typename Handle::StorageType>();
+	m_recycleList = std::deque<typename Handle::StorageType>();
 }
 
 // ----------------------------------------------------------------------------

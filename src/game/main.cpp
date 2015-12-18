@@ -1,4 +1,5 @@
-#include "editor/EditorSystem.h"
+#include "editor/component/EditorComponent.h"
+#include "editor/component/EditorComponentWrapper.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
 #include "violet/component/MappedDataComponent.h"
@@ -28,8 +29,6 @@
 #include "violet/window/glut/GlutWindowSystem.h"
 #include "violet/window/sdl/SDLWindowSystem.h"
 
-#include "../res/editor.h"
-
 Violet::SystemFactory setup()
 {
 	Violet::ComponentManager::installComponent<Violet::ColorComponent>();
@@ -43,10 +42,11 @@ Violet::SystemFactory setup()
 	Violet::ComponentManager::installComponent<Violet::TextureComponent>();
 	Violet::ComponentManager::installComponent<Violet::UpdateComponent>();
 	Violet::ComponentManager::installComponent<Violet::WorldTransformComponent>();
-	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::ScriptComponent>>();
-	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::KeyInputComponent>>();
-	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::MouseInputComponent>>();
-	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::UpdateComponent>>();
+	Violet::ComponentManager::installComponent<edt::EditorComponent>();
+	Violet::ComponentManager::installComponent<edt::EditorComponentWrapper<Violet::ScriptComponent>>();
+	Violet::ComponentManager::installComponent<edt::EditorComponentWrapper<Violet::KeyInputComponent>>();
+	Violet::ComponentManager::installComponent<edt::EditorComponentWrapper<Violet::MouseInputComponent>>();
+	Violet::ComponentManager::installComponent<edt::EditorComponentWrapper<Violet::UpdateComponent>>();
 
 	Violet::JsonDeserializer::install();
 	Violet::JsonSerializer::install();
@@ -63,7 +63,6 @@ Violet::SystemFactory setup()
 	Violet::InputSystem::install(factory);
 	Violet::TransformSystem::install(factory);
 	Violet::UpdateSystem::install(factory);
-	Violet::EditorSystem::install(factory);
 
 	return factory;
 }

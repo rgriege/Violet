@@ -11,11 +11,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\editor\EditorConfig.h" />
-    <ClInclude Include="..\..\..\src\editor\EditorSystem.h" />
+    <ClInclude Include="..\..\..\src\editor\command\ClearAllCommand.h" />
+    <ClInclude Include="..\..\..\src\editor\command\Command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\file\OpenCommand.h" />
+    <ClInclude Include="..\..\..\src\editor\command\file\SaveAllCommand.h" />
+    <ClInclude Include="..\..\..\src\editor\component\EditorComponent.h" />
+    <ClInclude Include="..\..\..\src\editor\component\EditorComponentWrapper.h" />
+    <ClInclude Include="..\..\..\src\editor\CppScriptExports.h" />
+    <ClInclude Include="..\..\..\src\editor\Editor.h" />
+    <ClInclude Include="..\..\..\src\editor\Defines.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\editor\EditorSystem.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\ClearAllCommand.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\file\OpenCommand.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\file\SaveAllCommand.cpp" />
+    <ClCompile Include="..\..\..\src\editor\component\EditorComponent.cpp" />
+    <ClCompile Include="..\..\..\src\editor\CppScriptExports.cpp" />
+    <ClCompile Include="..\..\..\src\editor\Editor.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C493A578-E9E7-476E-A96E-A272232655EB}</ProjectGuid>
@@ -63,7 +75,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;VIOLETEDITOR_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;EDITOR_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freeglut\include;E:\Libraries\jsoncpp\include;E:\Libraries\lua-5.2.3\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DisableSpecificWarnings>4251</DisableSpecificWarnings>
@@ -83,7 +95,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;VIOLETEDITOR_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;EDITOR_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>E:\Documents\alottabit\violet\src;E:\Libraries\freeglut\include;E:\Libraries\jsoncpp\include;E:\Libraries\lua-5.2.3\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4251</DisableSpecificWarnings>
     </ClCompile>

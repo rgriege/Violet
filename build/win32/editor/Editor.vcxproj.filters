@@ -1,10 +1,53 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\editor\EditorSystem.h" />
-    <ClInclude Include="..\..\..\src\editor\EditorConfig.h" />
+    <ClInclude Include="..\..\..\src\editor\command\Command.h">
+      <Filter>command</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\command\file\OpenCommand.h">
+      <Filter>command\file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\Editor.h" />
+    <ClInclude Include="..\..\..\src\editor\Defines.h" />
+    <ClInclude Include="..\..\..\src\editor\command\file\SaveAllCommand.h">
+      <Filter>command\file</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\CppScriptExports.h" />
+    <ClInclude Include="..\..\..\src\editor\component\EditorComponentWrapper.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\component\EditorComponent.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\command\ClearAllCommand.h">
+      <Filter>command</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\editor\EditorSystem.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\file\OpenCommand.cpp">
+      <Filter>command\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\Editor.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\file\SaveAllCommand.cpp">
+      <Filter>command\file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\CppScriptExports.cpp" />
+    <ClCompile Include="..\..\..\src\editor\component\EditorComponent.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\command\ClearAllCommand.cpp">
+      <Filter>command</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="command">
+      <UniqueIdentifier>{29aad1a3-3d23-4e8e-94d7-e552ad4cebbc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="command\file">
+      <UniqueIdentifier>{4826a7b9-6e8d-4571-9eee-716a05e65950}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="component">
+      <UniqueIdentifier>{d9f7fe37-7626-4caa-8f09-7d6fc46fd2e9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

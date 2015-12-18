@@ -41,18 +41,14 @@ Handle Violet::VersionedHandleManager<Handle>::create()
 	const Handle handle = m_manager.create();
 	if (handle.getId() >= m_versions.size())
 		m_versions.resize(handle.getId() + 1);
-	return Handle(handle.getId(), m_version[handle.getId()]);
+	return Handle(handle.getId(), m_versions[handle.getId()]);
 }
 
 // ----------------------------------------------------------------------------
-
 template <typename Handle>
-Handle Violet::VersionedHandleManager<Handle>::create(const typename Handle::StorageType desiredId)
+bool Violet::VersionedHandleManager<Handle>::used(const Handle handle) const
 {
-	const Handle handle = m_manager.create(desiredId);
-	if (handle.getId() >= m_versions.size())
-		m_versions.resize(handle.getId() + 1);
-	return Handle(handle.getId(), m_versions[handle.getId()]);
+	return m_manager.used(handle) && m_versions[handle.getId()] == handle.getVersion();
 }
 
 // ----------------------------------------------------------------------------

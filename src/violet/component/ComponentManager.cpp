@@ -78,7 +78,6 @@ std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 
 ComponentManager::ComponentManager() :
 	m_handleManager(),
-	m_handleManagerRecycleList(),
 	m_pools()
 {
 	for (auto const & entry : ms_poolThreads)
@@ -89,7 +88,6 @@ ComponentManager::ComponentManager() :
 
 ComponentManager::ComponentManager(ComponentManager && other) :
 	m_handleManager(std::move(other.m_handleManager)),
-	m_handleManagerRecycleList(std::move(other.m_handleManagerRecycleList)),
 	m_pools(std::move(other.m_pools))
 {
 }
@@ -99,7 +97,6 @@ ComponentManager::ComponentManager(ComponentManager && other) :
 ComponentManager & ComponentManager::operator=(ComponentManager && other)
 {
 	std::swap(m_handleManager, other.m_handleManager);
-	std::swap(m_handleManagerRecycleList, other.m_handleManagerRecycleList);
 	std::swap(m_pools, other.m_pools);
 	return *this;
 }
@@ -138,10 +135,9 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 		{
 			while (*idFileDeserializer)
 			{
-				const uint32 desiredId = idFileDeserializer->getUint("id");
-				const EntityId createdHandle = m_handleManager.create(desiredId);
-				if (createdHandle.getId() != desiredId)
-					(*handleIdMap)[desiredId] = createdHandle;
+				const uint32 originalId = idFileDeserializer->getUint("id");
+				const EntityId createdHandle = m_handleManager.create();
+				(*handleIdMap)[originalId] = createdHandle;
 				loadedEntityIds.emplace_back(createdHandle);
 			}
 
@@ -233,6 +229,13 @@ void ComponentManager::save(const char * filename, std::vector<EntityId> entityI
 		else
 			Log::log(FormattedString<128>().sprintf("Could not open scene id file '%s'", idFileName.c_str()));
 	}
+}
+
+// ----------------------------------------------------------------------------
+
+bool ComponentManager::exists(const EntityId entityId) const
+{
+	return m_handleManager.used(entityId);
 }
 
 // ----------------------------------------------------------------------------

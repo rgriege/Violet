@@ -1,7 +1,7 @@
 #ifndef VIOLET_HandleManager_H
 #define VIOLET_HandleManager_H
 
-#include <queue>
+#include <deque>
 #include <vector>
 
 namespace Violet
@@ -18,7 +18,7 @@ namespace Violet
 		HandleManager & operator=(HandleManager && other);
 
 		Handle create();
-		Handle create(typename Handle::StorageType desiredId);
+		bool used(Handle handle) const;
 		void free(Handle handle);
 		void freeAll();
 
@@ -28,7 +28,7 @@ namespace Violet
 	private:
 
 		std::vector<bool> m_usedList;
-		std::queue<typename Handle::StorageType> m_recycleList;
+		std::deque<typename Handle::StorageType> m_recycleList;
 	};
 }
 

@@ -17,7 +17,7 @@ namespace Violet
 		VersionedHandleManager & operator=(VersionedHandleManager && other);
 
 		Handle create();
-		Handle create(typename Handle::StorageType desiredId);
+		bool used(Handle handle) const;
 		void free(Handle handle);
 		void freeAll();
 
