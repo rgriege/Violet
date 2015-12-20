@@ -12,6 +12,20 @@ using namespace Violet;
 
 // ============================================================================
 
+const char * SaveAllCommand::getUsage()
+{
+	return "save <file>";
+}
+
+// ----------------------------------------------------------------------------
+
+std::unique_ptr<Command> SaveAllCommand::parse(const std::string & text)
+{
+	return text.find(' ') == std::string::npos ? std::make_unique<SaveAllCommand>(text) : nullptr;
+}
+
+// ============================================================================
+
 SaveAllCommand::SaveAllCommand(std::string fileName) :
 	m_fileName(std::move(fileName))
 {

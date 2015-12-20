@@ -11,6 +11,20 @@ using namespace Violet;
 
 // ============================================================================
 
+const char * OpenCommand::getUsage()
+{
+	return "open <file>";
+}
+
+// ----------------------------------------------------------------------------
+
+std::unique_ptr<Command> OpenCommand::parse(const std::string & text)
+{
+	return text.find(' ') == std::string::npos ? std::make_unique<OpenCommand>(text) : nullptr;
+}
+
+// ============================================================================
+
 OpenCommand::OpenCommand(std::string fileName) :
 	m_fileName(std::move(fileName)),
 	m_entityIds()

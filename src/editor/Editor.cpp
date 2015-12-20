@@ -8,8 +8,10 @@
 #include "violet/graphics/component/ColorComponent.h"
 #include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
+#include "violet/log/Log.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/update/component/UpdateComponent.h"
+#include "violet/utility/FormattedString.h"
 
 #include <deque>
 
@@ -20,7 +22,8 @@ using namespace Violet;
 
 namespace EditorNamespace
 {
-	std::deque<std::unique_ptr<Command>> ms_commands;
+	std::deque<std::unique_ptr<Command>> ms_commandHistory;
+	Editor::CommandFactory ms_commandFactory;
 }
 
 using namespace EditorNamespace;
@@ -37,14 +40,33 @@ const ComponentManager::TagMap Editor::ms_tagMap = {
 
 // ============================================================================
 
+void Editor::registerCommand(const char * const usage, const CommandFactory::Producer & producer)
+{
+	ms_commandFactory.assign(StringUtilities::left(usage, ' '), producer);
+}
+
+// ----------------------------------------------------------------------------
+
+void Editor::execute(const std::string & commandString)
+{
+	const std::string name = StringUtilities::left(commandString, ' ');
+	auto command = ms_commandFactory.create(name, StringUtilities::rightOfFirst(commandString, ' '));
+	if (command != nullptr)
+		execute(std::move(command));
+	else
+		Log::log(FormattedString<128>().sprintf("Invalid command '%s'", commandString.c_str()));
+}
+
+// ----------------------------------------------------------------------------
+
 void Editor::execute(std::unique_ptr<Command> && command)
 {
 	command->execute();
 	if (command->canUndo())
 	{
-		ms_commands.emplace_back(std::move(command));
-		if (ms_commands.size() >= 100)
-			ms_commands.pop_front();
+		ms_commandHistory.emplace_back(std::move(command));
+		if (ms_commandHistory.size() >= 100)
+			ms_commandHistory.pop_front();
 	}
 }
 
@@ -52,10 +74,10 @@ void Editor::execute(std::unique_ptr<Command> && command)
 
 void Editor::undo()
 {
-	if (!ms_commands.empty())
+	if (!ms_commandHistory.empty())
 	{
-		ms_commands.back()->undo();
-		ms_commands.pop_back();
+		ms_commandHistory.back()->undo();
+		ms_commandHistory.pop_back();
 	}
 }
 

@@ -26,6 +26,20 @@ using namespace ClearAllNamespace;
 
 // ============================================================================
 
+const char * ClearAllCommand::getUsage()
+{
+	return "clear";
+}
+
+// ----------------------------------------------------------------------------
+
+std::unique_ptr<Command> ClearAllCommand::parse(const std::string & text)
+{
+	return text.empty() ? std::make_unique<ClearAllCommand>() : nullptr;
+}
+
+// ============================================================================
+
 ClearAllCommand::ClearAllCommand() :
 	m_tempFileName()
 {

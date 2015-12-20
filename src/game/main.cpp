@@ -1,3 +1,7 @@
+#include "editor/Editor.h"
+#include "editor/command/ClearAllCommand.h"
+#include "editor/command/file/OpenCommand.h"
+#include "editor/command/file/SaveAllCommand.h"
 #include "editor/component/EditorComponent.h"
 #include "editor/component/EditorComponentWrapper.h"
 #include "violet/Engine.h"
@@ -29,6 +33,8 @@
 #include "violet/window/glut/GlutWindowSystem.h"
 #include "violet/window/sdl/SDLWindowSystem.h"
 
+using namespace edt;
+
 Violet::SystemFactory setup()
 {
 	Violet::ComponentManager::installComponent<Violet::ColorComponent>();
@@ -42,11 +48,11 @@ Violet::SystemFactory setup()
 	Violet::ComponentManager::installComponent<Violet::TextureComponent>();
 	Violet::ComponentManager::installComponent<Violet::UpdateComponent>();
 	Violet::ComponentManager::installComponent<Violet::WorldTransformComponent>();
-	Violet::ComponentManager::installComponent<edt::EditorComponent>();
-	Violet::ComponentManager::installComponent<edt::EditorComponentWrapper<Violet::ScriptComponent>>();
-	Violet::ComponentManager::installComponent<edt::EditorComponentWrapper<Violet::KeyInputComponent>>();
-	Violet::ComponentManager::installComponent<edt::EditorComponentWrapper<Violet::MouseInputComponent>>();
-	Violet::ComponentManager::installComponent<edt::EditorComponentWrapper<Violet::UpdateComponent>>();
+	Violet::ComponentManager::installComponent<EditorComponent>();
+	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::ScriptComponent>>();
+	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::KeyInputComponent>>();
+	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::MouseInputComponent>>();
+	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::UpdateComponent>>();
 
 	Violet::JsonDeserializer::install();
 	Violet::JsonSerializer::install();
@@ -63,6 +69,10 @@ Violet::SystemFactory setup()
 	Violet::InputSystem::install(factory);
 	Violet::TransformSystem::install(factory);
 	Violet::UpdateSystem::install(factory);
+
+	Editor::registerCommand<ClearAllCommand>();
+	Editor::registerCommand<OpenCommand>();
+	Editor::registerCommand<SaveAllCommand>();
 
 	return factory;
 }

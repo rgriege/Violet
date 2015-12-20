@@ -12,8 +12,6 @@
 
 #include "dialog.h"
 
-#include <functional>
-
 using namespace edt;
 using namespace Violet;
 
@@ -24,7 +22,6 @@ public:
     Instance(CppScript & script) :
         CppScript::Instance(script)
     {
-        using namespace std::placeholders;
         KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
         DialogClosedEvent::subscribe(Engine::getInstance(), DialogClosedEvent::Subscriber::bind<Instance, &Instance::onDialogClosed>(this));
     }
@@ -68,27 +65,39 @@ private:
                         printf("%x - %x - %x\n", event.modifiers, Key::Modifier::M_CTRL, event.modifiers & Key::Modifier::M_CTRL);
                     break;
 
-				case 'z':
-					if ((event.modifiers & Key::Modifier::M_CTRL) != 0)
-						Editor::undo();
+                case 'z':
+                    if ((event.modifiers & Key::Modifier::M_CTRL) != 0)
+                        Editor::undo();
+                    break;
+
+                case Key::Return:
+                    Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
+                        [](ComponentManager & scene)
+                        {
+                            scene.load("dialog.json");
+                        });
+                    m_dialog = Command;
                     break;
             }
         }
     }
 
-    void onDialogClosed(const std::string & fileName)
+    void onDialogClosed(const std::string & input)
     {
-        if (!fileName.empty())
+        if (!input.empty())
         {
             switch (m_dialog)
             {
+                case Command:
+                    Editor::execute(input);
+                    break;
+
                 case Load:
-                    Editor::execute(createOpenCommand(fileName));
-					// Editor::execute(std::make_unique<OpenCommand>(fileName));
+                    Editor::execute(createOpenCommand(input));
                     break;
 
                 case Save:
-					Editor::execute(std::make_unique<SaveAllCommand>(fileName));
+                    Editor::execute(createSaveAllCommand(input));
                     break;
             }
         }
@@ -99,6 +108,7 @@ private:
 
     enum Dialog
     {
+        Command,
         Load,
         Save,
         None

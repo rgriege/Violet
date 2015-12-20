@@ -50,4 +50,7 @@
       <UniqueIdentifier>{d9f7fe37-7626-4caa-8f09-7d6fc46fd2e9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\src\editor\Editor.inl" />
+  </ItemGroup>
 </Project>

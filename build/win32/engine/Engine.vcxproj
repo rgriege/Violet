@@ -176,6 +176,7 @@
     <ClInclude Include="..\..\..\src\violet\transform\component\WorldTransformComponent.h" />
     <ClInclude Include="..\..\..\src\violet\transform\system\TransformSystem.h" />
     <ClInclude Include="..\..\..\src\violet\transform\Transform.h" />
+    <ClInclude Include="..\..\..\src\violet\ui\UiTextInputBox.h" />
     <ClInclude Include="..\..\..\src\violet\update\component\UpdateComponent.h" />
     <ClInclude Include="..\..\..\src\violet\update\system\UpdateSystem.h" />
     <ClInclude Include="..\..\..\src\violet\utility\Buffer.h" />
@@ -261,6 +262,7 @@
     <ClCompile Include="..\..\..\src\violet\transform\component\WorldTransformComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\transform\system\TransformSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\transform\Transform.cpp" />
+    <ClCompile Include="..\..\..\src\violet\ui\UiTextInputBox.cpp" />
     <ClCompile Include="..\..\..\src\violet\update\component\UpdateComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\update\system\UpdateSystem.cpp" />
     <ClCompile Include="..\..\..\src\violet\utility\FileUtilities.cpp" />

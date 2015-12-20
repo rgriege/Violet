@@ -4,6 +4,7 @@
 #include "editor/command/Command.h"
 #include "violet/Defines.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,11 @@ namespace edt
 {
 	class EDITOR_API OpenCommand final : public Command
 	{
+	public:
+
+		static const char * getUsage();
+		static std::unique_ptr<Command> parse(const std::string & text);
+
 	public:
 
 		OpenCommand(std::string fileName);

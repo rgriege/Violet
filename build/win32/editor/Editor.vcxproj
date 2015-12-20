@@ -29,6 +29,9 @@
     <ClCompile Include="..\..\..\src\editor\CppScriptExports.cpp" />
     <ClCompile Include="..\..\..\src\editor\Editor.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\src\editor\Editor.inl" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C493A578-E9E7-476E-A96E-A272232655EB}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

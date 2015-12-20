@@ -124,6 +124,9 @@
     <Filter Include="transform\component">
       <UniqueIdentifier>{04a36eb9-0930-4bfc-ae0d-827766819f47}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ui">
+      <UniqueIdentifier>{c5a378d4-f682-4d12-80fb-4075caba6df4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\src\violet\graphics\Color.h">
@@ -458,6 +461,9 @@
     <ClInclude Include="..\..\..\src\violet\component\ComponentDeserializer.h">
       <Filter>component</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\ui\UiTextInputBox.h">
+      <Filter>ui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -661,6 +667,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\component\ComponentDeserializer.cpp">
       <Filter>component</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\ui\UiTextInputBox.cpp">
+      <Filter>ui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -6,6 +6,7 @@
 #include "violet/graphics/component/TextComponent.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/script/cpp/CppScript.h"
+#include "violet/ui/UiTextInputBox.h"
 #include "violet/utility/FormattedString.h"
 
 #include "dialog.h"
@@ -21,7 +22,8 @@ class Instance : public CppScript::Instance
 public:
 
     Instance(CppScript & script) :
-        CppScript::Instance(script)
+        CppScript::Instance(script),
+        m_textInput()
     {
         BindToComponentMethod::assign(script, BindToComponentMethod::Handler::bind<Instance, &Instance::onBindToComponent>(this));
         FocusLostMethod::assign(script, FocusLostMethod::Handler::bind<Instance, &Instance::onFocusLost>(this));
@@ -60,32 +62,9 @@ private:
 
     void onKeyUp(const EntityId entityId, const WindowSystem::KeyEvent & event)
     {
-        const unsigned char key = event.code;
-        const Engine & engine = Engine::getInstance();
-        if (std::isalpha(key) || key == '.')
+        if (m_textInput.onKeyUp(entityId, event) == UiTextInputBox::S_inactive)
         {
-            const auto * tc = engine.getCurrentScene().getComponent<TextComponent>(entityId);
-            if (tc != nullptr)
-            {
-                engine.addWriteTask(*tc, [key](TextComponent & tc)
-                    {
-                        tc.m_text += key;
-                    });
-            }
-        }
-        else if (key == Key::Backspace)
-        {
-            const auto * tc = engine.getCurrentScene().getComponent<TextComponent>(entityId);
-            if (tc != nullptr && !tc->m_text.empty())
-            {
-                engine.addWriteTask(*tc, [](TextComponent & tc)
-                    {
-                        tc.m_text.pop_back();
-                    });
-            }
-        }
-        else if (key == Key::Return)
-        {
+            const Engine & engine = Engine::getInstance();
             const auto * tc = engine.getCurrentScene().getComponent<TextComponent>(entityId);
             if (tc != nullptr && !tc->m_text.empty())
             {
@@ -93,14 +72,15 @@ private:
                 engine.addWriteTask(engine.getCurrentScene(),
                     [=](ComponentManager & manager)
                     {
-                        manager.remove<KeyInputComponent>(entityId);
                         Engine::getInstance().getCurrentScene().removeAll(entityId);
                     });
             }
         }
-        else
-            printf("%d\n", key);
     }
+
+private:
+
+	UiTextInputBox m_textInput;
 };
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)

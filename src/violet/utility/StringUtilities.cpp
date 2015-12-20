@@ -12,7 +12,8 @@ std::string StringUtilities::left(std::string const & str, char delimiter)
 
 std::string StringUtilities::rightOfFirst(std::string const & str, char delimiter)
 {
-	return str.substr(std::min(str.find(delimiter) + 1, str.size()), std::string::npos);
+	const auto pos = str.find(delimiter);
+	return pos != std::string::npos ? str.substr(pos + 1) : "";
 }
 
 const char * StringUtilities::rightOfFirst(const char * str, char delimiter)

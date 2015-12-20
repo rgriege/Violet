@@ -3,6 +3,7 @@
 
 #include "editor/command/ClearAllCommand.h"
 #include "editor/command/file/OpenCommand.h"
+#include "editor/command/file/SaveAllCommand.h"
 
 #include <memory>
 
@@ -10,6 +11,7 @@ namespace edt
 {
 	EDITOR_API std::unique_ptr<ClearAllCommand> createClearAllCommand();
 	EDITOR_API std::unique_ptr<OpenCommand> createOpenCommand(std::string fileName);
+	EDITOR_API std::unique_ptr<SaveAllCommand> createSaveAllCommand(std::string fileName);
 }
 
 #endif
