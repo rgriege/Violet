@@ -2,7 +2,7 @@
 
 #include "editor/command/ClearAllCommand.h"
 
-#include "editor/Editor.h"
+#include "editor/EditorSystem.h"
 #include "editor/component/EditorComponent.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
@@ -50,7 +50,7 @@ ClearAllCommand::ClearAllCommand() :
 ClearAllCommand::~ClearAllCommand()
 {
 	if (!m_tempFileName.empty())
-		std::remove(m_tempFileName.c_str());
+		cleanup(m_tempFileName);
 }
 
 // ----------------------------------------------------------------------------
@@ -67,7 +67,7 @@ void ClearAllCommand::execute()
 	{
 		m_tempFileName = StringUtilities::rightOfFirst(FormattedString<32>().sprintf("%.6f.json", Random::ms_generator.generate0to1()), '.');
 
-		scene.save(m_tempFileName.c_str(), entityIds, Editor::ms_tagMap);
+		scene.save(m_tempFileName.c_str(), entityIds, EditorSystem::ms_tagMap);
 
 		Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
 			[=]()
@@ -95,9 +95,9 @@ void ClearAllCommand::undo()
 		Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
 			[=](ComponentManager & scene)
 			{
-				const auto & entityIds = scene.load(tempFileName.c_str(), Editor::ms_tagMap);
+				const auto & entityIds = scene.load(tempFileName.c_str(), EditorSystem::ms_tagMap);
 				for (const auto entityId : entityIds)
-					Editor::addEditBehavior(scene, entityId);
+					EditorSystem::addEditBehavior(scene, entityId);
 				cleanup(tempFileName);
 			});
 		m_tempFileName.clear();

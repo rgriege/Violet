@@ -15,7 +15,8 @@
     },
     "inpt": {},
     "updt": {},
-    "tsfm": {}
+    "tsfm": {},
+    "edtr": {}
   },
   "firstScene": "editorScene.json"
 }

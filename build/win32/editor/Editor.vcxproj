@@ -18,7 +18,7 @@
     <ClInclude Include="..\..\..\src\editor\component\EditorComponent.h" />
     <ClInclude Include="..\..\..\src\editor\component\EditorComponentWrapper.h" />
     <ClInclude Include="..\..\..\src\editor\CppScriptExports.h" />
-    <ClInclude Include="..\..\..\src\editor\Editor.h" />
+    <ClInclude Include="..\..\..\src\editor\EditorSystem.h" />
     <ClInclude Include="..\..\..\src\editor\Defines.h" />
   </ItemGroup>
   <ItemGroup>
@@ -27,10 +27,10 @@
     <ClCompile Include="..\..\..\src\editor\command\file\SaveAllCommand.cpp" />
     <ClCompile Include="..\..\..\src\editor\component\EditorComponent.cpp" />
     <ClCompile Include="..\..\..\src\editor\CppScriptExports.cpp" />
-    <ClCompile Include="..\..\..\src\editor\Editor.cpp" />
+    <ClCompile Include="..\..\..\src\editor\EditorSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\editor\Editor.inl" />
+    <None Include="..\..\..\src\editor\EditorSystem.inl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C493A578-E9E7-476E-A96E-A272232655EB}</ProjectGuid>

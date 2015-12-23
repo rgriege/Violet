@@ -1,4 +1,4 @@
-#include "editor/Editor.h"
+#include "editor/EditorSystem.h"
 #include "editor/CppScriptExports.h"
 #include "editor/command/file/OpenCommand.h"
 #include "editor/command/file/SaveAllCommand.h"
@@ -36,6 +36,7 @@ private:
 
     void onKeyUp(const EntityId entityId, const WindowSystem::KeyEvent & event)
     {
+        const auto & engine = Engine::getInstance();
         if (m_dialog == None)
         {
             switch (event.code)
@@ -60,14 +61,26 @@ private:
 
                 case 'c':
                     if ((event.modifiers & Key::Modifier::M_CTRL) == 0)
-                        Editor::execute(createClearAllCommand());
+                    {
+                        engine.addWriteTask(*engine.getSystem<EditorSystem>(),
+                            [](EditorSystem & editor)
+                            {
+                                editor.execute(createClearAllCommand());
+                            });
+                    }
                     else
                         printf("%x - %x - %x\n", event.modifiers, Key::Modifier::M_CTRL, event.modifiers & Key::Modifier::M_CTRL);
                     break;
 
                 case 'z':
                     if ((event.modifiers & Key::Modifier::M_CTRL) != 0)
-                        Editor::undo();
+                    {
+                        engine.addWriteTask(*engine.getSystem<EditorSystem>(),
+                            [](EditorSystem & editor)
+                            {
+                                editor.undo();
+                            });
+                    }
                     break;
 
                 case Key::Return:
@@ -86,18 +99,31 @@ private:
     {
         if (!input.empty())
         {
+            const auto & engine = Engine::getInstance();
             switch (m_dialog)
             {
                 case Command:
-                    Editor::execute(input);
+                    engine.addWriteTask(*engine.getSystem<EditorSystem>(),
+                        [=](EditorSystem & editor)
+                        {
+                            editor.execute(input);
+                        });
                     break;
 
                 case Load:
-                    Editor::execute(createOpenCommand(input));
+                    engine.addWriteTask(*engine.getSystem<EditorSystem>(),
+                        [=](EditorSystem & editor)
+                        {
+                            editor.execute(createOpenCommand(input));
+                        });
                     break;
 
                 case Save:
-                    Editor::execute(createSaveAllCommand(input));
+                    engine.addWriteTask(*engine.getSystem<EditorSystem>(),
+                        [=](EditorSystem & editor)
+                        {
+                            editor.execute(createSaveAllCommand(input));
+                        });
                     break;
             }
         }

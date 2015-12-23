@@ -1,6 +1,6 @@
 // ============================================================================
 
-#include "editor/Editor.h"
+#include "editor/EditorSystem.h"
 
 #include "editor/component/EditorComponent.h"
 #include "editor/component/EditorComponentWrapper.h"
@@ -10,6 +10,7 @@
 #include "violet/input/component/MouseInputComponent.h"
 #include "violet/log/Log.h"
 #include "violet/script/ScriptComponent.h"
+#include "violet/system/SystemFactory.h"
 #include "violet/update/component/UpdateComponent.h"
 #include "violet/utility/FormattedString.h"
 
@@ -22,15 +23,14 @@ using namespace Violet;
 
 namespace EditorNamespace
 {
-	std::deque<std::unique_ptr<Command>> ms_commandHistory;
-	Editor::CommandFactory ms_commandFactory;
+	EditorSystem::CommandFactory ms_commandFactory;
 }
 
 using namespace EditorNamespace;
 
 // ============================================================================
 
-const ComponentManager::TagMap Editor::ms_tagMap = {
+const ComponentManager::TagMap EditorSystem::ms_tagMap = {
 	{ UpdateComponent::getStaticTag(), EditorComponentWrapper<UpdateComponent>::getStaticTag() },
 	{ ScriptComponent::getStaticTag(), EditorComponentWrapper<ScriptComponent>::getStaticTag() },
 	{ KeyInputComponent::getStaticTag(), EditorComponentWrapper<KeyInputComponent>::getStaticTag() },
@@ -40,50 +40,41 @@ const ComponentManager::TagMap Editor::ms_tagMap = {
 
 // ============================================================================
 
-void Editor::registerCommand(const char * const usage, const CommandFactory::Producer & producer)
+const char * EditorSystem::getStaticLabel()
+{
+	return "edtr";
+}
+
+// ----------------------------------------------------------------------------
+
+void EditorSystem::install(Violet::SystemFactory & factory)
+{
+	factory.assign(getStaticLabel(), &EditorSystem::init);
+}
+
+// ----------------------------------------------------------------------------
+
+void EditorSystem::init(Violet::Deserializer & deserializer)
+{
+	deserializer.enterSegment(getStaticLabel());
+
+	Engine::getInstance().addWriteTask(Engine::getInstance(),
+		[=](Engine & engine)
+		{
+			engine.addSystem(std::unique_ptr<EditorSystem>(new EditorSystem));
+		}, Thread::Window);
+}
+
+// ----------------------------------------------------------------------------
+
+void EditorSystem::registerCommand(const char * const usage, const CommandFactory::Producer & producer)
 {
 	ms_commandFactory.assign(StringUtilities::left(usage, ' '), producer);
 }
 
 // ----------------------------------------------------------------------------
 
-void Editor::execute(const std::string & commandString)
-{
-	const std::string name = StringUtilities::left(commandString, ' ');
-	auto command = ms_commandFactory.create(name, StringUtilities::rightOfFirst(commandString, ' '));
-	if (command != nullptr)
-		execute(std::move(command));
-	else
-		Log::log(FormattedString<128>().sprintf("Invalid command '%s'", commandString.c_str()));
-}
-
-// ----------------------------------------------------------------------------
-
-void Editor::execute(std::unique_ptr<Command> && command)
-{
-	command->execute();
-	if (command->canUndo())
-	{
-		ms_commandHistory.emplace_back(std::move(command));
-		if (ms_commandHistory.size() >= 100)
-			ms_commandHistory.pop_front();
-	}
-}
-
-// ----------------------------------------------------------------------------
-
-void Editor::undo()
-{
-	if (!ms_commandHistory.empty())
-	{
-		ms_commandHistory.back()->undo();
-		ms_commandHistory.pop_back();
-	}
-}
-
-// ----------------------------------------------------------------------------
-
-void Editor::addEditBehavior(const ComponentManager & scene, const EntityId entityId)
+void EditorSystem::addEditBehavior(const ComponentManager & scene, const EntityId entityId)
 {
 	Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
 		[&scene, entityId]()
@@ -112,7 +103,7 @@ void Editor::addEditBehavior(const ComponentManager & scene, const EntityId enti
 
 // ----------------------------------------------------------------------------
 
-void Editor::removeEditBehavior(const ComponentManager & scene, const EntityId entityId)
+void EditorSystem::removeEditBehavior(const ComponentManager & scene, const EntityId entityId)
 {
 	const auto & engine = Engine::getInstance();
 	engine.addWriteTask(*engine.getCurrentScene().getPool<ScriptComponent>(),
@@ -125,6 +116,50 @@ void Editor::removeEditBehavior(const ComponentManager & scene, const EntityId e
 		{
 			pool.remove(entityId);
 		});
+}
+
+// ============================================================================
+
+void EditorSystem::execute(const std::string & commandString)
+{
+	const std::string name = StringUtilities::left(commandString, ' ');
+	auto command = ms_commandFactory.create(name, StringUtilities::rightOfFirst(commandString, ' '));
+	if (command != nullptr)
+		execute(std::move(command));
+	else
+		Log::log(FormattedString<128>().sprintf("Invalid command '%s'", commandString.c_str()));
+}
+
+// ----------------------------------------------------------------------------
+
+void EditorSystem::execute(std::unique_ptr<Command> && command)
+{
+	command->execute();
+	if (command->canUndo())
+	{
+		m_commandHistory.emplace_back(std::move(command));
+		if (m_commandHistory.size() >= 100)
+			m_commandHistory.pop_front();
+	}
+}
+
+// ----------------------------------------------------------------------------
+
+void EditorSystem::undo()
+{
+	if (!m_commandHistory.empty())
+	{
+		m_commandHistory.back()->undo();
+		m_commandHistory.pop_back();
+	}
+}
+
+// ============================================================================
+
+EditorSystem::EditorSystem() :
+	System(getStaticLabel()),
+	m_commandHistory()
+{
 }
 
 // ============================================================================

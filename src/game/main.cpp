@@ -1,4 +1,4 @@
-#include "editor/Editor.h"
+#include "editor/EditorSystem.h"
 #include "editor/command/ClearAllCommand.h"
 #include "editor/command/file/OpenCommand.h"
 #include "editor/command/file/SaveAllCommand.h"
@@ -69,10 +69,11 @@ Violet::SystemFactory setup()
 	Violet::InputSystem::install(factory);
 	Violet::TransformSystem::install(factory);
 	Violet::UpdateSystem::install(factory);
+	edt::EditorSystem::install(factory);
 
-	Editor::registerCommand<ClearAllCommand>();
-	Editor::registerCommand<OpenCommand>();
-	Editor::registerCommand<SaveAllCommand>();
+	EditorSystem::registerCommand<ClearAllCommand>();
+	EditorSystem::registerCommand<OpenCommand>();
+	EditorSystem::registerCommand<SaveAllCommand>();
 
 	return factory;
 }

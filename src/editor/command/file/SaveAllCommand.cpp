@@ -2,7 +2,7 @@
 
 #include "editor/command/file/SaveAllCommand.h"
 
-#include "editor/Editor.h"
+#include "editor/EditorSystem.h"
 #include "editor/component/EditorComponent.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
@@ -41,7 +41,7 @@ void SaveAllCommand::execute()
 	for (const auto & entity : scene.getEntityView<EditorComponent>())
 		entityIds.emplace_back(std::get<0>(entity).getEntityId());
 
-	Engine::getInstance().getCurrentScene().save(m_fileName.c_str(), entityIds, Editor::ms_tagMap);
+	Engine::getInstance().getCurrentScene().save(m_fileName.c_str(), entityIds, EditorSystem::ms_tagMap);
 }
 
 // ----------------------------------------------------------------------------

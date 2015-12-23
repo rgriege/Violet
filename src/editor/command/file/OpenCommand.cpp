@@ -2,7 +2,7 @@
 
 #include "editor/command/file/OpenCommand.h"
 
-#include "editor/Editor.h"
+#include "editor/EditorSystem.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
 
@@ -38,9 +38,9 @@ void OpenCommand::execute()
 	Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
 		[=](ComponentManager & scene)
 		{
-			m_entityIds = scene.load(m_fileName.c_str(), Editor::ms_tagMap);
+			m_entityIds = scene.load(m_fileName.c_str(), EditorSystem::ms_tagMap);
 			for (const auto entityId : m_entityIds)
-				Editor::addEditBehavior(scene, entityId);
+				EditorSystem::addEditBehavior(scene, entityId);
 		});
 }
 

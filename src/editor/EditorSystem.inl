@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename T>
-void edt::Editor::registerCommand()
+void edt::EditorSystem::registerCommand()
 {
 	registerCommand(T::getUsage(), &T::parse);
 }

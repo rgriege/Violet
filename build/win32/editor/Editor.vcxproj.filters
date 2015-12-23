@@ -7,7 +7,6 @@
     <ClInclude Include="..\..\..\src\editor\command\file\OpenCommand.h">
       <Filter>command\file</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\editor\Editor.h" />
     <ClInclude Include="..\..\..\src\editor\Defines.h" />
     <ClInclude Include="..\..\..\src\editor\command\file\SaveAllCommand.h">
       <Filter>command\file</Filter>
@@ -22,12 +21,12 @@
     <ClInclude Include="..\..\..\src\editor\command\ClearAllCommand.h">
       <Filter>command</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\EditorSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\editor\command\file\OpenCommand.cpp">
       <Filter>command\file</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\src\editor\Editor.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\file\SaveAllCommand.cpp">
       <Filter>command\file</Filter>
     </ClCompile>
@@ -38,6 +37,7 @@
     <ClCompile Include="..\..\..\src\editor\command\ClearAllCommand.cpp">
       <Filter>command</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\EditorSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="command">
@@ -51,6 +51,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\editor\Editor.inl" />
+    <None Include="..\..\..\src\editor\EditorSystem.inl" />
   </ItemGroup>
 </Project>
