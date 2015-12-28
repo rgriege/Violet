@@ -6,6 +6,52 @@
 
 // ============================================================================
 
+namespace Violet
+{
+    namespace detail
+    {
+        template <typename ComponentType, typename... ComponentTypes>
+        struct BeginHelper
+        {
+            static std::tuple<ComponentPool::Iterator<ComponentType, true>, ComponentPool::Iterator<ComponentTypes, true>...> begin(const Violet::ComponentManager & manager)
+            {
+                return std::tuple_cat(BeginHelper<ComponentType>::begin(manager), BeginHelper<ComponentTypes...>::begin(manager));
+            }
+        };
+
+        template <typename ComponentType>
+        struct BeginHelper<ComponentType>
+        {
+            static std::tuple<ComponentPool::Iterator<ComponentType, true>> begin(const Violet::ComponentManager & manager)
+            {
+                const ComponentPool * pool = manager.getPool<ComponentType>();
+                return std::make_tuple(pool->begin<ComponentType>());
+            }
+        };
+
+        template <typename ComponentType, typename... ComponentTypes>
+        struct EndHelper
+        {
+            static std::tuple<ComponentPool::Iterator<ComponentType, true>, ComponentPool::Iterator<ComponentTypes, true>...> end(const Violet::ComponentManager & manager)
+            {
+                return std::tuple_cat(EndHelper<ComponentType>::end(manager), EndHelper<ComponentTypes...>::end(manager));
+            }
+        };
+
+        template <typename ComponentType>
+        struct EndHelper<ComponentType>
+        {
+            static std::tuple<ComponentPool::Iterator<ComponentType, true>> end(const Violet::ComponentManager & manager)
+            {
+                const ComponentPool * pool = manager.getPool<ComponentType>();
+                return std::make_tuple(pool->end<ComponentType>());
+            }
+        };
+    }
+}
+
+// ============================================================================
+
 template <bool is_const, typename... ComponentTypes>
 Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator::Iterator(iterator_tuple iterators) :
 	m_iterators(iterators),
@@ -106,9 +152,8 @@ Violet::ComponentManager::View<is_const, ComponentTypes...>::View(const Componen
 template <bool is_const, typename... ComponentTypes>
 typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator Violet::ComponentManager::View<is_const, ComponentTypes...>::begin()
 {
-	auto iterator = Iterator(std::make_tuple(m_manager.getPool<ComponentTypes>()->begin<ComponentTypes>()...));
-	++iterator;
-	return iterator;
+    Iterator iterator(detail::BeginHelper<ComponentTypes...>::begin(m_manager));
+	return ++iterator;
 }
 
 // ----------------------------------------------------------------------------
@@ -116,7 +161,7 @@ typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator V
 template <bool is_const, typename... ComponentTypes>
 typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator Violet::ComponentManager::View<is_const, ComponentTypes...>::end()
 {
-	return Iterator(std::make_tuple(m_manager.getPool<ComponentTypes>()->end<ComponentTypes>()...));
+    return Iterator(detail::EndHelper<ComponentTypes...>::end(m_manager));
 }
 
 // ============================================================================
@@ -124,7 +169,8 @@ typename Violet::ComponentManager::View<is_const, ComponentTypes...>::Iterator V
 template <typename ComponentType, typename... Args>
 ComponentType & Violet::ComponentManager::createComponent(const EntityId entityId, Args &&... args)
 {
-	return getPool<ComponentType>()->create<ComponentType, Args...>(entityId, std::forward<Args>(args)...);
+    ComponentPool * pool = getPool<ComponentType>();
+	return pool->create<ComponentType, Args...>(entityId, std::forward<Args>(args)...);
 }
 
 // ----------------------------------------------------------------------------
@@ -202,7 +248,7 @@ void Violet::ComponentManager::uninstallComponent()
 // ============================================================================
 
 template <typename ComponentType>
-static Violet::ComponentPool Violet::ComponentManager::createPool()
+Violet::ComponentPool Violet::ComponentManager::createPool()
 {
 	return ComponentPool::create<ComponentType>();
 }

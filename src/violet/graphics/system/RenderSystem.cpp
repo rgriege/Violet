@@ -4,7 +4,6 @@
 
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
-#include "violet/entity/Entity.h"
 #include "violet/graphics/component/ColorComponent.h"
 #include "violet/graphics/component/TextComponent.h"
 #include "violet/graphics/component/TextureComponent.h"

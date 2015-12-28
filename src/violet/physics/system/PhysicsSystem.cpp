@@ -4,7 +4,6 @@
 
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
-#include "violet/entity/Entity.h"
 #include "violet/serialization/Deserializer.h"
 #include "violet/structures/QuadTree.h"
 #include "violet/system/SystemFactory.h"

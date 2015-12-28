@@ -26,8 +26,8 @@ namespace Violet
 		{
 		public:
 
-			typedef std::conditional_t<is_const, const_pointer, pointer> pointer;
-			typedef std::conditional_t<is_const, const_reference, reference> reference;
+			typedef std::conditional_t<is_const, Vector::const_pointer, Vector::pointer> pointer;
+			typedef std::conditional_t<is_const, Vector::const_reference, Vector::reference> reference;
 
 		public:
 

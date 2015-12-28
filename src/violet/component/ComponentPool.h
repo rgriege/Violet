@@ -42,8 +42,8 @@ namespace Violet
 			Pointer m_ptr;
 		};
 
-		template <typename T> using iterator = typename Iterator<T, false>;
-		template <typename T> using const_iterator = typename Iterator<T, true>;
+		template <typename T> using iterator = Iterator<T, false>;
+		template <typename T> using const_iterator = Iterator<T, true>;
 
 	public:
 

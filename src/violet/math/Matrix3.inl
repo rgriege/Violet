@@ -20,8 +20,8 @@ template <typename T>
 Violet::Matrix3<T> Violet::Matrix3<T>::createRotation(const float radians)
 {
 	return {
-		cos(radians), -sin(radians), 0.f,
-		sin(radians), cos(radians), 0.f,
+		std::cos(radians), -std::sin(radians), 0.f,
+		std::sin(radians), std::cos(radians), 0.f,
 		0.f, 0.f, 1.f
 	};
 }

@@ -26,19 +26,19 @@ namespace edt
 	public:
 
 		EditorComponentWrapper(const Violet::EntityId entityId, Violet::ComponentDeserializer & deserializer) :
-			ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
+			Violet::ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
 			m_data(entityId, deserializer)
 		{
 		}
 
 		EditorComponentWrapper(EditorComponentWrapper && other) :
-			ComponentBase<EditorComponentWrapper<ComponentType>>(std::move(other)),
+			Violet::ComponentBase<EditorComponentWrapper<ComponentType>>(std::move(other)),
 			m_data(std::move(other.m_data))
 		{
 		}
 
 		EditorComponentWrapper(const Violet::EntityId entityId, ComponentType && other) :
-			ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
+			Violet::ComponentBase<EditorComponentWrapper<ComponentType>>(entityId),
 			m_data(std::move(other))
 		{
 		}

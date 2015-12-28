@@ -3,9 +3,7 @@
 #include "game/pathfinding/PathfindingSystem.h"
 
 #include "violet/Engine.h"
-#include "violet/scene/SceneProcessor.h"
 #include "violet/system/SystemFactory.h"
-#include "violet/transform/component/TransformComponent.h"
 #include "game/world/WorldSystem.h"
 #include "game/pathfinding/MapComponent.h"
 #include "game/pathfinding/PathComponent.h"

@@ -2,6 +2,8 @@
 
 #include "violet/template/TupleUtilities.h"
 
+#include <algorithm>
+
 // ============================================================================
 
 template <typename Writable>

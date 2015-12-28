@@ -15,7 +15,7 @@ Violet::Tag MapComponent::getStaticTag()
 
 // ============================================================================
 
-MapComponent::MapComponent(Violet::const Handle entityId, Violet::Deserializer & deserializer) :
+MapComponent::MapComponent(const Violet::EntityId entityId, Violet::Deserializer & deserializer) :
 	ComponentBase<MapComponent>(entityId),
 	m_graph(),
 	m_id(0)
@@ -23,7 +23,7 @@ MapComponent::MapComponent(Violet::const Handle entityId, Violet::Deserializer &
 	m_id = deserializer.getUint("id");
 	{
 		auto nodesSegment = deserializer.enterSegment("nodes");
-		std::vector<Vec2f> nodes = Violet::SerializationUtilities::deserializeElements<Vec2f>(*nodesSegment);
+		Violet::Vector<Vec2f> nodes = Violet::SerializationUtilities::deserializeElements<Vec2f>(*nodesSegment);
 		for (auto const & node : nodes)
 			m_graph.addNode({ node });
 	}
@@ -47,7 +47,7 @@ Violet::Serializer & operator<<(Violet::Serializer & serializer, const MapCompon
 	serializer.writeUint("id", component.m_id);
 	{
 		auto nodesSegment = serializer.createSegment("nodes");
-		std::vector<Vec2f> nodes;
+		Violet::Vector<Vec2f> nodes;
 		for (auto const & node : component.m_graph.getNodes())
 			nodes.emplace_back(node.second.m_position);
 		Violet::SerializationUtilities::serializeElements(*nodesSegment, nodes);

@@ -3,6 +3,7 @@
 
 #include "violet/Defines.h"
 #include "violet/event/EventContextOwner.h"
+#include "violet/system/System.h"
 #include "violet/task/Task.h"
 #include "violet/task/Thread.h"
 
@@ -15,7 +16,6 @@
 namespace Violet
 {
 	class ComponentManager;
-	class System;
 	class SystemFactory;
 	class TaskScheduler;
 

@@ -11,8 +11,8 @@ using namespace Violet;
 
 void PhysicsTest::run(TestEvaluator & evaluator)
 {
-	RigidBody r1(Vec2f(3, 3), Polygon(std::vector<Vec2f>({ Vec2f(-2, -2), Vec2f(2, -2), Vec2f(2, 2), Vec2f(-2, 2) })), 1.f);
-	RigidBody r2(Vec2f(8, 3), Polygon(std::vector<Vec2f>({ Vec2f(-2, -2), Vec2f(2, -2), Vec2f(2, 2), Vec2f(-2, 2) })), 1.f);
+	RigidBody r1(Vec2f(3, 3), Polygon(Vector<Vec2f>({ Vec2f(-2, -2), Vec2f(2, -2), Vec2f(2, 2), Vec2f(-2, 2) })), 1.f);
+	RigidBody r2(Vec2f(8, 3), Polygon(Vector<Vec2f>({ Vec2f(-2, -2), Vec2f(2, -2), Vec2f(2, 2), Vec2f(-2, 2) })), 1.f);
 	r2.applyImpulse(Vec2f(-2, 0));
 	Intersection firstIntersection(std::move(r1), std::move(r2), 1.f);
 

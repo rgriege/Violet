@@ -13,8 +13,6 @@ namespace Violet
 	{
 	public:
 
-		enum { MaxId = MaxId };
-		enum { MaxVersion = MaxVersion };
 		enum { IdStorageSize = log_ceil<MaxId>::value };
 		enum { VersionStorageSize = log_ceil<MaxVersion>::value };
 		enum { StorageSize = IdStorageSize + VersionStorageSize };

@@ -14,7 +14,7 @@ namespace Violet
 
 	protected:
 
-		DelegateStore(void * instance, void * function) :
+		DelegateStore(void * instance, void (*function)()) :
 			m_instance(instance),
 			m_function(function)
 		{
@@ -23,7 +23,7 @@ namespace Violet
 	protected:
 
 		void * m_instance;
-		void * m_function;
+		void (*m_function)();
 	};
 
 	template <typename Signature>
@@ -33,7 +33,7 @@ namespace Violet
 	{
 	public:
 
-		template <typename T, typename ResultType(T::*Member)(Args...)>
+		template <typename T, ResultType(T::*Member)(Args...)>
 		static Delegate bind(T * instance)
 		{
 			ResultType(*function)(T*, Args...) = callMember<T, Member>;
@@ -42,7 +42,7 @@ namespace Violet
 
 	private:
 
-		template <typename T, typename ResultType(T::*Member)(Args...)>
+		template <typename T, ResultType(T::*Member)(Args...)>
 		static ResultType callMember(T * instance, Args ... args)
 		{
 			return (instance->*Member)(args...);
@@ -63,15 +63,15 @@ namespace Violet
 		ResultType operator()(Args && ... args) const
 		{
 			return m_instance == nullptr
-				? static_cast<ResultType(*)(Args...)>(m_function)(std::forward<Args>(args)...)
-				: static_cast<ResultType(*)(void *, Args...)>(m_function)(m_instance, std::forward<Args>(args)...);
+				? reinterpret_cast<ResultType(*)(Args...)>(m_function)(std::forward<Args>(args)...)
+				: reinterpret_cast<ResultType(*)(void *, Args...)>(m_function)(m_instance, std::forward<Args>(args)...);
 		}
 
 	private:
 
 		template <typename T>
 		Delegate(T * instance, ResultType(*function)(T*, Args...)) :
-			DelegateStore(instance, function)
+			DelegateStore(instance, reinterpret_cast<void(*)()>(function))
 		{
 		}
 	};

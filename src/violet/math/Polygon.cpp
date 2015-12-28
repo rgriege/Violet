@@ -35,20 +35,6 @@ Polygon::Polygon(Deserializer & deserializer) :
 
 // ----------------------------------------------------------------------------
 
-Polygon::Polygon(const Polygon & rhs) :
-	m_vertices(rhs.m_vertices)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-Polygon::Polygon(Polygon && rhs) :
-	m_vertices(std::move(rhs.m_vertices))
-{
-}
-
-// ----------------------------------------------------------------------------
-
 bool Polygon::contains(const Vec2f & point) const
 {
 	static const FloatInterval interval(0, 1);

@@ -35,8 +35,8 @@ void Transform::rotate(Matrix3f & mat, float const radians)
 Matrix3f Transform::create(const Vec2f & position, const float rotation, const Vec2f & scale)
 {
 	const Matrix3f result = {
-		scale.x * cos(rotation), -scale.y * sin(rotation), position.x,
-		scale.x * sin(rotation), scale.y * cos(rotation), position.y,
+		scale.x * std::cos(rotation), -scale.y * std::sin(rotation), position.x,
+		scale.x * std::sin(rotation), scale.y * std::cos(rotation), position.y,
 		0, 0, 1
 	};
 	return result;

@@ -11,7 +11,7 @@ Violet::Vector<T, Allocator>::Iterator<is_const>::Iterator(pointer ptr) :
 
 template <typename T, typename Allocator>
 template <bool is_const>
-typename Violet::Vector<T, Allocator>::Iterator<is_const> & Violet::Vector<T, Allocator>::Iterator<is_const>::operator++()
+typename Violet::Vector<T, Allocator>::template Iterator<is_const> & Violet::Vector<T, Allocator>::Iterator<is_const>::operator++()
 {
 	++m_ptr;
 	return *this;
@@ -22,7 +22,7 @@ typename Violet::Vector<T, Allocator>::Iterator<is_const> & Violet::Vector<T, Al
 
 template <typename T, typename Allocator>
 template <bool is_const>
-typename Violet::Vector<T, Allocator>::Iterator<is_const>::reference Violet::Vector<T, Allocator>::Iterator<is_const>::operator*()
+typename Violet::Vector<T, Allocator>::template Iterator<is_const>::reference Violet::Vector<T, Allocator>::Iterator<is_const>::operator*()
 {
 	return *m_ptr;
 }
@@ -31,7 +31,7 @@ typename Violet::Vector<T, Allocator>::Iterator<is_const>::reference Violet::Vec
 
 template <typename T, typename Allocator>
 template <bool is_const>
-typename Violet::Vector<T, Allocator>::Iterator<is_const>::pointer Violet::Vector<T, Allocator>::Iterator<is_const>::operator->()
+typename Violet::Vector<T, Allocator>::template Iterator<is_const>::pointer Violet::Vector<T, Allocator>::Iterator<is_const>::operator->()
 {
 	return m_ptr;
 }
@@ -293,7 +293,7 @@ void Violet::Vector<T, Allocator>::emplace_back(Args && ... args)
 {
 	if (m_size == m_capacity)
 		grow();
-	m_allocator.construct(m_data + m_size, std::move(args)...);
+	m_allocator.construct(m_data + m_size, std::forward<Args>(args)...);
 	++m_size;
 }
 

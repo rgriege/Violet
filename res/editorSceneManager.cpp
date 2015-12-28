@@ -7,7 +7,6 @@
 #include "violet/input/system/InputSystem.h"
 #include "violet/log/Log.h"
 #include "violet/script/cpp/CppScript.h"
-#include "violet/script/ScriptUtilities.h"
 #include "violet/utility/FormattedString.h"
 
 #include "dialog.h"

@@ -154,7 +154,10 @@ std::vector<EntityId> ComponentManager::load(const char * const filename, const 
 					{
 						auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
 						if (poolDeserializer != nullptr && *poolDeserializer)
-							ms_componentsFactory.create(poolTag, pool, ComponentDeserializer(std::move(poolDeserializer), handleIdMap));
+                        {
+                            ComponentDeserializer componentDeserializer(std::move(poolDeserializer), handleIdMap);
+							ms_componentsFactory.create(poolTag, pool, componentDeserializer);
+                        }
 						else
 							Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
 					}, threadIt->second);

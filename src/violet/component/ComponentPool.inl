@@ -2,6 +2,7 @@
 
 #include "violet/component/ComponentDeserializer.h"
 
+#include <algorithm>
 #include <assert.h>
 
 // ============================================================================

@@ -18,7 +18,7 @@ public:
 
 public:
 
-	PathfindingComponent(Violet::Handle entityId, Violet::Deserializer & deserializer);
+	PathfindingComponent(Violet::EntityId entityId, Violet::Deserializer & deserializer);
 
 public:
 

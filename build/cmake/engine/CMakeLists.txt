@@ -5,11 +5,13 @@ set (Engine_ROOT ${Violet_SRC}/violet)
 
 # define header and source files for the library
 set (HEADER_FILES
-    ${Engine_ROOT}/component/Component.h
-    ${Engine_ROOT}/component/MappedDataComponent.h
     ${Engine_ROOT}/Defines.h
     ${Engine_ROOT}/Engine.h
-    ${Engine_ROOT}/entity/Entity.h
+    ${Engine_ROOT}/component/Component.h
+    ${Engine_ROOT}/component/ComponentDeserializer.h
+    ${Engine_ROOT}/component/ComponentManager.h
+    ${Engine_ROOT}/component/ComponentPool.h
+    ${Engine_ROOT}/component/MappedDataComponent.h
     ${Engine_ROOT}/event/Event.h
     ${Engine_ROOT}/event/EventContext.h
     ${Engine_ROOT}/event/EventContextOwner.h
@@ -25,18 +27,22 @@ set (HEADER_FILES
     ${Engine_ROOT}/graphics/texture/Texture.h
     ${Engine_ROOT}/handle/Handle.h
     ${Engine_ROOT}/handle/HandleManager.h
-    ${Engine_ROOT}/input/component/KeyInputComponent.h
-    ${Engine_ROOT}/input/component/MouseInputComponent.h
+    ${Engine_ROOT}/handle/VersionedHandleManager.h
     ${Engine_ROOT}/input/InputResult.h
     ${Engine_ROOT}/input/Key.h
+    ${Engine_ROOT}/input/component/KeyInputComponent.h
+    ${Engine_ROOT}/input/component/MouseInputComponent.h
     ${Engine_ROOT}/input/system/InputSystem.h
     ${Engine_ROOT}/log/ConsoleLogTarget.h
+    ${Engine_ROOT}/log/ConsoleLogTarget.h
+    ${Engine_ROOT}/log/FileLogTarget.h
     ${Engine_ROOT}/log/Log.h
     ${Engine_ROOT}/log/LogTarget.h
     ${Engine_ROOT}/math/AABB.h
     ${Engine_ROOT}/math/Circle.h
     ${Engine_ROOT}/math/Constants.h
     ${Engine_ROOT}/math/Interval.h
+    ${Engine_ROOT}/math/LogConst.h
     ${Engine_ROOT}/math/Matrix2.h
     ${Engine_ROOT}/math/Matrix3.h
     ${Engine_ROOT}/math/Polygon.h
@@ -45,11 +51,10 @@ set (HEADER_FILES
     ${Engine_ROOT}/physics/collision/RigidBody.h
     ${Engine_ROOT}/physics/component/PhysicsComponent.h
     ${Engine_ROOT}/physics/system/PhysicsSystem.h
-    ${Engine_ROOT}/scene/Scene.h
-    ${Engine_ROOT}/scene/SceneProcessor.h
     ${Engine_ROOT}/script/Script.h
     ${Engine_ROOT}/script/ScriptComponent.h
     ${Engine_ROOT}/script/ScriptFactory.h
+    ${Engine_ROOT}/script/ScriptUtilities.h
     ${Engine_ROOT}/script/cpp/CppScript.h
     ${Engine_ROOT}/script/cpp/SharedLibrary.h
     ${Engine_ROOT}/script/lua/LuaLibrary.h
@@ -67,16 +72,20 @@ set (HEADER_FILES
     ${Engine_ROOT}/serialization/Serializer.h
     ${Engine_ROOT}/structures/CrsGraph.h
     ${Engine_ROOT}/structures/QuadTree.h
+    ${Engine_ROOT}/structures/Vector.h
     ${Engine_ROOT}/system/SystemFactory.h
     ${Engine_ROOT}/system/System.h
     ${Engine_ROOT}/task/Task.h
     ${Engine_ROOT}/task/TaskScheduler.h
+    ${Engine_ROOT}/task/Thread.h
     ${Engine_ROOT}/template/TemplateUtilities.h
     ${Engine_ROOT}/template/TupleUtilities.h
     ${Engine_ROOT}/time/Time.h
-    ${Engine_ROOT}/transform/component/TransformComponent.h
-    ${Engine_ROOT}/ui/UiList.h
-    ${Engine_ROOT}/ui/UiStateComponent.h
+    ${Engine_ROOT}/transform/Transform.h
+    ${Engine_ROOT}/transform/component/LocalTransformComponent.h
+    ${Engine_ROOT}/transform/component/WorldTransformComponent.h
+    ${Engine_ROOT}/transform/system/TransformSystem.h
+    ${Engine_ROOT}/ui/UiTextInputBox.h
     ${Engine_ROOT}/update/component/UpdateComponent.h
     ${Engine_ROOT}/update/system/UpdateSystem.h
     ${Engine_ROOT}/utility/Buffer.h
@@ -87,23 +96,27 @@ set (HEADER_FILES
     ${Engine_ROOT}/utility/Guard.h
     ${Engine_ROOT}/utility/lent_ptr.h
     ${Engine_ROOT}/utility/Profiler.h
+    ${Engine_ROOT}/utility/Random.h
     ${Engine_ROOT}/utility/ResourceCache.h
     ${Engine_ROOT}/utility/shared_val.h
     ${Engine_ROOT}/utility/StringUtilities.h
     ${Engine_ROOT}/utility/Tag.h
     ${Engine_ROOT}/utility/TextResource.h
     ${Engine_ROOT}/utility/unique_val.h
-    ${Engine_ROOT}/window/glut/GlutWindowSystem.h
     ${Engine_ROOT}/window/MouseButton.h
-    ${Engine_ROOT}/window/sdl/SDLWindowSystem.h
     ${Engine_ROOT}/window/WindowSystem.h
+    ${Engine_ROOT}/window/glut/GlutWindowSystem.h
+    ${Engine_ROOT}/window/sdl/SDLWindowSystem.h
 )
 
 set (SOURCE_FILES
     ${Engine_ROOT}/component/Component.cpp
+    ${Engine_ROOT}/component/ComponentDeserializer.cpp
+    ${Engine_ROOT}/component/ComponentPool.cpp
+    ${Engine_ROOT}/component/ComponentManager.cpp
     ${Engine_ROOT}/component/MappedDataComponent.cpp
     ${Engine_ROOT}/Engine.cpp
-    ${Engine_ROOT}/entity/Entity.cpp
+    ${Engine_ROOT}/event/Event.cpp
     ${Engine_ROOT}/event/EventContext.cpp
     ${Engine_ROOT}/event/EventContextOwner.cpp
     ${Engine_ROOT}/graphics/Color.cpp
@@ -116,14 +129,12 @@ set (SOURCE_FILES
     ${Engine_ROOT}/graphics/shader/Shader.cpp
     ${Engine_ROOT}/graphics/system/RenderSystem.cpp
     ${Engine_ROOT}/graphics/texture/Texture.cpp
-    ${Engine_ROOT}/handle/Handle.cpp
-    ${Engine_ROOT}/handle/HandleComponent.cpp
-    ${Engine_ROOT}/handle/HandleManager.cpp
     ${Engine_ROOT}/input/Key.cpp
     ${Engine_ROOT}/input/component/KeyInputComponent.cpp
     ${Engine_ROOT}/input/component/MouseInputComponent.cpp
     ${Engine_ROOT}/input/system/InputSystem.cpp
     ${Engine_ROOT}/log/ConsoleLogTarget.cpp
+    ${Engine_ROOT}/log/FileLogTarget.cpp
     ${Engine_ROOT}/log/Log.cpp
     ${Engine_ROOT}/log/LogTarget.cpp
     ${Engine_ROOT}/math/AABB.cpp
@@ -135,8 +146,6 @@ set (SOURCE_FILES
     ${Engine_ROOT}/physics/collision/RigidBody.cpp
     ${Engine_ROOT}/physics/component/PhysicsComponent.cpp
     ${Engine_ROOT}/physics/system/PhysicsSystem.cpp
-    ${Engine_ROOT}/scene/Scene.cpp
-    ${Engine_ROOT}/scene/SceneProcessor.cpp
     ${Engine_ROOT}/script/Script.cpp
     ${Engine_ROOT}/script/ScriptComponent.cpp
     ${Engine_ROOT}/script/ScriptFactory.cpp
@@ -154,14 +163,17 @@ set (SOURCE_FILES
     ${Engine_ROOT}/task/Task.cpp
     ${Engine_ROOT}/task/TaskScheduler.cpp
     ${Engine_ROOT}/time/Time.cpp
-    ${Engine_ROOT}/transform/component/TransformComponent.cpp
-    ${Engine_ROOT}/ui/UiList.cpp
-    ${Engine_ROOT}/ui/UiStateComponent.cpp
+    ${Engine_ROOT}/transform/Transform.cpp
+    ${Engine_ROOT}/transform/component/LocalTransformComponent.cpp
+    ${Engine_ROOT}/transform/component/WorldTransformComponent.cpp
+    ${Engine_ROOT}/transform/system/TransformSystem.cpp
+    ${Engine_ROOT}/ui/UiTextInputBox.cpp
     ${Engine_ROOT}/update/component/UpdateComponent.cpp
     ${Engine_ROOT}/update/system/UpdateSystem.cpp
     ${Engine_ROOT}/utility/FileUtilities.cpp
     ${Engine_ROOT}/utility/FreeList.cpp
     ${Engine_ROOT}/utility/Profiler.cpp
+    ${Engine_ROOT}/utility/Random.cpp
     ${Engine_ROOT}/utility/StringUtilities.cpp
     ${Engine_ROOT}/utility/Tag.cpp
     ${Engine_ROOT}/window/glut/GlutWindowSystem.cpp

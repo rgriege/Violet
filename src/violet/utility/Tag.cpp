@@ -2,6 +2,7 @@
 
 #include "violet/utility/Tag.h"
 
+#include <cstring>
 #include <set>
 
 using namespace Violet;

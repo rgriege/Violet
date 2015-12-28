@@ -10,7 +10,7 @@ set (SOURCE_FILES
 include_directories (${Violet_SRC})
 
 # Setup for library find
-set (POSSIBLE_LIBRARIES OpenGL GLEW Freetype PNG Lua JsonCpp SDL2 Engine Game Editor)
+set (POSSIBLE_LIBRARIES OpenGL GLEW Freetype PNG Lua JsonCpp SDL2 Engine Editor)
 
 gather_libraries ()
 add_executable (App ${SOURCE_FILES})

@@ -2,7 +2,6 @@
 #define GAME_MapComponent_H
 
 #include "violet/component/Component.h"
-#include "violet/entity/Entity.h"
 #include "game/Config.h"
 #include "game/pathfinding/Map.h"
 
@@ -20,7 +19,7 @@ public:
 
 public:
 
-	MapComponent(Violet::Handle entityId, Violet::Deserializer & deserializer);
+	MapComponent(Violet::EntityId entityId, Violet::Deserializer & deserializer);
 	MapComponent(MapComponent && other);
 
 public:

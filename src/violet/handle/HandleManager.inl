@@ -42,7 +42,7 @@ Violet::HandleManager<Handle> & Violet::HandleManager<Handle>::operator=(HandleM
 template <typename Handle>
 Handle Violet::HandleManager<Handle>::create()
 {
-	Handle::StorageType id;
+	typename Handle::StorageType id;
 	if (!m_recycleList.empty())
 	{
 		id = m_recycleList.front();
@@ -62,7 +62,7 @@ Handle Violet::HandleManager<Handle>::create()
 template <typename Handle>
 bool Violet::HandleManager<Handle>::used(const Handle handle) const
 {
-	const Handle::StorageType id = handle.getId();
+	const typename Handle::StorageType id = handle.getId();
 	return id < m_usedList.size() && m_usedList[id];
 }
 
@@ -71,7 +71,7 @@ bool Violet::HandleManager<Handle>::used(const Handle handle) const
 template <typename Handle>
 void Violet::HandleManager<Handle>::free(const Handle entity)
 {
-	const Handle::StorageType id = entity.getId();
+	const typename Handle::StorageType id = entity.getId();
 	if (id < m_usedList.size() && m_usedList[id])
 	{
 		m_usedList[id] = false;

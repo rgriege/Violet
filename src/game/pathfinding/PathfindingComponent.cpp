@@ -14,7 +14,7 @@ Violet::Tag PathfindingComponent::getStaticTag()
 
 // ============================================================================
 
-PathfindingComponent::PathfindingComponent(Violet::const Handle entityId, Violet::Deserializer & deserializer) :
+PathfindingComponent::PathfindingComponent(const Violet::EntityId entityId, Violet::Deserializer & deserializer) :
 	ComponentBase<PathfindingComponent>(entityId),
 	m_mapId(deserializer.getUint("mapId")),
 	m_speed(deserializer.getFloat("speed"))
