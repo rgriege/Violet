@@ -35,14 +35,14 @@ namespace edt
 		static void registerCommand();
 		static void registerCommand(const char * usage, const CommandFactory::Producer & producer);
 
-		static void addEditBehavior(const Violet::ComponentManager & scene, const Violet::EntityId entityId);
-		static void removeEditBehavior(const Violet::ComponentManager & scene, const Violet::EntityId entityId);
-
 	public:
 
 		static const Violet::ComponentManager::TagMap ms_tagMap;
 
 	public:
+
+		void addEditBehavior(const Violet::ComponentManager & scene, const Violet::EntityId entityId) const;
+		void removeEditBehavior(const Violet::ComponentManager & scene, const Violet::EntityId entityId) const;
 
 		void execute(const std::string & command);
 		void execute(std::unique_ptr<Command> && command);
@@ -50,13 +50,14 @@ namespace edt
 
 	private:
 
-		EditorSystem();
+		EditorSystem(std::string editScriptFileName);
 
 		EditorSystem(const EditorSystem &) = delete;
 		EditorSystem & operator=(const EditorSystem &) = delete;
 
 	private:
 
+        std::string m_editScriptFileName;
 		std::deque<std::unique_ptr<Command>> m_commandHistory;
 	};
 }

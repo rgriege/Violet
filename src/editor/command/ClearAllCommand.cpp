@@ -97,7 +97,7 @@ void ClearAllCommand::undo()
 			{
 				const auto & entityIds = scene.load(tempFileName.c_str(), EditorSystem::ms_tagMap);
 				for (const auto entityId : entityIds)
-					EditorSystem::addEditBehavior(scene, entityId);
+					Engine::getInstance().getSystem<EditorSystem>()->addEditBehavior(scene, entityId);
 				cleanup(tempFileName);
 			});
 		m_tempFileName.clear();

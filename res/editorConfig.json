@@ -16,7 +16,9 @@
     "inpt": {},
     "updt": {},
     "tsfm": {},
-    "edtr": {}
+    "edtr": {
+      "editScript": "editEntity.dll"
+    }
   },
   "firstScene": "editorScene.json"
 }

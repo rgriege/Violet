@@ -40,7 +40,7 @@ void OpenCommand::execute()
 		{
 			m_entityIds = scene.load(m_fileName.c_str(), EditorSystem::ms_tagMap);
 			for (const auto entityId : m_entityIds)
-				EditorSystem::addEditBehavior(scene, entityId);
+				Engine::getInstance().getSystem<EditorSystem>()->addEditBehavior(scene, entityId);
 		});
 }
 

@@ -56,12 +56,13 @@ void EditorSystem::install(Violet::SystemFactory & factory)
 
 void EditorSystem::init(Violet::Deserializer & deserializer)
 {
-	deserializer.enterSegment(getStaticLabel());
+	auto segment = deserializer.enterSegment(getStaticLabel());
+    std::string editScriptFileName = segment->getString("editScript");
 
 	Engine::getInstance().addWriteTask(Engine::getInstance(),
-		[=](Engine & engine)
+		[=](Engine & engine) mutable
 		{
-			engine.addSystem(std::unique_ptr<EditorSystem>(new EditorSystem));
+			engine.addSystem(std::unique_ptr<EditorSystem>(new EditorSystem(std::move(editScriptFileName))));
 		}, Thread::Window);
 }
 
@@ -72,19 +73,19 @@ void EditorSystem::registerCommand(const char * const usage, const CommandFactor
 	ms_commandFactory.assign(StringUtilities::left(usage, ' '), producer);
 }
 
-// ----------------------------------------------------------------------------
+// ============================================================================
 
-void EditorSystem::addEditBehavior(const ComponentManager & scene, const EntityId entityId)
+void EditorSystem::addEditBehavior(const ComponentManager & scene, const EntityId entityId) const
 {
 	Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
-		[&scene, entityId]()
+		[&scene, entityId, this]()
 		{
 			if (scene.hasComponent<ColorComponent>(entityId))
 			{
 				Engine::getInstance().addWriteTask(*scene.getPool<ScriptComponent>(),
 					[=](ComponentPool & pool)
 					{
-						pool.create<ScriptComponent>(entityId, "editEntity.dll");
+						pool.create<ScriptComponent>(entityId, m_editScriptFileName.c_str());
 					});
 				Polygon poly = scene.getComponent<ColorComponent>(entityId)->m_mesh->getPolygon();
 				Engine::getInstance().addWriteTask(*scene.getPool<MouseInputComponent>(),
@@ -103,7 +104,7 @@ void EditorSystem::addEditBehavior(const ComponentManager & scene, const EntityI
 
 // ----------------------------------------------------------------------------
 
-void EditorSystem::removeEditBehavior(const ComponentManager & scene, const EntityId entityId)
+void EditorSystem::removeEditBehavior(const ComponentManager & scene, const EntityId entityId) const
 {
 	const auto & engine = Engine::getInstance();
 	engine.addWriteTask(*engine.getCurrentScene().getPool<ScriptComponent>(),
@@ -118,7 +119,7 @@ void EditorSystem::removeEditBehavior(const ComponentManager & scene, const Enti
 		});
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 void EditorSystem::execute(const std::string & commandString)
 {
@@ -156,8 +157,9 @@ void EditorSystem::undo()
 
 // ============================================================================
 
-EditorSystem::EditorSystem() :
+EditorSystem::EditorSystem(std::string editScriptFileName) :
 	System(getStaticLabel()),
+    m_editScriptFileName(std::move(editScriptFileName)),
 	m_commandHistory()
 {
 }
