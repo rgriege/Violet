@@ -1,7 +1,9 @@
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
+#include "violet/graphics/component/ColorComponent.h"
 #include "violet/input/system/InputSystem.h"
 #include "violet/log/Log.h"
+#include "violet/math/Polygon.h"
 #include "violet/script/cpp/CppScript.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/serialization/file/FileDeserializerFactory.h"
@@ -19,6 +21,7 @@ public:
     Instance(CppScript & script) :
         CppScript::Instance(script),
         m_dragging(false),
+        m_selected(false),
         m_mouseDownPos(),
         m_startDragPos()
     {
@@ -41,13 +44,17 @@ private:
         if (event.button == MB_Left)
         {
             const auto & engine = Engine::getInstance();
-            createComponentMenu(entityId);
             m_dragging = true;
             m_mouseDownPos = event.position;
             if (engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
             {
                 const auto * ltc = engine.getCurrentScene().getComponent<LocalTransformComponent>(entityId);
                 m_startDragPos = Transform::getPosition(ltc->m_transform);
+            }
+            if (!m_selected)
+            {
+                m_selected = true;
+                addMutationHandle(entityId);
             }
             return InputResult::Block;
         }
@@ -97,33 +104,49 @@ private:
             });
     }
 
-    void createComponentMenu(const EntityId entityId)
+    void addMutationHandle(const EntityId entityId)
     {
-        /*const auto & engine = Engine::getInstance();
-        const auto & menu = engine.getCurrentScene().getEntity(EntityId(4000, 0));
-        if (menu != nullptr)
+        const auto & engine = Engine::getInstance();
+        if (!engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
         {
-            if (entity.hasComponent<TransformComponent>())
-            {
-                engine.addWriteTask(*menu, [&](Entity & m)
-                    {
-                        const auto & deserializer = FileDeserializerFactory::getInstance().create("editTransform.json");
-                        if (deserializer != nullptr)
-                            m.addChild(*deserializer);
+            engine.addWriteTask(*engine.getCurrentScene().getPool<LocalTransformComponent>(),
+                [=](ComponentPool & pool)
+                {
+                    pool.create<LocalTransformComponent>(entityId, EntityId::ms_invalid, Matrix3f::Identity);
+                });
+        }
 
+        engine.addWriteTask(engine.getCurrentScene(),
+            [entityId](ComponentManager & scene)
+            {
+                const EntityId handleId = scene.load("mutationHandle.json").front();
+
+                Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
+                    [entityId, handleId]()
+                    {
                         const auto & engine = Engine::getInstance();
-                        engine.addWriteTask(engine.getCurrentScene(), [&](Scene & scene)
+                        const auto & pool = engine.getCurrentScene().getPool<ColorComponent>();
+                        const auto & poly = pool->get<ColorComponent>(entityId)->m_mesh->getPolygon();
+                        const Vec2f & offset = poly.getBoundingBox().getMaximum();
+
+                        engine.addWriteTask(*engine.getCurrentScene().getPool<LocalTransformComponent>(),
+                            [entityId, handleId, offset](ComponentPool & pool)
                             {
-                                EntitySelectedEvent::emit(scene, entity);
+                                auto * ltc = pool.get<LocalTransformComponent>(handleId);
+                                if (ltc != nullptr)
+                                {
+                                    ltc->m_parentId = entityId;
+                                    Transform::setPosition(ltc->m_transform, offset);
+                                }
                             });
-                    });
-            }
-        }*/
+                    }), ColorComponent::getStaticThread());
+            });
     }
 
 private:
 
     bool m_dragging;
+    bool m_selected;
     Vec2f m_mouseDownPos;
     Vec2f m_startDragPos;
 };
