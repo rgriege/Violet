@@ -108,7 +108,10 @@ namespace Violet
 
 #include "violet/math/Vec2.inl"
 
-typedef Violet::Vec2<int> Vec2i;
-typedef Violet::Vec2<float> Vec2f;
+namespace Violet
+{
+    typedef Vec2<int> Vec2i;
+    typedef Vec2<float> Vec2f;
+}
 
 #endif

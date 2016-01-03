@@ -22,9 +22,13 @@ namespace edt
 
 	public:
 
-		EditorComponent(Violet::EntityId entityId);
+		EditorComponent(Violet::EntityId entityId, Violet::EntityId editId);
 		EditorComponent(Violet::EntityId entityId, const Violet::ComponentDeserializer & deserializer);
 		EditorComponent(EditorComponent && other);
+
+	public:
+
+		Violet::EntityId m_editId;
 	};
 
 	EDITOR_API Violet::Serializer & operator<<(Violet::Serializer & serializer, const EditorComponent & component);

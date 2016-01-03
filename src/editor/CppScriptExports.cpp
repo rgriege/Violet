@@ -3,12 +3,20 @@
 #include "editor/CppScriptExports.h"
 
 using namespace edt;
+using namespace Violet;
 
 // ============================================================================
 
 std::unique_ptr<ClearAllCommand> edt::createClearAllCommand()
 {
 	return std::make_unique<ClearAllCommand>();
+}
+
+// ----------------------------------------------------------------------------
+
+std::unique_ptr<MoveToCommand> edt::createMoveToCommand(const EntityId entityId, const Vec2f & position)
+{
+	return std::make_unique<MoveToCommand>(entityId, position);
 }
 
 // ----------------------------------------------------------------------------

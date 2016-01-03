@@ -40,3 +40,15 @@ void StringUtilities::replace(std::string & haystack, std::string const & needle
 		pos = haystack.find(needle.c_str(), pos + replacement.size());
 	}
 }
+
+void StringUtilities::split(const std::string & whole, const char delimiter, std::vector<std::string> & pieces)
+{
+    size_t start = 0;
+    size_t end = whole.find(delimiter); 
+    for ( ; end != std::string::npos; end = whole.find(delimiter, end + 1))
+    {
+        pieces.emplace_back(whole.substr(start, end));
+        start = end;
+    }
+    pieces.emplace_back(whole.substr(start, end));
+}

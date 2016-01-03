@@ -44,14 +44,6 @@ WorldTransformComponent::WorldTransformComponent(const EntityId entityId, const 
 {
 }
 
-// ----------------------------------------------------------------------------
-
-WorldTransformComponent::WorldTransformComponent(WorldTransformComponent && other) :
-	ComponentBase<WorldTransformComponent>(std::move(other)),
-	m_transform(std::move(other.m_transform))
-{
-}
-
 // ============================================================================
 
 ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, WorldTransformComponent & component)

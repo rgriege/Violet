@@ -31,13 +31,6 @@ Component::Component(const EntityId entityId) :
 
 // ----------------------------------------------------------------------------
 
-Component::Component(Component && other) :
-	m_entityId(other.m_entityId)
-{
-}
-
-// ----------------------------------------------------------------------------
-
 EntityId Component::getEntityId() const
 {
 	return m_entityId;

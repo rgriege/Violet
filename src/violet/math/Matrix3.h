@@ -83,7 +83,10 @@ namespace Violet
 
 #include "violet/math/Matrix3.inl"
 
-typedef Violet::Matrix3<int> Matrix3i;
-typedef Violet::Matrix3<float> Matrix3f;
+namespace Violet
+{
+    typedef Matrix3<int> Matrix3i;
+    typedef Matrix3<float> Matrix3f;
+}
 
 #endif

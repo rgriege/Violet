@@ -1,9 +1,9 @@
 #include "editor/EditorSystem.h"
 #include "editor/command/ClearAllCommand.h"
+#include "editor/command/MoveToCommand.h"
 #include "editor/command/file/OpenCommand.h"
 #include "editor/command/file/SaveAllCommand.h"
 #include "editor/component/EditorComponent.h"
-#include "editor/component/EditorComponentWrapper.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
 #include "violet/component/MappedDataComponent.h"
@@ -49,10 +49,6 @@ Violet::SystemFactory setup()
 	Violet::ComponentManager::installComponent<Violet::UpdateComponent>();
 	Violet::ComponentManager::installComponent<Violet::WorldTransformComponent>();
 	Violet::ComponentManager::installComponent<EditorComponent>();
-	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::ScriptComponent>>();
-	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::KeyInputComponent>>();
-	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::MouseInputComponent>>();
-	Violet::ComponentManager::installComponent<EditorComponentWrapper<Violet::UpdateComponent>>();
 
 	Violet::JsonDeserializer::install();
 	Violet::JsonSerializer::install();
@@ -72,6 +68,7 @@ Violet::SystemFactory setup()
 	edt::EditorSystem::install(factory);
 
 	EditorSystem::registerCommand<ClearAllCommand>();
+    EditorSystem::registerCommand<MoveToCommand>();
 	EditorSystem::registerCommand<OpenCommand>();
 	EditorSystem::registerCommand<SaveAllCommand>();
 

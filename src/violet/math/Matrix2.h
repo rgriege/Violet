@@ -45,7 +45,10 @@ namespace Violet
 
 #include "violet/math/Matrix2.inl"
 
-typedef Violet::Matrix2<int> Matrix2i;
-typedef Violet::Matrix2<float> Matrix2f;
+namespace Violet
+{
+    typedef Matrix2<int> Matrix2i;
+    typedef Matrix2<float> Matrix2f;
+}
 
 #endif

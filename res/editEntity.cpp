@@ -1,3 +1,6 @@
+#include "editor/CppScriptExports.h"
+#include "editor/EditorSystem.h"
+#include "editor/component/EditorComponent.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
 #include "violet/graphics/component/ColorComponent.h"
@@ -12,6 +15,7 @@
 #include "violet/transform/Transform.h"
 #include "violet/utility/FormattedString.h"
 
+using namespace edt;
 using namespace Violet;
 
 class Instance : public CppScript::Instance
@@ -44,6 +48,7 @@ private:
         if (event.button == MB_Left)
         {
             const auto & engine = Engine::getInstance();
+
             m_dragging = true;
             m_mouseDownPos = event.position;
             if (engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
@@ -51,11 +56,18 @@ private:
                 const auto * ltc = engine.getCurrentScene().getComponent<LocalTransformComponent>(entityId);
                 m_startDragPos = Transform::getPosition(ltc->m_transform);
             }
+            else
+            {
+                const auto * wtc = engine.getCurrentScene().getComponent<WorldTransformComponent>(entityId);
+                m_startDragPos = Transform::getPosition(wtc->m_transform);
+            }
+
             if (!m_selected)
             {
                 m_selected = true;
                 addMutationHandle(entityId);
             }
+
             return InputResult::Block;
         }
 
@@ -67,15 +79,11 @@ private:
         if (m_dragging)
         {
             const auto & engine = Engine::getInstance();
+            const auto & newPosition = m_startDragPos + event.to - m_mouseDownPos;
             if (engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
-            {
-                const auto * ltc = engine.getCurrentScene().getComponent<LocalTransformComponent>(entityId);
-                const auto & newPosition = m_startDragPos + event.to - m_mouseDownPos;
-                
                 move<LocalTransformComponent>(entityId, newPosition);
-            }
             else
-                move<WorldTransformComponent>(entityId, event.to);
+                move<WorldTransformComponent>(entityId, newPosition);
         }
     }
 
@@ -83,9 +91,20 @@ private:
     {
         if (event.button == MB_Left)
         {
-            m_dragging = false;
-            m_startDragPos = Vec2f::ZERO;
-            m_mouseDownPos = Vec2f::ZERO;
+            if (m_dragging)
+            {
+                const auto & engine = Engine::getInstance();
+                m_dragging = false;
+                const auto * ec = engine.getCurrentScene().getComponent<EditorComponent>(entityId);
+                const Vec2f pos = m_startDragPos + event.position - m_mouseDownPos;
+                engine.addWriteTask(*engine.getSystem<EditorSystem>(),
+                    [=](EditorSystem & editor)
+                    {
+                        editor.execute(createMoveToCommand(ec->m_editId, pos));
+                    });
+                m_startDragPos = Vec2f::ZERO;
+                m_mouseDownPos = Vec2f::ZERO;
+            }
             return InputResult::Block;
         }
 

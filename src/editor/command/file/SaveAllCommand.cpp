@@ -3,7 +3,6 @@
 #include "editor/command/file/SaveAllCommand.h"
 
 #include "editor/EditorSystem.h"
-#include "editor/component/EditorComponent.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
 
@@ -35,13 +34,7 @@ SaveAllCommand::SaveAllCommand(std::string fileName) :
 
 void SaveAllCommand::execute()
 {
-	const auto & scene = Engine::getInstance().getCurrentScene();
-
-	std::vector<EntityId> entityIds;
-	for (const auto & entity : scene.getEntityView<EditorComponent>())
-		entityIds.emplace_back(std::get<0>(entity).getEntityId());
-
-	Engine::getInstance().getCurrentScene().save(m_fileName.c_str(), entityIds, EditorSystem::ms_tagMap);
+	Engine::getInstance().getSystem<EditorSystem>()->getScene().save(m_fileName.c_str());
 }
 
 // ----------------------------------------------------------------------------

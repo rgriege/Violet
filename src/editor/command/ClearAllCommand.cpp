@@ -3,7 +3,6 @@
 #include "editor/command/ClearAllCommand.h"
 
 #include "editor/EditorSystem.h"
-#include "editor/component/EditorComponent.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
 #include "violet/log/Log.h"
@@ -57,23 +56,26 @@ ClearAllCommand::~ClearAllCommand()
 
 void ClearAllCommand::execute()
 {
-	const auto & scene = Engine::getInstance().getCurrentScene();
+    std::vector<EntityId> copiedEntityIds;
+    for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<EditorComponent>())
+        copiedEntityIds.emplace_back(std::get<0>(entity).getEntityId());
 
-	std::vector<EntityId> entityIds;
-	for (const auto & entity : scene.getEntityView<EditorComponent>())
-		entityIds.emplace_back(std::get<0>(entity).getEntityId());
-
+    const auto & scene = Engine::getInstance().getSystem<EditorSystem>()->getScene();
+    const auto entityIds = scene.getEntityIds();
 	if (!entityIds.empty())
 	{
 		m_tempFileName = StringUtilities::rightOfFirst(FormattedString<32>().sprintf("%.6f.json", Random::ms_generator.generate0to1()), '.');
 
-		scene.save(m_tempFileName.c_str(), entityIds, EditorSystem::ms_tagMap);
+		scene.save(m_tempFileName.c_str(), entityIds);
 
 		Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
 			[=]()
 			{
-				for (const auto & entityId : entityIds)
-					Engine::getInstance().getCurrentScene().removeAll(entityId);
+                const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
+				for (const auto entityId : entityIds)
+					editor.getScene().removeAll(entityId);
+				for (const auto entityId : copiedEntityIds)
+                    editor.propogateRemove(entityId);
 			}));
 	}
 }
@@ -92,12 +94,20 @@ void ClearAllCommand::undo()
 	if (!m_tempFileName.empty())
 	{
 		const std::string tempFileName = m_tempFileName;
-		Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
+		Engine::getInstance().addWriteTask(Engine::getInstance().getSystem<EditorSystem>()->getScene(),
 			[=](ComponentManager & scene)
 			{
-				const auto & entityIds = scene.load(tempFileName.c_str(), EditorSystem::ms_tagMap);
-				for (const auto entityId : entityIds)
-					Engine::getInstance().getSystem<EditorSystem>()->addEditBehavior(scene, entityId);
+                Log::log("ClearAllCommand::undo load");
+                const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
+				const auto & entityIds = scene.load(tempFileName.c_str());
+                for (const EntityId entityId : entityIds)
+                {
+                    Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
+                        [=]()
+                        {
+                            Engine::getInstance().getSystem<EditorSystem>()->propogateAdd(entityId);
+                        }));
+                }
 				cleanup(tempFileName);
 			});
 		m_tempFileName.clear();

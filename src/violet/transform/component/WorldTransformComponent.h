@@ -23,7 +23,6 @@ namespace Violet
 		WorldTransformComponent(EntityId entityId);
 		WorldTransformComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		WorldTransformComponent(EntityId entityId, const Matrix3f & transform);
-		WorldTransformComponent(WorldTransformComponent && other);
 
 	public:
 

@@ -5,6 +5,7 @@
 
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace Violet
 {
@@ -33,6 +34,7 @@ namespace Violet
 		static std::string rightOfLast(std::string const & str, char delimiter);
 		static const char * rightOfLast(const char * str, char delimiter);
 		static void replace(std::string & haystack, std::string const & needle, std::string const & replacement);
+        static void split(const std::string & whole, char delimiter, std::vector<std::string> & pieces);
 	};
 }
 

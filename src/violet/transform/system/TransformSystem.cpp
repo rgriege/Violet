@@ -91,11 +91,17 @@ void TransformSystem::update(const float /*dt*/)
 		const auto & worldTransformComponent = std::get<1>(entity);
 		const EntityId entityId = localTransformComponent.getEntityId();
 
-        Log::log(FormattedString<128>().sprintf("invalid hierarchy (parent <%d,%d> for <%d,%d>)",
+        Log::log(FormattedString<128>().sprintf("invalid hierarchy (parent <%d,%d> for <%d,%d>), removing",
             localTransformComponent.m_parentId.getId(),
             localTransformComponent.m_parentId.getVersion(),
             entityId.getId(),
             entityId.getVersion()));
+
+        engine.addWriteTask(engine.getCurrentScene(),
+            [=](ComponentManager & scene)
+            {
+                scene.removeAll(entityId);
+            });
     }
 }
 

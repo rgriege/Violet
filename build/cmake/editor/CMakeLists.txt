@@ -10,19 +10,20 @@ set (HEADER_FILES
     ${Editor_ROOT}/EditorSystem.h
     ${Editor_ROOT}/command/Command.h
     ${Editor_ROOT}/command/ClearAllCommand.h
+    ${Editor_ROOT}/command/MoveToCommand.h
     ${Editor_ROOT}/command/file/OpenCommand.h
     ${Editor_ROOT}/command/file/SaveAllCommand.h
     ${Editor_ROOT}/component/EditorComponent.h
-    ${Editor_ROOT}/component/EditorComponentWrapper.h
 )
 
 set (SOURCE_FILES
     ${Editor_ROOT}/CppScriptExports.cpp
     ${Editor_ROOT}/command/ClearAllCommand.cpp
+    ${Editor_ROOT}/command/MoveToCommand.cpp
     ${Editor_ROOT}/command/file/OpenCommand.cpp
     ${Editor_ROOT}/command/file/SaveAllCommand.cpp
-    ${Editor_ROOT}/component/EditorComponent.cpp
     ${Editor_ROOT}/EditorSystem.cpp
+    ${Editor_ROOT}/component/EditorComponent.cpp
 )
 
 include_directories (${Violet_SRC})

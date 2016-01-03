@@ -36,11 +36,6 @@ namespace Violet
 
 		Component(EntityId entityId);
 
-		Component(const Component &) = delete;
-		Component & operator=(const Component &) = delete;
-
-		Component(Component &&);
-
 	protected:
 
 		EntityId m_entityId;
@@ -56,7 +51,6 @@ namespace Violet
 	protected:
 
 		ComponentBase(EntityId entityId);
-		ComponentBase(ComponentBase && other);
 	};
 }
 

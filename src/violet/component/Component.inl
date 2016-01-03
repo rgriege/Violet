@@ -45,12 +45,4 @@ Violet::ComponentBase<Derived>::ComponentBase(const EntityId entityId) :
 {
 }
 
-// ----------------------------------------------------------------------------
-
-template <typename Derived>
-Violet::ComponentBase<Derived>::ComponentBase(ComponentBase && other) :
-	Component(std::move(other))
-{
-}
-
 // ============================================================================

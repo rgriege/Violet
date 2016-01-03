@@ -38,15 +38,6 @@ LocalTransformComponent::LocalTransformComponent(const EntityId entityId, const 
 {
 }
 
-// ----------------------------------------------------------------------------
-
-LocalTransformComponent::LocalTransformComponent(LocalTransformComponent && other) :
-	ComponentBase<LocalTransformComponent>(std::move(other)),
-	m_parentId(other.m_parentId),
-	m_transform(std::move(other.m_transform))
-{
-}
-
 // ============================================================================
 
 ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, LocalTransformComponent & component)

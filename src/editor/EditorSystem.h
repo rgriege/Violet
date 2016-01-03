@@ -37,26 +37,30 @@ namespace edt
 
 	public:
 
-		static const Violet::ComponentManager::TagMap ms_tagMap;
-
-	public:
-
-		void addEditBehavior(const Violet::ComponentManager & scene, const Violet::EntityId entityId) const;
-		void removeEditBehavior(const Violet::ComponentManager & scene, const Violet::EntityId entityId) const;
+        Violet::ComponentManager & getScene();
+        const Violet::ComponentManager & getScene() const;
 
 		void execute(const std::string & command);
 		void execute(std::unique_ptr<Command> && command);
 		void undo();
 
+        void propogateAdd(Violet::EntityId entityId) const;
+        template <typename ComponentType, typename MemberType, MemberType ComponentType::*Member>
+        void propogateChange(Violet::EntityId entityId, const MemberType & member) thread_const;
+        void propogateRemove(Violet::EntityId entityId) const;
+
 	private:
 
 		EditorSystem(std::string editScriptFileName);
+
+		void addEditBehavior(const Violet::ComponentManager & scene, const Violet::EntityId entityId) const;
 
 		EditorSystem(const EditorSystem &) = delete;
 		EditorSystem & operator=(const EditorSystem &) = delete;
 
 	private:
 
+        std::unique_ptr<Violet::ComponentManager> m_scene;
         std::string m_editScriptFileName;
 		std::deque<std::unique_ptr<Command>> m_commandHistory;
 	};

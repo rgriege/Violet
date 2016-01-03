@@ -1,17 +1,15 @@
 // ============================================================================
 
 #include "editor/EditorSystem.h"
-
-#include "editor/component/EditorComponent.h"
-#include "editor/component/EditorComponentWrapper.h"
 #include "editor/command/Command.h"
+#include "editor/component/EditorComponent.h"
 #include "violet/graphics/component/ColorComponent.h"
-#include "violet/input/component/KeyInputComponent.h"
 #include "violet/input/component/MouseInputComponent.h"
 #include "violet/log/Log.h"
 #include "violet/script/ScriptComponent.h"
 #include "violet/system/SystemFactory.h"
-#include "violet/update/component/UpdateComponent.h"
+#include "violet/transform/component/LocalTransformComponent.h"
+#include "violet/transform/component/WorldTransformComponent.h"
 #include "violet/utility/FormattedString.h"
 
 #include <deque>
@@ -27,16 +25,6 @@ namespace EditorNamespace
 }
 
 using namespace EditorNamespace;
-
-// ============================================================================
-
-const ComponentManager::TagMap EditorSystem::ms_tagMap = {
-	{ UpdateComponent::getStaticTag(), EditorComponentWrapper<UpdateComponent>::getStaticTag() },
-	{ ScriptComponent::getStaticTag(), EditorComponentWrapper<ScriptComponent>::getStaticTag() },
-	{ KeyInputComponent::getStaticTag(), EditorComponentWrapper<KeyInputComponent>::getStaticTag() },
-	{ MouseInputComponent::getStaticTag(), EditorComponentWrapper<MouseInputComponent>::getStaticTag() },
-	{ EditorComponent::getStaticTag(), EditorComponentWrapper<EditorComponent>::getStaticTag() }
-};
 
 // ============================================================================
 
@@ -75,48 +63,47 @@ void EditorSystem::registerCommand(const char * const usage, const CommandFactor
 
 // ============================================================================
 
-void EditorSystem::addEditBehavior(const ComponentManager & scene, const EntityId entityId) const
+/*void EditorSystem::update(const float dt)
 {
-	Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
-		[&scene, entityId, this]()
-		{
-			if (scene.hasComponent<ColorComponent>(entityId))
-			{
-				Engine::getInstance().addWriteTask(*scene.getPool<ScriptComponent>(),
-					[=](ComponentPool & pool)
-					{
-						pool.create<ScriptComponent>(entityId, m_editScriptFileName.c_str());
-					});
-				Polygon poly = scene.getComponent<ColorComponent>(entityId)->m_mesh->getPolygon();
-				Engine::getInstance().addWriteTask(*scene.getPool<MouseInputComponent>(),
-					[=](ComponentPool & pool) mutable
-					{
-						pool.create<MouseInputComponent>(entityId, std::move(poly));
-					});
-			}
-		}), Thread::Window);
-	Engine::getInstance().addWriteTask(*scene.getPool<EditorComponent>(),
-		[entityId](ComponentPool & pool)
-		{
-			pool.create<EditorComponent>(entityId);
-		});
+    const auto & engine = Engine::getInstance();
+    const auto & scene = engine.getCurrentScene();
+    std::vector<EntityId> edittedEntityIds;
+
+    {
+        const auto & edittedEntities = scene.getEntityView<EditorComponent>();
+        entityIds.reserve(edittedEntities.size());
+        for (const auto & entity : edittedEntities)
+        {
+            const EntityId entityId = std::get<0>(entity).getEdittedId();
+            edittedEntityIds.emplace_back(entityId);
+            if (!m_scene->hasEntity(entityId))
+            {
+                engine.addWriteTask(scene,
+                    [=](ComponentManager & scene)
+                    {
+                        scene.removeAll(entityId);
+                    });
+            }
+        }
+    }
+        
+    for (const auto & entity : scene.getEntityView<LocalTransformComponent>())
+        if (!m_scene->hasEntity(std::get<0>(entity).getEntityId()))
+            engine.addWriteTask
+}*/
+
+// ----------------------------------------------------------------------------
+
+ComponentManager & EditorSystem::getScene()
+{
+    return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
 
-void EditorSystem::removeEditBehavior(const ComponentManager & scene, const EntityId entityId) const
+const ComponentManager & EditorSystem::getScene() const
 {
-	const auto & engine = Engine::getInstance();
-	engine.addWriteTask(*engine.getCurrentScene().getPool<ScriptComponent>(),
-		[=](ComponentPool & pool)
-		{
-			pool.remove(entityId);
-		});
-	engine.addWriteTask(*engine.getCurrentScene().getPool<MouseInputComponent>(),
-		[=](ComponentPool & pool)
-		{
-			pool.remove(entityId);
-		});
+    return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
@@ -155,13 +142,84 @@ void EditorSystem::undo()
 	}
 }
 
+// ----------------------------------------------------------------------------
+
+void EditorSystem::propogateAdd(const EntityId entityId) const
+{
+    if (m_scene->hasComponent<WorldTransformComponent>(entityId) && m_scene->hasComponent<ColorComponent>(entityId))
+    {
+        const auto & engine = Engine::getInstance();
+        engine.addWriteTask(engine.getCurrentScene(),
+            [=](ComponentManager & scene)
+            {
+                const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
+                const EntityId copyId = scene.createEntity();
+
+                scene.createComponent<EditorComponent>(copyId, entityId);
+
+                scene.createComponent<WorldTransformComponent>(copyId, editor.getScene().getComponent<WorldTransformComponent>(entityId)->m_transform);
+
+                const auto * cc = editor.getScene().getComponent<ColorComponent>(entityId);
+                scene.createComponent<ColorComponent>(copyId, cc->m_mesh->getPolygon(), cc->m_shader, cc->m_color);
+
+                const auto * ltc = editor.getScene().getComponent<LocalTransformComponent>(entityId);
+                if (ltc != nullptr)
+                {
+                    EntityId parentId;
+                    if (ltc->m_parentId != EntityId::ms_invalid)
+                    {
+                        for (const auto & entity : scene.getEntityView<EditorComponent>())
+                        {
+                            if (std::get<0>(entity).m_editId == ltc->m_parentId)
+                            {
+                                parentId = std::get<0>(entity).getEntityId();
+                                break;
+                            }
+                        }
+                    }
+                    scene.createComponent<LocalTransformComponent>(copyId, parentId, ltc->m_transform);
+                }
+                editor.addEditBehavior(scene, copyId);
+            });
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+void EditorSystem::propogateRemove(const EntityId entityId) const
+{
+    Engine::getInstance().getCurrentScene().removeAll(entityId);
+}
+
 // ============================================================================
 
 EditorSystem::EditorSystem(std::string editScriptFileName) :
 	System(getStaticLabel()),
+    m_scene(std::make_unique<ComponentManager>()),
     m_editScriptFileName(std::move(editScriptFileName)),
 	m_commandHistory()
 {
+}
+
+// ----------------------------------------------------------------------------
+
+void EditorSystem::addEditBehavior(const ComponentManager & scene, const EntityId entityId) const
+{
+	Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
+		[&scene, entityId, this]()
+		{
+            Engine::getInstance().addWriteTask(*scene.getPool<ScriptComponent>(),
+                [=](ComponentPool & pool)
+                {
+                    pool.create<ScriptComponent>(entityId, m_editScriptFileName.c_str());
+                });
+            Polygon poly = scene.getComponent<ColorComponent>(entityId)->m_mesh->getPolygon();
+            Engine::getInstance().addWriteTask(*scene.getPool<MouseInputComponent>(),
+                [=](ComponentPool & pool) mutable
+                {
+                    pool.create<MouseInputComponent>(entityId, std::move(poly));
+                });
+		}), Thread::Window);
 }
 
 // ============================================================================

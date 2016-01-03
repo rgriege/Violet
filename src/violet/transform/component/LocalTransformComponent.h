@@ -22,7 +22,6 @@ namespace Violet
 
 		LocalTransformComponent(EntityId entityId, ComponentDeserializer & deserializer);
 		LocalTransformComponent(EntityId entityId, EntityId parentId, const Matrix3f & transform);
-		LocalTransformComponent(LocalTransformComponent && other);
 
 	public:
 

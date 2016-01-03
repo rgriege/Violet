@@ -22,6 +22,7 @@ namespace Violet
 		void freeAll();
 
 		std::vector<Handle> getUsed() const;
+        typename Handle::StorageType getVersion(typename Handle::StorageType id) const;
 
 	private:
 

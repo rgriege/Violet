@@ -25,14 +25,15 @@ Thread EditorComponent::getStaticThread()
 
 // ============================================================================
 
-EditorComponent::EditorComponent(const EntityId entityId) :
-	ComponentBase<EditorComponent>(entityId)
+EditorComponent::EditorComponent(const EntityId entityId, const EntityId editId) :
+	ComponentBase<EditorComponent>(entityId),
+	m_editId(editId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-EditorComponent::EditorComponent(const EntityId entityId, const Violet::ComponentDeserializer & /*deserializer*/) :
+EditorComponent::EditorComponent(const EntityId entityId, const ComponentDeserializer & /*deserializer*/) :
 	ComponentBase<EditorComponent>(entityId)
 {
 	assert(false);
@@ -41,13 +42,14 @@ EditorComponent::EditorComponent(const EntityId entityId, const Violet::Componen
 // ----------------------------------------------------------------------------
 
 EditorComponent::EditorComponent(EditorComponent && other) :
-	ComponentBase<EditorComponent>(std::move(other))
+	ComponentBase<EditorComponent>(std::move(other)),
+	m_editId(other.m_editId)
 {
 }
 
 // ============================================================================
 
-Violet::Serializer & edt::operator<<(Violet::Serializer & serializer, const EditorComponent & /*component*/)
+Serializer & edt::operator<<(Serializer & serializer, const EditorComponent & /*component*/)
 {
 	assert(false);
 	return serializer;

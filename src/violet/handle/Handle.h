@@ -8,11 +8,13 @@
 
 namespace Violet
 {
-	template <size_t MaxId, size_t MaxVersion>
+	template <size_t MaxId_, size_t MaxVersion_>
 	class Handle
 	{
 	public:
 
+        enum { MaxId = MaxId_ };
+        enum { MaxVersion = MaxVersion_ };
 		enum { IdStorageSize = log_ceil<MaxId>::value };
 		enum { VersionStorageSize = log_ceil<MaxVersion>::value };
 		enum { StorageSize = IdStorageSize + VersionStorageSize };

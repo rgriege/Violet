@@ -76,8 +76,6 @@ namespace Violet
 		typedef Factory<Tag, void(ComponentPool &, ComponentDeserializer &)> ComponentsFactory;
 		typedef Factory<Tag, uint32(const ComponentPool &, Serializer &, const std::vector<EntityId> &)> PoolSaveFactory;
 
-		typedef std::vector<std::pair<Tag, Tag>> TagMap;
-
 	public:
 
 		template <typename ComponentType>
@@ -95,10 +93,11 @@ namespace Violet
 		ComponentManager & operator=(ComponentManager && other);
 		~ComponentManager();
 
-		std::vector<EntityId> load(const char * sceneName, const TagMap & tagMap = TagMap());
+		std::vector<EntityId> load(const char * sceneName);
 		void save(const char * sceneName) const;
-		void save(const char * sceneName, std::vector<EntityId> entityIds, const TagMap & tagMap = TagMap()) const;
+		void save(const char * sceneName, std::vector<EntityId> entityIds) const;
 
+		EntityId createEntity();
 		template <typename ComponentType, typename... Args>
 		ComponentType & createComponent(EntityId entityId, Args &&... args);
 
@@ -117,6 +116,8 @@ namespace Violet
 		const ComponentType * getComponent(EntityId entityId) const;
 		template <typename... ComponentTypes>
 		View<true, ComponentTypes...> getEntityView() const;
+		std::vector<EntityId> getEntityIds() const;
+		EntityId::StorageType getEntityVersion(EntityId::StorageType id) const;
 		
 		template <typename ComponentType>
 		bool remove(EntityId entityId);
