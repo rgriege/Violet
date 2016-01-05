@@ -7,7 +7,7 @@
 
 namespace Violet
 {
-	class AABB
+	class VIOLET_API AABB
 	{
 	public:
 
