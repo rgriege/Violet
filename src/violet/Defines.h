@@ -20,14 +20,22 @@ namespace Violet
 }
 
 #ifdef WIN32
+
+#define TEMPLATE_HINT
+
 #ifdef VIOLETCORE_EXPORT
 #define VIOLET_API __declspec(dllexport)
-#else
+#else // VIOLETCORE_EXPORT
 #define VIOLET_API __declspec(dllimport)
-#endif
-#else
+#endif // VIOLETCORE_EXPORT
+
+#else // Win32
+
+#define TEMPLATE_HINT template
+
 #define VIOLET_API
-#endif
+
+#endif // Win32
 
 #define thread_const const
 #define thread_mutable mutable

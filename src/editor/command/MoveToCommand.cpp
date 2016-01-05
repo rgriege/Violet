@@ -33,8 +33,8 @@ std::unique_ptr<Command> MoveToCommand::parse(const std::string & text)
     if (arguments.size() == 3)
     {
         const uint32 id = std::atoi(arguments[0].c_str());
-        const float x = std::atof(arguments[1].c_str());
-        const float y = std::atof(arguments[2].c_str());
+        const float x = static_cast<float>(std::atof(arguments[1].c_str()));
+        const float y = static_cast<float>(std::atof(arguments[2].c_str()));
         return std::make_unique<MoveToCommand>(EntityId(id, ~0), Vec2f(x, y));
     }
     return nullptr;
