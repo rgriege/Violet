@@ -73,6 +73,14 @@ AABB Polygon::getBoundingBox() const
 
 // ----------------------------------------------------------------------------
 
+void Polygon::translate(const Vec2f delta)
+{
+	for (auto & vertex : m_vertices)
+		vertex += delta;
+}
+
+// ----------------------------------------------------------------------------
+
 FloatInterval Polygon::project(const Vec2f & axis) const
 {
 	const Vec2f & unitAxis = axis.isUnit() ? axis : axis.getUnit();
