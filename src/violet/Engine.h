@@ -74,10 +74,6 @@ namespace Violet
 		void switchScene(const char * filename);
 		ComponentManager & getCurrentScene();
 		const ComponentManager & getCurrentScene() const;
-#ifdef USE_SCENE_PROCESSOR
-		void addSceneDelegate(SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate);
-		void removeSceneDelegate(SceneProcessor::Filter filter, const SceneProcessor::Delegate & delegate);
-#endif
 		void stop();
 
 		void addSystem(std::unique_ptr<System> && system);
