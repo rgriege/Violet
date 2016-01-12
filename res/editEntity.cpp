@@ -25,7 +25,6 @@ public:
     Instance(CppScript & script) :
         CppScript::Instance(script),
         m_dragging(false),
-        m_selected(false),
         m_mouseDownPos(),
         m_startDragPos()
     {
@@ -62,11 +61,25 @@ private:
                 m_startDragPos = Transform::getPosition(wtc->m_transform);
             }
 
-            if (!m_selected)
-            {
-                m_selected = true;
-                addMutationHandle(entityId);
-            }
+            const bool multiSelect = (event.modifiers & Key::M_SHIFT) != 0;
+            engine.addWriteTask(*engine.getSystem<EditorSystem>(),
+                [=](EditorSystem & editor)
+                {
+                    const EntityId editId = Engine::getInstance().getCurrentScene().getComponent<EditorComponent>(entityId)->m_editId;
+                    const auto & entityIds = editor.getSelectedEntities();
+                    auto it = entityIds.find(editId);
+                    const bool selected = it != entityIds.end();
+
+					if (!selected)
+					{
+						editor.execute(createSelectCommand(editId));
+
+						if (!multiSelect && !entityIds.empty())
+							editor.execute(createDeselectCommand(std::vector<EntityId>(entityIds.begin(), entityIds.end())));
+					}
+					else if (multiSelect)
+						editor.execute(createDeselectCommand(editId));
+                });
 
             return InputResult::Block;
         }
@@ -93,15 +106,18 @@ private:
         {
             if (m_dragging)
             {
-                const auto & engine = Engine::getInstance();
-                m_dragging = false;
-                const auto * ec = engine.getCurrentScene().getComponent<EditorComponent>(entityId);
-                const Vec2f pos = m_startDragPos + event.position - m_mouseDownPos;
-                engine.addWriteTask(*engine.getSystem<EditorSystem>(),
-                    [=](EditorSystem & editor)
-                    {
-                        editor.execute(createMoveToCommand(ec->m_editId, pos));
-                    });
+				if (event.position != m_mouseDownPos)
+				{
+					const auto & engine = Engine::getInstance();
+					const auto * ec = engine.getCurrentScene().getComponent<EditorComponent>(entityId);
+					const Vec2f pos = m_startDragPos + event.position - m_mouseDownPos;
+					engine.addWriteTask(*engine.getSystem<EditorSystem>(),
+						[=](EditorSystem & editor)
+						{
+							editor.execute(createMoveToCommand(ec->m_editId, pos));
+						});
+				}
+				m_dragging = false;
                 m_startDragPos = Vec2f::ZERO;
                 m_mouseDownPos = Vec2f::ZERO;
             }
@@ -123,49 +139,9 @@ private:
             });
     }
 
-    void addMutationHandle(const EntityId entityId)
-    {
-        const auto & engine = Engine::getInstance();
-        if (!engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
-        {
-            engine.addWriteTask(*engine.getCurrentScene().getPool<LocalTransformComponent>(),
-                [=](ComponentPool & pool)
-                {
-                    pool.create<LocalTransformComponent>(entityId, EntityId::ms_invalid, Matrix3f::Identity);
-                });
-        }
-
-        engine.addWriteTask(engine.getCurrentScene(),
-            [entityId](ComponentManager & scene)
-            {
-                const EntityId handleId = scene.load("mutationHandle.json").front();
-
-                Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
-                    [entityId, handleId]()
-                    {
-                        const auto & engine = Engine::getInstance();
-                        const auto & pool = engine.getCurrentScene().getPool<ColorComponent>();
-                        const auto & poly = pool->get<ColorComponent>(entityId)->m_mesh->getPolygon();
-                        const Vec2f & offset = poly.getBoundingBox().getMaximum();
-
-                        engine.addWriteTask(*engine.getCurrentScene().getPool<LocalTransformComponent>(),
-                            [entityId, handleId, offset](ComponentPool & pool)
-                            {
-                                auto * ltc = pool.get<LocalTransformComponent>(handleId);
-                                if (ltc != nullptr)
-                                {
-                                    ltc->m_parentId = entityId;
-                                    Transform::setPosition(ltc->m_transform, offset);
-                                }
-                            });
-                    }), ColorComponent::getStaticThread());
-            });
-    }
-
 private:
 
     bool m_dragging;
-    bool m_selected;
     Vec2f m_mouseDownPos;
     Vec2f m_startDragPos;
 };

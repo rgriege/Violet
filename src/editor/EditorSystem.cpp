@@ -144,6 +144,54 @@ void EditorSystem::undo()
 
 // ----------------------------------------------------------------------------
 
+bool EditorSystem::select(const EntityId entityId)
+{
+	const bool selected = m_selectedEntities.emplace(entityId).second;
+	if (selected)
+	{
+		Engine::getInstance().addWriteTask(Engine::getInstance(),
+			[=](Engine & engine)
+			{
+				auto id = entityId;
+				EntitySelectedEvent::emit(engine.getEventContext(), std::move(id));
+			});
+	}
+	return selected;
+}
+
+// ----------------------------------------------------------------------------
+
+bool EditorSystem::selected(const EntityId entityId) const
+{
+	return m_selectedEntities.find(entityId) != m_selectedEntities.end();
+}
+
+// ----------------------------------------------------------------------------
+
+const std::set<EntityId> & EditorSystem::getSelectedEntities() const
+{
+	return m_selectedEntities;
+}
+
+// ----------------------------------------------------------------------------
+
+bool EditorSystem::deselect(const EntityId entityId)
+{
+	const bool deselected = m_selectedEntities.erase(entityId) != 0;
+	if (deselected)
+	{
+		Engine::getInstance().addWriteTask(Engine::getInstance(),
+			[=](Engine & engine)
+			{
+				auto id = entityId;
+				EntityDeselectedEvent::emit(engine.getEventContext(), std::move(id));
+			});
+	}
+	return deselected;
+}
+
+// ----------------------------------------------------------------------------
+
 void EditorSystem::propogateAdd(const EntityId entityId) const
 {
     if (m_scene->hasComponent<WorldTransformComponent>(entityId) && m_scene->hasComponent<ColorComponent>(entityId))
@@ -195,9 +243,10 @@ void EditorSystem::propogateRemove(const EntityId entityId) const
 
 EditorSystem::EditorSystem(std::string editScriptFileName) :
 	System(getStaticLabel()),
-    m_scene(std::make_unique<ComponentManager>()),
-    m_editScriptFileName(std::move(editScriptFileName)),
-	m_commandHistory()
+	m_scene(std::make_unique<ComponentManager>()),
+	m_editScriptFileName(std::move(editScriptFileName)),
+	m_commandHistory(),
+	m_selectedEntities()
 {
 }
 

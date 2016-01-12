@@ -3,11 +3,13 @@
 
 #include "editor/Defines.h"
 #include "violet/component/ComponentManager.h"
+#include "violet/event/Event.h"
 #include "violet/system/System.h"
 #include "violet/utility/Factory.h"
 
 #include <deque>
 #include <memory>
+#include <set>
 #include <string>
 
 namespace Violet
@@ -44,6 +46,11 @@ namespace edt
 		void execute(std::unique_ptr<Command> && command);
 		void undo();
 
+		bool select(Violet::EntityId entityId);
+		bool selected(Violet::EntityId entityId) const;
+		const std::set<Violet::EntityId> & getSelectedEntities() const;
+		bool deselect(Violet::EntityId entityId);
+
         void propogateAdd(Violet::EntityId entityId) const;
         template <typename ComponentType, typename MemberType, MemberType ComponentType::*Member>
         void propogateChange(Violet::EntityId entityId, const MemberType & member) thread_const;
@@ -63,7 +70,11 @@ namespace edt
         std::unique_ptr<Violet::ComponentManager> m_scene;
         std::string m_editScriptFileName;
 		std::deque<std::unique_ptr<Command>> m_commandHistory;
+		std::set<Violet::EntityId> m_selectedEntities;
 	};
+
+	DEFINE_EVENT(EntitySelectedEvent, void(Violet::EntityId));
+	DEFINE_EVENT(EntityDeselectedEvent, void(Violet::EntityId));
 }
 
 #include "editor/EditorSystem.inl"

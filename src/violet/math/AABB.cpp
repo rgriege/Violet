@@ -65,6 +65,13 @@ AABB::AABB(const float left, const float top, const float right, const float bot
 
 // ----------------------------------------------------------------------------
 
+bool AABB::empty() const
+{
+	return m_topLeft == m_bottomRight;
+}
+
+// ----------------------------------------------------------------------------
+
 bool AABB::contains(const Vec2f & point) const
 {
 	return point.x >= m_topLeft.x

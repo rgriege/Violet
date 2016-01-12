@@ -148,6 +148,7 @@ bool SDLWindowSystem::getEvent(const EventType type, Event * const event)
 					event->mouse.x = sdlEvent.button.x;
 					event->mouse.y = sdlEvent.button.y;
 					event->mouse.button = static_cast<MouseButton>(sdlEvent.button.button - 1);
+					event->mouse.modifiers = convertKeyModifier(SDL_GetModState());
 					foundEvent = true;
 				}
 				break;
@@ -159,6 +160,7 @@ bool SDLWindowSystem::getEvent(const EventType type, Event * const event)
 					event->mouse.x = sdlEvent.button.x;
 					event->mouse.y = sdlEvent.button.y;
 					event->mouse.button = static_cast<MouseButton>(sdlEvent.button.button - 1);
+					event->mouse.modifiers = convertKeyModifier(SDL_GetModState());
 					foundEvent = true;
 				}
 				break;

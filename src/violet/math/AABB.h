@@ -19,6 +19,8 @@ namespace Violet
 		AABB(const Vec2f & center, const Vec2f & halfDim);
 		AABB(float left, float top, float right, float bottom);
 
+		bool empty() const;
+
 		bool contains(const Vec2f & point) const;
 		bool contains(const AABB & other) const;
 		bool overlaps(const AABB & other) const;

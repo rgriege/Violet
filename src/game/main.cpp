@@ -3,6 +3,8 @@
 #include "editor/command/MoveToCommand.h"
 #include "editor/command/file/OpenCommand.h"
 #include "editor/command/file/SaveAllCommand.h"
+#include "editor/command/selection/DeselectCommand.h"
+#include "editor/command/selection/SelectCommand.h"
 #include "editor/component/EditorComponent.h"
 #include "violet/Engine.h"
 #include "violet/component/ComponentManager.h"
@@ -68,9 +70,11 @@ Violet::SystemFactory setup()
 	edt::EditorSystem::install(factory);
 
 	EditorSystem::registerCommand<ClearAllCommand>();
+	EditorSystem::registerCommand<DeselectCommand>();
     EditorSystem::registerCommand<MoveToCommand>();
 	EditorSystem::registerCommand<OpenCommand>();
 	EditorSystem::registerCommand<SaveAllCommand>();
+	EditorSystem::registerCommand<SelectCommand>();
 
 	return factory;
 }

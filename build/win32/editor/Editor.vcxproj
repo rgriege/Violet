@@ -16,6 +16,8 @@
     <ClInclude Include="..\..\..\src\editor\command\file\OpenCommand.h" />
     <ClInclude Include="..\..\..\src\editor\command\file\SaveAllCommand.h" />
     <ClInclude Include="..\..\..\src\editor\command\MoveToCommand.h" />
+    <ClInclude Include="..\..\..\src\editor\command\selection\DeselectCommand.h" />
+    <ClInclude Include="..\..\..\src\editor\command\selection\SelectCommand.h" />
     <ClInclude Include="..\..\..\src\editor\component\EditorComponent.h" />
     <ClInclude Include="..\..\..\src\editor\CppScriptExports.h" />
     <ClInclude Include="..\..\..\src\editor\EditorSystem.h" />
@@ -26,6 +28,8 @@
     <ClCompile Include="..\..\..\src\editor\command\file\OpenCommand.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\file\SaveAllCommand.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\MoveToCommand.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\selection\DeselectCommand.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\selection\SelectCommand.cpp" />
     <ClCompile Include="..\..\..\src\editor\component\EditorComponent.cpp" />
     <ClCompile Include="..\..\..\src\editor\CppScriptExports.cpp" />
     <ClCompile Include="..\..\..\src\editor\EditorSystem.cpp" />

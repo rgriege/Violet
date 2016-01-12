@@ -1,4 +1,6 @@
 {
   "id": 0,
-  "file": "editorSceneManager.dll"
+  "file": "editorSceneManager.dll",
+  "id": 1,
+  "file": "selectionManager.dll"
 }

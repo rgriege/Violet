@@ -40,6 +40,7 @@ namespace Violet
 		{
 			int x, y;
 			MouseButton button;
+			Key::Modifier modifiers;
 		};
 
 		struct MotionEvent

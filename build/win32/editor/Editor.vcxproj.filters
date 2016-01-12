@@ -22,6 +22,12 @@
     <ClInclude Include="..\..\..\src\editor\command\MoveToCommand.h">
       <Filter>command</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\command\selection\SelectCommand.h">
+      <Filter>command\selection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\command\selection\DeselectCommand.h">
+      <Filter>command\selection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\editor\command\file\OpenCommand.cpp">
@@ -41,6 +47,12 @@
     <ClCompile Include="..\..\..\src\editor\command\MoveToCommand.cpp">
       <Filter>command</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\command\selection\SelectCommand.cpp">
+      <Filter>command\selection</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\command\selection\DeselectCommand.cpp">
+      <Filter>command\selection</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="command">
@@ -51,6 +63,9 @@
     </Filter>
     <Filter Include="component">
       <UniqueIdentifier>{d9f7fe37-7626-4caa-8f09-7d6fc46fd2e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="command\selection">
+      <UniqueIdentifier>{bca29b39-3fa3-486e-b651-56271c4d1631}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

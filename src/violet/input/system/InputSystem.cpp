@@ -96,7 +96,7 @@ void InputSystem::update(const float dt)
 				case WindowSystem::ET_MouseDown:
 				case WindowSystem::ET_MouseUp:
 					{
-						InputSystem::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button };
+						InputSystem::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button, event.mouse.modifiers };
 						if (!m_focussedEntityId.isValid())
 						{
 							for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())

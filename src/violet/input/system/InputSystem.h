@@ -22,6 +22,7 @@ namespace Violet
 		{
 			const Vec2f position;
 			MouseButton button;
+			Key::Modifier modifiers;
 		};
 
 		struct MouseMotionEvent
