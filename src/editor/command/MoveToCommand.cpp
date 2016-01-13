@@ -79,14 +79,14 @@ void MoveToCommand::execute()
         {
             Log::log(FormattedString<128>().sprintf("MoveTo world <%f,%f>", m_position.x, m_position.y));
             engine.addWriteTask(*wtc,
-                [=](WorldTransformComponent & wtc)
+                [=, &editor](WorldTransformComponent & wtc)
                 {
                     auto & transform = wtc.m_transform;
                     const Vec2f oldPosition = Transform::getPosition(transform);
                     Transform::setPosition(transform, m_position);
                     m_position = oldPosition;
+					editor.propogateChange<WorldTransformComponent, Matrix3f, &WorldTransformComponent::m_transform>(m_entityId, transform);
                 });
-            editor.propogateChange<WorldTransformComponent, Matrix3f, &WorldTransformComponent::m_transform>(m_entityId, wtc->m_transform);
         }
     }
 }
