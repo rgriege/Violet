@@ -236,7 +236,10 @@ void EditorSystem::propogateAdd(const EntityId entityId) const
 
 void EditorSystem::propogateRemove(const EntityId entityId) const
 {
-    Engine::getInstance().getCurrentScene().removeAll(entityId);
+	const auto & scene = Engine::getInstance().getCurrentScene();
+	for (const auto & entity : scene.getEntityView<edt::EditorComponent>())
+		if (std::get<0>(entity).m_editId == entityId)
+			scene.removeAll(std::get<0>(entity).getEntityId());
 }
 
 // ============================================================================
