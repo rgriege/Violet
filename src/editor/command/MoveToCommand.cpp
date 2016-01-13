@@ -58,6 +58,10 @@ void MoveToCommand::execute()
     const auto & scene = editor.getScene();
     if (m_entityId.getVersion() == EntityId::MaxVersion)
         m_entityId = EntityId(m_entityId.getId(), scene.getEntityVersion(m_entityId.getId()));
+
+	const EntityId entityId = m_entityId;
+	const Vec2f newPosition = m_position;
+
     const auto * ltc = scene.getComponent<LocalTransformComponent>(m_entityId);
     if (ltc != nullptr)
     {
@@ -66,11 +70,10 @@ void MoveToCommand::execute()
             [=, &editor](LocalTransformComponent & ltc)
             {
                 auto & transform = ltc.m_transform;
-                const Vec2f oldPosition = Transform::getPosition(transform);
-                Transform::setPosition(transform, m_position);
-                m_position = oldPosition;
-                editor.propogateChange<LocalTransformComponent, Matrix3f, &LocalTransformComponent::m_transform>(m_entityId, transform);
+                Transform::setPosition(transform, newPosition);
+                editor.propogateChange<LocalTransformComponent, Matrix3f, &LocalTransformComponent::m_transform>(entityId, transform);
             });
+		m_position = Transform::getPosition(ltc->m_transform);
     }
     else
     {
@@ -82,11 +85,10 @@ void MoveToCommand::execute()
                 [=, &editor](WorldTransformComponent & wtc)
                 {
                     auto & transform = wtc.m_transform;
-                    const Vec2f oldPosition = Transform::getPosition(transform);
-                    Transform::setPosition(transform, m_position);
-                    m_position = oldPosition;
-					editor.propogateChange<WorldTransformComponent, Matrix3f, &WorldTransformComponent::m_transform>(m_entityId, transform);
+                    Transform::setPosition(transform, newPosition);
+					editor.propogateChange<WorldTransformComponent, Matrix3f, &WorldTransformComponent::m_transform>(entityId, transform);
                 });
+			m_position = Transform::getPosition(wtc->m_transform);
         }
     }
 }
