@@ -42,8 +42,21 @@ private:
         const auto & selectedEntities = editor.getSelectedEntities();
         if (!selectedEntities.empty())
         {
-            /*for (const auto & entity : selectedEntities)
-                onEntitySelected(entity);*/
+			/*m_selectionBox = AABB();
+			for (const auto & entity : selectedEntities)
+			{
+				engine.addWriteTask(engine.getSystem<EditorSystem>()->getScene(),
+					[=](ComponentManager & scene)
+					{
+						const auto * cc = scene.getComponent<ColorComponent>(entityId);
+						AABB box = cc->m_mesh->getPolygon().getBoundingBox();
+						const Vec2f pos = Transform::getPosition(scene.getComponent<WorldTransformComponent>(entityId)->m_transform);
+						box.translate(pos);
+						m_selectionBox.extend(box);
+						moveMutationHandle(m_minimumBoxId);
+						moveMutationHandle(m_maximumBoxId);
+					}, ColorComponent::getStaticThread());
+			}*/
         }
         else
         {
