@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\editor\command\ChainCommand.h" />
     <ClInclude Include="..\..\..\src\editor\command\ClearAllCommand.h" />
     <ClInclude Include="..\..\..\src\editor\command\Command.h" />
     <ClInclude Include="..\..\..\src\editor\command\file\OpenCommand.h" />
@@ -24,6 +25,7 @@
     <ClInclude Include="..\..\..\src\editor\Defines.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\editor\command\ChainCommand.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\ClearAllCommand.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\file\OpenCommand.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\file\SaveAllCommand.cpp" />

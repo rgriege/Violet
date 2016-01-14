@@ -1,6 +1,7 @@
 #ifndef EDITOR_CppScriptExports_H
 #define EDITOR_CppScriptExports_H
 
+#include "editor/command/ChainCommand.h"
 #include "editor/command/ClearAllCommand.h"
 #include "editor/command/MoveToCommand.h"
 #include "editor/command/file/OpenCommand.h"
@@ -12,6 +13,7 @@
 
 namespace edt
 {
+	EDITOR_API std::unique_ptr<ChainCommand> createChainCommand(std::vector<std::unique_ptr<Command>> && commands);
 	EDITOR_API std::unique_ptr<ClearAllCommand> createClearAllCommand();
 	EDITOR_API std::unique_ptr<DeselectCommand> createDeselectCommand(Violet::EntityId entityId);
 	EDITOR_API std::unique_ptr<DeselectCommand> createDeselectCommand(std::vector<Violet::EntityId> && entityIds);

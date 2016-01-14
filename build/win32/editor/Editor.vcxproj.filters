@@ -28,6 +28,9 @@
     <ClInclude Include="..\..\..\src\editor\command\selection\DeselectCommand.h">
       <Filter>command\selection</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\command\ChainCommand.h">
+      <Filter>command</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\editor\command\file\OpenCommand.cpp">
@@ -52,6 +55,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\editor\command\selection\DeselectCommand.cpp">
       <Filter>command\selection</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\command\ChainCommand.cpp">
+      <Filter>command</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

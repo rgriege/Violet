@@ -7,6 +7,13 @@ using namespace Violet;
 
 // ============================================================================
 
+std::unique_ptr<ChainCommand> edt::createChainCommand(std::vector<std::unique_ptr<Command>> && commands)
+{
+	return std::make_unique<ChainCommand>(std::move(commands));
+}
+
+// ----------------------------------------------------------------------------
+
 std::unique_ptr<ClearAllCommand> edt::createClearAllCommand()
 {
 	return std::make_unique<ClearAllCommand>();
