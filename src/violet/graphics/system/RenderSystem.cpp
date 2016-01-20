@@ -73,6 +73,9 @@ void RenderSystem::init(Deserializer & deserializer)
             Log::log(FormattedString<32>().sprintf("GL version: %s", glGetString(GL_VERSION)));
 	
 			glClearColor(color.r, color.g, color.b, color.a);
+
+			glEnable(GL_DEPTH_TEST);
+
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	
@@ -100,11 +103,12 @@ void RenderSystem::update(float const /*dt*/)
 		[]()
 		{
 			const auto & engine = Engine::getInstance();
-			glClear(GL_COLOR_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			const auto & windowSystem = engine.getSystem<WindowSystem>();
 			Matrix4f viewMatrix = Matrix4f::Identity;
 			viewMatrix[0][0] = 2.f / windowSystem->getWidth();
 			viewMatrix[1][1] = 2.f / windowSystem->getHeight();
+			viewMatrix[2][2] = 0.01f;
 
 			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, ColorComponent>())
 				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
