@@ -41,12 +41,13 @@ namespace Violet
 		EntityId m_entityId;
 	};
 
-	template <typename Derived>
+	template <typename Derived, uint32 Version>
 	class ComponentBase : public Component
 	{
 	public:
 
 		static uint32 getStaticFlag();
+		static uint32 getStaticVersion();
 
 	protected:
 

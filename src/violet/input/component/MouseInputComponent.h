@@ -11,7 +11,7 @@ namespace Violet
 	class ComponentDeserializer;
 	class Serializer;
 
-	class VIOLET_API MouseInputComponent : public ComponentBase<MouseInputComponent>
+	class VIOLET_API MouseInputComponent : public ComponentBase<MouseInputComponent, 0>
 	{
 	public:
 

@@ -89,6 +89,7 @@ template <typename ComponentType>
 void Violet::ComponentPool::save(Serializer & serailizer) const
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
+	serailizer.writeUint("version", ComponentType::getStaticVersion());
 	for (auto it = begin<ComponentType>(), endIt = end<ComponentType>(); it != endIt; ++it)
 	{
 		serailizer.writeUint("id", it->getEntityId().getId());
@@ -103,6 +104,7 @@ uint32 Violet::ComponentPool::save(Serializer & serailizer, const std::vector<En
 {
 	uint32 count = 0;
 	assert(ComponentType::getStaticTag() == m_componentTag);
+	serailizer.writeUint("version", ComponentType::getStaticVersion());
 	for (auto it = begin<ComponentType>(), endIt = end<ComponentType>(); it != endIt; ++it)
 	{
 		if (std::binary_search(entityIds.cbegin(), entityIds.cend(), it->getEntityId()))

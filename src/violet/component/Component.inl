@@ -31,16 +31,24 @@ uint32 Violet::Component::gatherFlags()
 
 // ============================================================================
 
-template <typename Derived>
-uint32 Violet::ComponentBase<Derived>::getStaticFlag()
+template <typename Derived, uint32 Version>
+uint32 Violet::ComponentBase<Derived, Version>::getStaticFlag()
 {
 	return Component::getStaticFlag<Derived>();
 }
 
+// ----------------------------------------------------------------------------
+
+template <typename Derived, uint32 Version>
+uint32 Violet::ComponentBase<Derived, Version>::getStaticVersion()
+{
+	return Version;
+}
+
 // ============================================================================
 
-template <typename Derived>
-Violet::ComponentBase<Derived>::ComponentBase(const EntityId entityId) :
+template <typename Derived, uint32 Version>
+Violet::ComponentBase<Derived, Version>::ComponentBase(const EntityId entityId) :
 	Component(entityId)
 {
 }

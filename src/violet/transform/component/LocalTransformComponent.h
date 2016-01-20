@@ -11,7 +11,7 @@ namespace Violet
 	class ComponentDeserializer;
 	class Serializer;
 
-	class VIOLET_API LocalTransformComponent : public ComponentBase<LocalTransformComponent>
+	class VIOLET_API LocalTransformComponent : public ComponentBase<LocalTransformComponent, 0>
 	{
 	public:
 

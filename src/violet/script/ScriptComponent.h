@@ -13,7 +13,7 @@ namespace Violet
 	class Deserializer;
 	class Serializer;
 
-	class VIOLET_API ScriptComponent : public ComponentBase<ScriptComponent>
+	class VIOLET_API ScriptComponent : public ComponentBase<ScriptComponent, 0>
 	{
 	public:
 

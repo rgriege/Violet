@@ -6,8 +6,9 @@ using namespace Violet;
 
 // ============================================================================
 
-ComponentDeserializer::ComponentDeserializer(std::unique_ptr<Deserializer> && deserializer, std::shared_ptr<const std::unordered_map<uint32, EntityId>> handleIdMap) :
+ComponentDeserializer::ComponentDeserializer(std::unique_ptr<Deserializer> && deserializer, const uint32 version, std::shared_ptr<const std::unordered_map<uint32, EntityId>> handleIdMap) :
 	m_deserializer(std::move(deserializer)),
+	m_version(version),
 	m_handleIdMap(std::move(handleIdMap))
 {
 }
@@ -85,7 +86,14 @@ const char * ComponentDeserializer::getString(const char * const label)
 
 // ----------------------------------------------------------------------------
 
-EntityId ComponentDeserializer::getEntityId(const char * const label)
+uint32 ComponentDeserializer::getVersion() const
+{
+	return m_version;
+}
+
+// ----------------------------------------------------------------------------
+
+EntityId ComponentDeserializer::getEntityId(const char * const label) const
 {
 	const uint32 desiredId = m_deserializer->getUint(label);
 	const auto it = m_handleIdMap->find(desiredId);

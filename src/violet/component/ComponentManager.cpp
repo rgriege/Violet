@@ -155,7 +155,8 @@ std::vector<EntityId> ComponentManager::load(const char * const filename)
 						auto poolDeserializer = FileDeserializerFactory::getInstance().create(poolFileName.c_str());
 						if (poolDeserializer != nullptr && *poolDeserializer)
 						{
-							ComponentDeserializer componentDeserializer(std::move(poolDeserializer), handleIdMap);
+							const uint32 version = poolDeserializer->getUint("version");
+							ComponentDeserializer componentDeserializer(std::move(poolDeserializer), version, handleIdMap);
 							ms_componentsFactory.create(componentTag, pool, componentDeserializer);
 						}
 						else

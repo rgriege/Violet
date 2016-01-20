@@ -25,7 +25,7 @@ Thread ColorComponent::getStaticThread()
 // ============================================================================
 
 ColorComponent::ColorComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
-	ComponentBase<ColorComponent>(entityId),
+	ComponentBase<ColorComponent, 0>(entityId),
 	RenderComponentData(deserializer),
 	m_color(deserializer)
 {
@@ -34,7 +34,7 @@ ColorComponent::ColorComponent(const EntityId entityId, ComponentDeserializer & 
 // ----------------------------------------------------------------------------
 
 ColorComponent::ColorComponent(const EntityId entityId, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, const Color color) :
-	ComponentBase<ColorComponent>(entityId),
+	ComponentBase<ColorComponent, 0>(entityId),
 	RenderComponentData(poly, shader),
 	m_color(color)
 {
@@ -43,7 +43,7 @@ ColorComponent::ColorComponent(const EntityId entityId, const Polygon & poly, st
 // ----------------------------------------------------------------------------
 
 ColorComponent::ColorComponent(ColorComponent && other) :
-	ComponentBase<ColorComponent>(std::move(other)),
+	ComponentBase<ColorComponent, 0>(std::move(other)),
 	RenderComponentData(std::move(other)),
 	m_color(std::move(other.m_color))
 {

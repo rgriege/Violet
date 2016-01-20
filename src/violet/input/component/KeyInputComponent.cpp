@@ -23,7 +23,7 @@ Thread KeyInputComponent::getStaticThread()
 // ============================================================================
 
 KeyInputComponent::KeyInputComponent(const EntityId entityId) :
-	ComponentBase<KeyInputComponent>(entityId)
+	ComponentBase<KeyInputComponent, 0>(entityId)
 {
 }
 
@@ -37,7 +37,7 @@ KeyInputComponent::KeyInputComponent(const EntityId entityId, ComponentDeseriali
 // ----------------------------------------------------------------------------
 
 KeyInputComponent::KeyInputComponent(KeyInputComponent && other) :
-	ComponentBase<KeyInputComponent>(std::move(other))
+	ComponentBase<KeyInputComponent, 0>(std::move(other))
 {
 }
 

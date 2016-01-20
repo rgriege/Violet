@@ -11,7 +11,7 @@ namespace Violet
 	{
 	public:
 
-		ComponentDeserializer(std::unique_ptr<Deserializer> && deserializer, std::shared_ptr<const std::unordered_map<uint32, EntityId>> handleIdMap);
+		ComponentDeserializer(std::unique_ptr<Deserializer> && deserializer, uint32 version, std::shared_ptr<const std::unordered_map<uint32, EntityId>> handleIdMap);
 		virtual ~ComponentDeserializer() override = default;
 
 		virtual operator bool() const override;
@@ -26,7 +26,8 @@ namespace Violet
 		virtual double getDouble(const char * label) override;
 		virtual const char * getString(const char * label) override;
 
-		EntityId getEntityId(const char * label);
+		uint32 getVersion() const;
+		EntityId getEntityId(const char * label) const;
 
 	private:
 
@@ -35,6 +36,7 @@ namespace Violet
 	private:
 
 		std::unique_ptr<Deserializer> m_deserializer;
+		const uint32 m_version;
 		const std::shared_ptr<const std::unordered_map<uint32, EntityId>> m_handleIdMap;
 	};
 }

@@ -23,21 +23,21 @@ Thread UpdateComponent::getStaticThread()
 // ============================================================================
 
 UpdateComponent::UpdateComponent(const EntityId entityId) :
-	ComponentBase<UpdateComponent>(entityId)
+	ComponentBase<UpdateComponent, 0>(entityId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 UpdateComponent::UpdateComponent(const EntityId entityId, ComponentDeserializer & /*deserializer*/) :
-	ComponentBase<UpdateComponent>(entityId)
+	ComponentBase<UpdateComponent, 0>(entityId)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 UpdateComponent::UpdateComponent(UpdateComponent && other) :
-	ComponentBase<UpdateComponent>(std::move(other))
+	ComponentBase<UpdateComponent, 0>(std::move(other))
 {
 }
 

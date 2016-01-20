@@ -10,7 +10,7 @@ namespace Violet
 {
 	class ComponentDeserializer;
 
-	class VIOLET_API MappedDataComponent : public ComponentBase<MappedDataComponent>
+	class VIOLET_API MappedDataComponent : public ComponentBase<MappedDataComponent, 0>
 	{
 	public:
 

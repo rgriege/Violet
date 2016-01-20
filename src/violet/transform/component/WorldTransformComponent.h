@@ -11,7 +11,7 @@ namespace Violet
 	class ComponentDeserializer;
 	class Serializer;
 
-	class VIOLET_API WorldTransformComponent : public ComponentBase<WorldTransformComponent>
+	class VIOLET_API WorldTransformComponent : public ComponentBase<WorldTransformComponent, 0>
 	{
 	public:
 

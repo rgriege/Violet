@@ -9,7 +9,7 @@ namespace Violet
 	class ComponentDeserializer;
 	class Serializer;
 
-	class VIOLET_API UpdateComponent : public ComponentBase<UpdateComponent>
+	class VIOLET_API UpdateComponent : public ComponentBase<UpdateComponent, 0>
 	{
 	public:
 

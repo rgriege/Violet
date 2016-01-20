@@ -15,7 +15,7 @@ namespace Violet
 	class Font;
 	class Serializer;
 
-	class VIOLET_API TextComponent : public ComponentBase<TextComponent>, public RenderComponentData
+	class VIOLET_API TextComponent : public ComponentBase<TextComponent, 0>, public RenderComponentData
 	{
 	public:
 

@@ -13,7 +13,7 @@ namespace Violet
 
 namespace edt
 {
-	class EDITOR_API EditorComponent : public Violet::ComponentBase<EditorComponent>
+	class EDITOR_API EditorComponent : public Violet::ComponentBase<EditorComponent, 0>
 	{
 	public:
 

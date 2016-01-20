@@ -37,7 +37,7 @@ Thread PhysicsComponent::getStaticThread()
 // ============================================================================
 
 PhysicsComponent::PhysicsComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
-	ComponentBase<PhysicsComponent>(entityId),
+	ComponentBase<PhysicsComponent, 0>(entityId),
 	m_polygon(deserializer),
 	m_mass(),
 	m_velocity(),
@@ -52,7 +52,7 @@ PhysicsComponent::PhysicsComponent(const EntityId entityId, ComponentDeserialize
 // ----------------------------------------------------------------------------
 
 PhysicsComponent::PhysicsComponent(PhysicsComponent && other) :
-	ComponentBase<PhysicsComponent>(std::move(other)),
+	ComponentBase<PhysicsComponent, 0>(std::move(other)),
 	m_polygon(std::move(other.m_polygon)),
 	m_mass(other.m_mass),
 	m_velocity(std::move(other.m_velocity)),

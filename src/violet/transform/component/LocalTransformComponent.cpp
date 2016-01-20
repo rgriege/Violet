@@ -32,7 +32,7 @@ LocalTransformComponent::LocalTransformComponent(const EntityId entityId, Compon
 // ----------------------------------------------------------------------------
 
 LocalTransformComponent::LocalTransformComponent(const EntityId entityId, const EntityId parentId, const Matrix3f & transform) :
-	ComponentBase<LocalTransformComponent>(entityId),
+	ComponentBase<LocalTransformComponent, 0>(entityId),
 	m_parentId(parentId),
 	m_transform(transform)
 {

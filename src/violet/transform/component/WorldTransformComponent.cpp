@@ -39,7 +39,7 @@ WorldTransformComponent::WorldTransformComponent(const EntityId entityId, Compon
 // ----------------------------------------------------------------------------
 
 WorldTransformComponent::WorldTransformComponent(const EntityId entityId, const Matrix3f & transform) :
-	ComponentBase<WorldTransformComponent>(entityId),
+	ComponentBase<WorldTransformComponent, 0>(entityId),
 	m_transform(transform)
 {
 }

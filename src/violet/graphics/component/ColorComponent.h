@@ -13,7 +13,7 @@ namespace Violet
 	class Serializer;
 	class ShaderProgram;
 
-	class VIOLET_API ColorComponent : public ComponentBase<ColorComponent>, public RenderComponentData
+	class VIOLET_API ColorComponent : public ComponentBase<ColorComponent, 0>, public RenderComponentData
 	{
 	public:
 

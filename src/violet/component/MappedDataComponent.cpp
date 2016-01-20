@@ -24,7 +24,7 @@ Thread MappedDataComponent::getStaticThread()
 // ============================================================================
 
 MappedDataComponent::MappedDataComponent(const EntityId entityId) :
-	ComponentBase<MappedDataComponent>(entityId),
+	ComponentBase<MappedDataComponent, 0>(entityId),
 	m_data()
 {
 }
@@ -32,7 +32,7 @@ MappedDataComponent::MappedDataComponent(const EntityId entityId) :
 // ----------------------------------------------------------------------------
 
 MappedDataComponent::MappedDataComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
-	ComponentBase<MappedDataComponent>(entityId),
+	ComponentBase<MappedDataComponent, 0>(entityId),
 	m_data()
 {
 	const uint32 n = deserializer.getUint("n");
@@ -46,7 +46,7 @@ MappedDataComponent::MappedDataComponent(const EntityId entityId, ComponentDeser
 // ----------------------------------------------------------------------------
 
 MappedDataComponent::MappedDataComponent(MappedDataComponent && other) :
-	ComponentBase<MappedDataComponent>(std::move(other)),
+	ComponentBase<MappedDataComponent, 0>(std::move(other)),
 	m_data(std::move(other.m_data))
 {
 }

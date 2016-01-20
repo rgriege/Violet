@@ -32,7 +32,7 @@ ScriptComponent::ScriptComponent(const EntityId entityId, Deserializer & deseria
 // ----------------------------------------------------------------------------
 
 ScriptComponent::ScriptComponent(EntityId entityId, const char * const fileName) :
-	ComponentBase<ScriptComponent>(entityId),
+	ComponentBase<ScriptComponent, 0>(entityId),
 	m_script(ScriptFactory::create(fileName))
 {
 	BindToComponentMethod::run(*m_script, std::move(entityId));
@@ -41,7 +41,7 @@ ScriptComponent::ScriptComponent(EntityId entityId, const char * const fileName)
 // ----------------------------------------------------------------------------
 
 ScriptComponent::ScriptComponent(ScriptComponent && other) :
-	ComponentBase<ScriptComponent>(std::move(other)),
+	ComponentBase<ScriptComponent, 0>(std::move(other)),
 	m_script(std::move(other.m_script))
 {
 }

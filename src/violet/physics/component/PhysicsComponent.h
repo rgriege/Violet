@@ -11,7 +11,7 @@ namespace Violet
 	class ComponentDeserializer;
 	class Serializer;
 
-	class VIOLET_API PhysicsComponent : public ComponentBase<PhysicsComponent>
+	class VIOLET_API PhysicsComponent : public ComponentBase<PhysicsComponent, 0>
 	{
 	public:
 

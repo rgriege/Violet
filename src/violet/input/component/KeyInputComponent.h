@@ -9,7 +9,7 @@ namespace Violet
 	class ComponentDeserializer;
 	class Serializer;
 
-	class VIOLET_API KeyInputComponent : public ComponentBase<KeyInputComponent>
+	class VIOLET_API KeyInputComponent : public ComponentBase<KeyInputComponent, 0>
 	{
 	public:
 
