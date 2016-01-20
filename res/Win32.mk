@@ -8,22 +8,22 @@ include Targets.mk
 all: $(foreach TARGET, $(TARGETS), $(TARGET).dll)
 
 install: all
-	copy *.json $(DST)
-	copy *.ttf $(DST)
-	copy *.vert $(DST)
-	copy *.frag $(DST)
-	copy *.dll $(DST)
-	copy *.pdb $(DST)
-	copy *.lua $(DST)
-	copy *.png $(DST)
+	xcopy /c /y *.json $(DST)
+	xcopy /c /y *.ttf $(DST)
+	xcopy /c /y *.vert $(DST)
+	xcopy /c /y *.frag $(DST)
+	xcopy /c /y *.dll $(DST)
+	xcopy /c /y *.pdb $(DST)
+	xcopy /c /y *.lua $(DST)
+	xcopy /c /y *.png $(DST)
 
 install-live: all
-	copy *.json $(DST)
-	copy *.ttf $(DST)
-	copy *.dll $(DST)
-	copy *.pdb $(DST)/*.pdb.swp
-	copy *.lua $(DST)
-	copy *.png $(DST)
+	xcopy /c /y *.json $(DST)
+	xcopy /c /y *.ttf $(DST)
+	xcopy /c /y *.dll $(DST)
+	xcopy /c /y *.pdb $(DST)/*.pdb.swp
+	xcopy /c /y *.lua $(DST)
+	xcopy /c /y *.png $(DST)
 
 clean:
 	del *.dll *.obj *.lib *.ilk *.pdb *.exp *~ *.swp
