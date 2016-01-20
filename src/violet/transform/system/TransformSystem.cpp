@@ -19,7 +19,7 @@ namespace TransformSystemNamespace
 {
     typedef std::tuple<const LocalTransformComponent &, const WorldTransformComponent &> TransformEntity;
 
-    void updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix3f> & worldTransformCache, std::vector<TransformEntity> & deferredUpdates);
+    void updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache, std::vector<TransformEntity> & deferredUpdates);
 }
 
 using namespace TransformSystemNamespace;
@@ -69,7 +69,7 @@ TransformSystem::~TransformSystem()
 
 void TransformSystem::update(const float /*dt*/)
 {
-	m_entityWorldTransformCache = std::map<EntityId, Matrix3f>{ { EntityId::ms_invalid, Matrix3f::Identity } };
+	m_entityWorldTransformCache = std::map<EntityId, Matrix4f>{ { EntityId::ms_invalid, Matrix4f::Identity } };
     std::vector<TransformEntity> deferredUpdates;
 	const auto & engine = Engine::getInstance();
 	for (const auto & entity : engine.getCurrentScene().getEntityView<LocalTransformComponent, WorldTransformComponent>())
@@ -115,7 +115,7 @@ TransformSystem::TransformSystem() :
 
 // ============================================================================
 
-void TransformSystemNamespace::updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix3f> & worldTransformCache, std::vector<TransformEntity> & deferredUpdates)
+void TransformSystemNamespace::updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache, std::vector<TransformEntity> & deferredUpdates)
 {
 	const auto & engine = Engine::getInstance();
     const auto & localTransformComponent = std::get<0>(entity);
@@ -125,8 +125,8 @@ void TransformSystemNamespace::updateWorldTransform(const TransformEntity & enti
     const auto it = worldTransformCache.find(localTransformComponent.m_parentId);
     if (it != worldTransformCache.end())
     {
-        const Matrix3f & parentWorldTransform = it != worldTransformCache.end() ? it->second : Matrix3f::Identity;
-        const Matrix3f & worldTransform = worldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
+        const Matrix4f & parentWorldTransform = it != worldTransformCache.end() ? it->second : Matrix4f::Identity;
+        const Matrix4f & worldTransform = worldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
         if (worldTransformComponent.m_transform != worldTransform)
         {
             engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),

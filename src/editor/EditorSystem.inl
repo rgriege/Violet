@@ -21,8 +21,9 @@ template <typename ComponentType, typename MemberType, MemberType ComponentType:
 void edt::EditorSystem::propogateChange(const Violet::EntityId entityId, const MemberType & member) thread_const
 {
     const auto & engine = Violet::Engine::getInstance();
+	auto copyableMember = to_copyable(member);
     engine.addWriteTask(engine.getCurrentScene(),
-        [entityId, member](Violet::ComponentManager & scene)
+		[entityId, copyableMember](Violet::ComponentManager & scene)
         {
             Violet::EntityId copyId;
             for (const auto & entity : scene.getEntityView<edt::EditorComponent>())
@@ -30,7 +31,7 @@ void edt::EditorSystem::propogateChange(const Violet::EntityId entityId, const M
                     copyId = std::get<0>(entity).getEntityId();
             Violet::Log::log(Violet::FormattedString<128>().sprintf("propogate %s %d -> %d", ComponentType::getStaticTag().asString().c_str(), entityId.getId(), copyId.getId()));
             if (copyId.isValid())
-                scene.getComponent<ComponentType>(copyId)->*Member = std::move(member);
+                scene.getComponent<ComponentType>(copyId)->*Member = static_cast<MemberType>(copyableMember);
         }, ComponentType::getStaticThread());
 }
 

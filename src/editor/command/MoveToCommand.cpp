@@ -71,7 +71,7 @@ void MoveToCommand::execute()
             {
                 auto & transform = ltc.m_transform;
                 Transform::setPosition(transform, newPosition);
-                editor.propogateChange<LocalTransformComponent, Matrix3f, &LocalTransformComponent::m_transform>(entityId, transform);
+                editor.propogateChange<LocalTransformComponent, Matrix4f, &LocalTransformComponent::m_transform>(entityId, transform);
             });
 		m_position = Transform::getPosition(ltc->m_transform);
     }
@@ -86,7 +86,7 @@ void MoveToCommand::execute()
                 {
                     auto & transform = wtc.m_transform;
                     Transform::setPosition(transform, newPosition);
-					editor.propogateChange<WorldTransformComponent, Matrix3f, &WorldTransformComponent::m_transform>(entityId, transform);
+					// editor.propogateChange<WorldTransformComponent, Matrix4f, &WorldTransformComponent::m_transform>(entityId, transform);
                 });
 			m_position = Transform::getPosition(wtc->m_transform);
         }

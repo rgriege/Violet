@@ -28,9 +28,9 @@ namespace RenderSystemNamespace
 {
 	// ----------------------------------------------------------------------------
 
-	void draw(const WorldTransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view);
-	void draw(const WorldTransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view);
-	void draw(const WorldTransformComponent & transformComponent, const TextureComponent & textureComponent, const Matrix3f & view);
+	void draw(const WorldTransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix4f & view);
+	void draw(const WorldTransformComponent & transformComponent, const TextComponent & textComponent, const Matrix4f & view);
+	void draw(const WorldTransformComponent & transformComponent, const TextureComponent & textureComponent, const Matrix4f & view);
 
 	// ----------------------------------------------------------------------------
 }
@@ -102,7 +102,7 @@ void RenderSystem::update(float const /*dt*/)
 			const auto & engine = Engine::getInstance();
 			glClear(GL_COLOR_BUFFER_BIT);
 			const auto & windowSystem = engine.getSystem<WindowSystem>();
-			Matrix3f viewMatrix = Matrix3f::Identity;
+			Matrix4f viewMatrix = Matrix4f::Identity;
 			viewMatrix[0][0] = 2.f / windowSystem->getWidth();
 			viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 
@@ -127,9 +127,9 @@ RenderSystem::RenderSystem() :
 
 // ----------------------------------------------------------------------------
 
-void RenderSystemNamespace::draw(const WorldTransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix3f & view)
+void RenderSystemNamespace::draw(const WorldTransformComponent & transformComponent, const ColorComponent & colorComponent, const Matrix4f & view)
 {
-	const Matrix3f & transform = transformComponent.m_transform;
+	const Matrix4f & transform = transformComponent.m_transform;
 
 	const GLint colorAttrib = colorComponent.m_shader->getUniformLocation("color");
 	const GLint modelAttrib = colorComponent.m_shader->getUniformLocation("model");
@@ -138,8 +138,8 @@ void RenderSystemNamespace::draw(const WorldTransformComponent & transformCompon
 	glBindVertexArray(colorComponent.m_vertexArrayBuffer);
 	const Guard<ShaderProgram> shaderGuard(*colorComponent.m_shader);
 	glUniform4fv(colorAttrib, 1, colorComponent.m_color.as4fv().data());
-	glUniformMatrix3fv(modelAttrib, 1, true, transform.data());
-	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
+	glUniformMatrix4fv(modelAttrib, 1, true, transform.data());
+	glUniformMatrix4fv(viewAttribute, 1, true, view.data());
 
 	glDrawArrays(GL_TRIANGLE_FAN, 0, colorComponent.m_mesh->m_size);
 	glBindVertexArray(0);
@@ -147,9 +147,9 @@ void RenderSystemNamespace::draw(const WorldTransformComponent & transformCompon
 
 // ----------------------------------------------------------------------------
 
-void RenderSystemNamespace::draw(const WorldTransformComponent & transformComponent, const TextComponent & textComponent, const Matrix3f & view)
+void RenderSystemNamespace::draw(const WorldTransformComponent & transformComponent, const TextComponent & textComponent, const Matrix4f & view)
 {
-	const Matrix3f & transform = transformComponent.m_transform;
+	const Matrix4f & transform = transformComponent.m_transform;
 
 	const GLint colorAttrib = textComponent.m_shader->getUniformLocation("color");
 	const GLint modelAttrib = textComponent.m_shader->getUniformLocation("model");
@@ -157,17 +157,17 @@ void RenderSystemNamespace::draw(const WorldTransformComponent & transformCompon
 
 	const Guard<ShaderProgram> shaderGuard(*textComponent.m_shader);
 	glUniform4fv(colorAttrib, 1, textComponent.m_color.as4fv().data());
-	glUniformMatrix3fv(modelAttrib, 1, true, transform.data());
-	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
+	glUniformMatrix4fv(modelAttrib, 1, true, transform.data());
+	glUniformMatrix4fv(viewAttribute, 1, true, view.data());
 
 	textComponent.m_font->render(textComponent.m_text, *textComponent.m_shader);
 }
 
 // ----------------------------------------------------------------------------
 
-void RenderSystemNamespace::draw(const WorldTransformComponent & transformComponent, const TextureComponent & textureComponent, const Matrix3f & view)
+void RenderSystemNamespace::draw(const WorldTransformComponent & transformComponent, const TextureComponent & textureComponent, const Matrix4f & view)
 {
-	const Matrix3f & transform = transformComponent.m_transform;
+	const Matrix4f & transform = transformComponent.m_transform;
 
 	const GLint modelAttrib = textureComponent.m_shader->getUniformLocation("model");
 	const GLint viewAttribute = textureComponent.m_shader->getUniformLocation("view");
@@ -175,8 +175,8 @@ void RenderSystemNamespace::draw(const WorldTransformComponent & transformCompon
 	glBindVertexArray(textureComponent.m_vertexArrayBuffer);
 	const Guard<ShaderProgram> shaderGuard(*textureComponent.m_shader);
 	const Guard<Texture> texGuard(*textureComponent.m_texture);
-	glUniformMatrix3fv(modelAttrib, 1, true, transform.data());
-	glUniformMatrix3fv(viewAttribute, 1, true, view.data());
+	glUniformMatrix4fv(modelAttrib, 1, true, transform.data());
+	glUniformMatrix4fv(viewAttribute, 1, true, view.data());
 
 	glDrawArrays(GL_TRIANGLE_FAN, 0, textureComponent.m_mesh->m_size);
 	glBindVertexArray(0);

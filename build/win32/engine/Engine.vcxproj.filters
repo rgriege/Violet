@@ -464,6 +464,12 @@
     <ClInclude Include="..\..\..\src\violet\ui\UiTextInputBox.h">
       <Filter>ui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\math\Matrix4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\math\Vec3.h">
+      <Filter>math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\graphics\Color.cpp">
@@ -671,6 +677,12 @@
     <ClCompile Include="..\..\..\src\violet\ui\UiTextInputBox.cpp">
       <Filter>ui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\math\Matrix4.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\math\Vec3.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\violet\serialization\SerializationUtilities.inl">
@@ -724,6 +736,12 @@
     </None>
     <None Include="..\..\..\src\violet\structures\Vector.inl">
       <Filter>structures</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\math\Matrix4.inl">
+      <Filter>math</Filter>
+    </None>
+    <None Include="..\..\..\src\violet\math\Vec3.inl">
+      <Filter>math</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -83,7 +83,7 @@ void PhysicsSystem::update(const float dt)
 	{
 		auto & transformComponent = std::get<0>(entity);
 		auto & physicsComponent = std::get<1>(entity);
-		tree.insert(RigidBody(transformComponent, physicsComponent), physicsComponent.m_polygon.getBoundingBox().transform(transformComponent.m_transform));
+		tree.insert(RigidBody(transformComponent, physicsComponent), physicsComponent.m_polygon.getBoundingBox().transform(to2d(transformComponent.m_transform)));
 		engine.addWriteTask(physicsComponent,
 			[&transformComponent, this, dt](PhysicsComponent & physics)
 			{
@@ -97,7 +97,7 @@ void PhysicsSystem::update(const float dt)
 		RigidBody body(transformComponent, physicsComponent);
 
 		std::vector<RigidBody> otherBodies;
-		tree.retrieve(otherBodies, physicsComponent.m_polygon.getBoundingBox().transform(transformComponent.m_transform));
+		tree.retrieve(otherBodies, physicsComponent.m_polygon.getBoundingBox().transform(to2d(transformComponent.m_transform)));
 
 		for (auto & otherBody : otherBodies)
 		{

@@ -5,6 +5,8 @@
 #include "violet/component/ComponentDeserializer.h"
 #include "violet/serialization/Serializer.h"
 
+#include <assert.h>
+
 using namespace Violet;
 
 // ============================================================================
@@ -24,22 +26,22 @@ Thread WorldTransformComponent::getStaticThread()
 // ============================================================================
 
 WorldTransformComponent::WorldTransformComponent(const EntityId entityId) :
-	WorldTransformComponent(entityId, Matrix3f::Identity)
+	WorldTransformComponent(entityId, Matrix4f::Identity)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 WorldTransformComponent::WorldTransformComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
-	WorldTransformComponent(entityId, Matrix3f::Identity)
+	WorldTransformComponent(entityId, Matrix4f::Identity)
 {
 	deserializer >> *this;
 }
 
 // ----------------------------------------------------------------------------
 
-WorldTransformComponent::WorldTransformComponent(const EntityId entityId, const Matrix3f & transform) :
-	ComponentBase<WorldTransformComponent, 0>(entityId),
+WorldTransformComponent::WorldTransformComponent(const EntityId entityId, const Matrix4f & transform) :
+	ComponentBase<WorldTransformComponent, 1>(entityId),
 	m_transform(transform)
 {
 }
@@ -48,7 +50,23 @@ WorldTransformComponent::WorldTransformComponent(const EntityId entityId, const 
 
 ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, WorldTransformComponent & component)
 {
-	deserializer >> component.m_transform;
+	switch (deserializer.getVersion())
+	{
+	case 0:
+		Matrix3f mat2d;
+		deserializer >> mat2d;
+		component.m_transform = from2d(mat2d);
+		break;
+
+	case 1:
+		deserializer >> component.m_transform;
+		break;
+
+	default:
+		assert(false);
+		break;
+	}
+
 	return deserializer;
 }
 

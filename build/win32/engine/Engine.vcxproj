@@ -136,8 +136,10 @@
     <ClInclude Include="..\..\..\src\violet\math\LogConst.h" />
     <ClInclude Include="..\..\..\src\violet\math\Matrix2.h" />
     <ClInclude Include="..\..\..\src\violet\math\Matrix3.h" />
+    <ClInclude Include="..\..\..\src\violet\math\Matrix4.h" />
     <ClInclude Include="..\..\..\src\violet\math\Polygon.h" />
     <ClInclude Include="..\..\..\src\violet\math\Vec2.h" />
+    <ClInclude Include="..\..\..\src\violet\math\Vec3.h" />
     <ClInclude Include="..\..\..\src\violet\physics\collision\Intersection.h" />
     <ClInclude Include="..\..\..\src\violet\physics\collision\RigidBody.h" />
     <ClInclude Include="..\..\..\src\violet\physics\component\PhysicsComponent.h" />
@@ -232,8 +234,10 @@
     <ClCompile Include="..\..\..\src\violet\math\AABB.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\Circle.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\Matrix3.cpp" />
+    <ClCompile Include="..\..\..\src\violet\math\Matrix4.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\Polygon.cpp" />
     <ClCompile Include="..\..\..\src\violet\math\Vec2.cpp" />
+    <ClCompile Include="..\..\..\src\violet\math\Vec3.cpp" />
     <ClCompile Include="..\..\..\src\violet\physics\collision\Intersection.cpp" />
     <ClCompile Include="..\..\..\src\violet\physics\collision\RigidBody.cpp" />
     <ClCompile Include="..\..\..\src\violet\physics\component\PhysicsComponent.cpp" />
@@ -305,6 +309,8 @@
       <FileType>Document</FileType>
     </ClInclude>
     <None Include="..\..\..\src\violet\handle\VersionedHandleManager.inl" />
+    <None Include="..\..\..\src\violet\math\Matrix4.inl" />
+    <None Include="..\..\..\src\violet\math\Vec3.inl" />
     <None Include="..\..\..\src\violet\script\cpp\CppScript.inl" />
     <None Include="..\..\..\src\violet\script\lua\LuaLibrary.inl" />
     <None Include="..\..\..\src\violet\script\lua\LuaScript.inl" />

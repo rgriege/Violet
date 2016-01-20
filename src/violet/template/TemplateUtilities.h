@@ -60,6 +60,22 @@ namespace Violet
 
 	template <typename Type>
 	struct equal<Type, Type> : true_type {};
+
+
+
+	template <typename T>
+	struct copyable
+	{
+		typedef T type;
+	};
+
+	template <typename T> using copyable_t = typename copyable<T>::type;
+
+	template <typename T>
+	typename copyable_t<T> to_copyable(const T & t)
+	{
+		return static_cast<copyable_t<T>>(t);
+	}
 }
 
 #endif

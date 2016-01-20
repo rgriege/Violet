@@ -5,6 +5,8 @@
 #include "violet/component/ComponentDeserializer.h"
 #include "violet/serialization/Serializer.h"
 
+#include <assert.h>
+
 using namespace Violet;
 
 // ============================================================================
@@ -24,15 +26,15 @@ Thread LocalTransformComponent::getStaticThread()
 // ============================================================================
 
 LocalTransformComponent::LocalTransformComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
-	LocalTransformComponent(entityId, EntityId::ms_invalid, Matrix3f::Identity)
+	LocalTransformComponent(entityId, EntityId::ms_invalid, Matrix4f::Identity)
 {
 	deserializer >> *this;
 }
 
 // ----------------------------------------------------------------------------
 
-LocalTransformComponent::LocalTransformComponent(const EntityId entityId, const EntityId parentId, const Matrix3f & transform) :
-	ComponentBase<LocalTransformComponent, 0>(entityId),
+LocalTransformComponent::LocalTransformComponent(const EntityId entityId, const EntityId parentId, const Matrix4f & transform) :
+	ComponentBase<LocalTransformComponent, 1>(entityId),
 	m_parentId(parentId),
 	m_transform(transform)
 {
@@ -43,7 +45,24 @@ LocalTransformComponent::LocalTransformComponent(const EntityId entityId, const 
 ComponentDeserializer & Violet::operator>>(ComponentDeserializer & deserializer, LocalTransformComponent & component)
 {
 	component.m_parentId = deserializer.getEntityId("parentId");
-	deserializer >> component.m_transform;
+
+	switch (deserializer.getVersion())
+	{
+	case 0:
+		Matrix3f mat2d;
+		deserializer >> mat2d;
+		component.m_transform = from2d(mat2d);
+		break;
+
+	case 1:
+		deserializer >> component.m_transform;
+		break;
+
+	default:
+		assert(false);
+		break;
+	}
+
 	return deserializer;
 }
 

@@ -190,7 +190,7 @@ void InputSystem::processFocussedEvent(const MouseButtonEvent & worldEvent, cons
 	{
 		auto const & script = *sc->m_script;
 
-		if (mc->m_mesh.getBoundingBox().transform(tc->m_transform).contains(worldEvent.position))
+		if (mc->m_mesh.getBoundingBox().transform(to2d(tc->m_transform)).contains(worldEvent.position))
 		{
 			if (type == WindowSystem::ET_MouseDown)
 				MouseDownMethod::run(script, sc->getEntityId(), worldEvent);
@@ -241,7 +241,7 @@ void InputSystemNamespace::processEvent(const ScriptComponent & scriptComponent,
 
 InputResult InputSystemNamespace::processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseButtonEvent & event, const WindowSystem::EventType type)
 {
-	if (mc.m_mesh.getBoundingBox().transform(tc.m_transform).contains(event.position))
+	if (mc.m_mesh.getBoundingBox().transform(to2d(tc.m_transform)).contains(event.position))
 	{
 		auto const & script = *sc.m_script;
 		return type == WindowSystem::ET_MouseDown
@@ -256,7 +256,7 @@ InputResult InputSystemNamespace::processEvent(const WorldTransformComponent & t
 
 void InputSystemNamespace::processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseMotionEvent & event)
 {
-	const AABB worldBoundary = mc.m_mesh.getBoundingBox().transform(tc.m_transform);
+	const AABB worldBoundary = mc.m_mesh.getBoundingBox().transform(to2d(tc.m_transform));
 	const bool contained = worldBoundary.contains(event.from);
 	const bool contains = worldBoundary.contains(event.to);
 	

@@ -2,7 +2,7 @@
 #define VIOLET_TransformSystem_H
 
 #include "violet/handle/Handle.h"
-#include "violet/math/Matrix3.h"
+#include "violet/math/Matrix4.h"
 #include "violet/system/System.h"
 
 #include <map>
@@ -33,7 +33,7 @@ namespace Violet
 
 	private:
 
-		std::map<EntityId, Matrix3f> m_entityWorldTransformCache;
+		std::map<EntityId, Matrix4f> m_entityWorldTransformCache;
 	};
 }
 
