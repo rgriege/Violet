@@ -105,13 +105,13 @@ Vector<Vec2f> TextureComponentNamespace::createTexCoordsFromMesh(const Mesh & me
 	const auto polygon = mesh.getPolygon();
 	for (const auto & vertex : polygon.m_vertices)
 		extent.extend(vertex);
-	extent.translate(-extent.getMinimum());
-	const auto & max = extent.getMaximum();
+	const Vec2f & minimum = extent.getMinimum();
+	const Vec2f & dimension = extent.getMaximum() - minimum;
 
 	Vector<Vec2f> result;
 	result.reserve(polygon.m_vertices.size());
-	for (const auto & vertex : polygon.m_vertices)
-		result.emplace_back(Vec2f(vertex.x / max.x, vertex.y / max.y));
+	for (const Vec2f & vertex : polygon.m_vertices)
+		result.emplace_back(Vec2f((vertex.x - minimum.x) / dimension.x, (vertex.y - minimum.y) / dimension.y));
 	return result;
 }
 
