@@ -8,7 +8,6 @@ out vec2 TexCoord;
 
 void main()
 {
-    vec3 p = view * model * vec4(position, 0.0, 1.0);
-    gl_Position = p;
+    gl_Position = view * model * vec4(position, 0, 1);
     TexCoord = texCoord;
 }
