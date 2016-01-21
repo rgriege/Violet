@@ -112,9 +112,9 @@ void RenderSystem::update(float const /*dt*/)
 
 			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, ColorComponent>())
 				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
-			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextComponent>())
-				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
 			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextureComponent>())
+				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
+			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextComponent>())
 				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
 
 			glFlush();
