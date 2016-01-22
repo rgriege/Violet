@@ -124,8 +124,7 @@ ComponentType & Violet::ComponentPool::create(const EntityId entityId, Args && .
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
 	auto result = getLocation(entityId);
-	if (result.second)
-		return *static_cast<ComponentType*>(result.first);
+	assert(!result.second);
 
 	ComponentType * component = new (result.first) ComponentType(entityId, std::forward<Args>(args)...);
 	return *component;
