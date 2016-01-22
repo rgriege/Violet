@@ -19,7 +19,9 @@ class Instance : public CppScript::Instance
 public:
 
     Instance(CppScript & script) :
-        CppScript::Instance(script)
+        CppScript::Instance(script),
+		m_dialog(None),
+		m_dialogEntities()
     {
         KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
         DialogClosedEvent::subscribe(Engine::getInstance(), DialogClosedEvent::Subscriber::bind<Instance, &Instance::onDialogClosed>(this));
@@ -42,18 +44,18 @@ private:
             {
                 case 'o':
                     Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
-                        [](ComponentManager & scene)
+                        [=](ComponentManager & scene)
                         {
-                            scene.load("dialog.json");
+							m_dialogEntities = scene.load("dialog.json");
                         });
                     m_dialog = Load;
                     break;
 
                 case 's':
                     Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
-                        [](ComponentManager & scene)
+                        [=](ComponentManager & scene)
                         {
-                            scene.load("dialog.json");
+							m_dialogEntities = scene.load("dialog.json");
                         });
                     m_dialog = Save;
                     break;
@@ -84,9 +86,9 @@ private:
 
                 case Key::Return:
                     Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
-                        [](ComponentManager & scene)
+                        [=](ComponentManager & scene)
                         {
-                            scene.load("dialog.json");
+							m_dialogEntities = scene.load("dialog.json");
                         });
                     m_dialog = Command;
                     break;
@@ -96,9 +98,9 @@ private:
 
     void onDialogClosed(const std::string & input)
     {
+		const auto & engine = Engine::getInstance();
         if (!input.empty())
         {
-            const auto & engine = Engine::getInstance();
             switch (m_dialog)
             {
                 case Command:
@@ -127,6 +129,15 @@ private:
             }
         }
         m_dialog = None;
+		for (const EntityId entityId : m_dialogEntities)
+		{
+			engine.addWriteTask(engine.getCurrentScene(),
+				[=](ComponentManager & scene)
+				{
+					scene.removeAll(entityId);
+				});
+		}
+		m_dialogEntities.clear();
     }
 
 private:
@@ -140,6 +151,7 @@ private:
     };
 
     Dialog m_dialog = None;
+	std::vector<EntityId> m_dialogEntities;
 };
 
 VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)

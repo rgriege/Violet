@@ -53,11 +53,6 @@ private:
     {
         const auto & engine = Engine::getInstance();
         DialogClosedEvent::emit(engine, std::string());
-        engine.addWriteTask(engine.getCurrentScene(),
-            [=](ComponentManager & manager)
-            {
-                Engine::getInstance().getCurrentScene().removeAll(entityId);
-            });
     }
 
     void onKeyUp(const EntityId entityId, const WindowSystem::KeyEvent & event)
@@ -67,14 +62,7 @@ private:
             const Engine & engine = Engine::getInstance();
             const auto * tc = engine.getCurrentScene().getComponent<TextComponent>(entityId);
             if (tc != nullptr && !tc->m_text.empty())
-            {
                 DialogClosedEvent::emit(engine, tc->m_text);
-                engine.addWriteTask(engine.getCurrentScene(),
-                    [=](ComponentManager & manager)
-                    {
-                        Engine::getInstance().getCurrentScene().removeAll(entityId);
-                    });
-            }
         }
     }
 
