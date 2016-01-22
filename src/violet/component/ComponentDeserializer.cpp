@@ -2,6 +2,8 @@
 
 #include "violet/component/ComponentDeserializer.h"
 
+#include <assert.h>
+
 using namespace Violet;
 
 // ============================================================================
@@ -97,7 +99,8 @@ EntityId ComponentDeserializer::getEntityId(const char * const label) const
 {
 	const uint32 desiredId = m_deserializer->getUint(label);
 	const auto it = m_handleIdMap->find(desiredId);
-	return it == m_handleIdMap->end() ? EntityId(desiredId, 0) : it->second;
+	assert(!EntityId(desiredId, 0).isValid() || it != m_handleIdMap->end());
+	return it == m_handleIdMap->end() ? EntityId::ms_invalid : it->second;
 }
 
 // ============================================================================
