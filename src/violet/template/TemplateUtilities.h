@@ -72,7 +72,7 @@ namespace Violet
 	template <typename T> using copyable_t = typename copyable<T>::type;
 
 	template <typename T>
-	typename copyable_t<T> to_copyable(const T & t)
+	copyable_t<T> to_copyable(const T & t)
 	{
 		return static_cast<copyable_t<T>>(t);
 	}

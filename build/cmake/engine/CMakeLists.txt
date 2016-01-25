@@ -45,8 +45,10 @@ set (HEADER_FILES
     ${Engine_ROOT}/math/LogConst.h
     ${Engine_ROOT}/math/Matrix2.h
     ${Engine_ROOT}/math/Matrix3.h
+    ${Engine_ROOT}/math/Matrix4.h
     ${Engine_ROOT}/math/Polygon.h
     ${Engine_ROOT}/math/Vec2.h
+    ${Engine_ROOT}/math/Vec3.h
     ${Engine_ROOT}/physics/collision/Intersection.h
     ${Engine_ROOT}/physics/collision/RigidBody.h
     ${Engine_ROOT}/physics/component/PhysicsComponent.h
@@ -140,6 +142,7 @@ set (SOURCE_FILES
     ${Engine_ROOT}/math/AABB.cpp
     ${Engine_ROOT}/math/Circle.cpp
     ${Engine_ROOT}/math/Matrix3.cpp
+    ${Engine_ROOT}/math/Matrix4.cpp
     ${Engine_ROOT}/math/Polygon.cpp
     ${Engine_ROOT}/math/Vec2.cpp
     ${Engine_ROOT}/physics/collision/Intersection.cpp

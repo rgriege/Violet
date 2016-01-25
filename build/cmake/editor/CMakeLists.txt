@@ -9,19 +9,25 @@ set (HEADER_FILES
     ${Editor_ROOT}/Defines.h
     ${Editor_ROOT}/EditorSystem.h
     ${Editor_ROOT}/command/Command.h
+    ${Editor_ROOT}/command/ChainCommand.h
     ${Editor_ROOT}/command/ClearAllCommand.h
     ${Editor_ROOT}/command/MoveToCommand.h
     ${Editor_ROOT}/command/file/OpenCommand.h
     ${Editor_ROOT}/command/file/SaveAllCommand.h
+    ${Editor_ROOT}/command/selection/DeselectCommand.h
+    ${Editor_ROOT}/command/selection/SelectCommand.h
     ${Editor_ROOT}/component/EditorComponent.h
 )
 
 set (SOURCE_FILES
     ${Editor_ROOT}/CppScriptExports.cpp
+    ${Editor_ROOT}/command/ChainCommand.cpp
     ${Editor_ROOT}/command/ClearAllCommand.cpp
     ${Editor_ROOT}/command/MoveToCommand.cpp
     ${Editor_ROOT}/command/file/OpenCommand.cpp
     ${Editor_ROOT}/command/file/SaveAllCommand.cpp
+    ${Editor_ROOT}/command/selection/DeselectCommand.cpp
+    ${Editor_ROOT}/command/selection/SelectCommand.cpp
     ${Editor_ROOT}/EditorSystem.cpp
     ${Editor_ROOT}/component/EditorComponent.cpp
 )
