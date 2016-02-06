@@ -47,10 +47,3 @@ uint32 Violet::ComponentBase<Derived, Version>::getStaticVersion()
 
 // ============================================================================
 
-template <typename Derived, uint32 Version>
-Violet::ComponentBase<Derived, Version>::ComponentBase(const EntityId entityId) :
-	Component(entityId)
-{
-}
-
-// ============================================================================

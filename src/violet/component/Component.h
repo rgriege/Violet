@@ -27,18 +27,6 @@ namespace Violet
 	private:
 
 		static uint32 getNextFlag();
-
-	public:
-
-		EntityId getEntityId() const;
-		
-	protected:
-
-		Component(EntityId entityId);
-
-	protected:
-
-		EntityId m_entityId;
 	};
 
 	template <typename Derived, uint32 Version>
@@ -51,7 +39,7 @@ namespace Violet
 
 	protected:
 
-		ComponentBase(EntityId entityId);
+		ComponentBase() = default;
 	};
 }
 

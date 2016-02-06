@@ -110,12 +110,12 @@ void RenderSystem::update(float const /*dt*/)
 			viewMatrix[1][1] = 2.f / windowSystem->getHeight();
 			viewMatrix[2][2] = 0.01f;
 
-			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, ColorComponent>())
-				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
-			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextureComponent>())
-				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
-			for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextComponent>())
-				draw(std::get<0>(entity), std::get<1>(entity), viewMatrix);
+			for (const auto & entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, ColorComponent>())
+				draw(entity.get<WorldTransformComponent>(), entity.get<ColorComponent>(), viewMatrix);
+			for (const auto & entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextureComponent>())
+				draw(entity.get<WorldTransformComponent>(), entity.get<TextureComponent>(), viewMatrix);
+			for (const auto & entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, TextComponent>())
+				draw(entity.get<WorldTransformComponent>(), entity.get<TextComponent>(), viewMatrix);
 
 			glFlush();
 			engine.addWriteTask(engine, [](Engine & engine) { engine.getSystem<WindowSystem>()->render(); }, Thread::Window);

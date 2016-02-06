@@ -109,7 +109,7 @@ namespace Violet
 	template <typename ReturnType, typename Tuple>
 	ReturnType & get(Tuple & tuple)
 	{
-		return std::get<detail::index_of<ReturnType, Tuple, std::tuple_size<Tuple>::value>::value>(tuple);
+		return std::get<index_of<ReturnType, Tuple>::value>(tuple);
 	}
 
 	/*
@@ -118,7 +118,7 @@ namespace Violet
 	template <typename ReturnType, typename Tuple>
 	const ReturnType & get(const Tuple & tuple)
 	{
-		return std::get<detail::index_of<ReturnType, Tuple, std::tuple_size<Tuple>::value>::value>(tuple);
+		return std::get<index_of<ReturnType, Tuple>::value>(tuple);
 	}
 
 

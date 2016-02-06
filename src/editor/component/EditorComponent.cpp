@@ -26,7 +26,7 @@ Thread EditorComponent::getStaticThread()
 // ============================================================================
 
 EditorComponent::EditorComponent(const EntityId entityId, const EntityId editId) :
-	ComponentBase<EditorComponent, 0>(entityId),
+	ComponentBase<EditorComponent, 0>(),
 	m_editId(editId)
 {
 }
@@ -34,7 +34,7 @@ EditorComponent::EditorComponent(const EntityId entityId, const EntityId editId)
 // ----------------------------------------------------------------------------
 
 EditorComponent::EditorComponent(const EntityId entityId, const ComponentDeserializer & /*deserializer*/) :
-	ComponentBase<EditorComponent, 0>(entityId)
+	ComponentBase<EditorComponent, 0>()
 {
 	assert(false);
 }

@@ -55,8 +55,8 @@ UpdateSystem::~UpdateSystem()
 
 void UpdateSystem::update(float dt)
 {
-	for (auto entity : Engine::getInstance().getCurrentScene().getEntityView<UpdateComponent, ScriptComponent>())
-		UpdateMethod::run(*std::get<1>(entity).m_script, std::get<0>(entity).getEntityId(), std::move(dt));
+	for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<UpdateComponent, ScriptComponent>())
+		UpdateMethod::run(*entity.get<ScriptComponent>().m_script, entity.getId(), std::move(dt));
 }
 
 // ============================================================================

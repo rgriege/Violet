@@ -23,7 +23,7 @@ Thread KeyInputComponent::getStaticThread()
 // ============================================================================
 
 KeyInputComponent::KeyInputComponent(const EntityId entityId) :
-	ComponentBase<KeyInputComponent, 0>(entityId)
+	ComponentBase<KeyInputComponent, 0>()
 {
 }
 

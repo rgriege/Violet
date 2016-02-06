@@ -27,8 +27,8 @@ void edt::EditorSystem::propogateChange(const Violet::EntityId entityId, const M
         {
             Violet::EntityId copyId;
             for (const auto & entity : scene.getEntityView<edt::EditorComponent>())
-                if (std::get<0>(entity).m_editId == entityId)
-                    copyId = std::get<0>(entity).getEntityId();
+                if (entity.get<edt::EditorComponent>().m_editId == entityId)
+                    copyId = entity.getId();
             Violet::Log::log(Violet::FormattedString<128>().sprintf("propogate %s %d -> %d", ComponentType::getStaticTag().asString().c_str(), entityId.getId(), copyId.getId()));
             if (copyId.isValid())
                 scene.getComponent<ComponentType>(copyId)->*Member = static_cast<MemberType>(copyableMember);

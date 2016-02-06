@@ -19,15 +19,29 @@ namespace Violet
 	{
 	public:
 
-		template <bool is_const, typename... ComponentTypes>
+		template <typename... ComponentTypes>
 		class View
 		{
 		public:
 
-			typedef std::conditional_t<is_const, std::tuple<const ComponentTypes&...>, std::tuple<ComponentTypes&...>> component_tuple;
-			typedef std::conditional_t<is_const,
-				std::tuple<ComponentPool::const_iterator<ComponentTypes>...>,
-				std::tuple<ComponentPool::iterator<ComponentTypes>...>> iterator_tuple;
+			typedef std::tuple<const ComponentTypes&...> component_tuple;
+			typedef std::tuple<ComponentPool::const_iterator<ComponentTypes>...> iterator_tuple;
+
+			class Entity
+			{
+			public:
+
+				Entity(component_tuple components, EntityId id);
+
+				template <typename ComponentType>
+				const ComponentType & get() const;
+				EntityId getId() const;
+
+			private:
+
+				const component_tuple m_components;
+				EntityId m_id;
+			};
 
 			class Iterator : public std::iterator<std::input_iterator_tag, component_tuple>
 			{
@@ -36,8 +50,7 @@ namespace Violet
 				explicit Iterator(iterator_tuple iterators);
 
 				Iterator & operator++();
-				component_tuple operator*();
-				EntityId getEntityId() const;
+				Entity operator*();
 
 				bool operator==(const Iterator & other) const;
 				bool operator!=(const Iterator & other) const;
@@ -115,7 +128,7 @@ namespace Violet
 		template <typename ComponentType>
 		const ComponentType * getComponent(EntityId entityId) const;
 		template <typename... ComponentTypes>
-		View<true, ComponentTypes...> getEntityView() const;
+		View<ComponentTypes...> getEntityView() const;
 		std::vector<EntityId> getEntityIds() const;
 		EntityId::StorageType getEntityVersion(EntityId::StorageType id) const;
 		
@@ -154,6 +167,9 @@ namespace Violet
 		VersionedHandleManager<EntityId> m_handleManager;
 		std::vector<ComponentPool> m_pools;
 	};
+
+	template <typename... ComponentTypes> 
+	using Entity = typename ComponentManager::View<ComponentTypes...>::Entity;
 }
 
 #include "violet/component/ComponentManager.inl"

@@ -26,7 +26,7 @@ Thread TextComponent::getStaticThread()
 // ============================================================================
 
 TextComponent::TextComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
-	ComponentBase<TextComponent, 0>(entityId),
+	ComponentBase<TextComponent, 0>(),
 	RenderComponentData(deserializer),
 	m_text(deserializer.getString("str")),
 	m_font(),

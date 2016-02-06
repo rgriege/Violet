@@ -218,9 +218,9 @@ void EditorSystem::propogateAdd(const EntityId entityId) const
                     {
                         for (const auto & entity : scene.getEntityView<EditorComponent>())
                         {
-                            if (std::get<0>(entity).m_editId == ltc->m_parentId)
+                            if (entity.get<EditorComponent>().m_editId == ltc->m_parentId)
                             {
-                                parentId = std::get<0>(entity).getEntityId();
+                                parentId = entity.getId();
                                 break;
                             }
                         }
@@ -237,9 +237,9 @@ void EditorSystem::propogateAdd(const EntityId entityId) const
 void EditorSystem::propogateRemove(const EntityId entityId) const
 {
 	const auto & scene = Engine::getInstance().getCurrentScene();
-	for (const auto & entity : scene.getEntityView<edt::EditorComponent>())
-		if (std::get<0>(entity).m_editId == entityId)
-			scene.removeAll(std::get<0>(entity).getEntityId());
+	for (const auto & entity : scene.getEntityView<EditorComponent>())
+		if (entity.get<EditorComponent>().m_editId == entityId)
+			scene.removeAll(entity.getId());
 }
 
 // ============================================================================

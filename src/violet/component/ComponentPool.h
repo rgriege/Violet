@@ -3,9 +3,7 @@
 
 #include "violet/component/Component.h"
 
-#include <map>
 #include <vector>
-#include <unordered_map>
 
 namespace Violet
 {
@@ -26,13 +24,14 @@ namespace Violet
 
 		public:
 
-			explicit Iterator(Pointer ptr);
+			Iterator(Pointer ptr, const EntityId * idPtr);
 
 			Iterator<ComponentType, is_const> & operator++();
 			Iterator<ComponentType, is_const> & advanceTo(EntityId entityId);
 
 			Reference operator*();
 			Pointer operator->();
+			EntityId getEntityId() const;
 
 			operator bool() const;
 			bool operator!=(const Iterator<ComponentType, is_const> & other) const;
@@ -40,6 +39,7 @@ namespace Violet
 		private:
 
 			Pointer m_ptr;
+			const EntityId * m_idPtr;
 		};
 
 		template <typename T> using iterator = Iterator<T, false>;
@@ -102,8 +102,6 @@ namespace Violet
 		template <typename ComponentType>
 		const ComponentType * get(uint32 index) const;
 
-		uint32 getLastDataIndex() const;
-
 		std::pair<void *, bool> getLocation(EntityId entityId);
 		void verify();
 
@@ -112,7 +110,7 @@ namespace Violet
 		const Tag m_componentTag;
 		const uint32 m_componentSize;
 		std::vector<ubyte> m_data;
-		std::map<EntityId, uint32> m_lookupMap;
+		std::vector<EntityId> m_ids;
 	};
 }
 

@@ -17,9 +17,9 @@ namespace PhysicsSystemNamespace
 {
 	// ----------------------------------------------------------------------------
 
-	void resolveCollisionForEntity(const WorldTransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, float impulseMagnitude);
+	void resolveCollisionForEntity(const WorldTransformComponent & transform, const PhysicsComponent & physics, const Intersection & intersection, const float impulseMagnitude);
 
-	void move(PhysicsComponent & physics, const WorldTransformComponent & transform, const Vec2f & gravity, float drag, float dt);
+	void move(PhysicsComponent & physics, const WorldTransformComponent & transform, const Vec2f & gravity, const float drag, const float dt);
 	void collide(PhysicsComponent & physics, const Vec2f & impulse, float angularImpulse);
 
 	// ----------------------------------------------------------------------------
@@ -79,10 +79,10 @@ void PhysicsSystem::update(const float dt)
 	const AABB boundary(0, 0, static_cast<float>(windowSystem->getWidth()), static_cast<float>(windowSystem->getHeight()));
 	QuadTree<RigidBody> tree(boundary, 4);
 
-	for (const auto entity : Engine::getInstance().getCurrentScene().getEntityView<WorldTransformComponent, PhysicsComponent>())
+	for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<WorldTransformComponent, PhysicsComponent>())
 	{
-		auto & transformComponent = std::get<0>(entity);
-		auto & physicsComponent = std::get<1>(entity);
+		auto & transformComponent = entity.get<WorldTransformComponent>();
+		auto & physicsComponent = entity.get<PhysicsComponent>();
 		tree.insert(RigidBody(transformComponent, physicsComponent), physicsComponent.m_polygon.getBoundingBox().transform(to2d(transformComponent.m_transform)));
 		engine.addWriteTask(physicsComponent,
 			[&transformComponent, this, dt](PhysicsComponent & physics)
@@ -90,10 +90,10 @@ void PhysicsSystem::update(const float dt)
 				move(physics, transformComponent, m_gravity, m_drag, dt);
 			});
 	}
-	for (const auto entity : Engine::getInstance().getCurrentScene().getEntityView<WorldTransformComponent, PhysicsComponent>())
+	for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<WorldTransformComponent, PhysicsComponent>())
 	{
-		auto & transformComponent = std::get<0>(entity);
-		auto & physicsComponent = std::get<1>(entity);
+		auto & transformComponent = entity.get<WorldTransformComponent>();
+		auto & physicsComponent = entity.get<PhysicsComponent>();
 		RigidBody body(transformComponent, physicsComponent);
 
 		std::vector<RigidBody> otherBodies;

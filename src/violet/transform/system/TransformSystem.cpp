@@ -17,7 +17,7 @@ using namespace Violet;
 
 namespace TransformSystemNamespace
 {
-    typedef std::tuple<const LocalTransformComponent &, const WorldTransformComponent &> TransformEntity;
+    typedef Entity<LocalTransformComponent, WorldTransformComponent> TransformEntity;
 
     void updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache, std::vector<TransformEntity> & deferredUpdates);
 }
@@ -87,9 +87,9 @@ void TransformSystem::update(const float /*dt*/)
 
     for (const auto & entity : deferredUpdates)
     {
-		const auto & localTransformComponent = std::get<0>(entity);
-		const auto & worldTransformComponent = std::get<1>(entity);
-		const EntityId entityId = localTransformComponent.getEntityId();
+		const auto & localTransformComponent = entity.get<LocalTransformComponent>();
+		const auto & worldTransformComponent = entity.get<WorldTransformComponent>();
+		const EntityId entityId = entity.getId();
 
         Log::log(FormattedString<128>().sprintf("invalid hierarchy (parent <%d,%d> for <%d,%d>), removing",
             localTransformComponent.m_parentId.getId(),
@@ -118,9 +118,9 @@ TransformSystem::TransformSystem() :
 void TransformSystemNamespace::updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache, std::vector<TransformEntity> & deferredUpdates)
 {
 	const auto & engine = Engine::getInstance();
-    const auto & localTransformComponent = std::get<0>(entity);
-    const auto & worldTransformComponent = std::get<1>(entity);
-    const EntityId entityId = localTransformComponent.getEntityId();
+	const auto & localTransformComponent = entity.get<LocalTransformComponent>();
+	const auto & worldTransformComponent = entity.get<WorldTransformComponent>();
+    const EntityId entityId = entity.getId();
 
     const auto it = worldTransformCache.find(localTransformComponent.m_parentId);
     if (it != worldTransformCache.end())

@@ -39,7 +39,7 @@ Thread TextureComponent::getStaticThread()
 // ============================================================================
 
 TextureComponent::TextureComponent(const EntityId entityId, ComponentDeserializer & deserializer) :
-	ComponentBase<TextureComponent, 0>(entityId),
+	ComponentBase<TextureComponent, 0>(),
 	RenderComponentData(deserializer),
 	m_texture(Texture::getCache().fetch(deserializer.getString("texture"))),
 	m_texCoords(std::make_unique<Mesh>(createTexCoordsFromMesh(*m_mesh)))
@@ -55,7 +55,7 @@ TextureComponent::TextureComponent(const EntityId entityId, ComponentDeserialize
 // ----------------------------------------------------------------------------
 
 TextureComponent::TextureComponent(const EntityId entityId, const Polygon & poly, std::shared_ptr<ShaderProgram> shader, std::shared_ptr<Texture> texture, const Polygon & texCoords) :
-	ComponentBase<TextureComponent, 0>(entityId),
+	ComponentBase<TextureComponent, 0>(),
 	RenderComponentData(poly, shader),
 	m_texture(std::move(texture)),
 	m_texCoords(std::make_unique<Mesh>(texCoords))

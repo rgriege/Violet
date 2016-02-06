@@ -58,7 +58,7 @@ void ClearAllCommand::execute()
 {
     std::vector<EntityId> copiedEntityIds;
     for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<EditorComponent>())
-        copiedEntityIds.emplace_back(std::get<0>(entity).getEntityId());
+        copiedEntityIds.emplace_back(entity.getId());
 
     const auto & scene = Engine::getInstance().getSystem<EditorSystem>()->getScene();
     const auto entityIds = scene.getEntityIds();

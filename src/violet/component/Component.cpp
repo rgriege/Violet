@@ -24,16 +24,3 @@ uint32 Component::getNextFlag()
 
 // ============================================================================
 
-Component::Component(const EntityId entityId) :
-	m_entityId(entityId)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-EntityId Component::getEntityId() const
-{
-	return m_entityId;
-}
-
-// ============================================================================

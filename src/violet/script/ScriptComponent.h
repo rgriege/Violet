@@ -35,7 +35,7 @@ namespace Violet
 	VIOLET_API Serializer & operator<<(Serializer & serializer, const ScriptComponent & component);
 
 	DEFINE_METHOD(BindToComponentMethod, void(EntityId entityId));
-	DEFINE_METHOD(UnbindFromComponentMethod, void(EntityId entityId));
+	DEFINE_METHOD(UnbindFromComponentMethod, void());
 }
 
 #endif

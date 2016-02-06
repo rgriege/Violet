@@ -8,8 +8,9 @@
 // ============================================================================
 
 template <typename ComponentType, bool is_const>
-Violet::ComponentPool::Iterator<ComponentType, is_const>::Iterator(Pointer ptr) :
-	m_ptr(ptr)
+Violet::ComponentPool::Iterator<ComponentType, is_const>::Iterator(Pointer ptr, const EntityId * idPtr) :
+	m_ptr(ptr),
+	m_idPtr(idPtr)
 {
 }
 
@@ -19,6 +20,7 @@ template <typename ComponentType, bool is_const>
 Violet::ComponentPool::Iterator<ComponentType, is_const> & Violet::ComponentPool::Iterator<ComponentType, is_const>::operator++()
 {
 	++m_ptr;
+	++m_idPtr;
 	return *this;
 }
 
@@ -27,8 +29,11 @@ Violet::ComponentPool::Iterator<ComponentType, is_const> & Violet::ComponentPool
 template <typename ComponentType, bool is_const>
 Violet::ComponentPool::Iterator<ComponentType, is_const> & Violet::ComponentPool::Iterator<ComponentType, is_const>::advanceTo(const EntityId entityId)
 {
-	while (*this && m_ptr->getEntityId() < entityId)
+	while (*this && *m_idPtr < entityId)
+	{
+		++m_idPtr;
 		++m_ptr;
+	}
 
 	return *this;
 }
@@ -52,9 +57,17 @@ typename Violet::ComponentPool::Iterator<ComponentType, is_const>::Pointer Viole
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool is_const>
+Violet::EntityId Violet::ComponentPool::Iterator<ComponentType, is_const>::getEntityId() const
+{
+	return *m_idPtr;
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename ComponentType, bool is_const>
 Violet::ComponentPool::Iterator<ComponentType, is_const>::operator bool() const
 {
-	return m_ptr->getEntityId().isValid();
+	return m_idPtr->isValid();
 }
 
 // ----------------------------------------------------------------------------
@@ -86,31 +99,31 @@ void Violet::ComponentPool::load(ComponentDeserializer & deserializer)
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void Violet::ComponentPool::save(Serializer & serailizer) const
+void Violet::ComponentPool::save(Serializer & serializer) const
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
-	serailizer.writeUint("version", ComponentType::getStaticVersion());
-	for (auto it = begin<ComponentType>(), endIt = end<ComponentType>(); it != endIt; ++it)
+	serializer.writeUint("version", ComponentType::getStaticVersion());
+	for (uint32 i = 0, end = m_ids.size(); i < end; ++i)
 	{
-		serailizer.writeUint("id", it->getEntityId().getId());
-		serailizer << *it;
+		serializer.writeUint("id", m_ids[i].getId());
+		serializer << *get<ComponentType>(i);
 	}
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-uint32 Violet::ComponentPool::save(Serializer & serailizer, const std::vector<EntityId> & entityIds) const
+uint32 Violet::ComponentPool::save(Serializer & serializer, const std::vector<EntityId> & entityIds) const
 {
 	uint32 count = 0;
 	assert(ComponentType::getStaticTag() == m_componentTag);
-	serailizer.writeUint("version", ComponentType::getStaticVersion());
-	for (auto it = begin<ComponentType>(), endIt = end<ComponentType>(); it != endIt; ++it)
+	serializer.writeUint("version", ComponentType::getStaticVersion());
+	for (uint32 i = 0, end = m_ids.size(); i < end; ++i)
 	{
-		if (std::binary_search(entityIds.cbegin(), entityIds.cend(), it->getEntityId()))
+		if (std::binary_search(entityIds.cbegin(), entityIds.cend(), m_ids[i]))
 		{
-			serailizer.writeUint("id", it->getEntityId().getId());
-			serailizer << *it;
+			serializer.writeUint("id", m_ids[i].getId());
+			serializer << *get<ComponentType>(i);
 			++count;
 		}
 	}
@@ -136,8 +149,8 @@ template <typename ComponentType>
 ComponentType * Violet::ComponentPool::get(const EntityId entityId)
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
-	auto const it = m_lookupMap.find(entityId);
-	return it != m_lookupMap.end() ? get<ComponentType>(it->second) : nullptr;
+	const auto & it = std::lower_bound(m_ids.begin(), m_ids.end(), entityId);
+	return it != m_ids.end() && *it == entityId ? get<ComponentType>(it - m_ids.begin()) : nullptr;
 }
 
 // ----------------------------------------------------------------------------
@@ -146,8 +159,8 @@ template <typename ComponentType>
 const ComponentType * Violet::ComponentPool::get(const EntityId entityId) const
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
-	auto const it = m_lookupMap.find(entityId);
-	return it != m_lookupMap.end() ? get<ComponentType>(it->second) : nullptr;
+	const auto & it = std::lower_bound(m_ids.begin(), m_ids.end(), entityId);
+	return it != m_ids.end() && *it == entityId ? get<ComponentType>(it - m_ids.begin()) : nullptr;
 }
 
 // ----------------------------------------------------------------------------
@@ -156,7 +169,7 @@ template <typename ComponentType>
 Violet::ComponentPool::iterator<ComponentType> Violet::ComponentPool::begin()
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
-	return iterator<ComponentType>(get<ComponentType>(0));
+	return iterator<ComponentType>(get<ComponentType>(0), &m_ids[0]);
 }
 
 // ----------------------------------------------------------------------------
@@ -165,7 +178,7 @@ template <typename ComponentType>
 Violet::ComponentPool::const_iterator<ComponentType> Violet::ComponentPool::begin() const
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
-	return const_iterator<ComponentType>(get<ComponentType>(0));
+	return const_iterator<ComponentType>(get<ComponentType>(0), &m_ids[0]);
 }
 
 // ----------------------------------------------------------------------------
@@ -174,7 +187,7 @@ template <typename ComponentType>
 Violet::ComponentPool::iterator<ComponentType> Violet::ComponentPool::end()
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
-	return iterator<ComponentType>(get<ComponentType>(getLastDataIndex()));
+	return iterator<ComponentType>(get<ComponentType>(size()), &m_ids[size()]);
 }
 
 // ----------------------------------------------------------------------------
@@ -183,7 +196,7 @@ template <typename ComponentType>
 Violet::ComponentPool::const_iterator<ComponentType> Violet::ComponentPool::end() const
 {
 	assert(ComponentType::getStaticTag() == m_componentTag);
-	return const_iterator<ComponentType>(get<ComponentType>(getLastDataIndex()));
+	return const_iterator<ComponentType>(get<ComponentType>(size()), &m_ids[size()]);
 }
 
 // ============================================================================
@@ -191,7 +204,7 @@ Violet::ComponentPool::const_iterator<ComponentType> Violet::ComponentPool::end(
 template <typename ComponentType>
 ComponentType * Violet::ComponentPool::get(const uint32 index)
 {
-	return reinterpret_cast<ComponentType*>(m_data.data() + index);
+	return reinterpret_cast<ComponentType*>(m_data.data() + index * m_componentSize);
 }
 
 // ----------------------------------------------------------------------------
@@ -199,7 +212,7 @@ ComponentType * Violet::ComponentPool::get(const uint32 index)
 template <typename ComponentType>
 const ComponentType * Violet::ComponentPool::get(const uint32 index) const
 {
-	return reinterpret_cast<const ComponentType*>(m_data.data() + index);
+	return reinterpret_cast<const ComponentType*>(m_data.data() + index * m_componentSize);
 }
 
 // ============================================================================

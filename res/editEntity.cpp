@@ -157,8 +157,8 @@ private:
 	{
 		std::vector<EntityId> result;
 		for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<EditorComponent>())
-			if (selectedEntities.find(std::get<0>(entity).m_editId) != selectedEntities.end())
-				result.emplace_back(std::get<0>(entity).getEntityId());
+			if (selectedEntities.find(entity.get<EditorComponent>().m_editId) != selectedEntities.end())
+				result.emplace_back(entity.getId());
 		return result;
 	}
 

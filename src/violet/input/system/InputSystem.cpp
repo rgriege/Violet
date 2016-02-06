@@ -20,9 +20,12 @@ namespace InputSystemNamespace
 {
 	// ----------------------------------------------------------------------------
 
-	void processEvent(const ScriptComponent & scriptComponent, const WindowSystem::KeyEvent & event, WindowSystem::EventType type);
-	InputResult processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseButtonEvent & event, WindowSystem::EventType type);
-	void processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseMotionEvent & event);
+	typedef Entity<KeyInputComponent, ScriptComponent> KeyInputEntity;
+	void processEvent(const KeyInputEntity & entity, const WindowSystem::KeyEvent & event, WindowSystem::EventType type);
+
+	typedef Entity<WorldTransformComponent, MouseInputComponent, ScriptComponent> MouseInputEntity;
+	InputResult processEvent(const MouseInputEntity & entity, const InputSystem::MouseButtonEvent & event, WindowSystem::EventType type);
+	void processEvent(const MouseInputEntity & entity, const InputSystem::MouseMotionEvent & event);
 
 	Vec2f computeWorldCoordinates(const Vec2i & windowDimensions, int x, int y);
 
@@ -86,8 +89,8 @@ void InputSystem::update(const float dt)
 				case WindowSystem::ET_KeyUp:
 					if (!m_focussedEntityId.isValid())
 					{
-						for (const auto entity : engine.getCurrentScene().getEntityView<KeyInputComponent, ScriptComponent>())
-							processEvent(std::get<1>(entity), event.key, event.type);
+						for (const auto & entity : engine.getCurrentScene().getEntityView<KeyInputComponent, ScriptComponent>())
+							processEvent(entity, event.key, event.type);
 					}
 					else
 						processFocussedEvent(event.key, event.type);
@@ -99,8 +102,8 @@ void InputSystem::update(const float dt)
 						InputSystem::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button, event.mouse.modifiers };
 						if (!m_focussedEntityId.isValid())
 						{
-							for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
-								if (processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent, event.type) == InputResult::Block)
+							for (const auto & entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
+								if (processEvent(entity, worldEvent, event.type) == InputResult::Block)
 									break;
 						}
 						else
@@ -114,7 +117,7 @@ void InputSystem::update(const float dt)
 						if (!m_focussedEntityId.isValid())
 						{
 							for (const auto entity : engine.getCurrentScene().getEntityView<WorldTransformComponent, MouseInputComponent, ScriptComponent>())
-								processEvent(std::get<0>(entity), std::get<1>(entity), std::get<2>(entity), worldEvent);
+								processEvent(entity, worldEvent);
 						}
 						else
 							processFocussedEvent(worldEvent);
@@ -163,9 +166,10 @@ void InputSystem::processFocussedEvent(const WindowSystem::KeyEvent & event, con
 	const auto & engine = Engine::getInstance();
 	if (event.code != Key::Escape)
 	{
+		const auto * kic = engine.getCurrentScene().getComponent<KeyInputComponent>(m_focussedEntityId);
 		const auto * sc = engine.getCurrentScene().getComponent<ScriptComponent>(m_focussedEntityId);
-		if (sc != nullptr && engine.getCurrentScene().getComponent<KeyInputComponent>(m_focussedEntityId) != nullptr)
-			processEvent(*sc, event, type);
+		if (sc != nullptr && kic != nullptr)
+			processEvent(KeyInputEntity(std::forward_as_tuple(*kic, *sc), m_focussedEntityId), event, type);
 		else
 			engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
 	}
@@ -173,7 +177,10 @@ void InputSystem::processFocussedEvent(const WindowSystem::KeyEvent & event, con
 	{
 		const auto * sc = engine.getCurrentScene().getComponent<ScriptComponent>(m_focussedEntityId);
 		if (sc != nullptr)
-			FocusLostMethod::run(*sc->m_script, sc->getEntityId());
+		{
+			EntityId id = m_focussedEntityId;
+			FocusLostMethod::run(*sc->m_script, std::move(id));
+		}
 		engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
 	}
 }
@@ -189,17 +196,18 @@ void InputSystem::processFocussedEvent(const MouseButtonEvent & worldEvent, cons
 	if (sc && mc && tc)
 	{
 		auto const & script = *sc->m_script;
+		EntityId id = m_focussedEntityId;
 
 		if (mc->m_mesh.getBoundingBox().transform(to2d(tc->m_transform)).contains(worldEvent.position))
 		{
 			if (type == WindowSystem::ET_MouseDown)
-				MouseDownMethod::run(script, sc->getEntityId(), worldEvent);
+				MouseDownMethod::run(script, std::move(id), worldEvent);
 			else
-				MouseUpMethod::run(script, sc->getEntityId(), worldEvent);
+				MouseUpMethod::run(script, std::move(id), worldEvent);
 		}
 		else
 		{
-			FocusLostMethod::run(script, sc->getEntityId());
+			FocusLostMethod::run(script, std::move(id));
 			engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
 		}
 	}
@@ -216,37 +224,39 @@ void InputSystem::processFocussedEvent(const MouseMotionEvent & worldEvent) thre
 	const auto * mc = engine.getCurrentScene().getComponent<MouseInputComponent>(m_focussedEntityId);
 	const auto * tc = engine.getCurrentScene().getComponent<WorldTransformComponent>(m_focussedEntityId);
 	if (sc && mc && tc)
-		processEvent(*tc, *mc, *sc, worldEvent);
+		processEvent(MouseInputEntity(std::forward_as_tuple(*tc, *mc, *sc), m_focussedEntityId), worldEvent);
 	else
 		engine.addWriteTask(*this, [=](InputSystem & input) { input.unfocus(m_focussedEntityId); });
 }
 
 // ============================================================================
 
-void InputSystemNamespace::processEvent(const ScriptComponent & scriptComponent, const WindowSystem::KeyEvent & event, const WindowSystem::EventType type)
+void InputSystemNamespace::processEvent(const KeyInputEntity & entity, const WindowSystem::KeyEvent & event, const WindowSystem::EventType type)
 {
 	if (type == WindowSystem::ET_KeyDown)
 	{
 		unsigned char code = event.code;
-		KeyDownMethod::run(*scriptComponent.m_script, scriptComponent.getEntityId(), event);
+		KeyDownMethod::run(*entity.get<ScriptComponent>().m_script, entity.getId(), event);
 	}
 	else if (type == WindowSystem::ET_KeyUp)
 	{
 		unsigned char code = event.code;
-		KeyUpMethod::run(*scriptComponent.m_script, scriptComponent.getEntityId(), event);
+		KeyUpMethod::run(*entity.get<ScriptComponent>().m_script, entity.getId(), event);
 	}
 }
 
 // ----------------------------------------------------------------------------
 
-InputResult InputSystemNamespace::processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseButtonEvent & event, const WindowSystem::EventType type)
+InputResult InputSystemNamespace::processEvent(const MouseInputEntity & entity, const InputSystem::MouseButtonEvent & event, const WindowSystem::EventType type)
 {
-	if (mc.m_mesh.getBoundingBox().transform(to2d(tc.m_transform)).contains(event.position))
+	const Matrix3f & mat = to2d(entity.get<WorldTransformComponent>().m_transform);
+	const AABB & worldBoundary = entity.get<MouseInputComponent>().m_mesh.getBoundingBox().transform(mat);
+	if (worldBoundary.contains(event.position))
 	{
-		auto const & script = *sc.m_script;
+		auto const & script = *entity.get<ScriptComponent>().m_script;
 		return type == WindowSystem::ET_MouseDown
-			? MouseDownMethod::run(script, sc.getEntityId(), event)
-			: MouseUpMethod::run(script, sc.getEntityId(), event);
+			? MouseDownMethod::run(script, entity.getId(), event)
+			: MouseUpMethod::run(script, entity.getId(), event);
 	}
 
 	return InputResult::Pass;
@@ -254,23 +264,24 @@ InputResult InputSystemNamespace::processEvent(const WorldTransformComponent & t
 
 // ----------------------------------------------------------------------------
 
-void InputSystemNamespace::processEvent(const WorldTransformComponent & tc, const MouseInputComponent & mc, const ScriptComponent & sc, const InputSystem::MouseMotionEvent & event)
+void InputSystemNamespace::processEvent(const MouseInputEntity & entity, const InputSystem::MouseMotionEvent & event)
 {
-	const AABB worldBoundary = mc.m_mesh.getBoundingBox().transform(to2d(tc.m_transform));
+	const Matrix3f & mat = to2d(entity.get<WorldTransformComponent>().m_transform);
+	const AABB & worldBoundary = entity.get<MouseInputComponent>().m_mesh.getBoundingBox().transform(mat);
 	const bool contained = worldBoundary.contains(event.from);
 	const bool contains = worldBoundary.contains(event.to);
 	
-	auto const & script = *sc.m_script;
+	auto const & script = *entity.get<ScriptComponent>().m_script;
 
 	if (contained ^ contains)
 	{
 		if (contains)
-			MouseInMethod::run(script, sc.getEntityId());
+			MouseInMethod::run(script, entity.getId());
 		else
-			MouseOutMethod::run(script, sc.getEntityId());
+			MouseOutMethod::run(script, entity.getId());
 	}
 
-	MouseMoveMethod::run(script, sc.getEntityId(), event);
+	MouseMoveMethod::run(script, entity.getId(), event);
 }
 
 // ----------------------------------------------------------------------------
