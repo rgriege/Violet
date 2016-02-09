@@ -45,6 +45,20 @@ namespace Violet
 		template <typename T> using iterator = Iterator<T, false>;
 		template <typename T> using const_iterator = Iterator<T, true>;
 
+	private:
+
+		struct FuncTable
+		{
+			typedef void(*Load)(ComponentPool &, ComponentDeserializer &);
+			typedef void(*Save)(Serializer &, const void *);
+			typedef void(*Destroy)(void*);
+			FuncTable(Load load, Save save, Destroy destroy);
+
+			Load load;
+			Save save;
+			Destroy destroy;
+		};
+
 	public:
 
 		template <typename ComponentType>
@@ -59,11 +73,8 @@ namespace Violet
 
 		Tag getComponentTag() const;
 
-		template <typename ComponentType>
 		void load(ComponentDeserializer & deserializer);
-		template <typename ComponentType>
 		void save(Serializer & serailizer) const;
-		template <typename ComponentType>
 		uint32 save(Serializer & serailizer, const std::vector<EntityId> & entityIds) const;
 
 		template <typename ComponentType, typename... Args>
@@ -92,24 +103,25 @@ namespace Violet
 
 	private:
 
-		ComponentPool(Tag componentTag, uint32 componentSize);
+		ComponentPool(Tag componentTag, uint32 componentSize, uint32 componentVersion, std::unique_ptr<FuncTable> && ftable);
 
 		ComponentPool(const ComponentPool &) = delete;
 		ComponentPool & operator=(const ComponentPool &) = delete;
 
-		template <typename ComponentType>
-		ComponentType * get(uint32 index);
-		template <typename ComponentType>
-		const ComponentType * get(uint32 index) const;
+		uint32 getIndex(EntityId entityId) const;
 
-		std::pair<void *, bool> getLocation(EntityId entityId);
-		void verify();
+		Component * get(uint32 index);
+		const Component * get(uint32 index) const;
+
+		std::pair<void *, bool> insert(EntityId entityId);
 
 	private:
 
 		const Tag m_componentTag;
 		const uint32 m_componentSize;
-		std::vector<ubyte> m_data;
+		const uint32 m_componentVersion;
+		std::unique_ptr<FuncTable> m_funcTable;
+		std::vector<ubyte> m_componentData;
 		std::vector<EntityId> m_ids;
 	};
 }

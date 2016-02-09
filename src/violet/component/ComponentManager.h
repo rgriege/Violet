@@ -86,14 +86,12 @@ namespace Violet
 	public:
 
 		typedef Factory<Tag, ComponentPool()> PoolFactory;
-		typedef Factory<Tag, void(ComponentPool &, ComponentDeserializer &)> ComponentsFactory;
-		typedef Factory<Tag, uint32(const ComponentPool &, Serializer &, const std::vector<EntityId> &)> PoolSaveFactory;
 
 	public:
 
 		template <typename ComponentType>
 		static void installComponent();
-		static void installComponent(Tag const tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, const PoolSaveFactory::Producer & sProducer, Thread thread);
+		static void installComponent(Tag const tag, const PoolFactory::Producer & producer, Thread thread);
 
 		template <typename ComponentType>
 		static void uninstallComponent();
@@ -142,10 +140,6 @@ namespace Violet
 
 		template <typename ComponentType>
 		static ComponentPool createPool();
-		template <typename ComponentType>
-		static void createComponents(ComponentPool & pool, ComponentDeserializer & deserializer);
-		template <typename ComponentType>
-		static uint32 savePool(const ComponentPool & pool, Serializer & serializer, const std::vector<EntityId> & entityIds);
 
 	private:
 
@@ -158,8 +152,6 @@ namespace Violet
 	private:
 
 		static PoolFactory ms_poolFactory;
-		static ComponentsFactory ms_componentsFactory;
-		static PoolSaveFactory ms_saveFactory;
 		static std::map<Tag, Thread> ms_poolThreads;
 
 	private:

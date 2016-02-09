@@ -46,12 +46,10 @@ using namespace ComponentManagerNamespace;
 
 // ============================================================================
 
-void ComponentManager::installComponent(const Tag tag, const PoolFactory::Producer & producer, const ComponentsFactory::Producer & csProducer, const PoolSaveFactory::Producer & sProducer, const Thread thread)
+void ComponentManager::installComponent(const Tag tag, const PoolFactory::Producer & producer, const Thread thread)
 {
 	assert(!ms_poolFactory.has(tag));
 	ms_poolFactory.assign(tag, producer);
-	ms_componentsFactory.assign(tag, csProducer);
-	ms_saveFactory.assign(tag, sProducer);
 	ms_poolThreads[tag] = thread;
 }
 
@@ -61,16 +59,12 @@ void ComponentManager::uninstallComponent(const Tag tag)
 {
 	assert(ms_poolFactory.has(tag));
 	ms_poolFactory.remove(tag);
-	ms_componentsFactory.remove(tag);
-	ms_saveFactory.remove(tag);
 	ms_poolThreads.erase(tag);
 }
 
 // ============================================================================
 
 ComponentManager::PoolFactory ComponentManager::ms_poolFactory;
-ComponentManager::ComponentsFactory ComponentManager::ms_componentsFactory;
-ComponentManager::PoolSaveFactory ComponentManager::ms_saveFactory;
 std::map<Tag, Thread> ComponentManager::ms_poolThreads;
 
 // ============================================================================
@@ -157,7 +151,7 @@ std::vector<EntityId> ComponentManager::load(const char * const filename)
 						{
 							const uint32 version = poolDeserializer->getUint("version");
 							ComponentDeserializer componentDeserializer(std::move(poolDeserializer), version, handleIdMap);
-							ms_componentsFactory.create(componentTag, pool, componentDeserializer);
+							pool.load(componentDeserializer);
 						}
 						else
 							Log::log(FormattedString<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
@@ -214,7 +208,7 @@ void ComponentManager::save(const char * filename, std::vector<EntityId> entityI
 					auto poolSerializer = FileSerializerFactory::getInstance().create(poolFileName.c_str());
 					if (poolSerializer != nullptr)
 					{
-						const uint32 count = ms_saveFactory.create(pool.getComponentTag(), pool, *poolSerializer, *sharedEntityIds);
+						const uint32 count = pool.save(*poolSerializer, *sharedEntityIds);
 						sceneFileSaver->onPoolSaved(pool.getComponentTag(), poolFileName, count);
 						if (count == 0)
 						{
