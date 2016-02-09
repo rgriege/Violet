@@ -103,7 +103,6 @@
     <ClInclude Include="..\..\..\src\violet\component\MappedDataComponent.h" />
     <ClInclude Include="..\..\..\src\violet\Defines.h" />
     <ClInclude Include="..\..\..\src\violet\Engine.h" />
-    <ClInclude Include="..\..\..\src\violet\entity\Entity.h" />
     <ClInclude Include="..\..\..\src\violet\event\Event.h" />
     <ClInclude Include="..\..\..\src\violet\event\EventContext.h" />
     <ClInclude Include="..\..\..\src\violet\event\EventContextOwner.h" />
@@ -209,7 +208,6 @@
     <ClCompile Include="..\..\..\src\violet\component\ComponentPool.cpp" />
     <ClCompile Include="..\..\..\src\violet\component\MappedDataComponent.cpp" />
     <ClCompile Include="..\..\..\src\violet\Engine.cpp" />
-    <ClCompile Include="..\..\..\src\violet\entity\Entity.cpp" />
     <ClCompile Include="..\..\..\src\violet\event\Event.cpp" />
     <ClCompile Include="..\..\..\src\violet\event\EventContext.cpp" />
     <ClCompile Include="..\..\..\src\violet\event\EventContextOwner.cpp" />
@@ -301,7 +299,6 @@
     <None Include="..\..\..\src\violet\component\ComponentManager.inl" />
     <None Include="..\..\..\src\violet\component\ComponentPool.inl" />
     <None Include="..\..\..\src\violet\Engine.inl" />
-    <None Include="..\..\..\src\violet\entity\Entity.inl" />
     <ClInclude Include="..\..\..\src\violet\event\Event.inl">
       <FileType>Document</FileType>
     </ClInclude>

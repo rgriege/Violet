@@ -47,7 +47,7 @@ namespace Violet
 
 	private:
 
-		struct FuncTable
+		struct VIOLET_API FuncTable
 		{
 			typedef void(*Load)(ComponentPool &, ComponentDeserializer &);
 			typedef void(*Save)(Serializer &, const void *);
