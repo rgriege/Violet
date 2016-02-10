@@ -82,6 +82,8 @@ bool Engine::bootstrap(const SystemFactory & factory, const char * const configF
 
 	// cleanup
 	ms_instance->m_scene.reset();
+	for (auto it = ms_instance->m_systems.rbegin(), end = ms_instance->m_systems.rend(); it != end; ++it)
+		it->reset();
 	ms_instance->m_systems.clear();
 
 	// clear any pending scene change
