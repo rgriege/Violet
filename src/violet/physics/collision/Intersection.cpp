@@ -208,7 +208,7 @@ Vec2f const & Intersection::getImpactLocation() const
 
 bool Intersection::boundsOverlap() const
 {
-	return    m_rb1.project(Vec2f::X_AXIS).overlaps(m_rb2.project(Vec2f::X_AXIS))
+	return	m_rb1.project(Vec2f::X_AXIS).overlaps(m_rb2.project(Vec2f::X_AXIS))
 		   && m_rb1.project(Vec2f::Y_AXIS).overlaps(m_rb2.project(Vec2f::Y_AXIS));
 }
 

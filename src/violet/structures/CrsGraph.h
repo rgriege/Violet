@@ -7,10 +7,10 @@
 
 namespace Violet
 {
-    template <class NodeType, class EdgeType>
+	template <class NodeType, class EdgeType>
 	class CrsGraph
-    {
-    public:
+	{
+	public:
 
 		typedef std::vector<NodeType> Nodes;
 
@@ -45,7 +45,7 @@ namespace Violet
 			NodeIterator m_end;
 		};
 
-        typedef std::vector<EdgeType> Edges;
+		typedef std::vector<EdgeType> Edges;
 		typedef typename Edges::iterator EdgeIterator;
 		typedef typename Edges::const_iterator ConstEdgeIterator;
 
@@ -79,25 +79,25 @@ namespace Violet
 			const ConstEdgeIterator m_end;
 		};
 
-    public:
+	public:
 
-        CrsGraph();
+		CrsGraph();
 
-        uint32 addNode(const NodeType & node);
+		uint32 addNode(const NodeType & node);
 		bool hasNode(uint32 nodeIndex) const;
 		NodeType & getNode(uint32 nodeIndex);
 		const NodeType & getNode(uint32 nodeIndex) const;
-        size_t numNodes() const;
+		size_t numNodes() const;
 		NodeSegment getNodes() const;
 
-        void addEdge(const EdgeType & edge);
-        /*
-         * Used to add multiple edges at once.
-         * Adding many edges using AddEdge(...) is highly inefficient,
-         * since potentially lots of edge pointers will need updating.
-         */
+		void addEdge(const EdgeType & edge);
+		/*
+		 * Used to add multiple edges at once.
+		 * Adding many edges using AddEdge(...) is highly inefficient,
+		 * since potentially lots of edge pointers will need updating.
+		 */
 		void addEdges(const Edges & edges);
-        uint32 numEdges() const;
+		uint32 numEdges() const;
 		EdgeSegment getEdges();
 		ConstEdgeSegment getEdges() const;
 		EdgeSegment getEdges(uint32 src);
@@ -109,12 +109,12 @@ namespace Violet
 
 		static bool compareEdges(const EdgeType & e1, const EdgeType & e2);
 
-    private:
+	private:
 
-        Nodes m_nodes;
-        std::vector<int> m_edgePointers;
-        Edges m_edges;
-    };
+		Nodes m_nodes;
+		std::vector<int> m_edgePointers;
+		Edges m_edges;
+	};
 }
 
 #include "violet/structures/CrsGraph.inl"

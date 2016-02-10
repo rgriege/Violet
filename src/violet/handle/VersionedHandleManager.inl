@@ -85,7 +85,7 @@ std::vector<Handle> Violet::VersionedHandleManager<Handle>::getUsed() const
 template <typename Handle>
 typename Handle::StorageType Violet::VersionedHandleManager<Handle>::getVersion(const typename Handle::StorageType id) const
 {
-    return id < m_versions.size() ? m_versions[id] : 0;
+	return id < m_versions.size() ? m_versions[id] : 0;
 }
 
 // ============================================================================

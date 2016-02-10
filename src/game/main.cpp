@@ -71,7 +71,7 @@ Violet::SystemFactory setup()
 
 	EditorSystem::registerCommand<ClearAllCommand>();
 	EditorSystem::registerCommand<DeselectCommand>();
-    EditorSystem::registerCommand<MoveToCommand>();
+	EditorSystem::registerCommand<MoveToCommand>();
 	EditorSystem::registerCommand<OpenCommand>();
 	EditorSystem::registerCommand<SaveAllCommand>();
 	EditorSystem::registerCommand<SelectCommand>();

@@ -8,46 +8,46 @@
 
 namespace Violet
 {
-    namespace detail
-    {
-        template <typename ComponentType, typename... ComponentTypes>
-        struct BeginHelper
-        {
-            static std::tuple<ComponentPool::Iterator<ComponentType, true>, ComponentPool::Iterator<ComponentTypes, true>...> begin(const Violet::ComponentManager & manager)
-            {
-                return std::tuple_cat(BeginHelper<ComponentType>::begin(manager), BeginHelper<ComponentTypes...>::begin(manager));
-            }
-        };
+	namespace detail
+	{
+		template <typename ComponentType, typename... ComponentTypes>
+		struct BeginHelper
+		{
+			static std::tuple<ComponentPool::Iterator<ComponentType, true>, ComponentPool::Iterator<ComponentTypes, true>...> begin(const Violet::ComponentManager & manager)
+			{
+				return std::tuple_cat(BeginHelper<ComponentType>::begin(manager), BeginHelper<ComponentTypes...>::begin(manager));
+			}
+		};
 
-        template <typename ComponentType>
-        struct BeginHelper<ComponentType>
-        {
-            static std::tuple<ComponentPool::Iterator<ComponentType, true>> begin(const Violet::ComponentManager & manager)
-            {
-                const ComponentPool * pool = manager.getPool<ComponentType>();
-                return std::make_tuple(pool->begin<ComponentType>());
-            }
-        };
+		template <typename ComponentType>
+		struct BeginHelper<ComponentType>
+		{
+			static std::tuple<ComponentPool::Iterator<ComponentType, true>> begin(const Violet::ComponentManager & manager)
+			{
+				const ComponentPool * pool = manager.getPool<ComponentType>();
+				return std::make_tuple(pool->begin<ComponentType>());
+			}
+		};
 
-        template <typename ComponentType, typename... ComponentTypes>
-        struct EndHelper
-        {
-            static std::tuple<ComponentPool::Iterator<ComponentType, true>, ComponentPool::Iterator<ComponentTypes, true>...> end(const Violet::ComponentManager & manager)
-            {
-                return std::tuple_cat(EndHelper<ComponentType>::end(manager), EndHelper<ComponentTypes...>::end(manager));
-            }
-        };
+		template <typename ComponentType, typename... ComponentTypes>
+		struct EndHelper
+		{
+			static std::tuple<ComponentPool::Iterator<ComponentType, true>, ComponentPool::Iterator<ComponentTypes, true>...> end(const Violet::ComponentManager & manager)
+			{
+				return std::tuple_cat(EndHelper<ComponentType>::end(manager), EndHelper<ComponentTypes...>::end(manager));
+			}
+		};
 
-        template <typename ComponentType>
-        struct EndHelper<ComponentType>
-        {
-            static std::tuple<ComponentPool::Iterator<ComponentType, true>> end(const Violet::ComponentManager & manager)
-            {
-                const ComponentPool * pool = manager.getPool<ComponentType>();
-                return std::make_tuple(pool->end<ComponentType>());
-            }
-        };
-    }
+		template <typename ComponentType>
+		struct EndHelper<ComponentType>
+		{
+			static std::tuple<ComponentPool::Iterator<ComponentType, true>> end(const Violet::ComponentManager & manager)
+			{
+				const ComponentPool * pool = manager.getPool<ComponentType>();
+				return std::make_tuple(pool->end<ComponentType>());
+			}
+		};
+	}
 }
 
 // ============================================================================
@@ -170,7 +170,7 @@ Violet::ComponentManager::View<ComponentTypes...>::View(const ComponentManager &
 template <typename... ComponentTypes>
 typename Violet::ComponentManager::View<ComponentTypes...>::Iterator Violet::ComponentManager::View<ComponentTypes...>::begin()
 {
-    Iterator iterator(detail::BeginHelper<ComponentTypes...>::begin(m_manager));
+	Iterator iterator(detail::BeginHelper<ComponentTypes...>::begin(m_manager));
 	return ++iterator;
 }
 
@@ -179,7 +179,7 @@ typename Violet::ComponentManager::View<ComponentTypes...>::Iterator Violet::Com
 template <typename... ComponentTypes>
 typename Violet::ComponentManager::View<ComponentTypes...>::Iterator Violet::ComponentManager::View<ComponentTypes...>::end()
 {
-    return Iterator(detail::EndHelper<ComponentTypes...>::end(m_manager));
+	return Iterator(detail::EndHelper<ComponentTypes...>::end(m_manager));
 }
 
 // ============================================================================
@@ -187,7 +187,7 @@ typename Violet::ComponentManager::View<ComponentTypes...>::Iterator Violet::Com
 template <typename ComponentType, typename... Args>
 ComponentType & Violet::ComponentManager::createComponent(const EntityId entityId, Args &&... args)
 {
-    ComponentPool * pool = getPool<ComponentType>();
+	ComponentPool * pool = getPool<ComponentType>();
 	return pool->create<ComponentType, Args...>(entityId, std::forward<Args>(args)...);
 }
 

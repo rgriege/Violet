@@ -52,7 +52,7 @@ void SDLWindowSystem::init(Deserializer & deserializer)
 			SDL_SetMainReady();
 			if (SDL_Init(SDL_INIT_VIDEO) < 0)
 			{
-                Log::log(FormattedString<1024>().sprintf("SDL_Init(VIDEO) failed: %s", SDL_GetError()));
+				Log::log(FormattedString<1024>().sprintf("SDL_Init(VIDEO) failed: %s", SDL_GetError()));
 				engine.stop();
 				return;
 			}
@@ -66,7 +66,7 @@ void SDLWindowSystem::init(Deserializer & deserializer)
 			SDL_Window * window = SDL_CreateWindow(title.c_str(), x, y, width, height, SDL_WINDOW_OPENGL);
 			if (window == nullptr)
 			{
-                Log::log(FormattedString<1024>().sprintf("SDL_CreateWindow failed: %s", SDL_GetError()));
+				Log::log(FormattedString<1024>().sprintf("SDL_CreateWindow failed: %s", SDL_GetError()));
 				engine.stop();
 				return;
 			}
@@ -74,7 +74,7 @@ void SDLWindowSystem::init(Deserializer & deserializer)
 			SDL_GLContext glContext = SDL_GL_CreateContext(window);
 			if (glContext == nullptr)
 			{
-                Log::log(FormattedString<1024>().sprintf("SDL_CreateContext failed: %s", SDL_GetError()));
+				Log::log(FormattedString<1024>().sprintf("SDL_CreateContext failed: %s", SDL_GetError()));
 				engine.stop();
 				return;
 			}

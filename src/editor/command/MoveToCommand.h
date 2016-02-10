@@ -27,8 +27,8 @@ namespace edt
 
 	private:
 
-        Violet::EntityId m_entityId;
-        Violet::Vec2f m_position;
+		Violet::EntityId m_entityId;
+		Violet::Vec2f m_position;
 	};
 }
 

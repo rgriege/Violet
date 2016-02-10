@@ -146,7 +146,7 @@ void CppScript::load()
 void CppScript::unload()
 {
 	m_instance.reset();
-    m_lib.reset();
+	m_lib.reset();
 }
 
 // ============================================================================

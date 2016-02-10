@@ -19,8 +19,8 @@ namespace Violet
 		explicit Polygon(Deserializer & deserializer);
 		Polygon(const Polygon & rhs) = default;
 		Polygon(Polygon && rhs) = default;
-        Polygon & operator=(const Polygon & rhs) = default;
-        Polygon & operator=(Polygon && rhs) = default;
+		Polygon & operator=(const Polygon & rhs) = default;
+		Polygon & operator=(Polygon && rhs) = default;
 
 		bool contains(const Vec2f & point) const;
 		AABB getBoundingBox() const;

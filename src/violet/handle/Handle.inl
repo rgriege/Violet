@@ -7,7 +7,7 @@ const Violet::Handle<MaxId, MaxVersion> Violet::Handle<MaxId, MaxVersion>::ms_in
 
 template <size_t MaxId, size_t MaxVersion>
 Violet::Handle<MaxId, MaxVersion>::Handle() :
-    Handle(~0, 0)
+	Handle(~0, 0)
 {
 	static_assert(StorageSize <= sizeof(long long unsigned) * 8, "Exceeded storage size");
 }

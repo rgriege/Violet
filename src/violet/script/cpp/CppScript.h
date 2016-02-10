@@ -7,7 +7,7 @@
 
 namespace Violet
 {
-    class SharedLibrary;
+	class SharedLibrary;
 
 	class VIOLET_API CppScript : public Script
 	{

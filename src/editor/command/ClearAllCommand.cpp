@@ -56,12 +56,12 @@ ClearAllCommand::~ClearAllCommand()
 
 void ClearAllCommand::execute()
 {
-    std::vector<EntityId> copiedEntityIds;
-    for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<EditorComponent>())
-        copiedEntityIds.emplace_back(entity.getId());
+	std::vector<EntityId> copiedEntityIds;
+	for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<EditorComponent>())
+		copiedEntityIds.emplace_back(entity.getId());
 
-    const auto & scene = Engine::getInstance().getSystem<EditorSystem>()->getScene();
-    const auto entityIds = scene.getEntityIds();
+	const auto & scene = Engine::getInstance().getSystem<EditorSystem>()->getScene();
+	const auto entityIds = scene.getEntityIds();
 	if (!entityIds.empty())
 	{
 		m_tempFileName = StringUtilities::rightOfFirst(FormattedString<32>().sprintf("%.6f.json", Random::ms_generator.generate0to1()), '.');
@@ -71,11 +71,11 @@ void ClearAllCommand::execute()
 		Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
 			[=]()
 			{
-                const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
+				const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
 				for (const auto entityId : entityIds)
 					editor.getScene().removeAll(entityId);
 				for (const auto entityId : copiedEntityIds)
-                    editor.propogateRemove(entityId);
+					editor.propogateRemove(entityId);
 			}));
 	}
 }
@@ -97,17 +97,17 @@ void ClearAllCommand::undo()
 		Engine::getInstance().addWriteTask(Engine::getInstance().getSystem<EditorSystem>()->getScene(),
 			[=](ComponentManager & scene)
 			{
-                Log::log("ClearAllCommand::undo load");
-                const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
+				Log::log("ClearAllCommand::undo load");
+				const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
 				const auto & entityIds = scene.load(tempFileName.c_str());
-                for (const EntityId entityId : entityIds)
-                {
-                    Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
-                        [=]()
-                        {
-                            Engine::getInstance().getSystem<EditorSystem>()->propogateAdd(entityId);
-                        }));
-                }
+				for (const EntityId entityId : entityIds)
+				{
+					Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
+						[=]()
+						{
+							Engine::getInstance().getSystem<EditorSystem>()->propogateAdd(entityId);
+						}));
+				}
 				cleanup(tempFileName);
 			});
 		m_tempFileName.clear();

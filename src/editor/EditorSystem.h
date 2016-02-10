@@ -39,8 +39,8 @@ namespace edt
 
 	public:
 
-        Violet::ComponentManager & getScene();
-        const Violet::ComponentManager & getScene() const;
+		Violet::ComponentManager & getScene();
+		const Violet::ComponentManager & getScene() const;
 
 		void execute(const std::string & command);
 		void execute(std::unique_ptr<Command> && command);
@@ -51,10 +51,10 @@ namespace edt
 		const std::set<Violet::EntityId> & getSelectedEntities() const;
 		bool deselect(Violet::EntityId entityId);
 
-        void propogateAdd(Violet::EntityId entityId) const;
-        template <typename ComponentType, typename MemberType, MemberType ComponentType::*Member>
-        void propogateChange(Violet::EntityId entityId, const MemberType & member) thread_const;
-        void propogateRemove(Violet::EntityId entityId) const;
+		void propogateAdd(Violet::EntityId entityId) const;
+		template <typename ComponentType, typename MemberType, MemberType ComponentType::*Member>
+		void propogateChange(Violet::EntityId entityId, const MemberType & member) thread_const;
+		void propogateRemove(Violet::EntityId entityId) const;
 
 	private:
 
@@ -67,8 +67,8 @@ namespace edt
 
 	private:
 
-        std::unique_ptr<Violet::ComponentManager> m_scene;
-        std::string m_editScriptFileName;
+		std::unique_ptr<Violet::ComponentManager> m_scene;
+		std::string m_editScriptFileName;
 		std::deque<std::unique_ptr<Command>> m_commandHistory;
 		std::set<Violet::EntityId> m_selectedEntities;
 	};

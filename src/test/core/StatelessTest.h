@@ -20,13 +20,13 @@ namespace Violet
 		{
 		}
 
-        StatelessTest(StatelessTest && rhs) :
-            m_name(std::move(rhs.m_name)),
-            m_desired(std::move(rhs.m_desired)),
-            m_predicate(std::move(rhs.m_predicate)),
+		StatelessTest(StatelessTest && rhs) :
+			m_name(std::move(rhs.m_name)),
+			m_desired(std::move(rhs.m_desired)),
+			m_predicate(std::move(rhs.m_predicate)),
 			m_negated(rhs.m_negated)
-        {
-        }
+		{
+		}
 
 		template <typename TestEvaluator>
 		bool evaluate(TestEvaluator & evaluator) const
@@ -35,7 +35,7 @@ namespace Violet
 			return evaluator.evaluate(m_name.c_str(), m_desired, actual, m_negated);
 		}
 
-    private:
+	private:
 
 		StatelessTest(const StatelessTest &) = delete;
 

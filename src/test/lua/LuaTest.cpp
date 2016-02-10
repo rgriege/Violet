@@ -22,9 +22,9 @@ namespace LuaTestNamespace
 		"function get42()\n"
 		"	return 42\n"
 		"end\n"
-        "function get42FromC()\n"
-        "   return get42InC()\n"
-        "end\n"
+		"function get42FromC()\n"
+		"   return get42InC()\n"
+		"end\n"
 		"function add5(x)\n"
 		"	return x + 5\n"
 		"end\n"
@@ -34,9 +34,9 @@ namespace LuaTestNamespace
 		"function sum(x, y)\n"
 		"	return x + y\n"
 		"end\n"
-        "function getSumFromC(x, y)\n"
-        "   return addInC(x, y)\n"
-        "end\n"
+		"function getSumFromC(x, y)\n"
+		"   return addInC(x, y)\n"
+		"end\n"
 		"function clean() end\n");
 
 	shared_val<TextResource> m_invalidScriptSource = make_shared_val<StringResource>("invalid.inl",
@@ -54,7 +54,7 @@ namespace LuaTestNamespace
 	// ----------------------------------------------------------------------------
 
 	void sayHiFromLua();
-    int get42();
+	int get42();
 	int add5(int x);
 	int add(int x, int y);
 
@@ -103,7 +103,7 @@ void LuaTestNamespace::sayHiFromLua()
 
 int LuaTestNamespace::get42()
 {
-    return 42;
+	return 42;
 }
 
 // ----------------------------------------------------------------------------

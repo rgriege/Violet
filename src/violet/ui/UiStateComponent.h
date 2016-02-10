@@ -38,7 +38,7 @@ namespace Violet
 		std::vector<unique_val<Entity>> m_states;
 	};
 
-    VIOLET_API Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
 	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, UiStateComponent & component);
 }
 

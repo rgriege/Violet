@@ -39,14 +39,14 @@ void OpenCommand::execute()
 		[=](ComponentManager & scene)
 		{
 			m_entityIds = scene.load(m_fileName.c_str());
-            for (const EntityId entityId : m_entityIds)
-            {
-                Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
-                    [=]()
-                    {
-                        Engine::getInstance().getSystem<EditorSystem>()->propogateAdd(entityId);
-                    }));
-            }
+			for (const EntityId entityId : m_entityIds)
+			{
+				Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
+					[=]()
+					{
+						Engine::getInstance().getSystem<EditorSystem>()->propogateAdd(entityId);
+					}));
+			}
 		});
 }
 
@@ -61,16 +61,16 @@ bool OpenCommand::canUndo() const
 
 void OpenCommand::undo()
 {
-    const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
+	const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
 	const auto & scene = editor.getScene();
 	for (const EntityId entityId : m_entityIds)
-    {
+	{
 		if (scene.exists(entityId))
-        {
+		{
 			scene.removeAll(entityId);
-            editor.propogateRemove(entityId);
-        }
-    }
+			editor.propogateRemove(entityId);
+		}
+	}
 	m_entityIds.clear();
 }
 

@@ -85,8 +85,8 @@ namespace Violet
 
 namespace Violet
 {
-    typedef Matrix3<int> Matrix3i;
-    typedef Matrix3<float> Matrix3f;
+	typedef Matrix3<int> Matrix3i;
+	typedef Matrix3<float> Matrix3f;
 	typedef Matrix3<double> Matrix3d;
 }
 

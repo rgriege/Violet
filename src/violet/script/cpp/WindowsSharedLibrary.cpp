@@ -21,29 +21,29 @@ public:
 
 public:
 
-    HMODULE m_handle;
+	HMODULE m_handle;
 };
 
 // ============================================================================
 
 std::shared_ptr<SharedLibrary> SharedLibrary::load(const char * const filename)
 {
-    HMODULE handle = LoadLibrary(filename);
-    return handle != nullptr ? std::shared_ptr<SharedLibrary>(new SharedLibrary(make_unique_val<SharedLibrary::Implementation>(handle))) : nullptr;
+	HMODULE handle = LoadLibrary(filename);
+	return handle != nullptr ? std::shared_ptr<SharedLibrary>(new SharedLibrary(make_unique_val<SharedLibrary::Implementation>(handle))) : nullptr;
 }
 
 // ----------------------------------------------------------------------------
 
 const char * SharedLibrary::getSuffix()
 {
-    return "dll";
+	return "dll";
 }
 
 // ============================================================================
 
 SharedLibrary::~SharedLibrary()
 {
-    FreeLibrary(m_impl->m_handle);
+	FreeLibrary(m_impl->m_handle);
 }
 
 // ----------------------------------------------------------------------------
@@ -71,7 +71,7 @@ void * SharedLibrary::getMethodPtr(const char * const name)
 // ============================================================================
 
 SharedLibrary::SharedLibrary(unique_val<Implementation> && impl) :
-    m_impl(std::move(impl))
+	m_impl(std::move(impl))
 {
 }
 

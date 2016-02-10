@@ -230,7 +230,7 @@ void ComponentManager::save(const char * filename, std::vector<EntityId> entityI
 
 EntityId ComponentManager::createEntity()
 {
-    return m_handleManager.create();
+	return m_handleManager.create();
 }
 
 // ----------------------------------------------------------------------------

@@ -44,11 +44,11 @@ namespace SceneTestNamespace
 		std::unique_ptr<Scene> m_scene;
 	};
 
-    template <>
-    struct SceneBuilder::AddHelper<>
-    {
-        static void add(Scene & scene, Entity & entity);
-    };
+	template <>
+	struct SceneBuilder::AddHelper<>
+	{
+		static void add(Scene & scene, Entity & entity);
+	};
 
 	lent_ptr<Entity> tryGet(Scene & scene, uint32 index);
 }

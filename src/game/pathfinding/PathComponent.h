@@ -7,7 +7,7 @@
 
 namespace Violet
 {
-    class Serializer;
+	class Serializer;
 }
 
 class VIOLET_GAME_API PathComponent : public Violet::ComponentBase<PathComponent>

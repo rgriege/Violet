@@ -8,8 +8,8 @@ namespace Violet
 	class Engine;
 
 	class VIOLET_API System
-    {
-    public:
+	{
+	public:
 
 		System(const char * label);
 		virtual ~System() = default;
@@ -21,7 +21,7 @@ namespace Violet
 	private:
 
 		const char * m_label;
-    };
+	};
 };
 
 #endif

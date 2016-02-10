@@ -9,32 +9,32 @@
 
 namespace Violet
 {
-    class VIOLET_API SharedLibrary
-    {
-    private:
+	class VIOLET_API SharedLibrary
+	{
+	private:
 
-        class Implementation;
+		class Implementation;
 
-    public:
+	public:
 
-        static std::shared_ptr<SharedLibrary> load(const char * filename);
-        static const char * getSuffix();
+		static std::shared_ptr<SharedLibrary> load(const char * filename);
+		static const char * getSuffix();
 
-    public:
+	public:
 
-        ~SharedLibrary();
+		~SharedLibrary();
 
-        std::string getFilename() const;
-        void * getMethodPtr(const char * name);
+		std::string getFilename() const;
+		void * getMethodPtr(const char * name);
 
-    private:
+	private:
 
-        SharedLibrary(unique_val<Implementation> && impl);
+		SharedLibrary(unique_val<Implementation> && impl);
 
-    private:
+	private:
 
-        unique_val<Implementation> m_impl;
-    };
+		unique_val<Implementation> m_impl;
+	};
 }
 
 #endif

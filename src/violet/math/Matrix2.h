@@ -47,8 +47,8 @@ namespace Violet
 
 namespace Violet
 {
-    typedef Matrix2<int> Matrix2i;
-    typedef Matrix2<float> Matrix2f;
+	typedef Matrix2<int> Matrix2i;
+	typedef Matrix2<float> Matrix2f;
 }
 
 #endif

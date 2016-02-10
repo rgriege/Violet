@@ -17,9 +17,9 @@ using namespace Violet;
 
 namespace TransformSystemNamespace
 {
-    typedef Entity<LocalTransformComponent, WorldTransformComponent> TransformEntity;
+	typedef Entity<LocalTransformComponent, WorldTransformComponent> TransformEntity;
 
-    void updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache);
+	void updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache);
 }
 
 using namespace TransformSystemNamespace;
@@ -55,7 +55,7 @@ void TransformSystem::init(Deserializer & deserializer)
 
 TransformSystem::TransformSystem(TransformSystem && other) :
 	System(std::move(other)),
-    m_entityWorldTransformCache()
+	m_entityWorldTransformCache()
 {
 }
 
@@ -72,7 +72,7 @@ void TransformSystem::update(const float /*dt*/)
 	m_entityWorldTransformCache = std::map<EntityId, Matrix4f>{ { EntityId::ms_invalid, Matrix4f::Identity } };
 	const auto & engine = Engine::getInstance();
 	for (const auto & entity : engine.getCurrentScene().getEntityView<LocalTransformComponent, WorldTransformComponent>())
-        updateWorldTransform(entity, m_entityWorldTransformCache);
+		updateWorldTransform(entity, m_entityWorldTransformCache);
 }
 
 // ============================================================================
@@ -90,23 +90,23 @@ void TransformSystemNamespace::updateWorldTransform(const TransformEntity & enti
 	const auto & engine = Engine::getInstance();
 	const auto & localTransformComponent = entity.get<LocalTransformComponent>();
 	const auto & worldTransformComponent = entity.get<WorldTransformComponent>();
-    const EntityId entityId = entity.getId();
+	const EntityId entityId = entity.getId();
 
-    const auto it = worldTransformCache.find(localTransformComponent.m_parentId);
+	const auto it = worldTransformCache.find(localTransformComponent.m_parentId);
 	assert(it != worldTransformCache.end());
 
-    {
-        const Matrix4f & parentWorldTransform = it != worldTransformCache.end() ? it->second : Matrix4f::Identity;
-        const Matrix4f & worldTransform = worldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
-        if (worldTransformComponent.m_transform != worldTransform)
-        {
-            engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
-                [entityId, &worldTransformCache](ComponentPool & pool)
-                {
-                    pool.get<WorldTransformComponent>(entityId)->m_transform = worldTransformCache[entityId];
-                });
-        }
-    }
+	{
+		const Matrix4f & parentWorldTransform = it != worldTransformCache.end() ? it->second : Matrix4f::Identity;
+		const Matrix4f & worldTransform = worldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
+		if (worldTransformComponent.m_transform != worldTransform)
+		{
+			engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
+				[entityId, &worldTransformCache](ComponentPool & pool)
+				{
+					pool.get<WorldTransformComponent>(entityId)->m_transform = worldTransformCache[entityId];
+				});
+		}
+	}
 }
 
 // ============================================================================

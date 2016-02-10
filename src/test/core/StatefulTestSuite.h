@@ -17,12 +17,12 @@ namespace Violet
 		{
 		}
 
-        StatefulTestSuite(StatefulTestSuite && rhs) :
-            m_name(rhs.m_name),
-            m_state(std::move(rhs.m_state)),
-            m_tests(std::move(rhs.m_tests))
-        {
-        }
+		StatefulTestSuite(StatefulTestSuite && rhs) :
+			m_name(rhs.m_name),
+			m_state(std::move(rhs.m_state)),
+			m_tests(std::move(rhs.m_tests))
+		{
+		}
 
 		template <typename Evaluator>
 		bool evaluate(Evaluator & evaluator) const
@@ -61,7 +61,7 @@ namespace Violet
 			}
 		};
 
-    private:
+	private:
 
 		StatefulTestSuite(const StatefulTestSuite &) = delete;
 

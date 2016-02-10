@@ -167,7 +167,7 @@ Violet::Matrix4<T> Violet::from2d(const Matrix3<T> & mat)
 	return Matrix4<T> {
 		mat[0][0], mat[0][1], 0, mat[0][2],
 		mat[1][0], mat[1][1], 0, mat[1][2],
-		        0,         0, 1,         0,
+				0,		 0, 1,		 0,
 		mat[2][0], mat[2][1], 0, mat[2][2]
 	};
 }

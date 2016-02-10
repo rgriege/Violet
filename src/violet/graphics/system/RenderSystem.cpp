@@ -65,12 +65,12 @@ void RenderSystem::init(Deserializer & deserializer)
 			GLenum glewError = glewInit();
 			if (glewError != GLEW_OK)
 			{
-                Log::log(FormattedString<1024>().sprintf("glewInit error: %s", glewGetErrorString(glewError)));
+				Log::log(FormattedString<1024>().sprintf("glewInit error: %s", glewGetErrorString(glewError)));
 				engine.stop();
 				return;
 			}
 
-            Log::log(FormattedString<32>().sprintf("GL version: %s", glGetString(GL_VERSION)));
+			Log::log(FormattedString<32>().sprintf("GL version: %s", glGetString(GL_VERSION)));
 	
 			glClearColor(color.r, color.g, color.b, color.a);
 

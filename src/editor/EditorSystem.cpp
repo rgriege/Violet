@@ -45,7 +45,7 @@ void EditorSystem::install(Violet::SystemFactory & factory)
 void EditorSystem::init(Violet::Deserializer & deserializer)
 {
 	auto segment = deserializer.enterSegment(getStaticLabel());
-    std::string editScriptFileName = segment->getString("editScript");
+	std::string editScriptFileName = segment->getString("editScript");
 
 	Engine::getInstance().addWriteTask(Engine::getInstance(),
 		[=](Engine & engine) mutable
@@ -65,45 +65,45 @@ void EditorSystem::registerCommand(const char * const usage, const CommandFactor
 
 /*void EditorSystem::update(const float dt)
 {
-    const auto & engine = Engine::getInstance();
-    const auto & scene = engine.getCurrentScene();
-    std::vector<EntityId> edittedEntityIds;
+	const auto & engine = Engine::getInstance();
+	const auto & scene = engine.getCurrentScene();
+	std::vector<EntityId> edittedEntityIds;
 
-    {
-        const auto & edittedEntities = scene.getEntityView<EditorComponent>();
-        entityIds.reserve(edittedEntities.size());
-        for (const auto & entity : edittedEntities)
-        {
-            const EntityId entityId = std::get<0>(entity).getEdittedId();
-            edittedEntityIds.emplace_back(entityId);
-            if (!m_scene->hasEntity(entityId))
-            {
-                engine.addWriteTask(scene,
-                    [=](ComponentManager & scene)
-                    {
-                        scene.removeAll(entityId);
-                    });
-            }
-        }
-    }
-        
-    for (const auto & entity : scene.getEntityView<LocalTransformComponent>())
-        if (!m_scene->hasEntity(std::get<0>(entity).getEntityId()))
-            engine.addWriteTask
+	{
+		const auto & edittedEntities = scene.getEntityView<EditorComponent>();
+		entityIds.reserve(edittedEntities.size());
+		for (const auto & entity : edittedEntities)
+		{
+			const EntityId entityId = std::get<0>(entity).getEdittedId();
+			edittedEntityIds.emplace_back(entityId);
+			if (!m_scene->hasEntity(entityId))
+			{
+				engine.addWriteTask(scene,
+					[=](ComponentManager & scene)
+					{
+						scene.removeAll(entityId);
+					});
+			}
+		}
+	}
+		
+	for (const auto & entity : scene.getEntityView<LocalTransformComponent>())
+		if (!m_scene->hasEntity(std::get<0>(entity).getEntityId()))
+			engine.addWriteTask
 }*/
 
 // ----------------------------------------------------------------------------
 
 ComponentManager & EditorSystem::getScene()
 {
-    return *m_scene;
+	return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
 
 const ComponentManager & EditorSystem::getScene() const
 {
-    return *m_scene;
+	return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
@@ -194,42 +194,42 @@ bool EditorSystem::deselect(const EntityId entityId)
 
 void EditorSystem::propogateAdd(const EntityId entityId) const
 {
-    if (m_scene->hasComponent<WorldTransformComponent>(entityId) && m_scene->hasComponent<ColorComponent>(entityId))
-    {
-        const auto & engine = Engine::getInstance();
-        engine.addWriteTask(engine.getCurrentScene(),
-            [=](ComponentManager & scene)
-            {
-                const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
-                const EntityId copyId = scene.createEntity();
+	if (m_scene->hasComponent<WorldTransformComponent>(entityId) && m_scene->hasComponent<ColorComponent>(entityId))
+	{
+		const auto & engine = Engine::getInstance();
+		engine.addWriteTask(engine.getCurrentScene(),
+			[=](ComponentManager & scene)
+			{
+				const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
+				const EntityId copyId = scene.createEntity();
 
-                scene.createComponent<EditorComponent>(copyId, entityId);
+				scene.createComponent<EditorComponent>(copyId, entityId);
 
-                scene.createComponent<WorldTransformComponent>(copyId, editor.getScene().getComponent<WorldTransformComponent>(entityId)->m_transform);
+				scene.createComponent<WorldTransformComponent>(copyId, editor.getScene().getComponent<WorldTransformComponent>(entityId)->m_transform);
 
-                const auto * cc = editor.getScene().getComponent<ColorComponent>(entityId);
-                scene.createComponent<ColorComponent>(copyId, cc->m_mesh->getPolygon(), cc->m_shader, cc->m_color);
+				const auto * cc = editor.getScene().getComponent<ColorComponent>(entityId);
+				scene.createComponent<ColorComponent>(copyId, cc->m_mesh->getPolygon(), cc->m_shader, cc->m_color);
 
-                const auto * ltc = editor.getScene().getComponent<LocalTransformComponent>(entityId);
-                if (ltc != nullptr)
-                {
-                    EntityId parentId;
-                    if (ltc->m_parentId != EntityId::ms_invalid)
-                    {
-                        for (const auto & entity : scene.getEntityView<EditorComponent>())
-                        {
-                            if (entity.get<EditorComponent>().m_editId == ltc->m_parentId)
-                            {
-                                parentId = entity.getId();
-                                break;
-                            }
-                        }
-                    }
-                    scene.createComponent<LocalTransformComponent>(copyId, parentId, ltc->m_transform);
-                }
-                editor.addEditBehavior(scene, copyId);
-            });
-    }
+				const auto * ltc = editor.getScene().getComponent<LocalTransformComponent>(entityId);
+				if (ltc != nullptr)
+				{
+					EntityId parentId;
+					if (ltc->m_parentId != EntityId::ms_invalid)
+					{
+						for (const auto & entity : scene.getEntityView<EditorComponent>())
+						{
+							if (entity.get<EditorComponent>().m_editId == ltc->m_parentId)
+							{
+								parentId = entity.getId();
+								break;
+							}
+						}
+					}
+					scene.createComponent<LocalTransformComponent>(copyId, parentId, ltc->m_transform);
+				}
+				editor.addEditBehavior(scene, copyId);
+			});
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -260,17 +260,17 @@ void EditorSystem::addEditBehavior(const ComponentManager & scene, const EntityI
 	Engine::getInstance().addReadTask(std::make_unique<DelegateTask>(
 		[&scene, entityId, this]()
 		{
-            Engine::getInstance().addWriteTask(*scene.getPool<ScriptComponent>(),
-                [=](ComponentPool & pool)
-                {
-                    pool.create<ScriptComponent>(entityId, m_editScriptFileName.c_str());
-                });
-            Polygon poly = scene.getComponent<ColorComponent>(entityId)->m_mesh->getPolygon();
-            Engine::getInstance().addWriteTask(*scene.getPool<MouseInputComponent>(),
-                [=](ComponentPool & pool) mutable
-                {
-                    pool.create<MouseInputComponent>(entityId, std::move(poly));
-                });
+			Engine::getInstance().addWriteTask(*scene.getPool<ScriptComponent>(),
+				[=](ComponentPool & pool)
+				{
+					pool.create<ScriptComponent>(entityId, m_editScriptFileName.c_str());
+				});
+			Polygon poly = scene.getComponent<ColorComponent>(entityId)->m_mesh->getPolygon();
+			Engine::getInstance().addWriteTask(*scene.getPool<MouseInputComponent>(),
+				[=](ComponentPool & pool) mutable
+				{
+					pool.create<MouseInputComponent>(entityId, std::move(poly));
+				});
 		}), Thread::Window);
 }
 

@@ -48,7 +48,7 @@ namespace Violet
 		struct is_unique
 		{
 			typedef typename std::tuple_element<Width - 1, Tuple>::type ElementType;
-			enum { value =    !detail::has_type<Tuple, ElementType, Width - 1>::value
+			enum { value =	!detail::has_type<Tuple, ElementType, Width - 1>::value
 							&& is_unique<Tuple, Width - 1>::value };
 		};
 
