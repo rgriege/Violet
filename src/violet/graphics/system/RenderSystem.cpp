@@ -92,6 +92,7 @@ RenderSystem::~RenderSystem()
 		{
 			ShaderProgram::getCache().clear();
 			Font::getCache().clear();
+			Texture::getCache().clear();
 		}), Thread::Window);
 }
 
