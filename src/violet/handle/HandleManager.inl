@@ -75,7 +75,7 @@ void Violet::HandleManager<Handle>::free(const Handle entity)
 	if (id < m_usedList.size() && m_usedList[id])
 	{
 		m_usedList[id] = false;
-		m_recycleList.emplace_back(id);
+		m_recycleList.insert(std::lower_bound(m_recycleList.begin(), m_recycleList.end(), id), id);
 		std::sort(m_recycleList.begin(), m_recycleList.end());
 	}
 	else
@@ -88,7 +88,7 @@ template <typename Handle>
 void Violet::HandleManager<Handle>::freeAll()
 {
 	m_usedList.clear();
-	m_recycleList = std::deque<typename Handle::StorageType>();
+	m_recycleList.clear();
 }
 
 // ----------------------------------------------------------------------------
