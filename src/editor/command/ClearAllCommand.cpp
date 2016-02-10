@@ -73,9 +73,10 @@ void ClearAllCommand::execute()
 			{
 				const auto & editor = *Engine::getInstance().getSystem<EditorSystem>();
 				for (const auto entityId : entityIds)
-					editor.getScene().removeAll(entityId);
-				for (const auto entityId : copiedEntityIds)
+				{
 					editor.propogateRemove(entityId);
+					editor.getScene().removeAll(entityId);
+				}
 			}));
 	}
 }
