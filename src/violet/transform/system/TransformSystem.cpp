@@ -19,7 +19,7 @@ namespace TransformSystemNamespace
 {
     typedef Entity<LocalTransformComponent, WorldTransformComponent> TransformEntity;
 
-    void updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache, std::vector<TransformEntity> & deferredUpdates);
+    void updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache);
 }
 
 using namespace TransformSystemNamespace;
@@ -70,39 +70,9 @@ TransformSystem::~TransformSystem()
 void TransformSystem::update(const float /*dt*/)
 {
 	m_entityWorldTransformCache = std::map<EntityId, Matrix4f>{ { EntityId::ms_invalid, Matrix4f::Identity } };
-    std::vector<TransformEntity> deferredUpdates;
 	const auto & engine = Engine::getInstance();
 	for (const auto & entity : engine.getCurrentScene().getEntityView<LocalTransformComponent, WorldTransformComponent>())
-        updateWorldTransform(entity, m_entityWorldTransformCache, deferredUpdates);
-
-    uint32 iteration = 0;
-    while (!deferredUpdates.empty() && iteration < 5)
-    {
-        std::vector<TransformEntity> newDeferredUpdates;
-        for (const auto & entity : deferredUpdates)
-            updateWorldTransform(entity, m_entityWorldTransformCache, newDeferredUpdates);
-        std::swap(deferredUpdates, newDeferredUpdates);
-        ++iteration;
-    }
-
-    for (const auto & entity : deferredUpdates)
-    {
-		const auto & localTransformComponent = entity.get<LocalTransformComponent>();
-		const auto & worldTransformComponent = entity.get<WorldTransformComponent>();
-		const EntityId entityId = entity.getId();
-
-        Log::log(FormattedString<128>().sprintf("invalid hierarchy (parent <%d,%d> for <%d,%d>), removing",
-            localTransformComponent.m_parentId.getId(),
-            localTransformComponent.m_parentId.getVersion(),
-            entityId.getId(),
-            entityId.getVersion()));
-
-        engine.addWriteTask(engine.getCurrentScene(),
-            [=](ComponentManager & scene)
-            {
-                scene.removeAll(entityId);
-            });
-    }
+        updateWorldTransform(entity, m_entityWorldTransformCache);
 }
 
 // ============================================================================
@@ -115,7 +85,7 @@ TransformSystem::TransformSystem() :
 
 // ============================================================================
 
-void TransformSystemNamespace::updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache, std::vector<TransformEntity> & deferredUpdates)
+void TransformSystemNamespace::updateWorldTransform(const TransformEntity & entity, std::map<EntityId, Matrix4f> & worldTransformCache)
 {
 	const auto & engine = Engine::getInstance();
 	const auto & localTransformComponent = entity.get<LocalTransformComponent>();
@@ -123,7 +93,8 @@ void TransformSystemNamespace::updateWorldTransform(const TransformEntity & enti
     const EntityId entityId = entity.getId();
 
     const auto it = worldTransformCache.find(localTransformComponent.m_parentId);
-    if (it != worldTransformCache.end())
+	assert(it != worldTransformCache.end());
+
     {
         const Matrix4f & parentWorldTransform = it != worldTransformCache.end() ? it->second : Matrix4f::Identity;
         const Matrix4f & worldTransform = worldTransformCache[entityId] = parentWorldTransform * localTransformComponent.m_transform;
@@ -136,8 +107,6 @@ void TransformSystemNamespace::updateWorldTransform(const TransformEntity & enti
                 });
         }
     }
-    else
-        deferredUpdates.emplace_back(entity);
 }
 
 // ============================================================================
