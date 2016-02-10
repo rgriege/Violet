@@ -99,7 +99,7 @@ namespace Violet
 		template <typename T>
 		void deleteComponent(T * component)
 		{
-			delete component;
+			component->~T();
 		}
 	}
 }

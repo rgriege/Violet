@@ -65,11 +65,10 @@ namespace Violet
 		static ComponentPool create();
 
 	public:
-
-		~ComponentPool();
-
+		
 		ComponentPool(ComponentPool && other);
 		ComponentPool & operator=(ComponentPool && other);
+		~ComponentPool();
 
 		Tag getComponentTag() const;
 

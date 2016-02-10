@@ -17,14 +17,6 @@ ComponentPool::FuncTable::FuncTable(Load _load, Save _save, Destroy _destroy) :
 
 // ============================================================================
 
-ComponentPool::~ComponentPool()
-{
-	for (uint32 i = 0, end = size(); i < end; ++i)
-		m_funcTable->destroy(get(i));
-}
-
-// ----------------------------------------------------------------------------
-
 ComponentPool::ComponentPool(ComponentPool && other) :
 	m_componentTag(other.m_componentTag),
 	m_componentSize(other.m_componentSize),
@@ -33,7 +25,7 @@ ComponentPool::ComponentPool(ComponentPool && other) :
 	m_componentData(std::move(other.m_componentData)),
 	m_ids(std::move(other.m_ids))
 {
-	other.m_componentData.clear();
+	other.m_ids.emplace_back(EntityId::ms_invalid);
 }
 
 // ----------------------------------------------------------------------------
@@ -47,6 +39,14 @@ ComponentPool & ComponentPool::operator=(ComponentPool && other)
 	std::swap(m_componentData, other.m_componentData);
 	std::swap(m_ids, other.m_ids);
 	return *this;
+}
+
+// ----------------------------------------------------------------------------
+
+ComponentPool::~ComponentPool()
+{
+	for (uint32 i = 0, end = size(); i < end; ++i)
+		m_funcTable->destroy(get(i));
 }
 
 // ----------------------------------------------------------------------------
