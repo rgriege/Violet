@@ -1,18 +1,18 @@
 // ============================================================================
 
-#include "violet/utility/Random.h"
+#include "violet/utility/random.h"
 
-using namespace Violet;
-
-// ============================================================================
-
-Random Random::ms_generator;
+using namespace vlt;
 
 // ============================================================================
 
-float Random::generate0to1()
+random random::ms_generator;
+
+// ============================================================================
+
+r32 random::generate_0_to_1()
 {
-	return static_cast<float>(m_device()) / static_cast<float>(m_device.max());
+	return static_cast<r32>(m_device()) / static_cast<r32>(m_device.max());
 }
 
 // ============================================================================

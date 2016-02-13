@@ -1,85 +1,85 @@
 // ============================================================================
 
-#include "violet/Engine.h"
+#include "violet/core/engine.h"
 
 // ============================================================================
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::subscribe(EventContext & eventContext, const Subscriber & func)
+void vlt::event<Derived, void(Args...)>::subscribe(event_context & event_context, const subscriber & func)
 {
-	eventContext.subscribe(Derived::getIdentifier(), func);
+	event_context.subscribe(Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::subscribe(const EventContext & eventContext, const Subscriber & func)
+void vlt::event<Derived, void(Args...)>::subscribe(const event_context & event_context, const subscriber & func)
 {
-	Violet::EventBase::subscribe(eventContext, Derived::getIdentifier(), func);
+	vlt::event_base::subscribe(event_context, Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::subscribe(EventContextOwner & eventContextOwner, const Subscriber & func)
+void vlt::event<Derived, void(Args...)>::subscribe(event_context_owner & event_context_owner, const subscriber & func)
 {
-	subscribe(eventContextOwner.getEventContext(), func);
+	subscribe(event_context_owner.event_context, func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::subscribe(const EventContextOwner & eventContextOwner, const Subscriber & func)
+void vlt::event<Derived, void(Args...)>::subscribe(const event_context_owner & event_context_owner, const subscriber & func)
 {
-	subscribe(eventContextOwner.getEventContext(), func);
+	subscribe(event_context_owner.event_context, func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::emit(const EventContext & eventContext, Args && ... args)
+void vlt::event<Derived, void(Args...)>::emit(const event_context & event_context, Args && ... args)
 {
-	eventContext.emit(Derived::getIdentifier(), std::forward<Args>(args)...);
+	event_context.emit(Derived::get_identifier(), std::forward<Args>(args)...);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::emit(const EventContextOwner & eventContextOwner, Args && ... args)
+void vlt::event<Derived, void(Args...)>::emit(const event_context_owner & event_context_owner, Args && ... args)
 {
-	emit(eventContextOwner.getEventContext(), std::forward<Args>(args)...);
+	emit(event_context_owner.event_context, std::forward<Args>(args)...);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::unsubscribe(EventContext & eventContext, const Subscriber & func)
+void vlt::event<Derived, void(Args...)>::unsubscribe(event_context & event_context, const subscriber & func)
 {
-	eventContext.unsubscribe(Derived::getIdentifier(), func);
+	event_context.unsubscribe(Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::unsubscribe(const EventContext & eventContext, const Subscriber & func)
+void vlt::event<Derived, void(Args...)>::unsubscribe(const event_context & event_context, const subscriber & func)
 {
-	Violet::EventBase::unsubscribe(eventContext, Derived::getIdentifier(), func);
+	vlt::event_base::unsubscribe(event_context, Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::unsubscribe(EventContextOwner & eventContextOwner, const Subscriber & func)
+void vlt::event<Derived, void(Args...)>::unsubscribe(event_context_owner & event_context_owner, const subscriber & func)
 {
-	unsubscribe(eventContextOwner.getEventContext(), func);
+	unsubscribe(event_context_owner.event_context, func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void Violet::Event<Derived, void(Args...)>::unsubscribe(const EventContextOwner & eventContextOwner, const Subscriber & func)
+void vlt::event<Derived, void(Args...)>::unsubscribe(const event_context_owner & event_context_owner, const subscriber & func)
 {
-	unsubscribe(eventContextOwner.getEventContext(), func);
+	unsubscribe(event_context_owner.event_context, func);
 }
 
 // ============================================================================

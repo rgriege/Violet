@@ -3,10 +3,10 @@
 
 #include <functional>
 
-namespace Violet
+namespace vlt
 {
 	template <typename ResultType>
-	class StatelessTest
+	struct StatelessTest
 	{
 	public:
 

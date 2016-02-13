@@ -1,18 +1,16 @@
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef VIOLET_SHADER_H
+#define VIOLET_SHADER_H
 
-#include "violet/utility/ResourceCache.h"
-#include "violet/Defines.h"
+#include "violet/utility/resource_cache.h"
+#include "violet/core/defines.h"
 
 #include <memory>
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API Shader
+	struct VIOLET_API shader
 	{
-	public:
-
-		friend class ShaderProgram;
+		friend struct shader_program;
 
 		enum Type
 		{
@@ -22,50 +20,48 @@ namespace Violet
 
 	public:
 
-		static std::unique_ptr<Shader> create(const char * filename, Type type);
+		static std::unique_ptr<shader> create(const char * filename, Type type);
 
 	public:
 
-		~Shader();
+		~shader();
 
-		const char * getFilename() const;
+		const char * get_filename() const;
 
 	private:
 
-		Shader(const char * filename, uint32 handle);
+		shader(const char * filename, u32 handle);
 
 	private:
 
 		const std::string m_filename;
-		const uint32 m_handle;
+		const u32 m_handle;
 	};
 
-	class VIOLET_API ShaderProgram
+	struct VIOLET_API shader_program
 	{
-	public:
-
-		static std::unique_ptr<ShaderProgram> load(const char * name);
-		static std::unique_ptr<ShaderProgram> load(const char * vertexShaderFilename, const char * fragmentShaderFilename);
-		static std::unique_ptr<ShaderProgram> create(std::shared_ptr<Shader> vertexShader, std::shared_ptr<Shader> fragmentShader);
-		typedef ResourceCache<ShaderProgram, const char *> Cache;
-		static Cache & getCache();
-		static void bind(const ShaderProgram & program);
+		static std::unique_ptr<shader_program> load(const char * name);
+		static std::unique_ptr<shader_program> load(const char * vertexShaderFilename, const char * fragmentShaderFilename);
+		static std::unique_ptr<shader_program> create(std::shared_ptr<shader> vertexShader, std::shared_ptr<shader> fragmentShader);
+		typedef resource_cache<shader_program, const char *> Cache;
+		static Cache & get_cache();
+		static void bind(const shader_program & program);
 		static void unbind();
 
 	public:
 
-		ShaderProgram(uint32 handle, std::shared_ptr<Shader> vertexShader, std::shared_ptr<Shader> fragmentShader);
-		~ShaderProgram();
+		shader_program(u32 handle, std::shared_ptr<shader> vertexShader, std::shared_ptr<shader> fragmentShader);
+		~shader_program();
 
-		std::string getName() const;
+		std::string get_name() const;
 		int getAttributeLocation(const char * name);
 		int getUniformLocation(const char * name);
 
 	private:
 
-		const uint32 m_handle;
-		const std::shared_ptr<Shader> m_vertexShader;
-		const std::shared_ptr<Shader> m_fragmentShader;
+		const u32 m_handle;
+		const std::shared_ptr<shader> m_vertexShader;
+		const std::shared_ptr<shader> m_fragmentShader;
 	};
 }
 

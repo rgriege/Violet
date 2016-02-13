@@ -1,25 +1,24 @@
 #ifndef VIOLET_Serializer_H
 #define VIOLET_Serializer_H
 
-#include "violet/Defines.h"
+#include "violet/core/defines.h"
+#include "violet/core/types.h"
 #include "violet/utility/unique_val.h"
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API Serializer
+	struct VIOLET_API serializer
 	{
-	public:
+		virtual ~serializer() = default;
 
-		virtual ~Serializer() = default;
+		virtual unique_val<serializer> create_segment(const char * label) = 0;
 
-		virtual unique_val<Serializer> createSegment(const char * label) = 0;
-
-		virtual void writeBoolean(const char * label, bool value) = 0;
-		virtual void writeUint(const char * label, uint32 value) = 0;
-		virtual void writeInt(const char * label, int value) = 0;
-		virtual void writeFloat(const char * label, float value) = 0;
-		virtual void writeDouble(const char * label, double value) = 0;
-		virtual void writeString(const char * label, const char * value) = 0;
+		virtual void write_b8(const char * label, b8 value) = 0;
+		virtual void write_u32(const char * label, u32 value) = 0;
+		virtual void write_s32(const char * label, int value) = 0;
+		virtual void write_r32(const char * label, r32 value) = 0;
+		virtual void write_r64(const char * label, r64 value) = 0;
+		virtual void write_string(const char * label, const char * value) = 0;
 	};
 }
 

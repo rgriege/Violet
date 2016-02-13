@@ -1,66 +1,66 @@
-#include "violet/Engine.h"
-#include "violet/component/ComponentManager.h"
-#include "violet/input/Key.h"
-#include "violet/input/component/KeyInputComponent.h"
-#include "violet/input/system/InputSystem.h"
-#include "violet/graphics/component/TextComponent.h"
-#include "violet/script/ScriptComponent.h"
-#include "violet/script/cpp/CppScript.h"
-#include "violet/ui/UiTextInputBox.h"
-#include "violet/utility/FormattedString.h"
+#include "violet/core/engine.h"
+#include "violet/component/scene.h"
+#include "violet/input/key.h"
+#include "violet/input/component/key_input_component.h"
+#include "violet/input/system/input_system.h"
+#include "violet/graphics/component/text_component.h"
+#include "violet/script/script_component.h"
+#include "violet/script/cpp/cpp_script.h"
+#include "violet/ui/ui_text_input_box.h"
+#include "violet/utility/formatted_string.h"
 
 #include "dialog.h"
 
 #include <cctype>
 #include <functional>
 
-using namespace Violet;
+using namespace vlt;
 using namespace std::placeholders;
 
-class Instance : public CppScript::Instance
+struct instance : public cpp_script::instance
 {
 public:
 
-    Instance(CppScript & script) :
-        CppScript::Instance(script),
+    instance(cpp_script & script) :
+        cpp_script::instance(script),
         m_textInput()
     {
-        BindToComponentMethod::assign(script, BindToComponentMethod::Handler::bind<Instance, &Instance::onBindToComponent>(this));
-        FocusLostMethod::assign(script, FocusLostMethod::Handler::bind<Instance, &Instance::onFocusLost>(this));
-        KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
+        BindToComponentMethod::assign(script, BindToComponentMethod::Handler::bind<instance, &instance::onBindToComponent>(this));
+        FocusLostMethod::assign(script, FocusLostMethod::Handler::bind<instance, &instance::onFocusLost>(this));
+        KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<instance, &instance::on_key_up>(this));
     }
 
-    virtual ~Instance() override
+    virtual ~instance() override
     {
-        BindToComponentMethod::remove(m_script);
-        FocusLostMethod::remove(m_script);
-        KeyUpMethod::remove(m_script);
+        BindToComponentMethod::remove(script);
+        FocusLostMethod::remove(script);
+        KeyUpMethod::remove(script);
     }
 
 private:
 
-    void onBindToComponent(const EntityId entityId)
+    void onBindToComponent(const handle entity_id)
     {
-        const Engine & engine = Engine::getInstance();
-        engine.addWriteTask(*engine.getSystem<InputSystem>(),
-            [=](InputSystem & input)
+        const engine & engine = engine::instance();
+        engine.add_write_task(*engine.get_system<input_system>(),
+            [=](input_system & input)
             {
-                input.focus(entityId);
+                input.focus(entity_id);
             });
     }
 
-    void onFocusLost(const EntityId entityId)
+    void onFocusLost(const handle entity_id)
     {
-        const auto & engine = Engine::getInstance();
+        const auto & engine = engine::instance();
         DialogClosedEvent::emit(engine, std::string());
     }
 
-    void onKeyUp(const EntityId entityId, const WindowSystem::KeyEvent & event)
+    void on_key_up(const handle entity_id, const window_system::key_event & event)
     {
-        if (m_textInput.onKeyUp(entityId, event) == UiTextInputBox::S_inactive)
+        if (m_textInput.on_key_up(entity_id, event) == ui_text_input_box::S_inactive)
         {
-            const Engine & engine = Engine::getInstance();
-            const auto * tc = engine.getCurrentScene().getComponent<TextComponent>(entityId);
+            const engine & engine = engine::instance();
+            const auto * tc = engine.get_current_scene().get_component<text_component>(entity_id);
             if (tc != nullptr && !tc->m_text.empty())
                 DialogClosedEvent::emit(engine, tc->m_text);
         }
@@ -68,12 +68,12 @@ private:
 
 private:
 
-	UiTextInputBox m_textInput;
+	ui_text_input_box m_textInput;
 };
 
-VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
+VIOLET_SCRIPT_EXPORT void init(cpp_script & script, std::unique_ptr<cpp_script::instance> & i)
 {
-    instance = std::make_unique<Instance>(script);
+    i = std::make_unique<instance>(script);
 }
 
 

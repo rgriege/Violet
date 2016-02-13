@@ -1,41 +1,30 @@
-#ifndef VIOLET_Task_H
-#define VIOLET_Task_H
+#ifndef VIOLET_TASK_H
+#define VIOLET_TASK_H
 
-#include "violet/Defines.h"
+#include "violet/core/defines.h"
 
 #include <functional>
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API Task
+	struct VIOLET_API task
 	{
+		const u64 dependency;
+
+		static const u64 Null_Dependency;
+
 	public:
 
-		static const uint64 ms_nullDependency;
-		static const uint32 ms_defaultPriority;
-
-	public:
-
-		Task(uint64 dependency = ms_nullDependency, uint32 priority = ms_defaultPriority);
-		virtual ~Task() = default;
+		task(u64 dependency = Null_Dependency);
+		virtual ~task() = default;
 
 		virtual void execute() const = 0;
-
-		uint64 getDependency() const;
-		bool operator<(const Task& rhs) const;
-
-	private:
-
-		const uint64 m_dependency;
-		const uint32 m_priority;
 	};
 
-	class VIOLET_API DelegateTask : public Task
+	struct VIOLET_API delegate_task : public task
 	{
-	public:
-
-		DelegateTask(std::function<void()> delegate, uint64 dependency = ms_nullDependency, uint32 priority = ms_defaultPriority);
-		virtual ~DelegateTask() override = default;
+		delegate_task(std::function<void()> delegate, u64 dependency = Null_Dependency);
+		virtual ~delegate_task() override = default;
 
 		virtual void execute() const override;
 

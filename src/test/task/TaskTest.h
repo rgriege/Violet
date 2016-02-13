@@ -1,11 +1,11 @@
 #ifndef VIOLET_TaskTest_H
 #define VIOLET_TaskTest_H
 
-namespace Violet
+namespace vlt
 {
-	class TestEvaluator;
+	struct TestEvaluator;
 
-	class TaskTest
+	struct TaskTest
 	{
 	public:
 

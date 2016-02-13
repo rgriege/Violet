@@ -3,16 +3,16 @@
 
 #include <memory>
 
-namespace Violet
+namespace vlt
 {
 	template <typename T>
-	class shared_val
+	struct shared_val
 	{
 		template <typename U, typename ... Args>
 		friend shared_val<U> make_shared_val(Args && ... args);
 
 		template <typename U>
-		friend class shared_val;
+		friend struct shared_val;
 
 	public:
 

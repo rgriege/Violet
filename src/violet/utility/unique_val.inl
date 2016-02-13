@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename T>
-Violet::unique_val<T>::unique_val(unique_val<T> && rhs) :
+vlt::unique_val<T>::unique_val(unique_val<T> && rhs) :
 	m_ptr(std::move(rhs.m_ptr))
 {
 }
@@ -10,7 +10,7 @@ Violet::unique_val<T>::unique_val(unique_val<T> && rhs) :
 
 template <typename T>
 template <typename U>
-Violet::unique_val<T>::unique_val(unique_val<U> && rhs) :
+vlt::unique_val<T>::unique_val(unique_val<U> && rhs) :
 	m_ptr(std::move(rhs.m_ptr))
 {
 }
@@ -18,7 +18,7 @@ Violet::unique_val<T>::unique_val(unique_val<U> && rhs) :
 // ----------------------------------------------------------------------------
 
 template <typename T>
-Violet::unique_val<T> & Violet::unique_val<T>::operator=(unique_val<T> && rhs)
+vlt::unique_val<T> & vlt::unique_val<T>::operator=(unique_val<T> && rhs)
 {
 	m_ptr = std::move(rhs.m_ptr);
 	return *this;
@@ -27,7 +27,7 @@ Violet::unique_val<T> & Violet::unique_val<T>::operator=(unique_val<T> && rhs)
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T & Violet::unique_val<T>::get() const
+T & vlt::unique_val<T>::get() const
 {
 	return *m_ptr;
 }
@@ -35,7 +35,7 @@ T & Violet::unique_val<T>::get() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T * Violet::unique_val<T>::ptr() const
+T * vlt::unique_val<T>::ptr() const
 {
 	return m_ptr.get();
 }
@@ -43,7 +43,7 @@ T * Violet::unique_val<T>::ptr() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T & Violet::unique_val<T>::operator*() const
+T & vlt::unique_val<T>::operator*() const
 {
 	return *m_ptr;
 }
@@ -51,7 +51,7 @@ T & Violet::unique_val<T>::operator*() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T * Violet::unique_val<T>::operator->() const
+T * vlt::unique_val<T>::operator->() const
 {
 	return m_ptr.operator->();
 }
@@ -59,7 +59,7 @@ T * Violet::unique_val<T>::operator->() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-Violet::unique_val<T>::operator T &() const
+vlt::unique_val<T>::operator T &() const
 {
 	return *m_ptr;
 }
@@ -67,7 +67,7 @@ Violet::unique_val<T>::operator T &() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-Violet::unique_val<T>::unique_val(std::unique_ptr<T> && ptr) :
+vlt::unique_val<T>::unique_val(std::unique_ptr<T> && ptr) :
 	m_ptr(std::move(ptr))
 {
 }
@@ -75,7 +75,7 @@ Violet::unique_val<T>::unique_val(std::unique_ptr<T> && ptr) :
 // ============================================================================
 
 template <typename T, typename ... Args>
-Violet::unique_val<T> Violet::make_unique_val(Args && ... args)
+vlt::unique_val<T> vlt::make_unique_val(Args && ... args)
 {
 	return unique_val<T>(std::make_unique<T>(std::forward<Args>(args)...));
 }

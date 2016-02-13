@@ -1,9 +1,9 @@
-#ifndef VIOLET_Thread_H
-#define VIOLET_Thread_H
+#ifndef VIOLET_THREAD_H
+#define VIOLET_THREAD_H
 
-namespace Violet
+namespace vlt
 {
-	enum class Thread
+	enum struct thread
 	{
 		Any = -1,
 		Window

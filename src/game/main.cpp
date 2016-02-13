@@ -1,93 +1,95 @@
-#include "editor/EditorSystem.h"
-#include "editor/command/ClearAllCommand.h"
-#include "editor/command/MoveToCommand.h"
-#include "editor/command/file/OpenCommand.h"
-#include "editor/command/file/SaveAllCommand.h"
-#include "editor/command/selection/DeselectCommand.h"
-#include "editor/command/selection/SelectCommand.h"
-#include "editor/component/EditorComponent.h"
-#include "violet/Engine.h"
-#include "violet/component/ComponentManager.h"
-#include "violet/component/MappedDataComponent.h"
-#include "violet/graphics/component/ColorComponent.h"
-#include "violet/graphics/component/TextComponent.h"
-#include "violet/graphics/component/TextureComponent.h"
-#include "violet/graphics/system/RenderSystem.h"
-#include "violet/input/component/KeyInputComponent.h"
-#include "violet/input/component/MouseInputComponent.h"
-#include "violet/input/system/InputSystem.h"
+#include <iostream>
+
+#include "editor/editor_system.h"
+#include "editor/command/clear_all_command.h"
+#include "editor/command/move_to_command.h"
+#include "editor/command/file/open_command.h"
+#include "editor/command/file/save_all_command.h"
+#include "editor/command/selection/deselect_command.h"
+#include "editor/command/selection/select_command.h"
+#include "editor/component/editor_component.h"
+#include "violet/core/engine.h"
+#include "violet/component/scene.h"
+#include "violet/component/mapped_data_component.h"
+#include "violet/graphics/component/color_component.h"
+#include "violet/graphics/component/text_component.h"
+#include "violet/graphics/component/texture_component.h"
+#include "violet/graphics/system/render_system.h"
+#include "violet/input/component/key_input_component.h"
+#include "violet/input/component/mouse_input_component.h"
+#include "violet/input/system/input_system.h"
 #include "violet/log/Log.h"
-#include "violet/log/ConsoleLogTarget.h"
-#include "violet/log/FileLogTarget.h"
-#include "violet/physics/system/PhysicsSystem.h"
-#include "violet/script/ScriptComponent.h"
-#include "violet/script/cpp/CppScript.h"
-#include "violet/script/lua/LuaScript.h"
-#include "violet/serialization/file/FileDeserializerFactory.h"
-#include "violet/serialization/json/JsonDeserializer.h"
-#include "violet/serialization/json/JsonSerializer.h"
-#include "violet/system/SystemFactory.h"
-#include "violet/transform/component/LocalTransformComponent.h"
-#include "violet/transform/component/WorldTransformComponent.h"
-#include "violet/transform/system/TransformSystem.h"
-#include "violet/update/component/UpdateComponent.h"
-#include "violet/update/system/UpdateSystem.h"
-#include "violet/window/glut/GlutWindowSystem.h"
-#include "violet/window/sdl/SDLWindowSystem.h"
+#include "violet/log/console_log_target.h"
+#include "violet/log/file_log_target.h"
+#include "violet/physics/system/physics_system.h"
+#include "violet/script/script_component.h"
+#include "violet/script/cpp/cpp_script.h"
+#include "violet/script/lua/lua_script.h"
+#include "violet/serialization/file/file_deserializer_factory.h"
+#include "violet/serialization/json/json_deserializer.h"
+#include "violet/serialization/json/json_serializer.h"
+#include "violet/system/system_factory.h"
+#include "violet/transform/component/local_transform_component.h"
+#include "violet/transform/component/world_transform_component.h"
+#include "violet/transform/system/transform_system.h"
+#include "violet/update/component/update_component.h"
+#include "violet/update/system/update_system.h"
+#include "violet/window/glut/glut_window_system.h"
+#include "violet/window/sdl/sdl_window_system.h"
 
 using namespace edt;
 
-Violet::SystemFactory setup()
+vlt::system_factory setup()
 {
-	Violet::ComponentManager::installComponent<Violet::ColorComponent>();
-	Violet::ComponentManager::installComponent<Violet::KeyInputComponent>();
-	Violet::ComponentManager::installComponent<Violet::LocalTransformComponent>();
-	Violet::ComponentManager::installComponent<Violet::MappedDataComponent>();
-	Violet::ComponentManager::installComponent<Violet::MouseInputComponent>();
-	Violet::ComponentManager::installComponent<Violet::PhysicsComponent>();
-	Violet::ComponentManager::installComponent<Violet::ScriptComponent>();
-	Violet::ComponentManager::installComponent<Violet::TextComponent>();
-	Violet::ComponentManager::installComponent<Violet::TextureComponent>();
-	Violet::ComponentManager::installComponent<Violet::UpdateComponent>();
-	Violet::ComponentManager::installComponent<Violet::WorldTransformComponent>();
-	Violet::ComponentManager::installComponent<EditorComponent>();
+	vlt::scene::install_component<vlt::color_component>();
+	vlt::scene::install_component<vlt::key_input_component>();
+	vlt::scene::install_component<vlt::local_transform_component>();
+	vlt::scene::install_component<vlt::mapped_data_component>();
+	vlt::scene::install_component<vlt::mouse_input_component>();
+	vlt::scene::install_component<vlt::physics_component>();
+	vlt::scene::install_component<vlt::script_component>();
+	vlt::scene::install_component<vlt::text_component>();
+	vlt::scene::install_component<vlt::texture_component>();
+	vlt::scene::install_component<vlt::update_component>();
+	vlt::scene::install_component<vlt::world_transform_component>();
+	vlt::scene::install_component<editor_component>();
 
-	Violet::JsonDeserializer::install();
-	Violet::JsonSerializer::install();
-	// Violet::BinaryDeserializer::install();
+	vlt::json_deserializer::install();
+	vlt::json_serializer::install();
+	// vlt::binary_deserializer::install();
 
-	Violet::LuaScript::install();
-	Violet::CppScript::install();
+	vlt::lua_script::install();
+	vlt::cpp_script::install();
 
-	Violet::SystemFactory factory;
-	// Violet::GlutWindowSystem::install(factory);
-	Violet::SDLWindowSystem::install(factory);
-	Violet::PhysicsSystem::install(factory);
-	Violet::RenderSystem::install(factory);
-	Violet::InputSystem::install(factory);
-	Violet::TransformSystem::install(factory);
-	Violet::UpdateSystem::install(factory);
-	edt::EditorSystem::install(factory);
+	vlt::system_factory factory;
+	// vlt::glut_window_system::install(factory);
+	vlt::sdl_window_system::install(factory);
+	vlt::physics_system::install(factory);
+	vlt::render_system::install(factory);
+	vlt::input_system::install(factory);
+	vlt::transform_system::install(factory);
+	vlt::update_system::install(factory);
+	edt::editor_system::install(factory);
 
-	EditorSystem::registerCommand<ClearAllCommand>();
-	EditorSystem::registerCommand<DeselectCommand>();
-	EditorSystem::registerCommand<MoveToCommand>();
-	EditorSystem::registerCommand<OpenCommand>();
-	EditorSystem::registerCommand<SaveAllCommand>();
-	EditorSystem::registerCommand<SelectCommand>();
+	editor_system::register_command<clear_all_command>();
+	editor_system::register_command<deselect_command>();
+	editor_system::register_command<move_to_command>();
+	editor_system::register_command<open_command>();
+	editor_system::register_command<save_all_command>();
+	editor_system::register_command<select_command>();
 
 	return factory;
 }
 
 int main(int /*argc*/, char ** /*argv*/)
 {
-	const Violet::LogTarget::Guard consoleLogGuard(Violet::Log::installTarget(std::make_unique<Violet::ConsoleLogTarget>()));
-	const Violet::LogTarget::Guard fileLogGuard(Violet::Log::installTarget(Violet::FileLogTarget::create("log.txt")));
+	const vlt::log_target::guard consoleLogGuard(vlt::install_log_target(std::make_unique<vlt::console_log_target>()));
+	const vlt::log_target::guard fileLogGuard(vlt::install_log_target(vlt::file_log_target::create("log.txt")));
 
 	auto factory = setup();
-	if (!Violet::Engine::bootstrap(factory, "editorConfig.json"))
+	if (!vlt::engine::bootstrap(factory, "editorConfig.json"))
 	{
-		Violet::Log::log("failed to init engine");
+		vlt::log("failed to init engine");
 		char c;
 		std::cin >> c;
 		exit(1);

@@ -1,26 +1,20 @@
-#ifndef VIOLET_System_H
-#define VIOLET_System_H
+#ifndef VIOLET_SYSTEM_H
+#define VIOLET_SYSTEM_H
 
-#include "violet/Defines.h"
+#include "violet/core/defines.h"
 
-namespace Violet
+namespace vlt
 {
-	class Engine;
+	struct engine;
 
-	class VIOLET_API System
+	struct VIOLET_API system
 	{
-	public:
+		const char * const label;
 
-		System(const char * label);
-		virtual ~System() = default;
+		system(const char * label);
+		virtual ~system() = default;
 
-		virtual void update(float dt);
-
-		const char * getLabel() const;
-
-	private:
-
-		const char * m_label;
+		virtual void update(r32 dt);
 	};
 };
 

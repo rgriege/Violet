@@ -1,21 +1,17 @@
-#ifndef VIOLET_Random_H
-#define VIOLET_Random_H
+#ifndef VIOLET_RANDOM_H
+#define VIOLET_RANDOM_H
 
-#include "violet/Defines.h"
+#include "violet/core/defines.h"
 
 #include <random>
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API Random
+	struct VIOLET_API random
 	{
-	public:
-
-		static Random ms_generator;
-
-	public:
-		
-		float generate0to1();
+		static random ms_generator;
+				
+		r32 generate_0_to_1();
 
 	private:
 

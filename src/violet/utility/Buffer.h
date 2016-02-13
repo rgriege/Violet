@@ -1,46 +1,37 @@
-#ifndef BUFFER_H
-#define BUFFER_H
+#ifndef VIOLET_BUFFER_H
+#define VIOLET_BUFFER_H
 
-namespace Violet
+namespace vlt
 {
 	template <typename T, size_t N>
-	class StackBuffer
+	struct stack_buffer
 	{
-	public:
+		T data[N];
 
-		StackBuffer() :
-			m_data()
+		stack_buffer() :
+			data()
 		{
 		}
 
-		operator T* () { return m_data; }
-
-	private:
-
-		T m_data[N];
+		operator T* () { return data; }
 	};
 
 	template <typename T>
-	class HeapBuffer
+	struct heap_buffer
 	{
-	public:
+		T * const data;
 
-		HeapBuffer(size_t n) :
-			m_data(static_cast<T*>(malloc(n * sizeof(T))))
+		heap_buffer(size_t n) :
+			data(static_cast<T*>(malloc(n * sizeof(T))))
 		{
 		}
 
-		~HeapBuffer()
+		~heap_buffer()
 		{
-			free(m_data);
+			free(data);
 		}
 
-		operator T* () { return m_data; }
-		T* data() { return m_data; }
-
-	private:
-
-		T * const m_data;
+		operator T* () { return data; }
 	};
 }
 

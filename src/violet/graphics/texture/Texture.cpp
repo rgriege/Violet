@@ -1,6 +1,6 @@
 // ============================================================================
 
-#include "violet/graphics/texture/Texture.h"
+#include "violet/graphics/texture/texture.h"
 
 #include "violet/utility/Buffer.h"
 
@@ -8,11 +8,11 @@
 #include <GL/glew.h>
 #include <png.h>
 
-using namespace Violet;
+using namespace vlt;
 
 // ============================================================================
 
-std::unique_ptr<Texture> Texture::loadPng(const char * filename)
+std::unique_ptr<texture> texture::load_png(const char * filename)
 {
 	png_image image;
 	memset(&image, 0, (sizeof image));
@@ -20,10 +20,10 @@ std::unique_ptr<Texture> Texture::loadPng(const char * filename)
 
 	if (png_image_begin_read_from_file(&image, filename) != 0)
 	{
-		HeapBuffer<png_byte> buffer{ PNG_IMAGE_SIZE(image) };
+		heap_buffer<png_byte> buffer{ PNG_IMAGE_SIZE(image) };
 		image.format = PNG_FORMAT_RGBA;
 		if (buffer != NULL && png_image_finish_read(&image, NULL, buffer, 0, NULL) != 0)
-			return std::unique_ptr<Texture>(new Texture(filename, image.width, image.height, buffer, GL_RGBA));
+			return std::unique_ptr<texture>(new texture(filename, image.width, image.height, buffer, GL_RGBA));
 	}
 
 	return nullptr;
@@ -31,29 +31,29 @@ std::unique_ptr<Texture> Texture::loadPng(const char * filename)
 
 // ----------------------------------------------------------------------------
 
-void Texture::bind(const Texture & texture)
+void texture::bind(const texture & texture)
 {
 	glBindTexture(GL_TEXTURE_2D, texture.m_handle);
 }
 
 // ----------------------------------------------------------------------------
 
-void Texture::unbind()
+void texture::unbind()
 {
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 // ----------------------------------------------------------------------------
 
-Texture::Cache & Texture::getCache()
+texture::Cache & texture::get_cache()
 {
-	static Cache s_cache(&Texture::loadPng);
+	static Cache s_cache(&texture::load_png);
 	return s_cache;
 }
 
 // ============================================================================
 
-Texture::Texture(std::string filename, const uint32 width, const uint32 height, const void * const data, const uint32 format) :
+texture::texture(std::string filename, const u32 width, const u32 height, const void * const data, const u32 format) :
 	m_filename(std::move(filename)),
 	m_handle(0)
 {
@@ -71,7 +71,7 @@ Texture::Texture(std::string filename, const uint32 width, const uint32 height, 
 
 // ----------------------------------------------------------------------------
 
-Texture::Texture(Texture && other) :
+texture::texture(texture && other) :
 	m_handle(other.m_handle)
 {
 	other.m_handle = 0;
@@ -79,7 +79,7 @@ Texture::Texture(Texture && other) :
 
 // ----------------------------------------------------------------------------
 
-Texture::~Texture()
+texture::~texture()
 {
 	if (m_handle != 0)
 		glDeleteTextures(1, &m_handle);
@@ -87,7 +87,7 @@ Texture::~Texture()
 
 // ----------------------------------------------------------------------------
 
-std::string const & Texture::getName() const
+std::string const & texture::get_name() const
 {
 	return m_filename;
 }

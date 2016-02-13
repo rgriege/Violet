@@ -1,30 +1,28 @@
-#ifndef VIOLET_Factory_H
-#define VIOLET_Factory_H
+#ifndef VIOLET_FACTORY_H
+#define VIOLET_FACTORY_H
 
-#include "violet/utility/StringUtilities.h"
+#include "violet/utility/string_utilities.h"
 
 #include <assert.h>
 #include <functional>
 #include <map>
 #include <mutex>
 
-namespace Violet
+namespace vlt
 {
 	template <typename Label, typename Signature>
-	class Factory;
+	struct factory;
 
 	template <typename Label, typename ReturnType, typename... Args>
-	class Factory<Label, ReturnType(Args ...)>
+	struct factory<Label, ReturnType(Args ...)>
 	{
-	public:
-
-		typedef std::function<ReturnType(Args ...)> Producer;
+		typedef std::function<ReturnType(Args ...)> producer;
 
 	public:
 
-		Factory() = default;
+		factory() = default;
 
-		Factory(const Factory & rhs) :
+		factory(const factory & rhs) :
 			m_producers(rhs.m_producers),
 			m_mutex()
 		{
@@ -38,7 +36,7 @@ namespace Violet
 			return (it->second)(std::forward<Args>(args)...);
 		}
 
-		void assign(const Label & label, const Producer & producer)
+		void assign(const Label & label, const producer & producer)
 		{
 			const std::lock_guard<std::mutex> guard(m_mutex);
 			m_producers[label] = producer;
@@ -58,22 +56,22 @@ namespace Violet
 
 	private:
 
-		std::map<Label, Producer> m_producers;
+		std::map<Label, producer> m_producers;
 		mutable std::mutex m_mutex;
 	};
 
 	template <typename ReturnType, typename... Args>
-	class Factory<const char *, ReturnType(Args ...)>
+	struct factory<const char *, ReturnType(Args ...)>
 	{
 	public:
 
-		typedef std::function<ReturnType(Args ...)> Producer;
+		typedef std::function<ReturnType(Args ...)> producer;
 
 	public:
 
-		Factory() = default;
+		factory() = default;
 
-		Factory(const Factory & rhs) :
+		factory(const factory & rhs) :
 			m_producers(rhs.m_producers),
 			m_mutex()
 		{
@@ -87,7 +85,7 @@ namespace Violet
 			return (it->second)(std::forward<Args>(args)...);
 		}
 
-		void assign(const char * const label, const Producer & producer)
+		void assign(const char * const label, const producer & producer)
 		{
 			const std::lock_guard<std::mutex> guard(m_mutex);
 			m_producers[label] = producer;
@@ -107,7 +105,7 @@ namespace Violet
 
 	private:
 
-		std::map<const char *, Producer, StringUtilities::Less> m_producers;
+		std::map<const char *, producer, string_utilities::Less> m_producers;
 		mutable std::mutex m_mutex;
 	};
 }

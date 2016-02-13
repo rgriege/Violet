@@ -1,18 +1,18 @@
-#ifndef VIOLET_Vector_H
-#define VIOLET_Vector_H
+#ifndef VIOLET_VECTOR_H
+#define VIOLET_VECTOR_H
 
 #include <assert.h>
 
-namespace Violet
+namespace vlt
 {
 	template <typename T, typename Allocator = std::allocator<T>>
-	class Vector
+	struct vector
 	{
 	public:
 
 		typedef T value_type;
 		typedef Allocator allocator_type;
-		typedef uint32 size_type;
+		typedef u32 size_type;
 		typedef std::ptrdiff_t difference_type;
 		typedef value_type * pointer;
 		typedef const value_type * const_pointer;
@@ -21,25 +21,25 @@ namespace Violet
 
 	public:
 
-		template <bool is_const>
-		class Iterator
+		template <bool IsConst>
+		struct Iterator
 		{
 		public:
 
-			typedef std::conditional_t<is_const, typename Vector::const_pointer, typename Vector::pointer> pointer;
-			typedef std::conditional_t<is_const, typename Vector::const_reference, typename Vector::reference> reference;
+			typedef std::conditional_t<IsConst, typename vector::const_pointer, typename vector::pointer> pointer;
+			typedef std::conditional_t<IsConst, typename vector::const_reference, typename vector::reference> reference;
 
 		public:
 
 			explicit Iterator(pointer ptr);
 
-			Iterator<is_const> & operator++();
+			Iterator<IsConst> & operator++();
 
 			reference operator*();
 			pointer operator->();
 
-			bool operator==(const Iterator<is_const> & rhs) const;
-			bool operator!=(const Iterator<is_const> & rhs) const;
+			bool operator==(const Iterator<IsConst> & rhs) const;
+			bool operator!=(const Iterator<IsConst> & rhs) const;
 
 		private:
 
@@ -51,13 +51,13 @@ namespace Violet
 
 	public:
 
-		Vector();
-		Vector(std::initializer_list<value_type> list);
-		Vector(const Vector & rhs);
-		Vector(Vector && rhs);
-		~Vector();
-		Vector & operator=(const Vector & rhs);
-		Vector & operator=(Vector && rhs);
+		vector();
+		vector(std::initializer_list<value_type> list);
+		vector(const vector & rhs);
+		vector(vector && rhs);
+		~vector();
+		vector & operator=(const vector & rhs);
+		vector & operator=(vector && rhs);
 
 		reference operator[](size_type index);
 		const_reference operator[](size_type index) const;
@@ -84,7 +84,7 @@ namespace Violet
 		template <typename ... Args>
 		void emplace_back(Args && ... args);
 		void resize(size_type size);
-		void swap(Vector & rhs);
+		void swap(vector & rhs);
 
 	private:
 
@@ -99,6 +99,6 @@ namespace Violet
 	};
 }
 
-#include "violet/structures/Vector.inl"
+#include "violet/structures/vector.inl"
 
 #endif

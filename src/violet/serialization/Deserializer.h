@@ -1,35 +1,31 @@
-#ifndef VIOLET_Deserializer_H
-#define VIOLET_Deserializer_H
+#ifndef VIOLET_DESERIALIZER_H
+#define VIOLET_DESERIALIZER_H
 
-#include "violet/Defines.h"
+#include "violet/core/defines.h"
+#include "violet/core/types.h"
 
 #include <memory>
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API Deserializer
+	struct VIOLET_API deserializer
 	{
-	public:
+		deserializer() = default;
+		deserializer(const deserializer &) = delete;
+		deserializer & operator=(const deserializer &) = delete;
+		virtual ~deserializer() = default;
 
-		Deserializer() = default;
-		virtual ~Deserializer() = default;
+		virtual b8 is_valid() const = 0;
 
-		virtual operator bool() const = 0;
+		virtual std::unique_ptr<deserializer> enter_segment(const char * label) = 0;
+		virtual const char * next_label() const = 0;
 
-		virtual std::unique_ptr<Deserializer> enterSegment(const char * label) = 0;
-		virtual const char * nextLabel() const = 0;
-
-		virtual bool getBoolean(const char * label) = 0;
-		virtual uint32 getUint(const char * label) = 0;
-		virtual int32 getInt(const char * label) = 0;
-		virtual float getFloat(const char * label) = 0;
-		virtual double getDouble(const char * label) = 0;
-		virtual const char * getString(const char * label) = 0;
-
-	private:
-
-		Deserializer(const Deserializer &) = delete;
-		Deserializer & operator=(const Deserializer &) = delete;
+		virtual b8 get_b8(const char * label) = 0;
+		virtual u32 get_u32(const char * label) = 0;
+		virtual s32 get_s32(const char * label) = 0;
+		virtual r32 get_r32(const char * label) = 0;
+		virtual r64 get_r64(const char * label) = 0;
+		virtual const char * get_string(const char * label) = 0;
 	};
 }
 

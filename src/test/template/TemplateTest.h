@@ -1,11 +1,11 @@
 #ifndef TEMPLATE_TEST_H
 #define TEMPLATE_TEST_H
 
-namespace Violet
+namespace vlt
 {
-	class TestEvaluator;
+	struct TestEvaluator;
 
-	class TemplateTests
+	struct TemplateTests
 	{
 	public:
 

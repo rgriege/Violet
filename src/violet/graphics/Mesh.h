@@ -1,47 +1,41 @@
-#ifndef VIOLET_Mesh_H
-#define VIOLET_Mesh_H
+#ifndef VIOLET_MESH_H
+#define VIOLET_MESH_H
 
-#include "violet/Defines.h"
-#include "violet/math/Vec2.h"
-#include "violet/structures/Vector.h"
+#include "violet/core/defines.h"
+#include "violet/math/v2.h"
+#include "violet/structures/vector.h"
 
-namespace Violet
+namespace vlt
 {
-	class Deserializer;
-	class Polygon;
-	class Serializer;
+	struct deserializer;
+	struct poly;
+	struct serializer;
 
-	class VIOLET_API Mesh
+	struct VIOLET_API mesh final
 	{
-	public:
+		u32 m_vertexBuffer;
+		u32 m_size;
 
-		static void bind(const Mesh & mesh);
+		static void bind(const mesh & mesh);
 		static void unbind();
 
-	public:
+		explicit mesh(vector<v2> && vertices);
+		explicit mesh(const poly & poly);
+		explicit mesh(deserializer & deserializer);
+		explicit mesh(const mesh & other);
+		explicit mesh(mesh && other);
+		mesh & operator=(mesh && other);
+		~mesh();
 
-		explicit Mesh(Vector<Vec2f> && vertices);
-		explicit Mesh(const Polygon & poly);
-		explicit Mesh(Deserializer & deserializer);
-		explicit Mesh(const Mesh & other);
-		explicit Mesh(Mesh && other);
-		Mesh & operator=(Mesh && other);
-		~Mesh();
-
-		Polygon getPolygon() const;
+		poly get_poly() const;
 
 	private:
 
-		Mesh & operator=(const Mesh & other) = delete;
-
-	public:
-
-		uint32 m_vertexBuffer;
-		uint32 m_size;
+		mesh & operator=(const mesh & other) = delete;
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, Mesh & mesh);
-	Serializer & operator<<(Serializer & serializer, const Mesh & mesh);
+	deserializer & operator>>(deserializer & deserializer, mesh & mesh);
+	serializer & operator<<(serializer & serializer, const mesh & mesh);
 }
 
 #endif

@@ -1,19 +1,19 @@
 // ============================================================================
 
-#include "violet/transform/Transform.h"
+#include "violet/transform/transform.h"
 
-using namespace Violet;
+using namespace vlt;
 
 // ============================================================================
 
-Vec2f Transform::getPosition(const Matrix4f & mat)
+v2 transform::get_position(const m4 & mat)
 {
-	return Vec2f(mat[0][3], mat[1][3]);
+	return v2(mat[0][3], mat[1][3]);
 }
 
 // ----------------------------------------------------------------------------
 
-void Transform::setPosition(Matrix4f & mat, const Vec2f & position)
+void transform::set_position(m4 & mat, const v2 & position)
 {
 	mat[0][3] = position.x;
 	mat[1][3] = position.y;

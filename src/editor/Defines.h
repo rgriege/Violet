@@ -1,5 +1,5 @@
-#ifndef EDITOR_Defines_H
-#define EDITOR_Defines_H
+#ifndef EDITOR_DEFINES_H
+#define EDITOR_DEFINES_H
 
 #ifdef WIN32
 #ifdef EDITOR_EXPORT

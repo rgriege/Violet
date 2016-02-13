@@ -1,30 +1,30 @@
 // ============================================================================
 
-#include "violet/event/Event.h"
-
 #include <algorithm>
 
-using namespace Violet;
+#include "violet/event/event.h"
+
+using namespace vlt;
 
 // ============================================================================
 
-void EventBase::subscribe(const EventContext & eventContext, const uint32 identifier, const DelegateStore & func)
+void event_base::subscribe(const event_context & context, const u32 identifier, const delegate_store & func)
 {
-	Violet::Engine::getInstance().addWriteTask(eventContext,
-		[=](EventContext & eventContext)
+	vlt::engine::instance().add_write_task(context,
+		[=](event_context & context)
 		{
-			eventContext.subscribe(identifier, func);
+			context.subscribe(identifier, func);
 		});
 }
 
 // ----------------------------------------------------------------------------
 
-void EventBase::unsubscribe(const EventContext & eventContext, const uint32 identifier, const DelegateStore & func)
+void event_base::unsubscribe(const event_context & context, const u32 identifier, const delegate_store & func)
 {
-	Violet::Engine::getInstance().addWriteTask(eventContext,
-		[=](EventContext & eventContext)
+	vlt::engine::instance().add_write_task(context,
+		[=](event_context & context)
 	{
-		eventContext.unsubscribe(identifier, func);
+		context.unsubscribe(identifier, func);
 	});
 }
 

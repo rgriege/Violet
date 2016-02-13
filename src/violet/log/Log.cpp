@@ -1,29 +1,42 @@
 // ============================================================================
 
-#include "violet/log/Log.h"
-#include "violet/log/LogTarget.h"
-
 #include <algorithm>
 #include <mutex>
 #include <vector>
 
+#include "violet/log/log.h"
+
 // ============================================================================
 
-using namespace Violet;
+using namespace vlt;
 
 namespace LogNamespace
 {
-	typedef std::pair<uint32, std::unique_ptr<LogTarget>> Target;
-	std::vector<Target> ms_targets;
+	typedef std::pair<u32, std::unique_ptr<log_target>> target;
+	std::vector<target> ms_targets;
 	std::mutex ms_targetMutex;
-	uint32 ms_nextId = 0;
+	u32 ms_nextId = 0;
 }
 
 using namespace LogNamespace;
 
 // ============================================================================
 
-uint32 Log::installTarget(std::unique_ptr<LogTarget> && logTarget)
+log_target::guard::guard(const u32 handle) :
+	handle(handle)
+{
+}
+
+// ----------------------------------------------------------------------------
+
+log_target::guard::~guard()
+{
+	remove_log_target(handle);
+}
+
+// ============================================================================
+
+u32 vlt::install_log_target(std::unique_ptr<log_target> && logTarget)
 {
 	const std::lock_guard<std::mutex> guard(ms_targetMutex);
 	ms_targets.emplace_back(ms_nextId++, std::move(logTarget));
@@ -32,15 +45,15 @@ uint32 Log::installTarget(std::unique_ptr<LogTarget> && logTarget)
 
 // ----------------------------------------------------------------------------
 
-void Log::removeTarget(const uint32 id)
+void vlt::remove_log_target(const u32 id)
 {
 	const std::lock_guard<std::mutex> guard(ms_targetMutex);
-	ms_targets.erase(std::remove_if(ms_targets.begin(), ms_targets.end(), [id](const Target & target) { return target.first == id; }), ms_targets.end());
+	ms_targets.erase(std::remove_if(ms_targets.begin(), ms_targets.end(), [id](const target & target) { return target.first == id; }), ms_targets.end());
 }
 
 // ----------------------------------------------------------------------------
 
-void Log::log(const char * const entry)
+void vlt::log(const char * const entry)
 {
 	const std::lock_guard<std::mutex> guard(ms_targetMutex);
 	for (const auto & target : ms_targets)

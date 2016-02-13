@@ -6,9 +6,9 @@
 #include "test/core/StatelessTest.h"
 #include "test/core/StatelessTestSuite.h"
 
-namespace Violet
+namespace vlt
 {
-	class TestFactory
+	struct TestFactory
 	{
 	public:
 

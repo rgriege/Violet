@@ -1,20 +1,18 @@
-#ifndef VIOLET_Transform_H
-#define VIOLET_Transform_H
+#ifndef VIOLET_TRANSFORM_H
+#define VIOLET_TRANSFORM_H
 
-#include "violet/math/Matrix4.h"
+#include "violet/math/m4.h"
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API Transform
+	struct VIOLET_API transform
 	{
-	public:
-
-		static Vec2f getPosition(const Matrix4f & mat);
-		static void setPosition(Matrix4f & mat, const Vec2f & position);
+		static v2 get_position(const m4 & mat);
+		static void set_position(m4 & mat, const v2 & position);
 
 	private:
 
-		Transform() = delete;
+		transform() = delete;
 	};
 }
 

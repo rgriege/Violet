@@ -1,47 +1,31 @@
 // ============================================================================
 
-#include "violet/task/Task.h"
+#include "violet/task/task.h"
 
-using namespace Violet;
-
-// ============================================================================
-
-const uint64 Task::ms_nullDependency = 0;
-const uint32 Task::ms_defaultPriority = 32;
+using namespace vlt;
 
 // ============================================================================
 
-Task::Task(const uint64 dependency, const uint32 priority) :
-	m_dependency(dependency),
-	m_priority(priority)
+const u64 task::Null_Dependency = 0;
+
+// ============================================================================
+
+task::task(const u64 dependency) :
+	dependency(dependency)
 {
-}
-
-// ----------------------------------------------------------------------------
-
-uint64 Task::getDependency() const
-{
-	return m_dependency;
-}
-
-// ----------------------------------------------------------------------------
-
-bool Task::operator<(const Task & rhs) const
-{
-	return m_priority < rhs.m_priority;
 }
 
 // ============================================================================
 
-DelegateTask::DelegateTask(std::function<void()> delegate, const uint64 dependency, const uint32 priority) :
-	Task(dependency, priority),
+delegate_task::delegate_task(std::function<void()> delegate, const u64 dependency) :
+	task(dependency),
 	m_delegate(delegate)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-void DelegateTask::execute() const
+void delegate_task::execute() const
 {
 	m_delegate();
 }

@@ -1,16 +1,16 @@
 #ifndef PATHFINDING_TEST_H
 #define PATHFINDING_TEST_H
 
-namespace Violet
+namespace vlt
 {
-	class TestEvaluator;
+	struct TestEvaluator;
 }
 
-class PathfindingTest
+struct PathfindingTest
 {
 public:
 
-	static void run(Violet::TestEvaluator & evaluator);
+	static void run(vlt::TestEvaluator & evaluator);
 };
 
 #endif

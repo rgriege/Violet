@@ -1,60 +1,60 @@
 // ============================================================================
 
-#include "violet/graphics/Mesh.h"
+#include "violet/graphics/mesh.h"
 
-#include "violet/math/Polygon.h"
+#include "violet/math/poly.h"
 
 #include <GL/glew.h>
 
-using namespace Violet;
+using namespace vlt;
 
 // ============================================================================
 
 namespace MeshNamespace
 {
-	void setVertices(Mesh & mesh, const Polygon & poly);
+	void setVertices(mesh & mesh, const poly & poly);
 }
 
 using namespace MeshNamespace;
 
 // ============================================================================
 
-void Mesh::bind(const Mesh & mesh)
+void mesh::bind(const mesh & mesh)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, mesh.m_vertexBuffer);
 }
 
 // ----------------------------------------------------------------------------
 
-void Mesh::unbind()
+void mesh::unbind()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 // ============================================================================
 
-Mesh::Mesh(Vector<Vec2f> && vertices) :
-	Mesh(Polygon(std::move(vertices)))
+mesh::mesh(vector<v2> && vertices) :
+	mesh(poly(std::move(vertices)))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-Mesh::Mesh(Deserializer & deserializer) :
-	Mesh(Polygon(deserializer))
+mesh::mesh(deserializer & deserializer) :
+	mesh(poly(deserializer))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-Mesh::Mesh(const Mesh & other) :
-	Mesh(other.getPolygon())
+mesh::mesh(const mesh & other) :
+	mesh(other.get_poly())
 {
 }
 
 // ----------------------------------------------------------------------------
 
-Mesh::Mesh(Mesh && other) :
+mesh::mesh(mesh && other) :
 	m_vertexBuffer(other.m_vertexBuffer),
 	m_size(other.m_size)
 {
@@ -63,7 +63,7 @@ Mesh::Mesh(Mesh && other) :
 
 // ----------------------------------------------------------------------------
 
-Mesh & Mesh::operator=(Mesh && other)
+mesh & mesh::operator=(mesh && other)
 {
 	std::swap(m_vertexBuffer, other.m_vertexBuffer);
 	std::swap(m_size, other.m_size);
@@ -72,9 +72,9 @@ Mesh & Mesh::operator=(Mesh && other)
 
 // ----------------------------------------------------------------------------
 
-Mesh::Mesh(const Polygon & poly) :
+mesh::mesh(const poly & poly) :
 	m_vertexBuffer(0),
-	m_size(poly.m_vertices.size())
+	m_size(poly.vertices.size())
 {
 	glGenBuffers(1, &m_vertexBuffer);
 	setVertices(*this, poly);
@@ -82,7 +82,7 @@ Mesh::Mesh(const Polygon & poly) :
 
 // ----------------------------------------------------------------------------
 
-Mesh::~Mesh()
+mesh::~mesh()
 {
 	if (m_vertexBuffer != 0)
 		glDeleteBuffers(1, &m_vertexBuffer);
@@ -90,40 +90,40 @@ Mesh::~Mesh()
 
 // ----------------------------------------------------------------------------
 
-Polygon Mesh::getPolygon() const
+poly mesh::get_poly() const
 {
-	Vector<Vec2f> vertices;
+	vector<v2> vertices;
 	vertices.resize(m_size);
-	Mesh::bind(*this);
-	glGetBufferSubData(GL_ARRAY_BUFFER, 0, m_size * sizeof(Vec2f), vertices.data());
-	Mesh::unbind();
-	return Polygon(std::move(vertices));
+	mesh::bind(*this);
+	glGetBufferSubData(GL_ARRAY_BUFFER, 0, m_size * sizeof(v2), vertices.data());
+	mesh::unbind();
+	return poly(std::move(vertices));
 }
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, Mesh & mesh)
+deserializer & vlt::operator>>(deserializer & deserializer, mesh & mesh)
 {
-	Polygon poly(deserializer);
+	poly poly(deserializer);
 	setVertices(mesh, poly);
 	return deserializer;
 }
 
 // ----------------------------------------------------------------------------
 
-Serializer & Violet::operator<<(Serializer & serializer, const Mesh & mesh)
+serializer & vlt::operator<<(serializer & serializer, const mesh & mesh)
 {
-	return serializer << mesh.getPolygon();
+	return serializer << mesh.get_poly();
 }
 
 // ============================================================================
 
-void MeshNamespace::setVertices(Mesh & mesh, const Polygon & poly)
+void MeshNamespace::setVertices(mesh & mesh, const poly & poly)
 {
 
-	Mesh::bind(mesh);
-	glBufferData(GL_ARRAY_BUFFER, poly.m_vertices.size() * sizeof(Vec2f), poly.m_vertices.data(), GL_STATIC_DRAW);
-	Mesh::unbind();
+	mesh::bind(mesh);
+	glBufferData(GL_ARRAY_BUFFER, poly.vertices.size() * sizeof(v2), poly.vertices.data(), GL_STATIC_DRAW);
+	mesh::unbind();
 }
 
 // ============================================================================

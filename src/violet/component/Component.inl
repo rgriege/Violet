@@ -1,46 +1,40 @@
 // ============================================================================
 
-#include "violet/serialization/Serializer.h"
-
-#include <cstring>
-
-// ============================================================================
-
 template <typename Derived>
-uint32 Violet::Component::getStaticFlag()
+u32 vlt::component::get_flag()
 {
-	static const uint32 s_flag = getNextFlag();
-	return s_flag;
+	static const u32 flag = get_next_flag();
+	return flag;
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-uint32 Violet::Component::gatherFlags()
+u32 vlt::component::gather_flags()
 {
-	return ComponentType::getStaticFlag();
+	return ComponentType::get_flag();
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, typename OtherComponentType, typename ... ComponentTypes>
-uint32 Violet::Component::gatherFlags()
+u32 vlt::component::gather_flags()
 {
-	return gatherFlags<ComponentType>() | gatherFlags<OtherComponentType, ComponentTypes...>();
+	return gather_flags<ComponentType>() | gather_flags<OtherComponentType, ComponentTypes...>();
 }
 
 // ============================================================================
 
-template <typename Derived, uint32 Version>
-uint32 Violet::ComponentBase<Derived, Version>::getStaticFlag()
+template <typename Derived, u32 Version>
+u32 vlt::component_base<Derived, Version>::get_flag()
 {
-	return Component::getStaticFlag<Derived>();
+	return component::get_flag<Derived>();
 }
 
 // ----------------------------------------------------------------------------
 
-template <typename Derived, uint32 Version>
-uint32 Violet::ComponentBase<Derived, Version>::getStaticVersion()
+template <typename Derived, u32 Version>
+u32 vlt::component_base<Derived, Version>::get_version()
 {
 	return Version;
 }

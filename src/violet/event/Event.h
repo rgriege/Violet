@@ -1,46 +1,46 @@
-#ifndef VIOLET_Event_H
-#define VIOLET_Event_H
+#ifndef VIOLET_EVENT_H
+#define VIOLET_EVENT_H
 
-#include "violet/event/EventContext.h"
-#include "violet/event/EventContextOwner.h"
-#include "violet/utility/Delegate.h"
+#include "violet/event/event_context.h"
+#include "violet/event/event_context_owner.h"
+#include "violet/utility/delegate.h"
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API EventBase
+	struct VIOLET_API event_base
 	{
 	protected:
 
-		static void subscribe(const EventContext & eventContext, uint32 identifier, const DelegateStore & func);
-		static void unsubscribe(const EventContext & eventContext, uint32 identifier, const DelegateStore & func);
+		static void subscribe(const event_context & event_context, u32 identifier, const delegate_store & func);
+		static void unsubscribe(const event_context & event_context, u32 identifier, const delegate_store & func);
 	};
 
 	template <typename Derived, typename Signature>
-	class Event;
+	struct event;
 
 	template <typename Derived, typename ... Args>
-	class Event<Derived, void(Args...)> : public EventBase
+	struct event<Derived, void(Args...)> : public event_base
 	{
 	public:
 
-		typedef Delegate<void(Args...)> Subscriber;
+		typedef delegate<void(Args...)> subscriber;
 
 	public:
 
-		static void subscribe(EventContext & eventContextOwner, const Subscriber & func);
-		static void subscribe(const EventContext & eventContextOwner, const Subscriber & func);
-		static void subscribe(EventContextOwner & eventContext, const Subscriber & func);
-		static void subscribe(const EventContextOwner & eventContext, const Subscriber & func);
-		static void emit(const EventContext & eventContext, Args && ... args);
-		static void emit(const EventContextOwner & eventContextOwner, Args && ... args);
-		static void unsubscribe(EventContext & eventContext, const Subscriber & func);
-		static void unsubscribe(const EventContext & eventContext, const Subscriber & func);
-		static void unsubscribe(EventContextOwner & eventContextOwner, const Subscriber & func);
-		static void unsubscribe(const EventContextOwner & eventContextOwner, const Subscriber & func);
+		static void subscribe(event_context & event_context_owner, const subscriber & func);
+		static void subscribe(const event_context & event_context_owner, const subscriber & func);
+		static void subscribe(event_context_owner & event_context, const subscriber & func);
+		static void subscribe(const event_context_owner & event_context, const subscriber & func);
+		static void emit(const event_context & event_context, Args && ... args);
+		static void emit(const event_context_owner & event_context_owner, Args && ... args);
+		static void unsubscribe(event_context & event_context, const subscriber & func);
+		static void unsubscribe(const event_context & event_context, const subscriber & func);
+		static void unsubscribe(event_context_owner & event_context_owner, const subscriber & func);
+		static void unsubscribe(const event_context_owner & event_context_owner, const subscriber & func);
 
 	private:
 
-		Event() = default;
+		event() = default;
 	};
 
 #ifdef WIN32
@@ -53,21 +53,21 @@ namespace Violet
 #define EVENT_API
 #endif
 
-#define DEFINE_EVENT(EventName, Signature) class EVENT_API EventName : public Violet::Event<EventName, Signature> \
+#define DEFINE_EVENT(EventName, Signature) struct EVENT_API EventName : public vlt::event<EventName, Signature> \
 	{ \
 	public: \
-		static const char * getName() { return #EventName; } \
-		static uint32 getIdentifier() { return std::hash<std::string>()(getName()); } \
+		static const char * get_name() { return #EventName; } \
+		static u32 get_identifier() { return std::hash<std::string>()(get_name()); } \
 	}
 
-#define DEFINE_EXTERNAL_EVENT(EventName, Signature) class EventName : public Violet::Event<EventName, Signature> \
+#define DEFINE_EXTERNAL_EVENT(EventName, Signature) struct EventName : public vlt::event<EventName, Signature> \
 	{ \
 	public: \
-		static const char * getName() { return #EventName; } \
-		static uint32 getIdentifier() { return std::hash<std::string>()(getName()); } \
+		static const char * get_name() { return #EventName; } \
+		static u32 get_identifier() { return std::hash<std::string>()(get_name()); } \
 	}
 }
 
-#include "violet/event/Event.inl"
+#include "violet/event/event.inl"
 
 #endif

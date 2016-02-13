@@ -1,50 +1,50 @@
-#include "editor/EditorSystem.h"
-#include "editor/CppScriptExports.h"
-#include "editor/command/file/OpenCommand.h"
-#include "editor/command/file/SaveAllCommand.h"
-#include "violet/Engine.h"
-#include "violet/component/ComponentManager.h"
-#include "violet/input/system/InputSystem.h"
-#include "violet/log/Log.h"
-#include "violet/script/cpp/CppScript.h"
-#include "violet/utility/FormattedString.h"
+#include "editor/editor_system.h"
+#include "editor/cpp_script_exports.h"
+#include "editor/command/file/open_command.h"
+#include "editor/command/file/save_all_command.h"
+#include "violet/core/engine.h"
+#include "violet/component/scene.h"
+#include "violet/input/system/input_system.h"
+#include "violet/log/log.h"
+#include "violet/script/cpp/cpp_script.h"
+#include "violet/utility/formatted_string.h"
 
 #include "dialog.h"
 
 using namespace edt;
-using namespace Violet;
+using namespace vlt;
 
-class Instance : public CppScript::Instance
+class instance final : public cpp_script::instance
 {
 public:
 
-    Instance(CppScript & script) :
-        CppScript::Instance(script),
+    instance(cpp_script & script) :
+        cpp_script::instance(script),
 		m_dialog(None),
 		m_dialogEntities()
     {
-        KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::onKeyUp>(this));
-        DialogClosedEvent::subscribe(Engine::getInstance(), DialogClosedEvent::Subscriber::bind<Instance, &Instance::onDialogClosed>(this));
+        KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<instance, &instance::on_key_up>(this));
+        DialogClosedEvent::subscribe(engine::instance(), DialogClosedEvent::subscriber::bind<instance, &instance::onDialogClosed>(this));
     }
 
-    virtual ~Instance() override
+    virtual ~instance() override
     {
-        KeyUpMethod::remove(m_script);
-        DialogClosedEvent::unsubscribe(Engine::getInstance(), DialogClosedEvent::Subscriber::bind<Instance, &Instance::onDialogClosed>(this));
+        KeyUpMethod::remove(script);
+        DialogClosedEvent::unsubscribe(engine::instance(), DialogClosedEvent::subscriber::bind<instance, &instance::onDialogClosed>(this));
     }
 
 private:
 
-    void onKeyUp(const EntityId entityId, const WindowSystem::KeyEvent & event)
+    void on_key_up(const handle entityId, const window_system::key_event & event)
     {
-        const auto & engine = Engine::getInstance();
+        const auto & ngn = engine::instance();
         if (m_dialog == None)
         {
             switch (event.code)
             {
                 case 'o':
-                    Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
-                        [=](ComponentManager & scene)
+					ngn.add_write_task(ngn.get_current_scene(),
+                        [=](scene & scene)
                         {
 							m_dialogEntities = scene.load("dialog.json");
                         });
@@ -52,8 +52,8 @@ private:
                     break;
 
                 case 's':
-                    Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
-                        [=](ComponentManager & scene)
+					ngn.add_write_task(ngn.get_current_scene(),
+                        [=](scene & scene)
                         {
 							m_dialogEntities = scene.load("dialog.json");
                         });
@@ -61,34 +61,34 @@ private:
                     break;
 
                 case 'c':
-                    if ((event.modifiers & Key::Modifier::M_CTRL) == 0)
+                    if ((event.modifiers & key::modifier::M_CTRL) == 0)
                     {
-                        engine.addWriteTask(*engine.getSystem<EditorSystem>(),
-                            [](EditorSystem & editor)
+						ngn.add_write_task(*ngn.get_system<editor_system>(),
+                            [](editor_system & editor)
                             {
-                                editor.execute(createClearAllCommand());
+                                editor.execute(create_clear_all_command());
                             });
                     }
                     else
-                        printf("%x - %x - %x\n", event.modifiers, Key::Modifier::M_CTRL, event.modifiers & Key::Modifier::M_CTRL);
+                        printf("%x - %x - %x\n", event.modifiers, key::modifier::M_CTRL, event.modifiers & key::modifier::M_CTRL);
                     break;
 
                 case 'z':
-                    if ((event.modifiers & Key::Modifier::M_CTRL) != 0)
+                    if ((event.modifiers & key::modifier::M_CTRL) != 0)
                     {
-                        engine.addWriteTask(*engine.getSystem<EditorSystem>(),
-                            [](EditorSystem & editor)
+                        ngn.add_write_task(*ngn.get_system<editor_system>(),
+                            [](editor_system & editor)
                             {
                                 editor.undo();
                             });
                     }
                     break;
 
-                case Key::Return:
-                    Engine::getInstance().addWriteTask(Engine::getInstance().getCurrentScene(),
-                        [=](ComponentManager & scene)
+                case key::Return:
+                    ngn.add_write_task(ngn.get_current_scene(),
+                        [=](scene & s)
                         {
-							m_dialogEntities = scene.load("dialog.json");
+							m_dialogEntities = s.load("dialog.json");
                         });
                     m_dialog = Command;
                     break;
@@ -98,43 +98,43 @@ private:
 
     void onDialogClosed(const std::string & input)
     {
-		const auto & engine = Engine::getInstance();
+		const auto & ngn = engine::instance();
         if (!input.empty())
         {
             switch (m_dialog)
             {
                 case Command:
-                    engine.addWriteTask(*engine.getSystem<EditorSystem>(),
-                        [=](EditorSystem & editor)
+                    ngn.add_write_task(*ngn.get_system<editor_system>(),
+                        [=](editor_system & editor)
                         {
                             editor.execute(input);
                         });
                     break;
 
                 case Load:
-                    engine.addWriteTask(*engine.getSystem<EditorSystem>(),
-                        [=](EditorSystem & editor)
+                    ngn.add_write_task(*ngn.get_system<editor_system>(),
+                        [=](editor_system & editor)
                         {
-                            editor.execute(createOpenCommand(input));
+                            editor.execute(create_open_command(input));
                         });
                     break;
 
                 case Save:
-                    engine.addWriteTask(*engine.getSystem<EditorSystem>(),
-                        [=](EditorSystem & editor)
+                    ngn.add_write_task(*ngn.get_system<editor_system>(),
+                        [=](editor_system & editor)
                         {
-                            editor.execute(createSaveAllCommand(input));
+                            editor.execute(create_save_all_command(input));
                         });
                     break;
             }
         }
         m_dialog = None;
-		for (const EntityId entityId : m_dialogEntities)
+		for (const handle entityId : m_dialogEntities)
 		{
-			engine.addWriteTask(engine.getCurrentScene(),
-				[=](ComponentManager & scene)
+			ngn.add_write_task(ngn.get_current_scene(),
+				[=](scene & s)
 				{
-					scene.removeAll(entityId);
+					s.remove_all(entityId);
 				});
 		}
 		m_dialogEntities.clear();
@@ -151,11 +151,11 @@ private:
     };
 
     Dialog m_dialog = None;
-	std::vector<EntityId> m_dialogEntities;
+	std::vector<handle> m_dialogEntities;
 };
 
-VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
+VIOLET_SCRIPT_EXPORT void init(cpp_script & script, std::unique_ptr<cpp_script::instance> & i)
 {
-    instance = std::make_unique<Instance>(script);
+    i = std::make_unique<instance>(script);
 }
 

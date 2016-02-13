@@ -1,6 +1,6 @@
 #include "test/core/TestEvaluator.h"
 
-using namespace Violet;
+using namespace vlt;
 
 TestEvaluator::TestBuffer::TestBuffer(std::string const & entry) :
 	m_entry(entry)

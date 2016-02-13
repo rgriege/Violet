@@ -1,48 +1,41 @@
-#ifndef VIOLET_Component_H
-#define VIOLET_Component_H
+#ifndef VIOLET_COMPONENT_H
+#define VIOLET_COMPONENT_H
 
-#include "violet/Defines.h"
-#include "violet/utility/Tag.h"
+#include "violet/core/defines.h"
+#include "violet/core/tag.h"
+#include "violet/core/types.h"
 
 #include <utility>
 
-namespace Violet
+namespace vlt
 {
-	class Serializer;
+	struct serializer;
 
-	class VIOLET_API Component
+	struct VIOLET_API component
 	{
-	public:
-
 		template <typename ComponentType>
-		static uint32 gatherFlags();
+		static u32 gather_flags();
 		template <typename ComponentType, typename OtherComponentType, typename ... ComponentTypes>
-		static uint32 gatherFlags();
+		static u32 gather_flags();
 
 	protected:
 
 		template <typename Derived>
-		static uint32 getStaticFlag();
+		static u32 get_flag();
 
 	private:
 
-		static uint32 getNextFlag();
+		static u32 get_next_flag();
 	};
 
-	template <typename Derived, uint32 Version>
-	class ComponentBase : public Component
+	template <typename Derived, u32 Version>
+	struct component_base : public component
 	{
-	public:
-
-		static uint32 getStaticFlag();
-		static uint32 getStaticVersion();
-
-	protected:
-
-		ComponentBase() = default;
+		static u32 get_flag();
+		static u32 get_version();
 	};
 }
 
-#include "violet/component/Component.inl"
+#include "violet/component/component.inl"
 
 #endif

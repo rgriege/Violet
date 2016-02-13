@@ -10,7 +10,7 @@
 std::ostream & operator<<(std::ostream & os, const Path & path);
 bool operator==(const Path & lhs, const Path & rhs);
 
-void PathfindingTest::run(Violet::TestEvaluator & evaluator)
+void PathfindingTest::run(vlt::TestEvaluator & evaluator)
 {
 	Map map;
 	map.addNode({ { 0.f, 0.f } });
@@ -43,7 +43,7 @@ void PathfindingTest::run(Violet::TestEvaluator & evaluator)
 std::ostream & operator<<(std::ostream & os, const Path & path)
 {
 	os << "[";
-	for (uint32 i = 0, end = path.getPoints().size(); i < end; ++i)
+	for (u32 i = 0, end = path.getPoints().size(); i < end; ++i)
 		os << path.getPoints()[i] << (i < end - 1 ? "," : "");
 	os << "]";
 	return os;
@@ -54,7 +54,7 @@ bool operator==(const Path & lhs, const Path & rhs)
 	if (lhs.getPoints().size() != rhs.getPoints().size())
 		return false;
 
-	for (uint32 i = 0, end = lhs.getPoints().size(); i != end; ++i)
+	for (u32 i = 0, end = lhs.getPoints().size(); i != end; ++i)
 		if (lhs.getPoints()[i] != rhs.getPoints()[i])
 			return false;
 

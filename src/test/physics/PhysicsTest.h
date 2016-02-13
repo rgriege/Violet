@@ -1,11 +1,11 @@
 #ifndef PHYSICS_TEST_H
 #define PHYSICS_TEST_H
 
-namespace Violet
+namespace vlt
 {
-	class TestEvaluator;
+	struct TestEvaluator;
 
-	class PhysicsTest
+	struct PhysicsTest
 	{
 	public:
 

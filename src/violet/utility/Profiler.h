@@ -1,7 +1,7 @@
-#ifndef VIOLET_Profiler_H
-#define VIOLET_Profiler_H
+#ifndef VIOLET_PROFILER_H
+#define VIOLET_PROFILER_H
 
-#include "violet/Defines.h"
+#include "violet/core/defines.h"
 
 #include <chrono>
 #include <iostream>
@@ -9,103 +9,103 @@
 #include <string>
 #include <unordered_map>
 
-namespace Violet
+namespace vlt
 {
-	class Profiler
+	struct profiler
 	{
 	public:
 
-		static void flushCache();
-		static Profiler & getInstance();
+		static void flush_cache();
+		static profiler & instance();
 
 	public:
 
-		class Block
+		struct block
 		{
 		public:
 
-			Block(std::string key, Profiler & profiler = getInstance());
-			~Block();
+			block(std::string key, profiler & profiler = instance());
+			~block();
 
 		private:
 
 			const std::string m_key;
-			Profiler & m_profiler;
+			profiler & m_profiler;
 			const std::chrono::steady_clock::time_point m_startTime;
 		};
 
 	public:
 
-		void add(const std::string & key, int64 microseconds);
+		void add(const std::string & key, s64 microseconds);
 
 		void report(std::ostream & os, bool clear = true);
-		int64 report(std::string const & key, bool clear = true);
+		s64 report(std::string const & key, bool clear = true);
 
 	private:
 
-		std::unordered_map<std::string, int64> m_counters;
+		std::unordered_map<std::string, s64> m_counters;
 	};
 
-	/*class Metric
+	/*struct Metric
 	{
 	public:
 
-		virtual void set(int64 value) = 0;
-		virtual void update(float dt) = 0;
+		virtual void set(s64 value) = 0;
+		virtual void update(r32 dt) = 0;
 	};
 
-	class AverageMetric : public Metric
+	struct AverageMetric : public Metric
 	{
 	public:
 
-		virtual void set(int64 value) override
+		virtual void set(s64 value) override
 		{
 
 		}
 
 	private:
 
-		int64 m_value;
+		s64 m_value;
 	};
 
-	class StatisticMetric : public Metric
+	struct StatisticMetric : public Metric
 	{
 	public:
 
-		virtual void set(int64 value) override
+		virtual void set(s64 value) override
 		{
 			m_min = std::min(m_min, value);
 			m_max = std::max(m_max, value);
 			m_accumulation += value;
 		}
 
-		virtual void update(float dt) override
+		virtual void update(r32 dt) override
 		{
 			m_timeSinceLastReport += dt;
 			if (m_reportInterval >= m_timeSinceLastReport)
 			{
-				Profiler::getInstance().add(m_label + "_min", m_min);
-				Profiler::getInstance().add(m_label + "_max", m_max);
-				Profiler::getInstance().add(m_label + "_avg", m_accumulation / static_cast<int64>(m_timeSinceLastReport * 1000000));
+				profiler::instance().add(m_label + "_min", m_min);
+				profiler::instance().add(m_label + "_max", m_max);
+				profiler::instance().add(m_label + "_avg", m_accumulation / static_cast<s64>(m_timeSinceLastReport * 1000000));
 			}
 		}
 
 	private:
 
 		std::string const m_label;
-		int64 m_min;
-		int64 m_max;
-		int64 m_accumulation;
-		float m_timeSinceLastReport;
-		float m_reportInterval;
+		s64 m_min;
+		s64 m_max;
+		s64 m_accumulation;
+		r32 m_timeSinceLastReport;
+		r32 m_reportInterval;
 	};
 
-	class MetricsTracker
+	struct MetricsTracker
 	{
 	public:
 
-		static void set(std::string const & key, int64 value);
-		static void update(float dt);
+		static void set(std::string const & key, s64 value);
+		static void update(r32 dt);
 
 	private:
 

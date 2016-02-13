@@ -1,77 +1,69 @@
-#ifndef VIOLET_Delegate_H
-#define VIOLET_Delegate_H
+#ifndef VIOLET_DELEGATE_H
+#define VIOLET_DELEGATE_H
 
-namespace Violet
+namespace vlt
 {
-	class DelegateStore
+	struct delegate_store
 	{
-	public:
+		void * instance;
+		void(*function)();
 
-		bool operator==(const DelegateStore & rhs) const
-		{
-			return m_instance == rhs.m_instance && m_function == rhs.m_function;
-		}
-
-	protected:
-
-		DelegateStore(void * instance, void (*function)()) :
-			m_instance(instance),
-			m_function(function)
+		delegate_store(void * instance, void(*function)()) :
+			instance(instance),
+			function(function)
 		{
 		}
 
-	protected:
-
-		void * m_instance;
-		void (*m_function)();
+		bool operator==(const delegate_store & rhs) const
+		{
+			return instance == rhs.instance && function == rhs.function;
+		}
 	};
 
 	template <typename Signature>
-	class Delegate;
+	struct delegate;
 	template <typename ResultType, typename ... Args>
-	class Delegate<ResultType(Args...)> : public DelegateStore
+	struct delegate<ResultType(Args...)> : public delegate_store
 	{
-	public:
-
 		template <typename T, ResultType(T::*Member)(Args...)>
-		static Delegate bind(T * instance)
+		static delegate bind(T * instance)
 		{
-			ResultType(*function)(T*, Args...) = callMember<T, Member>;
-			return Delegate(instance, function);
+			ResultType(*function)(T*, Args...) = call_member<T, Member>;
+			return delegate(instance, function);
 		}
 
 	private:
 
 		template <typename T, ResultType(T::*Member)(Args...)>
-		static ResultType callMember(T * instance, Args ... args)
+		static ResultType call_member(T * instance, Args ... args)
 		{
 			return (instance->*Member)(args...);
 		}
 
 	public:
 
-		Delegate(const DelegateStore & store) :
-			DelegateStore(store)
+		delegate(const delegate_store & store) :
+			delegate_store(store)
 		{
 		}
 
-		Delegate(ResultType(*function)(Args...)) :
-			DelegateStore(nullptr, function)
+		delegate(ResultType(*function)(Args...)) :
+			delegate_store(nullptr, function)
 		{
 		}
 
 		ResultType operator()(Args && ... args) const
 		{
-			return m_instance == nullptr
-				? reinterpret_cast<ResultType(*)(Args...)>(m_function)(std::forward<Args>(args)...)
-				: reinterpret_cast<ResultType(*)(void *, Args...)>(m_function)(m_instance, std::forward<Args>(args)...);
+			return instance == nullptr
+				? reinterpret_cast<ResultType(*)(Args...)>(function)(std::forward<Args>(args)...)
+				: reinterpret_cast<ResultType(*)(void *, Args...)>(function)(instance, std::forward<Args>(args)...);
 		}
 
 	private:
 
 		template <typename T>
-		Delegate(T * instance, ResultType(*function)(T*, Args...)) :
-			DelegateStore(instance, reinterpret_cast<void(*)()>(function))
+		delegate(T * instance, ResultType(*function)(T*, Args...)) :
+			delegate_store(instance, reinterpret_cast<void(*)()>(function))
 		{
 		}
 	};

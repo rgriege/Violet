@@ -1,15 +1,15 @@
-#ifndef VIOLET_Key_H
-#define VIOLET_Key_H
+#ifndef VIOLET_KEY_H
+#define VIOLET_KEY_H
 
-#include "violet/Defines.h"
+#include "violet/core/defines.h"
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API Key
+	struct VIOLET_API key final
 	{
 	public:
 
-		enum SpecialKey : unsigned char
+		enum special_key : unsigned char
 		{
 			Null = 0,
 			Backspace = 8,
@@ -18,7 +18,7 @@ namespace Violet
 			Delete = 127
 		};
 
-		enum Modifier
+		enum modifier
 		{
 			M_NONE = 0x00,
 			M_LSHIFT = 0x01,
@@ -36,8 +36,8 @@ namespace Violet
 
 	public:
 
-		static bool isNumeric(unsigned char key);
-		static bool isNumericInput(unsigned char key);
+		static bool is_numeric(unsigned char key);
+		static bool is_numeric_input(unsigned char key);
 	};
 }
 

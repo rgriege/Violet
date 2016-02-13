@@ -1,123 +1,123 @@
-#include "editor/CppScriptExports.h"
-#include "editor/EditorSystem.h"
-#include "editor/component/EditorComponent.h"
-#include "violet/Engine.h"
-#include "violet/component/ComponentManager.h"
-#include "violet/graphics/component/ColorComponent.h"
-#include "violet/input/system/InputSystem.h"
+#include "editor/cpp_script_exports.h"
+#include "editor/editor_system.h"
+#include "editor/component/editor_component.h"
+#include "violet/core/engine.h"
+#include "violet/component/scene.h"
+#include "violet/graphics/component/color_component.h"
+#include "violet/input/system/input_system.h"
 #include "violet/log/Log.h"
-#include "violet/math/Polygon.h"
-#include "violet/script/cpp/CppScript.h"
-#include "violet/script/ScriptComponent.h"
-#include "violet/serialization/file/FileDeserializerFactory.h"
-#include "violet/transform/component/LocalTransformComponent.h"
-#include "violet/transform/component/WorldTransformComponent.h"
-#include "violet/transform/Transform.h"
-#include "violet/utility/FormattedString.h"
+#include "violet/math/poly.h"
+#include "violet/script/cpp/cpp_script.h"
+#include "violet/script/script_component.h"
+#include "violet/serialization/file/file_deserializer_factory.h"
+#include "violet/transform/component/local_transform_component.h"
+#include "violet/transform/component/world_transform_component.h"
+#include "violet/transform/transform.h"
+#include "violet/utility/formatted_string.h"
 
 using namespace edt;
-using namespace Violet;
+using namespace vlt;
 
-class Instance : public CppScript::Instance
+struct instance : public cpp_script::instance
 {
 private:
 
 	struct DraggedEntity
 	{
-		DraggedEntity(const EntityId id, const Vec2f & startPos) :
+		DraggedEntity(const handle id, const v2 & startPos) :
 			m_id(id),
 			m_startPos(startPos)
 		{
 		}
 
-		EntityId m_id;
-		Vec2f m_startPos;
+		handle m_id;
+		v2 m_startPos;
 	};
 
 public:
 
-    Instance(CppScript & script) :
-        CppScript::Instance(script),
+    instance(cpp_script & script) :
+        cpp_script::instance(script),
         m_dragging(false),
         m_mouseDownPos(),
 		m_draggedEntities()
     {
-        MouseDownMethod::assign(m_script, MouseDownMethod::Handler::bind<Instance, &Instance::onMouseDown>(this));
-        MouseMoveMethod::assign(m_script, MouseMoveMethod::Handler::bind<Instance, &Instance::onMouseMove>(this));
-        MouseUpMethod::assign(m_script, MouseUpMethod::Handler::bind<Instance, &Instance::onMouseUp>(this));
+        MouseDownMethod::assign(script, MouseDownMethod::Handler::bind<instance, &instance::onMouseDown>(this));
+        MouseMoveMethod::assign(script, MouseMoveMethod::Handler::bind<instance, &instance::onMouseMove>(this));
+        MouseUpMethod::assign(script, MouseUpMethod::Handler::bind<instance, &instance::onMouseUp>(this));
     }
 
-    virtual ~Instance() override
+    virtual ~instance() override
     {
-        MouseDownMethod::remove(m_script);
-        MouseMoveMethod::remove(m_script);
-        MouseUpMethod::remove(m_script);
+        MouseDownMethod::remove(script);
+        MouseMoveMethod::remove(script);
+        MouseUpMethod::remove(script);
     }
 
 private:
 
-    InputResult onMouseDown(const EntityId entityId, const InputSystem::MouseButtonEvent & event)
+    input_result onMouseDown(const handle entity_id, const input_system::MouseButtonEvent & event)
     {
         if (event.button == MB_Left)
         {
-            const auto & engine = Engine::getInstance();
+            const auto & engine = engine::instance();
 
             m_dragging = true;
             m_mouseDownPos = event.position;
-			drag(entityId);
+			drag(entity_id);
 
-            const bool multiSelect = (event.modifiers & Key::M_SHIFT) != 0;
-            engine.addWriteTask(*engine.getSystem<EditorSystem>(),
-                [=](EditorSystem & editor)
+            const bool multiSelect = (event.modifiers & key::M_SHIFT) != 0;
+            engine.add_write_task(*engine.get_system<editor_system>(),
+                [=](editor_system & editor)
                 {
-					const EntityId editId = Engine::getInstance().getCurrentScene().getComponent<EditorComponent>(entityId)->m_editId;
-					const auto & selectedEditIds = editor.getSelectedEntities();
+					const handle editId = engine::instance().get_current_scene().get_component<editor_component>(entity_id)->edit_id;
+					const auto & selectedEditIds = editor.get_selected_entities();
 					const auto & selectedProxyIds = getSelectedProxies(selectedEditIds);
                     auto it = selectedEditIds.find(editId);
                     const bool selected = it != selectedEditIds.end();
 
 					if (!selected)
 					{
-						std::vector<std::unique_ptr<Command>> commands;
-						commands.emplace_back(createSelectCommand(editId));
+						std::vector<std::unique_ptr<command>> commands;
+						commands.emplace_back(create_select_command(editId));
 
 						if (!multiSelect && !selectedEditIds.empty())
-							commands.emplace_back(createDeselectCommand(std::vector<EntityId>(selectedEditIds.begin(), selectedEditIds.end())));
+							commands.emplace_back(create_deselect_command(std::vector<handle>(selectedEditIds.begin(), selectedEditIds.end())));
 						else
 						{
-							for (const EntityId id : selectedProxyIds)
+							for (const handle id : selectedProxyIds)
 								drag(id);
 						}
 
-						editor.execute(createChainCommand(std::move(commands)));
+						editor.execute(create_chain_command(std::move(commands)));
 					}
 					else if (multiSelect)
-						editor.execute(createDeselectCommand(editId));
+						editor.execute(create_deselect_command(editId));
 					else
 					{
-						for (const EntityId id : selectedProxyIds)
+						for (const handle id : selectedProxyIds)
 							drag(id);
 					}
                 });
 
-            return InputResult::Block;
+            return input_result::block;
         }
 
-        return InputResult::Pass;
+        return input_result::Pass;
     }
 
-    void onMouseMove(const EntityId entityId, const InputSystem::MouseMotionEvent & event)
+    void onMouseMove(const handle entity_id, const input_system::MouseMotionEvent & event)
     {
         if (m_dragging)
         {
-            const auto & engine = Engine::getInstance();
-			const Vec2f & delta = event.to - m_mouseDownPos;
+            const auto & engine = engine::instance();
+			const v2 & delta = event.to - m_mouseDownPos;
 			for (const auto & draggedEntity : m_draggedEntities)
 				move(draggedEntity.m_id, draggedEntity.m_startPos + delta);
         }
     }
 
-    InputResult onMouseUp(const EntityId entityId, const InputSystem::MouseButtonEvent & event)
+    input_result onMouseUp(const handle entity_id, const input_system::MouseButtonEvent & event)
     {
         if (event.button == MB_Left)
         {
@@ -125,110 +125,110 @@ private:
             {
 				if (event.position != m_mouseDownPos)
 				{
-					const auto & engine = Engine::getInstance();
-					std::vector<std::pair<EntityId, Vec2f>> moveData;
+					const auto & engine = engine::instance();
+					std::vector<std::pair<handle, v2>> moveData;
 					for (const auto & draggedEntity : m_draggedEntities)
 					{
-						const auto * ec = engine.getCurrentScene().getComponent<EditorComponent>(draggedEntity.m_id);
-						const Vec2f pos = draggedEntity.m_startPos + event.position - m_mouseDownPos;
-						moveData.emplace_back(ec->m_editId, pos);
+						const auto * ec = engine.get_current_scene().get_component<editor_component>(draggedEntity.m_id);
+						const v2 pos = draggedEntity.m_startPos + event.position - m_mouseDownPos;
+						moveData.emplace_back(ec->edit_id, pos);
 					}
 					
-					engine.addWriteTask(*engine.getSystem<EditorSystem>(),
-						[moveData](EditorSystem & editor) mutable
+					engine.add_write_task(*engine.get_system<editor_system>(),
+						[moveData](editor_system & editor) mutable
 						{
-							std::vector<std::unique_ptr<Command>> commands;
+							std::vector<std::unique_ptr<command>> commands;
 							for (const auto & d : moveData)
-								commands.emplace_back(createMoveToCommand(d.first, d.second));
-							editor.execute(createChainCommand(std::move(commands)));
+								commands.emplace_back(create_move_to_command(d.first, d.second));
+							editor.execute(create_chain_command(std::move(commands)));
 						});
 				}
 				m_dragging = false;
-                m_mouseDownPos = Vec2f::ZERO;
+                m_mouseDownPos = v2::Zero;
 				m_draggedEntities.clear();
             }
-            return InputResult::Block;
+            return input_result::block;
         }
 
-        return InputResult::Pass;
+        return input_result::Pass;
     }
 
-	std::vector<EntityId> getSelectedProxies(const std::set<EntityId> & selectedEntities) const
+	std::vector<handle> getSelectedProxies(const std::set<handle> & selectedEntities) const
 	{
-		std::vector<EntityId> result;
-		for (const auto & entity : Engine::getInstance().getCurrentScene().getEntityView<EditorComponent>())
-			if (selectedEntities.find(entity.get<EditorComponent>().m_editId) != selectedEntities.end())
-				result.emplace_back(entity.getId());
+		std::vector<handle> result;
+		for (const auto & entity : engine::instance().get_current_scene().get_entity_view<editor_component>())
+			if (selectedEntities.find(entity.get<editor_component>().edit_id) != selectedEntities.end())
+				result.emplace_back(entity.id);
 		return result;
 	}
 
-	void drag(const EntityId entityId)
+	void drag(const handle entity_id)
 	{
-		const auto & engine = Engine::getInstance();
-		if (engine.getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
+		const auto & engine = engine::instance();
+		if (engine.get_current_scene().has_component<local_transform_component>(entity_id))
 		{
-			if (std::find_if(m_draggedEntities.begin(), m_draggedEntities.end(), [=](const DraggedEntity & d) { return isAncestor(entityId, d.m_id); }) == m_draggedEntities.end())
+			if (std::find_if(m_draggedEntities.begin(), m_draggedEntities.end(), [=](const DraggedEntity & d) { return isAncestor(entity_id, d.m_id); }) == m_draggedEntities.end())
 			{
-				const auto * ltc = engine.getCurrentScene().getComponent<LocalTransformComponent>(entityId);
-				m_draggedEntities.emplace_back(entityId, Transform::getPosition(ltc->m_transform));
+				const auto * ltc = engine.get_current_scene().get_component<local_transform_component>(entity_id);
+				m_draggedEntities.emplace_back(entity_id, transform::get_position(ltc->transform));
 			}
 
 			m_draggedEntities.erase(std::remove_if(m_draggedEntities.begin(), m_draggedEntities.end(),
 				[=](const DraggedEntity & d)
 				{
-					return isAncestor(d.m_id, entityId);
+					return isAncestor(d.m_id, entity_id);
 				}), m_draggedEntities.end());
 		}
 		else
 		{
-			const auto * wtc = engine.getCurrentScene().getComponent<WorldTransformComponent>(entityId);
-			m_draggedEntities.emplace_back(entityId, Transform::getPosition(wtc->m_transform));
+			const auto * wtc = engine.get_current_scene().get_component<world_transform_component>(entity_id);
+			m_draggedEntities.emplace_back(entity_id, transform::get_position(wtc->transform));
 		}
 	}
 
-	bool isAncestor(const EntityId childId, const EntityId parentId) const
+	bool isAncestor(const handle childId, const handle parentId) const
 	{
-		const auto & engine = Engine::getInstance();
-		const auto * ltc = engine.getCurrentScene().getComponent<LocalTransformComponent>(childId);
+		const auto & engine = engine::instance();
+		const auto * ltc = engine.get_current_scene().get_component<local_transform_component>(childId);
 		if (ltc != nullptr)
 		{
-			if (ltc->m_parentId == parentId)
+			if (ltc->parent_id == parentId)
 				return true;
-			else if (ltc->m_parentId.isValid())
-				return isAncestor(ltc->m_parentId, parentId);
+			else if (ltc->parent_id.is_valid())
+				return isAncestor(ltc->parent_id, parentId);
 		}
 		return false;
 	}
 
-	void move(const EntityId entityId, const Vec2f & position) const
+	void move(const handle entity_id, const v2 & position) const
 	{
-		if (Engine::getInstance().getCurrentScene().hasComponent<LocalTransformComponent>(entityId))
-			moveT<LocalTransformComponent>(entityId, position);
+		if (engine::instance().get_current_scene().has_component<local_transform_component>(entity_id))
+			moveT<local_transform_component>(entity_id, position);
 		else
-			moveT<WorldTransformComponent>(entityId, position);
+			moveT<world_transform_component>(entity_id, position);
 	}
 
     template <typename ComponentType>
-    void moveT(const EntityId entityId, const Vec2f & position) const
+    void moveT(const handle entity_id, const v2 & position) const
     {
-        const auto & engine = Engine::getInstance();
-        engine.addWriteTask(*engine.getCurrentScene().getPool<ComponentType>(),
-            [=](ComponentPool & pool)
+        const auto & engine = engine::instance();
+        engine.add_write_task(*engine.get_current_scene().get_pool<ComponentType>(),
+            [=](component_pool & pool)
             {
-                auto & transform = pool.get<ComponentType>(entityId)->m_transform;
-                Transform::setPosition(transform, position);
+                auto & transform = pool.get<ComponentType>(entity_id)->transform;
+                transform::set_position(transform, position);
             });
     }
 
 private:
 
     bool m_dragging;
-    Vec2f m_mouseDownPos;
+    v2 m_mouseDownPos;
 	std::vector<DraggedEntity> m_draggedEntities;
 };
 
-VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
+VIOLET_SCRIPT_EXPORT void init(cpp_script & script, std::unique_ptr<cpp_script::instance> & i)
 {
-    instance = std::make_unique<Instance>(script);
+    i = std::make_unique<instance>(script);
 }
 

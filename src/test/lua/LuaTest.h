@@ -1,11 +1,11 @@
 #ifndef VIOLET_LuaTest_H
 #define VIOLET_LuaTest_H
 
-namespace Violet
+namespace vlt
 {
-	class TestEvaluator;
+	struct TestEvaluator;
 
-	class LuaTest
+	struct LuaTest
 	{
 	public:
 

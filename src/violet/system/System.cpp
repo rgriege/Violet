@@ -1,28 +1,21 @@
 // ============================================================================
 
-#include "violet/system/System.h"
+#include "violet/system/system.h"
 
-using namespace Violet;
+using namespace vlt;
 
 // ============================================================================
 
-System::System(const char * label) :
-	m_label(label)
+system::system(const char * const label) :
+	label(label)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-void System::update(const float /*dt*/)
+void system::update(const r32 /*dt*/)
 {
 
-}
-
-// ----------------------------------------------------------------------------
-
-const char * System::getLabel() const
-{
-	return m_label;
 }
 
 // ============================================================================

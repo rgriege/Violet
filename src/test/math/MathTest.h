@@ -1,11 +1,11 @@
 #ifndef MATH_TEST_H
 #define MATH_TEST_H
 
-namespace Violet
+namespace vlt
 {
-	class TestEvaluator;
+	struct TestEvaluator;
 
-	class MathTests
+	struct MathTests
 	{
 	public:
 

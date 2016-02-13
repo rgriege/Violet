@@ -1,39 +1,32 @@
-#ifndef VIOLET_Interval_H
-#define VIOLET_Interval_H
+#ifndef VIOLET_INTERVAL_H
+#define VIOLET_INTERVAL_H
 
 #include <iosfwd>
 
-namespace Violet
+#include "violet/core/defines.h"
+#include "violet/core/types.h"
+
+namespace vlt
 {
-	template <typename T>
-	class Interval
+	struct VIOLET_API interval
 	{
-	public:
+		r32 left, right;
 
-		Interval();
-		Interval(T left, T right);
-		Interval(const Interval & other);
+		interval();
+		interval(r32 left, r32 right);
+		interval(const interval & other);
 
-		Interval & slide(T delta);
+		interval & slide(r32 delta);
 
-		T length() const;
+		r32 length() const;
 		
-		bool contains(T x) const;
-		bool contains(const Interval & other) const;
-		bool overlaps(const Interval & other) const;
-		T overlap(const Interval & other) const;
-
-	public:
-
-		T m_left, m_right;
+		bool contains(r32 x) const;
+		bool contains(const interval & other) const;
+		bool overlaps(const interval & other) const;
+		r32 overlap(const interval & other) const;
 	};
 
-	template<typename T>
-	std::ostream & operator<<(std::ostream & os, const Interval<T> & interval);
+	VIOLET_API std::ostream & operator<<(std::ostream & os, const interval & interval);
 }
-
-#include "violet/math/Interval.inl"
-
-typedef Violet::Interval<float> FloatInterval;
 
 #endif

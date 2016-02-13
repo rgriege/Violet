@@ -1,17 +1,15 @@
-#ifndef Editor_Command_H
-#define Editor_Command_H
+#ifndef EDITOR_COMMAND_H
+#define EDITOR_COMMAND_H
 
 #include "editor/Defines.h"
 
 namespace edt
 {
-	class EDITOR_API Command
+	struct EDITOR_API command
 	{
-	public:
-
-		virtual ~Command() = default;
+		virtual ~command() = default;
 		virtual void execute() = 0;
-		virtual bool canUndo() const = 0;
+		virtual bool can_undo() const = 0;
 		virtual void undo() = 0;
 	};
 }

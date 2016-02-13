@@ -7,20 +7,20 @@
 #include <algorithm>
 #include <memory>
 
-namespace Violet
+namespace vlt
 {
-	class TestEvaluator
+	struct TestEvaluator
 	{
 	private:
 
-		class BufferBase
+		struct BufferBase
 		{
 		public:
 
 			virtual void write(std::ostream & stream, int level) = 0;
 		};
 
-		class TestBuffer : public BufferBase
+		struct TestBuffer : public BufferBase
 		{
 		public:
 
@@ -33,7 +33,7 @@ namespace Violet
 			std::string const m_entry;
 		};
 
-		class SuiteBuffer : public BufferBase
+		struct SuiteBuffer : public BufferBase
 		{
 		public:
 

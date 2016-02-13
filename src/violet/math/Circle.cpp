@@ -1,33 +1,33 @@
 // ============================================================================
 
-#include "violet/math/Circle.h"
+#include "violet/math/circle.h"
 
-using namespace Violet;
+using namespace vlt;
 
 // ============================================================================
 
-Circle::Circle() :
-	m_center(),
-	m_radius(0)
+circle::circle() :
+	center(),
+	radius(0)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-Circle::Circle(const Vec2f & center, const float radius) :
-	m_center(center),
-	m_radius(radius)
+circle::circle(const v2 & center, const r32 radius) :
+	center(center),
+	radius(radius)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-FloatInterval Circle::project(const Vec2f & vec) const
+interval circle::project(const v2 & vec) const
 {
-	const Vec2f axis = vec.isUnit() ? vec : vec.getUnit();
+	const v2 axis = vec.is_unit() ? vec : vec.get_unit();
 
-	float center_proj = m_center.dot(axis);
-	return FloatInterval(center_proj - m_radius, center_proj + m_radius);
+	r32 center_proj = center.dot(axis);
+	return interval(center_proj - radius, center_proj + radius);
 }
 
 // ============================================================================

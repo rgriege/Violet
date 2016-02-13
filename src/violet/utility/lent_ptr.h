@@ -3,10 +3,10 @@
 
 #include <memory>
 
-namespace Violet
+namespace vlt
 {
 	template <typename T>
-	class lent_ptr
+	struct lent_ptr
 	{
 	public:
 

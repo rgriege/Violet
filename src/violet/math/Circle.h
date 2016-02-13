@@ -1,23 +1,19 @@
-#ifndef VIOLET_Circle_H
-#define VIOLET_Circle_H
+#ifndef VIOLET_CIRCLE_H
+#define VIOLET_CIRCLE_H
 
-#include "violet/math/Vec2.h"
-#include "violet/math/Interval.h"
+#include "violet/math/v2.h"
+#include "violet/math/interval.h"
 
-namespace Violet
+namespace vlt
 {
-	class VIOLET_API Circle
+	struct VIOLET_API circle
 	{
-	public:
+		const v2 center;
+		const r32 radius;
 
-		Circle();
-		Circle(const Vec2f & center, float radius);
-		FloatInterval project(const Vec2f & axis) const;
-
-	public:
-	
-		const Vec2f m_center;
-		const float m_radius;
+		circle();
+		circle(const v2 & center, r32 radius);
+		interval project(const v2 & axis) const;
 	};
 }
 

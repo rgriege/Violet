@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename T>
-Violet::lent_ptr<T>::lent_ptr(T * const ptr) :
+vlt::lent_ptr<T>::lent_ptr(T * const ptr) :
 	m_ptr(ptr)
 {
 }
@@ -9,7 +9,7 @@ Violet::lent_ptr<T>::lent_ptr(T * const ptr) :
 // ----------------------------------------------------------------------------
 
 template <typename T>
-Violet::lent_ptr<T>::lent_ptr(const std::unique_ptr<T> & ptr) :
+vlt::lent_ptr<T>::lent_ptr(const std::unique_ptr<T> & ptr) :
 	m_ptr(ptr.get())
 {
 }
@@ -17,7 +17,7 @@ Violet::lent_ptr<T>::lent_ptr(const std::unique_ptr<T> & ptr) :
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T & Violet::lent_ptr<T>::operator*() const
+T & vlt::lent_ptr<T>::operator*() const
 {
 	return *m_ptr;
 }
@@ -25,7 +25,7 @@ T & Violet::lent_ptr<T>::operator*() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T * Violet::lent_ptr<T>::operator->() const
+T * vlt::lent_ptr<T>::operator->() const
 {
 	return m_ptr;
 }
@@ -33,7 +33,7 @@ T * Violet::lent_ptr<T>::operator->() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-bool Violet::lent_ptr<T>::operator==(const T * const rhs) const
+bool vlt::lent_ptr<T>::operator==(const T * const rhs) const
 {
 	return m_ptr == rhs;
 }
@@ -41,7 +41,7 @@ bool Violet::lent_ptr<T>::operator==(const T * const rhs) const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-bool Violet::lent_ptr<T>::operator!=(const T * const rhs) const
+bool vlt::lent_ptr<T>::operator!=(const T * const rhs) const
 {
 	return m_ptr != rhs;
 }

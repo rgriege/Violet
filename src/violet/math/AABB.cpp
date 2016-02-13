@@ -1,18 +1,17 @@
 // ============================================================================
 
-#include "violet/math/AABB.h"
-
-#include "violet/math/Polygon.h"
-
 #include <algorithm>
 
-using namespace Violet;
+#include "violet/math/aabb.h"
+#include "violet/math/poly.h"
+
+using namespace vlt;
 
 // ============================================================================
 
-AABB AABB::createFromLine(const Vec2f & start, const Vec2f & end)
+aabb aabb::from_line(const v2 & start, const v2 & end)
 {
-	float minX, maxX, minY, maxY;
+	r32 minX, maxX, minY, maxY;
 
 	if (start.x < end.x)
 	{
@@ -36,132 +35,132 @@ AABB AABB::createFromLine(const Vec2f & start, const Vec2f & end)
 		maxY = start.y;
 	}
 
-	return AABB(minX, maxY, maxX, minY);
+	return aabb(minX, maxY, maxX, minY);
 }
 
 // ============================================================================
 
-AABB::AABB() :
-	m_topLeft(),
-	m_bottomRight()
+aabb::aabb() :
+	top_left(),
+	bottom_right()
 {
 }
 
 // ----------------------------------------------------------------------------
 	
-AABB::AABB(const Vec2f & center, const Vec2f & halfDim) :
-	m_topLeft(center - halfDim),
-	m_bottomRight(center + halfDim)
+aabb::aabb(const v2 & center, const v2 & half_dim) :
+	top_left(center - half_dim),
+	bottom_right(center + half_dim)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-AABB::AABB(const float left, const float top, const float right, const float bottom) :
-	m_topLeft(left, top),
-	m_bottomRight(right, bottom)
+aabb::aabb(const r32 left, const r32 top, const r32 right, const r32 bottom) :
+	top_left(left, top),
+	bottom_right(right, bottom)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-bool AABB::empty() const
+bool aabb::empty() const
 {
-	return m_topLeft == m_bottomRight;
+	return top_left == bottom_right;
 }
 
 // ----------------------------------------------------------------------------
 
-bool AABB::contains(const Vec2f & point) const
+bool aabb::contains(const v2 & point) const
 {
-	return point.x >= m_topLeft.x
-		&& point.x <= m_bottomRight.x
-		&& point.y <= m_topLeft.y
-		&& point.y >= m_bottomRight.y;
+	return point.x >= top_left.x
+		&& point.x <= bottom_right.x
+		&& point.y <= top_left.y
+		&& point.y >= bottom_right.y;
 }
 
 // ----------------------------------------------------------------------------
 
-bool AABB::contains(const AABB & other) const
+bool aabb::contains(const aabb & other) const
 {
-	return FloatInterval(m_topLeft.x, m_bottomRight.x).contains(FloatInterval(other.m_topLeft.x, other.m_bottomRight.x))
-		&& FloatInterval(m_topLeft.y, m_bottomRight.y).contains(FloatInterval(other.m_topLeft.y, other.m_bottomRight.y));
+	return interval(top_left.x, bottom_right.x).contains(interval(other.top_left.x, other.bottom_right.x))
+		&& interval(top_left.y, bottom_right.y).contains(interval(other.top_left.y, other.bottom_right.y));
 }
 
 // ----------------------------------------------------------------------------
 
-bool AABB::overlaps(const AABB & other) const
+bool aabb::overlaps(const aabb & other) const
 {
-	return FloatInterval(m_topLeft.x, m_bottomRight.x).overlaps(FloatInterval(other.m_topLeft.x, other.m_bottomRight.x))
-		&& FloatInterval(m_topLeft.y, m_bottomRight.y).overlaps(FloatInterval(other.m_topLeft.y, other.m_bottomRight.y));
+	return interval(top_left.x, bottom_right.x).overlaps(interval(other.top_left.x, other.bottom_right.x))
+		&& interval(top_left.y, bottom_right.y).overlaps(interval(other.top_left.y, other.bottom_right.y));
 }
 
 // ----------------------------------------------------------------------------
 
-AABB & AABB::extend(const Vec2f & point)
+aabb & aabb::extend(const v2 & point)
 {
-	*this = AABB(std::min(m_topLeft.x, point.x), std::max(m_topLeft.y, point.y), std::max(m_bottomRight.x, point.x), std::min(m_bottomRight.y, point.y));
+	*this = aabb(std::min(top_left.x, point.x), std::max(top_left.y, point.y), std::max(bottom_right.x, point.x), std::min(bottom_right.y, point.y));
 	return *this;
 }
 
 // ----------------------------------------------------------------------------
 
-AABB & AABB::extend(const AABB & other)
+aabb & aabb::extend(const aabb & other)
 {
-	extend(other.m_topLeft);
-	extend(other.m_bottomRight);
+	extend(other.top_left);
+	extend(other.bottom_right);
 	return *this;
 }
 
 // ----------------------------------------------------------------------------
 
-AABB & AABB::translate(const Vec2f & offset)
+aabb & aabb::translate(const v2 & offset)
 {
-	m_topLeft += offset;
-	m_bottomRight += offset;
+	top_left += offset;
+	bottom_right += offset;
 	return *this;
 }
 
 // ----------------------------------------------------------------------------
 
-AABB & AABB::transform(const Matrix3f & transformation)
+aabb & aabb::transform(const m3 & transformation)
 {
-	*this = Polygon{ {
-			transformation * m_topLeft,
-			transformation * Vec2f{ m_bottomRight.x, m_topLeft.y },
-			transformation * m_bottomRight,
-			transformation * Vec2f{ m_topLeft.x, m_bottomRight.y }
-		} }.getBoundingBox();
+	*this = poly{ {
+			transformation * top_left,
+			transformation * v2{ bottom_right.x, top_left.y },
+			transformation * bottom_right,
+			transformation * v2{ top_left.x, bottom_right.y }
+		} }.get_bounding_box();
 
 	return *this;
 }
 
 // ----------------------------------------------------------------------------
 
-Vec2f AABB::getCenter() const
+v2 aabb::get_center() const
 {
-	return Vec2f((m_bottomRight.x - m_topLeft.x) / 2.f, (m_topLeft.y - m_bottomRight.y) / 2.f);
+	return v2((bottom_right.x - top_left.x) / 2.f, (top_left.y - bottom_right.y) / 2.f);
 }
 
 // ----------------------------------------------------------------------------
 
-Vec2f AABB::getHalfDim() const
+v2 aabb::get_half_dim() const
 {
-	return getCenter() - m_topLeft;
+	return get_center() - top_left;
 }
 
 // ----------------------------------------------------------------------------
 
-Vec2f AABB::getMinimum() const
+v2 aabb::get_min() const
 {
-	return Vec2f(m_topLeft.x, m_bottomRight.y);
+	return v2(top_left.x, bottom_right.y);
 }
 
 // ----------------------------------------------------------------------------
 
-Vec2f AABB::getMaximum() const
+v2 aabb::get_max() const
 {
-	return Vec2f(m_bottomRight.x, m_topLeft.y);
+	return v2(bottom_right.x, top_left.y);
 }
 
 // ============================================================================

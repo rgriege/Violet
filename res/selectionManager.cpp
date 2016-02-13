@@ -1,83 +1,83 @@
-#include "editor/EditorSystem.h"
-#include "editor/CppScriptExports.h"
-#include "violet/Engine.h"
-#include "violet/component/ComponentManager.h"
-#include "violet/graphics/component/ColorComponent.h"
-#include "violet/input/system/InputSystem.h"
-#include "violet/log/Log.h"
-#include "violet/math/AABB.h"
-#include "violet/math/Polygon.h"
-#include "violet/script/cpp/CppScript.h"
-#include "violet/transform/Transform.h"
-#include "violet/transform/component/WorldTransformComponent.h"
-#include "violet/utility/FormattedString.h"
+#include "editor/editor_system.h"
+#include "editor/cpp_script_exports.h"
+#include "violet/core/engine.h"
+#include "violet/component/scene.h"
+#include "violet/graphics/component/color_component.h"
+#include "violet/input/system/input_system.h"
+#include "violet/log/log.h"
+#include "violet/math/aabb.h"
+#include "violet/math/poly.h"
+#include "violet/script/cpp/cpp_script.h"
+#include "violet/transform/transform.h"
+#include "violet/transform/component/world_transform_component.h"
+#include "violet/utility/formatted_string.h"
 
 using namespace edt;
-using namespace Violet;
+using namespace vlt;
 
-class Instance : public CppScript::Instance
+class instance : public cpp_script::instance
 {
 public:
 
-    Instance(CppScript & script) :
-        CppScript::Instance(script)
+    instance(cpp_script & script) :
+        cpp_script::instance(script)
     {
-        EntityDeselectedEvent::subscribe(Engine::getInstance(), EntityDeselectedEvent::Subscriber::bind<Instance, &Instance::onEntityDeselected>(this));
-        EntitySelectedEvent::subscribe(Engine::getInstance(), EntitySelectedEvent::Subscriber::bind<Instance, &Instance::onEntitySelected>(this));
+        EntityDeselectedEvent::subscribe(engine::instance(), EntityDeselectedEvent::subscriber::bind<instance, &instance::onEntityDeselected>(this));
+        EntitySelectedEvent::subscribe(engine::instance(), EntitySelectedEvent::subscriber::bind<instance, &instance::onEntitySelected>(this));
     }
 
-    virtual ~Instance() override
+    virtual ~instance() override
     {
-        EntityDeselectedEvent::unsubscribe(Engine::getInstance(), EntityDeselectedEvent::Subscriber::bind<Instance, &Instance::onEntityDeselected>(this));
-        EntitySelectedEvent::unsubscribe(Engine::getInstance(), EntitySelectedEvent::Subscriber::bind<Instance, &Instance::onEntitySelected>(this));
+        EntityDeselectedEvent::unsubscribe(engine::instance(), EntityDeselectedEvent::subscriber::bind<instance, &instance::onEntityDeselected>(this));
+        EntitySelectedEvent::unsubscribe(engine::instance(), EntitySelectedEvent::subscriber::bind<instance, &instance::onEntitySelected>(this));
     }
 
 private:
 
-    void onEntityDeselected(const EntityId entityId)
+    void onEntityDeselected(const handle entityId)
     {
-		Log::log(FormattedString<128>().sprintf("<%d> deselected", entityId.getId()));
-        const auto & engine = Engine::getInstance();
-        const auto & editor = *engine.getSystem<EditorSystem>();
-        const auto & selectedEntities = editor.getSelectedEntities();
+		log(formatted_string<128>().sprintf("<%d> deselected", entityId.id));
+        const auto & engine = engine::instance();
+        const auto & editor = *engine.get_system<editor_system>();
+        const auto & selectedEntities = editor.get_selected_entities();
         if (!selectedEntities.empty())
         {
-			/*m_selectionBox = AABB();
+			/*m_selectionBox = aabb();
 			for (const auto & entity : selectedEntities)
 			{
-				engine.addWriteTask(engine.getSystem<EditorSystem>()->getScene(),
-					[=](ComponentManager & scene)
+				engine.add_write_task(engine.getSystem<editor_system>()->get_scene(),
+					[=](scene & scene)
 					{
-						const auto * cc = scene.getComponent<ColorComponent>(entityId);
-						AABB box = cc->m_mesh->getPolygon().getBoundingBox();
-						const Vec2f pos = Transform::getPosition(scene.getComponent<WorldTransformComponent>(entityId)->m_transform);
+						const auto * cc = scene.getComponent<color_component>(entityId);
+						aabb box = cc->m_mesh->getPolygon().get_bounding_box();
+						const Vec2f pos = transform::getPosition(scene.getComponent<world_transform_component>(entityId)->m_transform);
 						box.translate(pos);
 						m_selectionBox.extend(box);
 						moveMutationHandle(m_minimumBoxId);
 						moveMutationHandle(m_maximumBoxId);
-					}, ColorComponent::getStaticThread());
+					}, color_component::getStaticThread());
 			}*/
         }
         else
         {
             // engine.getCurrentScene().removeAll(m_minimumBoxId);
             // engine.getCurrentScene().removeAll(m_maximumBoxId);
-            m_minimumBoxId = EntityId();
-            m_maximumBoxId = EntityId();
-            m_selectionBox = AABB();
+            m_minimumBoxId = handle::Invalid;
+            m_maximumBoxId = handle::Invalid;
+            m_selectionBox = aabb();
         }
     }
 
-    void onEntitySelected(const EntityId entityId)
+    void onEntitySelected(const handle entityId)
     {
-		Log::log(FormattedString<128>().sprintf("<%d> selected", entityId.getId()));
-        const auto & engine = Engine::getInstance();
-        engine.addWriteTask(engine.getSystem<EditorSystem>()->getScene(),
-            [=](ComponentManager & scene)
+		log(formatted_string<128>().sprintf("<%d> selected", entityId.id));
+        const auto & engine = engine::instance();
+        engine.add_write_task(engine.get_system<editor_system>()->get_scene(),
+            [=](scene & scene)
             {
-				const auto * cc = scene.getComponent<ColorComponent>(entityId);
-                AABB box = cc->m_mesh->getPolygon().getBoundingBox();
-                const Vec2f pos = Transform::getPosition(scene.getComponent<WorldTransformComponent>(entityId)->m_transform);
+				const auto * cc = scene.get_component<color_component>(entityId);
+                aabb box = cc->m_mesh->get_poly().get_bounding_box();
+                const v2 pos = transform::get_position(scene.get_component<world_transform_component>(entityId)->transform);
                 box.translate(pos);
                 if (m_selectionBox.empty())
                 {
@@ -91,42 +91,42 @@ private:
                     // moveMutationHandle(m_minimumBoxId);
                     // moveMutationHandle(m_maximumBoxId);
                 }
-            }, ColorComponent::getStaticThread());
+            }, color_component::get_thread_static());
     }
 
-    void addMutationHandle(EntityId & entityId)
+    void addMutationHandle(handle & entityId)
     {
-        const auto & engine = Engine::getInstance();
-        engine.addWriteTask(engine.getCurrentScene(),
-            [&entityId, this](ComponentManager & scene)
+        const auto & e = engine::instance();
+        e.add_write_task(e.get_current_scene(),
+            [&entityId, this](scene & s)
             {
-                entityId = scene.load("mutationHandle.json").front();
+                entityId = s.load("mutationHandle.json").front();
                 moveMutationHandle(entityId);
             });
     }
 
-    void moveMutationHandle(const EntityId entityId)
+    void moveMutationHandle(const handle entityId)
     {
-        const auto & engine = Engine::getInstance();
-        const Vec2f & offset = entityId == m_minimumBoxId
-            ? m_selectionBox.getMinimum()
-            : m_selectionBox.getMaximum();
-        engine.addWriteTask(*engine.getCurrentScene().getPool<WorldTransformComponent>(),
-            [=](ComponentPool & pool)
+        const auto & e = engine::instance();
+        const v2 & offset = entityId == m_minimumBoxId
+            ? m_selectionBox.get_min()
+            : m_selectionBox.get_max();
+        e.add_write_task(*e.get_current_scene().get_pool<world_transform_component>(),
+            [=](component_pool & pool)
             {
-                Transform::setPosition(pool.get<WorldTransformComponent>(entityId)->m_transform, offset);
+                transform::set_position(pool.get<world_transform_component>(entityId)->transform, offset);
             });
     }
 
 private:
 
-    AABB m_selectionBox;
-    EntityId m_minimumBoxId;
-    EntityId m_maximumBoxId;
+    aabb m_selectionBox;
+    handle m_minimumBoxId;
+	handle m_maximumBoxId;
 };
 
-VIOLET_SCRIPT_EXPORT void init(CppScript & script, std::unique_ptr<CppScript::Instance> & instance)
+VIOLET_SCRIPT_EXPORT void init(cpp_script & script, std::unique_ptr<cpp_script::instance> & i)
 {
-    instance = std::make_unique<Instance>(script);
+    i = std::make_unique<instance>(script);
 }
 

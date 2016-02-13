@@ -11,33 +11,33 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\editor\command\ChainCommand.h" />
-    <ClInclude Include="..\..\..\src\editor\command\ClearAllCommand.h" />
-    <ClInclude Include="..\..\..\src\editor\command\Command.h" />
-    <ClInclude Include="..\..\..\src\editor\command\file\OpenCommand.h" />
-    <ClInclude Include="..\..\..\src\editor\command\file\SaveAllCommand.h" />
-    <ClInclude Include="..\..\..\src\editor\command\MoveToCommand.h" />
-    <ClInclude Include="..\..\..\src\editor\command\selection\DeselectCommand.h" />
-    <ClInclude Include="..\..\..\src\editor\command\selection\SelectCommand.h" />
-    <ClInclude Include="..\..\..\src\editor\component\EditorComponent.h" />
-    <ClInclude Include="..\..\..\src\editor\CppScriptExports.h" />
-    <ClInclude Include="..\..\..\src\editor\EditorSystem.h" />
-    <ClInclude Include="..\..\..\src\editor\Defines.h" />
+    <ClInclude Include="..\..\..\src\editor\command\chain_command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\clear_all_command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\file\open_command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\file\save_all_command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\move_to_command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\selection\deselect_command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\selection\select_command.h" />
+    <ClInclude Include="..\..\..\src\editor\component\editor_component.h" />
+    <ClInclude Include="..\..\..\src\editor\cpp_script_exports.h" />
+    <ClInclude Include="..\..\..\src\editor\defines.h" />
+    <ClInclude Include="..\..\..\src\editor\editor_system.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\editor\command\ChainCommand.cpp" />
-    <ClCompile Include="..\..\..\src\editor\command\ClearAllCommand.cpp" />
-    <ClCompile Include="..\..\..\src\editor\command\file\OpenCommand.cpp" />
-    <ClCompile Include="..\..\..\src\editor\command\file\SaveAllCommand.cpp" />
-    <ClCompile Include="..\..\..\src\editor\command\MoveToCommand.cpp" />
-    <ClCompile Include="..\..\..\src\editor\command\selection\DeselectCommand.cpp" />
-    <ClCompile Include="..\..\..\src\editor\command\selection\SelectCommand.cpp" />
-    <ClCompile Include="..\..\..\src\editor\component\EditorComponent.cpp" />
-    <ClCompile Include="..\..\..\src\editor\CppScriptExports.cpp" />
-    <ClCompile Include="..\..\..\src\editor\EditorSystem.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\chain_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\clear_all_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\file\open_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\file\save_all_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\move_to_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\selection\deselect_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\selection\select_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\component\editor_component.cpp" />
+    <ClCompile Include="..\..\..\src\editor\cpp_script_exports.cpp" />
+    <ClCompile Include="..\..\..\src\editor\editor_system.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\editor\EditorSystem.inl" />
+    <None Include="..\..\..\src\editor\editor_system.inl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C493A578-E9E7-476E-A96E-A272232655EB}</ProjectGuid>

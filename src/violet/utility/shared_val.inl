@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename T>
-Violet::shared_val<T>::shared_val(const shared_val<T> & rhs) :
+vlt::shared_val<T>::shared_val(const shared_val<T> & rhs) :
 	m_ptr(rhs.m_ptr)
 {
 }
@@ -10,7 +10,7 @@ Violet::shared_val<T>::shared_val(const shared_val<T> & rhs) :
 
 template <typename T>
 template <typename U>
-Violet::shared_val<T>::shared_val(const shared_val<U> & rhs) :
+vlt::shared_val<T>::shared_val(const shared_val<U> & rhs) :
 	m_ptr(rhs.m_ptr)
 {
 }
@@ -18,7 +18,7 @@ Violet::shared_val<T>::shared_val(const shared_val<U> & rhs) :
 // ----------------------------------------------------------------------------
 
 template <typename T>
-Violet::shared_val<T> & Violet::shared_val<T>::operator=(const shared_val<T> & rhs)
+vlt::shared_val<T> & vlt::shared_val<T>::operator=(const shared_val<T> & rhs)
 {
 	m_ptr = rhs.m_ptr;
 }
@@ -26,7 +26,7 @@ Violet::shared_val<T> & Violet::shared_val<T>::operator=(const shared_val<T> & r
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T & Violet::shared_val<T>::get() const
+T & vlt::shared_val<T>::get() const
 {
 	return *m_ptr;
 }
@@ -34,7 +34,7 @@ T & Violet::shared_val<T>::get() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T * Violet::shared_val<T>::ptr() const
+T * vlt::shared_val<T>::ptr() const
 {
 	return m_ptr.get();
 }
@@ -42,7 +42,7 @@ T * Violet::shared_val<T>::ptr() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T & Violet::shared_val<T>::operator*() const
+T & vlt::shared_val<T>::operator*() const
 {
 	return *m_ptr;
 }
@@ -50,7 +50,7 @@ T & Violet::shared_val<T>::operator*() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-T * Violet::shared_val<T>::operator->() const
+T * vlt::shared_val<T>::operator->() const
 {
 	return m_ptr.operator->();
 }
@@ -58,7 +58,7 @@ T * Violet::shared_val<T>::operator->() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-Violet::shared_val<T>::operator T &() const
+vlt::shared_val<T>::operator T &() const
 {
 	return *m_ptr;
 }
@@ -66,7 +66,7 @@ Violet::shared_val<T>::operator T &() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-Violet::shared_val<T>::shared_val(std::shared_ptr<T> ptr) :
+vlt::shared_val<T>::shared_val(std::shared_ptr<T> ptr) :
 	m_ptr(std::move(ptr))
 {
 }
@@ -74,7 +74,7 @@ Violet::shared_val<T>::shared_val(std::shared_ptr<T> ptr) :
 // ============================================================================
 
 template <typename T, typename ... Args>
-Violet::shared_val<T> Violet::make_shared_val(Args && ... args)
+vlt::shared_val<T> vlt::make_shared_val(Args && ... args)
 {
 	return shared_val<T>(std::make_shared<T>(std::forward<Args>(args)...));
 }

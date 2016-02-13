@@ -1,19 +1,17 @@
-#ifndef GUARD_H
-#define GUARD_H
+#ifndef VIOLET_GUARD_H
+#define VIOLET_GUARD_H
 
-namespace Violet
+namespace vlt
 {
 	template <typename T>
-	class Guard
+	struct guard
 	{
-	public:
-
-		Guard(const T & t)
+		guard(const T & t)
 		{
 			T::bind(t);
 		}
 
-		~Guard()
+		~guard()
 		{
 			T::unbind();
 		}

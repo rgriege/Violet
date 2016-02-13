@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-using namespace Violet;
+using namespace vlt;
 
 int main(int argc, char** argv)
 {

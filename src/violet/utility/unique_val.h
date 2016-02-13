@@ -1,18 +1,18 @@
-#ifndef UNIQUE_VAL_H
-#define UNIQUE_VAL_H
+#ifndef VIOLET_UNIQUE_VAL_H
+#define VIOLET_UNIQUE_VAL_H
 
 #include <memory>
 
-namespace Violet
+namespace vlt
 {
 	template <typename T>
-	class unique_val 
+	struct unique_val 
 	{
 		template <typename U, typename ... Args>
 		friend unique_val<U> make_unique_val(Args && ... args);
 
 		template <typename U>
-		friend class unique_val;
+		friend struct unique_val;
 		
 	public:
 

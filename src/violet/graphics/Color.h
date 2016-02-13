@@ -1,78 +1,66 @@
-#ifndef VIOLET_Color_H
-#define VIOLET_Color_H
-
-#include "violet/Defines.h"
+#ifndef VIOLET_COLOR_H
+#define VIOLET_COLOR_H
 
 #include <array>
 
-namespace Violet
+#include "violet/core/defines.h"
+
+namespace vlt
 {
-	class Deserializer;
-	class Serializer;
+	struct deserializer;
+	struct serializer;
 
-	class VIOLET_API Color
-	{
-	public:
-	
-		static const Color kBlack;
-		static const Color kRed;
-		static const Color kOrange;
-		static const Color kYellow;
-		static const Color kGreen;
-		static const Color kIndigo;
-		static const Color kBlue;
-		static const Color kPurple;
-		static const Color kWhite;
-		static const Color kTan;
-		static const Color kBrown;
-		static const Color kRainbow[];
+	struct VIOLET_API color final
+	{	
+		static const color Black;
+		static const color Red;
+		static const color Orange;
+		static const color Yellow;
+		static const color Green;
+		static const color Indigo;
+		static const color Blue;
+		static const color Purple;
+		static const color White;
+		static const color Tan;
+		static const color Brown;
+		static const color Rainbow[];
 
-	public:
-
-		class VIOLET_API Component
+		struct VIOLET_API component
 		{
-		public:
+			u8 value;
 
-			Component();
-			Component(uint8 value);
-			Component(float value);
+			component();
+			component(u8 value);
+			component(r32 value);
 
-			Component & operator=(uint8 value);
-			Component & operator=(float value);
+			component & operator=(u8 value);
+			component & operator=(r32 value);
 
-			bool operator!=(uint8 value) const;
-			Component & operator+=(uint8 value);
-			Component & operator-=(uint8 value);
+			bool operator!=(u8 value) const;
+			component & operator+=(u8 value);
+			component & operator-=(u8 value);
 
-			operator uint8() const;
-			operator float() const;
+			operator u8() const;
+			operator r32() const;
 
-			uint8 asUint() const;
-			float asFloat() const;
-
-		private:
-
-			uint8 m_value;
+			u8 asUint() const;
+			r32 asFloat() const;
 		};
 
-	public:
+		component r, g, b, a;
 
-		Color();
-		Color(uint8 _r, uint8 _g, uint8 _b, uint8 _a = 255);
-		Color(Deserializer & deserializer);
-		Color(const char * hexString);
+		color();
+		color(u8 _r, u8 _g, u8 _b, u8 _a = 255);
+		color(deserializer & deserializer);
+		color(const char * hexString);
 
-		bool operator!=(const Color & rhs) const;
+		bool operator!=(const color & rhs) const;
 
-		std::array<float, 4> as4fv() const;
-
-	public:
-
-		Component r, g, b, a;
+		std::array<r32, 4> as4fv() const;
 	};
 
-	Deserializer & operator>>(Deserializer & deserializer, Color & color);
-	Serializer & operator<<(Serializer & serializer, const Color & color);
+	deserializer & operator>>(deserializer & deserializer, color & color);
+	serializer & operator<<(serializer & serializer, const color & color);
 }
 
 #endif

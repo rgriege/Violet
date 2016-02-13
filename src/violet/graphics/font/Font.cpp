@@ -1,12 +1,12 @@
 // ============================================================================
 
-#include "violet/graphics/font/Font.h"
+#include "violet/graphics/font/font.h"
 
-#include "violet/Defines.h"
+#include "violet/core/defines.h"
 #include "violet/log/Log.h"
-#include "violet/graphics/shader/Shader.h"
-#include "violet/utility/FormattedString.h"
-#include "violet/utility/Guard.h"
+#include "violet/graphics/shader/shader.h"
+#include "violet/utility/formatted_string.h"
+#include "violet/utility/guard.h"
 
 #include <algorithm>
 #include <map>
@@ -14,7 +14,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-using namespace Violet;
+using namespace vlt;
 
 // ============================================================================
 
@@ -27,10 +27,10 @@ using namespace FontNamespace;
 
 // ============================================================================
 
-Font::Glyph::Glyph(const uint32 vertexArrayBuffer, Texture && texture, Mesh && mesh, Mesh && texCoords, const Vec2f & offset, const uint32 advance) :
+font::glyph::glyph(const u32 vertexArrayBuffer, texture && texture, mesh && m, mesh && texCoords, const v2 & offset, const u32 advance) :
 	m_vertexArrayBuffer(vertexArrayBuffer),
 	m_texture(std::move(texture)),
-	m_mesh(std::move(mesh)),
+	m_mesh(std::move(m)),
 	m_texCoords(std::move(texCoords)),
 	m_offset(offset),
 	m_advance(advance)
@@ -39,7 +39,7 @@ Font::Glyph::Glyph(const uint32 vertexArrayBuffer, Texture && texture, Mesh && m
 
 // ----------------------------------------------------------------------------
 
-Font::Glyph::Glyph(Glyph && other) :
+font::glyph::glyph(glyph && other) :
 	m_vertexArrayBuffer(other.m_vertexArrayBuffer),
 	m_texture(std::move(other.m_texture)),
 	m_mesh(std::move(other.m_mesh)),
@@ -52,7 +52,7 @@ Font::Glyph::Glyph(Glyph && other) :
 
 // ----------------------------------------------------------------------------
 
-Font::Glyph::~Glyph()
+font::glyph::~glyph()
 {
 	if (m_vertexArrayBuffer != 0)
 		glDeleteVertexArrays(1, &m_vertexArrayBuffer);
@@ -60,17 +60,17 @@ Font::Glyph::~Glyph()
 
 // ----------------------------------------------------------------------------
 
-void Font::Glyph::render(ShaderProgram & program) const
+void font::glyph::render(shader_program & program) const
 {
 	glBindVertexArray(m_vertexArrayBuffer);
-	const Guard<Texture> textureGuard(m_texture);
+	const guard<texture> textureGuard(m_texture);
 
-	const Guard<Mesh> meshGuard(m_mesh);
+	const guard<mesh> meshGuard(m_mesh);
 	const GLint positionAttribute = program.getAttributeLocation("position");
 	glVertexAttribPointer(positionAttribute, 2, GL_FLOAT, false, 0, 0);
 	glEnableVertexAttribArray(positionAttribute);
 
-	const Guard<Mesh> texCoordGuard(m_texCoords);
+	const guard<mesh> texCoordGuard(m_texCoords);
 	const GLint texCoordAttribute = program.getAttributeLocation("texCoord");
 	glVertexAttribPointer(texCoordAttribute, 2, GL_FLOAT, false, 0, 0);
 	glEnableVertexAttribArray(texCoordAttribute);
@@ -81,28 +81,28 @@ void Font::Glyph::render(ShaderProgram & program) const
 
 // ----------------------------------------------------------------------------
 
-uint32 Font::Glyph::getAdvance() const
+u32 font::glyph::get_advance() const
 {
 	return m_advance;
 }
 
 // ----------------------------------------------------------------------------
 
-const Vec2f & Font::Glyph::getOffset() const
+const v2 & font::glyph::get_offset() const
 {
 	return m_offset;
 }
 
 // ============================================================================
 
-std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
+std::unique_ptr<font> font::load(const char * const filename, const u32 size)
 {
 	if (ms_freetypeLibrary == nullptr)
 	{
 		auto ftError = FT_Init_FreeType(&ms_freetypeLibrary);
 		if (ftError != FT_Err_Ok)
 		{
-			Log::log(FormattedString<64>().sprintf("FT_Init_FreeType error: %d", ftError));
+			log(formatted_string<64>().sprintf("FT_Init_FreeType error: %d", ftError));
 			return nullptr;
 		}
 	}
@@ -111,26 +111,26 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 	auto ftError = FT_New_Face(ms_freetypeLibrary, filename, 0, &face);
 	if (ftError != FT_Err_Ok)
 	{
-		Log::log(FormattedString<64>().sprintf("FT_New_Face error: %d", ftError));
+		log(formatted_string<64>().sprintf("FT_New_Face error: %d", ftError));
 		return nullptr;
 	}
 
 	ftError = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 	if (ftError != FT_Err_Ok)
 	{
-		Log::log(FormattedString<64>().sprintf("FT_Select_Charmap error: %d", ftError));
+		log(formatted_string<64>().sprintf("FT_Select_Charmap error: %d", ftError));
 		return nullptr;
 	}
 
 	ftError = FT_Set_Char_Size(face, 0, size * 64, 0, 0);
 	if (ftError != FT_Err_Ok)
 	{
-		Log::log(FormattedString<64>().sprintf("FT_Set_Char_Size error: %d", ftError));
+		log(formatted_string<64>().sprintf("FT_Set_Char_Size error: %d", ftError));
 		return nullptr;
 	}
 
-	std::map<char, Glyph> glyphs;
-	uint32 spaceWidth = size;
+	std::map<char, glyph> glyphs;
+	u32 spaceWidth = size;
 
 	FT_ULong charcode;
 	FT_UInt glyphIndex;
@@ -146,54 +146,54 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 		ftError = FT_Load_Glyph(face, glyphIndex, FT_LOAD_RENDER);
 		if (ftError != FT_Err_Ok)
 		{
-			Log::log(FormattedString<64>().sprintf("FT_Load_Glyph error: ", ftError));
+			log(formatted_string<64>().sprintf("FT_Load_Glyph error: ", ftError));
 			return nullptr;
 		}
 
 		const FT_Bitmap bitmap = face->glyph->bitmap;
 		if (bitmap.buffer != nullptr)
 		{
-			const uint32 texHeight = static_cast<uint32>(pow(2, ceil(log2(bitmap.rows))));
-			const uint32 texWidth = std::max(4u, static_cast<uint32>(pow(2, ceil(log2(bitmap.width))))); // For some reason 2 doesn't work...
-			uint8 * pixels = new uint8[texHeight * texWidth];
+			const u32 texHeight = static_cast<u32>(pow(2, ceil(log2(bitmap.rows))));
+			const u32 texWidth = std::max(4u, static_cast<u32>(pow(2, ceil(log2(bitmap.width))))); // For some reason 2 doesn't work...
+			u8 * pixels = new u8[texHeight * texWidth];
 
 			for (int i = 0; i < bitmap.rows; ++i)
 			{
 				memcpy(pixels + i * texWidth, bitmap.buffer + i * bitmap.width, bitmap.width);
 				memset(pixels + i * texWidth + bitmap.width, 0, texWidth - bitmap.width);
 			}
-			for (uint32 i = bitmap.rows; i < texHeight; ++i)
+			for (u32 i = bitmap.rows; i < texHeight; ++i)
 				memset(pixels + i * texWidth, 0, texWidth);
 
 			GLuint vertexArrayBuffer = 0;
 			glGenVertexArrays(1, &vertexArrayBuffer);
 			glBindVertexArray(vertexArrayBuffer);
 
-			Texture texture(filename, texWidth, texHeight, pixels, GL_ALPHA);
+			texture texture(filename, texWidth, texHeight, pixels, GL_ALPHA);
 
-			const float width = static_cast<float>(texWidth);
-			const float height = static_cast<float>(texHeight);
-			Mesh mesh({
+			const r32 width = static_cast<r32>(texWidth);
+			const r32 height = static_cast<r32>(texHeight);
+			mesh m({
 				{ 0, 0 },
 				{ 0, height },
 				{ width, height },
 				{ width, 0 }
 			});
-			Mesh texCoords({
+			mesh texCoords({
 				{ 0.f, 1.f },
 				{ 0.f, 0.f },
 				{ 1.f, 0.f },
 				{ 1.f, 1.f }
 			});
 
-			glyphs.emplace(static_cast<char>(charcode), Glyph(vertexArrayBuffer, std::move(texture), std::move(mesh), std::move(texCoords), Vec2f(static_cast<float>(face->glyph->bitmap_left), static_cast<float>(face->glyph->bitmap_top - static_cast<int>(texHeight))), face->glyph->advance.x >> 6));
+			glyphs.emplace(static_cast<char>(charcode), glyph(vertexArrayBuffer, std::move(texture), std::move(m), std::move(texCoords), v2(static_cast<r32>(face->glyph->bitmap_left), static_cast<r32>(face->glyph->bitmap_top - static_cast<int>(texHeight))), face->glyph->advance.x >> 6));
 
 			delete[] pixels;
 		}
 		else if (charcode == 32)
 			spaceWidth = face->glyph->advance.x >> 6;
 		else
-			Log::log(FormattedString<64>().sprintf("Charcode has no bitmap: %lu", charcode));
+			log(formatted_string<64>().sprintf("Charcode has no bitmap: %lu", charcode));
 
 		charcode = FT_Get_Next_Char(face, charcode, &glyphIndex);
 	}
@@ -201,30 +201,30 @@ std::unique_ptr<Font> Font::load(const char * const filename, const uint32 size)
 	ftError = FT_Done_Face(face);
 	if (ftError != FT_Err_Ok)
 	{
-		Log::log(FormattedString<64>().sprintf("FT_Done_Face error: %d", ftError));
+		log(formatted_string<64>().sprintf("FT_Done_Face error: %d", ftError));
 		return nullptr;
 	}
 
-	return std::unique_ptr<Font>(new Font(filename, size, std::move(glyphs), spaceWidth));
+	return std::unique_ptr<font>(new font(filename, size, std::move(glyphs), spaceWidth));
 }
 
 // ----------------------------------------------------------------------------
 
-Font::Cache & Font::getCache()
+font::Cache & font::get_cache()
 {
-	static std::unique_ptr<Font>(*s_loader)(const char *, uint32) = &Font::load;
+	static std::unique_ptr<font>(*s_loader)(const char *, u32) = &font::load;
 	static Cache s_cache(s_loader);
 	return s_cache;
 }
 
 // ============================================================================
 
-void Font::render(std::string const & str, ShaderProgram & program)
+void font::render(std::string const & str, shader_program & program)
 {
-	float xOffset = 0;
-	std::vector<std::pair<const Glyph &, Vec2f>> glyphOffsets;
+	r32 xOffset = 0;
+	std::vector<std::pair<const glyph &, v2>> glyphOffsets;
 	// Only God knows why ranged for doesn't work here...
-	for (uint32 i = 0, end = str.size(); i < end; ++i)
+	for (u32 i = 0, end = str.size(); i < end; ++i)
 	{
 		char character = str[i];
 		if (character == ' ')
@@ -234,15 +234,15 @@ void Font::render(std::string const & str, ShaderProgram & program)
 			const auto it = m_glyphs.find(character);
 			if (it != m_glyphs.end())
 			{
-				glyphOffsets.emplace_back(it->second, it->second.getOffset() + Vec2f(xOffset, 0.f));
-				xOffset += it->second.getAdvance();
+				glyphOffsets.emplace_back(it->second, it->second.get_offset() + v2(xOffset, 0.f));
+				xOffset += it->second.get_advance();
 			}
 			else
-				Log::log(FormattedString<64>().sprintf("unknown character: '%x'", character));
+				log(formatted_string<64>().sprintf("unknown character: '%x'", character));
 		}
 	}
 
-	float const halfWidth = xOffset / 2.f;
+	r32 const halfWidth = xOffset / 2.f;
 	for (const auto & glyphOffset : glyphOffsets)
 	{
 		// looks bad if offset not rounded
@@ -254,21 +254,21 @@ void Font::render(std::string const & str, ShaderProgram & program)
 
 // ----------------------------------------------------------------------------
 
-const char * Font::getFilename() const
+const char * font::get_filename() const
 {
 	return m_filename.c_str();
 }
 
 // ----------------------------------------------------------------------------
 
-uint32 Font::getSize() const
+u32 font::get_size() const
 {
 	return m_size;
 }
 
 // ============================================================================
 
-Font::Font(const char * filename, const uint32 size, std::map<char, Glyph> && glyphs, const uint32 spaceWidth) :
+font::font(const char * filename, const u32 size, std::map<char, glyph> && glyphs, const u32 spaceWidth) :
 	m_filename(filename),
 	m_size(size),
 	m_glyphs(std::move(glyphs)),

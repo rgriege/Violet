@@ -1,43 +1,43 @@
-#ifndef VIOLET_Texture_H
-#define VIOLET_Texture_H
+#ifndef VIOLET_TEXTURE_H
+#define VIOLET_TEXTURE_H
 
-#include "violet/Defines.h"
-#include "violet/utility/ResourceCache.h"
-
-#include <memory>
 #include <iosfwd>
+#include <memory>
 
-namespace Violet
+#include "violet/core/defines.h"
+#include "violet/utility/resource_cache.h"
+
+namespace vlt
 {
-	class VIOLET_API Texture
+	struct VIOLET_API texture
 	{
 	public:
 
-		static std::unique_ptr<Texture> loadPng(const char * filename);
+		static std::unique_ptr<texture> load_png(const char * filename);
 
-		static void bind(const Texture & texture);
+		static void bind(const texture & texture);
 		static void unbind();
 
-		typedef ResourceCache<Texture, const char *> Cache;
-		static Cache & getCache();
+		typedef resource_cache<texture, const char *> Cache;
+		static Cache & get_cache();
 
 	public:
 
-		Texture(std::string filename, uint32 width, uint32 height, const void * data, uint32 format);
-		Texture(Texture && other);
-		~Texture();
+		texture(std::string filename, u32 width, u32 height, const void * data, u32 format);
+		texture(texture && other);
+		~texture();
 
-		const std::string & getName() const;
+		const std::string & get_name() const;
 
 	private:
 
-		Texture(const Texture & other) = delete;
-		Texture & operator=(const Texture & other) = delete;
+		texture(const texture & other) = delete;
+		texture & operator=(const texture & other) = delete;
 
 	private:
 
 		std::string m_filename;
-		uint32 m_handle;
+		u32 m_handle;
 	};
 }
 

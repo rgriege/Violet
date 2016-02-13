@@ -1,12 +1,12 @@
 // ============================================================================
 
-#include "violet/input/Key.h"
+#include "violet/input/key.h"
 
-using namespace Violet;
+using namespace vlt;
 
 // ============================================================================
 
-bool Key::isNumeric(const unsigned char key)
+bool key::is_numeric(const unsigned char key)
 {
 	switch (key)
 	{
@@ -28,9 +28,9 @@ bool Key::isNumeric(const unsigned char key)
 
 // ----------------------------------------------------------------------------
 
-bool Key::isNumericInput(const unsigned char key)
+bool key::is_numeric_input(const unsigned char key)
 {
-	return isNumeric(key) || key == '-' || key == '.';
+	return is_numeric(key) || key == '-' || key == '.';
 }
 
 // ============================================================================
