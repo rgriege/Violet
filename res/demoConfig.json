@@ -1,6 +1,18 @@
 {
-  "opts": {
-    "workerCount": 2
+  "thread": {
+    "workerCount": 2,
+    "tag": "colr",
+    "thread_idx": 1,
+    "tag": "kipt",
+    "thread_idx": 1,
+    "tag": "ltfm",
+    "thread_idx": 0,
+    "tag": "scpt",
+    "thread_idx": 0,
+    "tag": "updt",
+    "thread_idx": 0,
+    "tag": "wtfm",
+    "thread_idx": 0    
   },
   "sysv": {
     "wndw": {
@@ -8,7 +20,8 @@
       "y": 50,
       "width": 1400,
       "height": 800,
-      "title": "Demo"
+      "title": "Demo",
+      "thread": 1
     },
     "rndr": {
       "color": "0xffffffff"

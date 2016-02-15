@@ -1,14 +1,14 @@
 // ============================================================================
 
 #include "editor/command/selection/deselect_command.h"
-
+#include "editor/component/editor_component.h"
 #include "editor/editor_system.h"
 #include "violet/core/engine.h"
 #include "violet/component/scene.h"
 #include "violet/log/Log.h"
 #include "violet/serialization/file/file_deserializer_factory.h"
 #include "violet/utility/formatted_string.h"
-#include "violet/utility/random.h"
+#include "violet/utility/memory.h"
 #include "violet/utility/string_utilities.h"
 
 using namespace edt;
@@ -65,6 +65,22 @@ deselect_command::deselect_command(std::vector<handle> && entityIds) :
 
 // ----------------------------------------------------------------------------
 
+struct execute_task_data
+{
+	std::vector<handle> & entity_ids;
+};
+
+static void execute_task(void * mem)
+{
+	auto data = make_unique<execute_task_data>(mem);
+	auto & editor = *engine::instance().get_system<editor_system>();
+	data->entity_ids.erase(std::remove_if(data->entity_ids.begin(), data->entity_ids.end(),
+		[&](const handle entity_id)
+		{
+			return !editor.deselect(entity_id);
+		}), data->entity_ids.end());
+}
+
 void deselect_command::execute()
 {
 	const auto & engine = engine::instance();
@@ -82,15 +98,7 @@ void deselect_command::execute()
 			++it;
 	}
 
-	engine::instance().add_write_task(editor,
-		[=](editor_system & editor)
-		{
-			m_entityIds.erase(std::remove_if(m_entityIds.begin(), m_entityIds.end(),
-				[&](const handle entity_id)
-				{
-					return !editor.deselect(entity_id);
-				}), m_entityIds.end());
-		});
+	add_task(execute_task, new execute_task_data{ m_entityIds }, editor_component::metadata->thread, task_type::write);
 }
 
 // ----------------------------------------------------------------------------
@@ -102,15 +110,22 @@ bool deselect_command::can_undo() const
 
 // ----------------------------------------------------------------------------
 
+struct undo_task_data
+{
+	std::vector<handle> entity_ids;
+};
+
+static void undo_task(void * mem)
+{
+	auto data = make_unique<undo_task_data>(mem);
+	auto & editor = engine::instance().get_system<editor_system>();
+	for (const auto entity_id : data->entity_ids)
+		editor->select(entity_id);
+}
+
 void deselect_command::undo()
 {
-	const auto & entityIds = m_entityIds;
-	engine::instance().add_write_task(*engine::instance().get_system<editor_system>(),
-		[=](editor_system & editor)
-		{
-			for (const auto entity_id : entityIds)
-				editor.select(entity_id);
-		});
+	add_task(undo_task, new undo_task_data{ std::move(m_entityIds) }, editor_component::metadata->thread, task_type::write);
 }
 
 // ============================================================================

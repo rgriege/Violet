@@ -1,30 +1,19 @@
 // ============================================================================
 
-#include "violet/input/component/mouse_input_component.h"
-
 #include "violet/component/component_deserializer.h"
+#include "violet/component/scene.h"
+#include "violet/input/component/mouse_input_component.h"
 #include "violet/serialization/serializer.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-tag mouse_input_component::get_tag_static()
-{
-	return tag('m', 'i', 'p', 't');
-}
-
-// ----------------------------------------------------------------------------
-
-thread mouse_input_component::get_thread_static()
-{
-	return thread::Any;
-}
+const component_metadata * mouse_input_component::metadata;
 
 // ============================================================================
 
 mouse_input_component::mouse_input_component(const handle entity_id, component_deserializer & deserializer) :
-	component_base<mouse_input_component, 0>(),
 	m_mesh(deserializer)
 {
 }
@@ -32,7 +21,6 @@ mouse_input_component::mouse_input_component(const handle entity_id, component_d
 // ----------------------------------------------------------------------------
 
 mouse_input_component::mouse_input_component(const handle entity_id, poly && mesh) :
-	component_base<mouse_input_component, 0>(),
 	m_mesh(std::move(mesh))
 {
 }
@@ -40,12 +28,19 @@ mouse_input_component::mouse_input_component(const handle entity_id, poly && mes
 // ----------------------------------------------------------------------------
 
 mouse_input_component::mouse_input_component(mouse_input_component && other) :
-	component_base<mouse_input_component, 0>(std::move(other)),
 	m_mesh(std::move(other.m_mesh))
 {
 }
 
 // ============================================================================
+
+void vlt::install_mouse_input_component()
+{
+	mouse_input_component::metadata = init_component_metadata(tag('m', 'i', 'p', 't'), 0, sizeof(mouse_input_component));
+	scene::install_component<mouse_input_component>();
+}
+
+// ----------------------------------------------------------------------------
 
 serializer & vlt::operator<<(serializer & serializer, const mouse_input_component & component)
 {

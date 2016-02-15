@@ -80,7 +80,7 @@ namespace vlt
 
 		template <typename ComponentType>
 		static void install_component();
-		static void install_component(tag const tag, const pool_factory::producer & producer, thread thread);
+		static void install_component(tag const tag, const pool_factory::producer & producer);
 
 		template <typename ComponentType>
 		static void uninstall_component();
@@ -141,7 +141,6 @@ namespace vlt
 	private:
 
 		static pool_factory ms_poolFactory;
-		static std::map<tag, thread> ms_poolThreads;
 
 	private:
 

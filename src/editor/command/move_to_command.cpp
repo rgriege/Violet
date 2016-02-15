@@ -10,6 +10,7 @@
 #include "violet/transform/component/local_transform_component.h"
 #include "violet/transform/component/world_transform_component.h"
 #include "violet/utility/formatted_string.h"
+#include "violet/utility/memory.h"
 #include "violet/utility/string_utilities.h"
 
 #include <cstdlib>
@@ -50,6 +51,38 @@ move_to_command::move_to_command(const handle entity_id, const v2 & position) :
 
 // ----------------------------------------------------------------------------
 
+struct execute_task_data
+{
+	handle entity_id;
+	v2 position;
+};
+
+static void execute_task_local(void * mem)
+{
+	auto data = make_unique<execute_task_data>(mem);
+	auto & editor = *engine::instance().get_system<editor_system>();
+	auto ltc = editor.get_scene().get_component<local_transform_component>(data->entity_id);
+	if (ltc != nullptr)
+	{
+		transform::set_position(ltc->transform, data->position);
+		const handle proxy_id = editor.get_proxy_id(data->entity_id);
+		engine::instance().get_current_scene().get_component<local_transform_component>(proxy_id)->transform = ltc->transform;
+	}
+}
+
+static void execute_task_world(void * mem)
+{
+	auto data = make_unique<execute_task_data>(mem);
+	auto & editor = *engine::instance().get_system<editor_system>();
+	auto wtc = editor.get_scene().get_component<world_transform_component>(data->entity_id);
+	if (wtc != nullptr)
+	{
+		transform::set_position(wtc->transform, data->position);
+		// const handle proxy_id = editor.get_proxy_id(data->entity_id);
+		// engine::instance().get_current_scene().get_component<world_transform_component>(proxy_id)->transform = ltc->transform;
+	}
+}
+
 void move_to_command::execute()
 {
 	log(formatted_string<128>().sprintf("MoveTo::execute %d", m_entityId.id));
@@ -66,13 +99,7 @@ void move_to_command::execute()
 	if (ltc != nullptr)
 	{
 		log(formatted_string<128>().sprintf("MoveTo local <%f,%f>", m_position.x, m_position.y));
-		engine.add_write_task(*ltc,
-			[=, &editor](local_transform_component & ltc)
-			{
-				auto & transform = ltc.transform;
-				transform::set_position(transform, newPosition);
-				editor.propagate_change<local_transform_component, m4, &local_transform_component::transform>(entity_id, transform);
-			});
+		add_task(execute_task_local, new execute_task_data{ entity_id, m_position }, local_transform_component::metadata->thread, task_type::write);
 		m_position = transform::get_position(ltc->transform);
 	}
 	else
@@ -81,13 +108,6 @@ void move_to_command::execute()
 		if (wtc != nullptr)
 		{
 			log(formatted_string<128>().sprintf("MoveTo world <%f,%f>", m_position.x, m_position.y));
-			engine.add_write_task(*wtc,
-				[=, &editor](world_transform_component & wtc)
-				{
-					auto & transform = wtc.transform;
-					transform::set_position(transform, newPosition);
-					// editor.propagate_change<world_transform_component, m4, &world_transform_component::transform>(entity_id, transform);
-				});
 			m_position = transform::get_position(wtc->transform);
 		}
 	}

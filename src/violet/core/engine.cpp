@@ -10,7 +10,6 @@
 #include "violet/serialization/serializer.h"
 #include "violet/system/system.h"
 #include "violet/system/system_factory.h"
-#include "violet/task/task_scheduler.h"
 #include "violet/utility/formatted_string.h"
 #include "violet/utility/profiler.h"
 
@@ -29,7 +28,7 @@ using namespace engineNamespace;
 
 // ============================================================================
 
-const engine & engine::instance()
+engine & engine::instance()
 {
 	// For now, just don't...
 	assert(ms_instance != nullptr);
@@ -51,12 +50,20 @@ bool engine::bootstrap(const system_factory & factory, const char * const config
 		return false;
 	}
 
-	// start the thread pool
+	// assign data to threads and start the thread pool
 	{
-		auto optionsSegment = deserializer->enter_segment("opts");
-		const u32 workerCount = optionsSegment->get_u32("workerCount");
-		ms_instance.reset(new engine(workerCount));
-	}
+		auto thread_segment = deserializer->enter_segment("thread");
+		init_thread_pool(thread_segment->get_u32("worker_cnt"));
+
+		while (thread_segment->is_valid())
+		{
+			const tag tag(thread_segment->get_string("tag"));
+			const u32 thread_idx = thread_segment->get_u32("thread_idx");
+			assign_component_to_thread(tag, thread_idx);
+		}
+	} 
+
+	ms_instance.reset(new engine);
 
 	// create the systems
 	{
@@ -71,28 +78,23 @@ bool engine::bootstrap(const system_factory & factory, const char * const config
 		}
 	}
 
-	ms_instance->m_taskScheduler->finishCurrentTasks();
+	finish_all_tasks();
 
-	// create the first scene if systems initalized properly
+	// create and run the first scene if systems initalized properly
 	if (ms_instance->m_running)
 	{
 		ms_instance->m_scene->load(deserializer->get_string("firstScene"));
 		ms_instance->begin();
+		finish_all_tasks();
 	}
 
 	// cleanup
 	ms_instance->m_scene.reset();
+	ms_instance->m_nextSceneFileName.clear();
 	for (auto it = ms_instance->m_systems.rbegin(), end = ms_instance->m_systems.rend(); it != end; ++it)
 		it->reset();
 	ms_instance->m_systems.clear();
-
-	// clear any pending scene change
-	ms_instance->m_nextSceneFileName.clear();
-
-	// run additional frames to handle cleanup tasks
-	while (ms_instance->has_tasks())
-		ms_instance->run_frame(0.f);
-
+	cleanup_thread_pool();
 	ms_instance.reset();
 	return true;
 }
@@ -139,30 +141,13 @@ void engine::add_system(std::unique_ptr<vlt::system> && s)
 	m_systems.emplace_back(std::move(s));
 }
 
-// ----------------------------------------------------------------------------
-
-void engine::add_read_task(std::unique_ptr<task> && task, const thread thread) thread_const
-{
-	add_task(std::move(task), thread, FrameStage::Read);
-}
-
-// ----------------------------------------------------------------------------
-
-void engine::add_delete_task(std::unique_ptr<task> && task, const thread thread) thread_const
-{
-	add_task(std::move(task), thread, FrameStage::Delete);
-}
-
 // ============================================================================
 
-engine::engine(const u32 workerCount) :
+engine::engine() :
 	m_systems(),
 	m_scene(std::make_unique<scene>()),
 	m_nextSceneFileName(),
-	m_taskScheduler(std::make_unique<task_scheduler>(workerCount)),
-	m_taskQueues(),
-	m_running(true),
-	m_frameStage(FrameStage::Read)
+	m_running(true)
 {
 }
 
@@ -189,7 +174,7 @@ void engine::begin()
 		else
 		{
 			previousFrameTime = frameTime;
-			// log(formatted_string<128>().sprintf("frame timestamp: %.3f", previousFrameTime));
+			log(formatted_string<128>().sprintf("frame timestamp: %.3f", previousFrameTime));
 		}
 	}
 }
@@ -200,58 +185,15 @@ void engine::run_frame(const r32 frameTime)
 {
 	std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<system> & system) { system->update(frameTime); });
 
+	while (get_current_stage() != task_type::last)
+		complete_frame_stage();
+	complete_frame_stage();
+
 	if (!m_nextSceneFileName.empty())
 	{
 		m_scene->clear();
 		m_scene->load(m_nextSceneFileName.c_str());
 	}
-
-	while (m_frameStage != FrameStage::Last)
-		perform_current_frame_stage();
-	perform_current_frame_stage();
-}
-
-// ----------------------------------------------------------------------------
-
-void engine::perform_current_frame_stage()
-{
-	auto & taskQueue = m_taskQueues[static_cast<int>(m_frameStage)];
-	auto & tasks = taskQueue.m_tasks;
-	const std::lock_guard<std::mutex> lk(taskQueue.m_mutex);
-	while (!tasks.empty())
-	{
-		m_taskScheduler->add_task(std::move(tasks.front().first), static_cast<int>(tasks.front().second));
-		tasks.pop();
-	}
-
-	m_taskScheduler->finishCurrentTasks();
-
-	m_frameStage = static_cast<FrameStage>((static_cast<int>(m_frameStage)+1) % static_cast<int>(FrameStage::Count));
-}
-
-// ----------------------------------------------------------------------------
-
-void engine::add_task(std::unique_ptr<task> && task, const thread thread, const FrameStage frameStage) thread_const
-{
-	assert(task != nullptr);
-	if (frameStage == m_frameStage)
-		m_taskScheduler->add_task(std::move(task), static_cast<int>(thread));
-	else
-	{
-		auto & taskQueue = m_taskQueues[static_cast<int>(frameStage)];
-		const std::lock_guard<std::mutex> lk(taskQueue.m_mutex);
-		taskQueue.m_tasks.emplace(std::move(task), thread);
-	}
-}
-
-// ----------------------------------------------------------------------------
-
-bool engine::has_tasks() const
-{
-	for (auto const & taskQueue : m_taskQueues)
-		if (!taskQueue.m_tasks.empty())
-			return true;
-	return false;
 }
 
 // ============================================================================

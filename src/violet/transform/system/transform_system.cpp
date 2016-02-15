@@ -10,6 +10,7 @@
 #include "violet/transform/component/local_transform_component.h"
 #include "violet/transform/component/world_transform_component.h"
 #include "violet/utility/formatted_string.h"
+#include "violet/utility/memory.h"
 
 using namespace vlt;
 
@@ -40,28 +41,30 @@ void transform_system::install(system_factory & factory)
 
 // ----------------------------------------------------------------------------
 
+static void init_task(void*)
+{
+	engine::instance().add_system(std::unique_ptr<vlt::system>(new transform_system));
+}
+
 void transform_system::init(deserializer & deserializer)
 {
 	deserializer.enter_segment(get_label_static());
-
-	engine::instance().add_write_task(engine::instance(),
-		[](engine & engine)
-		{
-			engine.add_system(std::unique_ptr<system>(new transform_system));
-		});
+	add_task(init_task, nullptr, local_transform_component::metadata->thread, task_type::write);
 }
 
 // ============================================================================
 
-transform_system::transform_system(transform_system && other) :
-	system(std::move(other)),
+transform_system::transform_system() :
+	system(get_label_static()),
 	m_entityWorldtransformCache()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-transform_system::~transform_system()
+transform_system::transform_system(transform_system && other) :
+	system(std::move(other)),
+	m_entityWorldtransformCache()
 {
 }
 
@@ -77,13 +80,18 @@ void transform_system::update(const r32 /*dt*/)
 
 // ============================================================================
 
-transform_system::transform_system() :
-	system(get_label_static()),
-	m_entityWorldtransformCache()
+struct update_world_transform_task_data
 {
-}
+	handle entity_id;
+	m4 * transform;
+};
 
-// ============================================================================
+static void update_world_transform_task(void * mem)
+{
+	auto data = make_unique<update_world_transform_task_data>(mem);
+	auto pool = engine::instance().get_current_scene().get_pool<world_transform_component>();
+	pool->get<world_transform_component>(data->entity_id)->transform = *data->transform;
+}
 
 void transformSystemNamespace::updateWorldtransform(const transformEntity & entity, std::map<handle, m4> & worldtransformCache)
 {
@@ -99,13 +107,7 @@ void transformSystemNamespace::updateWorldtransform(const transformEntity & enti
 		const m4 & parentWorldtransform = it != worldtransformCache.end() ? it->second : m4::Identity;
 		const m4 & worldtransform = worldtransformCache[entity_id] = parentWorldtransform * localtransformComponent.transform;
 		if (worldtransformComponent.transform != worldtransform)
-		{
-			engine.add_write_task(*engine.get_current_scene().get_pool<world_transform_component>(),
-				[entity_id, &worldtransformCache](component_pool & pool)
-				{
-					pool.get<world_transform_component>(entity_id)->transform = worldtransformCache[entity_id];
-				});
-		}
+			add_task(update_world_transform_task, new update_world_transform_task_data{ entity_id, &worldtransformCache[entity_id] }, world_transform_component::metadata->thread, task_type::write);
 	}
 }
 

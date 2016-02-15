@@ -4,6 +4,7 @@
 
 #include "violet/core/engine.h"
 #include "violet/component/scene.h"
+#include "violet/graphics/component/color_component.h"
 #include "violet/input/key.h"
 #include "violet/input/input_result.h"
 #include "violet/input/component/key_input_component.h"
@@ -13,6 +14,7 @@
 #include "violet/script/script_component.h"
 #include "violet/system/system_factory.h"
 #include "violet/transform/component/world_transform_component.h"
+#include "violet/utility/memory.h"
 #include "violet/window/window_system.h"
 
 using namespace vlt;
@@ -51,18 +53,26 @@ void input_system::install(system_factory & factory)
 
 // ----------------------------------------------------------------------------
 
+static void init_task(void*)
+{
+	engine::instance().add_system(std::unique_ptr<vlt::system>(new input_system));
+}
+
 void input_system::init(deserializer & deserializer)
 {
 	deserializer.enter_segment(get_label_static());
-
-	engine::instance().add_write_task(engine::instance(),
-		[](engine & engine)
-		{
-			engine.add_system(std::unique_ptr<system>(new input_system));
-		});
+	add_task(init_task, nullptr, mouse_input_component::metadata->thread, task_type::write);
 }
 
 // ============================================================================
+
+input_system::input_system() :
+	system(get_label_static()),
+	m_focussedEntityId()
+{
+}
+
+// ----------------------------------------------------------------------------
 
 input_system::input_system(input_system && other) :
 	system(std::move(other))
@@ -71,67 +81,70 @@ input_system::input_system(input_system && other) :
 
 // ----------------------------------------------------------------------------
 
-void input_system::update(const r32 dt)
+static void update_task(void*)
 {
-	const engine & e = engine::instance();
-	e.add_write_task(*e.get_system<window_system>(),
-		[=](window_system & windowSystem)
+	engine & e = engine::instance();
+	auto & windowSystem = *e.get_system<window_system>();
+	const v2i windowDimensions(windowSystem.get_width(), windowSystem.get_height());
+
+	const auto & inputSystem = *e.get_system<input_system>();
+
+	window_system::event event;
+	// todo: make this call const so the task only reads from the window_system
+	while (windowSystem.get_event(static_cast<window_system::event_type>(~0), &event))
+	{
+		switch (event.type)
 		{
-			const engine & e = engine::instance();
-			window_system::event event;
-			const v2i windowDimensions(windowSystem.get_width(), windowSystem.get_height());
-
-			std::vector<window_system::event> events;
-			while (windowSystem.get_event(static_cast<window_system::event_type>(~0), &event))
+		case window_system::ET_KeyDown:
+		case window_system::ET_KeyUp:
+			if (!inputSystem.m_focussedEntityId.is_valid())
 			{
-				switch (event.type)
-				{
-				case window_system::ET_KeyDown:
-				case window_system::ET_KeyUp:
-					if (!m_focussedEntityId.is_valid())
-					{
-						for (const auto & entity : e.get_current_scene().get_entity_view<key_input_component, script_component>())
-							process_event(entity, event.key, event.type);
-					}
-					else
-						process_focussed_event(event.key, event.type);
-					break;
-
-				case window_system::ET_MouseDown:
-				case window_system::ET_MouseUp:
-					{
-						input_system::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button, event.mouse.modifiers };
-						if (!m_focussedEntityId.is_valid())
-						{
-							for (const auto & entity : e.get_current_scene().get_entity_view<world_transform_component, mouse_input_component, script_component>())
-								if (process_event(entity, worldEvent, event.type) == input_result::block)
-									break;
-						}
-						else
-							process_focussed_event(worldEvent, event.type);
-					}
-					break;
-
-				case window_system::ET_MouseMove:
-					{
-						input_system::MouseMotionEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.motion.x - event.motion.xrel, event.motion.y - event.motion.yrel), computeWorldCoordinates(windowDimensions, event.motion.x, event.motion.y) };
-						if (!m_focussedEntityId.is_valid())
-						{
-							for (const auto entity : e.get_current_scene().get_entity_view<world_transform_component, mouse_input_component, script_component>())
-								process_event(entity, worldEvent);
-						}
-						else
-							process_focussed_event(worldEvent);
-					}
-					break;
-
-				case window_system::ET_Quit:
-					QuitEvent::emit(engine::instance());
-					e.add_write_task(e, [](engine & e) { e.stop(); });
-					break;
-				}
+				for (const auto & entity : e.get_current_scene().get_entity_view<key_input_component, script_component>())
+					process_event(entity, event.key, event.type);
 			}
-		}, thread::Window);
+			else
+				inputSystem.process_focussed_event(event.key, event.type);
+			break;
+
+		case window_system::ET_MouseDown:
+		case window_system::ET_MouseUp:
+		{
+			input_system::MouseButtonEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.mouse.x, event.mouse.y), event.mouse.button, event.mouse.modifiers };
+			if (!inputSystem.m_focussedEntityId.is_valid())
+			{
+				for (const auto & entity : e.get_current_scene().get_entity_view<world_transform_component, mouse_input_component, script_component>())
+					if (process_event(entity, worldEvent, event.type) == input_result::block)
+						break;
+			}
+			else
+				inputSystem.process_focussed_event(worldEvent, event.type);
+		}
+		break;
+
+		case window_system::ET_MouseMove:
+		{
+			input_system::MouseMotionEvent worldEvent = { computeWorldCoordinates(windowDimensions, event.motion.x - event.motion.xrel, event.motion.y - event.motion.yrel), computeWorldCoordinates(windowDimensions, event.motion.x, event.motion.y) };
+			if (!inputSystem.m_focussedEntityId.is_valid())
+			{
+				for (const auto entity : e.get_current_scene().get_entity_view<world_transform_component, mouse_input_component, script_component>())
+					process_event(entity, worldEvent);
+			}
+			else
+				inputSystem.process_focussed_event(worldEvent);
+		}
+		break;
+
+		case window_system::ET_Quit:
+			QuitEvent::emit(engine::instance());
+			engine::instance().stop();
+			break;
+		}
+	}
+}
+
+void input_system::update(const r32 /*dt*/)
+{
+	add_task(update_task, nullptr, color_component::metadata->thread, task_type::write);
 }
 
 // ----------------------------------------------------------------------------
@@ -154,13 +167,16 @@ void input_system::unfocus(const handle entity_id)
 
 // ============================================================================
 
-input_system::input_system() :
-	system(get_label_static()),
-	m_focussedEntityId()
+struct unfocus_task_data
 {
-}
+	handle entity_id;
+};
 
-// ----------------------------------------------------------------------------
+static void unfocus_task(void * mem)
+{
+	auto data = make_unique<unfocus_task_data>(mem);
+	engine::instance().get_system<input_system>()->unfocus(data->entity_id);
+}
 
 void input_system::process_focussed_event(const window_system::key_event & event, const window_system::event_type type) thread_const
 {
@@ -172,7 +188,7 @@ void input_system::process_focussed_event(const window_system::key_event & event
 		if (sc != nullptr && kic != nullptr)
 			process_event(KeyInputEntity(std::forward_as_tuple(*kic, *sc), m_focussedEntityId), event, type);
 		else
-			engine.add_write_task(*this, [=](input_system & input) { input.unfocus(m_focussedEntityId); });
+			add_task(unfocus_task, new unfocus_task_data{ m_focussedEntityId }, mouse_input_component::metadata->thread, task_type::write);
 	}
 	else
 	{
@@ -182,7 +198,7 @@ void input_system::process_focussed_event(const window_system::key_event & event
 			handle id = m_focussedEntityId;
 			FocusLostMethod::run(*sc->script, std::move(id));
 		}
-		engine.add_write_task(*this, [=](input_system & input) { input.unfocus(m_focussedEntityId); });
+		add_task(unfocus_task, new unfocus_task_data{ m_focussedEntityId }, mouse_input_component::metadata->thread, task_type::write);
 	}
 }
 
@@ -209,11 +225,11 @@ void input_system::process_focussed_event(const MouseButtonEvent & worldEvent, c
 		else
 		{
 			FocusLostMethod::run(script, std::move(id));
-			engine.add_write_task(*this, [=](input_system & input) { input.unfocus(m_focussedEntityId); });
+			add_task(unfocus_task, new unfocus_task_data{ m_focussedEntityId }, mouse_input_component::metadata->thread, task_type::write);
 		}
 	}
 	else
-		engine.add_write_task(*this, [=](input_system & input) { input.unfocus(m_focussedEntityId); });
+		add_task(unfocus_task, new unfocus_task_data{ m_focussedEntityId }, mouse_input_component::metadata->thread, task_type::write);
 }
 
 // ----------------------------------------------------------------------------
@@ -227,7 +243,7 @@ void input_system::process_focussed_event(const MouseMotionEvent & worldEvent) t
 	if (sc && mc && tc)
 		process_event(MouseInputEntity(std::forward_as_tuple(*tc, *mc, *sc), m_focussedEntityId), worldEvent);
 	else
-		engine.add_write_task(*this, [=](input_system & input) { input.unfocus(m_focussedEntityId); });
+		add_task(unfocus_task, new unfocus_task_data{ m_focussedEntityId }, mouse_input_component::metadata->thread, task_type::write);
 }
 
 // ============================================================================

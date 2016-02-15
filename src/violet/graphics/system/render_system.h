@@ -15,12 +15,9 @@ namespace vlt
 		static void install(system_factory & factory);
 		static void init(deserializer & deserializer);
 
+		render_system();
 		virtual ~render_system() override;
 		virtual void update(r32 dt) override;
-
-	private:
-
-		render_system();
 	};
 }
 

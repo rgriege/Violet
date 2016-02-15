@@ -5,10 +5,28 @@
 #include "violet/transform/component/world_transform_component.h"
 #include "violet/update/system/update_system.h"
 #include "violet/utility/formatted_string.h"
+#include "violet/utility/memory.h"
 #include "violet/utility/random.h"
 #include "violet/window/window_system.h"
 
 using namespace vlt;
+
+struct update_task_data
+{
+	handle entity_id;
+	v2 delta;
+};
+
+static void update_task(void * mem)
+{
+	auto data = make_unique<update_task_data>(mem);
+	auto tc = engine::instance().get_current_scene().get_component<world_transform_component>(data->entity_id);
+	if (tc != nullptr)
+	{
+		tc->transform[0][3] += data->delta.x;
+		tc->transform[1][3] += data->delta.y;
+	}
+}
 
 class instance : public cpp_script::instance
 {
@@ -36,17 +54,11 @@ private:
         if (transformC != nullptr)
         {
             const auto & window = engine::instance().get_system<window_system>();
-            const float dx = m_speed.x * dt;
-            const float dy = m_speed.y * dt;
-            engine::instance().add_write_task(*transformC,
-                [=](world_transform_component & transformC)
-                {
-                    transformC.transform[0][2] += dx;
-                    transformC.transform[1][2] += dy;
-                });
-            if (std::abs(transformC->transform[0][2] + dx) > window->get_width() / 2)
+			const v2 delta = m_speed * dt;
+			add_task(update_task, new update_task_data{ entityId, delta }, world_transform_component::metadata->thread, task_type::write);
+            if (std::abs(transformC->transform[0][3] + delta.x) > window->get_width() / 2)
                 m_speed.x = -m_speed.x;
-            if (std::abs(transformC->transform[1][2] + dy) > window->get_height() / 2)
+            if (std::abs(transformC->transform[1][3] + delta.y) > window->get_height() / 2)
                 m_speed.y = -m_speed.y;
         }
     }

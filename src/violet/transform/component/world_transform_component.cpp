@@ -1,27 +1,17 @@
 // ============================================================================
 
-#include "violet/transform/component/world_transform_component.h"
+#include <assert.h>
 
 #include "violet/component/component_deserializer.h"
+#include "violet/component/scene.h"
 #include "violet/serialization/serializer.h"
-
-#include <assert.h>
+#include "violet/transform/component/world_transform_component.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-tag world_transform_component::get_tag_static()
-{
-	return tag('w', 't', 'f', 'm');
-}
-
-// ----------------------------------------------------------------------------
-
-thread world_transform_component::get_thread_static()
-{
-	return thread::Any;
-}
+const component_metadata * world_transform_component::metadata;
 
 // ============================================================================
 
@@ -41,12 +31,19 @@ world_transform_component::world_transform_component(const handle entity_id, com
 // ----------------------------------------------------------------------------
 
 world_transform_component::world_transform_component(const handle entity_id, const m4 & transform) :
-	component_base<world_transform_component, 1>(),
 	transform(transform)
 {
 }
 
 // ============================================================================
+
+void vlt::install_world_transform_component()
+{
+	world_transform_component::metadata = init_component_metadata(tag('w', 't', 'f', 'm'), 1, sizeof(world_transform_component));
+	scene::install_component<world_transform_component>();
+}
+
+// ----------------------------------------------------------------------------
 
 component_deserializer & vlt::operator>>(component_deserializer & deserializer, world_transform_component & component)
 {

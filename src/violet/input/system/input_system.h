@@ -33,6 +33,7 @@ namespace vlt
 		static void install(system_factory & factory);
 		static void init(deserializer & deserializer);
 
+		input_system();
 		input_system(input_system && other);
 
 		virtual ~input_system() override = default;
@@ -40,16 +41,10 @@ namespace vlt
 
 		void focus(handle entity_id);
 		void unfocus(handle entity_id);
-
-	private:
-
-		input_system();
-
+		
 		void process_focussed_event(const window_system::key_event & event, window_system::event_type type) thread_const;
 		void process_focussed_event(const MouseButtonEvent & worldEvent, window_system::event_type type) thread_const;
 		void process_focussed_event(const MouseMotionEvent & worldEvent) thread_const;
-
-	private:
 
 		handle m_focussedEntityId;
 	};

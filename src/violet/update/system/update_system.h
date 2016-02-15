@@ -16,16 +16,10 @@ namespace vlt
 		static void install(system_factory & factory);
 		static void init(deserializer & deserializer);
 
-	public:
-
+		update_system();
 		update_system(update_system && other);
 
-		virtual ~update_system() override;
 		virtual void update(r32 dt) override;
-
-	private:
-
-		update_system();
 	};
 
 	DEFINE_METHOD(UpdateMethod, void(handle, r32));

@@ -5,7 +5,12 @@
 
 namespace vlt
 {
-	struct engine;
+	struct system_metadata
+	{
+		u32 thread;
+		// todo: replace label w/ this
+		// tag tag;
+	};
 
 	struct VIOLET_API system
 	{
@@ -16,6 +21,8 @@ namespace vlt
 
 		virtual void update(r32 dt);
 	};
+
+	VIOLET_API void assign_system_to_thread(u32 thread);
 };
 
 #endif

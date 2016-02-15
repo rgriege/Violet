@@ -1,6 +1,3 @@
 TARGETS = \
-    editEntity \
-    editorSceneManager \
-    dialog \
-	selectionManager \
+    addSquares \
     square

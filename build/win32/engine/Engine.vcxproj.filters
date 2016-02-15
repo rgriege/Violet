@@ -147,9 +147,6 @@
     <ClInclude Include="..\..\..\src\violet\component\component_pool.h">
       <Filter>component</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\component\component.h">
-      <Filter>component</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\violet\component\mapped_data_component.h">
       <Filter>component</Filter>
     </ClInclude>
@@ -251,15 +248,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\system\system_factory.h">
       <Filter>system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\task\task_scheduler.h">
-      <Filter>task</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\task\thread.h">
-      <Filter>task</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\violet\task\task.h">
-      <Filter>task</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\violet\template\template_utilities.h">
       <Filter>template</Filter>
@@ -441,6 +429,15 @@
     <ClInclude Include="..\..\..\src\violet\serialization\serialization_utilities.h">
       <Filter>serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\task\thread.h">
+      <Filter>task</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\component\component_metadata.h">
+      <Filter>component</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\violet\utility\memory.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\violet\system\System.cpp">
@@ -453,9 +450,6 @@
       <Filter>component</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\component\component_pool.cpp">
-      <Filter>component</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\component\component.cpp">
       <Filter>component</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\component\mapped_data_component.cpp">
@@ -535,12 +529,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\component\scene.cpp">
       <Filter>component</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\task\task_scheduler.cpp">
-      <Filter>task</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\src\violet\task\task.cpp">
-      <Filter>task</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\violet\core\engine.cpp">
       <Filter>core</Filter>
@@ -668,15 +656,18 @@
     <ClCompile Include="..\..\..\src\violet\time\timestamp.cpp">
       <Filter>time</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\task\thread.cpp">
+      <Filter>task</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\violet\component\component_metadata.cpp">
+      <Filter>component</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\violet\structures\Vector.inl">
       <Filter>structures</Filter>
     </None>
     <None Include="..\..\..\src\violet\component\component_pool.inl">
-      <Filter>component</Filter>
-    </None>
-    <None Include="..\..\..\src\violet\component\component.inl">
       <Filter>component</Filter>
     </None>
     <None Include="..\..\..\src\violet\serialization\file\file_deserializer.inl">

@@ -37,8 +37,13 @@ namespace edt
 
 	public:
 
+		editor_system(std::string editScriptFileName);
+		editor_system(const editor_system &) = delete;
+		editor_system & operator=(const editor_system &) = delete;
+
 		vlt::scene & get_scene();
 		const vlt::scene & get_scene() const;
+		vlt::handle get_proxy_id(vlt::handle proxied_id) const;
 
 		void execute(const std::string & command);
 		void execute(std::unique_ptr<command> && command);
@@ -50,18 +55,7 @@ namespace edt
 		bool deselect(vlt::handle entity_id);
 
 		void propagate_add(vlt::handle entity_id) const;
-		template <typename ComponentType, typename MemberType, MemberType ComponentType::*Member>
-		void propagate_change(vlt::handle entity_id, const MemberType & member) thread_const;
 		void propagated_remove(vlt::handle entity_id) const;
-
-	private:
-
-		editor_system(std::string editScriptFileName);
-
-		void addEditBehavior(const vlt::scene & scene, const vlt::handle entity_id) const;
-
-		editor_system(const editor_system &) = delete;
-		editor_system & operator=(const editor_system &) = delete;
 
 	private:
 

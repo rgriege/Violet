@@ -18,46 +18,42 @@ namespace vlt
 	{
 		typedef std::function<ReturnType(Args ...)> producer;
 
-	public:
-
 		factory() = default;
 
 		factory(const factory & rhs) :
-			m_producers(rhs.m_producers),
-			m_mutex()
+			producers(rhs.producers),
+			mutex()
 		{
 		}
 
 		ReturnType create(const Label & label, Args ... args) const
 		{
-			const std::lock_guard<std::mutex> guard(m_mutex);
-			auto it = m_producers.find(label);
-			assert(it != m_producers.end());
+			const std::lock_guard<std::mutex> guard(mutex);
+			auto it = producers.find(label);
+			assert(it != producers.end());
 			return (it->second)(std::forward<Args>(args)...);
 		}
 
 		void assign(const Label & label, const producer & producer)
 		{
-			const std::lock_guard<std::mutex> guard(m_mutex);
-			m_producers[label] = producer;
+			const std::lock_guard<std::mutex> guard(mutex);
+			producers[label] = producer;
 		}
 
 		bool has(const Label & label) const
 		{
-			const std::lock_guard<std::mutex> guard(m_mutex);
-			return m_producers.find(label) != m_producers.end();
+			const std::lock_guard<std::mutex> guard(mutex);
+			return producers.find(label) != producers.end();
 		}
 
 		void remove(const Label & label)
 		{
-			const std::lock_guard<std::mutex> guard(m_mutex);
-			m_producers.erase(label);
+			const std::lock_guard<std::mutex> guard(mutex);
+			producers.erase(label);
 		}
 
-	private:
-
-		std::map<Label, producer> m_producers;
-		mutable std::mutex m_mutex;
+		std::map<Label, producer> producers;
+		mutable std::mutex mutex;
 	};
 
 	template <typename ReturnType, typename... Args>
@@ -72,41 +68,39 @@ namespace vlt
 		factory() = default;
 
 		factory(const factory & rhs) :
-			m_producers(rhs.m_producers),
-			m_mutex()
+			producers(rhs.producers),
+			mutex()
 		{
 		}
 
 		ReturnType create(const char * const label, Args ... args) const
 		{
-			const std::lock_guard<std::mutex> guard(m_mutex);
-			auto it = m_producers.find(label);
-			assert(it != m_producers.end());
+			const std::lock_guard<std::mutex> guard(mutex);
+			auto it = producers.find(label);
+			assert(it != producers.end());
 			return (it->second)(std::forward<Args>(args)...);
 		}
 
 		void assign(const char * const label, const producer & producer)
 		{
-			const std::lock_guard<std::mutex> guard(m_mutex);
-			m_producers[label] = producer;
+			const std::lock_guard<std::mutex> guard(mutex);
+			producers[label] = producer;
 		}
 
 		bool has(const char * const label) const
 		{
-			const std::lock_guard<std::mutex> guard(m_mutex);
-			return m_producers.find(label) != m_producers.end();
+			const std::lock_guard<std::mutex> guard(mutex);
+			return producers.find(label) != producers.end();
 		}
 
 		void remove(const char * const label)
 		{
-			const std::lock_guard<std::mutex> guard(m_mutex);
-			m_producers.erase(label);
+			const std::lock_guard<std::mutex> guard(mutex);
+			producers.erase(label);
 		}
 
-	private:
-
-		std::map<const char *, producer, string_utilities::Less> m_producers;
-		mutable std::mutex m_mutex;
+		std::map<const char *, producer, string_utilities::Less> producers;
+		mutable std::mutex mutex;
 	};
 }
 

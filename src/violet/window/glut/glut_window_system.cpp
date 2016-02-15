@@ -6,6 +6,7 @@
 #include "violet/math/v2.h"
 #include "violet/serialization/deserializer.h"
 #include "violet/system/system_factory.h"
+#include "violet/utility/memory.h"
 
 #include <GL/freeglut.h>
 
@@ -35,47 +36,76 @@ void glut_window_system::install(system_factory & factory)
 
 // ----------------------------------------------------------------------------
 
+namespace
+{
+	struct init_task_data
+	{
+		int x;
+		int y;
+		int width;
+		int height;
+		std::string title;
+		u32 thread;
+	};
+}
+
+static void init_task(void * mem)
+{
+	auto data = make_unique<init_task_data>(mem);
+
+	int argc = 0;
+	char arr[1] = { '\0' };
+	char * argv = arr;
+
+	glutInit(&argc, &argv);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitWindowSize(data->width, data->height);
+	glutInitWindowPosition(data->x, data->y);
+	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+	const int id = glutCreateWindow(data->title.c_str());
+	if (id == 0)
+	{
+		engine::instance().stop();
+		return;
+	}
+
+	glutCloseFunc(close);
+	glutDisplayFunc(display);
+	glutMouseFunc(onMouseButton);
+	glutMotionFunc(onMouseMove);
+	glutKeyboardFunc(onKeyboardDown);
+	glutKeyboardUpFunc(onKeyboardUp);
+
+	engine::instance().add_system(std::unique_ptr<vlt::system>(new glut_window_system(id, data->width, data->height)));
+}
+
 void glut_window_system::init(deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enter_segment(get_label_static());
 
-	int const x = settingsSegment->get_s32("x");
-	int const y = settingsSegment->get_s32("y");
-	int const width = settingsSegment->get_s32("width");
-	int const height = settingsSegment->get_s32("height");
-	const char * title = settingsSegment->get_string("title");
+	auto data = new init_task_data;
+	data->x = settingsSegment->get_s32("x");
+	data->y = settingsSegment->get_s32("y");
+	data->width = settingsSegment->get_s32("width");
+	data->height = settingsSegment->get_s32("height");
+	data->title = settingsSegment->get_string("title");
+	data->thread = settingsSegment->get_u32("thread");
 
-	engine::instance().add_write_task(engine::instance(),
-		[=](engine & engine)
-		{
-			int argc = 0;
-			char arr[1] = { '\0' };
-			char * argv = arr;
-
-			glutInit(&argc, &argv);
-			glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-			glutInitWindowSize(width, height);
-			glutInitWindowPosition(x, y);
-			glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
-			const int id = glutCreateWindow(title);
-			if (id == 0)
-			{
-				engine.stop();
-				return;
-			}
-
-			glutCloseFunc(close);
-			glutDisplayFunc(display);
-			glutMouseFunc(onMouseButton);
-			glutMotionFunc(onMouseMove);
-			glutKeyboardFunc(onKeyboardDown);
-			glutKeyboardUpFunc(onKeyboardUp);
-
-			engine.add_system(std::unique_ptr<system>(new glut_window_system(id, width, height)));
-		}, thread::Window);
+	add_task(init_task, data, data->thread, task_type::write);
 }
 
 // ============================================================================
+
+glut_window_system::glut_window_system(const int id, const int width, const int height) :
+	window_system(),
+	m_id(id),
+	m_width(width),
+	m_height(height),
+	m_eventQueue()
+{
+}
+
+// ----------------------------------------------------------------------------
 
 void glut_window_system::update(const r32 /*dt*/)
 {
@@ -128,17 +158,6 @@ int glut_window_system::get_width() const
 int glut_window_system::get_height() const
 {
 	return m_height;
-}
-
-// ============================================================================
-
-glut_window_system::glut_window_system(const int id, const int width, const int height) :
-	window_system(),
-	m_id(id),
-	m_width(width),
-	m_height(height),
-	m_eventQueue()
-{
 }
 
 // ============================================================================

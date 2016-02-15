@@ -22,14 +22,11 @@ namespace vlt
 
 	public:
 
+		physics_system(r32 drag, v2 gravity);
 		physics_system(physics_system && other);
 
 		virtual ~physics_system() override = default;
 		virtual void update(r32 dt) override;
-
-	private:
-
-		physics_system(r32 drag, v2 gravity);
 
 	private:
 		

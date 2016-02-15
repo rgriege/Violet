@@ -1,6 +1,28 @@
 {
-  "opts": {
-    "workerCount": 1
+  "thread": {
+    "worker_cnt": 0,
+    "tag": "colr",
+    "thread_idx": 0,
+    "tag": "edtr",
+    "thread_idx": 0,
+    "tag": "kipt",
+    "thread_idx": 0,
+    "tag": "ltfm",
+    "thread_idx": 0,
+    "tag": "mapd",
+    "thread_idx": 0,
+    "tag": "mipt",
+    "thread_idx": 0,
+    "tag": "scpt",
+    "thread_idx": 0,
+    "tag": "text",
+    "thread_idx": 0,
+    "tag": "texu",
+    "thread_idx": 0,
+    "tag": "updt",
+    "thread_idx": 0,
+    "tag": "wtfm",
+    "thread_idx": 0,
   },
   "sysv": {
     "wndw": {

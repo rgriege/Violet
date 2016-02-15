@@ -1,5 +1,6 @@
 // ============================================================================
 
+#include "violet/component/scene.h"
 #include "violet/input/component/key_input_component.h"
 #include "violet/serialization/serializer.h"
 
@@ -7,40 +8,35 @@ using namespace vlt;
 
 // ============================================================================
 
-tag key_input_component::get_tag_static()
+const component_metadata * key_input_component::metadata;
+
+// ============================================================================
+
+key_input_component::key_input_component(const handle entity_id)
 {
-	return tag('k', 'i', 'p', 't');
 }
 
 // ----------------------------------------------------------------------------
 
-thread key_input_component::get_thread_static()
+key_input_component::key_input_component(const handle entity_id, component_deserializer & /*deserializer*/)
 {
-	return thread::Any;
+}
+
+// ----------------------------------------------------------------------------
+
+key_input_component::key_input_component(key_input_component && other)
+{
 }
 
 // ============================================================================
 
-key_input_component::key_input_component(const handle entity_id) :
-	component_base<key_input_component, 0>()
+void vlt::install_key_input_component()
 {
+	key_input_component::metadata = init_component_metadata(tag('k', 'i', 'p', 't'), 0, sizeof(key_input_component));
+	scene::install_component<key_input_component>();
 }
 
 // ----------------------------------------------------------------------------
-
-key_input_component::key_input_component(const handle entity_id, component_deserializer & /*deserializer*/) :
-	key_input_component(entity_id)
-{
-}
-
-// ----------------------------------------------------------------------------
-
-key_input_component::key_input_component(key_input_component && other) :
-	component_base<key_input_component, 0>(std::move(other))
-{
-}
-
-// ============================================================================
 
 serializer & vlt::operator<<(serializer & serializer, const key_input_component & component)
 {

@@ -3,11 +3,10 @@
 
 #include <memory>
 
-#include "violet/component/component.h"
+#include "violet/component/component_metadata.h"
 #include "violet/core/handle.h"
 #include "violet/graphics/color.h"
 #include "violet/graphics/component/render_component_data.h"
-#include "violet/task/thread.h"
 
 namespace vlt
 {
@@ -15,19 +14,21 @@ namespace vlt
 	struct serializer;
 	struct shader_program;
 
-	struct VIOLET_API color_component final : public component_base<color_component, 0>, public render_component_data
+	struct VIOLET_API color_component final : public render_component_data
 	{
-		color m_color;
+		typedef color Color;
+		Color color;
 
-		static tag get_tag_static();
-		static thread get_thread_static();
+		static const component_metadata * metadata;
 
 		color_component(handle entity_id, component_deserializer & deserializer);
-		color_component(handle entity_id, const poly & poly, std::shared_ptr<shader_program> shader, color color);
+		color_component(handle entity_id, const poly & poly, std::shared_ptr<shader_program> shader, Color color);
 		color_component(const color_component &) = delete;
 		color_component & operator=(const color_component &) = delete;
 		color_component(color_component && other);
 	};
+
+	VIOLET_API void install_color_component();
 
 	VIOLET_API component_deserializer & operator>>(component_deserializer & deserializer, color_component & component);
 	VIOLET_API serializer & operator<<(serializer & serializer, const color_component & component);

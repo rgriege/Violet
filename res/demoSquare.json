@@ -1,0 +1,11 @@
+{
+  "idFile": "demoSquare.hndl.json",
+  "cpnt": "wtfm",
+  "file": "demoSquare.wtfm.json",
+  "cpnt": "colr",
+  "file": "demoSquare.colr.json",
+  "cpnt": "updt",
+  "file": "demoSquare.updt.json",
+  "cpnt": "scpt",
+  "file": "demoSquare.scpt.json"
+}

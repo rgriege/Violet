@@ -3,28 +3,28 @@
 
 #include <memory>
 
-#include "violet/component/component.h"
+#include "violet/component/component_metadata.h"
 #include "violet/core/handle.h"
 #include "violet/script/script.h"
-#include "violet/task/thread.h"
 
 namespace vlt
 {
 	struct deserializer;
 	struct serializer;
 
-	struct VIOLET_API script_component final : public component_base<script_component, 0>
+	struct VIOLET_API script_component final
 	{
 		std::unique_ptr<script> script;
 
-		static tag get_tag_static();
-		static thread get_thread_static();
+		static const component_metadata * metadata;
 
 		script_component(handle entity_id, deserializer & deserializer);
 		script_component(handle entity_id, const char * fileName);
 		script_component(script_component && other);
 		~script_component();
 	};
+
+	VIOLET_API void install_script_component();
 
 	VIOLET_API serializer & operator<<(serializer & serializer, const script_component & component);
 

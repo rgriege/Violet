@@ -9,6 +9,7 @@
 #include "violet/serialization/deserializer.h"
 #include "violet/system/system_factory.h"
 #include "violet/utility/formatted_string.h"
+#include "violet/utility/memory.h"
 
 #include <SDL.h>
 
@@ -36,68 +37,106 @@ void sdl_window_system::install(system_factory & factory)
 
 // ----------------------------------------------------------------------------
 
+namespace
+{
+	struct init_task_data
+	{
+		int x;
+		int y;
+		int width;
+		int height;
+		std::string title;
+		u32 thread;
+	};
+}
+
+static void init_task(void * mem)
+{
+	auto data = make_unique<init_task_data>(mem);
+	auto & engine = engine::instance();
+	SDL_SetMainReady();
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	{
+		log(formatted_string<1024>().sprintf("SDL_Init(VIDEO) failed: %s", SDL_GetError()));
+		engine.stop();
+		return;
+	}
+
+	//Use OpenGL 3.1 core
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+	SDL_Window * window = SDL_CreateWindow(data->title.c_str(), data->x, data->y, data->width, data->height, SDL_WINDOW_OPENGL);
+	if (window == nullptr)
+	{
+		log(formatted_string<1024>().sprintf("SDL_CreateWindow failed: %s", SDL_GetError()));
+		engine.stop();
+		return;
+	}
+
+	SDL_GLContext glContext = SDL_GL_CreateContext(window);
+	if (glContext == nullptr)
+	{
+		log(formatted_string<1024>().sprintf("SDL_CreateContext failed: %s", SDL_GetError()));
+		engine.stop();
+		return;
+	}
+
+	SDL_SetEventFilter(filterEvent, nullptr);
+
+	engine.add_system(std::unique_ptr<vlt::system>(new sdl_window_system(window, glContext, data->thread)));
+}
+
 void sdl_window_system::init(deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enter_segment(get_label_static());
 
-	const int x = settingsSegment->get_s32("x");
-	const int y = settingsSegment->get_s32("y");
-	const int width = settingsSegment->get_s32("width");
-	const int height = settingsSegment->get_s32("height");
-	const std::string title = settingsSegment->get_string("title");
+	auto data = new init_task_data;
+	data->x = settingsSegment->get_s32("x");
+	data->y = settingsSegment->get_s32("y");
+	data->width = settingsSegment->get_s32("width");
+	data->height = settingsSegment->get_s32("height");
+	data->title = settingsSegment->get_string("title");
+	data->thread = settingsSegment->get_u32("thread");
 
-	engine::instance().add_write_task(engine::instance(),
-		[=](engine & engine)
-		{
-			SDL_SetMainReady();
-			if (SDL_Init(SDL_INIT_VIDEO) < 0)
-			{
-				log(formatted_string<1024>().sprintf("SDL_Init(VIDEO) failed: %s", SDL_GetError()));
-				engine.stop();
-				return;
-			}
-
-			//Use OpenGL 3.1 core
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-			//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-			SDL_Window * window = SDL_CreateWindow(title.c_str(), x, y, width, height, SDL_WINDOW_OPENGL);
-			if (window == nullptr)
-			{
-				log(formatted_string<1024>().sprintf("SDL_CreateWindow failed: %s", SDL_GetError()));
-				engine.stop();
-				return;
-			}
-
-			SDL_GLContext glContext = SDL_GL_CreateContext(window);
-			if (glContext == nullptr)
-			{
-				log(formatted_string<1024>().sprintf("SDL_CreateContext failed: %s", SDL_GetError()));
-				engine.stop();
-				return;
-			}
-
-			SDL_SetEventFilter(filterEvent, nullptr);
-
-			engine.add_system(std::unique_ptr<system>(new sdl_window_system(window, glContext)));
-		}, thread::Window);
+	add_task(init_task, data, data->thread, task_type::write);
 }
 
 // ============================================================================
 
+sdl_window_system::sdl_window_system(SDL_Window * window, SDL_GLContext context, u32 thread) :
+	window_system(),
+	m_window(window),
+	m_glContext(context),
+	m_width(0),
+	m_height(0),
+	m_thread(thread)
+{
+	SDL_GetWindowSize(m_window, &m_width, &m_height);
+}
+
+// ----------------------------------------------------------------------------
+
+struct destroy_data
+{
+	SDL_GLContext gl_context;
+	SDL_Window * window;
+};
+
+static void destroy(void * mem)
+{
+	auto data = make_unique<destroy_data>(mem);
+	SDL_GL_DeleteContext(data->gl_context);
+	SDL_DestroyWindow(data->window);
+	SDL_Quit();
+}
+
 sdl_window_system::~sdl_window_system()
 {
-	const auto glContext = m_glContext;
-	const auto window = m_window;
-	engine::instance().add_delete_task(std::make_unique<delegate_task>(
-		[=]()
-		{
-			SDL_GL_DeleteContext(glContext);
-			SDL_DestroyWindow(window);
-			SDL_Quit();
-		}), thread::Window);
+	auto data = new destroy_data{ m_glContext, m_window };
+	add_task(destroy, data, m_thread, task_type::del);
 }
 
 // ----------------------------------------------------------------------------
@@ -245,18 +284,6 @@ int sdl_window_system::get_width() const
 int sdl_window_system::get_height() const
 {
 	return m_height;
-}
-
-// ============================================================================
-
-sdl_window_system::sdl_window_system(SDL_Window * window, SDL_GLContext context) :
-	window_system(),
-	m_window(window),
-	m_glContext(context),
-	m_width(0),
-	m_height(0)
-{
-	SDL_GetWindowSize(m_window, &m_width, &m_height);
 }
 
 // ============================================================================

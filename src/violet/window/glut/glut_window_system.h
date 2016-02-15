@@ -30,6 +30,7 @@ namespace vlt
 
 	public:
 
+		glut_window_system(int id, int width, int height);
 		virtual ~glut_window_system() override = default;
 
 		virtual void update(r32 dt) override;
@@ -38,10 +39,6 @@ namespace vlt
 		virtual void add_event(event event) override;
 		virtual int get_width() const override;
 		virtual int get_height() const override;
-
-	private:
-
-		glut_window_system(int id, int width, int height);
 
 	private:
 

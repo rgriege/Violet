@@ -20,6 +20,7 @@ namespace vlt
 		static void install(system_factory & factory);
 		static void init(deserializer & deserializer);
 
+		sdl_window_system(SDL_Window * window, SDL_GLContext context, u32 thread);
 		virtual ~sdl_window_system() override;
 
 		virtual void render() override;
@@ -30,14 +31,11 @@ namespace vlt
 
 	private:
 
-		sdl_window_system(SDL_Window * window, SDL_GLContext context);
-
-	private:
-
 		SDL_Window * m_window;
 		SDL_GLContext m_glContext;
 		int m_width;
 		int m_height;
+		u32 m_thread;
 	};
 }
 

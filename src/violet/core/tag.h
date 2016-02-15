@@ -10,22 +10,34 @@ namespace vlt
 {
 	struct VIOLET_API tag
 	{
-	public:
+		union
+		{
+			std::array<char, 4> characters;
+			u32 value;
+		};
 
+		tag() = default;
 		tag(char a, char b, char c, char d);
 		explicit tag(const char * str);
-
-	public:
+		tag(const tag &) = default;
 
 		std::string as_string() const;
 
 		bool operator<(const tag rhs) const;
 		bool operator==(const tag rhs) const;
 		bool operator!=(const tag rhs) const;
+	};
+}
 
-	private:
-
-		std::array<char, 4> data;
+namespace std
+{
+	template <>
+	struct hash<vlt::tag>
+	{
+		std::size_t operator()(const vlt::tag tag) const
+		{
+			return std::hash<u32>()(tag.value);
+		}
 	};
 }
 

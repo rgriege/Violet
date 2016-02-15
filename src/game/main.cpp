@@ -41,18 +41,18 @@ using namespace edt;
 
 vlt::system_factory setup()
 {
-	vlt::scene::install_component<vlt::color_component>();
-	vlt::scene::install_component<vlt::key_input_component>();
-	vlt::scene::install_component<vlt::local_transform_component>();
-	vlt::scene::install_component<vlt::mapped_data_component>();
-	vlt::scene::install_component<vlt::mouse_input_component>();
-	vlt::scene::install_component<vlt::physics_component>();
-	vlt::scene::install_component<vlt::script_component>();
-	vlt::scene::install_component<vlt::text_component>();
-	vlt::scene::install_component<vlt::texture_component>();
-	vlt::scene::install_component<vlt::update_component>();
-	vlt::scene::install_component<vlt::world_transform_component>();
-	vlt::scene::install_component<editor_component>();
+	vlt::install_color_component();
+	vlt::install_key_input_component();
+	vlt::install_local_transform_component();
+	vlt::install_mapped_data_component();
+	vlt::install_mouse_input_component();
+	vlt::install_physics_component();
+	vlt::install_script_component();
+	vlt::install_text_component();
+	vlt::install_texture_component();
+	vlt::install_update_component();
+	vlt::install_world_transform_component();
+	install_editor_component();
 
 	vlt::json_deserializer::install();
 	vlt::json_serializer::install();
@@ -87,7 +87,7 @@ int main(int /*argc*/, char ** /*argv*/)
 	const vlt::log_target::guard fileLogGuard(vlt::install_log_target(vlt::file_log_target::create("log.txt")));
 
 	auto factory = setup();
-	if (!vlt::engine::bootstrap(factory, "editorConfig.json"))
+	if (!vlt::engine::bootstrap(factory, "demoConfig.json"))
 	{
 		vlt::log("failed to init engine");
 		char c;

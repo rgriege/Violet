@@ -111,7 +111,7 @@ vlt::component_pool vlt::component_pool::create()
 	func_table::save_fn save = (func_table::save_fn) &vlt::detail::saveComponent<ComponentType>;
 	func_table::destroy_fn destroy = (func_table::destroy_fn) &vlt::detail::deleteComponent<ComponentType>;
 	auto ftable = std::make_unique<func_table>(load, save, destroy);
-	return component_pool(ComponentType::get_tag_static(), sizeof(ComponentType), ComponentType::get_version(), std::move(ftable));
+	return component_pool(ComponentType::metadata, std::move(ftable));
 }
 
 // ============================================================================
@@ -119,7 +119,7 @@ vlt::component_pool vlt::component_pool::create()
 template <typename ComponentType, typename... Args>
 ComponentType & vlt::component_pool::create(const handle entity_id, Args && ... args)
 {
-	assert(ComponentType::get_tag_static() == component_tag);
+	assert(ComponentType::metadata->tag == metadata->tag);
 	auto result = insert(entity_id);
 	assert(!result.second);
 
@@ -132,7 +132,7 @@ ComponentType & vlt::component_pool::create(const handle entity_id, Args && ... 
 template <typename ComponentType>
 ComponentType * vlt::component_pool::get(const handle entity_id)
 {
-	assert(ComponentType::get_tag_static() == component_tag);
+	assert(ComponentType::metadata->tag == metadata->tag);
 	const u32 index = get_index(entity_id);
 	return index != size() ? static_cast<ComponentType*>(get(index)) : nullptr;
 }
@@ -142,7 +142,7 @@ ComponentType * vlt::component_pool::get(const handle entity_id)
 template <typename ComponentType>
 const ComponentType * vlt::component_pool::get(const handle entity_id) const
 {
-	assert(ComponentType::get_tag_static() == component_tag);
+	assert(ComponentType::metadata->tag == metadata->tag);
 	const u32 index = get_index(entity_id);
 	return index != size() ? static_cast<const ComponentType*>(get(index)) : nullptr;
 }
@@ -152,7 +152,7 @@ const ComponentType * vlt::component_pool::get(const handle entity_id) const
 template <typename ComponentType>
 vlt::component_pool::iterator<ComponentType> vlt::component_pool::begin()
 {
-	assert(ComponentType::get_tag_static() == component_tag);
+	assert(ComponentType::metadata->tag == metadata->tag);
 	return iterator<ComponentType>(static_cast<ComponentType*>(get(0)), &ids[0]);
 }
 
@@ -161,7 +161,7 @@ vlt::component_pool::iterator<ComponentType> vlt::component_pool::begin()
 template <typename ComponentType>
 vlt::component_pool::const_iterator<ComponentType> vlt::component_pool::begin() const
 {
-	assert(ComponentType::get_tag_static() == component_tag);
+	assert(ComponentType::metadata->tag == metadata->tag);
 	return const_iterator<ComponentType>(static_cast<const ComponentType*>(get(0)), &ids[0]);
 }
 
@@ -170,7 +170,7 @@ vlt::component_pool::const_iterator<ComponentType> vlt::component_pool::begin() 
 template <typename ComponentType>
 vlt::component_pool::iterator<ComponentType> vlt::component_pool::end()
 {
-	assert(ComponentType::get_tag_static() == component_tag);
+	assert(ComponentType::metadata->tag == metadata->tag);
 	return iterator<ComponentType>(static_cast<ComponentType*>(get(size())), &ids[size()]);
 }
 
@@ -179,7 +179,7 @@ vlt::component_pool::iterator<ComponentType> vlt::component_pool::end()
 template <typename ComponentType>
 vlt::component_pool::const_iterator<ComponentType> vlt::component_pool::end() const
 {
-	assert(ComponentType::get_tag_static() == component_tag);
+	assert(ComponentType::metadata->tag == metadata->tag);
 	return const_iterator<ComponentType>(static_cast<const ComponentType*>(get(size())), &ids[size()]);
 }
 

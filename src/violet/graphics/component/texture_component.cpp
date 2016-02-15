@@ -1,48 +1,32 @@
 // ============================================================================
 
-#include "violet/graphics/component/texture_component.h"
+#include <GL/glew.h>
 
 #include "violet/component/component_deserializer.h"
+#include "violet/component/scene.h"
+#include "violet/graphics/component/texture_component.h"
 #include "violet/graphics/shader/shader.h"
 #include "violet/math/aabb.h"
 #include "violet/math/poly.h"
 #include "violet/serialization/serializer.h"
 #include "violet/utility/guard.h"
 
-#include <GL/glew.h>
-
 using namespace vlt;
 
 // ============================================================================
 
-namespace TextureComponentNamespace
-{
-	vector<v2> createTexCoordsFromMesh(const mesh & mesh);
-}
-
-using namespace TextureComponentNamespace;
+const component_metadata * texture_component::metadata;
 
 // ============================================================================
 
-tag texture_component::get_tag_static()
-{
-	return tag('t', 'e', 'x', 'u');
-}
-
-// ----------------------------------------------------------------------------
-
-thread texture_component::get_thread_static()
-{
-	return thread::Window;
-}
+vector<v2> create_text_coords_from_mesh(const mesh & mesh);
 
 // ============================================================================
 
 texture_component::texture_component(const handle entity_id, component_deserializer & deserializer) :
-	component_base<texture_component, 0>(),
 	render_component_data(deserializer),
 	m_texture(texture::get_cache().fetch(deserializer.get_string("texture"))),
-	m_texCoords(std::make_unique<mesh>(createTexCoordsFromMesh(*m_mesh)))
+	m_texCoords(std::make_unique<mesh>(create_text_coords_from_mesh(*m_mesh)))
 {
 	glBindVertexArray(m_vertexArrayBuffer);
 	const guard<mesh> texCoordGuard(*m_texCoords);
@@ -55,7 +39,6 @@ texture_component::texture_component(const handle entity_id, component_deseriali
 // ----------------------------------------------------------------------------
 
 texture_component::texture_component(const handle entity_id, const poly & p, std::shared_ptr<shader_program> shader, std::shared_ptr<texture> texture, const poly & texCoords) :
-	component_base<texture_component, 0>(),
 	render_component_data(p, shader),
 	m_texture(std::move(texture)),
 	m_texCoords(std::make_unique<mesh>(texCoords))
@@ -65,7 +48,6 @@ texture_component::texture_component(const handle entity_id, const poly & p, std
 // ----------------------------------------------------------------------------
 
 texture_component::texture_component(texture_component && other) :
-	component_base<texture_component, 0>(std::move(other)),
 	render_component_data(std::move(other)),
 	m_texture(),
 	m_texCoords(std::move(other.m_texCoords))
@@ -73,13 +55,15 @@ texture_component::texture_component(texture_component && other) :
 	m_texture.swap(other.m_texture);
 }
 
-// ----------------------------------------------------------------------------
+// ============================================================================
 
-texture_component::~texture_component()
+void vlt::install_texture_component()
 {
+	texture_component::metadata = init_component_metadata(tag('t', 'e', 'x', 'u'), 0, sizeof(texture_component));
+	scene::install_component<texture_component>();
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 component_deserializer & vlt::operator>>(component_deserializer & deserializer, texture_component & component)
 {
@@ -99,7 +83,7 @@ serializer & vlt::operator<<(serializer & serializer, const texture_component & 
 
 // ============================================================================
 
-vector<v2> TextureComponentNamespace::createTexCoordsFromMesh(const mesh & mesh)
+vector<v2> create_text_coords_from_mesh(const mesh & mesh)
 {
 	aabb extent;
 	const auto poly = mesh.get_poly();

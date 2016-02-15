@@ -8,14 +8,24 @@
 #include "violet/script/cpp/cpp_script.h"
 #include "violet/ui/ui_text_input_box.h"
 #include "violet/utility/formatted_string.h"
+#include "violet/utility/memory.h"
 
 #include "dialog.h"
 
 #include <cctype>
-#include <functional>
 
 using namespace vlt;
-using namespace std::placeholders;
+
+struct focus_task_data
+{
+	handle entity_id;
+};
+
+static void focus_task(void * mem)
+{
+	auto data = make_unique<unfocus_task_data>(mem);
+	engine::instance().get_system<input_system>()->focus(data->entity_id);
+}
 
 struct instance : public cpp_script::instance
 {
@@ -41,12 +51,7 @@ private:
 
     void onBindToComponent(const handle entity_id)
     {
-        const engine & engine = engine::instance();
-        engine.add_write_task(*engine.get_system<input_system>(),
-            [=](input_system & input)
-            {
-                input.focus(entity_id);
-            });
+		add_task(focus_task, new focus_task_data{ entit_id }, key_input_component::metadata->thread, task_type::write);
     }
 
     void onFocusLost(const handle entity_id)

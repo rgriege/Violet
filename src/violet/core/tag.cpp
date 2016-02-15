@@ -10,37 +10,37 @@ using namespace vlt;
 // ============================================================================
 
 tag::tag(const char a, const char b, const char c, const char d) :
-	data({a, b, c, d})
+	characters({a, b, c, d})
 {
 }
 
 // ----------------------------------------------------------------------------
 
 tag::tag(const char * const str) :
-	data()
+	characters()
 {
-	strncpy(&data[0], str, 4);
+	strncpy(&characters[0], str, 4);
 }
 
 // ----------------------------------------------------------------------------
 
 std::string tag::as_string() const
 {
-	return std::string(&data[0], 4);
+	return std::string(&characters[0], 4);
 }
 
 // ----------------------------------------------------------------------------
 
 bool tag::operator<(const tag rhs) const
 {
-	return *reinterpret_cast<const u32*>(as_string().c_str()) < *reinterpret_cast<const u32*>(rhs.as_string().c_str());
+	return value < rhs.value;
 }
 
 // ----------------------------------------------------------------------------
 
 bool tag::operator==(const tag rhs) const
 {
-	return *reinterpret_cast<const u32*>(as_string().c_str()) == *reinterpret_cast<const u32*>(rhs.as_string().c_str());
+	return value == rhs.value;
 }
 
 // ----------------------------------------------------------------------------

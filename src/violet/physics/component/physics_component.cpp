@@ -1,43 +1,24 @@
 // ============================================================================
 
-#include "violet/physics/component/physics_component.h"
-
 #include "violet/component/component_deserializer.h"
+#include "violet/component/scene.h"
+#include "violet/physics/component/physics_component.h"
 #include "violet/serialization/serializer.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-namespace PhysicsComponentNamespace
-{
-	const char * const ms_massLabel = "mass";
-	const char * const ms_velocityLabel = "vel";
-
-	r32 calculateMomentOfInertia(const poly & poly, r32 mass);
-	component_deserializer & deserializeAllButPolygon(component_deserializer & deserializer, physics_component & component);
-}
-
-using namespace PhysicsComponentNamespace;
+const component_metadata * physics_component::metadata;
 
 // ============================================================================
 
-tag physics_component::get_tag_static()
-{
-	return tag('p', 'h', 'y', 's');
-}
-
-// ----------------------------------------------------------------------------
-
-thread physics_component::get_thread_static()
-{
-	return thread::Any;
-}
+r32 calculate_moment_of_inertia(const poly & poly, r32 mass);
+component_deserializer & deserialize_all_but_polygon(component_deserializer & deserializer, physics_component & component);
 
 // ============================================================================
 
 physics_component::physics_component(const handle entity_id, component_deserializer & deserializer) :
-	component_base<physics_component, 0>(),
 	m_polygon(deserializer),
 	m_mass(),
 	m_velocity(),
@@ -46,13 +27,12 @@ physics_component::physics_component(const handle entity_id, component_deseriali
 	m_angularVelocity(),
 	m_torque()
 {
-	deserializeAllButPolygon(deserializer, *this);
+	deserialize_all_but_polygon(deserializer, *this);
 }
 
 // ----------------------------------------------------------------------------
 
 physics_component::physics_component(physics_component && other) :
-	component_base<physics_component, 0>(std::move(other)),
 	m_polygon(std::move(other.m_polygon)),
 	m_mass(other.m_mass),
 	m_velocity(std::move(other.m_velocity)),
@@ -65,10 +45,18 @@ physics_component::physics_component(physics_component && other) :
 
 // ============================================================================
 
+void vlt::install_physics_component()
+{
+	physics_component::metadata = init_component_metadata(tag('p', 'h', 'y', 's'), 0, sizeof(physics_component));
+	scene::install_component<physics_component>();
+}
+
+// ----------------------------------------------------------------------------
+
 component_deserializer & vlt::operator>>(component_deserializer & deserializer, physics_component & component)
 {
 	deserializer >> component.m_polygon;
-	return deserializeAllButPolygon(deserializer, component);
+	return deserialize_all_but_polygon(deserializer, component);
 }
 
 // ----------------------------------------------------------------------------
@@ -76,15 +64,15 @@ component_deserializer & vlt::operator>>(component_deserializer & deserializer, 
 serializer & vlt::operator<<(serializer & serializer, const physics_component & component)
 {
 	serializer << component.m_polygon;
-	serializer.write_r32(ms_massLabel, component.m_mass);
-	auto segment = serializer.create_segment(ms_velocityLabel);
+	serializer.write_r32("mass", component.m_mass);
+	auto segment = serializer.create_segment("vel");
 	*segment << component.m_velocity;
 	return serializer;
 }
 
 // ============================================================================
 
-r32 PhysicsComponentNamespace::calculateMomentOfInertia(const poly & poly, const r32 mass)
+r32 calculate_moment_of_inertia(const poly & poly, const r32 mass)
 {
 	r32 area = 0;
 	r32 numerator = 0;
@@ -106,15 +94,15 @@ r32 PhysicsComponentNamespace::calculateMomentOfInertia(const poly & poly, const
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & PhysicsComponentNamespace::deserializeAllButPolygon(component_deserializer & deserializer, physics_component & component)
+component_deserializer & deserialize_all_but_polygon(component_deserializer & deserializer, physics_component & component)
 {
-	component.m_mass = deserializer.get_r32(ms_massLabel);
+	component.m_mass = deserializer.get_r32("mass");
 	{
-		auto velocitySegment = deserializer.enter_segment(ms_velocityLabel);
+		auto velocitySegment = deserializer.enter_segment("vel");
 		*velocitySegment >> component.m_velocity;
 	}
 	component.m_force = v2::Zero;
-	component.m_momentOfInertia = calculateMomentOfInertia(component.m_polygon, component.m_mass);
+	component.m_momentOfInertia = calculate_moment_of_inertia(component.m_polygon, component.m_mass);
 	component.m_angularVelocity = 0;
 	component.m_torque = 0;
 	return deserializer;

@@ -10,6 +10,7 @@
 #include "violet/serialization/file/file_serializer_factory.h"
 #include "violet/serialization/serializer.h"
 #include "violet/utility/formatted_string.h"
+#include "violet/utility/memory.h"
 
 using namespace vlt;
 
@@ -19,10 +20,12 @@ namespace sceneNamespace
 {
 	struct SceneFileSaver
 	{
-	public:
+		std::vector<handle> entity_ids;
+		std::unique_ptr<serializer> scene_serializer;
+		std::mutex mutex;
 
 		SceneFileSaver(std::unique_ptr<serializer> && serializer) :
-			m_serializer(std::move(serializer))
+			scene_serializer(std::move(serializer))
 		{
 		}
 
@@ -30,16 +33,11 @@ namespace sceneNamespace
 		{
 			if (count > 0)
 			{
-				const std::lock_guard<std::mutex> lk(m_mutex);
-				m_serializer->write_string("cpnt", componentTag.as_string().c_str());
-				m_serializer->write_string("file", poolFileName.c_str());
+				const std::lock_guard<std::mutex> lk(mutex);
+				scene_serializer->write_string("cpnt", componentTag.as_string().c_str());
+				scene_serializer->write_string("file", poolFileName.c_str());
 			}
 		}
-
-	private:
-
-		std::unique_ptr<serializer> m_serializer;
-		std::mutex m_mutex;
 	};
 }
 
@@ -47,11 +45,10 @@ using namespace sceneNamespace;
 
 // ============================================================================
 
-void scene::install_component(const tag tag, const pool_factory::producer & producer, const thread thread)
+void scene::install_component(const tag tag, const pool_factory::producer & producer)
 {
 	assert(!ms_poolFactory.has(tag));
 	ms_poolFactory.assign(tag, producer);
-	ms_poolThreads[tag] = thread;
 }
 
 // ----------------------------------------------------------------------------
@@ -60,13 +57,11 @@ void scene::uninstall_component(const tag tag)
 {
 	assert(ms_poolFactory.has(tag));
 	ms_poolFactory.remove(tag);
-	ms_poolThreads.erase(tag);
 }
 
 // ============================================================================
 
 scene::pool_factory scene::ms_poolFactory;
-std::map<tag, thread> scene::ms_poolThreads;
 
 // ============================================================================
 
@@ -74,7 +69,7 @@ scene::scene() :
 	m_handleManager(),
 	m_pools()
 {
-	for (auto const & entry : ms_poolThreads)
+	for (auto const & entry : ms_poolFactory.producers)
 		m_pools.emplace_back(ms_poolFactory.create(entry.first));
 }
 
@@ -97,32 +92,60 @@ scene & scene::operator=(scene && other)
 
 // ----------------------------------------------------------------------------
 
+static void delete_pool(void * pool)
+{
+	delete static_cast<component_pool*>(pool);
+}
+
 scene::~scene()
 {
 	for (auto & pool : m_pools)
 	{
-		component_pool * movedPool = new component_pool(std::move(pool));
-		engine::instance().add_delete_task(std::make_unique<delegate_task>(
-			[=]()
-			{
-				delete movedPool;
-			}), ms_poolThreads[pool.get_tag()]);
+		component_pool * moved_pool = new component_pool(std::move(pool));
+		add_task(delete_pool, moved_pool, moved_pool->metadata->thread, task_type::del);
 	}
 }
 
 // ----------------------------------------------------------------------------
+
+struct load_pool_data
+{
+	component_pool * pool;
+	std::string filename;
+	std::shared_ptr<std::unordered_map<u32, handle>> handle_map;
+};
+
+static void load_pool(void * mem)
+{
+	auto data = make_unique<load_pool_data>(mem);
+	auto pool_deserializer = file_deserializer_factory::instance().create(data->filename.c_str());
+	if (pool_deserializer && pool_deserializer->is_valid())
+	{
+		const u32 version = pool_deserializer->get_u32("version");
+		component_deserializer c(std::move(pool_deserializer), version, data->handle_map);
+		data->pool->load(c);
+	}
+	else
+	{
+		log(formatted_string<128>().sprintf("Could not open component file '%s'", data->filename.c_str()));
+	}
+}
 
 std::vector<handle> scene::load(const char * const filename)
 {
 	std::vector<handle> loadedEntityIds;
 	auto deserializer = file_deserializer_factory::instance().create(filename);
 	if (deserializer == nullptr)
+	{
 		log(formatted_string<128>().sprintf("Could not open scene file '%s'", filename));
+	}
 	else if (!deserializer->is_valid())
+	{
 		log(formatted_string<128>().sprintf("Failed to parse scene file '%s'", filename));
+	}
 	else
 	{
-		auto handleIdMap = std::make_shared<std::unordered_map<u32, handle>>();
+		auto handle_map = std::make_shared<std::unordered_map<u32, handle>>();
 		const std::string idFileName = deserializer->get_string("idFile");
 		auto idFileDeserializer = file_deserializer_factory::instance().create(idFileName.c_str());
 		if (idFileDeserializer != nullptr && idFileDeserializer->is_valid())
@@ -131,32 +154,20 @@ std::vector<handle> scene::load(const char * const filename)
 			{
 				const u32 originalId = idFileDeserializer->get_u32("id");
 				const handle createdHandle = m_handleManager.create();
-				(*handleIdMap)[originalId] = createdHandle;
+				(*handle_map)[originalId] = createdHandle;
 				loadedEntityIds.emplace_back(createdHandle);
 			}
 
 			while (deserializer->is_valid())
 			{
 				const tag componentTag = tag(deserializer->get_string("cpnt"));
-				const component_pool * pool = get_pool(componentTag);
+				component_pool * pool = get_pool(componentTag);
 				if (pool != nullptr)
 				{
-					const std::string poolFileName = deserializer->get_string("file");
-					auto threadIt = ms_poolThreads.find(componentTag);
-					assert(threadIt != ms_poolThreads.end());
-					engine::instance().add_write_task(*pool,
-					[=](component_pool & pool)
-					{
-						auto poolDeserializer = file_deserializer_factory::instance().create(poolFileName.c_str());
-						if (poolDeserializer != nullptr && poolDeserializer->is_valid())
-						{
-							const u32 version = poolDeserializer->get_u32("version");
-							component_deserializer componentDeserializer(std::move(poolDeserializer), version, handleIdMap);
-							pool.load(componentDeserializer);
-						}
-						else
-							log(formatted_string<128>().sprintf("Could not open component pool file '%s'", poolFileName.c_str()));
-					}, threadIt->second);
+					const std::string pool_file_name = deserializer->get_string("file");
+
+					load_pool_data * task_data = new load_pool_data{ pool, pool_file_name, handle_map };
+					add_task(load_pool, task_data, pool->metadata->thread, task_type::read);
 				}
 				else
 					log(formatted_string<256>().sprintf("Error loading '%s': no component pool for tag '%s'", idFileName.c_str(), componentTag.as_string().c_str()));
@@ -178,6 +189,31 @@ void scene::save(const char * filename) const
 
 // ----------------------------------------------------------------------------
 
+struct save_pool_task_data
+{
+	const component_pool * pool;
+	std::string filename;
+	std::shared_ptr<SceneFileSaver> scene_file_saver;
+};
+
+static void save_pool_task(void * mem)
+{
+	auto data = make_unique<save_pool_task_data>(mem);
+	auto poolSerializer = file_serializer_factory::instance().create(data->filename.c_str());
+	if (poolSerializer != nullptr)
+	{
+		const u32 count = data->pool->save(*poolSerializer, data->scene_file_saver->entity_ids);
+		data->scene_file_saver->onPoolSaved(data->pool->metadata->tag, data->filename, count);
+		if (count == 0)
+		{
+			poolSerializer.reset();
+			std::remove(data->filename.c_str());
+		}
+	}
+	else
+		log(formatted_string<128>().sprintf("Could not save component pool file '%s'", data->filename.c_str()));
+}
+
 void scene::save(const char * filename, std::vector<handle> entityIds) const
 {
 	log(formatted_string<32>().sprintf("saving %d entities", entityIds.size()));
@@ -196,30 +232,14 @@ void scene::save(const char * filename, std::vector<handle> entityIds) const
 				idFileSerializer->write_u32("id", entity_id.id);
 			idFileSerializer.reset();
 
-			auto sharedEntityIds = std::make_shared<std::vector<handle>>(std::move(entityIds));
 			std::shared_ptr<SceneFileSaver> sceneFileSaver = std::make_shared<SceneFileSaver>(std::move(serializer));
+			sceneFileSaver->entity_ids = std::move(entityIds);
 			for (const auto & pool : m_pools)
 			{
 				std::string poolFileName = filename;
-				string_utilities::replace(poolFileName, ".", std::string(".") + pool.get_tag().as_string() + ".");
+				string_utilities::replace(poolFileName, ".", std::string(".") + pool.metadata->tag.as_string() + ".");
 
-				engine::instance().add_read_task(std::make_unique<delegate_task>(
-				[&pool, poolFileName, sharedEntityIds, sceneFileSaver]()
-				{
-					auto poolSerializer = file_serializer_factory::instance().create(poolFileName.c_str());
-					if (poolSerializer != nullptr)
-					{
-						const u32 count = pool.save(*poolSerializer, *sharedEntityIds);
-						sceneFileSaver->onPoolSaved(pool.get_tag(), poolFileName, count);
-						if (count == 0)
-						{
-							poolSerializer.reset();
-							std::remove(poolFileName.c_str());
-						}
-					}
-					else
-						log(formatted_string<128>().sprintf("Could not save component pool file '%s'", poolFileName.c_str()));
-				}), ms_poolThreads[pool.get_tag()]);
+				add_task(save_pool_task, new save_pool_task_data{ &pool, poolFileName, sceneFileSaver }, pool.metadata->thread, task_type::read);
 			}
 		}
 		else
@@ -257,29 +277,44 @@ u16 scene::get_entity_version(const u16 id) const
 
 // ----------------------------------------------------------------------------
 
+struct remove_from_pool_data
+{
+	component_pool * pool;
+	handle entity_id;
+};
+
+static void remove_from_pool(void * mem)
+{
+	auto data = make_unique<remove_from_pool_data>(mem);
+	data->pool->remove(data->entity_id);
+}
+
 void scene::remove_all(const handle entity_id)
 {
 	for (auto & pool : m_pools)
-	{
-		engine::instance().add_write_task(pool,
-			[=](component_pool & pool)
-			{
-				pool.remove(entity_id);
-			}, ms_poolThreads[pool.get_tag()]);
-	}
+		add_task(remove_from_pool, new remove_from_pool_data{ &pool, entity_id }, pool.metadata->thread, task_type::del);
 
 	m_handleManager.free(entity_id);
 }
 
 // ----------------------------------------------------------------------------
 
+struct remove_all_data
+{
+	scene * scene;
+	handle entity_id;
+};
+
+static void remove_all_internal(void * mem)
+{
+	auto data = make_unique<remove_all_data>(mem);
+	data->scene->remove_all(data->entity_id);
+}
+
 void scene::remove_all(const handle entity_id) thread_const
 {
-	engine::instance().add_write_task(*this,
-		[=](scene & manager)
-		{
-			manager.remove_all(entity_id);
-		});
+	// todo: assign scene tasks to thread
+	add_task(remove_all_internal, new remove_all_data{ const_cast<scene*>(this), entity_id }, 0, task_type::del);
 }
 
 // ----------------------------------------------------------------------------
@@ -295,7 +330,7 @@ void scene::clear()
 
 component_pool * scene::get_pool(const tag componentTag)
 {
-	auto it = std::find_if(m_pools.begin(), m_pools.end(), [=](component_pool & pool) { return pool.get_tag() == componentTag; });
+	auto it = std::find_if(m_pools.begin(), m_pools.end(), [=](component_pool & pool) { return pool.metadata->tag == componentTag; });
 	return it == m_pools.end() ? nullptr : &*it;
 }
 
@@ -303,7 +338,7 @@ component_pool * scene::get_pool(const tag componentTag)
 
 const component_pool * scene::get_pool(const tag componentTag) const
 {
-	auto it = std::find_if(m_pools.cbegin(), m_pools.cend(), [=](const component_pool & pool) { return pool.get_tag() == componentTag; });
+	auto it = std::find_if(m_pools.cbegin(), m_pools.cend(), [=](const component_pool & pool) { return pool.metadata->tag == componentTag; });
 	return it == m_pools.cend() ? nullptr : &*it;
 }
 

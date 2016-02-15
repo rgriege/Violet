@@ -1,10 +1,11 @@
 // ============================================================================
 
 #include "editor/command/file/open_command.h"
-
+#include "editor/component/editor_component.h"
 #include "editor/editor_system.h"
 #include "violet/core/engine.h"
 #include "violet/component/scene.h"
+#include "violet/utility/memory.h"
 
 using namespace edt;
 using namespace vlt;
@@ -33,21 +34,23 @@ open_command::open_command(std::string _filename) :
 
 // ----------------------------------------------------------------------------
 
+struct execute_task_data
+{
+	std::string filename;
+};
+
+static void execute_task(void * mem)
+{
+	auto data = make_unique<execute_task_data>(mem);
+	auto & editor = engine::instance().get_system<editor_system>();
+	auto entity_ids = editor->get_scene().load(data->filename.c_str());
+	for (const handle entity_id : entity_ids)
+		editor->propagate_add(entity_id);
+}
+
 void open_command::execute()
 {
-	engine::instance().add_write_task(engine::instance().get_system<editor_system>()->get_scene(),
-		[=](scene & scene)
-		{
-			entity_ids = scene.load(filename.c_str());
-			for (const handle entity_id : entity_ids)
-			{
-				engine::instance().add_read_task(std::make_unique<delegate_task>(
-					[=]()
-					{
-						engine::instance().get_system<editor_system>()->propagate_add(entity_id);
-					}));
-			}
-		});
+	add_task(execute_task, new execute_task_data{ std::move(filename) }, editor_component::metadata->thread, task_type::write);
 }
 
 // ----------------------------------------------------------------------------

@@ -31,19 +31,16 @@ namespace vlt
 			static ResultType run(const script & script, Args && ... args);
 			static void remove(script & script);
 			static void remove(const script & script);
-			
-		private:
-
-			static void remove_hook(script & script);
 
 		private:
 
 			method() = default;
 		};
 
-	private:
-
 		static void add_hook(script & script, u32 id, const delegate_store & func);
+		static void add_hook(const script & script, u32 id, const delegate_store & func);
+		static void remove_hook(script & script, u32 id, const char * name);
+		static void remove_hook(const script & script, u32 id, const char * name);
 
 	public:
 

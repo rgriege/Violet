@@ -1,27 +1,17 @@
 // ============================================================================
 
-#include "violet/transform/component/local_transform_component.h"
+#include <assert.h>
 
 #include "violet/component/component_deserializer.h"
+#include "violet/component/scene.h"
 #include "violet/serialization/serializer.h"
-
-#include <assert.h>
+#include "violet/transform/component/local_transform_component.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-tag local_transform_component::get_tag_static()
-{
-	return tag('l', 't', 'f', 'm');
-}
-
-// ----------------------------------------------------------------------------
-
-thread local_transform_component::get_thread_static()
-{
-	return thread::Any;
-}
+const component_metadata * local_transform_component::metadata;
 
 // ============================================================================
 
@@ -34,13 +24,20 @@ local_transform_component::local_transform_component(const handle entity_id, com
 // ----------------------------------------------------------------------------
 
 local_transform_component::local_transform_component(const handle entity_id, const handle parentId, const m4 & transform) :
-	component_base<local_transform_component, 1>(),
 	parent_id(parentId),
 	transform(transform)
 {
 }
 
 // ============================================================================
+
+void vlt::install_local_transform_component()
+{
+	local_transform_component::metadata = init_component_metadata(tag('l', 't', 'f', 'm'), 1, sizeof(local_transform_component));
+	scene::install_component<local_transform_component>();
+}
+
+// ----------------------------------------------------------------------------
 
 component_deserializer & vlt::operator>>(component_deserializer & deserializer, local_transform_component & component)
 {

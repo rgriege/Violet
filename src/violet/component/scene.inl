@@ -188,7 +188,7 @@ ComponentType & vlt::scene::create_component(const handle entity_id, Args &&... 
 template <typename ComponentType>
 vlt::component_pool * vlt::scene::get_pool()
 {
-	return get_pool(ComponentType::get_tag_static());
+	return get_pool(ComponentType::metadata->tag);
 }
 
 // ----------------------------------------------------------------------------
@@ -196,7 +196,7 @@ vlt::component_pool * vlt::scene::get_pool()
 template <typename ComponentType>
 const vlt::component_pool * vlt::scene::get_pool() const
 {
-	return get_pool(ComponentType::get_tag_static());
+	return get_pool(ComponentType::metadata->tag);
 }
 
 // ----------------------------------------------------------------------------
@@ -244,7 +244,7 @@ bool vlt::scene::remove(const handle entity_id)
 template <typename ComponentType>
 void vlt::scene::install_component()
 {
-	install_component(ComponentType::get_tag_static(), &scene::create_pool<ComponentType>, ComponentType::get_thread_static());
+	install_component(ComponentType::metadata->tag, &scene::create_pool<ComponentType>);
 }
 
 // ----------------------------------------------------------------------------
@@ -252,7 +252,7 @@ void vlt::scene::install_component()
 template <typename ComponentType>
 void vlt::scene::uninstall_component()
 {
-	uninstall_component(ComponentType::get_tag_static());
+	uninstall_component(ComponentType::metadata->tag);
 }
 
 // ============================================================================

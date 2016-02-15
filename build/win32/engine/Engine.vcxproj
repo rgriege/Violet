@@ -96,7 +96,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\src\violet\component\component.h" />
+    <ClInclude Include="..\..\..\src\violet\component\component_metadata.h" />
     <ClInclude Include="..\..\..\src\violet\component\component_pool.h" />
     <ClInclude Include="..\..\..\src\violet\component\component_deserializer.h" />
     <ClInclude Include="..\..\..\src\violet\component\mapped_data_component.h" />
@@ -168,8 +168,6 @@
     <ClInclude Include="..\..\..\src\violet\structures\vector.h" />
     <ClInclude Include="..\..\..\src\violet\system\system.h" />
     <ClInclude Include="..\..\..\src\violet\system\system_factory.h" />
-    <ClInclude Include="..\..\..\src\violet\task\task.h" />
-    <ClInclude Include="..\..\..\src\violet\task\task_scheduler.h" />
     <ClInclude Include="..\..\..\src\violet\task\thread.h" />
     <ClInclude Include="..\..\..\src\violet\template\template_utilities.h" />
     <ClInclude Include="..\..\..\src\violet\template\tuple_utilities.h" />
@@ -189,6 +187,7 @@
     <ClInclude Include="..\..\..\src\violet\utility\free_list.h" />
     <ClInclude Include="..\..\..\src\violet\utility\guard.h" />
     <ClInclude Include="..\..\..\src\violet\utility\lent_ptr.h" />
+    <ClInclude Include="..\..\..\src\violet\utility\memory.h" />
     <ClInclude Include="..\..\..\src\violet\utility\profiler.h" />
     <ClInclude Include="..\..\..\src\violet\utility\random.h" />
     <ClInclude Include="..\..\..\src\violet\utility\resource_cache.h" />
@@ -202,7 +201,7 @@
     <ClInclude Include="..\..\..\src\violet\window\window_system.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\src\violet\component\component.cpp" />
+    <ClCompile Include="..\..\..\src\violet\component\component_metadata.cpp" />
     <ClCompile Include="..\..\..\src\violet\component\component_deserializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\component\component_pool.cpp" />
     <ClCompile Include="..\..\..\src\violet\component\mapped_data_component.cpp" />
@@ -257,8 +256,7 @@
     <ClCompile Include="..\..\..\src\violet\serialization\json\json_deserializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\serialization\json\json_serializer.cpp" />
     <ClCompile Include="..\..\..\src\violet\system\system.cpp" />
-    <ClCompile Include="..\..\..\src\violet\task\task.cpp" />
-    <ClCompile Include="..\..\..\src\violet\task\task_scheduler.cpp" />
+    <ClCompile Include="..\..\..\src\violet\task\thread.cpp" />
     <ClCompile Include="..\..\..\src\violet\time\timestamp.cpp" />
     <ClCompile Include="..\..\..\src\violet\transform\component\local_transform_component.cpp" />
     <ClCompile Include="..\..\..\src\violet\transform\component\world_transform_component.cpp" />
@@ -276,7 +274,6 @@
     <ClCompile Include="..\..\..\src\violet\window\sdl\sdl_window_system.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\src\violet\component\component.inl" />
     <None Include="..\..\..\src\violet\component\component_pool.inl" />
     <None Include="..\..\..\src\violet\component\scene.inl" />
     <None Include="..\..\..\src\violet\core\engine.inl" />

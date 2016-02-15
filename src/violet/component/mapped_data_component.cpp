@@ -1,30 +1,19 @@
 // ============================================================================
 
-#include "violet/component/mapped_data_component.h"
-
 #include "violet/component/component_deserializer.h"
+#include "violet/component/mapped_data_component.h"
+#include "violet/component/scene.h"
 #include "violet/serialization/serializer.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-tag mapped_data_component::get_tag_static()
-{
-	return tag('m', 'a', 'p', 'd');
-}
-
-// ----------------------------------------------------------------------------
-
-thread mapped_data_component::get_thread_static()
-{
-	return thread::Any;
-}
+const component_metadata * mapped_data_component::metadata;
 
 // ============================================================================
 
 mapped_data_component::mapped_data_component(const handle entity_id) :
-	component_base<mapped_data_component, 0>(),
 	data()
 {
 }
@@ -32,7 +21,6 @@ mapped_data_component::mapped_data_component(const handle entity_id) :
 // ----------------------------------------------------------------------------
 
 mapped_data_component::mapped_data_component(const handle entity_id, component_deserializer & deserializer) :
-	component_base<mapped_data_component, 0>(),
 	data()
 {
 	const u32 n = deserializer.get_u32("n");
@@ -46,12 +34,19 @@ mapped_data_component::mapped_data_component(const handle entity_id, component_d
 // ----------------------------------------------------------------------------
 
 mapped_data_component::mapped_data_component(mapped_data_component && other) :
-	component_base<mapped_data_component, 0>(std::move(other)),
 	data(std::move(other.data))
 {
 }
 
 // ============================================================================
+
+void vlt::install_mapped_data_component()
+{
+	mapped_data_component::metadata = init_component_metadata(tag('m', 'a', 'p', 'd'), 0, sizeof(mapped_data_component));
+	scene::install_component<mapped_data_component>();
+}
+
+// ----------------------------------------------------------------------------
 
 serializer & vlt::operator<<(serializer & serializer, const mapped_data_component & component)
 {

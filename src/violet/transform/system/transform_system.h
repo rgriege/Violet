@@ -18,14 +18,12 @@ namespace vlt
 		static void install(system_factory & factory);
 		static void init(deserializer & deserializer);
 
+		transform_system();
 		transform_system(transform_system && other);
 
-		virtual ~transform_system() override;
 		virtual void update(r32 dt) override;
 
 	private:
-
-		transform_system();
 
 		std::map<handle, m4> m_entityWorldtransformCache;
 	};

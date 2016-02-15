@@ -1,10 +1,10 @@
-#ifndef VIOLET_ComponentPool_H
-#define VIOLET_ComponentPool_H
+#ifndef VIOLET_COMPONENT_POOL_H
+#define VIOLET_COMPONENT_POOL_H
 
 #include <memory>
 #include <vector>
 
-#include "violet/component/component.h"
+#include "violet/component/component_metadata.h"
 #include "violet/core/handle.h"
 
 namespace vlt
@@ -14,9 +14,7 @@ namespace vlt
 
 	struct VIOLET_API component_pool
 	{
-		const tag component_tag;
-		const u32 component_size;
-		const u32 component_version;
+		const component_metadata * metadata;
 		struct func_table;
 		std::unique_ptr<func_table> ftable;
 		std::vector<ubyte> components;
@@ -70,8 +68,6 @@ namespace vlt
 		component_pool & operator=(component_pool && other);
 		~component_pool();
 
-		tag get_tag() const;
-
 		void load(component_deserializer & deserializer);
 		void save(serializer & serailizer) const;
 		u32 save(serializer & serailizer, const std::vector<handle> & entity_ids) const;
@@ -102,15 +98,15 @@ namespace vlt
 
 	private:
 
-		component_pool(tag tag, u32 component_size, u32 version, std::unique_ptr<func_table> && ftable);
+		component_pool(const component_metadata * metadata, std::unique_ptr<func_table> && ftable);
 
 		component_pool(const component_pool &) = delete;
 		component_pool & operator=(const component_pool &) = delete;
 
 		u32 get_index(handle entity_id) const;
 
-		component * get(u32 index);
-		const component * get(u32 index) const;
+		void * get(u32 index);
+		const void * get(u32 index) const;
 
 		std::pair<void *, bool> insert(handle entity_id);
 	};
