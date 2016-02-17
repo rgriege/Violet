@@ -95,16 +95,15 @@ static void update_world_transform_task(void * mem)
 
 void transformSystemNamespace::updateWorldtransform(const transformEntity & entity, std::map<handle, m4> & worldtransformCache)
 {
-	const auto & engine = engine::instance();
 	const auto & localtransformComponent = entity.get<local_transform_component>();
 	const auto & worldtransformComponent = entity.get<world_transform_component>();
 	const handle entity_id = entity.id;
+	const handle & parent_id = localtransformComponent.parent_id;
 
-	const auto it = worldtransformCache.find(localtransformComponent.parent_id);
-	assert(it != worldtransformCache.end());
-
+	const auto it = worldtransformCache.find(parent_id);
+	const m4 & parentWorldtransform = it != worldtransformCache.end() ? it->second : engine::instance().get_current_scene().get_component<world_transform_component>(parent_id)->transform;
+	
 	{
-		const m4 & parentWorldtransform = it != worldtransformCache.end() ? it->second : m4::Identity;
 		const m4 & worldtransform = worldtransformCache[entity_id] = parentWorldtransform * localtransformComponent.transform;
 		if (worldtransformComponent.transform != worldtransform)
 			add_task(update_world_transform_task, new update_world_transform_task_data{ entity_id, &worldtransformCache[entity_id] }, world_transform_component::metadata->thread, task_type::write);
