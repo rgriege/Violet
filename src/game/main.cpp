@@ -3,6 +3,7 @@
 #include "editor/editor_system.h"
 #include "editor/command/clear_all_command.h"
 #include "editor/command/move_to_command.h"
+#include "editor/command/resize_command.h"
 #include "editor/command/file/open_command.h"
 #include "editor/command/file/save_all_command.h"
 #include "editor/command/selection/deselect_command.h"
@@ -75,6 +76,7 @@ vlt::system_factory setup()
 	editor_system::register_command<deselect_command>();
 	editor_system::register_command<move_to_command>();
 	editor_system::register_command<open_command>();
+	editor_system::register_command<resize_command>();
 	editor_system::register_command<save_all_command>();
 	editor_system::register_command<select_command>();
 

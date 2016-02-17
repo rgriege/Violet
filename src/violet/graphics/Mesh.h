@@ -34,6 +34,8 @@ namespace vlt
 		mesh & operator=(const mesh & other) = delete;
 	};
 
+	VIOLET_API void set_mesh_vertices(mesh & mesh, const vector<v2> & vertices);
+
 	deserializer & operator>>(deserializer & deserializer, mesh & mesh);
 	serializer & operator<<(serializer & serializer, const mesh & mesh);
 }

@@ -31,6 +31,9 @@
     <ClInclude Include="..\..\..\src\editor\command\clear_all_command.h">
       <Filter>command</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\command\resize_command.h">
+      <Filter>command</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\editor\component\editor_component.cpp">
@@ -57,6 +60,9 @@
       <Filter>command</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\editor\command\clear_all_command.cpp">
+      <Filter>command</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\command\resize_command.cpp">
       <Filter>command</Filter>
     </ClCompile>
   </ItemGroup>

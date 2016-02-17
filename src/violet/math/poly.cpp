@@ -29,6 +29,17 @@ poly::poly(deserializer & deserializer) :
 
 // ----------------------------------------------------------------------------
 
+poly::poly(const aabb & box) :
+	vertices()
+{
+	vertices.emplace_back(box.bottom_right);
+	vertices.emplace_back(box.bottom_right.x, box.top_left.y);
+	vertices.emplace_back(box.top_left);
+	vertices.emplace_back(box.top_left.x, box.bottom_right.y);
+}
+
+// ----------------------------------------------------------------------------
+
 bool poly::contains(const v2 & point) const
 {
 	static const interval interval(0, 1);

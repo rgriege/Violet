@@ -12,7 +12,7 @@ using namespace vlt;
 
 namespace MeshNamespace
 {
-	void setVertices(mesh & mesh, const poly & poly);
+	void set_mesh_vertices(mesh & mesh, const poly & poly);
 }
 
 using namespace MeshNamespace;
@@ -77,7 +77,7 @@ mesh::mesh(const poly & poly) :
 	m_size(poly.vertices.size())
 {
 	glGenBuffers(1, &m_vertexBuffer);
-	setVertices(*this, poly);
+	set_mesh_vertices(*this, poly.vertices);
 }
 
 // ----------------------------------------------------------------------------
@@ -102,10 +102,20 @@ poly mesh::get_poly() const
 
 // ============================================================================
 
+void vlt::set_mesh_vertices(mesh & mesh, const vector<v2> & vertices)
+{
+	mesh::bind(mesh);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(v2), vertices.data(), GL_STATIC_DRAW);
+	mesh::unbind();
+	mesh.m_size = vertices.size();
+}
+
+// ----------------------------------------------------------------------------
+
 deserializer & vlt::operator>>(deserializer & deserializer, mesh & mesh)
 {
 	poly poly(deserializer);
-	setVertices(mesh, poly);
+	set_mesh_vertices(mesh, poly.vertices);
 	return deserializer;
 }
 
@@ -114,16 +124,6 @@ deserializer & vlt::operator>>(deserializer & deserializer, mesh & mesh)
 serializer & vlt::operator<<(serializer & serializer, const mesh & mesh)
 {
 	return serializer << mesh.get_poly();
-}
-
-// ============================================================================
-
-void MeshNamespace::setVertices(mesh & mesh, const poly & poly)
-{
-
-	mesh::bind(mesh);
-	glBufferData(GL_ARRAY_BUFFER, poly.vertices.size() * sizeof(v2), poly.vertices.data(), GL_STATIC_DRAW);
-	mesh::unbind();
 }
 
 // ============================================================================

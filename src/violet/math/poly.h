@@ -13,6 +13,7 @@ namespace vlt
 
 		explicit poly(vector<v2> && vertices);
 		explicit poly(deserializer & deserializer);
+		explicit poly(const aabb & box);
 		poly(const poly & rhs) = default;
 		poly(poly && rhs) = default;
 		poly & operator=(const poly & rhs) = default;
