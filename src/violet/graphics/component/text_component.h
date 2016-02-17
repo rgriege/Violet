@@ -25,6 +25,7 @@ namespace vlt
 		static const component_metadata * metadata;
 
 		text_component(handle entity_id, component_deserializer & deserializer);
+		text_component(const handle entity_id, const text_component & other);
 		text_component(text_component && other);
 	};
 

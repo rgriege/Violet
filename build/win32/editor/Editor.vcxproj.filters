@@ -37,6 +37,9 @@
     <ClInclude Include="..\..\..\src\editor\command\set_color_command.h">
       <Filter>command</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\editor\command\set_text_command.h">
+      <Filter>command</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\editor\component\editor_component.cpp">
@@ -69,6 +72,9 @@
       <Filter>command</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\src\editor\command\set_color_command.cpp">
+      <Filter>command</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\src\editor\command\set_text_command.cpp">
       <Filter>command</Filter>
     </ClCompile>
   </ItemGroup>

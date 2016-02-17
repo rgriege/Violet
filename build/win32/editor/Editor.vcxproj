@@ -21,6 +21,7 @@
     <ClInclude Include="..\..\..\src\editor\command\selection\deselect_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\selection\select_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\set_color_command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\set_text_command.h" />
     <ClInclude Include="..\..\..\src\editor\component\editor_component.h" />
     <ClInclude Include="..\..\..\src\editor\cpp_script_exports.h" />
     <ClInclude Include="..\..\..\src\editor\defines.h" />
@@ -36,6 +37,7 @@
     <ClCompile Include="..\..\..\src\editor\command\selection\deselect_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\selection\select_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\set_color_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\set_text_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\component\editor_component.cpp" />
     <ClCompile Include="..\..\..\src\editor\cpp_script_exports.cpp" />
     <ClCompile Include="..\..\..\src\editor\editor_system.cpp" />

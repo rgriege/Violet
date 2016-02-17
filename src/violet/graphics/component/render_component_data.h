@@ -21,7 +21,7 @@ namespace vlt
 
 		render_component_data(deserializer & deserializer);
 		render_component_data(const poly & poly, std::shared_ptr<shader_program> shader);
-		render_component_data(const render_component_data &) = delete;
+		render_component_data(const render_component_data &);
 		render_component_data & operator=(const render_component_data &) = delete;
 		render_component_data(render_component_data && other);
 		~render_component_data();

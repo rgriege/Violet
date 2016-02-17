@@ -29,6 +29,16 @@ text_component::text_component(const handle entity_id, component_deserializer & 
 
 // ----------------------------------------------------------------------------
 
+text_component::text_component(const handle entity_id, const text_component & other) :
+	render_component_data(other),
+	m_text(other.m_text),
+	m_font(other.m_font),
+	color(other.color)
+{
+}
+
+// ----------------------------------------------------------------------------
+
 text_component::text_component(text_component && other) :
 	render_component_data(std::move(other)),
 	m_text(std::move(other.m_text)),

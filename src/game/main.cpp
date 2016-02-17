@@ -5,6 +5,7 @@
 #include "editor/command/move_to_command.h"
 #include "editor/command/resize_command.h"
 #include "editor/command/set_color_command.h"
+#include "editor/command/set_text_command.h"
 #include "editor/command/file/open_command.h"
 #include "editor/command/file/save_all_command.h"
 #include "editor/command/selection/deselect_command.h"
@@ -81,6 +82,7 @@ vlt::system_factory setup()
 	editor_system::register_command<save_all_command>();
 	editor_system::register_command<select_command>();
 	editor_system::register_command<set_color_command>();
+	editor_system::register_command<set_text_command>();
 
 	return factory;
 }

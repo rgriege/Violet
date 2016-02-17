@@ -53,6 +53,13 @@ render_component_data::render_component_data(const poly & poly, std::shared_ptr<
 
 // ----------------------------------------------------------------------------
 
+render_component_data::render_component_data(const render_component_data & rhs) :
+	render_component_data(rhs.m_mesh->get_poly(), rhs.m_shader)
+{
+}
+
+// ----------------------------------------------------------------------------
+
 render_component_data::render_component_data(render_component_data && other) :
 	m_vertexArrayBuffer(other.m_vertexArrayBuffer),
 	m_mesh(std::move(other.m_mesh)),

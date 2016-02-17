@@ -4,6 +4,7 @@
 #include "editor/command/command.h"
 #include "editor/component/editor_component.h"
 #include "violet/graphics/component/color_component.h"
+#include "violet/graphics/component/text_component.h"
 #include "violet/input/component/mouse_input_component.h"
 #include "violet/log/Log.h"
 #include "violet/script/script_component.h"
@@ -235,9 +236,21 @@ static void propagate_add_task(void * mem)
 	scene.create_component<world_transform_component>(proxy_id, editor.get_scene().get_component<world_transform_component>(data->entity_id)->transform);
 
 	// new thread
+	poly poly(aabb{});
 	const auto * cc = editor.get_scene().get_component<color_component>(data->entity_id);
-	poly poly = cc->m_mesh->get_poly();
-	scene.create_component<color_component>(proxy_id, poly, cc->m_shader, cc->color);
+	if (cc)
+	{
+		poly = cc->m_mesh->get_poly();
+		scene.create_component<color_component>(proxy_id, poly, cc->m_shader, cc->color);
+	}
+
+	// new thread
+	const auto * tc = editor.get_scene().get_component<text_component>(data->entity_id);
+	if (tc)
+	{
+		poly = tc->m_mesh->get_poly();
+		scene.create_component<text_component>(proxy_id, *tc);
+	}
 
 	const auto * ltc = editor.get_scene().get_component<local_transform_component>(data->entity_id);
 	if (ltc != nullptr)
@@ -265,7 +278,9 @@ static void propagate_add_task(void * mem)
 
 void editor_system::propagate_add(const handle entity_id) const
 {
-	if (m_scene->has_component<world_transform_component>(entity_id) && m_scene->has_component<color_component>(entity_id))
+	if (   m_scene->has_component<world_transform_component>(entity_id)
+		&& (   m_scene->has_component<color_component>(entity_id)
+			|| m_scene->has_component<text_component>(entity_id)))
 		add_task(propagate_add_task, new editor_system_propagate_add_task_data{ entity_id, m_editScriptFileName }, editor_component::metadata->thread, task_type::write);
 }
 
