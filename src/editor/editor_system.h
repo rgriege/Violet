@@ -45,7 +45,7 @@ namespace edt
 		const vlt::scene & get_scene() const;
 		vlt::handle get_proxy_id(vlt::handle proxied_id) const;
 
-		void execute(const std::string & command);
+		b8 execute(const std::string & command);
 		void execute(std::unique_ptr<command> && command);
 		void undo();
 

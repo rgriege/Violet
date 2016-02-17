@@ -139,14 +139,21 @@ vlt::handle editor_system::get_proxy_id(const handle proxied_id) const
 
 // ----------------------------------------------------------------------------
 
-void editor_system::execute(const std::string & commandString)
+b8 editor_system::execute(const std::string & commandString)
 {
 	const std::string name = string_utilities::left(commandString, ' ');
-	auto command = ms_commandFactory.create(name, string_utilities::rightOfFirst(commandString, ' '));
-	if (command != nullptr)
-		execute(std::move(command));
-	else
-		log(formatted_string<128>().sprintf("Invalid command '%s'", commandString.c_str()));
+	if (ms_commandFactory.has(name))
+	{
+		auto command = ms_commandFactory.create(name, string_utilities::rightOfFirst(commandString, ' '));
+		if (command != nullptr)
+		{
+			execute(std::move(command));
+			return true;
+		}
+	}
+
+	log(formatted_string<128>().sprintf("Invalid command '%s'", commandString.c_str()));
+	return false;
 }
 
 // ----------------------------------------------------------------------------
