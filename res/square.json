@@ -3,9 +3,5 @@
   "cpnt": "wtfm",
   "file": "square.wtfm.json",
   "cpnt": "colr",
-  "file": "square.colr.json",
-  "cpnt": "updt",
-  "file": "square.updt.json",
-  "cpnt": "scpt",
-  "file": "square.scpt.json"
+  "file": "square.colr.json"
 }
