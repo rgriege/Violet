@@ -1,3 +1,5 @@
 TARGETS = \
-    addSquares \
+    dialog \
+    editEntity \
+    editorSceneManager \
     square

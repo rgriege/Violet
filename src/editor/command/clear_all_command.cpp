@@ -82,20 +82,28 @@ bool clear_all_command::can_undo() const
 
 // ----------------------------------------------------------------------------
 
-struct undo_task_data
+static void propagate_add_task(void * mem)
 {
-	std::string filename;
-};
+	auto entity_ids = make_unique<std::vector<handle>>(mem);
+	auto & editor = engine::instance().get_system<editor_system>();
+	for (const handle entity_id : *entity_ids)
+		editor->propagate_add(entity_id);
+}
+
+static void cleanup_task(void * mem)
+{
+	auto temp_filename = make_unique<std::string>(mem);
+	cleanup(*temp_filename);
+}
 
 static void undo_task(void * mem)
 {
-	auto data = make_unique<undo_task_data>(mem);
+	auto data = static_cast<std::string*>(mem);
 	log("clear_all_command::undo load");
 	auto & editor = *engine::instance().get_system<editor_system>();
-	const auto & entityIds = editor.get_scene().load(data->filename.c_str());
-	for (const handle entity_id : entityIds)
-		editor.propagate_add(entity_id);
-	cleanup(data->filename);
+	auto entity_ids = new std::vector<handle>(editor.get_scene().load(data->c_str()));
+	add_task(propagate_add_task, entity_ids, 0, task_type::read);
+	add_task(cleanup_task, data, 0, task_type::read);
 }
 
 void clear_all_command::undo()
@@ -103,7 +111,7 @@ void clear_all_command::undo()
 	if (!m_tempFileName.empty())
 	{
 		// todo: assign scene tasks to thread
-		add_task(undo_task, new undo_task_data{ std::move(m_tempFileName) }, 0, task_type::write);
+		add_task(undo_task, new std::string(std::move(m_tempFileName)), 0, task_type::write);
 		m_tempFileName.clear();
 	}
 }

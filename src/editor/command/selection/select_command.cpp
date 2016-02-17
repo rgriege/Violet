@@ -65,14 +65,14 @@ select_command::select_command(std::vector<handle> && entityIds) :
 
 // ----------------------------------------------------------------------------
 
-struct execute_task_data
+struct select_command_execute_task_data
 {
 	std::vector<handle> & entity_ids;
 };
 
 static void execute_task(void * mem)
 {
-	auto data = make_unique<execute_task_data>(mem);
+	auto data = make_unique<select_command_execute_task_data>(mem);
 	auto & editor = *engine::instance().get_system<editor_system>();
 	data->entity_ids.erase(std::remove_if(data->entity_ids.begin(), data->entity_ids.end(),
 		[&](const handle entity_id)
@@ -98,7 +98,7 @@ void select_command::execute()
 			++it;
 	}		
 
-	add_task(execute_task, new execute_task_data{ m_entityIds }, editor_component::metadata->thread, task_type::write);
+	add_task(execute_task, new select_command_execute_task_data{ m_entityIds }, editor_component::metadata->thread, task_type::write);
 }
 
 // ----------------------------------------------------------------------------
@@ -110,14 +110,14 @@ bool select_command::can_undo() const
 
 // ----------------------------------------------------------------------------
 
-struct undo_task_data
+struct select_command_undo_task_data
 {
 	std::vector<handle> entity_ids;
 };
 
 static void undo_task(void * mem)
 {
-	auto data = make_unique<undo_task_data>(mem);
+	auto data = make_unique<select_command_undo_task_data>(mem);
 	auto & editor = engine::instance().get_system<editor_system>();
 	for (const auto entity_id : data->entity_ids)
 		editor->deselect(entity_id);
@@ -125,7 +125,7 @@ static void undo_task(void * mem)
 
 void select_command::undo()
 {
-	add_task(undo_task, new undo_task_data{ std::move(m_entityIds) }, editor_component::metadata->thread, task_type::write);
+	add_task(undo_task, new select_command_undo_task_data{ std::move(m_entityIds) }, editor_component::metadata->thread, task_type::write);
 }
 
 // ============================================================================

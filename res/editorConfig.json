@@ -22,7 +22,7 @@
     "tag": "updt",
     "thread_idx": 0,
     "tag": "wtfm",
-    "thread_idx": 0,
+    "thread_idx": 0
   },
   "sysv": {
     "wndw": {
@@ -30,7 +30,8 @@
       "y": 50,
       "width": 1400,
       "height": 800,
-      "title": "Editor"
+      "title": "Editor",
+      "thread": 0
     },
     "rndr": {
       "color": "0xffffffff"

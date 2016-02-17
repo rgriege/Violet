@@ -34,23 +34,31 @@ open_command::open_command(std::string _filename) :
 
 // ----------------------------------------------------------------------------
 
-struct execute_task_data
+static void propagate_add_task(void * mem)
+{
+	auto entity_ids = static_cast<std::vector<handle>*>(mem);
+	auto & editor = engine::instance().get_system<editor_system>();
+	for (const handle entity_id : *entity_ids)
+		editor->propagate_add(entity_id);
+}
+
+struct open_command_execute_task_data
 {
 	std::string filename;
+	std::vector<handle> * entity_ids;
 };
 
 static void execute_task(void * mem)
 {
-	auto data = make_unique<execute_task_data>(mem);
+	auto data = make_unique<open_command_execute_task_data>(mem);
 	auto & editor = engine::instance().get_system<editor_system>();
-	auto entity_ids = editor->get_scene().load(data->filename.c_str());
-	for (const handle entity_id : entity_ids)
-		editor->propagate_add(entity_id);
+	*data->entity_ids = editor->get_scene().load(data->filename.c_str());
+	add_task(propagate_add_task, data->entity_ids, 0, task_type::read);
 }
 
 void open_command::execute()
 {
-	add_task(execute_task, new execute_task_data{ std::move(filename) }, editor_component::metadata->thread, task_type::write);
+	add_task(execute_task, new open_command_execute_task_data{ std::move(filename), &entity_ids }, editor_component::metadata->thread, task_type::write);
 }
 
 // ----------------------------------------------------------------------------

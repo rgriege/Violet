@@ -23,11 +23,11 @@ struct focus_task_data
 
 static void focus_task(void * mem)
 {
-	auto data = make_unique<unfocus_task_data>(mem);
+	auto data = make_unique<focus_task_data>(mem);
 	engine::instance().get_system<input_system>()->focus(data->entity_id);
 }
 
-struct instance : public cpp_script::instance
+struct instance final : public cpp_script::instance
 {
 public:
 
@@ -51,7 +51,7 @@ private:
 
     void onBindToComponent(const handle entity_id)
     {
-		add_task(focus_task, new focus_task_data{ entit_id }, key_input_component::metadata->thread, task_type::write);
+		add_task(focus_task, new focus_task_data{ entity_id }, key_input_component::metadata->thread, task_type::write);
     }
 
     void onFocusLost(const handle entity_id)

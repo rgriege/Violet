@@ -60,45 +60,46 @@ private:
     {
         if (event.button == MB_Left)
         {
-            const auto & engine = engine::instance();
+            auto & engine = engine::instance();
 
             m_dragging = true;
             m_mouseDownPos = event.position;
 			drag(entity_id);
 
             const bool multiSelect = (event.modifiers & key::M_SHIFT) != 0;
-            engine.add_write_task(*engine.get_system<editor_system>(),
-                [=](editor_system & editor)
-                {
-					const handle editId = engine::instance().get_current_scene().get_component<editor_component>(entity_id)->edit_id;
-					const auto & selectedEditIds = editor.get_selected_entities();
-					const auto & selectedProxyIds = getSelectedProxies(selectedEditIds);
-                    auto it = selectedEditIds.find(editId);
-                    const bool selected = it != selectedEditIds.end();
 
-					if (!selected)
-					{
-						std::vector<std::unique_ptr<command>> commands;
-						commands.emplace_back(create_select_command(editId));
+			// todo: async
+			{
+				auto & editor = *engine.get_system<editor_system>();
+				const handle proxied_id = engine.get_current_scene().get_component<editor_component>(entity_id)->proxied_id;
+				const auto & selectedEditIds = editor.get_selected_entities();
+				const auto & selectedProxyIds = get_selected_proxies(selectedEditIds);
+				auto it = selectedEditIds.find(proxied_id);
+				const bool selected = it != selectedEditIds.end();
 
-						if (!multiSelect && !selectedEditIds.empty())
-							commands.emplace_back(create_deselect_command(std::vector<handle>(selectedEditIds.begin(), selectedEditIds.end())));
-						else
-						{
-							for (const handle id : selectedProxyIds)
-								drag(id);
-						}
+				if (!selected)
+				{
+					std::vector<std::unique_ptr<command>> commands;
+					commands.emplace_back(create_select_command(proxied_id));
 
-						editor.execute(create_chain_command(std::move(commands)));
-					}
-					else if (multiSelect)
-						editor.execute(create_deselect_command(editId));
+					if (!multiSelect && !selectedEditIds.empty())
+						commands.emplace_back(create_deselect_command(std::vector<handle>(selectedEditIds.begin(), selectedEditIds.end())));
 					else
 					{
 						for (const handle id : selectedProxyIds)
 							drag(id);
 					}
-                });
+
+					editor.execute(create_chain_command(std::move(commands)));
+				}
+				else if (multiSelect)
+					editor.execute(create_deselect_command(proxied_id));
+				else
+				{
+					for (const handle id : selectedProxyIds)
+						drag(id);
+				}
+			}
 
             return input_result::block;
         }
@@ -125,23 +126,23 @@ private:
             {
 				if (event.position != m_mouseDownPos)
 				{
-					const auto & engine = engine::instance();
+					auto & engine = engine::instance();
 					std::vector<std::pair<handle, v2>> moveData;
 					for (const auto & draggedEntity : m_draggedEntities)
 					{
 						const auto * ec = engine.get_current_scene().get_component<editor_component>(draggedEntity.m_id);
 						const v2 pos = draggedEntity.m_startPos + event.position - m_mouseDownPos;
-						moveData.emplace_back(ec->edit_id, pos);
+						moveData.emplace_back(ec->proxied_id, pos);
 					}
 					
-					engine.add_write_task(*engine.get_system<editor_system>(),
-						[moveData](editor_system & editor) mutable
-						{
-							std::vector<std::unique_ptr<command>> commands;
-							for (const auto & d : moveData)
-								commands.emplace_back(create_move_to_command(d.first, d.second));
-							editor.execute(create_chain_command(std::move(commands)));
-						});
+					// todo: async
+					auto & editor = *engine.get_system<editor_system>();
+					{
+						std::vector<std::unique_ptr<command>> commands;
+						for (const auto & d : moveData)
+							commands.emplace_back(create_move_to_command(d.first, d.second));
+						editor.execute(create_chain_command(std::move(commands)));
+					}
 				}
 				m_dragging = false;
                 m_mouseDownPos = v2::Zero;
@@ -153,11 +154,11 @@ private:
         return input_result::Pass;
     }
 
-	std::vector<handle> getSelectedProxies(const std::set<handle> & selectedEntities) const
+	std::vector<handle> get_selected_proxies(const std::set<handle> & selectedEntities) const
 	{
 		std::vector<handle> result;
 		for (const auto & entity : engine::instance().get_current_scene().get_entity_view<editor_component>())
-			if (selectedEntities.find(entity.get<editor_component>().edit_id) != selectedEntities.end())
+			if (selectedEntities.find(entity.get<editor_component>().proxied_id) != selectedEntities.end())
 				result.emplace_back(entity.id);
 		return result;
 	}
@@ -211,13 +212,11 @@ private:
     template <typename ComponentType>
     void moveT(const handle entity_id, const v2 & position) const
     {
-        const auto & engine = engine::instance();
-        engine.add_write_task(*engine.get_current_scene().get_pool<ComponentType>(),
-            [=](component_pool & pool)
-            {
-                auto & transform = pool.get<ComponentType>(entity_id)->transform;
-                transform::set_position(transform, position);
-            });
+		// todo: async
+		{
+			auto component = engine::instance().get_current_scene().get_component<ComponentType>(entity_id);
+			transform::set_position(component->transform, position);
+		}
     }
 
 private:

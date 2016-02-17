@@ -87,7 +87,7 @@ int main(int /*argc*/, char ** /*argv*/)
 	const vlt::log_target::guard fileLogGuard(vlt::install_log_target(vlt::file_log_target::create("log.txt")));
 
 	auto factory = setup();
-	if (!vlt::engine::bootstrap(factory, "demoConfig.json"))
+	if (!vlt::engine::bootstrap(factory, "editorConfig.json"))
 	{
 		vlt::log("failed to init engine");
 		char c;

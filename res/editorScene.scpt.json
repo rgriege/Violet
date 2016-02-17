@@ -1,7 +1,5 @@
 {
   "version": 0,
   "id": 0,
-  "file": "editorSceneManager.dll",
-  "id": 1,
-  "file": "selectionManager.dll"
+  "file": "editorSceneManager.dll"
 }

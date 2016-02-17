@@ -51,7 +51,7 @@ move_to_command::move_to_command(const handle entity_id, const v2 & position) :
 
 // ----------------------------------------------------------------------------
 
-struct execute_task_data
+struct move_to_command_execute_task_data
 {
 	handle entity_id;
 	v2 position;
@@ -59,7 +59,7 @@ struct execute_task_data
 
 static void execute_task_local(void * mem)
 {
-	auto data = make_unique<execute_task_data>(mem);
+	auto data = make_unique<move_to_command_execute_task_data>(mem);
 	auto & editor = *engine::instance().get_system<editor_system>();
 	auto ltc = editor.get_scene().get_component<local_transform_component>(data->entity_id);
 	if (ltc != nullptr)
@@ -72,7 +72,7 @@ static void execute_task_local(void * mem)
 
 static void execute_task_world(void * mem)
 {
-	auto data = make_unique<execute_task_data>(mem);
+	auto data = make_unique<move_to_command_execute_task_data>(mem);
 	auto & editor = *engine::instance().get_system<editor_system>();
 	auto wtc = editor.get_scene().get_component<world_transform_component>(data->entity_id);
 	if (wtc != nullptr)
@@ -99,7 +99,7 @@ void move_to_command::execute()
 	if (ltc != nullptr)
 	{
 		log(formatted_string<128>().sprintf("MoveTo local <%f,%f>", m_position.x, m_position.y));
-		add_task(execute_task_local, new execute_task_data{ entity_id, m_position }, local_transform_component::metadata->thread, task_type::write);
+		add_task(execute_task_local, new move_to_command_execute_task_data{ entity_id, m_position }, local_transform_component::metadata->thread, task_type::write);
 		m_position = transform::get_position(ltc->transform);
 	}
 	else

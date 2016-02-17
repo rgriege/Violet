@@ -214,7 +214,7 @@ bool editor_system::deselect(const handle entity_id)
 
 // ----------------------------------------------------------------------------
 
-struct propagate_add_task_data
+struct editor_system_propagate_add_task_data
 {
 	handle entity_id;
 	std::string edit_script_filename;
@@ -222,7 +222,7 @@ struct propagate_add_task_data
 
 static void propagate_add_task(void * mem)
 {
-	auto data = make_unique<propagate_add_task_data>(mem);
+	auto data = make_unique<editor_system_propagate_add_task_data>(mem);
 	auto & scene = engine::instance().get_current_scene();
 	const auto & editor = *engine::instance().get_system<editor_system>();
 	// this thread
@@ -236,7 +236,8 @@ static void propagate_add_task(void * mem)
 
 	// new thread
 	const auto * cc = editor.get_scene().get_component<color_component>(data->entity_id);
-	scene.create_component<color_component>(proxy_id, cc->m_mesh->get_poly(), cc->m_shader, cc->color);
+	poly poly = cc->m_mesh->get_poly();
+	scene.create_component<color_component>(proxy_id, poly, cc->m_shader, cc->color);
 
 	const auto * ltc = editor.get_scene().get_component<local_transform_component>(data->entity_id);
 	if (ltc != nullptr)
@@ -259,14 +260,13 @@ static void propagate_add_task(void * mem)
 	// new thread
 	scene.create_component<script_component>(proxy_id, data->edit_script_filename.c_str());
 
-	poly poly = scene.get_component<color_component>(data->entity_id)->m_mesh->get_poly();
 	scene.create_component<mouse_input_component>(proxy_id, std::move(poly));
 }
 
 void editor_system::propagate_add(const handle entity_id) const
 {
 	if (m_scene->has_component<world_transform_component>(entity_id) && m_scene->has_component<color_component>(entity_id))
-		add_task(propagate_add_task, new propagate_add_task_data{ entity_id, m_editScriptFileName }, editor_component::metadata->thread, task_type::write);
+		add_task(propagate_add_task, new editor_system_propagate_add_task_data{ entity_id, m_editScriptFileName }, editor_component::metadata->thread, task_type::write);
 }
 
 // ----------------------------------------------------------------------------

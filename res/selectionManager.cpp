@@ -15,10 +15,8 @@
 using namespace edt;
 using namespace vlt;
 
-class instance : public cpp_script::instance
+struct instance final : public cpp_script::instance
 {
-public:
-
     instance(cpp_script & script) :
         cpp_script::instance(script)
     {
@@ -96,7 +94,8 @@ private:
 
     void addMutationHandle(handle & entityId)
     {
-        const auto & e = engine::instance();
+		add_task(load_mutation_handle, &)
+        const auto & engine = engine::instance();
         e.add_write_task(e.get_current_scene(),
             [&entityId, this](scene & s)
             {

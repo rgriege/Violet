@@ -8,16 +8,29 @@
 #include "violet/log/log.h"
 #include "violet/script/cpp/cpp_script.h"
 #include "violet/utility/formatted_string.h"
+#include "violet/utility/memory.h"
 
 #include "dialog.h"
 
 using namespace edt;
 using namespace vlt;
 
-class instance final : public cpp_script::instance
+static void load_dialog_task(void * mem)
 {
-public:
+	auto dialog_entities = static_cast<std::vector<handle>*>(mem);
+	*dialog_entities = engine::instance().get_current_scene().load("dialog.json");
+}
 
+static void remove_dialog_task(void * mem)
+{
+	auto dialog_entities = make_unique<std::vector<handle>>(mem);
+	auto & scene = engine::instance().get_current_scene();
+	for (const handle entity_id : *dialog_entities)
+		scene.remove_all(entity_id);
+}
+
+struct instance final : public cpp_script::instance
+{
     instance(cpp_script & script) :
         cpp_script::instance(script),
 		m_dialog(None),
@@ -33,41 +46,27 @@ public:
         DialogClosedEvent::unsubscribe(engine::instance(), DialogClosedEvent::subscriber::bind<instance, &instance::onDialogClosed>(this));
     }
 
-private:
-
     void on_key_up(const handle entityId, const window_system::key_event & event)
     {
-        const auto & ngn = engine::instance();
+		// todo: async
         if (m_dialog == None)
         {
             switch (event.code)
             {
                 case 'o':
-					ngn.add_write_task(ngn.get_current_scene(),
-                        [=](scene & scene)
-                        {
-							m_dialogEntities = scene.load("dialog.json");
-                        });
+					add_task(load_dialog_task, &m_dialogEntities, 0, task_type::write);
                     m_dialog = Load;
                     break;
 
                 case 's':
-					ngn.add_write_task(ngn.get_current_scene(),
-                        [=](scene & scene)
-                        {
-							m_dialogEntities = scene.load("dialog.json");
-                        });
+					add_task(load_dialog_task, &m_dialogEntities, 0, task_type::write);
                     m_dialog = Save;
                     break;
 
                 case 'c':
                     if ((event.modifiers & key::modifier::M_CTRL) == 0)
                     {
-						ngn.add_write_task(*ngn.get_system<editor_system>(),
-                            [](editor_system & editor)
-                            {
-                                editor.execute(create_clear_all_command());
-                            });
+						engine::instance().get_system<editor_system>()->execute(create_clear_all_command());
                     }
                     else
                         printf("%x - %x - %x\n", event.modifiers, key::modifier::M_CTRL, event.modifiers & key::modifier::M_CTRL);
@@ -76,20 +75,12 @@ private:
                 case 'z':
                     if ((event.modifiers & key::modifier::M_CTRL) != 0)
                     {
-                        ngn.add_write_task(*ngn.get_system<editor_system>(),
-                            [](editor_system & editor)
-                            {
-                                editor.undo();
-                            });
+						engine::instance().get_system<editor_system>()->undo();
                     }
                     break;
 
                 case key::Return:
-                    ngn.add_write_task(ngn.get_current_scene(),
-                        [=](scene & s)
-                        {
-							m_dialogEntities = s.load("dialog.json");
-                        });
+					add_task(load_dialog_task, &m_dialogEntities, 0, task_type::write);
                     m_dialog = Command;
                     break;
             }
@@ -98,45 +89,26 @@ private:
 
     void onDialogClosed(const std::string & input)
     {
-		const auto & ngn = engine::instance();
+		// todo: async (execute, remove_all)
         if (!input.empty())
         {
             switch (m_dialog)
             {
                 case Command:
-                    ngn.add_write_task(*ngn.get_system<editor_system>(),
-                        [=](editor_system & editor)
-                        {
-                            editor.execute(input);
-                        });
+					engine::instance().get_system<editor_system>()->execute(input);
                     break;
 
                 case Load:
-                    ngn.add_write_task(*ngn.get_system<editor_system>(),
-                        [=](editor_system & editor)
-                        {
-                            editor.execute(create_open_command(input));
-                        });
+					engine::instance().get_system<editor_system>()->execute(create_open_command(input));
                     break;
 
                 case Save:
-                    ngn.add_write_task(*ngn.get_system<editor_system>(),
-                        [=](editor_system & editor)
-                        {
-                            editor.execute(create_save_all_command(input));
-                        });
+					engine::instance().get_system<editor_system>()->execute(create_save_all_command(input));
                     break;
             }
         }
         m_dialog = None;
-		for (const handle entityId : m_dialogEntities)
-		{
-			ngn.add_write_task(ngn.get_current_scene(),
-				[=](scene & s)
-				{
-					s.remove_all(entityId);
-				});
-		}
+		add_task(remove_dialog_task, new std::vector<handle>(std::move(m_dialogEntities)), 0, task_type::write);
 		m_dialogEntities.clear();
     }
 
