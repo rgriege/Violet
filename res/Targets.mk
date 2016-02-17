@@ -1,5 +1,4 @@
 TARGETS = \
     dialog \
     editEntity \
-    editorSceneManager \
-    square
+    editorSceneManager
