@@ -75,7 +75,7 @@ ui_text_input_box::Status ui_text_input_box::on_key_up(const handle entity_id, c
 {
 	const unsigned char key = event.code;
 	const engine & engine = engine::instance();
-	if (std::isalpha(key) || key == '.' || key == ' ')
+	if (std::isprint(key) || key == '.' || key == ' ')
 	{
 		add_task(append_character_task, new append_character_data{ entity_id, key }, text_component::metadata->thread, task_type::write);
 	}
