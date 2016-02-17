@@ -174,7 +174,7 @@ void engine::begin()
 		else
 		{
 			previousFrameTime = frameTime;
-			log(formatted_string<128>().sprintf("frame timestamp: %.3f", previousFrameTime));
+			// log(formatted_string<128>().sprintf("frame timestamp: %.3f", previousFrameTime));
 		}
 	}
 }
