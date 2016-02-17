@@ -1,0 +1,9 @@
+{
+  "idFile": "editor_label.hndl.json",
+  "cpnt": "wtfm",
+  "file": "editor_label.wtfm.json",
+  "cpnt": "ltfm",
+  "file": "editor_label.ltfm.json",
+  "cpnt": "text",
+  "file": "editor_label.text.json"
+}

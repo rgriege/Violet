@@ -1,0 +1,12 @@
+{
+  "version": 0,
+  "id": 0,
+  "shader": "text",
+  "poly": {
+    "n": 0
+  },
+  "str": "??",
+  "font": "Vera.ttf",
+  "size": 12,
+  "color": "0x000000ff"
+}
