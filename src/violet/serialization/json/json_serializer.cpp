@@ -49,8 +49,8 @@ json_serializer::json_serializer(std::ostream & stream) :
 // ----------------------------------------------------------------------------
 
 json_serializer::json_serializer(json_serializer && other) :
-	stream(other.stream),
-	value(other.value)
+	stream(std::move(other.stream)),
+	value(std::move(other.value))
 {
 }
 

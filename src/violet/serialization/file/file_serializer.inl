@@ -1,8 +1,8 @@
 // ============================================================================
 
 template <typename StreamSerializer>
-vlt::file_serializer<StreamSerializer>::file_serializer(std::filebuf && file) :
-	file(std::move(file)),
+vlt::file_serializer<StreamSerializer>::file_serializer(std::filebuf && _file) :
+	file(std::move(_file)),
 	stream(&file),
 	stream_serializer(stream)
 {
