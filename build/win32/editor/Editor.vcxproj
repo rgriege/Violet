@@ -14,7 +14,7 @@
     <ClInclude Include="..\..\..\src\editor\command\delete_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\resize_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\chain_command.h" />
-    <ClInclude Include="..\..\..\src\editor\command\clear_all_command.h" />
+    <ClInclude Include="..\..\..\src\editor\command\clear_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\command.h" />
     <ClInclude Include="..\..\..\src\editor\command\file\open_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\file\save_all_command.h" />
@@ -32,7 +32,7 @@
     <ClCompile Include="..\..\..\src\editor\command\delete_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\resize_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\chain_command.cpp" />
-    <ClCompile Include="..\..\..\src\editor\command\clear_all_command.cpp" />
+    <ClCompile Include="..\..\..\src\editor\command\clear_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\file\open_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\file\save_all_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\move_to_command.cpp" />

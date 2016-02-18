@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "editor/command/chain_command.h"
-#include "editor/command/clear_all_command.h"
+#include "editor/command/clear_command.h"
 #include "editor/command/move_to_command.h"
 #include "editor/command/file/open_command.h"
 #include "editor/command/file/save_all_command.h"
@@ -14,7 +14,7 @@
 namespace edt
 {
 	EDITOR_API std::unique_ptr<chain_command> create_chain_command(std::vector<std::unique_ptr<command>> && commands);
-	EDITOR_API std::unique_ptr<clear_all_command> create_clear_all_command();
+	EDITOR_API std::unique_ptr<clear_command> create_clear_command();
 	EDITOR_API std::unique_ptr<deselect_command> create_deselect_command(vlt::handle entity_id);
 	EDITOR_API std::unique_ptr<deselect_command> create_deselect_command(std::vector<vlt::handle> && entityIds);
 	EDITOR_API std::unique_ptr<move_to_command> create_move_to_command(vlt::handle entity_id, const vlt::v2 & position);

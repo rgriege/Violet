@@ -14,9 +14,9 @@ std::unique_ptr<chain_command> edt::create_chain_command(std::vector<std::unique
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<clear_all_command> edt::create_clear_all_command()
+std::unique_ptr<clear_command> edt::create_clear_command()
 {
-	return std::make_unique<clear_all_command>();
+	return std::make_unique<clear_command>();
 }
 
 // ----------------------------------------------------------------------------
