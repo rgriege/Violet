@@ -2,6 +2,7 @@
 
 #include "editor/editor_system.h"
 #include "editor/command/clear_all_command.h"
+#include "editor/command/delete_command.h"
 #include "editor/command/move_to_command.h"
 #include "editor/command/resize_command.h"
 #include "editor/command/set_color_command.h"
@@ -75,6 +76,7 @@ vlt::system_factory setup()
 	edt::editor_system::install(factory);
 
 	editor_system::register_command<clear_all_command>();
+	editor_system::register_command<delete_command>();
 	editor_system::register_command<deselect_command>();
 	editor_system::register_command<move_to_command>();
 	editor_system::register_command<open_command>();

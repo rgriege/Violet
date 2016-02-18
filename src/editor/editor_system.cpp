@@ -291,14 +291,4 @@ void editor_system::propagate_add(const handle entity_id) const
 		add_task(propagate_add_task, new editor_system_propagate_add_task_data{ entity_id, m_editScriptFileName }, editor_component::metadata->thread, task_type::write);
 }
 
-// ----------------------------------------------------------------------------
-
-void editor_system::propagated_remove(const handle entity_id) const
-{
-	const auto & scene = engine::instance().get_current_scene();
-	for (const auto & entity : scene.get_entity_view<editor_component>())
-		if (entity.get<editor_component>().proxied_id == entity_id)
-			scene.remove_all(entity.id);
-}
-
 // ============================================================================

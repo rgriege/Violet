@@ -73,16 +73,18 @@ bool open_command::can_undo() const
 void open_command::undo()
 {
 	const auto & editor = *engine::instance().get_system<editor_system>();
-	const auto & scene = editor.get_scene();
+	const auto & proxied_scene = editor.get_scene();
 	for (const handle entity_id : entity_ids)
 	{
-		if (scene.exists(entity_id))
+		if (proxied_scene.exists(entity_id))
 		{
-			scene.remove_all(entity_id);
-			editor.propagated_remove(entity_id);
+			proxied_scene.remove_all(entity_id);
+			const auto & proxy_scene = engine::instance().get_current_scene();
+			for (const auto & entity : proxy_scene.get_entity_view<editor_component>())
+				if (entity.get<editor_component>().proxied_id == entity_id)
+					proxy_scene.remove_all(entity.id);
 		}
 	}
-	entity_ids.clear();
 }
 
 // ============================================================================

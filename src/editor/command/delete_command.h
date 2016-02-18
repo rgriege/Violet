@@ -1,22 +1,25 @@
-#ifndef EDITOR_CLEAR_ALL_COMMAND_H
-#define EDITOR_CLEAR_ALL_COMMAND_H
-
-#include "editor/command/command.h"
+#ifndef EDITOR_DELETE_COMMAND_H
+#define EDITOR_DELETE_COMMAND_H
 
 #include <memory>
 #include <string>
 
+#include "violet/core/handle.h"
+
+#include "editor/command/command.h"
+
 namespace edt
 {
-	struct EDITOR_API clear_all_command final : public command
+	struct EDITOR_API delete_command final : public command
 	{
+		vlt::handle entity_id;
 		std::string temp_filename;
 
 		static const char * get_usage();
 		static std::unique_ptr<command> parse(const std::string & text);
 
-		clear_all_command();
-		virtual ~clear_all_command() override;
+		delete_command(vlt::handle _entity_id);
+		virtual ~delete_command() override;
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;

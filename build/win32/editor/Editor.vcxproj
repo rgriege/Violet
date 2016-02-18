@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\src\editor\command\delete_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\resize_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\chain_command.h" />
     <ClInclude Include="..\..\..\src\editor\command\clear_all_command.h" />
@@ -28,6 +29,7 @@
     <ClInclude Include="..\..\..\src\editor\editor_system.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\src\editor\command\delete_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\resize_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\chain_command.cpp" />
     <ClCompile Include="..\..\..\src\editor\command\clear_all_command.cpp" />

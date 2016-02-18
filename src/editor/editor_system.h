@@ -55,7 +55,6 @@ namespace edt
 		bool deselect(vlt::handle entity_id);
 
 		void propagate_add(vlt::handle entity_id) const;
-		void propagated_remove(vlt::handle entity_id) const;
 
 	private:
 

@@ -1,6 +1,6 @@
 // ============================================================================
 
-#include "editor/command/clear_all_command.h"
+#include "editor/command/delete_command.h"
 #include "editor/component/editor_component.h"
 #include "editor/editor_system.h"
 #include "violet/core/engine.h"
@@ -21,28 +21,29 @@ static void cleanup(std::string tempFileName);
 
 // ============================================================================
 
-const char * clear_all_command::get_usage()
+const char * delete_command::get_usage()
 {
-	return "clear";
+	return "delete <id>";
 }
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<command> clear_all_command::parse(const std::string & text)
+std::unique_ptr<command> delete_command::parse(const std::string & text)
 {
-	return text.empty() ? std::make_unique<clear_all_command>() : nullptr;
+	return !text.empty() ? std::make_unique<delete_command>(handle(std::atoi(text.c_str()), 0)) : nullptr;
 }
 
 // ============================================================================
 
-clear_all_command::clear_all_command() :
+delete_command::delete_command(const vlt::handle _entity_id) :
+	entity_id(_entity_id),
 	temp_filename()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-clear_all_command::~clear_all_command()
+delete_command::~delete_command()
 {
 	if (!temp_filename.empty())
 		cleanup(temp_filename);
@@ -50,29 +51,26 @@ clear_all_command::~clear_all_command()
 
 // ----------------------------------------------------------------------------
 
-void clear_all_command::execute()
+void delete_command::execute()
 {
-	const auto & editor = *engine::instance().get_system<editor_system>();
 	const auto & proxy_scene = engine::instance().get_current_scene();
+	entity_id.version = proxy_scene.get_entity_version(entity_id.id);
+
+	const handle proxied_id = proxy_scene.get_component<editor_component>(entity_id)->proxied_id;
+
+	const auto & editor = *engine::instance().get_system<editor_system>();
 	const auto & proxied_scene = editor.get_scene();
-	const auto entity_ids = proxied_scene.get_entity_ids();
-	if (!entity_ids.empty())
-	{
-		temp_filename = string_utilities::rightOfFirst(formatted_string<32>().sprintf("%.6f.json", random::ms_generator.generate_0_to_1()), '.');
+	temp_filename = string_utilities::rightOfFirst(formatted_string<32>().sprintf("%.6f.json", random::ms_generator.generate_0_to_1()), '.');
 
-		proxied_scene.save(temp_filename.c_str(), entity_ids);
+	proxied_scene.save(temp_filename.c_str(), { proxied_id });
 
-		for (const auto entity_id : entity_ids)
-			proxied_scene.remove_all(entity_id);
-
-		for (const auto & entity : proxy_scene.get_entity_view<editor_component>())
-			proxy_scene.remove_all(entity.id);
-	}
+	proxy_scene.remove_all(entity_id);
+	proxied_scene.remove_all(proxied_id);
 }
 
 // ----------------------------------------------------------------------------
 
-bool clear_all_command::can_undo() const
+bool delete_command::can_undo() const
 {
 	return !temp_filename.empty();
 }
@@ -96,14 +94,14 @@ static void cleanup_task(void * mem)
 static void undo_task(void * mem)
 {
 	auto data = static_cast<std::string*>(mem);
-	log("clear_all_command::undo");
+	log("delete_command::undo");
 	auto & editor = *engine::instance().get_system<editor_system>();
 	auto entity_ids = new std::vector<handle>(editor.get_scene().load(data->c_str()));
 	add_task(propagate_add_task, entity_ids, 0, task_type::read);
 	add_task(cleanup_task, data, 0, task_type::read);
 }
 
-void clear_all_command::undo()
+void delete_command::undo()
 {
 	if (!temp_filename.empty())
 	{
