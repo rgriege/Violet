@@ -1,6 +1,6 @@
 // ============================================================================
 
-#include "editor/command/clear_all_command.h"
+#include "editor/command/clear_command.h"
 #include "editor/component/editor_component.h"
 #include "editor/editor_system.h"
 #include "violet/core/engine.h"
@@ -21,28 +21,28 @@ static void cleanup(std::string tempFileName);
 
 // ============================================================================
 
-const char * clear_all_command::get_usage()
+const char * clear_command::get_usage()
 {
 	return "clear";
 }
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<command> clear_all_command::parse(const std::string & text)
+std::unique_ptr<command> clear_command::parse(const std::string & text)
 {
-	return text.empty() ? std::make_unique<clear_all_command>() : nullptr;
+	return text.empty() ? std::make_unique<clear_command>() : nullptr;
 }
 
 // ============================================================================
 
-clear_all_command::clear_all_command() :
+clear_command::clear_command() :
 	temp_filename()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-clear_all_command::~clear_all_command()
+clear_command::~clear_command()
 {
 	if (!temp_filename.empty())
 		cleanup(temp_filename);
@@ -50,7 +50,7 @@ clear_all_command::~clear_all_command()
 
 // ----------------------------------------------------------------------------
 
-void clear_all_command::execute()
+void clear_command::execute()
 {
 	const auto & editor = *engine::instance().get_system<editor_system>();
 	const auto & proxy_scene = engine::instance().get_current_scene();
@@ -72,7 +72,7 @@ void clear_all_command::execute()
 
 // ----------------------------------------------------------------------------
 
-bool clear_all_command::can_undo() const
+bool clear_command::can_undo() const
 {
 	return !temp_filename.empty();
 }
@@ -96,14 +96,14 @@ static void cleanup_task(void * mem)
 static void undo_task(void * mem)
 {
 	auto data = static_cast<std::string*>(mem);
-	log("clear_all_command::undo");
+	log("clear_command::undo");
 	auto & editor = *engine::instance().get_system<editor_system>();
 	auto entity_ids = new std::vector<handle>(editor.get_scene().load(data->c_str()));
 	add_task(propagate_add_task, entity_ids, 0, task_type::read);
 	add_task(cleanup_task, data, 0, task_type::read);
 }
 
-void clear_all_command::undo()
+void clear_command::undo()
 {
 	if (!temp_filename.empty())
 	{
