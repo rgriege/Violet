@@ -99,7 +99,7 @@ struct instance final : public cpp_script::instance
 		case 'd':
 			if ((event.modifiers & key::modifier::M_CTRL) == 0)
 			{
-				engine::instance().get_system<editor_system>()->execute(create_clear_all_command());
+				engine::instance().get_system<editor_system>()->execute(create_clear_command());
 			}
 			break;
 
