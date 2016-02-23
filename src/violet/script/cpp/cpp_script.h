@@ -7,25 +7,25 @@
 
 namespace vlt
 {
-	struct shared_library;
+	struct Shared_Library;
 
-	struct VIOLET_API cpp_script final : public script
+	struct VIOLET_API Cpp_Script final : public Script
 	{
-		struct VIOLET_API instance
+		struct VIOLET_API Instance
 		{
-			instance(cpp_script & script);
-			virtual ~instance() = 0;
+			Instance(Cpp_Script & Script);
+			virtual ~Instance() = 0;
 
 		protected:
 
-			cpp_script & script;
+			Cpp_Script & script;
 		};
 
 		static void install();
 
-		cpp_script(const char * fileName);
-		cpp_script(cpp_script && other);
-		virtual ~cpp_script() override;
+		Cpp_Script(const char * fileName);
+		Cpp_Script(Cpp_Script && other);
+		virtual ~Cpp_Script() override;
 
 		virtual const std::string & get_filename() const override;
 		virtual bool is_valid() const override;
@@ -36,8 +36,8 @@ namespace vlt
 
 	private:
 
-		cpp_script(const cpp_script &) = delete;
-		cpp_script & operator=(const cpp_script &) = delete;
+		Cpp_Script(const Cpp_Script &) = delete;
+		Cpp_Script & operator=(const Cpp_Script &) = delete;
 
 		void * get_method_ptr(const char * name) const;
 
@@ -47,8 +47,8 @@ namespace vlt
 	private:
 
 		std::string m_fileName;
-		std::shared_ptr<shared_library> m_lib;
-		std::unique_ptr<instance> m_instance;
+		std::shared_ptr<Shared_Library> m_lib;
+		std::unique_ptr<Instance> m_instance;
 	};
 }
 

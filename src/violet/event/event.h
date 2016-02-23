@@ -7,40 +7,34 @@
 
 namespace vlt
 {
-	struct VIOLET_API event_base
+	struct VIOLET_API Event_Base
 	{
 	protected:
 
-		static void subscribe(const event_context & event_context, u32 identifier, const delegate_store & func);
-		static void unsubscribe(const event_context & event_context, u32 identifier, const delegate_store & func);
+		static void subscribe(const Event_Context & event_context, u32 identifier, const Delegate_Store & func);
+		static void unsubscribe(const Event_Context & event_context, u32 identifier, const Delegate_Store & func);
 	};
 
 	template <typename Derived, typename Signature>
-	struct event;
+	struct Event;
 
 	template <typename Derived, typename ... Args>
-	struct event<Derived, void(Args...)> : public event_base
+	struct Event<Derived, void(Args...)> : public Event_Base
 	{
-	public:
+		typedef Delegate<void(Args...)> Subscriber;
 
-		typedef delegate<void(Args...)> subscriber;
+		static void subscribe(Event_Context & context, const Subscriber & func);
+		static void subscribe(const Event_Context & context, const Subscriber & func);
+		static void subscribe(Event_Context_Owner & owner, const Subscriber & func);
+		static void subscribe(const Event_Context_Owner & context, const Subscriber & func);
+		static void emit(const Event_Context & context, Args && ... args);
+		static void emit(const Event_Context_Owner & owner, Args && ... args);
+		static void unsubscribe(Event_Context & context, const Subscriber & func);
+		static void unsubscribe(const Event_Context & context, const Subscriber & func);
+		static void unsubscribe(Event_Context_Owner & owner, const Subscriber & func);
+		static void unsubscribe(const Event_Context_Owner & owner, const Subscriber & func);
 
-	public:
-
-		static void subscribe(event_context & event_context_owner, const subscriber & func);
-		static void subscribe(const event_context & event_context_owner, const subscriber & func);
-		static void subscribe(event_context_owner & event_context, const subscriber & func);
-		static void subscribe(const event_context_owner & event_context, const subscriber & func);
-		static void emit(const event_context & event_context, Args && ... args);
-		static void emit(const event_context_owner & event_context_owner, Args && ... args);
-		static void unsubscribe(event_context & event_context, const subscriber & func);
-		static void unsubscribe(const event_context & event_context, const subscriber & func);
-		static void unsubscribe(event_context_owner & event_context_owner, const subscriber & func);
-		static void unsubscribe(const event_context_owner & event_context_owner, const subscriber & func);
-
-	private:
-
-		event() = default;
+		Event() = default;
 	};
 
 #ifdef WIN32
@@ -53,14 +47,14 @@ namespace vlt
 #define EVENT_API
 #endif
 
-#define DEFINE_EVENT(EventName, Signature) struct EVENT_API EventName : public vlt::event<EventName, Signature> \
+#define DEFINE_EVENT(EventName, Signature) struct EVENT_API EventName : public vlt::Event<EventName, Signature> \
 	{ \
 	public: \
 		static const char * get_name() { return #EventName; } \
 		static u32 get_identifier() { return std::hash<std::string>()(get_name()); } \
 	}
 
-#define DEFINE_EXTERNAL_EVENT(EventName, Signature) struct EventName : public vlt::event<EventName, Signature> \
+#define DEFINE_EXTERNAL_EVENT(EventName, Signature) struct EventName : public vlt::Event<EventName, Signature> \
 	{ \
 	public: \
 		static const char * get_name() { return #EventName; } \

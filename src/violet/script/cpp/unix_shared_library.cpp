@@ -1,19 +1,21 @@
 // ============================================================================
 
-#include "violet/script/cpp/shared_library.h"
-
 #include <cstdio>
 #include <dlfcn.h>
+
+#include "violet/log/log.h"
+#include "violet/script/cpp/shared_library.h"
+#include "violet/utility/formatted_string.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-class shared_library::implementation
+class Shared_Library::Implementation
 {
 public:
 
-	implementation(void * handle, std::string filename) :
+	Implementation(void * handle, std::string filename) :
 		m_handle(handle),
 		m_filename(std::move(filename))
 	{
@@ -27,48 +29,48 @@ public:
 
 // ============================================================================
 
-std::shared_ptr<shared_library> shared_library::load(const char * const filename)
+std::shared_ptr<Shared_Library> Shared_Library::load(const char * const filename)
 {
 	void * handle = dlopen(filename, RTLD_LAZY);
-	return handle != nullptr ? std::shared_ptr<shared_library>(new shared_library(make_unique_val<shared_library::implementation>(handle, filename))) : nullptr;
+	return handle != nullptr ? std::shared_ptr<Shared_Library>(new Shared_Library(make_unique_val<Shared_Library::Implementation>(handle, filename))) : nullptr;
 }
 
 // ----------------------------------------------------------------------------
 
-const char * shared_library::get_suffix()
+const char * Shared_Library::get_suffix()
 {
 	return "so";
 }
 
 // ============================================================================
 
-shared_library::~shared_library()
+Shared_Library::~Shared_Library()
 {
 	int const result = dlclose(m_impl->m_handle);
 	if (result != 0)
 	{
 		const char * const error = dlerror();
-		printf("Error closing shared lib %s: %s (%d)\n", m_impl->m_filename.c_str(), error, result);
+		log(Formatted_String<1024>().sprintf("Error closing shared lib %s: %s (%d)\n", m_impl->m_filename.c_str(), error, result));
 	}
 }
 
 // ----------------------------------------------------------------------------
 
-std::string shared_library::get_filename() const
+std::string Shared_Library::get_filename() const
 {
 	return m_impl->m_filename;
 }
 
 // ----------------------------------------------------------------------------
 
-void * shared_library::get_method_ptr(const char * const name)
+void * Shared_Library::get_method_ptr(const char * const name)
 {
 	return dlsym(m_impl->m_handle, name);
 }
 
 // ============================================================================
 
-shared_library::shared_library(unique_val<implementation> && impl) :
+Shared_Library::Shared_Library(unique_val<Implementation> && impl) :
 	m_impl(std::move(impl))
 {
 }

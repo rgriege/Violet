@@ -5,19 +5,19 @@
 
 namespace vlt
 {
-	struct system_metadata
+	struct System_Metadata
 	{
 		u32 thread;
 		// todo: replace label w/ this
-		// tag tag;
+		// Tag Tag;
 	};
 
-	struct VIOLET_API system
+	struct VIOLET_API System
 	{
 		const char * const label;
 
-		system(const char * label);
-		virtual ~system() = default;
+		System(const char * label);
+		virtual ~System() = default;
 
 		virtual void update(r32 dt);
 	};

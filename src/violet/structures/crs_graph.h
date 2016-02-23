@@ -8,7 +8,7 @@
 namespace vlt
 {
 	template <typename NodeType, struct EdgeType>
-	struct crs_graph
+	struct Crs_Graph
 	{
 	public:
 
@@ -81,7 +81,7 @@ namespace vlt
 
 	public:
 
-		crs_graph();
+		Crs_Graph();
 
 		u32 addNode(const NodeType & node);
 		bool hasNode(u32 nodeIndex) const;

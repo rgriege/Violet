@@ -1,6 +1,9 @@
 // ============================================================================
 
-#include "violet/graphics/system/render_system.h"
+#include <fstream>
+#include <GL/glew.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include "violet/core/engine.h"
 #include "violet/component/scene.h"
@@ -9,7 +12,8 @@
 #include "violet/graphics/component/texture_component.h"
 #include "violet/graphics/font/font.h"
 #include "violet/graphics/shader/shader.h"
-#include "violet/log/Log.h"
+#include "violet/graphics/system/render_system.h"
+#include "violet/log/log.h"
 #include "violet/serialization/deserializer.h"
 #include "violet/system/system_factory.h"
 #include "violet/transform/component/world_transform_component.h"
@@ -18,54 +22,42 @@
 #include "violet/utility/memory.h"
 #include "violet/window/window_system.h"
 
-#include <fstream>
-#include <GL/glew.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
 using namespace vlt;
-
-namespace RenderSystemNamespace
-{
-	// ----------------------------------------------------------------------------
-
-	void draw(const world_transform_component & transformComponent, const color_component & colorComponent, const m4 & view);
-	void draw(const world_transform_component & transformComponent, const text_component & textComponent, const m4 & view);
-	void draw(const world_transform_component & transformComponent, const texture_component & textureComponent, const m4 & view);
-
-	// ----------------------------------------------------------------------------
-}
-
-using namespace RenderSystemNamespace;
 
 // ============================================================================
 
-const char * render_system::get_label_static()
+static void draw(const World_Transform_Component & tsfm_cpnt, const Color_Component & color_cpnt, const m4 & view);
+static void draw(const World_Transform_Component & tsfm_cpnt, const Text_Component & text_cpnt, const m4 & view);
+static void draw(const World_Transform_Component & tsfm_cpnt, const Texture_Component & texu_cpnt, const m4 & view);
+
+// ============================================================================
+
+const char * Render_System::get_label_static()
 {
 	return "rndr";
 }
 
 // ----------------------------------------------------------------------------
 
-void render_system::install(system_factory & factory)
+void Render_System::install(System_Factory & Factory)
 {
-	factory.assign(get_label_static(), &render_system::init);
+	Factory.assign(get_label_static(), &Render_System::init);
 }
 
 // ----------------------------------------------------------------------------
 
 static void init_internal(void * mem)
 {
-	auto c = make_unique<color>(mem);
+	auto c = make_unique<Color>(mem);
 	GLenum glewError = glewInit();
 	if (glewError != GLEW_OK)
 	{
-		log(formatted_string<1024>().sprintf("glewInit error: %s", glewGetErrorString(glewError)));
-		engine::instance().stop();
+		log(Formatted_String<1024>().sprintf("glewInit error: %s", glewGetErrorString(glewError)));
+		Engine::instance().stop();
 		return;
 	}
 
-	log(formatted_string<32>().sprintf("GL version: %s", glGetString(GL_VERSION)));
+	log(Formatted_String<32>().sprintf("GL version: %s", glGetString(GL_VERSION)));
 
 	glClearColor(c->r, c->g, c->b, c->a);
 
@@ -74,20 +66,20 @@ static void init_internal(void * mem)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	engine::instance().add_system(std::unique_ptr<render_system>(new render_system));
+	Engine::instance().add_system(std::unique_ptr<Render_System>(new Render_System));
 }
 
-void render_system::init(deserializer & deserializer)
+void Render_System::init(Deserializer & deserializer)
 {
-	auto settingsSegment = deserializer.enter_segment(get_label_static());
-	color * c = new color(*settingsSegment);
-	add_task(init_internal, c, color_component::metadata->thread, task_type::write);
+	auto settings_segment = deserializer.enter_segment(get_label_static());
+	Color * c = new Color(*settings_segment);
+	add_task(init_internal, c, Color_Component::metadata->thread, task_type::write);
 }
 
 // ============================================================================
 
-render_system::render_system() :
-	system(get_label_static())
+Render_System::Render_System() :
+	System(get_label_static())
 {
 }
 
@@ -95,104 +87,104 @@ render_system::render_system() :
 
 static void clear_caches(void *)
 {
-	shader_program::get_cache().clear();
-	font::get_cache().clear();
-	texture::get_cache().clear();
+	Shader_Program::get_cache().clear();
+	Font::get_cache().clear();
+	Texture::get_cache().clear();
 }
 
-render_system::~render_system()
+Render_System::~Render_System()
 {
-	add_task(clear_caches, nullptr, color_component::metadata->thread, task_type::del);
+	add_task(clear_caches, nullptr, Color_Component::metadata->thread, task_type::del);
 }
 
 // ----------------------------------------------------------------------------
 
 static void render(void*)
 {
-	engine::instance().get_system<window_system>()->render();
+	Engine::instance().get_system<Window_System>()->render();
 }
 
 void update_internal(void *)
 {
-	auto & e = engine::instance();
+	auto & e = Engine::instance();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	const auto & windowSystem = e.get_system<window_system>();
-	m4 viewMatrix = m4::Identity;
-	viewMatrix[0][0] = 2.f / windowSystem->get_width();
-	viewMatrix[1][1] = 2.f / windowSystem->get_height();
-	viewMatrix[2][2] = 0.01f;
+	const auto & window_sys = e.get_system<Window_System>();
+	m4 view_mat = m4::Identity;
+	view_mat[0][0] = 2.f / window_sys->get_width();
+	view_mat[1][1] = 2.f / window_sys->get_height();
+	view_mat[2][2] = 0.01f;
 
-	for (const auto & entity : e.get_current_scene().get_entity_view<world_transform_component, color_component>())
-		draw(entity.get<world_transform_component>(), entity.get<color_component>(), viewMatrix);
-	for (const auto & entity : e.get_current_scene().get_entity_view<world_transform_component, texture_component>())
-		draw(entity.get<world_transform_component>(), entity.get<texture_component>(), viewMatrix);
-	for (const auto & entity : e.get_current_scene().get_entity_view<world_transform_component, text_component>())
-		draw(entity.get<world_transform_component>(), entity.get<text_component>(), viewMatrix);
+	for (const auto & entity : e.get_current_scene().get_entity_view<World_Transform_Component, Color_Component>())
+		draw(entity.get<World_Transform_Component>(), entity.get<Color_Component>(), view_mat);
+	for (const auto & entity : e.get_current_scene().get_entity_view<World_Transform_Component, Texture_Component>())
+		draw(entity.get<World_Transform_Component>(), entity.get<Texture_Component>(), view_mat);
+	for (const auto & entity : e.get_current_scene().get_entity_view<World_Transform_Component, Text_Component>())
+		draw(entity.get<World_Transform_Component>(), entity.get<Text_Component>(), view_mat);
 
 	glFlush();
-	// todo: window_system's thread
-	add_task(render, nullptr, color_component::metadata->thread, task_type::write);
+	// todo: Window_System's Thread
+	add_task(render, nullptr, Color_Component::metadata->thread, task_type::write);
 }
 
-void render_system::update(r32 const /*dt*/)
+void Render_System::update(r32 const /*dt*/)
 {
-	add_task(update_internal, nullptr, color_component::metadata->thread, task_type::read);
+	add_task(update_internal, nullptr, Color_Component::metadata->thread, task_type::read);
 }
 
 // ============================================================================
 
-void RenderSystemNamespace::draw(const world_transform_component & transformComponent, const color_component & colorComponent, const m4 & view)
+void draw(const World_Transform_Component & tsfm_cpnt, const Color_Component & color_cpnt, const m4 & view)
 {
-	const m4 & transform = transformComponent.transform;
+	const m4 & transform = tsfm_cpnt.transform;
 
-	const GLint colorAttrib = colorComponent.m_shader->getUniformLocation("color");
-	const GLint modelAttrib = colorComponent.m_shader->getUniformLocation("model");
-	const GLint viewAttribute = colorComponent.m_shader->getUniformLocation("view");
+	const GLint color_attrib = color_cpnt.shader->get_uniform_loc("Color");
+	const GLint model_attrib = color_cpnt.shader->get_uniform_loc("model");
+	const GLint view_attribute = color_cpnt.shader->get_uniform_loc("view");
 
-	glBindVertexArray(colorComponent.m_vertexArrayBuffer);
-	const guard<shader_program> shaderGuard(*colorComponent.m_shader);
-	glUniform4fv(colorAttrib, 1, colorComponent.color.as4fv().data());
-	glUniformMatrix4fv(modelAttrib, 1, true, transform.data());
-	glUniformMatrix4fv(viewAttribute, 1, true, view.data());
+	glBindVertexArray(color_cpnt.vertex_array_buffer);
+	const Guard<Shader_Program> shader_guard(*color_cpnt.shader);
+	glUniform4fv(color_attrib, 1, color_cpnt.color.as4fv().data());
+	glUniformMatrix4fv(model_attrib, 1, true, transform.data());
+	glUniformMatrix4fv(view_attribute, 1, true, view.data());
 
-	glDrawArrays(GL_TRIANGLE_FAN, 0, colorComponent.m_mesh->m_size);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, color_cpnt.mesh->size);
 	glBindVertexArray(0);
 }
 
 // ----------------------------------------------------------------------------
 
-void RenderSystemNamespace::draw(const world_transform_component & transformComponent, const text_component & textComponent, const m4 & view)
+void draw(const World_Transform_Component & tsfm_cpnt, const Text_Component & text_cpnt, const m4 & view)
 {
-	const m4 & transform = transformComponent.transform;
+	const m4 & transform = tsfm_cpnt.transform;
 
-	const GLint colorAttrib = textComponent.m_shader->getUniformLocation("color");
-	const GLint modelAttrib = textComponent.m_shader->getUniformLocation("model");
-	const GLint viewAttribute = textComponent.m_shader->getUniformLocation("view");
+	const GLint color_attrib = text_cpnt.shader->get_uniform_loc("Color");
+	const GLint model_attrib = text_cpnt.shader->get_uniform_loc("model");
+	const GLint view_attribute = text_cpnt.shader->get_uniform_loc("view");
 
-	const guard<shader_program> shaderGuard(*textComponent.m_shader);
-	glUniform4fv(colorAttrib, 1, textComponent.color.as4fv().data());
-	glUniformMatrix4fv(modelAttrib, 1, true, transform.data());
-	glUniformMatrix4fv(viewAttribute, 1, true, view.data());
+	const Guard<Shader_Program> shader_guard(*text_cpnt.shader);
+	glUniform4fv(color_attrib, 1, text_cpnt.color.as4fv().data());
+	glUniformMatrix4fv(model_attrib, 1, true, transform.data());
+	glUniformMatrix4fv(view_attribute, 1, true, view.data());
 
-	textComponent.m_font->render(textComponent.m_text, *textComponent.m_shader);
+	text_cpnt.font->render(text_cpnt.text, *text_cpnt.shader);
 }
 
 // ----------------------------------------------------------------------------
 
-void RenderSystemNamespace::draw(const world_transform_component & transformComponent, const texture_component & textureComponent, const m4 & view)
+void draw(const World_Transform_Component & tsfm_cpnt, const Texture_Component & texu_cpnt, const m4 & view)
 {
-	const m4 & transform = transformComponent.transform;
+	const m4 & transform = tsfm_cpnt.transform;
 
-	const GLint modelAttrib = textureComponent.m_shader->getUniformLocation("model");
-	const GLint viewAttribute = textureComponent.m_shader->getUniformLocation("view");
+	const GLint model_attrib = texu_cpnt.shader->get_uniform_loc("model");
+	const GLint view_attribute = texu_cpnt.shader->get_uniform_loc("view");
 
-	glBindVertexArray(textureComponent.m_vertexArrayBuffer);
-	const guard<shader_program> shaderGuard(*textureComponent.m_shader);
-	const guard<texture> texGuard(*textureComponent.m_texture);
-	glUniformMatrix4fv(modelAttrib, 1, true, transform.data());
-	glUniformMatrix4fv(viewAttribute, 1, true, view.data());
+	glBindVertexArray(texu_cpnt.vertex_array_buffer);
+	const Guard<Shader_Program> shader_guard(*texu_cpnt.shader);
+	const Guard<Texture> texGuard(*texu_cpnt.texture);
+	glUniformMatrix4fv(model_attrib, 1, true, transform.data());
+	glUniformMatrix4fv(view_attribute, 1, true, view.data());
 
-	glDrawArrays(GL_TRIANGLE_FAN, 0, textureComponent.m_mesh->m_size);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, texu_cpnt.mesh->size);
 	glBindVertexArray(0);
 }
 

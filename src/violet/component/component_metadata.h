@@ -7,18 +7,18 @@
 
 namespace vlt
 {
-	struct component_metadata
+	struct Component_Metadata
 	{
-		tag tag;
+		Tag tag;
 		u32 thread;
 		u32 flag;
 		u32 version;
 		u32 size;
 	};
 
-	VIOLET_API const component_metadata * init_component_metadata(tag t, u32 version, u32 size);
-	VIOLET_API void assign_component_to_thread(tag t, u32 thread);
-	VIOLET_API const component_metadata * get_component_metadata(tag t);
+	VIOLET_API const Component_Metadata * init_component_metadata(Tag tag, u32 version, u32 size);
+	VIOLET_API void assign_component_to_thread(Tag tag, u32 thread);
+	VIOLET_API const Component_Metadata * get_component_metadata(Tag tag);
 }
 
 #endif

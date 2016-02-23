@@ -5,22 +5,22 @@
 
 namespace vlt
 {
-	struct VIOLET_API intersection
+	struct VIOLET_API Intersection
 	{
 	public:
 
 		static bool test(const v2 & start1, const v2 & end1, const v2 & start2, const v2 & end2);
 		static bool test(const v2 & start1, const v2 & end1, const v2 & start2, const v2 & end2, v2 & intersection);
-		static bool test(const poly & poly, const v2 & start, const v2 & end, bool hollow = false);
-		static bool test(const poly & poly, const v2 & start, const v2 & end, v2 & intersection, bool hollow = false);
-		static bool test(const poly & poly1, const poly & poly2);
-		static bool test(const poly & poly1, const poly & poly2, const v2 & centerToCenter);
+		static bool test(const Poly & poly, const v2 & start, const v2 & end, bool hollow = false);
+		static bool test(const Poly & poly, const v2 & start, const v2 & end, v2 & intersection, bool hollow = false);
+		static bool test(const Poly & poly1, const Poly & poly2);
+		static bool test(const Poly & poly1, const Poly & poly2, const v2 & center_to_center);
 
 	public:
 
-		intersection(rigid_body && rb1, rigid_body && rb2, r32 frameTime);
-		intersection(intersection && other);
-		intersection(const intersection &) = delete;
+		Intersection(Rigid_Body && rb1, Rigid_Body && rb2, r32 frameTime);
+		Intersection(Intersection && other);
+		Intersection(const Intersection &) = delete;
 
 		bool exists() const;
 		v2 const & getIntersectionAxis() const;
@@ -38,8 +38,8 @@ namespace vlt
 
 	private:
 
-		mutable rigid_body m_rb1;
-		mutable rigid_body m_rb2;
+		mutable Rigid_Body m_rb1;
+		mutable Rigid_Body m_rb2;
 		const r32 m_frameTime;
 		mutable bool m_tested;
 

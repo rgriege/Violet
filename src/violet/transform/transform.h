@@ -5,14 +5,14 @@
 
 namespace vlt
 {
-	struct VIOLET_API transform
+	struct VIOLET_API Transform
 	{
 		static v2 get_position(const m4 & mat);
 		static void set_position(m4 & mat, const v2 & position);
 
 	private:
 
-		transform() = delete;
+		Transform() = delete;
 	};
 }
 

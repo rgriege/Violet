@@ -8,15 +8,15 @@
 
 namespace edt
 {
-	struct EDITOR_API clear_command final : public command
+	struct EDITOR_API Clear_Command final : public Command
 	{
 		std::string temp_filename;
 
 		static const char * get_usage();
-		static std::unique_ptr<command> parse(const std::string & text);
+		static std::unique_ptr<Command> parse(const std::string & text);
 
-		clear_command();
-		virtual ~clear_command() override;
+		Clear_Command();
+		virtual ~Clear_Command() override;
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;

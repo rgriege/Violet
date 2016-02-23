@@ -45,7 +45,7 @@ namespace vlt
 // ============================================================================
 
 template <typename ResultType, typename... Args>
-ResultType vlt::lua_script::run(const char * method, Args && ... args) const
+ResultType vlt::Lua_Script::run(const char * method, Args && ... args) const
 {
 	if (is_valid())
 	{

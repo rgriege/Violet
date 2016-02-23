@@ -1,74 +1,61 @@
 #ifndef VIOLET_FONT_H
 #define VIOLET_FONT_H
 
-#include "violet/utility/resource_cache.h"
+#include <map>
+#include <memory>
 
 #include "violet/graphics/mesh.h"
 #include "violet/graphics/texture/texture.h"
-
-#include <memory>
-#include <map>
+#include "violet/utility/resource_cache.h"
 
 namespace vlt
 {
-	struct shader_program;
+	struct Shader_Program;
 
-	struct VIOLET_API font
+	struct VIOLET_API Font
 	{
-	private:
-
-		struct glyph
+		struct Glyph
 		{
-		public:
+			u32 vertex_array_buffer;
+			Texture texture;
+			Mesh mesh;
+			Mesh tex_coords;
+			const v2 offset;
+			const u32 advance;
 
-			glyph(u32 vertexArrayBuffer, texture && texture, mesh && _mesh, mesh && texCoords, const v2 & offset, u32 advance);
-			glyph(glyph && other);
-			~glyph();
+			Glyph(u32 vertex_array_buffer, Texture && texture, Mesh && mesh, Mesh && tex_coords, const v2 & offset, u32 advance);
+			Glyph(const Glyph & other) = delete;
+			Glyph & operator=(const Glyph & other) = delete;
+			Glyph(Glyph && other);
+			~Glyph();
 
-			void render(shader_program & program) const;
+			void render(Shader_Program & program) const;
 			const v2 & get_offset() const;
 			u32 get_advance() const;
-
-		private:
-
-			glyph(const glyph & other) = delete;
-			glyph & operator=(const glyph & other) = delete;
-
-		private:
-
-			u32 m_vertexArrayBuffer;
-			texture m_texture;
-			mesh m_mesh;
-			mesh m_texCoords;
-			const v2 m_offset;
-			const u32 m_advance;
 		};
+
+		const std::string filename;
+		const u32 size;
+		std::map<char, Glyph> glyphs;
+		const u32 space_width;
 
 	public:
 
-		static std::unique_ptr<font> load(const char * filename, u32 size);
-		typedef resource_cache<font, const char *, u32> Cache;
+		static std::unique_ptr<Font> load(const char * filename, u32 size);
+		typedef Resource_Cache<Font, const char *, u32> Cache;
 		static Cache & get_cache();
 
 	public:
 
-		void render(std::string const & str, shader_program & program);
+		void render(std::string const & str, Shader_Program & program);
 		const char * get_filename() const;
 		u32 get_size() const;
 
 	private:
 
-		font(const char * filename, u32 size, std::map<char, glyph> && glyphs, u32 spaceWidth);
-
-		font(const font &) = delete;
-		font & operator=(const font &) = delete;
-
-	private:
-
-		const std::string m_filename;
-		const u32 m_size;
-		std::map<char, glyph> m_glyphs;
-		const u32 m_spaceWidth;
+		Font(const char * filename, u32 size, std::map<char, Glyph> && glyphs, u32 space_width);
+		Font(const Font &) = delete;
+		Font & operator=(const Font &) = delete;
 	};
 }
 

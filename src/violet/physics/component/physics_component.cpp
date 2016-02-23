@@ -9,16 +9,16 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * physics_component::metadata;
+const Component_Metadata * Physics_Component::metadata;
 
 // ============================================================================
 
-r32 calculate_moment_of_inertia(const poly & poly, r32 mass);
-component_deserializer & deserialize_all_but_polygon(component_deserializer & deserializer, physics_component & component);
+r32 calculate_moment_of_inertia(const Poly & poly, r32 mass);
+Component_Deserializer & deserialize_all_but_polygon(Component_Deserializer & deserializer, Physics_Component & component);
 
 // ============================================================================
 
-physics_component::physics_component(const handle entity_id, component_deserializer & deserializer) :
+Physics_Component::Physics_Component(const Handle entity_id, Component_Deserializer & deserializer) :
 	m_polygon(deserializer),
 	m_mass(),
 	m_velocity(),
@@ -32,7 +32,7 @@ physics_component::physics_component(const handle entity_id, component_deseriali
 
 // ----------------------------------------------------------------------------
 
-physics_component::physics_component(physics_component && other) :
+Physics_Component::Physics_Component(Physics_Component && other) :
 	m_polygon(std::move(other.m_polygon)),
 	m_mass(other.m_mass),
 	m_velocity(std::move(other.m_velocity)),
@@ -47,13 +47,13 @@ physics_component::physics_component(physics_component && other) :
 
 void vlt::install_physics_component()
 {
-	physics_component::metadata = init_component_metadata(tag('p', 'h', 'y', 's'), 0, sizeof(physics_component));
-	scene::install_component<physics_component>();
+	Physics_Component::metadata = init_component_metadata(Tag('p', 'h', 'y', 's'), 0, sizeof(Physics_Component));
+	Scene::install_component<Physics_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & vlt::operator>>(component_deserializer & deserializer, physics_component & component)
+Component_Deserializer & vlt::operator>>(Component_Deserializer & deserializer, Physics_Component & component)
 {
 	deserializer >> component.m_polygon;
 	return deserialize_all_but_polygon(deserializer, component);
@@ -61,7 +61,7 @@ component_deserializer & vlt::operator>>(component_deserializer & deserializer, 
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const physics_component & component)
+Serializer & vlt::operator<<(Serializer & serializer, const Physics_Component & component)
 {
 	serializer << component.m_polygon;
 	serializer.write_r32("mass", component.m_mass);
@@ -72,7 +72,7 @@ serializer & vlt::operator<<(serializer & serializer, const physics_component & 
 
 // ============================================================================
 
-r32 calculate_moment_of_inertia(const poly & poly, const r32 mass)
+r32 calculate_moment_of_inertia(const Poly & poly, const r32 mass)
 {
 	r32 area = 0;
 	r32 numerator = 0;
@@ -94,7 +94,7 @@ r32 calculate_moment_of_inertia(const poly & poly, const r32 mass)
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & deserialize_all_but_polygon(component_deserializer & deserializer, physics_component & component)
+Component_Deserializer & deserialize_all_but_polygon(Component_Deserializer & deserializer, Physics_Component & component)
 {
 	component.m_mass = deserializer.get_r32("mass");
 	{

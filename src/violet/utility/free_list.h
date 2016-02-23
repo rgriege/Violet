@@ -1,27 +1,25 @@
 #ifndef VIOLET_FREE_LIST_H
 #define VIOLET_FREE_LIST_H
 
-#include "violet/core/defines.h"
-
 #include <queue>
 #include <vector>
 
+#include "violet/core/defines.h"
+
 namespace vlt
 {
-	struct free_list
+	struct Free_List
 	{
-		free_list();
+		std::vector<bool> used_list;
+		std::queue<u32> recycle_list;
+
+		Free_List();
 
 		u32 reserve();
 		bool reserve(u32 id);
 		bool available(u32 id) const;
-		std::vector<u32> getUsed() const;
+		std::vector<u32> get_used() const;
 		void free(u32 id);
-
-	private:
-
-		std::vector<bool> m_usedList;
-		std::queue<u32> m_recycleList;
 	};
 }
 

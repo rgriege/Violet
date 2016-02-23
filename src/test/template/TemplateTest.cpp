@@ -1,12 +1,12 @@
-#include "test/template/TemplateTest.h"
+#include "test/template/templatetest.h"
 
 #include "violet/template/template_utilities.h"
 #include "violet/template/tuple_utilities.h"
-#include "test/core/TestEvaluator.h"
-#include "test/core/TestFactory.h"
+#include "test/core/testevaluator.h"
+#include "test/core/testfactory.h"
 
 #include <tuple>
-#include <vector>
+#include <Vector>
 #include <string>
 
 using namespace vlt;

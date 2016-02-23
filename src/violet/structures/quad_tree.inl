@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename T>
-vlt::quad_tree<T>::quad_tree(const aabb & boundary, const u32 capacity) :
+vlt::Quad_Tree<T>::Quad_Tree(const aabb & boundary, const u32 capacity) :
 	m_boundary(boundary),
 	m_capacity(capacity),
 	m_topLeft(),
@@ -15,7 +15,7 @@ vlt::quad_tree<T>::quad_tree(const aabb & boundary, const u32 capacity) :
 // ----------------------------------------------------------------------------
 
 template <typename T>
-bool vlt::quad_tree<T>::insert(const T & elem, const aabb & box)
+bool vlt::Quad_Tree<T>::insert(const T & elem, const aabb & box)
 {
 	const bool success = m_boundary.contains(box);
 	if (success)
@@ -36,7 +36,7 @@ bool vlt::quad_tree<T>::insert(const T & elem, const aabb & box)
 // ----------------------------------------------------------------------------
 
 template <typename T>
-u32 vlt::quad_tree<T>::size() const
+u32 vlt::Quad_Tree<T>::size() const
 {
 	u32 result = m_elements.size();
 	if (!is_leaf())
@@ -52,7 +52,7 @@ u32 vlt::quad_tree<T>::size() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-bool vlt::quad_tree<T>::is_leaf() const
+bool vlt::Quad_Tree<T>::is_leaf() const
 {
 	return m_topLeft == nullptr;
 }
@@ -60,7 +60,7 @@ bool vlt::quad_tree<T>::is_leaf() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-bool vlt::quad_tree<T>::empty() const
+bool vlt::Quad_Tree<T>::empty() const
 {
 	return size() == 0;
 }
@@ -68,7 +68,7 @@ bool vlt::quad_tree<T>::empty() const
 // ----------------------------------------------------------------------------
 
 template <typename T>
-void vlt::quad_tree<T>::retrieve(std::vector<T> & elements, const aabb & box) const
+void vlt::Quad_Tree<T>::retrieve(std::vector<T> & elements, const aabb & box) const
 {
 	if (m_boundary.contains(box))
 	{
@@ -88,14 +88,14 @@ void vlt::quad_tree<T>::retrieve(std::vector<T> & elements, const aabb & box) co
 // ============================================================================
 
 template <typename T>
-void vlt::quad_tree<T>::subdivide()
+void vlt::Quad_Tree<T>::subdivide()
 {
 	const v2 center = m_boundary.get_center();
 	const v2 quarterDim = m_boundary.get_half_dim() / 2.f;
-	m_topLeft = std::make_unique<quad_tree>(aabb(center - quarterDim, quarterDim), m_capacity);
-	m_topRight = std::make_unique<quad_tree>(aabb(v2(center.x + quarterDim.x, center.y - quarterDim.y), quarterDim), m_capacity);
-	m_bottomRight = std::make_unique<quad_tree>(aabb(center + quarterDim, quarterDim), m_capacity);
-	m_bottomLeft = std::make_unique<quad_tree>(aabb(v2(center.x - quarterDim.x, center.y + quarterDim.y), quarterDim), m_capacity);
+	m_topLeft = std::make_unique<Quad_Tree>(aabb(center - quarterDim, quarterDim), m_capacity);
+	m_topRight = std::make_unique<Quad_Tree>(aabb(v2(center.x + quarterDim.x, center.y - quarterDim.y), quarterDim), m_capacity);
+	m_bottomRight = std::make_unique<Quad_Tree>(aabb(center + quarterDim, quarterDim), m_capacity);
+	m_bottomLeft = std::make_unique<Quad_Tree>(aabb(v2(center.x - quarterDim.x, center.y + quarterDim.y), quarterDim), m_capacity);
 
 	auto it = m_elements.begin(), end = m_elements.end();
 	for (it; it != end;)
@@ -113,7 +113,7 @@ void vlt::quad_tree<T>::subdivide()
 // ----------------------------------------------------------------------------
 
 template <typename T>
-bool vlt::quad_tree<T>::insert_into_sub_tree(const T & elem, const aabb & box)
+bool vlt::Quad_Tree<T>::insert_into_sub_tree(const T & elem, const aabb & box)
 {
 	return m_topLeft->insert(elem, box)
 		|| m_topRight->insert(elem, box)

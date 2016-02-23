@@ -8,7 +8,7 @@ using namespace vlt;
 
 // L1 data cache size is 32kB ??
 // L2 data cache size is 256kB ??
-void profiler::flush_cache()
+void Profiler::flush_cache()
 {
 	static const int size = 1024 * 1024;
 	r32 temp = 0;
@@ -20,15 +20,15 @@ void profiler::flush_cache()
 
 // ----------------------------------------------------------------------------
 
-profiler & profiler::instance()
+Profiler & Profiler::instance()
 {
-	static profiler s_profiler;
+	static Profiler s_profiler;
 	return s_profiler;
 }
 
 // ============================================================================
 
-profiler::block::block(std::string key, profiler & profiler) :
+Profiler::Block::Block(std::string key, Profiler & profiler) :
 	m_key(std::move(key)),
 	m_profiler(profiler),
 	m_startTime(std::chrono::steady_clock::now())
@@ -37,7 +37,7 @@ profiler::block::block(std::string key, profiler & profiler) :
 
 // ----------------------------------------------------------------------------
 
-profiler::block::~block()
+Profiler::Block::~Block()
 {
 	const auto endTime = std::chrono::steady_clock::now();
 	m_profiler.add(m_key, std::chrono::duration_cast<std::chrono::microseconds>(endTime - m_startTime).count());
@@ -46,14 +46,14 @@ profiler::block::~block()
 
 // ============================================================================
 
-void profiler::add(const std::string & key, const s64 microseconds)
+void Profiler::add(const std::string & key, const s64 microseconds)
 {
 	m_counters[key] += microseconds;
 }
 
 // ----------------------------------------------------------------------------
 
-void profiler::report(std::ostream & os, const bool clear)
+void Profiler::report(std::ostream & os, const bool clear)
 {
 	for (auto const & counter : m_counters)
 		os << counter.first << ": " << counter.second << "us" << std::endl;
@@ -64,7 +64,7 @@ void profiler::report(std::ostream & os, const bool clear)
 
 // ----------------------------------------------------------------------------
 
-s64 profiler::report(std::string const & key, const bool clear)
+s64 Profiler::report(std::string const & key, const bool clear)
 {
 	const auto it = m_counters.find(key);
 	if (it != m_counters.end())

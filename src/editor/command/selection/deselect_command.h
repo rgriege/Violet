@@ -11,15 +11,15 @@
 
 namespace edt
 {
-	struct EDITOR_API deselect_command : public command
+	struct EDITOR_API Deselect_Command : public Command
 	{
 		static const char * get_usage();
-		static std::unique_ptr<command> parse(const std::string & text);
+		static std::unique_ptr<Command> parse(const std::string & text);
 
-		explicit deselect_command(vlt::handle entity_id);
-		explicit deselect_command(const std::vector<vlt::handle> & entityIds);
-		explicit deselect_command(std::vector<vlt::handle> && entityIds);
-		virtual ~deselect_command() override = default;
+		explicit Deselect_Command(vlt::Handle entity_id);
+		explicit Deselect_Command(const std::vector<vlt::Handle> & entityIds);
+		explicit Deselect_Command(std::vector<vlt::Handle> && entityIds);
+		virtual ~Deselect_Command() override = default;
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;
@@ -27,7 +27,7 @@ namespace edt
 
 	private:
 
-		std::vector<vlt::handle> m_entityIds;
+		std::vector<vlt::Handle> m_entityIds;
 	};
 }
 

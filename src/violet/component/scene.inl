@@ -1,5 +1,4 @@
-// ============================================================================
-
+// ============================================================================ 
 #include "violet/template/tuple_utilities.h"
 
 #include <algorithm>
@@ -11,39 +10,39 @@ namespace vlt
 	namespace detail
 	{
 		template <typename ComponentType, typename... ComponentTypes>
-		struct BeginHelper
+		struct Begin_Helper
 		{
-			static std::tuple<component_pool::const_iterator<ComponentType>, component_pool::const_iterator<ComponentTypes>...> begin(const vlt::scene & manager)
+			static std::tuple<Component_Pool::const_iterator<ComponentType>, Component_Pool::const_iterator<ComponentTypes>...> begin(const vlt::Scene & manager)
 			{
-				return std::tuple_cat(BeginHelper<ComponentType>::begin(manager), BeginHelper<ComponentTypes...>::begin(manager));
+				return std::tuple_cat(Begin_Helper<ComponentType>::begin(manager), Begin_Helper<ComponentTypes...>::begin(manager));
 			}
 		};
 
 		template <typename ComponentType>
-		struct BeginHelper<ComponentType>
+		struct Begin_Helper<ComponentType>
 		{
-			static std::tuple<component_pool::const_iterator<ComponentType>> begin(const vlt::scene & manager)
+			static std::tuple<Component_Pool::const_iterator<ComponentType>> begin(const vlt::Scene & manager)
 			{
-				const component_pool * pool = manager.get_pool<ComponentType>();
+				const Component_Pool * pool = manager.get_pool<ComponentType>();
 				return std::make_tuple(pool->begin<ComponentType>());
 			}
 		};
 
 		template <typename ComponentType, typename... ComponentTypes>
-		struct EndHelper
+		struct End_Helper
 		{
-			static std::tuple<component_pool::const_iterator<ComponentType>, component_pool::const_iterator<ComponentTypes>...> end(const vlt::scene & manager)
+			static std::tuple<Component_Pool::const_iterator<ComponentType>, Component_Pool::const_iterator<ComponentTypes>...> end(const vlt::Scene & manager)
 			{
-				return std::tuple_cat(EndHelper<ComponentType>::end(manager), EndHelper<ComponentTypes...>::end(manager));
+				return std::tuple_cat(End_Helper<ComponentType>::end(manager), End_Helper<ComponentTypes...>::end(manager));
 			}
 		};
 
 		template <typename ComponentType>
-		struct EndHelper<ComponentType>
+		struct End_Helper<ComponentType>
 		{
-			static std::tuple<component_pool::const_iterator<ComponentType>> end(const vlt::scene & manager)
+			static std::tuple<Component_Pool::const_iterator<ComponentType>> end(const vlt::Scene & manager)
 			{
-				const component_pool * pool = manager.get_pool<ComponentType>();
+				const Component_Pool * pool = manager.get_pool<ComponentType>();
 				return std::make_tuple(pool->end<ComponentType>());
 			}
 		};
@@ -53,7 +52,7 @@ namespace vlt
 // ============================================================================
 
 template <typename... ComponentTypes>
-vlt::scene::view<ComponentTypes...>::entity::entity(component_tuple _components, const handle _id) :
+vlt::Scene::View<ComponentTypes...>::Entity::Entity(component_tuple _components, const Handle _id) :
 	components(_components),
 	id(_id)
 {
@@ -63,7 +62,7 @@ vlt::scene::view<ComponentTypes...>::entity::entity(component_tuple _components,
 
 template <typename... ComponentTypes>
 template <typename ComponentType>
-const ComponentType & vlt::scene::view<ComponentTypes...>::entity::get() const
+const ComponentType & vlt::Scene::View<ComponentTypes...>::Entity::get() const
 {
 	return vlt::get<const ComponentType &>(components);
 }
@@ -71,18 +70,18 @@ const ComponentType & vlt::scene::view<ComponentTypes...>::entity::get() const
 // ============================================================================
 
 template <typename... ComponentTypes>
-vlt::scene::view<ComponentTypes...>::iterator::iterator(iterator_tuple iterators) :
-	m_iterators(iterators),
-	m_entityId()
+vlt::Scene::View<ComponentTypes...>::iterator::iterator(iterator_tuple _iterators) :
+	iterators(_iterators),
+	entity_id()
 {
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-typename vlt::scene::view<ComponentTypes...>::iterator & vlt::scene::view<ComponentTypes...>::iterator::operator++()
+typename vlt::Scene::View<ComponentTypes...>::iterator & vlt::Scene::View<ComponentTypes...>::iterator::operator++()
 {
-	m_entityId = m_entityId.is_valid() ? handle(m_entityId.id + 1, m_entityId.version) : handle(0, 0);
+	entity_id = entity_id.is_valid() ? Handle(entity_id.id + 1, entity_id.version) : Handle(0, 0);
 	advance();
 	return *this;
 }
@@ -90,23 +89,23 @@ typename vlt::scene::view<ComponentTypes...>::iterator & vlt::scene::view<Compon
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-typename vlt::scene::view<ComponentTypes...>::entity vlt::scene::view<ComponentTypes...>::iterator::operator*()
+typename vlt::Scene::View<ComponentTypes...>::Entity vlt::Scene::View<ComponentTypes...>::iterator::operator*()
 {
-	return entity(std::forward_as_tuple(*vlt::get<component_pool::const_iterator<ComponentTypes>>(m_iterators)...), m_entityId);
+	return Entity(std::forward_as_tuple(*vlt::get<Component_Pool::const_iterator<ComponentTypes>>(iterators)...), entity_id);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-bool vlt::scene::view<ComponentTypes...>::iterator::operator==(const iterator & other) const
+bool vlt::Scene::View<ComponentTypes...>::iterator::operator==(const iterator & other) const
 {
-	return m_entityId == other.m_entityId;
+	return entity_id == other.entity_id;
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-bool vlt::scene::view<ComponentTypes...>::iterator::operator!=(const iterator & other) const
+bool vlt::Scene::View<ComponentTypes...>::iterator::operator!=(const iterator & other) const
 {
 	return !(*this == other);
 }
@@ -114,7 +113,7 @@ bool vlt::scene::view<ComponentTypes...>::iterator::operator!=(const iterator & 
 // ============================================================================
 
 template <typename... ComponentTypes>
-void vlt::scene::view<ComponentTypes...>::iterator::advance()
+void vlt::Scene::View<ComponentTypes...>::iterator::advance()
 {
 	u32 count = 0;
 	advance<0>(count);
@@ -124,17 +123,17 @@ void vlt::scene::view<ComponentTypes...>::iterator::advance()
 
 template <typename... ComponentTypes>
 template <u32 Index>
-void vlt::scene::view<ComponentTypes...>::iterator::advance(u32 & count)
+void vlt::Scene::View<ComponentTypes...>::iterator::advance(u32 & count)
 {
 	if (count != sizeof...(ComponentTypes))
 	{
-		std::get<Index>(m_iterators).advance_to(m_entityId);
-		if (std::get<Index>(m_iterators))
+		std::get<Index>(iterators).advance_to(entity_id);
+		if (std::get<Index>(iterators))
 		{
-			if (std::get<Index>(m_iterators).get_entity_id() != m_entityId)
+			if (std::get<Index>(iterators).get_entity_id() != entity_id)
 			{
 				count = 1;
-				m_entityId = std::get<Index>(m_iterators).get_entity_id();
+				entity_id = std::get<Index>(iterators).get_entity_id();
 			}
 			else
 				++count;
@@ -144,7 +143,7 @@ void vlt::scene::view<ComponentTypes...>::iterator::advance(u32 & count)
 		else
 		{
 			count = sizeof...(ComponentTypes);
-			m_entityId = vlt::handle::Invalid;
+			entity_id = vlt::Handle::Invalid;
 		}
 	}
 }
@@ -152,41 +151,41 @@ void vlt::scene::view<ComponentTypes...>::iterator::advance(u32 & count)
 // ============================================================================
 
 template <typename... ComponentTypes>
-vlt::scene::view<ComponentTypes...>::view(const scene & manager) :
-	m_manager(manager)
+vlt::Scene::View<ComponentTypes...>::View(const Scene & _scene) :
+	scene(_scene)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-typename vlt::scene::view<ComponentTypes...>::iterator vlt::scene::view<ComponentTypes...>::begin()
+typename vlt::Scene::View<ComponentTypes...>::iterator vlt::Scene::View<ComponentTypes...>::begin()
 {
-	iterator iterator(detail::BeginHelper<ComponentTypes...>::begin(m_manager));
+	iterator iterator(detail::Begin_Helper<ComponentTypes...>::begin(scene));
 	return ++iterator;
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-typename vlt::scene::view<ComponentTypes...>::iterator vlt::scene::view<ComponentTypes...>::end()
+typename vlt::Scene::View<ComponentTypes...>::iterator vlt::Scene::View<ComponentTypes...>::end()
 {
-	return iterator(detail::EndHelper<ComponentTypes...>::end(m_manager));
+	return iterator(detail::End_Helper<ComponentTypes...>::end(scene));
 }
 
 // ============================================================================
 
 template <typename ComponentType, typename... Args>
-ComponentType & vlt::scene::create_component(const handle entity_id, Args &&... args)
+ComponentType & vlt::Scene::create_component(const Handle entity_id, Args &&... args)
 {
-	component_pool * pool = get_pool<ComponentType>();
+	Component_Pool * pool = get_pool<ComponentType>();
 	return pool->create<ComponentType, Args...>(entity_id, std::forward<Args>(args)...);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-vlt::component_pool * vlt::scene::get_pool()
+vlt::Component_Pool * vlt::Scene::get_pool()
 {
 	return get_pool(ComponentType::metadata->tag);
 }
@@ -194,7 +193,7 @@ vlt::component_pool * vlt::scene::get_pool()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-const vlt::component_pool * vlt::scene::get_pool() const
+const vlt::Component_Pool * vlt::Scene::get_pool() const
 {
 	return get_pool(ComponentType::metadata->tag);
 }
@@ -202,7 +201,7 @@ const vlt::component_pool * vlt::scene::get_pool() const
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-bool vlt::scene::has_component(const handle entity_id) const
+bool vlt::Scene::has_component(const Handle entity_id) const
 {
 	return get_pool<ComponentType>()->has(entity_id);
 }
@@ -210,7 +209,7 @@ bool vlt::scene::has_component(const handle entity_id) const
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-ComponentType * vlt::scene::get_component(const handle entity_id)
+ComponentType * vlt::Scene::get_component(const Handle entity_id)
 {
 	return get_pool<ComponentType>()->get<ComponentType>(entity_id);
 }
@@ -218,7 +217,7 @@ ComponentType * vlt::scene::get_component(const handle entity_id)
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-const ComponentType * vlt::scene::get_component(const handle entity_id) const
+const ComponentType * vlt::Scene::get_component(const Handle entity_id) const
 {
 	return get_pool<ComponentType>()->get<ComponentType>(entity_id);
 }
@@ -226,15 +225,15 @@ const ComponentType * vlt::scene::get_component(const handle entity_id) const
 // ----------------------------------------------------------------------------
 
 template <typename... ComponentTypes>
-vlt::scene::view<ComponentTypes...> vlt::scene::get_entity_view() const
+vlt::Scene::View<ComponentTypes...> vlt::Scene::get_entity_view() const
 {
-	return view<ComponentTypes...>(*this);
+	return View<ComponentTypes...>(*this);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-bool vlt::scene::remove(const handle entity_id)
+bool vlt::Scene::remove(const Handle entity_id)
 {
 	return get_pool<ComponentType>()->remove(entity_id);
 }
@@ -242,15 +241,15 @@ bool vlt::scene::remove(const handle entity_id)
 // ============================================================================
 
 template <typename ComponentType>
-void vlt::scene::install_component()
+void vlt::Scene::install_component()
 {
-	install_component(ComponentType::metadata->tag, &scene::create_pool<ComponentType>);
+	install_component(ComponentType::metadata->tag, &Scene::create_pool<ComponentType>);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-void vlt::scene::uninstall_component()
+void vlt::Scene::uninstall_component()
 {
 	uninstall_component(ComponentType::metadata->tag);
 }
@@ -258,9 +257,9 @@ void vlt::scene::uninstall_component()
 // ============================================================================
 
 template <typename ComponentType>
-vlt::component_pool vlt::scene::create_pool()
+vlt::Component_Pool vlt::Scene::create_pool()
 {
-	return component_pool::create<ComponentType>();
+	return Component_Pool::create<ComponentType>();
 }
 
 // ============================================================================

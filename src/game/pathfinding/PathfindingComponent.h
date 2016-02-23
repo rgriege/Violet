@@ -1,8 +1,8 @@
 #ifndef GAME_PathfindingComponent_H
 #define GAME_PathfindingComponent_H
 
-#include "violet/component/Component.h"
-#include "game/Config.h"
+#include "violet/component/component.h"
+#include "game/config.h"
 
 namespace Violet
 {
@@ -18,7 +18,7 @@ public:
 
 public:
 
-	PathfindingComponent(Violet::EntityId entityId, Violet::Deserializer & deserializer);
+	PathfindingComponent(Violet::EntityId entityId, Violet::Deserializer & Deserializer);
 
 public:
 
@@ -26,6 +26,6 @@ public:
 	float m_speed;
 };
 
-Violet::Serializer & operator<<(Violet::Serializer & serializer, const PathfindingComponent & component);
+Violet::Serializer & operator<<(Violet::Serializer & Serializer, const PathfindingComponent & component);
 
 #endif

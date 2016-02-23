@@ -40,8 +40,8 @@ namespace vlt
 	VIOLET_API bool operator!=(const m4 & lhs, const m4 & rhs);
 	VIOLET_API m4 from2d(const m3 & mat);
 	VIOLET_API m3 to2d(const m4 & mat);
-	VIOLET_API serializer & operator<<(serializer & serializer, const m4 & vec);
-	VIOLET_API deserializer & operator>>(deserializer & deserializer, m4 & vec);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const m4 & vec);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, m4 & vec);
 	
 	
 	struct VIOLET_API unaligned_m4

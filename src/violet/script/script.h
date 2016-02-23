@@ -1,51 +1,51 @@
 #ifndef VIOLET_SCRIPT_H
 #define VIOLET_SCRIPT_H
 
-#include "violet/core/defines.h"
-#include "violet/core/engine.h"
-#include "violet/utility/delegate.h"
-
 #include <string>
 #include <vector>
 #include <unordered_map>
 
+#include "violet/core/defines.h"
+#include "violet/core/engine.h"
+#include "violet/utility/delegate.h"
+
 namespace vlt
 {
-	struct VIOLET_API script
+	struct VIOLET_API Script
 	{
 		template <typename Derived, typename Signature>
-		struct method;
+		struct Method;
 
 		template <typename Derived, typename ResultType, typename ... Args>
-		struct method<Derived, ResultType(Args...)>
+		struct Method<Derived, ResultType(Args...)>
 		{
 		public:
 
-			typedef delegate<ResultType(Args...)> Handler;
+			typedef Delegate<ResultType(Args...)> Handler;
 
 		public:
 
-			static void assign(script & script, const Handler & func);
-			static void assign(const script & script, const Handler & func);
-			static bool has(const script & script);
-			static ResultType run(const script & script, Args && ... args);
-			static void remove(script & script);
-			static void remove(const script & script);
+			static void assign(Script & Script, const Handler & func);
+			static void assign(const Script & Script, const Handler & func);
+			static bool has(const Script & Script);
+			static ResultType run(const Script & Script, Args && ... args);
+			static void remove(Script & Script);
+			static void remove(const Script & Script);
 
 		private:
 
-			method() = default;
+			Method() = default;
 		};
 
-		static void add_hook(script & script, u32 id, const delegate_store & func);
-		static void add_hook(const script & script, u32 id, const delegate_store & func);
-		static void remove_hook(script & script, u32 id, const char * name);
-		static void remove_hook(const script & script, u32 id, const char * name);
+		static void add_hook(Script & script, u32 id, const Delegate_Store & func);
+		static void add_hook(const Script & script, u32 id, const Delegate_Store & func);
+		static void remove_hook(Script & script, u32 id, const char * name);
+		static void remove_hook(const Script & script, u32 id, const char * name);
 
 	public:
 
-		script() = default;
-		virtual ~script();
+		Script() = default;
+		virtual ~Script();
 
 		virtual std::string const & get_filename() const = 0;
 		virtual bool is_valid() const = 0;
@@ -57,12 +57,12 @@ namespace vlt
 
 	private:
 
-		script(const script &) = delete;
-		script & operator=(const script &) = delete;
+		Script(const Script &) = delete;
+		Script & operator=(const Script &) = delete;
 
 	private:
 
-		std::unordered_map<u32, delegate_store> m_boundMethods;
+		std::unordered_map<u32, Delegate_Store> m_boundMethods;
 	};
 
 #ifdef WIN32
@@ -75,14 +75,14 @@ namespace vlt
 #define SCRIPT_API
 #endif
 
-#define DEFINE_METHOD(MethodName, Signature) struct SCRIPT_API MethodName : public vlt::script::method<MethodName, Signature> \
+#define DEFINE_METHOD(MethodName, Signature) struct SCRIPT_API MethodName : public vlt::Script::Method<MethodName, Signature> \
 	{ \
 	public: \
 		static const char * get_name() { return #MethodName; } \
 		static u32 get_identifier() { return std::hash<std::string>()(get_name()); } \
 	}
 
-#define DEFINE_EXTERNAL_METHOD(MethodName, Signature) struct MethodName : public vlt::script::method<MethodName, Signature> \
+#define DEFINE_EXTERNAL_METHOD(MethodName, Signature) struct MethodName : public vlt::Script::Method<MethodName, Signature> \
 	{ \
 	public: \
 		static const char * get_name() { return #MethodName; } \

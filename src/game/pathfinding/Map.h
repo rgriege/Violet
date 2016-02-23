@@ -2,8 +2,8 @@
 #define GAME_Map_H
 
 #include "violet/math/Vec2.h"
-#include "violet/structures/CrsGraph.h"
-#include "game/Config.h"
+#include "violet/structures/crsgraph.h"
+#include "game/config.h"
 
 class Intersection
 {

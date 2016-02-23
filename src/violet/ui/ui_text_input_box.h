@@ -6,7 +6,7 @@
 
 namespace vlt
 {
-	struct VIOLET_API ui_text_input_box final
+	struct VIOLET_API Ui_Text_Input_Box final
 	{
 	public:
 
@@ -18,8 +18,8 @@ namespace vlt
 
 	public:
 
-		void activate(handle entity_id);
-		Status on_key_up(handle entity_id, const window_system::key_event & event);
+		void activate(Handle entity_id);
+		Status on_key_up(Handle entity_id, const Window_System::Key_Event & event);
 	};
 }
 

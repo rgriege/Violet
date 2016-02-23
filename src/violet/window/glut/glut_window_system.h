@@ -14,10 +14,10 @@ namespace GlutWindowSystemNamespace
 
 namespace vlt
 {
-	struct deserializer;
-	struct system_factory;
+	struct Deserializer;
+	struct System_Factory;
 
-	struct VIOLET_API glut_window_system final : public window_system
+	struct VIOLET_API Glut_Window_System final : public Window_System
 	{
 	public:
 
@@ -25,18 +25,18 @@ namespace vlt
 
 	public:
 
-		static void install(system_factory & factory);
-		static void init(deserializer & deserializer);
+		static void install(System_Factory & factory);
+		static void init(Deserializer & deserializer);
 
 	public:
 
-		glut_window_system(int id, int width, int height);
-		virtual ~glut_window_system() override = default;
+		Glut_Window_System(int id, int width, int height);
+		virtual ~Glut_Window_System() override = default;
 
 		virtual void update(r32 dt) override;
 		virtual void render() override;
-		virtual bool get_event(event_type type, event * event) override;
-		virtual void add_event(event event) override;
+		virtual bool get_event(Event_Type type, Event * event) override;
+		virtual void add_event(Event event) override;
 		virtual int get_width() const override;
 		virtual int get_height() const override;
 
@@ -45,7 +45,7 @@ namespace vlt
 		const int m_id;
 		int m_width;
 		int m_height;
-		std::deque<event> m_eventQueue;
+		std::deque<Event> m_eventQueue;
 		v2i m_mousePos;
 	};
 }

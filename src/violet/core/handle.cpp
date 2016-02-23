@@ -6,30 +6,29 @@ using namespace vlt;
 
 // ============================================================================
 
-
-const handle handle::Invalid;
+const Handle Handle::Invalid;
 
 // ============================================================================
 
 
-handle::handle() :
-	handle(~0, 0)
+Handle::Handle() :
+	Handle(~0, 0)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 
-handle::handle(const u16 id, const u16 version) :
-	id(id),
-	version(version)
+Handle::Handle(const u16 _id, const u16 _version) :
+	id(_id),
+	version(_version)
 {
 }
 
 // ----------------------------------------------------------------------------
 
 
-bool handle::is_valid() const
+bool Handle::is_valid() const
 {
 	return id != Invalid.id;
 }
@@ -37,7 +36,7 @@ bool handle::is_valid() const
 // ============================================================================
 
 
-bool vlt::operator<(const handle lhs, const handle rhs)
+bool vlt::operator<(const Handle lhs, const Handle rhs)
 {
 	return lhs.id < rhs.id;
 }
@@ -45,7 +44,7 @@ bool vlt::operator<(const handle lhs, const handle rhs)
 // ----------------------------------------------------------------------------
 
 
-bool vlt::operator==(const handle lhs, const handle rhs)
+bool vlt::operator==(const Handle lhs, const Handle rhs)
 {
 	return lhs.id == rhs.id && lhs.version == rhs.version;
 }
@@ -53,7 +52,7 @@ bool vlt::operator==(const handle lhs, const handle rhs)
 // ----------------------------------------------------------------------------
 
 
-bool vlt::operator!=(const handle lhs, const handle rhs)
+bool vlt::operator!=(const Handle lhs, const Handle rhs)
 {
 	return !(lhs == rhs);
 }

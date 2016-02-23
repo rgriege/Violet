@@ -9,57 +9,55 @@ using namespace vlt;
 
 // ============================================================================
 
-namespace ColorNamespace
+namespace Color_Namespace
 {
-	const char * const ms_segmentLabel = "color";
-
 	r32 convert(u8 value);
 	u8 convert(r32 value);
 
-	void deserializeFromHexString(color & color, const char * hexString);
+	void deserialize_from_hex_string(Color & Color, const char * hex_string);
 }
 
-using namespace ColorNamespace;
+using namespace Color_Namespace;
 
 // ============================================================================
 
-const color color::Black(0, 0, 0);
-const color color::Red(255, 0, 0);
-const color color::Orange(255, 127, 0);
-const color color::Yellow(255, 255, 0);
-const color color::Green(0, 255, 0);
-const color color::Indigo(0, 255, 255);
-const color color::Blue(0, 0, 255);
-const color color::Purple(140, 0, 255);
-const color color::White(255, 255, 255);
-const color color::Tan(240, 230, 170);
-const color color::Brown(107, 66, 38);
-const color color::Rainbow[] = { Red, Orange, Yellow, Green, Indigo, Blue, Purple };
+const Color Color::Black(0, 0, 0);
+const Color Color::Red(255, 0, 0);
+const Color Color::Orange(255, 127, 0);
+const Color Color::Yellow(255, 255, 0);
+const Color Color::Green(0, 255, 0);
+const Color Color::Indigo(0, 255, 255);
+const Color Color::Blue(0, 0, 255);
+const Color Color::Purple(140, 0, 255);
+const Color Color::White(255, 255, 255);
+const Color Color::Tan(240, 230, 170);
+const Color Color::Brown(107, 66, 38);
+const Color Color::Rainbow[] = { Red, Orange, Yellow, Green, Indigo, Blue, Purple };
 
 // ============================================================================
 
-color::component::component() :
+Color::component::component() :
 	value()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-color::component::component(const u8 value) :
+Color::component::component(const u8 value) :
 	value(value)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-color::component::component(const r32 value) :
+Color::component::component(const r32 value) :
 	value(convert(value))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-color::component & color::component::operator=(const u8 _value)
+Color::component & Color::component::operator=(const u8 _value)
 {
 	value = _value;
 	return *this;
@@ -67,7 +65,7 @@ color::component & color::component::operator=(const u8 _value)
 
 // ----------------------------------------------------------------------------
 
-color::component & color::component::operator=(const r32 _value)
+Color::component & Color::component::operator=(const r32 _value)
 {
 	value = convert(_value);
 	return *this;
@@ -75,14 +73,14 @@ color::component & color::component::operator=(const r32 _value)
 
 // ----------------------------------------------------------------------------
 
-bool color::component::operator!=(const u8 _value) const
+bool Color::component::operator!=(const u8 _value) const
 {
 	return value != _value;
 }
 
 // ----------------------------------------------------------------------------
 
-color::component & color::component::operator+=(const u8 _value)
+Color::component & Color::component::operator+=(const u8 _value)
 {
 	value += _value;
 	return *this;
@@ -90,7 +88,7 @@ color::component & color::component::operator+=(const u8 _value)
 
 // ----------------------------------------------------------------------------
 
-color::component & color::component::operator-=(const u8 _value)
+Color::component & Color::component::operator-=(const u8 _value)
 {
 	value -= _value;
 	return *this;
@@ -98,35 +96,35 @@ color::component & color::component::operator-=(const u8 _value)
 
 // ----------------------------------------------------------------------------
 
-color::component::operator u8() const
+Color::component::operator u8() const
 {
 	return value;
 }
 
 // ----------------------------------------------------------------------------
 
-color::component::operator r32() const
+Color::component::operator r32() const
 {
 	return convert(value);
 }
 
 // ----------------------------------------------------------------------------
 
-u8 color::component::asUint() const
+u8 Color::component::as_uint() const
 {
 	return value;
 }
 
 // ----------------------------------------------------------------------------
 
-r32 color::component::asFloat() const
+r32 Color::component::as_float() const
 {
 	return convert(value);
 }
 
 // ============================================================================
 
-color::color() :
+Color::Color() :
 	r(static_cast<u8>(0)),
 	g(static_cast<u8>(0)),
 	b(static_cast<u8>(0)),
@@ -136,7 +134,7 @@ color::color() :
 
 // ----------------------------------------------------------------------------
 
-color::color(const u8 _r, const u8 _g, const u8 _b, const u8 _a) :
+Color::Color(const u8 _r, const u8 _g, const u8 _b, const u8 _a) :
 	r(_r),
 	g(_g),
 	b(_b),
@@ -146,77 +144,77 @@ color::color(const u8 _r, const u8 _g, const u8 _b, const u8 _a) :
 
 // ----------------------------------------------------------------------------
 
-color::color(deserializer & deserializer) :
-	color()
+Color::Color(Deserializer & deserializer) :
+	Color()
 {
 	deserializer >> *this;
 }
 
 // ----------------------------------------------------------------------------
 
-color::color(const char * const hexString) :
-	color()
+Color::Color(const char * const hex_string) :
+	Color()
 {
-	deserializeFromHexString(*this, hexString);
+	deserialize_from_hex_string(*this, hex_string);
 }
 
 // ----------------------------------------------------------------------------
 
-bool color::operator!=(const color & rhs) const
+bool Color::operator!=(const Color & rhs) const
 {
 	return r != rhs.r || g != rhs.g || b != rhs.b || a != rhs.a;
 }
 
 // ----------------------------------------------------------------------------
 
-std::array<r32, 4> color::as4fv() const
+std::array<r32, 4> Color::as4fv() const
 {
 	return { r, g, b, a };
 }
 
 // ============================================================================
 
-deserializer & vlt::operator>>(deserializer & deserializer, color & color)
+Deserializer & vlt::operator>>(Deserializer & deserializer, Color & color)
 {
-	const char * hexString = deserializer.get_string(ms_segmentLabel);
-	deserializeFromHexString(color, hexString);
+	const char * hex_string = deserializer.get_string("color");
+	deserialize_from_hex_string(color, hex_string);
 	return deserializer;
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const color & color)
+Serializer & vlt::operator<<(Serializer & serializer, const Color & color)
 {
-	char hexString[11];
-	sprintf(hexString, "0x%.2x%.2x%.2x%.2x", color.r.asUint(), color.g.asUint(), color.b.asUint(), color.a.asUint());
-	hexString[10] = 0;
-	serializer.write_string(ms_segmentLabel, hexString);
+	char hex_string[11];
+	sprintf(hex_string, "0x%.2x%.2x%.2x%.2x", color.r.as_uint(), color.g.as_uint(), color.b.as_uint(), color.a.as_uint());
+	hex_string[10] = 0;
+	serializer.write_string("color", hex_string);
 	return serializer;
 }
 
 // ============================================================================
 
-r32 ColorNamespace::convert(const u8 value)
+r32 Color_Namespace::convert(const u8 value)
 {
 	return static_cast<r32>(value) / 255.f;
 }
 
 // ----------------------------------------------------------------------------
 
-u8 ColorNamespace::convert(const r32 value)
+u8 Color_Namespace::convert(const r32 value)
 {
 	return static_cast<u8>(value * 255);
 }
 
 // ----------------------------------------------------------------------------
 
-void ColorNamespace::deserializeFromHexString(color & color, const char * const hexString)
+void Color_Namespace::deserialize_from_hex_string(Color & Color, const char * const hex_string)
 {
-	u32 rgba = strtoul(hexString, nullptr, 16);
-	color.r = static_cast<u8>((rgba >> 24) & 0xff);
-	color.g = static_cast<u8>((rgba >> 16) & 0xff);
-	color.b = static_cast<u8>((rgba >> 8) & 0xff);
-	color.a = static_cast<u8>(rgba & 0xff);
+	u32 rgba = strtoul(hex_string, nullptr, 16);
+	Color.r = static_cast<u8>((rgba >> 24) & 0xff);
+	Color.g = static_cast<u8>((rgba >> 16) & 0xff);
+	Color.b = static_cast<u8>((rgba >> 8) & 0xff);
+	Color.a = static_cast<u8>(rgba & 0xff);
 }
 
 // ============================================================================

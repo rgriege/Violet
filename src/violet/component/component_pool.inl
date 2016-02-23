@@ -8,7 +8,7 @@
 // ============================================================================
 
 template <typename ComponentType, bool IsConst>
-vlt::component_pool::Iterator<ComponentType, IsConst>::Iterator(pointer ptr, const handle * idPtr) :
+vlt::Component_Pool::Iterator<ComponentType, IsConst>::Iterator(pointer ptr, const Handle * idPtr) :
 	component_ptr(ptr),
 	id_ptr(idPtr)
 {
@@ -17,7 +17,7 @@ vlt::component_pool::Iterator<ComponentType, IsConst>::Iterator(pointer ptr, con
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool IsConst>
-vlt::component_pool::Iterator<ComponentType, IsConst> & vlt::component_pool::Iterator<ComponentType, IsConst>::operator++()
+vlt::Component_Pool::Iterator<ComponentType, IsConst> & vlt::Component_Pool::Iterator<ComponentType, IsConst>::operator++()
 {
 	++component_ptr;
 	++id_ptr;
@@ -27,7 +27,7 @@ vlt::component_pool::Iterator<ComponentType, IsConst> & vlt::component_pool::Ite
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool IsConst>
-vlt::component_pool::Iterator<ComponentType, IsConst> & vlt::component_pool::Iterator<ComponentType, IsConst>::advance_to(const handle entity_id)
+vlt::Component_Pool::Iterator<ComponentType, IsConst> & vlt::Component_Pool::Iterator<ComponentType, IsConst>::advance_to(const Handle entity_id)
 {
 	while (*this && *id_ptr < entity_id)
 	{
@@ -41,7 +41,7 @@ vlt::component_pool::Iterator<ComponentType, IsConst> & vlt::component_pool::Ite
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool IsConst>
-typename vlt::component_pool::Iterator<ComponentType, IsConst>::reference vlt::component_pool::Iterator<ComponentType, IsConst>::operator*()
+typename vlt::Component_Pool::Iterator<ComponentType, IsConst>::reference vlt::Component_Pool::Iterator<ComponentType, IsConst>::operator*()
 {
 	return *component_ptr;
 }
@@ -49,7 +49,7 @@ typename vlt::component_pool::Iterator<ComponentType, IsConst>::reference vlt::c
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool IsConst>
-typename vlt::component_pool::Iterator<ComponentType, IsConst>::pointer vlt::component_pool::Iterator<ComponentType, IsConst>::operator->()
+typename vlt::Component_Pool::Iterator<ComponentType, IsConst>::pointer vlt::Component_Pool::Iterator<ComponentType, IsConst>::operator->()
 {
 	return component_ptr;
 }
@@ -57,7 +57,7 @@ typename vlt::component_pool::Iterator<ComponentType, IsConst>::pointer vlt::com
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool IsConst>
-vlt::handle vlt::component_pool::Iterator<ComponentType, IsConst>::get_entity_id() const
+vlt::Handle vlt::Component_Pool::Iterator<ComponentType, IsConst>::get_entity_id() const
 {
 	return *id_ptr;
 }
@@ -65,7 +65,7 @@ vlt::handle vlt::component_pool::Iterator<ComponentType, IsConst>::get_entity_id
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool IsConst>
-vlt::component_pool::Iterator<ComponentType, IsConst>::operator bool() const
+vlt::Component_Pool::Iterator<ComponentType, IsConst>::operator bool() const
 {
 	return id_ptr->is_valid();
 }
@@ -73,7 +73,7 @@ vlt::component_pool::Iterator<ComponentType, IsConst>::operator bool() const
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType, bool IsConst>
-bool vlt::component_pool::Iterator<ComponentType, IsConst>::operator!=(const Iterator<ComponentType, IsConst> & other) const
+bool vlt::Component_Pool::Iterator<ComponentType, IsConst>::operator!=(const Iterator<ComponentType, IsConst> & other) const
 {
 	return component_ptr != other.component_ptr;
 }
@@ -85,13 +85,13 @@ namespace vlt
 	namespace detail
 	{
 		template <typename T>
-		void loadComponent(component_pool & pool, component_deserializer & deserializer)
+		void loadComponent(Component_Pool & pool, Component_Deserializer & deserializer)
 		{
 			pool.create<T>(deserializer.get_entity_id("id"), deserializer);
 		}
 
 		template <typename T>
-		void saveComponent(serializer & serializer, const T * component)
+		void saveComponent(Serializer & serializer, const T * component)
 		{
 			serializer << *component;
 		}
@@ -105,19 +105,19 @@ namespace vlt
 }
 
 template <typename ComponentType>
-vlt::component_pool vlt::component_pool::create()
+vlt::Component_Pool vlt::Component_Pool::create()
 {
-	func_table::load_fn load = (func_table::load_fn) &vlt::detail::loadComponent<ComponentType>;
-	func_table::save_fn save = (func_table::save_fn) &vlt::detail::saveComponent<ComponentType>;
-	func_table::destroy_fn destroy = (func_table::destroy_fn) &vlt::detail::deleteComponent<ComponentType>;
-	auto ftable = std::make_unique<func_table>(load, save, destroy);
-	return component_pool(ComponentType::metadata, std::move(ftable));
+	Func_Table::load_fn load = (Func_Table::load_fn) &vlt::detail::loadComponent<ComponentType>;
+	Func_Table::save_fn save = (Func_Table::save_fn) &vlt::detail::saveComponent<ComponentType>;
+	Func_Table::destroy_fn destroy = (Func_Table::destroy_fn) &vlt::detail::deleteComponent<ComponentType>;
+	auto ftable = std::make_unique<Func_Table>(load, save, destroy);
+	return Component_Pool(ComponentType::metadata, std::move(ftable));
 }
 
 // ============================================================================
 
 template <typename ComponentType, typename... Args>
-ComponentType & vlt::component_pool::create(const handle entity_id, Args && ... args)
+ComponentType & vlt::Component_Pool::create(const Handle entity_id, Args && ... args)
 {
 	assert(ComponentType::metadata->tag == metadata->tag);
 	auto result = insert(entity_id);
@@ -130,7 +130,7 @@ ComponentType & vlt::component_pool::create(const handle entity_id, Args && ... 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-ComponentType * vlt::component_pool::get(const handle entity_id)
+ComponentType * vlt::Component_Pool::get(const Handle entity_id)
 {
 	assert(ComponentType::metadata->tag == metadata->tag);
 	const u32 index = get_index(entity_id);
@@ -140,7 +140,7 @@ ComponentType * vlt::component_pool::get(const handle entity_id)
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-const ComponentType * vlt::component_pool::get(const handle entity_id) const
+const ComponentType * vlt::Component_Pool::get(const Handle entity_id) const
 {
 	assert(ComponentType::metadata->tag == metadata->tag);
 	const u32 index = get_index(entity_id);
@@ -150,7 +150,7 @@ const ComponentType * vlt::component_pool::get(const handle entity_id) const
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-vlt::component_pool::iterator<ComponentType> vlt::component_pool::begin()
+vlt::Component_Pool::iterator<ComponentType> vlt::Component_Pool::begin()
 {
 	assert(ComponentType::metadata->tag == metadata->tag);
 	return iterator<ComponentType>(static_cast<ComponentType*>(get(0)), &ids[0]);
@@ -159,7 +159,7 @@ vlt::component_pool::iterator<ComponentType> vlt::component_pool::begin()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-vlt::component_pool::const_iterator<ComponentType> vlt::component_pool::begin() const
+vlt::Component_Pool::const_iterator<ComponentType> vlt::Component_Pool::begin() const
 {
 	assert(ComponentType::metadata->tag == metadata->tag);
 	return const_iterator<ComponentType>(static_cast<const ComponentType*>(get(0)), &ids[0]);
@@ -168,7 +168,7 @@ vlt::component_pool::const_iterator<ComponentType> vlt::component_pool::begin() 
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-vlt::component_pool::iterator<ComponentType> vlt::component_pool::end()
+vlt::Component_Pool::iterator<ComponentType> vlt::Component_Pool::end()
 {
 	assert(ComponentType::metadata->tag == metadata->tag);
 	return iterator<ComponentType>(static_cast<ComponentType*>(get(size())), &ids[size()]);
@@ -177,7 +177,7 @@ vlt::component_pool::iterator<ComponentType> vlt::component_pool::end()
 // ----------------------------------------------------------------------------
 
 template <typename ComponentType>
-vlt::component_pool::const_iterator<ComponentType> vlt::component_pool::end() const
+vlt::Component_Pool::const_iterator<ComponentType> vlt::Component_Pool::end() const
 {
 	assert(ComponentType::metadata->tag == metadata->tag);
 	return const_iterator<ComponentType>(static_cast<const ComponentType*>(get(size())), &ids[size()]);

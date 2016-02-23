@@ -15,75 +15,75 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * texture_component::metadata;
+const Component_Metadata * Texture_Component::metadata;
 
 // ============================================================================
 
-vector<v2> create_text_coords_from_mesh(const mesh & mesh);
+static Vector<v2> create_text_coords_from_mesh(const Mesh & mesh);
 
 // ============================================================================
 
-texture_component::texture_component(const handle entity_id, component_deserializer & deserializer) :
-	render_component_data(deserializer),
-	m_texture(texture::get_cache().fetch(deserializer.get_string("texture"))),
-	m_texCoords(std::make_unique<mesh>(create_text_coords_from_mesh(*m_mesh)))
+Texture_Component::Texture_Component(const Handle entity_id, Component_Deserializer & deserializer) :
+	Render_Component_Data(deserializer),
+	texture(Texture::get_cache().fetch(deserializer.get_string("texture"))),
+	tex_coords(std::make_unique<Mesh>(create_text_coords_from_mesh(*mesh)))
 {
-	glBindVertexArray(m_vertexArrayBuffer);
-	const guard<mesh> texCoordGuard(*m_texCoords);
-	const GLuint texCoordAttrib = m_shader->getAttributeLocation("texCoord");
-	glEnableVertexAttribArray(texCoordAttrib);
-	glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindVertexArray(vertex_array_buffer);
+	const Guard<Mesh> tex_coord_guard(*tex_coords);
+	const GLuint tex_coord_attrib = shader->get_attrib_loc("texCoord");
+	glEnableVertexAttribArray(tex_coord_attrib);
+	glVertexAttribPointer(tex_coord_attrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glBindVertexArray(0);
 }
 
 // ----------------------------------------------------------------------------
 
-texture_component::texture_component(const handle entity_id, const poly & p, std::shared_ptr<shader_program> shader, std::shared_ptr<texture> texture, const poly & texCoords) :
-	render_component_data(p, shader),
-	m_texture(std::move(texture)),
-	m_texCoords(std::make_unique<mesh>(texCoords))
+Texture_Component::Texture_Component(const Handle entity_id, const Poly & p, std::shared_ptr<Shader_Program> shader, std::shared_ptr<Texture> _texture, const Poly & _tex_coords) :
+	Render_Component_Data(p, shader),
+	texture(std::move(_texture)),
+	tex_coords(std::make_unique<Mesh>(_tex_coords))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-texture_component::texture_component(texture_component && other) :
-	render_component_data(std::move(other)),
-	m_texture(),
-	m_texCoords(std::move(other.m_texCoords))
+Texture_Component::Texture_Component(Texture_Component && other) :
+	Render_Component_Data(std::move(other)),
+	texture(),
+	tex_coords(std::move(other.tex_coords))
 {
-	m_texture.swap(other.m_texture);
+	texture.swap(other.texture);
 }
 
 // ============================================================================
 
 void vlt::install_texture_component()
 {
-	texture_component::metadata = init_component_metadata(tag('t', 'e', 'x', 'u'), 0, sizeof(texture_component));
-	scene::install_component<texture_component>();
+	Texture_Component::metadata = init_component_metadata(Tag('t', 'e', 'x', 'u'), 0, sizeof(Texture_Component));
+	Scene::install_component<Texture_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & vlt::operator>>(component_deserializer & deserializer, texture_component & component)
+Component_Deserializer & vlt::operator>>(Component_Deserializer & deserializer, Texture_Component & component)
 {
-	operator>>(deserializer, static_cast<render_component_data &>(component));
-	component.m_texture = texture::get_cache().fetch(deserializer.get_string("texture"));
+	operator>>(deserializer, static_cast<Render_Component_Data &>(component));
+	component.texture = Texture::get_cache().fetch(deserializer.get_string("texture"));
 	return deserializer;
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const texture_component & component)
+Serializer & vlt::operator<<(Serializer & serializer, const Texture_Component & component)
 {
-	operator<<(serializer, static_cast<const render_component_data &>(component));
-	serializer.write_string("texture", component.m_texture->get_name().c_str());
+	operator<<(serializer, static_cast<const Render_Component_Data &>(component));
+	serializer.write_string("texture", component.texture->filename.c_str());
 	return serializer;
 }
 
 // ============================================================================
 
-vector<v2> create_text_coords_from_mesh(const mesh & mesh)
+Vector<v2> create_text_coords_from_mesh(const Mesh & mesh)
 {
 	aabb extent;
 	const auto poly = mesh.get_poly();
@@ -92,7 +92,7 @@ vector<v2> create_text_coords_from_mesh(const mesh & mesh)
 	const v2 & minimum = extent.get_min();
 	const v2 & dimension = extent.get_max() - minimum;
 
-	vector<v2> result;
+	Vector<v2> result;
 	result.reserve(poly.vertices.size());
 	for (const v2 & vertex : poly.vertices)
 		result.emplace_back(v2((vertex.x - minimum.x) / dimension.x, (vertex.y - minimum.y) / dimension.y));

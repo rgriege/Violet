@@ -10,7 +10,7 @@ using namespace vlt;
 
 // ============================================================================
 
-std::unordered_map<tag, component_metadata> g_component_metadata_map;
+std::unordered_map<Tag, Component_Metadata> g_component_metadata_map;
 
 // ============================================================================
 
@@ -26,16 +26,16 @@ u32 _get_next_component_flag()
 
 // ============================================================================
 
-const component_metadata * vlt::init_component_metadata(const tag t, const u32 version, const u32 size)
+const Component_Metadata * vlt::init_component_metadata(const Tag tag, const u32 version, const u32 size)
 {
 	static std::mutex mutex;
 
 	const std::lock_guard<std::mutex> guard(mutex);
 
-	assert(g_component_metadata_map.find(t) == g_component_metadata_map.end());
+	assert(g_component_metadata_map.find(tag) == g_component_metadata_map.end());
 
-	component_metadata & data = g_component_metadata_map[t];
-	data.tag = t;
+	Component_Metadata & data = g_component_metadata_map[tag];
+	data.tag = tag;
 	data.flag = _get_next_component_flag();
 	data.size = size;
 	data.version = version;
@@ -45,19 +45,19 @@ const component_metadata * vlt::init_component_metadata(const tag t, const u32 v
 
 // ----------------------------------------------------------------------------
 
-void vlt::assign_component_to_thread(const tag t, const u32 thread)
+void vlt::assign_component_to_thread(const Tag tag, const u32 thread)
 {
-	assert(g_component_metadata_map.find(t) != g_component_metadata_map.end());
+	assert(g_component_metadata_map.find(tag) != g_component_metadata_map.end());
 
-	g_component_metadata_map[t].thread = thread;
+	g_component_metadata_map[tag].thread = thread;
 }
 
 // ----------------------------------------------------------------------------
 
-const component_metadata * vlt::get_component_metadata(const tag t)
+const Component_Metadata * vlt::get_component_metadata(const Tag tag)
 {
-	assert(g_component_metadata_map.find(t) != g_component_metadata_map.end());
-	return &g_component_metadata_map[t];
+	assert(g_component_metadata_map.find(tag) != g_component_metadata_map.end());
+	return &g_component_metadata_map[tag];
 }
 
 // ============================================================================

@@ -1,15 +1,15 @@
 #ifndef VIOLET_STRING_UTILITIES_H
 #define VIOLET_STRING_UTILITIES_H
 
-#include "violet/core/defines.h"
-
 #include <cstring>
 #include <string>
 #include <vector>
 
+#include "violet/core/defines.h"
+
 namespace vlt
 {
-	struct VIOLET_API string_utilities
+	struct VIOLET_API String_Utilities
 	{
 	public:
 
@@ -19,11 +19,6 @@ namespace vlt
 			{
 				return strcmp(lhs, rhs) < 0;
 			}
-		};
-
-		struct Hash
-		{
-			
 		};
 
 	public:

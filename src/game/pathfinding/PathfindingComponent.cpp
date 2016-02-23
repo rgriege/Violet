@@ -1,9 +1,9 @@
 // ============================================================================
 
-#include "game/pathfinding/PathfindingComponent.h"
+#include "game/pathfinding/pathfindingcomponent.h"
 
-#include "violet/serialization/Deserializer.h"
-#include "violet/serialization/Serializer.h"
+#include "violet/serialization/deserializer.h"
+#include "violet/serialization/serializer.h"
 
 // ============================================================================
 
@@ -14,20 +14,20 @@ Violet::Tag PathfindingComponent::getStaticTag()
 
 // ============================================================================
 
-PathfindingComponent::PathfindingComponent(const Violet::EntityId entityId, Violet::Deserializer & deserializer) :
+PathfindingComponent::PathfindingComponent(const Violet::EntityId entityId, Violet::Deserializer & Deserializer) :
 	ComponentBase<PathfindingComponent>(entityId),
-	m_mapId(deserializer.getUint("mapId")),
-	m_speed(deserializer.getFloat("speed"))
+	m_mapId(Deserializer.getUint("mapId")),
+	m_speed(Deserializer.getFloat("speed"))
 {
 }
 
 // ============================================================================
 
-Violet::Serializer & operator<<(Violet::Serializer & serializer, const PathfindingComponent & component)
+Violet::Serializer & operator<<(Violet::Serializer & Serializer, const PathfindingComponent & component)
 {
-	serializer.writeUint("mapId", component.m_mapId);
-	serializer.writeFloat("speed", component.m_speed);
-	return serializer;
+	Serializer.writeUint("mapId", component.m_mapId);
+	Serializer.writeFloat("speed", component.m_speed);
+	return Serializer;
 }
 
 // ============================================================================

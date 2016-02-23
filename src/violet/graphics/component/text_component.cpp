@@ -11,38 +11,38 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * text_component::metadata;
+const Component_Metadata * Text_Component::metadata;
 
 // ============================================================================
 
-text_component::text_component(const handle entity_id, component_deserializer & deserializer) :
-	render_component_data(deserializer),
-	m_text(deserializer.get_string("str")),
-	m_font(),
+Text_Component::Text_Component(const Handle entity_id, Component_Deserializer & deserializer) :
+	Render_Component_Data(deserializer),
+	text(deserializer.get_string("str")),
+	font(),
 	color()
 {
-	const char * filename = deserializer.get_string("font");
+	const char * filename = deserializer.get_string("Font");
 	const u32 size = deserializer.get_u32("size");
-	m_font = font::get_cache().fetch(filename, size);
+	font = Font::get_cache().fetch(filename, size);
 	deserializer >> color;
 }
 
 // ----------------------------------------------------------------------------
 
-text_component::text_component(const handle entity_id, const text_component & other) :
-	render_component_data(other),
-	m_text(other.m_text),
-	m_font(other.m_font),
+Text_Component::Text_Component(const Handle entity_id, const Text_Component & other) :
+	Render_Component_Data(other),
+	text(other.text),
+	font(other.font),
 	color(other.color)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-text_component::text_component(text_component && other) :
-	render_component_data(std::move(other)),
-	m_text(std::move(other.m_text)),
-	m_font(std::move(other.m_font)),
+Text_Component::Text_Component(Text_Component && other) :
+	Render_Component_Data(std::move(other)),
+	text(std::move(other.text)),
+	font(std::move(other.font)),
 	color(other.color)
 {
 }
@@ -51,31 +51,31 @@ text_component::text_component(text_component && other) :
 
 void vlt::install_text_component()
 {
-	text_component::metadata = init_component_metadata(tag('t', 'e', 'x', 't'), 0, sizeof(text_component));
-	scene::install_component<text_component>();
+	Text_Component::metadata = init_component_metadata(Tag('t', 'e', 'x', 't'), 0, sizeof(Text_Component));
+	Scene::install_component<Text_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & vlt::operator>>(component_deserializer & deserializer, text_component & component)
+Component_Deserializer & vlt::operator>>(Component_Deserializer & deserializer, Text_Component & component)
 {
-	operator>>(deserializer, static_cast<render_component_data &>(component));
-	component.m_text = deserializer.get_string("str");
+	operator>>(deserializer, static_cast<Render_Component_Data &>(component));
+	component.text = deserializer.get_string("str");
 	const char * filename = deserializer.get_string("font");
 	const u32 size = deserializer.get_u32("size");
-	component.m_font = font::get_cache().fetch(filename, size);
+	component.font = Font::get_cache().fetch(filename, size);
 	deserializer >> component.color;
 	return deserializer;
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const text_component & component)
+Serializer & vlt::operator<<(Serializer & serializer, const Text_Component & component)
 {
-	operator<<(serializer, static_cast<const render_component_data &>(component));
-	serializer.write_string("str", component.m_text.c_str());
-	serializer.write_string("font", component.m_font->get_filename());
-	serializer.write_u32("size", component.m_font->get_size());
+	operator<<(serializer, static_cast<const Render_Component_Data &>(component));
+	serializer.write_string("str", component.text.c_str());
+	serializer.write_string("font", component.font->filename.c_str());
+	serializer.write_u32("size", component.font->size);
 	serializer << component.color;
 	return serializer;
 }

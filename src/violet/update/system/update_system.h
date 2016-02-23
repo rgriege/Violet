@@ -7,22 +7,22 @@
 
 namespace vlt
 {
-	struct deserializer;
-	struct system_factory;
+	struct Deserializer;
+	struct System_Factory;
 
-	struct VIOLET_API update_system final : public system
+	struct VIOLET_API Update_System final : public System
 	{
 		static const char * get_label_static();
-		static void install(system_factory & factory);
-		static void init(deserializer & deserializer);
+		static void install(System_Factory & factory);
+		static void init(Deserializer & deserializer);
 
-		update_system();
-		update_system(update_system && other);
+		Update_System();
+		Update_System(Update_System && other);
 
 		virtual void update(r32 dt) override;
 	};
 
-	DEFINE_METHOD(UpdateMethod, void(handle, r32));
+	DEFINE_METHOD(UpdateMethod, void(Handle, r32));
 }
 
 #endif

@@ -8,23 +8,23 @@
 
 namespace vlt
 {
-	struct component_deserializer;
-	struct serializer;
+	struct Component_Deserializer;
+	struct Serializer;
 
-	struct VIOLET_API mapped_data_component final
+	struct VIOLET_API Mapped_Data_Component final
 	{
 		std::map<std::string, std::string> data;
 
-		static const component_metadata * metadata;
+		static const Component_Metadata * metadata;
 
-		mapped_data_component(handle entity_id);
-		mapped_data_component(handle entity_id, component_deserializer & deserializer);
-		mapped_data_component(mapped_data_component && other);
+		Mapped_Data_Component(Handle entity_id);
+		Mapped_Data_Component(Handle entity_id, Component_Deserializer & Deserializer);
+		Mapped_Data_Component(Mapped_Data_Component && other);
 	};
 
 	VIOLET_API void install_mapped_data_component();
 
-	VIOLET_API serializer & operator<<(serializer & serializer, const mapped_data_component & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Mapped_Data_Component & component);
 }
 
 #endif

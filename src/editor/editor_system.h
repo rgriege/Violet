@@ -6,7 +6,7 @@
 #include <set>
 #include <string>
 
-#include "editor/Defines.h"
+#include "editor/defines.h"
 #include "violet/component/scene.h"
 #include "violet/event/event.h"
 #include "violet/system/system.h"
@@ -14,58 +14,58 @@
 
 namespace vlt
 {
-	struct system_factory;
+	struct System_Factory;
 }
 
 namespace edt
 {
-	struct command;
+	struct Command;
 
-	struct EDITOR_API editor_system final : public vlt::system
+	struct EDITOR_API Editor_System final : public vlt::System
 	{
-		typedef vlt::factory<std::string, std::unique_ptr<command>(std::string)> CommandFactory;
+		typedef vlt::Factory<std::string, std::unique_ptr<Command>(std::string)> CommandFactory;
 
 	public:
 
 		static const char * get_label_static();
-		static void install(vlt::system_factory & factory);
-		static void init(vlt::deserializer & deserializer);
+		static void install(vlt::System_Factory & Factory);
+		static void init(vlt::Deserializer & deserializer);
 
 		template <typename T>
 		static void register_command();
-		static void register_command(const char * usage, const CommandFactory::producer & producer);
+		static void register_command(const char * usage, const CommandFactory::Producer & producer);
 
 	public:
 
-		editor_system(std::string editScriptFileName);
-		editor_system(const editor_system &) = delete;
-		editor_system & operator=(const editor_system &) = delete;
+		Editor_System(std::string editScriptFileName);
+		Editor_System(const Editor_System &) = delete;
+		Editor_System & operator=(const Editor_System &) = delete;
 
-		vlt::scene & get_scene();
-		const vlt::scene & get_scene() const;
-		vlt::handle get_proxy_id(vlt::handle proxied_id) const;
+		vlt::Scene & get_scene();
+		const vlt::Scene & get_scene() const;
+		vlt::Handle get_proxy_id(vlt::Handle proxied_id) const;
 
-		b8 execute(const std::string & command);
-		void execute(std::unique_ptr<command> && command);
+		b8 execute(const std::string & Command);
+		void execute(std::unique_ptr<Command> && command);
 		void undo();
 
-		bool select(vlt::handle entity_id);
-		bool selected(vlt::handle entity_id) const;
-		const std::set<vlt::handle> & get_selected_entities() const;
-		bool deselect(vlt::handle entity_id);
+		bool select(vlt::Handle entity_id);
+		bool selected(vlt::Handle entity_id) const;
+		const std::set<vlt::Handle> & get_selected_entities() const;
+		bool deselect(vlt::Handle entity_id);
 
-		void propagate_add(vlt::handle entity_id) const;
+		void propagate_add(vlt::Handle entity_id) const;
 
 	private:
 
-		std::unique_ptr<vlt::scene> m_scene;
+		std::unique_ptr<vlt::Scene> m_scene;
 		std::string m_editScriptFileName;
-		std::deque<std::unique_ptr<command>> m_commandHistory;
-		std::set<vlt::handle> m_selectedEntities;
+		std::deque<std::unique_ptr<Command>> m_commandHistory;
+		std::set<vlt::Handle> m_selectedEntities;
 	};
 
-	DEFINE_EVENT(EntitySelectedEvent, void(vlt::handle));
-	DEFINE_EVENT(EntityDeselectedEvent, void(vlt::handle));
+	DEFINE_EVENT(EntitySelectedEvent, void(vlt::Handle));
+	DEFINE_EVENT(EntityDeselectedEvent, void(vlt::Handle));
 }
 
 #include "editor/editor_system.inl"

@@ -1,15 +1,15 @@
 // ============================================================================
 
 template <typename StreamDeserializer>
-std::unique_ptr<vlt::deserializer> vlt::file_deserializer_factory::produce(std::filebuf && file)
+std::unique_ptr<vlt::Deserializer> vlt::File_Deserializer_Factory::produce(std::filebuf && file)
 {
-	return std::unique_ptr<deserializer>(new file_deserializer<StreamDeserializer>(std::move(file)));
+	return std::unique_ptr<Deserializer>(new File_Deserializer<StreamDeserializer>(std::move(file)));
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename T>
-void vlt::file_deserializer_factory::assign(const char * extension)
+void vlt::File_Deserializer_Factory::assign(const char * extension)
 {
 	m_factory.assign(extension, &produce<T>);
 }

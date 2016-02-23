@@ -9,7 +9,7 @@ using namespace vlt;
 
 // ============================================================================
 
-component_pool::func_table::func_table(load_fn _load, save_fn _save, destroy_fn _destroy) :
+Component_Pool::Func_Table::Func_Table(load_fn _load, save_fn _save, destroy_fn _destroy) :
 	load(_load),
 	save(_save),
 	destroy(_destroy)
@@ -18,18 +18,18 @@ component_pool::func_table::func_table(load_fn _load, save_fn _save, destroy_fn 
 
 // ============================================================================
 
-component_pool::component_pool(component_pool && other) :
+Component_Pool::Component_Pool(Component_Pool && other) :
 	metadata(other.metadata),
 	ftable(std::move(other.ftable)),
 	components(std::move(other.components)),
 	ids(std::move(other.ids))
 {
-	other.ids.emplace_back(handle::Invalid);
+	other.ids.emplace_back(Handle::Invalid);
 }
 
 // ----------------------------------------------------------------------------
 
-component_pool & component_pool::operator=(component_pool && other)
+Component_Pool & Component_Pool::operator=(Component_Pool && other)
 {
 	assert(metadata == other.metadata);
 	std::swap(ftable, other.ftable);
@@ -40,7 +40,7 @@ component_pool & component_pool::operator=(component_pool && other)
 
 // ----------------------------------------------------------------------------
 
-component_pool::~component_pool()
+Component_Pool::~Component_Pool()
 {
 	for (u32 i = 0, end = size(); i < end; ++i)
 		ftable->destroy(get(i));
@@ -48,7 +48,7 @@ component_pool::~component_pool()
 
 // ----------------------------------------------------------------------------
 
-void component_pool::load(component_deserializer & deserializer)
+void Component_Pool::load(Component_Deserializer & deserializer)
 {
 	while (deserializer.is_valid())
 		ftable->load(*this, deserializer);
@@ -56,7 +56,7 @@ void component_pool::load(component_deserializer & deserializer)
 
 // ----------------------------------------------------------------------------
 
-void component_pool::save(serializer & serailizer) const
+void Component_Pool::save(Serializer & serailizer) const
 {
 	serailizer.write_u32("version", metadata->version);
 	for (u32 i = 0, end = size(); i < end; ++i)
@@ -68,14 +68,14 @@ void component_pool::save(serializer & serailizer) const
 
 // ----------------------------------------------------------------------------
 
-u32 component_pool::save(serializer & serailizer, const std::vector<handle> & entityIds) const
+u32 Component_Pool::save(Serializer & serailizer, const std::vector<Handle> & entity_ids) const
 {
 	u32 count = 0;
 	serailizer.write_u32("version", metadata->version);
 	for (u32 i = 0, end = size(); i < end; ++i)
 	{
-		const handle id = ids[i];
-		if (std::binary_search(entityIds.cbegin(), entityIds.cend(), id))
+		const Handle id = ids[i];
+		if (std::binary_search(entity_ids.cbegin(), entity_ids.cend(), id))
 		{
 			serailizer.write_u32("id", id.id);
 			ftable->save(serailizer, get(i));
@@ -87,21 +87,21 @@ u32 component_pool::save(serializer & serailizer, const std::vector<handle> & en
 
 // ----------------------------------------------------------------------------
 
-bool component_pool::has(const handle entity_id) const
+bool Component_Pool::has(const Handle entity_id) const
 {
 	return get_index(entity_id) != size();
 }
 
 // ----------------------------------------------------------------------------
 
-u32 component_pool::size() const
+u32 Component_Pool::size() const
 {
 	return ids.size() - 1;
 }
 
 // ----------------------------------------------------------------------------
 
-bool component_pool::remove(const handle entity_id)
+bool Component_Pool::remove(const Handle entity_id)
 {
 	assert(entity_id.is_valid());
 	const u32 index = get_index(entity_id);
@@ -119,29 +119,29 @@ bool component_pool::remove(const handle entity_id)
 
 // ----------------------------------------------------------------------------
 
-void component_pool::clear()
+void Component_Pool::clear()
 {
 	for (u32 i = 0, end = size(); i < end; ++i)
 		ftable->destroy(get(i));
 	components.clear();
 	ids.clear();
-	ids.emplace_back(handle::Invalid);
+	ids.emplace_back(Handle::Invalid);
 }
 
 // ============================================================================
 
-component_pool::component_pool(const component_metadata * metadata, std::unique_ptr<func_table> && ftable) :
+Component_Pool::Component_Pool(const Component_Metadata * metadata, std::unique_ptr<Func_Table> && ftable) :
 	metadata(metadata),
 	ftable(std::move(ftable)),
 	components(),
 	ids()
 {
-	ids.emplace_back(handle::Invalid);
+	ids.emplace_back(Handle::Invalid);
 }
 
 // ----------------------------------------------------------------------------
 
-u32 component_pool::get_index(const handle entity_id) const
+u32 Component_Pool::get_index(const Handle entity_id) const
 {
 	assert(entity_id.is_valid());
 
@@ -151,21 +151,21 @@ u32 component_pool::get_index(const handle entity_id) const
 
 // ----------------------------------------------------------------------------
 
-void * component_pool::get(const u32 index)
+void * Component_Pool::get(const u32 index)
 {
 	return components.data() + index * metadata->size;
 }
 
 // ----------------------------------------------------------------------------
 
-const void * component_pool::get(const u32 index) const
+const void * Component_Pool::get(const u32 index) const
 {
 	return components.data() + index * metadata->size;
 }
 
 // ----------------------------------------------------------------------------
 
-std::pair<void *, bool>  component_pool::insert(const handle entity_id)
+std::pair<void *, bool>  Component_Pool::insert(const Handle entity_id)
 {
 	const auto & idIt = std::lower_bound(ids.begin(), ids.end(), entity_id);
 	bool const maxId = idIt == ids.end();

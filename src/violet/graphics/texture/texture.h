@@ -9,35 +9,26 @@
 
 namespace vlt
 {
-	struct VIOLET_API texture
+	struct VIOLET_API Texture
 	{
-	public:
+		std::string filename;
+		u32 handle;
 
-		static std::unique_ptr<texture> load_png(const char * filename);
+		static std::unique_ptr<Texture> load_png(const char * filename);
 
-		static void bind(const texture & texture);
+		static void bind(const Texture & texture);
 		static void unbind();
 
-		typedef resource_cache<texture, const char *> Cache;
+		typedef Resource_Cache<Texture, const char *> Cache;
 		static Cache & get_cache();
 
 	public:
 
-		texture(std::string filename, u32 width, u32 height, const void * data, u32 format);
-		texture(texture && other);
-		~texture();
-
-		const std::string & get_name() const;
-
-	private:
-
-		texture(const texture & other) = delete;
-		texture & operator=(const texture & other) = delete;
-
-	private:
-
-		std::string m_filename;
-		u32 m_handle;
+		Texture(std::string filename, u32 width, u32 height, const void * data, u32 format);
+		Texture(const Texture & other) = delete;
+		Texture & operator=(const Texture & other) = delete;
+		Texture(Texture && other);
+		~Texture();
 	};
 }
 

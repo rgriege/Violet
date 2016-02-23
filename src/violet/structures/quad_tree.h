@@ -1,17 +1,17 @@
 #ifndef VIOLET_QUAD_TREE_H
 #define VIOLET_QUAD_TREE_H
 
+#include <array>
+
 #include "violet/math/aabb.h"
 #include "violet/math/v2.h"
-
-#include <array>
 
 namespace vlt
 {
 	template <typename T>
-	struct quad_tree
+	struct Quad_Tree
 	{
-		quad_tree(const aabb & boundary, u32 capacity);
+		Quad_Tree(const aabb & boundary, u32 capacity);
 
 		bool insert(const T & elem, const aabb & box);
 
@@ -30,10 +30,10 @@ namespace vlt
 
 		const aabb m_boundary;
 		const u32 m_capacity;
-		std::unique_ptr<quad_tree> m_topLeft;
-		std::unique_ptr<quad_tree> m_topRight;
-		std::unique_ptr<quad_tree> m_bottomLeft;
-		std::unique_ptr<quad_tree> m_bottomRight;
+		std::unique_ptr<Quad_Tree> m_topLeft;
+		std::unique_ptr<Quad_Tree> m_topRight;
+		std::unique_ptr<Quad_Tree> m_bottomLeft;
+		std::unique_ptr<Quad_Tree> m_bottomRight;
 		std::vector<std::pair<T, aabb>> m_elements;
 	};
 }

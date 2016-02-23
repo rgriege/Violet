@@ -4,14 +4,14 @@
 namespace vlt
 {
 	template <typename T>
-	struct guard
+	struct Guard
 	{
-		guard(const T & t)
+		Guard(const T & t)
 		{
 			T::bind(t);
 		}
 
-		~guard()
+		~Guard()
 		{
 			T::unbind();
 		}

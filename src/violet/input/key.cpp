@@ -6,7 +6,7 @@ using namespace vlt;
 
 // ============================================================================
 
-bool key::is_numeric(const unsigned char key)
+bool Key::is_numeric(const unsigned char key)
 {
 	switch (key)
 	{
@@ -28,7 +28,7 @@ bool key::is_numeric(const unsigned char key)
 
 // ----------------------------------------------------------------------------
 
-bool key::is_numeric_input(const unsigned char key)
+bool Key::is_numeric_input(const unsigned char key)
 {
 	return is_numeric(key) || key == '-' || key == '.';
 }

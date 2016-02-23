@@ -6,16 +6,15 @@ using namespace vlt;
 
 // ============================================================================
 
-system::system(const char * const label) :
-	label(label)
+System::System(const char * const _label) :
+	label(_label)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-void system::update(const r32 /*dt*/)
+void System::update(const r32 /*dt*/)
 {
-
 }
 
 // ============================================================================

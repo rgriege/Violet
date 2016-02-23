@@ -9,23 +9,19 @@
 
 namespace vlt
 {
-	struct VIOLET_API script_factory
+	struct VIOLET_API Script_Factory
 	{
-		typedef factory<const char *, std::unique_ptr<script>(const char *)> factory_type;
+		typedef Factory<const char *, std::unique_ptr<Script>(const char *)> Factory_Type;
 
-		static void assign(const char * label, const factory_type::producer & producer);
-		static std::unique_ptr<script> create(const char * fileName);
+		static void assign(const char * label, const Factory_Type::Producer & producer);
+		static std::unique_ptr<Script> create(const char * filename);
 		static void remove(const char * label);
 
 	private:
 
-		static factory_type ms_instance;
-
-	private:
-
-		script_factory() = delete;
-		script_factory(const script_factory &) = delete;
-		script_factory & operator=(const script_factory &) = delete;
+		Script_Factory() = delete;
+		Script_Factory(const Script_Factory &) = delete;
+		Script_Factory & operator=(const Script_Factory &) = delete;
 	};
 }
 

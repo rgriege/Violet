@@ -1,17 +1,16 @@
 // ============================================================================
 
-#include "violet/utility/file_utilities.h"
-
-#include "violet/core/defines.h"
-
 #include <fstream>
 #include <iterator>
+
+#include "violet/core/defines.h"
+#include "violet/utility/file_utilities.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-bool file_utilities::exists(const char * const fileName)
+bool File_Utilities::exists(const char * const fileName)
 {
 	std::ifstream stream(fileName, std::ios_base::binary);
 	return !stream.fail();
@@ -19,7 +18,7 @@ bool file_utilities::exists(const char * const fileName)
 
 // ----------------------------------------------------------------------------
 
-bool file_utilities::copy(const char * src, const char * dst)
+bool File_Utilities::copy(const char * src, const char * dst)
 {
 	std::ifstream srcStream(src, std::ios_base::binary);
 	if (!srcStream)

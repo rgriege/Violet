@@ -8,30 +8,30 @@
 
 namespace vlt
 {
-	struct VIOLET_API handle
+	struct VIOLET_API Handle
 	{
 		u16 id;
 		u16 version;
 
-		static const handle Invalid;
+		static const Handle Invalid;
 		
-		handle();
-		handle(u16 id, u16 version);
+		Handle();
+		Handle(u16 id, u16 version);
 		
 		bool is_valid() const;
 	};
 
-	VIOLET_API bool operator<(handle lhs, handle rhs);
-	VIOLET_API bool operator==(handle lhs, handle rhs);
-	VIOLET_API bool operator!=(handle lhs, handle rhs);
+	VIOLET_API bool operator<(Handle lhs, Handle rhs);
+	VIOLET_API bool operator==(Handle lhs, Handle rhs);
+	VIOLET_API bool operator!=(Handle lhs, Handle rhs);
 }
 
 namespace std
 {
 	template <>
-	struct hash<vlt::handle>
+	struct hash<vlt::Handle>
 	{
-		std::size_t operator()(const vlt::handle id) const
+		std::size_t operator()(const vlt::Handle id) const
 		{
 			return std::hash<u32>()(*reinterpret_cast<const u32*>(&id));
 		}

@@ -6,12 +6,10 @@
 namespace vlt
 {
 	template <typename T>
-	struct lent_ptr
+	struct Lent_Ptr
 	{
-	public:
-
-		lent_ptr(T * ptr);
-		lent_ptr(const std::unique_ptr<T> & ptr);
+		Lent_Ptr(T * ptr);
+		Lent_Ptr(const std::unique_ptr<T> & ptr);
 
 		T & operator*() const;
 		T * operator->() const;

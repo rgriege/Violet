@@ -10,15 +10,15 @@
 
 namespace vlt
 {
-	struct deserializer;
+	struct Deserializer;
 
-	struct VIOLET_API window_system : public system
+	struct VIOLET_API Window_System : public System
 	{
 		static const char * get_label_static() { return "wndw"; }
 
 	public:
 
-		enum event_type
+		enum Event_Type
 		{
 			ET_KeyDown = 1,
 			ET_KeyUp = 2,
@@ -28,45 +28,45 @@ namespace vlt
 			ET_Quit = 32
 		};
 
-		struct key_event
+		struct Key_Event
 		{
 			unsigned char code;
-			key::modifier modifiers;
+			Key::Modifier modifiers;
 		};
 
-		struct mouse_event
+		struct Mouse_Event
 		{
 			int x, y;
-			mouse_button button;
-			key::modifier modifiers;
+			Mouse_Button button;
+			Key::Modifier modifiers;
 		};
 
-		struct motion_event
+		struct Motion_Event
 		{
 			int x, y, xrel, yrel;
 		};
 
-		struct event
+		struct Event
 		{
-			event_type type;
+			Event_Type type;
 
 			union
 			{
-				key_event key;
-				mouse_event mouse;
-				motion_event motion;
+				Key_Event key;
+				Mouse_Event mouse;
+				Motion_Event motion;
 			};
 		};
 
 	public:
 
-		window_system() : system(get_label_static()) {}
+		Window_System() : System(get_label_static()) {}
 
-		virtual ~window_system() override = default;
+		virtual ~Window_System() override = default;
 
 		virtual void render() = 0;
-		virtual bool get_event(event_type type, event* event) = 0;
-		virtual void add_event(event event) = 0;
+		virtual bool get_event(Event_Type type, Event * event) = 0;
+		virtual void add_event(Event event) = 0;
 		virtual int get_width() const = 0;
 		virtual int get_height() const = 0;
 	};

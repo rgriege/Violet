@@ -1,8 +1,10 @@
 // ============================================================================
 
-#include "violet/script/cpp/cpp_script.h"
+#include <assert.h>
+#include <set>
 
-#include "violet/log/Log.h"
+#include "violet/log/log.h"
+#include "violet/script/cpp/cpp_script.h"
 #include "violet/script/script_factory.h"
 #include "violet/script/cpp/shared_library.h"
 #include "violet/serialization/deserializer.h"
@@ -11,47 +13,44 @@
 #include "violet/utility/formatted_string.h"
 #include "violet/utility/string_utilities.h"
 
-#include <assert.h>
-#include <set>
-
 using namespace vlt;
 
 // ============================================================================
 
-namespace cpp_scriptNamespace
+namespace Cpp_Script_Namespace
 {
-	typedef void(*Initializer)(cpp_script & script, std::unique_ptr<cpp_script::instance> & instance);
+	typedef void(*Initializer)(Cpp_Script & Script, std::unique_ptr<Cpp_Script::Instance> & instance);
 
 	const char * const ms_swapSuffix = ".swp";
 
-	std::unique_ptr<script> create(const char * fileName);
+	std::unique_ptr<Script> create(const char * fileName);
 }
 
-using namespace cpp_scriptNamespace;
+using namespace Cpp_Script_Namespace;
 
 // ============================================================================
 
-cpp_script::instance::instance(cpp_script & script)
-	: script(script)
+Cpp_Script::Instance::Instance(Cpp_Script & _script)
+	: script(_script)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-cpp_script::instance::~instance()
+Cpp_Script::Instance::~Instance()
 {
 }
 
 // ============================================================================
 
-void cpp_script::install()
+void Cpp_Script::install()
 {
-	script_factory::assign(shared_library::get_suffix(), create);
+	Script_Factory::assign(Shared_Library::get_suffix(), create);
 }
 
 // ============================================================================
 
-cpp_script::cpp_script(const char * const fileName) :
+Cpp_Script::Cpp_Script(const char * const fileName) :
 	m_fileName(fileName),
 	m_lib(),
 	m_instance()
@@ -61,7 +60,7 @@ cpp_script::cpp_script(const char * const fileName) :
 
 // ----------------------------------------------------------------------------
 
-cpp_script::cpp_script(cpp_script && other) :
+Cpp_Script::Cpp_Script(Cpp_Script && other) :
 	m_fileName(std::move(other.m_fileName)),
 	m_lib(std::move(other.m_lib)),
 	m_instance(std::move(other.m_instance))
@@ -72,46 +71,46 @@ cpp_script::cpp_script(cpp_script && other) :
 
 // ----------------------------------------------------------------------------
 
-cpp_script::~cpp_script()
+Cpp_Script::~Cpp_Script()
 {
 	unload();
 }
 
 // ----------------------------------------------------------------------------
 
-const std::string & cpp_script::get_filename() const
+const std::string & Cpp_Script::get_filename() const
 {
 	return m_fileName;
 }
 
 // ----------------------------------------------------------------------------
 
-bool cpp_script::is_valid() const
+bool Cpp_Script::is_valid() const
 {
 	return m_lib != nullptr;
 }
 
 // ----------------------------------------------------------------------------
 
-void cpp_script::reload()
+void Cpp_Script::reload()
 {
 	const std::string swapFileName = m_fileName + ms_swapSuffix;
-	if (file_utilities::exists(swapFileName.c_str()))
+	if (File_Utilities::exists(swapFileName.c_str()))
 	{
 		if (is_valid())
 			unload();
 
 		std::remove(m_fileName.c_str());
-		if (file_utilities::copy(swapFileName.c_str(), m_fileName.c_str()))
+		if (File_Utilities::copy(swapFileName.c_str(), m_fileName.c_str()))
 			load();
 		else
-			log(formatted_string<256>().sprintf("Could not copy file '%s%s' to '%s'", m_fileName.c_str(), ms_swapSuffix, m_fileName.c_str()));
+			log(Formatted_String<256>().sprintf("Could not copy file '%s%s' to '%s'", m_fileName.c_str(), ms_swapSuffix, m_fileName.c_str()));
 	}
 }
 
 // ============================================================================
 
-void * cpp_script::get_method_ptr(const char * const name) const
+void * Cpp_Script::get_method_ptr(const char * const name) const
 {
 	void * methodPtr = nullptr;
 	if (is_valid())
@@ -125,11 +124,11 @@ void * cpp_script::get_method_ptr(const char * const name) const
 
 // ----------------------------------------------------------------------------
 
-void cpp_script::load()
+void Cpp_Script::load()
 {
-	m_lib = shared_library::load(m_fileName.c_str());
+	m_lib = Shared_Library::load(m_fileName.c_str());
 	if (!is_valid())
-		log(formatted_string<128>().sprintf("Error loading script: '%s'", m_fileName.c_str()));
+		log(Formatted_String<128>().sprintf("Error loading Script: '%s'", m_fileName.c_str()));
 	else
 	{
 		auto init = (Initializer)get_method_ptr("init");
@@ -143,7 +142,7 @@ void cpp_script::load()
 
 // ----------------------------------------------------------------------------
 
-void cpp_script::unload()
+void Cpp_Script::unload()
 {
 	m_instance.reset();
 	m_lib.reset();
@@ -151,9 +150,9 @@ void cpp_script::unload()
 
 // ============================================================================
 
-std::unique_ptr<script> cpp_scriptNamespace::create(const char * const fileName)
+std::unique_ptr<Script> Cpp_Script_Namespace::create(const char * const fileName)
 {
-	return std::make_unique<cpp_script>(fileName);
+	return std::make_unique<Cpp_Script>(fileName);
 }
 
 // ============================================================================

@@ -1,4 +1,4 @@
-#include "test/core/TestEvaluator.h"
+#include "test/core/testevaluator.h"
 
 using namespace vlt;
 
@@ -24,7 +24,7 @@ void TestEvaluator::SuiteBuffer::write(std::ostream & stream, int level)
 	m_buffers.back()->write(stream, level);
 	std::for_each(std::begin(m_buffers),
 		std::end(m_buffers) - 1,
-		[&](std::unique_ptr<BufferBase> const & buffer) { buffer->write(stream, level + 1); });
+		[&](std::unique_ptr<BufferBase> const & Buffer) { buffer->write(stream, level + 1); });
 }
 
 void TestEvaluator::SuiteBuffer::addEntry(std::string const & entry)

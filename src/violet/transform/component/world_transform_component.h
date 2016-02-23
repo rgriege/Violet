@@ -7,24 +7,24 @@
 
 namespace vlt
 {
-	struct component_deserializer;
-	struct serializer;
+	struct Component_Deserializer;
+	struct Serializer;
 
-	struct VIOLET_API world_transform_component final
+	struct VIOLET_API World_Transform_Component final
 	{
 		m4 transform;
 
-		static const component_metadata * metadata;
+		static const Component_Metadata * metadata;
 
-		world_transform_component(handle entity_id);
-		world_transform_component(handle entity_id, component_deserializer & deserializer);
-		world_transform_component(handle entity_id, const m4 & transform);
+		World_Transform_Component(Handle entity_id);
+		World_Transform_Component(Handle entity_id, Component_Deserializer & deserializer);
+		World_Transform_Component(Handle entity_id, const m4 & transform);
 	};
 
 	VIOLET_API void install_world_transform_component();
 
-	VIOLET_API component_deserializer & operator>>(component_deserializer & deserializer, world_transform_component & component);
-	VIOLET_API serializer & operator<<(serializer & serializer, const world_transform_component & component);
+	VIOLET_API Component_Deserializer & operator>>(Component_Deserializer & deserializer, World_Transform_Component & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const World_Transform_Component & component);
 }
 
 #endif

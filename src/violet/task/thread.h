@@ -18,7 +18,7 @@ namespace vlt
 	VIOLET_API void cleanup_thread_pool();
 
 	typedef void(*task_fn)(void*);
-	VIOLET_API void add_task(task_fn fn, void * memory, u32 thread, task_type type);
+	VIOLET_API void add_task(task_fn fn, void * Memory, u32 Thread, task_type type);
 	VIOLET_API task_type get_current_stage();
 	VIOLET_API void complete_frame_stage();
 	VIOLET_API void finish_all_tasks();

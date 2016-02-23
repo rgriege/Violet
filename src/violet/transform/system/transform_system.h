@@ -9,23 +9,23 @@
 
 namespace vlt
 {
-	struct deserializer;
-	struct system_factory;
+	struct Deserializer;
+	struct System_Factory;
 
-	struct VIOLET_API transform_system : public system
+	struct VIOLET_API Transform_System final : public System
 	{
 		static const char * get_label_static();
-		static void install(system_factory & factory);
-		static void init(deserializer & deserializer);
+		static void install(System_Factory & factory);
+		static void init(Deserializer & deserializer);
 
-		transform_system();
-		transform_system(transform_system && other);
+		Transform_System();
+		Transform_System(Transform_System && other);
 
 		virtual void update(r32 dt) override;
 
 	private:
 
-		std::map<handle, m4> m_entityWorldtransformCache;
+		std::map<Handle, m4> m_entityWorldtransformCache;
 	};
 }
 

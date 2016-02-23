@@ -7,23 +7,23 @@
 
 namespace vlt
 {
-	struct deserializer;
-	struct serializer;
+	struct Deserializer;
+	struct Serializer;
 
-	struct VIOLET_API color final
+	struct VIOLET_API Color final
 	{	
-		static const color Black;
-		static const color Red;
-		static const color Orange;
-		static const color Yellow;
-		static const color Green;
-		static const color Indigo;
-		static const color Blue;
-		static const color Purple;
-		static const color White;
-		static const color Tan;
-		static const color Brown;
-		static const color Rainbow[];
+		static const Color Black;
+		static const Color Red;
+		static const Color Orange;
+		static const Color Yellow;
+		static const Color Green;
+		static const Color Indigo;
+		static const Color Blue;
+		static const Color Purple;
+		static const Color White;
+		static const Color Tan;
+		static const Color Brown;
+		static const Color Rainbow[];
 
 		struct VIOLET_API component
 		{
@@ -43,24 +43,24 @@ namespace vlt
 			operator u8() const;
 			operator r32() const;
 
-			u8 asUint() const;
-			r32 asFloat() const;
+			u8 as_uint() const;
+			r32 as_float() const;
 		};
 
 		component r, g, b, a;
 
-		color();
-		color(u8 _r, u8 _g, u8 _b, u8 _a = 255);
-		color(deserializer & deserializer);
-		color(const char * hexString);
+		Color();
+		Color(u8 r, u8 g, u8 b, u8 a = 255);
+		Color(Deserializer & deserializer);
+		Color(const char * hex_string);
 
-		bool operator!=(const color & rhs) const;
+		bool operator!=(const Color & rhs) const;
 
 		std::array<r32, 4> as4fv() const;
 	};
 
-	deserializer & operator>>(deserializer & deserializer, color & color);
-	serializer & operator<<(serializer & serializer, const color & color);
+	Deserializer & operator>>(Deserializer & deserializer, Color & color);
+	Serializer & operator<<(Serializer & serializer, const Color & color);
 }
 
 #endif

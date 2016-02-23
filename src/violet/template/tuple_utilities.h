@@ -59,7 +59,7 @@ namespace vlt
 	}
 	
 	/*
-	 * Defines whether a std::tuple of type Tuple has any values with matching types
+	 * Defines whether a std::tuple of type Tuple has any values with matching Types
 	 */
 	template <typename Tuple>
 	struct is_unique : bool_constant<detail::is_unique<Tuple, std::tuple_size<Tuple>::value>::value> {};

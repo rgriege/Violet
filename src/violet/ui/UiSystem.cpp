@@ -1,13 +1,13 @@
 // ============================================================================
 
-#include "violet/ui/UiSystem.h"
+#include "violet/ui/uisystem.h"
 
-#include "violet/Engine.h"
-#include "violet/component/ComponentManager.h"
-#include "violet/serialization/Deserializer.h"
-#include "violet/system/SystemFactory.h"
-#include "violet/ui/AlignmentComponent.h"
-#include "violet/window/WindowSystem.h"
+#include "violet/engine.h"
+#include "violet/component/componentmanager.h"
+#include "violet/serialization/deserializer.h"
+#include "violet/system/systemfactory.h"
+#include "violet/ui/alignmentcomponent.h"
+#include "violet/window/windowsystem.h"
 
 using namespace Violet;
 
@@ -20,21 +20,21 @@ const char * UiSystem::getStaticLabel()
 
 // ----------------------------------------------------------------------------
 
-void UiSystem::install(SystemFactory & factory)
+void UiSystem::install(SystemFactory & Factory)
 {
-	factory.assign(getStaticLabel(), &UiSystem::init);
+	Factory.assign(getStaticLabel(), &UiSystem::init);
 }
 
 // ----------------------------------------------------------------------------
 
-void UiSystem::init(Deserializer & deserializer)
+void UiSystem::init(Deserializer & Deserializer)
 {
-	deserializer.enterSegment(getStaticLabel());
+	Deserializer.enterSegment(getStaticLabel());
 
 	Engine::getInstance().addWriteTask(Engine::getInstance(),
-		[](Engine & engine)
+		[](Engine & Engine)
 		{
-			engine.addSystem(std::unique_ptr<System>(new UiSystem));
+			Engine.addSystem(std::unique_ptr<System>(new UiSystem));
 		});
 }
 

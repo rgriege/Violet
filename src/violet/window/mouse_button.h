@@ -3,7 +3,7 @@
 
 namespace vlt
 {
-	enum mouse_button
+	enum Mouse_Button
 	{
 		MB_Left,
 		MB_Middle,

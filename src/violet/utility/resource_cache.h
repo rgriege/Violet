@@ -10,11 +10,11 @@
 namespace vlt
 {
 	template <typename Resource, typename ... Args>
-	struct resource_cache
+	struct Resource_Cache
 	{
 		typedef std::unique_ptr<Resource>(*Loader)(Args ...);
 		
-		resource_cache(const Loader & loader) :
+		Resource_Cache(const Loader & loader) :
 			m_loader(loader),
 			m_resources(),
 			m_mutex()

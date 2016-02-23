@@ -9,74 +9,49 @@ using namespace vlt;
 
 // ============================================================================
 
-handle_manager::handle_manager() :
-	m_usedList(),
-	m_recycleList()
+Handle_Manager::Handle_Manager() :
+	used_list(),
+	recycle_list()
 {
 }
 
-// ----------------------------------------------------------------------------
-
-handle_manager::~handle_manager()
-{
-}
-
-// ----------------------------------------------------------------------------
-
-handle_manager::handle_manager(handle_manager && other) :
-	m_usedList(std::move(other.m_usedList)),
-	m_recycleList(std::move(other.m_recycleList))
-{
-}
-
-// ----------------------------------------------------------------------------
-
-handle_manager & handle_manager::operator=(handle_manager && other)
-{
-	std::swap(m_usedList, other.m_usedList);
-	std::swap(m_recycleList, other.m_recycleList);
-	return *this;
-}
-
-// ----------------------------------------------------------------------------
-
-handle handle_manager::create()
+Handle Handle_Manager::create()
 {
 	u16 id;
-	if (!m_recycleList.empty())
+	if (!recycle_list.empty())
 	{
-		id = m_recycleList.front();
-		m_recycleList.pop_front();
-		m_usedList[id] = true;
+		id = recycle_list.front();
+		recycle_list.pop_front();
+		used_list[id] = true;
 	}
 	else
 	{
-		m_usedList.push_back(true);
-		id = static_cast<u16>(m_usedList.size() - 1);
+		used_list.push_back(true);
+		id = static_cast<u16>(used_list.size() - 1);
 	}
-	return handle(id, 0);
+	return Handle(id, 0);
 }
 
 // ----------------------------------------------------------------------------
 
 
-bool handle_manager::used(const handle handle) const
+bool Handle_Manager::used(const Handle handle) const
 {
 	const u16 id = handle.id;
-	return id < m_usedList.size() && m_usedList[id];
+	return id < used_list.size() && used_list[id];
 }
 
 // ----------------------------------------------------------------------------
 
 
-void handle_manager::free(const handle entity)
+void Handle_Manager::free(const Handle handle)
 {
-	const u16 id = entity.id;
-	if (id < m_usedList.size() && m_usedList[id])
+	const u16 id = handle.id;
+	if (id < used_list.size() && used_list[id])
 	{
-		m_usedList[id] = false;
-		m_recycleList.insert(std::lower_bound(m_recycleList.begin(), m_recycleList.end(), id), id);
-		std::sort(m_recycleList.begin(), m_recycleList.end());
+		used_list[id] = false;
+		recycle_list.insert(std::lower_bound(recycle_list.begin(), recycle_list.end(), id), id);
+		std::sort(recycle_list.begin(), recycle_list.end());
 	}
 	else
 		assert(false);
@@ -85,30 +60,30 @@ void handle_manager::free(const handle entity)
 // ----------------------------------------------------------------------------
 
 
-void handle_manager::freeAll()
+void Handle_Manager::free_all()
 {
-	m_usedList.clear();
-	m_recycleList.clear();
+	used_list.clear();
+	recycle_list.clear();
 }
 
 // ----------------------------------------------------------------------------
 
 
-u32 handle_manager::getUsedCount() const
+u32 Handle_Manager::get_used_count() const
 {
-	return m_usedList.size() - m_recycleList.size();
+	return used_list.size() - recycle_list.size();
 }
 
 // ----------------------------------------------------------------------------
 
 
-std::vector<handle> handle_manager::getUsed() const
+std::vector<Handle> Handle_Manager::get_used() const
 {
-	std::vector<handle> result;
-	result.reserve(getUsedCount());
-	for (u32 i = 0, end = m_usedList.size(); i < end; ++i)
-		if (m_usedList[i])
-			result.emplace_back(handle(i, 0));
+	std::vector<Handle> result;
+	result.reserve(get_used_count());
+	for (u32 i = 0, end = used_list.size(); i < end; ++i)
+		if (used_list[i])
+			result.emplace_back(Handle(i, 0));
 	return result;
 }
 

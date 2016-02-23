@@ -1,7 +1,8 @@
 // ============================================================================
 
-#include "violet/math/m3.h"
+#include <cmath>
 
+#include "violet/math/m3.h"
 #include "violet/serialization/deserializer.h"
 #include "violet/serialization/serializer.h"
 
@@ -115,7 +116,7 @@ bool vlt::operator!=(const m3 & lhs, const m3 & rhs)
 
 // ============================================================================
 
-serializer & vlt::operator<<(serializer & serializer, const m3 & mat)
+Serializer & vlt::operator<<(Serializer & serializer, const m3 & mat)
 {
 	auto segment = serializer.create_segment("mat");
 	segment->write_r32("a", mat[0][0]);
@@ -132,7 +133,7 @@ serializer & vlt::operator<<(serializer & serializer, const m3 & mat)
 
 // ----------------------------------------------------------------------------
 
-deserializer & vlt::operator>>(deserializer & deserializer, m3 & mat)
+Deserializer & vlt::operator>>(Deserializer & deserializer, m3 & mat)
 {
 	auto segment = deserializer.enter_segment("mat");
 	mat[0][0] = segment->get_r32("a");

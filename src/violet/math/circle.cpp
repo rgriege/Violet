@@ -6,7 +6,7 @@ using namespace vlt;
 
 // ============================================================================
 
-circle::circle() :
+Circle::Circle() :
 	center(),
 	radius(0)
 {
@@ -14,20 +14,20 @@ circle::circle() :
 
 // ----------------------------------------------------------------------------
 
-circle::circle(const v2 & center, const r32 radius) :
-	center(center),
-	radius(radius)
+Circle::Circle(const v2 & _center, const r32 _radius) :
+	center(_center),
+	radius(_radius)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-interval circle::project(const v2 & vec) const
+Interval Circle::project(const v2 & vec) const
 {
 	const v2 axis = vec.is_unit() ? vec : vec.get_unit();
 
 	r32 center_proj = center.dot(axis);
-	return interval(center_proj - radius, center_proj + radius);
+	return Interval(center_proj - radius, center_proj + radius);
 }
 
 // ============================================================================

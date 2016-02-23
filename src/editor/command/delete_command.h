@@ -10,16 +10,16 @@
 
 namespace edt
 {
-	struct EDITOR_API delete_command final : public command
+	struct EDITOR_API Delete_Command final : public Command
 	{
-		vlt::handle entity_id;
+		vlt::Handle entity_id;
 		std::string temp_filename;
 
 		static const char * get_usage();
-		static std::unique_ptr<command> parse(const std::string & text);
+		static std::unique_ptr<Command> parse(const std::string & text);
 
-		delete_command(vlt::handle _entity_id);
-		virtual ~delete_command() override;
+		Delete_Command(vlt::Handle _entity_id);
+		virtual ~Delete_Command() override;
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;

@@ -11,25 +11,25 @@
 
 namespace vlt
 {
-	struct scene;
-	struct system_factory;
+	struct Scene;
+	struct System_Factory;
 
-	struct VIOLET_API engine : public event_context_owner
+	struct VIOLET_API Engine final : public Event_Context_Owner
 	{
-		static bool bootstrap(const system_factory & factory, const char * configFileName);
+		static bool bootstrap(const System_Factory & factory, const char * configFileName);
 
-		static engine & instance();
+		static Engine & instance();
 
 	public:
 
-		~engine();
+		~Engine();
 
 		void switch_scene(const char * filename);
-		scene & get_current_scene();
-		const scene & get_current_scene() const;
+		Scene & get_current_scene();
+		const Scene & get_current_scene() const;
 		void stop();
 
-		void add_system(std::unique_ptr<system> && s);
+		void add_system(std::unique_ptr<System> && system);
 		template <typename SystemType>
 		const std::unique_ptr<SystemType> & get_system();
 		template <typename SystemType>
@@ -37,19 +37,19 @@ namespace vlt
 
 	private:
 
-		engine();
-		engine(const engine &) = delete;
-		engine & operator=(const engine &) = delete;
+		Engine();
+		Engine(const Engine &) = delete;
+		Engine & operator=(const Engine &) = delete;
 
 		void begin();
 		void run_frame(r32 frameTime);
 
 	private:
 
-		std::vector<std::unique_ptr<system>> m_systems;
-		std::unique_ptr<scene> m_scene;
-		std::string m_nextSceneFileName;
-		bool m_running;
+		std::vector<std::unique_ptr<System>> systems;
+		std::unique_ptr<Scene> scene;
+		std::string next_scene_filename;
+		bool running;
 	};
 }
 

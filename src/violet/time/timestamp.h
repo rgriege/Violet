@@ -1,20 +1,20 @@
 #ifndef VIOLET_TIMESTAMP_H
 #define VIOLET_TIMESTAMP_H
 
-#include "violet/core/defines.h"
-
 #include <chrono>
 #include <string>
 
+#include "violet/core/defines.h"
+
 namespace vlt
 {
-	struct VIOLET_API timestamp
+	struct VIOLET_API Timestamp
 	{
-		static timestamp now();
+		static Timestamp now();
 
-		timestamp(u64 secondsSinceEpoch);
+		Timestamp(u64 secondsSinceEpoch);
 
-		timestamp & operator+=(u64 seconds);
+		Timestamp & operator+=(u64 seconds);
 
 		u64 get_hours() const;
 		u64 get_minutes() const;

@@ -1,19 +1,18 @@
 // ============================================================================
 
-#include "violet/window/sdl/sdl_window_system.h"
+#include <assert.h>
+
+#include <SDL.h>
 
 #include "violet/core/engine.h"
 #include "violet/graphics/system/render_system.h"
 #include "violet/input/key.h"
-#include "violet/log/Log.h"
+#include "violet/log/log.h"
 #include "violet/serialization/deserializer.h"
 #include "violet/system/system_factory.h"
 #include "violet/utility/formatted_string.h"
 #include "violet/utility/memory.h"
-
-#include <SDL.h>
-
-#include <assert.h>
+#include "violet/window/sdl/sdl_window_system.h"
 
 using namespace vlt;
 
@@ -22,7 +21,7 @@ using namespace vlt;
 namespace SDLWindowSystemNamespace
 {
 	char convertKey(SDL_Keycode key);
-	key::modifier convertKeyModifier(SDL_Keymod mod);
+	Key::Modifier convertKeyModifier(SDL_Keymod mod);
 	int filterEvent(void * userdata, SDL_Event * event);
 }
 
@@ -30,9 +29,9 @@ using namespace SDLWindowSystemNamespace;
 
 // ============================================================================
 
-void sdl_window_system::install(system_factory & factory)
+void Sdl_Window_System::install(System_Factory & factory)
 {
-	factory.assign(get_label_static(), &sdl_window_system::init);
+	factory.assign(get_label_static(), &Sdl_Window_System::init);
 }
 
 // ----------------------------------------------------------------------------
@@ -53,11 +52,11 @@ namespace
 static void init_task(void * mem)
 {
 	auto data = make_unique<init_task_data>(mem);
-	auto & engine = engine::instance();
+	auto & engine = Engine::instance();
 	SDL_SetMainReady();
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
-		log(formatted_string<1024>().sprintf("SDL_Init(VIDEO) failed: %s", SDL_GetError()));
+		log(Formatted_String<1024>().sprintf("SDL_Init(VIDEO) failed: %s", SDL_GetError()));
 		engine.stop();
 		return;
 	}
@@ -71,7 +70,7 @@ static void init_task(void * mem)
 	SDL_Window * window = SDL_CreateWindow(data->title.c_str(), data->x, data->y, data->width, data->height, SDL_WINDOW_OPENGL);
 	if (window == nullptr)
 	{
-		log(formatted_string<1024>().sprintf("SDL_CreateWindow failed: %s", SDL_GetError()));
+		log(Formatted_String<1024>().sprintf("SDL_CreateWindow failed: %s", SDL_GetError()));
 		engine.stop();
 		return;
 	}
@@ -79,17 +78,17 @@ static void init_task(void * mem)
 	SDL_GLContext glContext = SDL_GL_CreateContext(window);
 	if (glContext == nullptr)
 	{
-		log(formatted_string<1024>().sprintf("SDL_CreateContext failed: %s", SDL_GetError()));
+		log(Formatted_String<1024>().sprintf("SDL_CreateContext failed: %s", SDL_GetError()));
 		engine.stop();
 		return;
 	}
 
 	SDL_SetEventFilter(filterEvent, nullptr);
 
-	engine.add_system(std::unique_ptr<vlt::system>(new sdl_window_system(window, glContext, data->thread)));
+	engine.add_system(std::unique_ptr<vlt::System>(new Sdl_Window_System(window, glContext, data->thread)));
 }
 
-void sdl_window_system::init(deserializer & deserializer)
+void Sdl_Window_System::init(Deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enter_segment(get_label_static());
 
@@ -99,15 +98,15 @@ void sdl_window_system::init(deserializer & deserializer)
 	data->width = settingsSegment->get_s32("width");
 	data->height = settingsSegment->get_s32("height");
 	data->title = settingsSegment->get_string("title");
-	data->thread = settingsSegment->get_u32("thread");
+	data->thread = settingsSegment->get_u32("Thread");
 
 	add_task(init_task, data, data->thread, task_type::write);
 }
 
 // ============================================================================
 
-sdl_window_system::sdl_window_system(SDL_Window * window, SDL_GLContext context, u32 thread) :
-	window_system(),
+Sdl_Window_System::Sdl_Window_System(SDL_Window * window, SDL_GLContext context, u32 thread) :
+	Window_System(),
 	m_window(window),
 	m_glContext(context),
 	m_width(0),
@@ -133,7 +132,7 @@ static void destroy(void * mem)
 	SDL_Quit();
 }
 
-sdl_window_system::~sdl_window_system()
+Sdl_Window_System::~Sdl_Window_System()
 {
 	auto data = new destroy_data{ m_glContext, m_window };
 	add_task(destroy, data, m_thread, task_type::del);
@@ -141,14 +140,14 @@ sdl_window_system::~sdl_window_system()
 
 // ----------------------------------------------------------------------------
 
-void sdl_window_system::render()
+void Sdl_Window_System::render()
 {
 	SDL_GL_SwapWindow(m_window);
 }
 
 // ----------------------------------------------------------------------------
 
-bool sdl_window_system::get_event(const event_type type, event * const event)
+bool Sdl_Window_System::get_event(const Event_Type type, Event * const event)
 {
 	bool queueEmpty = false;
 	bool foundEvent = false;
@@ -163,7 +162,7 @@ bool sdl_window_system::get_event(const event_type type, event * const event)
 			case SDL_KEYDOWN:
 				if (type & ET_KeyDown)
 				{
-					event->type = window_system::ET_KeyDown;
+					event->type = Window_System::ET_KeyDown;
 					event->key.code = convertKey(sdlEvent.key.keysym.sym);
 					event->key.modifiers = convertKeyModifier(SDL_GetModState());
 					foundEvent = true;
@@ -173,7 +172,7 @@ bool sdl_window_system::get_event(const event_type type, event * const event)
 			case SDL_KEYUP:
 				if (type & ET_KeyUp)
 				{
-					event->type = window_system::ET_KeyUp;
+					event->type = Window_System::ET_KeyUp;
 					event->key.code = convertKey(sdlEvent.key.keysym.sym);
 					event->key.modifiers = convertKeyModifier(SDL_GetModState());
 					foundEvent = true;
@@ -183,10 +182,10 @@ bool sdl_window_system::get_event(const event_type type, event * const event)
 			case SDL_MOUSEBUTTONDOWN:
 				if (type & ET_MouseDown)
 				{
-					event->type = window_system::ET_MouseDown;
+					event->type = Window_System::ET_MouseDown;
 					event->mouse.x = sdlEvent.button.x;
 					event->mouse.y = sdlEvent.button.y;
-					event->mouse.button = static_cast<mouse_button>(sdlEvent.button.button - 1);
+					event->mouse.button = static_cast<Mouse_Button>(sdlEvent.button.button - 1);
 					event->mouse.modifiers = convertKeyModifier(SDL_GetModState());
 					foundEvent = true;
 				}
@@ -195,10 +194,10 @@ bool sdl_window_system::get_event(const event_type type, event * const event)
 			case SDL_MOUSEBUTTONUP:
 				if (type & ET_MouseUp)
 				{
-					event->type = window_system::ET_MouseUp;
+					event->type = Window_System::ET_MouseUp;
 					event->mouse.x = sdlEvent.button.x;
 					event->mouse.y = sdlEvent.button.y;
-					event->mouse.button = static_cast<mouse_button>(sdlEvent.button.button - 1);
+					event->mouse.button = static_cast<Mouse_Button>(sdlEvent.button.button - 1);
 					event->mouse.modifiers = convertKeyModifier(SDL_GetModState());
 					foundEvent = true;
 				}
@@ -207,7 +206,7 @@ bool sdl_window_system::get_event(const event_type type, event * const event)
 			case SDL_MOUSEMOTION:
 				if (type & ET_MouseMove)
 				{
-					event->type = window_system::ET_MouseMove;
+					event->type = Window_System::ET_MouseMove;
 					event->motion.x = sdlEvent.motion.x;
 					event->motion.y = sdlEvent.motion.y;
 					event->motion.xrel = sdlEvent.motion.xrel;
@@ -219,7 +218,7 @@ bool sdl_window_system::get_event(const event_type type, event * const event)
 			case SDL_QUIT:
 				if (type & ET_Quit)
 				{
-					event->type = window_system::ET_Quit;
+					event->type = Window_System::ET_Quit;
 					foundEvent = true;
 				}
 				break;
@@ -234,34 +233,34 @@ bool sdl_window_system::get_event(const event_type type, event * const event)
 
 // ----------------------------------------------------------------------------
 
-void sdl_window_system::add_event(event event)
+void Sdl_Window_System::add_event(Event event)
 {
 	SDL_Event sdlEvent;
 	switch (event.type)
 	{
-	case window_system::ET_KeyDown:
+	case Window_System::ET_KeyDown:
 		sdlEvent.type = SDL_KEYDOWN;
 		sdlEvent.key.keysym.sym = static_cast<SDL_Keycode>(event.key.code);
 		break;
 
-	case window_system::ET_KeyUp:
+	case Window_System::ET_KeyUp:
 		sdlEvent.type = SDL_KEYUP;
 		sdlEvent.key.keysym.sym = static_cast<SDL_Keycode>(event.key.code);
 		break;
 
-	case window_system::ET_MouseUp:
+	case Window_System::ET_MouseUp:
 		sdlEvent.type = SDL_MOUSEBUTTONUP;
 		sdlEvent.button.x = event.mouse.x;
 		sdlEvent.button.y = event.mouse.y;
 		break;
 
-	case window_system::ET_MouseDown:
+	case Window_System::ET_MouseDown:
 		sdlEvent.type = SDL_MOUSEBUTTONDOWN;
 		sdlEvent.button.x = event.mouse.x;
 		sdlEvent.button.y = event.mouse.y;
 		break;
 
-	case window_system::ET_MouseMove:
+	case Window_System::ET_MouseMove:
 		sdlEvent.type = SDL_MOUSEMOTION;
 		sdlEvent.motion.x = event.motion.x;
 		sdlEvent.motion.y = event.motion.y;
@@ -274,14 +273,14 @@ void sdl_window_system::add_event(event event)
 
 // ----------------------------------------------------------------------------
 
-int sdl_window_system::get_width() const
+int Sdl_Window_System::get_width() const
 {
 	return m_width;
 }
 
 // ----------------------------------------------------------------------------
 
-int sdl_window_system::get_height() const
+int Sdl_Window_System::get_height() const
 {
 	return m_height;
 }
@@ -294,20 +293,20 @@ char SDLWindowSystemNamespace::convertKey(SDL_Keycode const key)
 		return key;
 	else if (key >= SDLK_KP_DIVIDE && key <= SDLK_KP_PERIOD)
 	{
-		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = { '/', '*', '-', '+', key::Return, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.' };
+		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = { '/', '*', '-', '+', Key::Return, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.' };
 		return keys[key - SDLK_KP_DIVIDE];
 	}
 	else if (key == 10)
-		return key::Return;
+		return Key::Return;
 
 	return 0;
 }
 
 // ----------------------------------------------------------------------------
 
-key::modifier SDLWindowSystemNamespace::convertKeyModifier(const SDL_Keymod mod)
+Key::Modifier SDLWindowSystemNamespace::convertKeyModifier(const SDL_Keymod mod)
 {
-	return static_cast<key::modifier>(mod & 0x3 | (mod & 0x3c0) >> 4 | (mod & 0x3000) >> 6);
+	return static_cast<Key::Modifier>(mod & 0x3 | (mod & 0x3c0) >> 4 | (mod & 0x3000) >> 6);
 }
 
 // ----------------------------------------------------------------------------

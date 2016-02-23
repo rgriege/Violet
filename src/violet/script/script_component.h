@@ -9,26 +9,26 @@
 
 namespace vlt
 {
-	struct deserializer;
-	struct serializer;
+	struct Deserializer;
+	struct Serializer;
 
-	struct VIOLET_API script_component final
+	struct VIOLET_API Script_Component final
 	{
-		std::unique_ptr<script> script;
+		std::unique_ptr<Script> script;
 
-		static const component_metadata * metadata;
+		static const Component_Metadata * metadata;
 
-		script_component(handle entity_id, deserializer & deserializer);
-		script_component(handle entity_id, const char * fileName);
-		script_component(script_component && other);
-		~script_component();
+		Script_Component(Handle entity_id, Deserializer & deserializer);
+		Script_Component(Handle entity_id, const char * filename);
+		Script_Component(Script_Component && other);
+		~Script_Component();
 	};
 
 	VIOLET_API void install_script_component();
 
-	VIOLET_API serializer & operator<<(serializer & serializer, const script_component & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Script_Component & component);
 
-	DEFINE_METHOD(BindToComponentMethod, void(handle entity_id));
+	DEFINE_METHOD(BindToComponentMethod, void(Handle entity_id));
 	DEFINE_METHOD(UnbindFromComponentMethod, void());
 }
 

@@ -1,10 +1,10 @@
 // ============================================================================
 
-#include "game/pathfinding/MapComponent.h"
+#include "game/pathfinding/mapcomponent.h"
 
-#include "violet/Engine.h"
-#include "violet/math/Polygon.h"
-#include "violet/serialization/SerializationUtilities.h"
+#include "violet/engine.h"
+#include "violet/math/polygon.h"
+#include "violet/serialization/serializationutilities.h"
 
 // ============================================================================
 
@@ -15,21 +15,21 @@ Violet::Tag MapComponent::getStaticTag()
 
 // ============================================================================
 
-MapComponent::MapComponent(const Violet::EntityId entityId, Violet::Deserializer & deserializer) :
+MapComponent::MapComponent(const Violet::EntityId entityId, Violet::Deserializer & Deserializer) :
 	ComponentBase<MapComponent>(entityId),
 	m_graph(),
 	m_id(0)
 {
-	m_id = deserializer.getUint("id");
+	m_id = Deserializer.getUint("id");
 	{
-		auto nodesSegment = deserializer.enterSegment("nodes");
+		auto nodesSegment = Deserializer.enterSegment("nodes");
 		Violet::Vector<Vec2f> nodes = Violet::SerializationUtilities::deserializeElements<Vec2f>(*nodesSegment);
 		for (auto const & node : nodes)
 			m_graph.addNode({ node });
 	}
 
 	{
-		auto edgesSegment = deserializer.enterSegment("edges");
+		auto edgesSegment = Deserializer.enterSegment("edges");
 		const uint32 n = edgesSegment->getUint("n");
 		for (uint32 i = 0; i < n; ++i)
 		{
@@ -42,18 +42,18 @@ MapComponent::MapComponent(const Violet::EntityId entityId, Violet::Deserializer
 
 // ============================================================================
 
-Violet::Serializer & operator<<(Violet::Serializer & serializer, const MapComponent & component)
+Violet::Serializer & operator<<(Violet::Serializer & Serializer, const MapComponent & component)
 {
-	serializer.writeUint("id", component.m_id);
+	Serializer.writeUint("id", component.m_id);
 	{
-		auto nodesSegment = serializer.createSegment("nodes");
+		auto nodesSegment = Serializer.createSegment("nodes");
 		Violet::Vector<Vec2f> nodes;
 		for (auto const & node : component.m_graph.getNodes())
 			nodes.emplace_back(node.second.m_position);
 		Violet::SerializationUtilities::serializeElements(*nodesSegment, nodes);
 	}
 	{
-		auto edgesSegment = serializer.createSegment("edges");
+		auto edgesSegment = Serializer.createSegment("edges");
 		edgesSegment->writeUint("n", std::distance(component.m_graph.getEdges().begin(), component.m_graph.getEdges().end()));
 		for (auto const & edge : component.m_graph.getEdges())
 		{
@@ -61,7 +61,7 @@ Violet::Serializer & operator<<(Violet::Serializer & serializer, const MapCompon
 			edgesSegment->writeUint("dst", edge.m_destination);
 		}
 	}
-	return serializer;
+	return Serializer;
 }
 
 // ============================================================================

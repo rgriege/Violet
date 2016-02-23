@@ -11,16 +11,16 @@
 
 namespace edt
 {
-	struct EDITOR_API set_color_command final : public command
+	struct EDITOR_API Set_Color_Command final : public Command
 	{
-		vlt::handle entity_id;
-		vlt::color new_color;
+		vlt::Handle entity_id;
+		vlt::Color new_color;
 
 		static const char * get_usage();
-		static std::unique_ptr<command> parse(const std::string & text);
+		static std::unique_ptr<Command> parse(const std::string & text);
 
-		set_color_command(vlt::handle _entity_id, const vlt::color _new_color);
-		virtual ~set_color_command() override = default;
+		Set_Color_Command(vlt::Handle _entity_id, const vlt::Color _new_color);
+		virtual ~Set_Color_Command() override = default;
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;

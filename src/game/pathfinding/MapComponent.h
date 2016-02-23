@@ -1,9 +1,9 @@
 #ifndef GAME_MapComponent_H
 #define GAME_MapComponent_H
 
-#include "violet/component/Component.h"
-#include "game/Config.h"
-#include "game/pathfinding/Map.h"
+#include "violet/component/component.h"
+#include "game/config.h"
+#include "game/pathfinding/map.h"
 
 namespace Violet
 {
@@ -19,7 +19,7 @@ public:
 
 public:
 
-	MapComponent(Violet::EntityId entityId, Violet::Deserializer & deserializer);
+	MapComponent(Violet::EntityId entityId, Violet::Deserializer & Deserializer);
 	MapComponent(MapComponent && other);
 
 public:
@@ -28,6 +28,6 @@ public:
 	uint32 m_id;
 };
 
-Violet::Serializer & operator<<(Violet::Serializer & serializer, const MapComponent & component);
+Violet::Serializer & operator<<(Violet::Serializer & Serializer, const MapComponent & component);
 
 #endif

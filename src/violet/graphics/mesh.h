@@ -7,37 +7,37 @@
 
 namespace vlt
 {
-	struct deserializer;
-	struct poly;
-	struct serializer;
+	struct Deserializer;
+	struct Poly;
+	struct Serializer;
 
-	struct VIOLET_API mesh final
+	struct VIOLET_API Mesh final
 	{
-		u32 m_vertexBuffer;
-		u32 m_size;
+		u32 vertex_buffer;
+		u32 size;
 
-		static void bind(const mesh & mesh);
+		static void bind(const Mesh & mesh);
 		static void unbind();
 
-		explicit mesh(vector<v2> && vertices);
-		explicit mesh(const poly & poly);
-		explicit mesh(deserializer & deserializer);
-		explicit mesh(const mesh & other);
-		explicit mesh(mesh && other);
-		mesh & operator=(mesh && other);
-		~mesh();
+		explicit Mesh(Vector<v2> && vertices);
+		explicit Mesh(const Poly & poly);
+		explicit Mesh(Deserializer & deserializer);
+		explicit Mesh(const Mesh & other);
+		explicit Mesh(Mesh && other);
+		Mesh & operator=(Mesh && other);
+		~Mesh();
 
-		poly get_poly() const;
+		Poly get_poly() const;
 
 	private:
 
-		mesh & operator=(const mesh & other) = delete;
+		Mesh & operator=(const Mesh & other) = delete;
 	};
 
-	VIOLET_API void set_mesh_vertices(mesh & mesh, const vector<v2> & vertices);
+	VIOLET_API void set_mesh_vertices(Mesh & mesh, const Vector<v2> & vertices);
 
-	deserializer & operator>>(deserializer & deserializer, mesh & mesh);
-	serializer & operator<<(serializer & serializer, const mesh & mesh);
+	Deserializer & operator>>(Deserializer & deserializer, Mesh & mesh);
+	Serializer & operator<<(Serializer & serializer, const Mesh & mesh);
 }
 
 #endif

@@ -11,12 +11,12 @@
 
 namespace edt
 {
-	struct EDITOR_API open_command final : public command
+	struct EDITOR_API Open_Command final : public Command
 	{
 		static const char * get_usage();
-		static std::unique_ptr<command> parse(const std::string & text);
+		static std::unique_ptr<Command> parse(const std::string & text);
 
-		open_command(std::string filename);
+		Open_Command(std::string filename);
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;
@@ -25,7 +25,7 @@ namespace edt
 	private:
 
 		const std::string filename;
-		std::vector<vlt::handle> entity_ids;
+		std::vector<vlt::Handle> entity_ids;
 	};
 }
 

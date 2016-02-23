@@ -11,9 +11,9 @@ namespace vlt
 		template <typename T>
 		struct VectorDeserializer
 		{
-			static vector<T> run(deserializer & d, const u32 elementCount)
+			static Vector<T> run(Deserializer & d, const u32 elementCount)
 			{
-				vector<T> elements;
+				Vector<T> elements;
 				elements.reserve(elementCount);
 				for (u32 i = 0; i < elementCount; ++i)
 					elements.emplace_back(d);
@@ -24,9 +24,9 @@ namespace vlt
 		template <>
 		struct VectorDeserializer<std::string>
 		{
-			static vector<std::string> run(deserializer & d, const u32 elementCount)
+			static Vector<std::string> run(Deserializer & d, const u32 elementCount)
 			{
-				vector<std::string> elements;
+				Vector<std::string> elements;
 				elements.reserve(elementCount);
 				for (u32 i = 0; i < elementCount; ++i)
 					elements.emplace_back(d.get_string("str"));
@@ -39,7 +39,7 @@ namespace vlt
 // ============================================================================
 
 template <typename T>
-vlt::vector<T> vlt::deserialize_vector(vlt::deserializer & d)
+vlt::Vector<T> vlt::deserialize_vector(vlt::Deserializer & d)
 {
 	return detail::VectorDeserializer<T>::run(d, d.get_u32("n"));
 }
@@ -47,7 +47,7 @@ vlt::vector<T> vlt::deserialize_vector(vlt::deserializer & d)
 // ----------------------------------------------------------------------------
 
 template <typename T>
-void vlt::serialize_vector(vlt::serializer & s, const vlt::vector<T> & elements)
+void vlt::serialize_vector(vlt::Serializer & s, const vlt::Vector<T> & elements)
 {
 	s.write_u32("n", elements.size());
 	for (auto const & element : elements)

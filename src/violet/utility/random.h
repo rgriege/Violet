@@ -1,15 +1,15 @@
 #ifndef VIOLET_RANDOM_H
 #define VIOLET_RANDOM_H
 
-#include "violet/core/defines.h"
-
 #include <random>
+
+#include "violet/core/defines.h"
 
 namespace vlt
 {
-	struct VIOLET_API random
+	struct VIOLET_API Random
 	{
-		static random ms_generator;
+		static Random ms_generator;
 				
 		r32 generate_0_to_1();
 

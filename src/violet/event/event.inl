@@ -5,81 +5,81 @@
 // ============================================================================
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::subscribe(event_context & event_context, const subscriber & func)
+void vlt::Event<Derived, void(Args...)>::subscribe(Event_Context & context, const Subscriber & func)
 {
-	event_context.subscribe(Derived::get_identifier(), func);
+	context.subscribe(Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::subscribe(const event_context & event_context, const subscriber & func)
+void vlt::Event<Derived, void(Args...)>::subscribe(const Event_Context & context, const Subscriber & func)
 {
-	vlt::event_base::subscribe(event_context, Derived::get_identifier(), func);
+	vlt::Event_Base::subscribe(context, Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::subscribe(event_context_owner & event_context_owner, const subscriber & func)
+void vlt::Event<Derived, void(Args...)>::subscribe(Event_Context_Owner & owner, const Subscriber & func)
 {
-	subscribe(event_context_owner.event_context, func);
+	subscribe(owner.event_context, func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::subscribe(const event_context_owner & event_context_owner, const subscriber & func)
+void vlt::Event<Derived, void(Args...)>::subscribe(const Event_Context_Owner & owner, const Subscriber & func)
 {
-	subscribe(event_context_owner.event_context, func);
+	subscribe(owner.event_context, func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::emit(const event_context & event_context, Args && ... args)
+void vlt::Event<Derived, void(Args...)>::emit(const Event_Context & context, Args && ... args)
 {
-	event_context.emit(Derived::get_identifier(), std::forward<Args>(args)...);
+	context.emit(Derived::get_identifier(), std::forward<Args>(args)...);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::emit(const event_context_owner & event_context_owner, Args && ... args)
+void vlt::Event<Derived, void(Args...)>::emit(const Event_Context_Owner & owner, Args && ... args)
 {
-	emit(event_context_owner.event_context, std::forward<Args>(args)...);
+	emit(owner.event_context, std::forward<Args>(args)...);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::unsubscribe(event_context & event_context, const subscriber & func)
+void vlt::Event<Derived, void(Args...)>::unsubscribe(Event_Context & context, const Subscriber & func)
 {
-	event_context.unsubscribe(Derived::get_identifier(), func);
+	context.unsubscribe(Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::unsubscribe(const event_context & event_context, const subscriber & func)
+void vlt::Event<Derived, void(Args...)>::unsubscribe(const Event_Context & context, const Subscriber & func)
 {
-	vlt::event_base::unsubscribe(event_context, Derived::get_identifier(), func);
+	vlt::Event_Base::unsubscribe(context, Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::unsubscribe(event_context_owner & event_context_owner, const subscriber & func)
+void vlt::Event<Derived, void(Args...)>::unsubscribe(Event_Context_Owner & owner, const Subscriber & func)
 {
-	unsubscribe(event_context_owner.event_context, func);
+	unsubscribe(owner.event_context, func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ... Args>
-void vlt::event<Derived, void(Args...)>::unsubscribe(const event_context_owner & event_context_owner, const subscriber & func)
+void vlt::Event<Derived, void(Args...)>::unsubscribe(const Event_Context_Owner & owner, const Subscriber & func)
 {
-	unsubscribe(event_context_owner.event_context, func);
+	unsubscribe(owner.event_context, func);
 }
 
 // ============================================================================

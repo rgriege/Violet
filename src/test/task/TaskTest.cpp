@@ -1,9 +1,9 @@
 // ============================================================================
 
-#include "test/task/TaskTest.h"
+#include "test/task/tasktest.h"
 
-#include "test/core/TestEvaluator.h"
-#include "test/core/TestFactory.h"
+#include "test/core/testevaluator.h"
+#include "test/core/testfactory.h"
 #include "violet/task/task_scheduler.h"
 #include "violet/utility/formatted_string.h"
 
@@ -25,10 +25,10 @@ namespace TaskTestNamespace
 	
 	StatelessTest<u32> makeThreadedTest(const u32 workerCount, const u32 taskCount)
 	{
-		return TestFactory::makeStateless(formatted_string<64>().sprintf("%d workers, %d tasks", workerCount, taskCount), taskCount, [=]() -> u32
+		return TestFactory::makeStateless(Formatted_String<64>().sprintf("%d workers, %d tasks", workerCount, taskCount), taskCount, [=]() -> u32
 			{
-				std::vector<u32> counts(workerCount);
-				task_scheduler scheduler(workerCount);
+				std::Vector<u32> counts(workerCount);
+				Task_Scheduler scheduler(workerCount);
 				for (u32 i = 0; i < taskCount; ++i)
 				{
 					const u32 threadIndex = i % workerCount;
@@ -49,13 +49,13 @@ void TaskTest::run(TestEvaluator & evaluator)
 	TestFactory::makeStatelessSuite("task tests", std::forward_as_tuple(
 		TestFactory::makeStateless("0 workers 0 tasks", true, []()
 			{
-				task_scheduler scheduler(0);
+				Task_Scheduler scheduler(0);
 				scheduler.finishCurrentTasks();
 				return true;
 			}),
 		TestFactory::makeStateless("0 workers 1 task", getCurrentThreadId(), []()
 			{
-				task_scheduler scheduler(0);
+				Task_Scheduler scheduler(0);
 				std::string threadId;
 				scheduler.add_task(std::make_unique<delegate_task>([&](){ threadId = getCurrentThreadId(); }));
 				scheduler.finishCurrentTasks();
@@ -63,13 +63,13 @@ void TaskTest::run(TestEvaluator & evaluator)
 			}),
 		TestFactory::makeStateless("1 worker 0 tasks", true, []()
 			{
-				task_scheduler scheduler(1);
+				Task_Scheduler scheduler(1);
 				scheduler.finishCurrentTasks();
 				return true;
 			}),
 		TestFactory::makeStateless("1 worker 1 task", getCurrentThreadId(), []()
 			{
-				task_scheduler scheduler(1);
+				Task_Scheduler scheduler(1);
 				std::string threadId;
 				scheduler.add_task(std::make_unique<delegate_task>([&](){ threadId = getCurrentThreadId(); }));
 				scheduler.finishCurrentTasks();
@@ -79,7 +79,7 @@ void TaskTest::run(TestEvaluator & evaluator)
 		makeThreadedTest(4, 40000),
 		TestFactory::makeStateless("dependencies", true, []()
 			{
-				task_scheduler scheduler(2);
+				Task_Scheduler scheduler(2);
 				std::atomic_uint concurrentTaskCount;
 				concurrentTaskCount = 0;
 				std::atomic_uint taskCount;

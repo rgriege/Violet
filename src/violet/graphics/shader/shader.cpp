@@ -1,31 +1,31 @@
-#include "violet/graphics/shader/shader.h"
+// ============================================================================
+
+#include <fstream>
+#include <GL/glew.h>
+#include <map>
+#include <string>
 
 #include "violet/core/defines.h"
+#include "violet/graphics/shader/shader.h"
 #include "violet/log/log.h"
 #include "violet/utility/buffer.h"
 #include "violet/utility/formatted_string.h"
 #include "violet/utility/string_utilities.h"
 
-#include <GL/glew.h>
-#include <fstream>
-#include <map>
-#include <string>
-
 using namespace vlt;
 
-namespace ShaderNamespace
-{
-	std::map<GLuint, std::string> ms_shaderFilenames;
-};
+// ============================================================================
 
-using namespace ShaderNamespace;
+std::map<GLuint, std::string> g_shader_filenames;
 
-std::unique_ptr<shader> shader::create(const char * filename, Type type)
+// ============================================================================
+
+std::unique_ptr<Shader> Shader::create(const char * filename, Type type)
 {
 	std::ifstream stream(filename, std::ios_base::binary);
 	if (!stream)
 	{
-		log(formatted_string<128>().sprintf("Could not open shader file '%s'", filename));
+		log(Formatted_String<128>().sprintf("Could not open Shader file '%s'", filename));
 		return nullptr;
 	}
 
@@ -33,7 +33,7 @@ std::unique_ptr<shader> shader::create(const char * filename, Type type)
 	stream.seekg(0, std::ios::end);
 	u32 const size = static_cast<u32>(stream.tellg() - start);
 	stream.seekg(0, std::ios::beg);
-	heap_buffer<char> buffer(size + 1);
+	Heap_Buffer<char> buffer(size + 1);
 	stream.read(buffer, size);
 	buffer[size] = 0;
 
@@ -47,52 +47,57 @@ std::unique_ptr<shader> shader::create(const char * filename, Type type)
 	{
 		GLint length;
 		glGetShaderiv(shader_handle, GL_INFO_LOG_LENGTH, &length);
-		heap_buffer<char> log_buffer(length);
+		Heap_Buffer<char> log_buffer(length);
 		glGetShaderInfoLog(shader_handle, length, nullptr, log_buffer);
-		log(formatted_string<1024>().sprintf("Compilation error in shader file '%s': %s", filename, log_buffer.data));
+		log(Formatted_String<1024>().sprintf("Compilation error in Shader file '%s': %s", filename, log_buffer.data));
 		return nullptr;
 	}
 
-	ms_shaderFilenames[shader_handle] = filename;
-	return std::unique_ptr<shader>(new shader(filename, shader_handle));
+	g_shader_filenames[shader_handle] = filename;
+	return std::make_unique<Shader>(filename, shader_handle);
 }
 
-shader::shader(const char * filename, const GLuint handle) :
-	m_filename(filename),
-	m_handle(handle)
+// ============================================================================
+
+Shader::Shader(const char * _filename, const GLuint _handle) :
+	filename(_filename),
+	handle(_handle)
 {
 }
 
-shader::~shader()
+// ----------------------------------------------------------------------------
+
+Shader::~Shader()
 {
-	glDeleteShader(m_handle);
+	glDeleteShader(handle);
 }
 
-const char * shader::get_filename() const
-{
-	return m_filename.c_str();
-}
+// ============================================================================
 
-std::unique_ptr<shader_program> shader_program::load(const char * name)
+std::unique_ptr<Shader_Program> Shader_Program::load(const char * name)
 {
 	std::string nameStr = name;
 	return load((nameStr + ".vert").c_str(), (nameStr + ".frag").c_str());
 }
 
-std::unique_ptr<shader_program> shader_program::load(const char * vertexShaderFilename, const char * fragmentShaderFilename)
+// ----------------------------------------------------------------------------
+
+std::unique_ptr<Shader_Program> Shader_Program::load(const char * vertex_shader_filename, const char * fragment_shader_filename)
 {
-	auto vertexShader = shader::create(vertexShaderFilename, shader::Vertex);
-	auto fragmentShader = shader::create(fragmentShaderFilename, shader::Fragment);
+	auto vertex_shader = Shader::create(vertex_shader_filename, Shader::Vertex);
+	auto fragment_shader = Shader::create(fragment_shader_filename, Shader::Fragment);
 	
-	return (vertexShader != nullptr && fragmentShader != nullptr) ? shader_program::create(std::shared_ptr<shader>(vertexShader.release()), std::shared_ptr<shader>(fragmentShader.release())) : nullptr;
+	return (vertex_shader != nullptr && fragment_shader != nullptr) ? Shader_Program::create(std::shared_ptr<Shader>(vertex_shader.release()), std::shared_ptr<Shader>(fragment_shader.release())) : nullptr;
 }
 
-std::unique_ptr<shader_program> shader_program::create(std::shared_ptr<shader> vertexShader, std::shared_ptr<shader> fragmentShader)
+// ----------------------------------------------------------------------------
+
+std::unique_ptr<Shader_Program> Shader_Program::create(std::shared_ptr<Shader> vertex_shader, std::shared_ptr<Shader> fragment_shader)
 {
 	GLuint program = glCreateProgram();
 
-	glAttachShader(program, vertexShader->m_handle);
-	glAttachShader(program, fragmentShader->m_handle);
+	glAttachShader(program, vertex_shader->handle);
+	glAttachShader(program, fragment_shader->handle);
 
 	glLinkProgram(program);
 	GLint linked;
@@ -101,56 +106,75 @@ std::unique_ptr<shader_program> shader_program::create(std::shared_ptr<shader> v
 	{
 		GLint length;
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
-		heap_buffer<char> log_buffer(length);
+		Heap_Buffer<char> log_buffer(length);
 		glGetProgramInfoLog(program, length, nullptr, log_buffer);
-		log(formatted_string<1024>().sprintf("Link error in shader program using '%s' and '%s': %s", ms_shaderFilenames[vertexShader->m_handle].c_str(), ms_shaderFilenames[fragmentShader->m_handle].c_str(), log_buffer));
+		log(Formatted_String<1024>().sprintf("Link error in Shader program using '%s' and '%s': %s", g_shader_filenames[vertex_shader->handle].c_str(), g_shader_filenames[fragment_shader->handle].c_str(), log_buffer));
 		return 0;
 	}
 	
-	return std::unique_ptr<shader_program>(new shader_program(program, vertexShader, fragmentShader));
+	return std::make_unique<Shader_Program>(program, vertex_shader, fragment_shader);
 }
 
-shader_program::Cache & shader_program::get_cache()
+// ----------------------------------------------------------------------------
+
+Shader_Program::Cache & Shader_Program::get_cache()
 {
-	static Cache s_cache(&shader_program::load);
+	static Cache s_cache(&Shader_Program::load);
 	return s_cache;
 }
 
-void shader_program::bind(const shader_program & program)
+// ----------------------------------------------------------------------------
+
+void Shader_Program::bind(const Shader_Program & program)
 {
-	glUseProgram(program.m_handle);
+	glUseProgram(program.handle);
 }
 
-void shader_program::unbind()
+// ----------------------------------------------------------------------------
+
+void Shader_Program::unbind()
 {
 	glUseProgram(0);
 }
 
-shader_program::shader_program(const GLuint handle, std::shared_ptr<shader> vertexShader, std::shared_ptr<shader> fragmentShader) :
-	m_handle(handle),
-	m_vertexShader(std::move(vertexShader)),
-	m_fragmentShader(std::move(fragmentShader))
+// ============================================================================
+
+Shader_Program::Shader_Program(const GLuint _handle, std::shared_ptr<Shader> _vertex_shader, std::shared_ptr<Shader> _fragment_shader) :
+	handle(_handle),
+	vertex_shader(std::move(_vertex_shader)),
+	fragment_shader(std::move(_fragment_shader))
 {
 }
 
-shader_program::~shader_program()
+// ----------------------------------------------------------------------------
+
+Shader_Program::~Shader_Program()
 {
-	glDetachShader(m_handle, m_vertexShader->m_handle);
-	glDetachShader(m_handle, m_fragmentShader->m_handle);
-	glDeleteProgram(m_handle);
+	glDetachShader(handle, vertex_shader->handle);
+	glDetachShader(handle, fragment_shader->handle);
+	glDeleteProgram(handle);
 }
 
-std::string shader_program::get_name() const
+// ----------------------------------------------------------------------------
+
+std::string Shader_Program::get_name() const
 {
-	return string_utilities::left(m_vertexShader->get_filename(), '.');
+	return String_Utilities::left(vertex_shader->filename, '.');
 }
 
-int shader_program::getAttributeLocation(const char * name)
+// ----------------------------------------------------------------------------
+
+int Shader_Program::get_attrib_loc(const char * name)
 {
-	return glGetAttribLocation(m_handle, name);
+	return glGetAttribLocation(handle, name);
 }
 
-int shader_program::getUniformLocation(const char * name)
+// ----------------------------------------------------------------------------
+
+int Shader_Program::get_uniform_loc(const char * name)
 {
-	return glGetUniformLocation(m_handle, name);
+	return glGetUniformLocation(handle, name);
 }
+
+// ============================================================================
+

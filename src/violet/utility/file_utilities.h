@@ -3,10 +3,8 @@
 
 namespace vlt
 {
-	struct file_utilities
+	struct File_Utilities
 	{
-	public:
-
 		static bool exists(const char * fileName);
 		static bool copy(const char * src, const char * dst);
 	};

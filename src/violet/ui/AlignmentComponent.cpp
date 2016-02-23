@@ -1,9 +1,9 @@
 // ============================================================================
 
-#include "violet/ui/AlignmentComponent.h"
+#include "violet/ui/alignmentcomponent.h"
 
-#include "violet/serialization/Deserializer.h"
-#include "violet/serialization/Serializer.h"
+#include "violet/serialization/deserializer.h"
+#include "violet/serialization/serializer.h"
 
 using namespace Violet;
 
@@ -30,7 +30,7 @@ AlignmentComponent::AlignmentComponent(const Handle entityId) :
 
 // ----------------------------------------------------------------------------
 
-AlignmentComponent::AlignmentComponent(const Handle entityId, Deserializer & /*deserializer*/) :
+AlignmentComponent::AlignmentComponent(const Handle entityId, Deserializer & /*Deserializer*/) :
 	ComponentBase<AlignmentComponent>(entityId)
 {
 }
@@ -44,21 +44,21 @@ AlignmentComponent::AlignmentComponent(AlignmentComponent && other) :
 
 // ============================================================================
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, AlignmentComponent & component)
+Deserializer & Violet::operator>>(Deserializer & Deserializer, AlignmentComponent & component)
 {
-	component.m_parent = Handle(deserializer.getUint("parent"), 0);
-	component.m_x = deserializer.getFloat("x");
-	component.m_y = deserializer.getFloat("y");
-	component.m_width = deserializer.getFloat("width");
-	component.m_height = deserializer.getFloat("height");
-	return deserializer;
+	component.m_parent = Handle(Deserializer.getUint("parent"), 0);
+	component.m_x = Deserializer.getFloat("x");
+	component.m_y = Deserializer.getFloat("y");
+	component.m_width = Deserializer.getFloat("width");
+	component.m_height = Deserializer.getFloat("height");
+	return Deserializer;
 }
 
 // ----------------------------------------------------------------------------
 
-Serializer & Violet::operator<<(Serializer & serializer, const AlignmentComponent & /*component*/)
+Serializer & Violet::operator<<(Serializer & Serializer, const AlignmentComponent & /*component*/)
 {
-	return serializer;
+	return Serializer;
 }
 
 // ============================================================================

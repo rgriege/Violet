@@ -38,7 +38,7 @@ namespace LuaScriptNamespace
 
 	// ----------------------------------------------------------------------------
 
-	std::unique_ptr<script> createFromFile(const char * fileName);
+	std::unique_ptr<Script> createFromFile(const char * fileName);
 
 	// ----------------------------------------------------------------------------
 }
@@ -47,14 +47,14 @@ using namespace LuaScriptNamespace;
 
 // ============================================================================
 
-void lua_script::install()
+void Lua_Script::install()
 {
-	script_factory::assign("lua", createFromFile);
+	Script_Factory::assign("lua", createFromFile);
 }
 
 // ============================================================================
 
-lua_script::lua_script(shared_val<text_resource> source) :
+Lua_Script::Lua_Script(shared_val<Text_Resource> source) :
 	m_source(std::move(source)),
 	m_lua(),
 	m_valid(false)
@@ -64,7 +64,7 @@ lua_script::lua_script(shared_val<text_resource> source) :
 
 // ----------------------------------------------------------------------------
 
-lua_script::lua_script(lua_script && other) :
+Lua_Script::Lua_Script(Lua_Script && other) :
 	m_source(std::move(other.m_source)),
 	m_lua(other.m_lua),
 	m_valid(other.m_valid)
@@ -75,7 +75,7 @@ lua_script::lua_script(lua_script && other) :
 
 // ----------------------------------------------------------------------------
 
-lua_script::~lua_script()
+Lua_Script::~Lua_Script()
 {
 	if (m_valid)
 		unload();
@@ -83,21 +83,21 @@ lua_script::~lua_script()
 
 // ----------------------------------------------------------------------------
 
-std::string const & lua_script::get_filename() const
+std::string const & Lua_Script::get_filename() const
 {
 	return m_source->name;
 }
 
 // ----------------------------------------------------------------------------
 
-bool lua_script::is_valid() const
+bool Lua_Script::is_valid() const
 {
 	return m_valid;
 }
 
 // ----------------------------------------------------------------------------
 
-void lua_script::reload()
+void Lua_Script::reload()
 {
 	if (m_valid)
 		unload();
@@ -106,7 +106,7 @@ void lua_script::reload()
 
 // ============================================================================
 
-void lua_script::load()
+void Lua_Script::load()
 {
 	m_lua = luaL_newstate();
 	m_valid = false;
@@ -149,7 +149,7 @@ void lua_script::load()
 
 // ----------------------------------------------------------------------------
 
-void lua_script::unload()
+void Lua_Script::unload()
 {
 	lua_getglobal(m_lua, "clean");
 	lua_pcall(m_lua, 0, 0, 0);
@@ -196,10 +196,10 @@ const char * LuaScriptNamespace::BlockStreamReader::readChunk(lua_State * /*lua*
 
 // ============================================================================
 
-std::unique_ptr<script> LuaScriptNamespace::createFromFile(const char * const fileName)
+std::unique_ptr<Script> LuaScriptNamespace::createFromFile(const char * const fileName)
 {
-	auto file = make_shared_val<file_resource>(fileName);
-	return std::make_unique<lua_script>(file);
+	auto file = make_shared_val<File_Resource>(fileName);
+	return std::make_unique<Lua_Script>(file);
 }
 
 // ============================================================================

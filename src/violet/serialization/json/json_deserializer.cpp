@@ -9,22 +9,22 @@
 
 #include <memory>
 
-#include "violet/serialization/json/json_deserializer.h"
 #include "violet/serialization/file/file_deserializer_factory.h"
+#include "violet/serialization/json/json_deserializer.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-struct sub_deserializer : public deserializer
+struct Sub_Deserializer : public Deserializer
 {
 public:
 
-	sub_deserializer(const Json::Value & value);
+	Sub_Deserializer(const Json::Value & value);
 
 	virtual bool is_valid() const override;
 
-	virtual std::unique_ptr<deserializer> enter_segment(const char * label) override;
+	virtual std::unique_ptr<Deserializer> enter_segment(const char * label) override;
 	virtual const char * next_label() const override;
 
 	virtual bool get_b8(const char * label) override;
@@ -42,14 +42,14 @@ private:
 
 // ============================================================================
 
-void json_deserializer::install()
+void Json_Deserializer::install()
 {
-	file_deserializer_factory::instance().assign<json_deserializer>("json");
+	File_Deserializer_Factory::instance().assign<Json_Deserializer>("json");
 }
 
 // ============================================================================
 
-json_deserializer::json_deserializer(std::istream & stream) :
+Json_Deserializer::Json_Deserializer(std::istream & stream) :
 	root(),
 	position()
 {
@@ -59,7 +59,7 @@ json_deserializer::json_deserializer(std::istream & stream) :
 
 // ----------------------------------------------------------------------------
 
-json_deserializer::json_deserializer(json_deserializer && other) :
+Json_Deserializer::Json_Deserializer(Json_Deserializer && other) :
 	root(),
 	position()
 {
@@ -73,134 +73,134 @@ json_deserializer::json_deserializer(json_deserializer && other) :
 
 // ----------------------------------------------------------------------------
 
-bool json_deserializer::is_valid() const
+bool Json_Deserializer::is_valid() const
 {
 	return position != root.end();
 }
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<deserializer> json_deserializer::enter_segment(const char * label)
+std::unique_ptr<Deserializer> Json_Deserializer::enter_segment(const char * label)
 {
-	return std::unique_ptr<deserializer>(new sub_deserializer(*position++));
+	return std::unique_ptr<Deserializer>(new Sub_Deserializer(*position++));
 }
 
 // ----------------------------------------------------------------------------
 
-const char * json_deserializer::next_label() const
+const char * Json_Deserializer::next_label() const
 {
 	return position.memberName();
 }
 
 // ----------------------------------------------------------------------------
 
-bool json_deserializer::get_b8(const char * label)
+bool Json_Deserializer::get_b8(const char * label)
 {
 	return (*position++).asBool();
 }
 
 // ----------------------------------------------------------------------------
 
-u32 json_deserializer::get_u32(const char * label)
+u32 Json_Deserializer::get_u32(const char * label)
 {
 	return (*position++).asUInt();
 }
 
 // ----------------------------------------------------------------------------
 
-int json_deserializer::get_s32(const char * label)
+int Json_Deserializer::get_s32(const char * label)
 {
 	return (*position++).asInt();
 }
 
 // ----------------------------------------------------------------------------
 
-r32 json_deserializer::get_r32(const char * label)
+r32 Json_Deserializer::get_r32(const char * label)
 {
 	return static_cast<r32>(get_r64(label));
 }
 
 // ----------------------------------------------------------------------------
 
-r64 json_deserializer::get_r64(const char * label)
+r64 Json_Deserializer::get_r64(const char * label)
 {
 	return (*position++).asDouble();
 }
 
 // ----------------------------------------------------------------------------
 
-const char * json_deserializer::get_string(const char * label)
+const char * Json_Deserializer::get_string(const char * label)
 {
 	return (*position++).asCString();
 }
 
 // ============================================================================
 
-sub_deserializer::sub_deserializer(const Json::Value & value) :
-	value(value),
+Sub_Deserializer::Sub_Deserializer(const Json::Value & _value) :
+	value(_value),
 	position(value.begin())
 {
 }
 
 // ----------------------------------------------------------------------------
 
-bool sub_deserializer::is_valid() const
+bool Sub_Deserializer::is_valid() const
 {
 	return position != value.end();
 }
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<deserializer> sub_deserializer::enter_segment(const char * label)
+std::unique_ptr<Deserializer> Sub_Deserializer::enter_segment(const char * label)
 {
-	return std::unique_ptr<deserializer>(new sub_deserializer(*position++));
+	return std::unique_ptr<Deserializer>(new Sub_Deserializer(*position++));
 }
 
 // ----------------------------------------------------------------------------
 
-const char * sub_deserializer::next_label() const
+const char * Sub_Deserializer::next_label() const
 {
 	return position.memberName();
 }
 
 // ----------------------------------------------------------------------------
 
-bool sub_deserializer::get_b8(const char * label)
+bool Sub_Deserializer::get_b8(const char * label)
 {
 	return (*position++).asBool();
 }
 
 // ----------------------------------------------------------------------------
 
-u32 sub_deserializer::get_u32(const char * label)
+u32 Sub_Deserializer::get_u32(const char * label)
 {
 	return (*position++).asUInt();
 }
 
 // ----------------------------------------------------------------------------
 
-int sub_deserializer::get_s32(const char * label)
+int Sub_Deserializer::get_s32(const char * label)
 {
 	return (*position++).asInt();
 }
 
 // ----------------------------------------------------------------------------
 
-r32 sub_deserializer::get_r32(const char * label)
+r32 Sub_Deserializer::get_r32(const char * label)
 {
 	return static_cast<r32>(get_r64(label));
 }
 
 // ----------------------------------------------------------------------------
 
-r64 sub_deserializer::get_r64(const char * label)
+r64 Sub_Deserializer::get_r64(const char * label)
 {
 	return (*position++).asDouble();
 }
 
 // ----------------------------------------------------------------------------
 
-const char * sub_deserializer::get_string(const char * label)
+const char * Sub_Deserializer::get_string(const char * label)
 {
 	return (*position++).asCString();
 }

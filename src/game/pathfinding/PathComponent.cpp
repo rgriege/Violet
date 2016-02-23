@@ -1,9 +1,9 @@
 // ============================================================================
 
-#include "game/pathfinding/PathComponent.h"
+#include "game/pathfinding/pathcomponent.h"
 
-#include "violet/serialization/Deserializer.h"
-#include "violet/serialization/Serializer.h"
+#include "violet/serialization/deserializer.h"
+#include "violet/serialization/serializer.h"
 
 // ============================================================================
 
@@ -14,11 +14,11 @@ Violet::Tag PathComponent::getStaticTag()
 
 // ============================================================================
 
-PathComponent::PathComponent(const Violet::EntityId entityId, Violet::Deserializer & deserializer) :
+PathComponent::PathComponent(const Violet::EntityId entityId, Violet::Deserializer & Deserializer) :
 	ComponentBase<PathComponent>(entityId),
 	m_path(),
 	m_lastIntersection(0),
-	m_speed(deserializer.getFloat("speed"))
+	m_speed(Deserializer.getFloat("speed"))
 {
 }
 
@@ -55,10 +55,10 @@ PathComponent::PathComponent(PathComponent && other) :
 
 // ============================================================================
 
-Violet::Serializer & operator<<(Violet::Serializer & serializer, const PathComponent & component)
+Violet::Serializer & operator<<(Violet::Serializer & Serializer, const PathComponent & component)
 {
-	serializer.writeFloat("speed", component.m_speed);
-	return serializer;
+	Serializer.writeFloat("speed", component.m_speed);
+	return Serializer;
 }
 
 // ============================================================================

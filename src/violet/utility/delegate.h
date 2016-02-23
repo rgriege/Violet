@@ -1,35 +1,37 @@
 #ifndef VIOLET_DELEGATE_H
 #define VIOLET_DELEGATE_H
 
+#include <functional>
+
 namespace vlt
 {
-	struct delegate_store
+	struct Delegate_Store
 	{
 		void * instance;
 		void(*function)();
 
-		delegate_store(void * instance, void(*function)()) :
+		Delegate_Store(void * instance, void(*function)()) :
 			instance(instance),
 			function(function)
 		{
 		}
 
-		bool operator==(const delegate_store & rhs) const
+		bool operator==(const Delegate_Store & rhs) const
 		{
 			return instance == rhs.instance && function == rhs.function;
 		}
 	};
 
 	template <typename Signature>
-	struct delegate;
+	struct Delegate;
 	template <typename ResultType, typename ... Args>
-	struct delegate<ResultType(Args...)> : public delegate_store
+	struct Delegate<ResultType(Args...)> : public Delegate_Store
 	{
 		template <typename T, ResultType(T::*Member)(Args...)>
-		static delegate bind(T * instance)
+		static Delegate bind(T * instance)
 		{
 			ResultType(*function)(T*, Args...) = call_member<T, Member>;
-			return delegate(instance, function);
+			return Delegate(instance, function);
 		}
 
 	private:
@@ -42,13 +44,13 @@ namespace vlt
 
 	public:
 
-		delegate(const delegate_store & store) :
-			delegate_store(store)
+		Delegate(const Delegate_Store & store) :
+			Delegate_Store(store)
 		{
 		}
 
-		delegate(ResultType(*function)(Args...)) :
-			delegate_store(nullptr, function)
+		Delegate(ResultType(*function)(Args...)) :
+			Delegate_Store(nullptr, function)
 		{
 		}
 
@@ -62,8 +64,8 @@ namespace vlt
 	private:
 
 		template <typename T>
-		delegate(T * instance, ResultType(*function)(T*, Args...)) :
-			delegate_store(instance, reinterpret_cast<void(*)()>(function))
+		Delegate(T * instance, ResultType(*function)(T*, Args...)) :
+			Delegate_Store(instance, reinterpret_cast<void(*)()>(function))
 		{
 		}
 	};

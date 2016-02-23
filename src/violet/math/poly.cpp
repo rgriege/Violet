@@ -9,18 +9,18 @@ using namespace vlt;
 
 // ============================================================================
 
-const char * const ms_segmentLabel("poly");
+const char * const ms_segmentLabel("Poly");
 
 // ============================================================================
 
-poly::poly(vector<v2> && vertices) :
+Poly::Poly(Vector<v2> && vertices) :
 	vertices(std::move(vertices))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-poly::poly(deserializer & deserializer) :
+Poly::Poly(Deserializer & deserializer) :
 	vertices()
 {
 	auto polygonSegment = deserializer.enter_segment(ms_segmentLabel);
@@ -29,7 +29,7 @@ poly::poly(deserializer & deserializer) :
 
 // ----------------------------------------------------------------------------
 
-poly::poly(const aabb & box) :
+Poly::Poly(const aabb & box) :
 	vertices()
 {
 	vertices.emplace_back(box.bottom_right);
@@ -40,9 +40,9 @@ poly::poly(const aabb & box) :
 
 // ----------------------------------------------------------------------------
 
-bool poly::contains(const v2 & point) const
+bool Poly::contains(const v2 & point) const
 {
-	static const interval interval(0, 1);
+	static const Interval interval(0, 1);
 	bool inside = false;
 	u32 const n = vertices.size();
 
@@ -68,7 +68,7 @@ bool poly::contains(const v2 & point) const
 
 // ----------------------------------------------------------------------------
 
-aabb poly::get_bounding_box() const
+aabb Poly::get_bounding_box() const
 {
 	aabb result{ get_center(), v2::Zero };
 	for (auto const & vertex : vertices)
@@ -78,7 +78,7 @@ aabb poly::get_bounding_box() const
 
 // ----------------------------------------------------------------------------
 
-void poly::translate(const v2 delta)
+void Poly::translate(const v2 delta)
 {
 	for (auto & vertex : vertices)
 		vertex += delta;
@@ -86,10 +86,10 @@ void poly::translate(const v2 delta)
 
 // ----------------------------------------------------------------------------
 
-interval poly::project(const v2 & axis) const
+Interval Poly::project(const v2 & axis) const
 {
 	const v2 & unitAxis = axis.is_unit() ? axis : axis.get_unit();
-	interval projection;
+	Interval projection;
 	for (const auto & vertex : vertices)
 	{
 		const r32 dp = vertex.dot(unitAxis);
@@ -103,7 +103,7 @@ interval poly::project(const v2 & axis) const
 
 // ----------------------------------------------------------------------------
 
-v2 poly::get_center() const
+v2 Poly::get_center() const
 {
 	v2 center;
 	for (auto const & vertex : vertices)
@@ -113,35 +113,35 @@ v2 poly::get_center() const
 
 // ----------------------------------------------------------------------------
 
-v2 & poly::operator[](u32 const index)
+v2 & Poly::operator[](u32 const index)
 {
 	return vertices[index];
 }
 
 // ----------------------------------------------------------------------------
 
-const v2 & poly::operator[](u32 const index) const
+const v2 & Poly::operator[](u32 const index) const
 {
 	return vertices[index];
 }
 
 // ----------------------------------------------------------------------------
 
-vector<v2>::iterator poly::begin()
+Vector<v2>::iterator Poly::begin()
 {
 	return vertices.begin();
 }
 
 // ----------------------------------------------------------------------------
 
-vector<v2>::iterator poly::end()
+Vector<v2>::iterator Poly::end()
 {
 	return vertices.end();
 }
 
 // ============================================================================
 
-serializer & vlt::operator<<(serializer & serializer, const poly & poly)
+Serializer & vlt::operator<<(Serializer & serializer, const Poly & poly)
 {
 	auto segment = serializer.create_segment(ms_segmentLabel);
 	serialize_vector(*segment, poly.vertices);
@@ -150,7 +150,7 @@ serializer & vlt::operator<<(serializer & serializer, const poly & poly)
 
 // ----------------------------------------------------------------------------
 
-deserializer & vlt::operator>>(deserializer & deserializer, poly & poly)
+Deserializer & vlt::operator>>(Deserializer & deserializer, Poly & poly)
 {
 	auto segment = deserializer.enter_segment(ms_segmentLabel);
 	poly.vertices = deserialize_vector<v2>(*segment);

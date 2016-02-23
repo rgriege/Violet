@@ -11,9 +11,9 @@ using namespace vlt;
 
 struct subscribe_task_data
 {
-	event_context * context;
+	Event_Context * context;
 	u32 identifier;
-	delegate_store func;
+	Delegate_Store func;
 };
 
 static void subscribe_task(void * mem)
@@ -22,18 +22,18 @@ static void subscribe_task(void * mem)
 	data->context->subscribe(data->identifier, data->func);
 }
 
-void event_base::subscribe(const event_context & context, const u32 identifier, const delegate_store & func)
+void Event_Base::subscribe(const Event_Context & context, const u32 identifier, const Delegate_Store & func)
 {
-	add_task(subscribe_task, new subscribe_task_data{ const_cast<event_context*>(&context), identifier, func }, 0, task_type::write);
+	add_task(subscribe_task, new subscribe_task_data{ const_cast<Event_Context*>(&context), identifier, func }, 0, task_type::write);
 }
 
 // ----------------------------------------------------------------------------
 
 struct unsubscribe_task_data
 {
-	event_context * context;
+	Event_Context * context;
 	u32 identifier;
-	delegate_store func;
+	Delegate_Store func;
 };
 
 static void unsubscribe_task(void * mem)
@@ -42,9 +42,9 @@ static void unsubscribe_task(void * mem)
 	data->context->unsubscribe(data->identifier, data->func);
 }
 
-void event_base::unsubscribe(const event_context & context, const u32 identifier, const delegate_store & func)
+void Event_Base::unsubscribe(const Event_Context & context, const u32 identifier, const Delegate_Store & func)
 {
-	add_task(unsubscribe_task, new unsubscribe_task_data{ const_cast<event_context*>(&context), identifier, func }, 0, task_type::write);
+	add_task(unsubscribe_task, new unsubscribe_task_data{ const_cast<Event_Context*>(&context), identifier, func }, 0, task_type::write);
 }
 
 // ============================================================================

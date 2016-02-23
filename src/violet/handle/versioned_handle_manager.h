@@ -5,26 +5,22 @@
 
 namespace vlt
 {
-	struct versioned_handle_manager
+	struct Versioned_Handle_Manager
 	{
-		versioned_handle_manager();
-		~versioned_handle_manager();
+		Handle_Manager manager;
+		std::vector<u16> versions;
 
-		versioned_handle_manager(versioned_handle_manager && other);
-		versioned_handle_manager & operator=(versioned_handle_manager && other);
+		Versioned_Handle_Manager();
+		Versioned_Handle_Manager(Versioned_Handle_Manager && other) = default;
+		Versioned_Handle_Manager & operator=(Versioned_Handle_Manager && other) = default;
 
-		handle create();
-		bool used(handle handle) const;
-		void free(handle handle);
-		void freeAll();
+		Handle create();
+		bool used(Handle Handle) const;
+		void free(Handle Handle);
+		void free_all();
 
-		std::vector<handle> getUsed() const;
+		std::vector<Handle> get_used() const;
 		u16 get_version(u16 id) const;
-
-	private:
-
-		handle_manager m_manager;
-		std::vector<u16> m_versions;
 	};
 }
 

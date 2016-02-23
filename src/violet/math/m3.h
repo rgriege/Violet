@@ -43,8 +43,8 @@ namespace vlt
 	VIOLET_API v2 operator*(const m3 & lhs, const v2 & rhs);
 	VIOLET_API bool operator==(const m3 & lhs, const m3 & rhs);
 	VIOLET_API bool operator!=(const m3 & lhs, const m3 & rhs);
-	VIOLET_API serializer & operator<<(serializer & serializer, const m3 & mat);
-	VIOLET_API deserializer & operator>>(deserializer & deserializer, m3 & mat);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const m3 & mat);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, m3 & mat);
 }
 
 #endif

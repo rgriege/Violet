@@ -8,12 +8,12 @@
 
 namespace edt
 {
-	struct EDITOR_API chain_command final : public command
+	struct EDITOR_API Chain_Command final : public Command
 	{
 	public:
 
-		chain_command(std::vector<std::unique_ptr<command>> && commands);
-		virtual ~chain_command() override = default;
+		Chain_Command(std::vector<std::unique_ptr<Command>> && commands);
+		virtual ~Chain_Command() override = default;
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;
@@ -21,12 +21,12 @@ namespace edt
 
 	private:
 
-		chain_command(const chain_command &) = delete;
-		chain_command & operator=(const chain_command &) = delete;
+		Chain_Command(const Chain_Command &) = delete;
+		Chain_Command & operator=(const Chain_Command &) = delete;
 
 	private:
 
-		std::vector<std::unique_ptr<command>> m_commands;
+		std::vector<std::unique_ptr<Command>> m_commands;
 	};
 }
 

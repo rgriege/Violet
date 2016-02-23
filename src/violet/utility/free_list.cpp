@@ -2,56 +2,56 @@
 
 using namespace vlt;
 
-free_list::free_list() :
-	m_usedList(),
-	m_recycleList()
+Free_List::Free_List() :
+	used_list(),
+	recycle_list()
 {
 }
 
-u32 free_list::reserve()
+u32 Free_List::reserve()
 {
-	if (!m_recycleList.empty())
+	if (!recycle_list.empty())
 	{
-		const u32 id = m_recycleList.front();
-		m_recycleList.pop();
-		m_usedList[id] = true;
+		const u32 id = recycle_list.front();
+		recycle_list.pop();
+		used_list[id] = true;
 		return id;
 	}
 	else
 	{
-		m_usedList.push_back(true);
-		return m_usedList.back();
+		used_list.push_back(true);
+		return used_list.back();
 	}
 }
 
-bool free_list::reserve(const u32 id)
+bool Free_List::reserve(const u32 id)
 {
 	if (available(id))
 	{
-		const u32 size = m_usedList.size();
+		const u32 size = used_list.size();
 		if (id >= size)
 		{
-			m_usedList.resize(id + 1);
+			used_list.resize(id + 1);
 			for (u32 i = size; i < id; ++i)
-				m_recycleList.push(i);
+				recycle_list.push(i);
 		}
-		m_usedList[id] = true;
+		used_list[id] = true;
 		return true;
 	}
 	else
 		return false;
 }
 
-bool free_list::available(const u32 id) const
+bool Free_List::available(const u32 id) const
 {
-	return id >= m_usedList.size() ? true : m_usedList[id];
+	return id >= used_list.size() ? true : used_list[id];
 }
 
-std::vector<u32> free_list::getUsed() const
+std::vector<u32> Free_List::get_used() const
 {
 	std::vector<u32> result;
 	u32 id = 0;
-	for (auto const & used : m_usedList)
+	for (auto const & used : used_list)
 	{
 		if (used)
 			result.emplace_back(id);
@@ -61,11 +61,11 @@ std::vector<u32> free_list::getUsed() const
 	return result;
 }
 
-void free_list::free(const u32 id)
+void Free_List::free(const u32 id)
 {
-	if (id < m_usedList.size())
+	if (id < used_list.size())
 	{
-		m_usedList[id] = false;
-		m_recycleList.push(id);
+		used_list[id] = false;
+		recycle_list.push(id);
 	}
 }

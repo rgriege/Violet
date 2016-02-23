@@ -8,20 +8,20 @@
 
 namespace vlt
 {
-	struct VIOLET_API json_deserializer final : public deserializer
+	struct VIOLET_API Json_Deserializer final : public Deserializer
 	{
 		Json::Value root;
 		Json::ValueConstIterator position;
 
 		static void install();
 
-		json_deserializer(std::istream & stream);
-		json_deserializer(json_deserializer && other);
-		virtual ~json_deserializer() override = default;
+		Json_Deserializer(std::istream & stream);
+		Json_Deserializer(Json_Deserializer && other);
+		virtual ~Json_Deserializer() override = default;
 
 		virtual bool is_valid() const override;
 
-		virtual std::unique_ptr<deserializer> enter_segment(const char * label) override;
+		virtual std::unique_ptr<Deserializer> enter_segment(const char * label) override;
 		virtual const char * next_label() const override;
 		
 		virtual bool get_b8(const char * label) override;

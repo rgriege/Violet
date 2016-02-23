@@ -1,9 +1,9 @@
-#include "test/game/PathfindingTest.h"
+#include "test/game/pathfindingtest.h"
 
-#include "game/pathfinding/Map.h"
-#include "game/pathfinding/Path.h"
-#include "test/core/TestEvaluator.h"
-#include "test/core/TestFactory.h"
+#include "game/pathfinding/map.h"
+#include "game/pathfinding/path.h"
+#include "test/core/testevaluator.h"
+#include "test/core/testfactory.h"
 
 #include <iostream>
 

@@ -1,36 +1,36 @@
 #ifndef VIOLET_PROFILER_H
 #define VIOLET_PROFILER_H
 
-#include "violet/core/defines.h"
-
 #include <chrono>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
+#include "violet/core/defines.h"
+
 namespace vlt
 {
-	struct profiler
+	struct Profiler
 	{
 	public:
 
 		static void flush_cache();
-		static profiler & instance();
+		static Profiler & instance();
 
 	public:
 
-		struct block
+		struct Block
 		{
 		public:
 
-			block(std::string key, profiler & profiler = instance());
-			~block();
+			Block(std::string key, Profiler & profiler = instance());
+			~Block();
 
 		private:
 
 			const std::string m_key;
-			profiler & m_profiler;
+			Profiler & m_profiler;
 			const std::chrono::steady_clock::time_point m_startTime;
 		};
 
@@ -84,9 +84,9 @@ namespace vlt
 			m_timeSinceLastReport += dt;
 			if (m_reportInterval >= m_timeSinceLastReport)
 			{
-				profiler::instance().add(m_label + "_min", m_min);
-				profiler::instance().add(m_label + "_max", m_max);
-				profiler::instance().add(m_label + "_avg", m_accumulation / static_cast<s64>(m_timeSinceLastReport * 1000000));
+				Profiler::instance().add(m_label + "_min", m_min);
+				Profiler::instance().add(m_label + "_max", m_max);
+				Profiler::instance().add(m_label + "_avg", m_accumulation / static_cast<s64>(m_timeSinceLastReport * 1000000));
 			}
 		}
 
@@ -104,7 +104,7 @@ namespace vlt
 	{
 	public:
 
-		static void set(std::string const & key, s64 value);
+		static void set(std::string const & Key, s64 value);
 		static void update(r32 dt);
 
 	private:

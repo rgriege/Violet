@@ -6,11 +6,11 @@ using namespace vlt;
 
 // ============================================================================
 
-random random::ms_generator;
+Random Random::ms_generator;
 
 // ============================================================================
 
-r32 random::generate_0_to_1()
+r32 Random::generate_0_to_1()
 {
 	return static_cast<r32>(m_device()) / static_cast<r32>(m_device.max());
 }

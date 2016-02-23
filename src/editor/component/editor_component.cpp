@@ -11,18 +11,18 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * editor_component::metadata;
+const Component_Metadata * Editor_Component::metadata;
 
 // ============================================================================
 
-editor_component::editor_component(const handle entity_id, const handle editId) :
-	proxied_id(editId)
+Editor_Component::Editor_Component(const Handle entity_id, const Handle _proxied_id) :
+	proxied_id(_proxied_id)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-editor_component::editor_component(const handle entity_id, const component_deserializer & /*deserializer*/) :
+Editor_Component::Editor_Component(const Handle entity_id, const Component_Deserializer & /*deserializer*/) :
 	proxied_id()
 {
 	assert(false);
@@ -30,7 +30,7 @@ editor_component::editor_component(const handle entity_id, const component_deser
 
 // ----------------------------------------------------------------------------
 
-editor_component::editor_component(editor_component && other) :
+Editor_Component::Editor_Component(Editor_Component && other) :
 	proxied_id(other.proxied_id)
 {
 }
@@ -39,13 +39,13 @@ editor_component::editor_component(editor_component && other) :
 
 void edt::install_editor_component()
 {
-	editor_component::metadata = vlt::init_component_metadata(tag('e', 'd', 't', 'r'), 0, sizeof(editor_component));
-	vlt::scene::install_component<editor_component>();
+	Editor_Component::metadata = vlt::init_component_metadata(Tag('e', 'd', 't', 'r'), 0, sizeof(Editor_Component));
+	vlt::Scene::install_component<Editor_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & edt::operator<<(serializer & serializer, const editor_component & /*component*/)
+Serializer & edt::operator<<(Serializer & serializer, const Editor_Component & /*component*/)
 {
 	assert(false);
 	return serializer;

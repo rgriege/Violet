@@ -1,21 +1,21 @@
 #ifndef VIOLET_RIGID_BODY_H
 #define VIOLET_RIGID_BODY_H
 
+#include <vector>
+
 #include "violet/math/interval.h"
 #include "violet/math/poly.h"
 #include "violet/math/v2.h"
 
-#include <vector>
-
 namespace vlt
 {
-	struct world_transform_component;
-	struct physics_component;
+	struct World_Transform_Component;
+	struct Physics_Component;
 
-	struct VIOLET_API rigid_body final
+	struct VIOLET_API Rigid_Body final
 	{
-		rigid_body(const world_transform_component & transform, const physics_component & physics);
-		rigid_body(v2 && center, poly && poly, r32 mass);
+		Rigid_Body(const World_Transform_Component & transform, const Physics_Component & physics);
+		Rigid_Body(v2 && center, Poly && poly, r32 mass);
 
 		const v2 & get_center();
 		const v2 & getVelocity();
@@ -24,16 +24,16 @@ namespace vlt
 		void rotate(r32 radians);
 		void applyImpulse(v2 impulse, const v2 & location = v2::Zero);
 
-		interval project(const v2 & axis) const;
+		Interval project(const v2 & axis) const;
 		r32 maxRadius() const;
-		void findIntersectionAxes(const rigid_body & other, std::vector<v2> & axes) const;
+		void findIntersectionAxes(const Rigid_Body & other, std::vector<v2> & axes) const;
 		void findClosestVertices(const v2 & axis, const v2 & goal, std::vector<v2> & vertices) const;
 
 	private:
 
 		v2 m_center;
 		r32 m_rotation;
-		poly m_polygon;
+		Poly m_polygon;
 		r32 m_mass;
 		v2 m_velocity;
 		v2 m_force;

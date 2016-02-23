@@ -1,32 +1,28 @@
 #ifndef VIOLET_FORMATTED_STRING_H
 #define VIOLET_FORMATTED_STRING_H
 
-#include "violet/core/types.h"
-
 #include <cstdarg>
+
+#include "violet/core/types.h"
 
 namespace vlt
 {
-	template <u32 bufferSize>
-	struct formatted_string
+	template <u32 BufferSize>
+	struct Formatted_String
 	{
-	public:
+		char buffer[BufferSize];
 
 		const char * sprintf(const char * format, ...);
-
-	private:
-
-		char m_buffer[bufferSize];
 	};
 
-	template <u32 bufferSize>
-	const char * formatted_string<bufferSize>::sprintf(const char * format, ...)
+	template <u32 BufferSize>
+	const char * Formatted_String<BufferSize>::sprintf(const char * format, ...)
 	{
 		va_list args;
 		va_start(args, format);
-		vsnprintf(m_buffer, bufferSize, format, args);
+		vsnprintf(buffer, BufferSize, format, args);
 		va_end(args);
-		return m_buffer;
+		return buffer;
 	}
 }
 

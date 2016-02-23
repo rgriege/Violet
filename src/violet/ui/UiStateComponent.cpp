@@ -1,13 +1,13 @@
 // ============================================================================
 
-#include "violet/ui/UiStateComponent.h"
+#include "violet/ui/uistatecomponent.h"
 
-#include "violet/entity/Entity.h"
-#include "violet/handle/HandleComponent.h"
-#include "violet/serialization/Deserializer.h"
-#include "violet/serialization/Serializer.h"
-#include "violet/serialization/SerializationUtilities.h"
-#include "violet/serialization/file/FileDeserializerFactory.h"
+#include "violet/entity/entity.h"
+#include "violet/handle/handlecomponent.h"
+#include "violet/serialization/deserializer.h"
+#include "violet/serialization/serializer.h"
+#include "violet/serialization/serializationutilities.h"
+#include "violet/serialization/file/filedeserializerfactory.h"
 
 using namespace Violet;
 
@@ -20,30 +20,30 @@ Tag UiStateComponent::getStaticTag()
 
 // ============================================================================
 
-UiStateComponent::UiStateComponent(const Handle entityId, Deserializer & deserializer) :
+UiStateComponent::UiStateComponent(const Handle entityId, Deserializer & Deserializer) :
 	ComponentBase<UiStateComponent>(entityId),
-	m_currentIndex(deserializer.getUint("index")),
+	m_currentIndex(Deserializer.getUint("index")),
 	m_currentHandle(),
 	m_states()
 {
-	auto const & stateFilenames = SerializationUtilities::deserializeElements<std::string>(deserializer);
+	auto const & stateFilenames = SerializationUtilities::deserializeElements<std::string>(Deserializer);
 	uint32 index = 0;
 	for (auto const & subElementFilename : stateFilenames)
 	{
-		auto const deserializer = FileDeserializerFactory::getInstance().create(subElementFilename.c_str());
-		if (deserializer != nullptr)
+		auto const Deserializer = FileDeserializerFactory::getInstance().create(subElementFilename.c_str());
+		if (Deserializer != nullptr)
 		{
 			if (index == m_currentIndex)
 			{
 				m_states.emplace_back(make_unique_val<Entity>(entityId.getScene()));
-				auto & child = m_entityId.addChild(make_unique_val<Entity>(entityId.getScene(), *deserializer));
+				auto & child = m_entityId.addChild(make_unique_val<Entity>(entityId.getScene(), *Deserializer));
 				if (!child.hasComponent<HandleComponent>())
 					child.addComponent<HandleComponent>();
 				m_currentHandle = child.getComponent<HandleComponent>()->getHandle();
 			}
 			else
 			{
-				m_states.emplace_back(make_unique_val<Entity>(entityId.getScene(), *deserializer));
+				m_states.emplace_back(make_unique_val<Entity>(entityId.getScene(), *Deserializer));
 				auto & child = *m_states.back();
 				if (!child.hasComponent<HandleComponent>())
 					child.addComponent<HandleComponent>();
@@ -99,16 +99,16 @@ void UiStateComponent::setCurrentIndex(const uint32 index)
 
 // ============================================================================
 
-Serializer & Violet::operator<<(Serializer & serializer, const UiStateComponent & component)
+Serializer & Violet::operator<<(Serializer & Serializer, const UiStateComponent & component)
 {
-	return serializer;
+	return Serializer;
 }
 
 // ----------------------------------------------------------------------------
 
-Deserializer & Violet::operator>>(Deserializer & deserializer, UiStateComponent & component)
+Deserializer & Violet::operator>>(Deserializer & Deserializer, UiStateComponent & component)
 {
-	return deserializer;
+	return Deserializer;
 }
 
 // ============================================================================

@@ -83,16 +83,16 @@ bool aabb::contains(const v2 & point) const
 
 bool aabb::contains(const aabb & other) const
 {
-	return interval(top_left.x, bottom_right.x).contains(interval(other.top_left.x, other.bottom_right.x))
-		&& interval(top_left.y, bottom_right.y).contains(interval(other.top_left.y, other.bottom_right.y));
+	return Interval(top_left.x, bottom_right.x).contains(Interval(other.top_left.x, other.bottom_right.x))
+		&& Interval(top_left.y, bottom_right.y).contains(Interval(other.top_left.y, other.bottom_right.y));
 }
 
 // ----------------------------------------------------------------------------
 
 bool aabb::overlaps(const aabb & other) const
 {
-	return interval(top_left.x, bottom_right.x).overlaps(interval(other.top_left.x, other.bottom_right.x))
-		&& interval(top_left.y, bottom_right.y).overlaps(interval(other.top_left.y, other.bottom_right.y));
+	return Interval(top_left.x, bottom_right.x).overlaps(Interval(other.top_left.x, other.bottom_right.x))
+		&& Interval(top_left.y, bottom_right.y).overlaps(Interval(other.top_left.y, other.bottom_right.y));
 }
 
 // ----------------------------------------------------------------------------
@@ -125,7 +125,7 @@ aabb & aabb::translate(const v2 & offset)
 
 aabb & aabb::transform(const m3 & transformation)
 {
-	*this = poly{ {
+	*this = Poly{ {
 			transformation * top_left,
 			transformation * v2{ bottom_right.x, top_left.y },
 			transformation * bottom_right,

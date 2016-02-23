@@ -6,14 +6,14 @@
 
 namespace vlt
 {
-	struct VIOLET_API circle
+	struct VIOLET_API Circle
 	{
 		const v2 center;
 		const r32 radius;
 
-		circle();
-		circle(const v2 & center, r32 radius);
-		interval project(const v2 & axis) const;
+		Circle();
+		Circle(const v2 & center, r32 radius);
+		Interval project(const v2 & axis) const;
 	};
 }
 

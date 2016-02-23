@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename StreamSerializer>
-vlt::file_serializer<StreamSerializer>::file_serializer(std::filebuf && _file) :
+vlt::File_Serializer<StreamSerializer>::File_Serializer(std::filebuf && _file) :
 	file(std::move(_file)),
 	stream(&file),
 	stream_serializer(stream)
@@ -11,14 +11,14 @@ vlt::file_serializer<StreamSerializer>::file_serializer(std::filebuf && _file) :
 // ----------------------------------------------------------------------------
 
 template <typename StreamSerializer>
-vlt::file_serializer<StreamSerializer>::~file_serializer()
+vlt::File_Serializer<StreamSerializer>::~File_Serializer()
 {
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename StreamSerializer>
-vlt::unique_val<vlt::serializer> vlt::file_serializer<StreamSerializer>::create_segment(const char * label)
+vlt::unique_val<vlt::Serializer> vlt::File_Serializer<StreamSerializer>::create_segment(const char * label)
 {
 	return stream_serializer.create_segment(label);
 }
@@ -26,7 +26,7 @@ vlt::unique_val<vlt::serializer> vlt::file_serializer<StreamSerializer>::create_
 // ----------------------------------------------------------------------------
 
 template <typename StreamSerializer>
-void vlt::file_serializer<StreamSerializer>::write_b8(const char * label, bool const value)
+void vlt::File_Serializer<StreamSerializer>::write_b8(const char * label, bool const value)
 {
 	stream_serializer.write_b8(label, value);
 }
@@ -34,7 +34,7 @@ void vlt::file_serializer<StreamSerializer>::write_b8(const char * label, bool c
 // ----------------------------------------------------------------------------
 
 template <typename StreamSerializer>
-void vlt::file_serializer<StreamSerializer>::write_u32(const char * label, u32 const value)
+void vlt::File_Serializer<StreamSerializer>::write_u32(const char * label, u32 const value)
 {
 	stream_serializer.write_u32(label, value);
 }
@@ -42,7 +42,7 @@ void vlt::file_serializer<StreamSerializer>::write_u32(const char * label, u32 c
 // ----------------------------------------------------------------------------
 
 template <typename StreamSerializer>
-void vlt::file_serializer<StreamSerializer>::write_s32(const char * label, s32 const value)
+void vlt::File_Serializer<StreamSerializer>::write_s32(const char * label, s32 const value)
 {
 	stream_serializer.write_s32(label, value);
 }
@@ -50,7 +50,7 @@ void vlt::file_serializer<StreamSerializer>::write_s32(const char * label, s32 c
 // ----------------------------------------------------------------------------
 
 template <typename StreamSerializer>
-void vlt::file_serializer<StreamSerializer>::write_r32(const char * label, r32 const value)
+void vlt::File_Serializer<StreamSerializer>::write_r32(const char * label, r32 const value)
 {
 	stream_serializer.write_r32(label, value);
 }
@@ -58,7 +58,7 @@ void vlt::file_serializer<StreamSerializer>::write_r32(const char * label, r32 c
 // ----------------------------------------------------------------------------
 
 template <typename StreamSerializer>
-void vlt::file_serializer<StreamSerializer>::write_r64(const char * label, r64 const value)
+void vlt::File_Serializer<StreamSerializer>::write_r64(const char * label, r64 const value)
 {
 	stream_serializer.write_r64(label, value);
 }
@@ -66,7 +66,7 @@ void vlt::file_serializer<StreamSerializer>::write_r64(const char * label, r64 c
 // ----------------------------------------------------------------------------
 
 template <typename StreamSerializer>
-void vlt::file_serializer<StreamSerializer>::write_string(const char * label, const char * value)
+void vlt::File_Serializer<StreamSerializer>::write_string(const char * label, const char * value)
 {
 	stream_serializer.write_string(label, value);
 }

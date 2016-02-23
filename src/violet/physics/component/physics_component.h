@@ -8,12 +8,12 @@
 
 namespace vlt
 {
-	struct component_deserializer;
-	struct serializer;
+	struct Component_Deserializer;
+	struct Serializer;
 
-	struct VIOLET_API physics_component
+	struct VIOLET_API Physics_Component
 	{
-		poly m_polygon;
+		Poly m_polygon;
 		r32 m_mass;
 		v2 m_velocity;
 		v2 m_force;
@@ -21,16 +21,16 @@ namespace vlt
 		r32 m_angularVelocity;
 		r32 m_torque;
 
-		static const component_metadata * metadata;
+		static const Component_Metadata * metadata;
 
-		physics_component(handle entity_id, component_deserializer & deserializer);
-		physics_component(physics_component && other);
+		Physics_Component(Handle entity_id, Component_Deserializer & deserializer);
+		Physics_Component(Physics_Component && other);
 	};
 
 	VIOLET_API void install_physics_component();
 
-	VIOLET_API component_deserializer & operator>>(component_deserializer & deserializer, physics_component & component);
-	VIOLET_API serializer & operator<<(serializer & serializer, const physics_component & component);
+	VIOLET_API Component_Deserializer & operator>>(Component_Deserializer & deserializer, Physics_Component & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Physics_Component & component);
 }
 
 #endif

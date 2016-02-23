@@ -10,42 +10,42 @@
 
 namespace vlt
 {
-	struct VIOLET_API file_serializer_factory
+	struct VIOLET_API File_Serializer_Factory
 	{
-		static file_serializer_factory & instance();
+		static File_Serializer_Factory & instance();
 
 	private:
 
 		template <typename StreamSerializer>
-		static std::unique_ptr<serializer> produce(std::filebuf && file);
+		static std::unique_ptr<Serializer> produce(std::filebuf && file);
 
 	public:
 
 		template <typename T>
 		void assign(const char * extension);
-		std::unique_ptr<serializer> create(const char * filename);
+		std::unique_ptr<Serializer> create(const char * filename);
 		void remove(const char * extension);
 
 	private:
 
-		file_serializer_factory();
+		File_Serializer_Factory();
 
-		file_serializer_factory(const file_serializer_factory &) = delete;
-		file_serializer_factory & operator=(const file_serializer_factory &) = delete;
+		File_Serializer_Factory(const File_Serializer_Factory &) = delete;
+		File_Serializer_Factory & operator=(const File_Serializer_Factory &) = delete;
 
 	private:
 
-		factory<const char *, std::unique_ptr<serializer>(std::filebuf &&)> m_factory;
+		Factory<const char *, std::unique_ptr<Serializer>(std::filebuf &&)> m_factory;
 	};
 
 	template <typename StreamSerializer>
-	std::unique_ptr<serializer> file_serializer_factory::produce(std::filebuf && file)
+	std::unique_ptr<Serializer> File_Serializer_Factory::produce(std::filebuf && file)
 	{
-		return std::unique_ptr<serializer>(new file_serializer<StreamSerializer>(std::move(file)));
+		return std::unique_ptr<Serializer>(new File_Serializer<StreamSerializer>(std::move(file)));
 	}
 
 	template <typename T>
-	void file_serializer_factory::assign(const char * extension)
+	void File_Serializer_Factory::assign(const char * extension)
 	{
 		m_factory.assign(extension, &produce<T>);
 	}

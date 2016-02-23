@@ -1,9 +1,9 @@
 #ifndef GAME_PathComponent_H
 #define GAME_PathComponent_H
 
-#include "violet/component/Component.h"
-#include "game/Config.h"
-#include "game/pathfinding/Path.h"
+#include "violet/component/component.h"
+#include "game/config.h"
+#include "game/pathfinding/path.h"
 
 namespace Violet
 {
@@ -18,7 +18,7 @@ public:
 
 public:
 
-	PathComponent(Violet::EntityId entityId, Violet::Deserializer & deserializer);
+	PathComponent(Violet::EntityId entityId, Violet::Deserializer & Deserializer);
 	PathComponent(Violet::EntityId entityId, float speed, Path && path);
 	PathComponent(PathComponent && other);
 	//PathComponent & operator=(PathComponent && other);
@@ -34,6 +34,6 @@ public:
 	float m_speed;
 };
 
-Violet::Serializer & operator<<(Violet::Serializer & serializer, const PathComponent & component);
+Violet::Serializer & operator<<(Violet::Serializer & Serializer, const PathComponent & component);
 
 #endif

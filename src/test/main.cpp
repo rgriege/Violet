@@ -1,12 +1,12 @@
-#include "test/core/TestEvaluator.h"
-#include "test/core/TestFactory.h"
-#include "test/game/PathfindingTest.h"
-#include "test/lua/LuaTest.h"
-#include "test/math/MathTest.h"
-#include "test/physics/PhysicsTest.h"
-#include "test/serialization/JsonSerializationTest.h"
-#include "test/task/TaskTest.h"
-#include "test/template/TemplateTest.h"
+#include "test/core/testevaluator.h"
+#include "test/core/testfactory.h"
+#include "test/game/pathfindingtest.h"
+#include "test/lua/luatest.h"
+#include "test/math/mathtest.h"
+#include "test/physics/physicstest.h"
+#include "test/serialization/jsonserializationtest.h"
+#include "test/task/tasktest.h"
+#include "test/template/templatetest.h"
 
 #include <iostream>
 

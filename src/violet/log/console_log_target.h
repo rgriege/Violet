@@ -6,9 +6,9 @@
 
 namespace vlt
 {
-	struct VIOLET_API console_log_target final : public log_target
+	struct VIOLET_API Console_Log_Target final : public Log_Target
 	{
-		virtual ~console_log_target() override;
+		virtual ~Console_Log_Target() override;
 		virtual void log(const char * entry) override;
 	};
 }

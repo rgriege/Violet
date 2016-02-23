@@ -2,8 +2,8 @@
 
 #include "violet/physics/collision/intersection.h"
 
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 using namespace vlt;
 
@@ -14,7 +14,7 @@ namespace IntersectionNamespace
 	const r32 ms_impactTimeDiffThreshold = 0.01f;
 	const r32 ms_overlapThreshold = 0.2f;
 
-	void getEdgePerpendiculars(const vector<v2> & vertices, std::vector<v2> & perpendiculars);
+	void getEdgePerpendiculars(const Vector<v2> & vertices, std::vector<v2> & perpendiculars);
 }
 
 using namespace IntersectionNamespace;
@@ -23,18 +23,18 @@ using namespace IntersectionNamespace;
 
 // ============================================================================
 
-bool intersection::test(const v2 & start1, const v2 & end1, const v2 & start2, const v2 & end2)
+bool Intersection::test(const v2 & start1, const v2 & end1, const v2 & start2, const v2 & end2)
 {
-	v2 intersection;
-	return test(start1, end1, start2, end2, intersection);
+	v2 Intersection;
+	return test(start1, end1, start2, end2, Intersection);
 }
 
 // ----------------------------------------------------------------------------
 
-bool intersection::test(const v2 & start1, const v2 & end1, const v2 & start2, const v2 & end2, v2 & intersection)
+bool Intersection::test(const v2 & start1, const v2 & end1, const v2 & start2, const v2 & end2, v2 & intersection)
 {
 	/*
-	 * (Uppercase = vector, lowercase = scalar)
+	 * (Uppercase = Vector, lowercase = scalar)
 	 * The two lines PR and QS intersect if there exists scalars t & u such that
 	 * P + tR = Q + uS
 	 *
@@ -69,7 +69,7 @@ bool intersection::test(const v2 & start1, const v2 & end1, const v2 & start2, c
 
 // ----------------------------------------------------------------------------
 
-bool intersection::test(const poly & poly, const v2 & start, const v2 & end, const bool hollow)
+bool Intersection::test(const Poly & poly, const v2 & start, const v2 & end, const bool hollow)
 {
 	v2 intersection;
 	return test(poly, start, end, intersection, hollow);
@@ -77,7 +77,7 @@ bool intersection::test(const poly & poly, const v2 & start, const v2 & end, con
 
 // ----------------------------------------------------------------------------
 
-bool intersection::test(const poly & poly, const v2 & start, const v2 & end, v2 & intersection, const bool hollow)
+bool Intersection::test(const Poly & poly, const v2 & start, const v2 & end, v2 & intersection, const bool hollow)
 {
 	if (test(poly.vertices.back(), poly.vertices.front(), start, end, intersection))
 		return true;
@@ -93,14 +93,14 @@ bool intersection::test(const poly & poly, const v2 & start, const v2 & end, v2 
 
 // ----------------------------------------------------------------------------
 
-bool intersection::test(const poly & poly1, const poly & poly2)
+bool Intersection::test(const Poly & poly1, const Poly & poly2)
 {
 	return test(poly1, poly2, poly2.get_center() - poly1.get_center());
 }
 
 // ----------------------------------------------------------------------------
 
-bool intersection::test(const poly & poly1, const poly & poly2, const v2 & centerToCenter)
+bool Intersection::test(const Poly & poly1, const Poly & poly2, const v2 & centerToCenter)
 {
 	if (!poly1.project(v2::X_Axis).overlaps(poly2.project(v2::X_Axis).slide(centerToCenter.dot(v2::X_Axis)))
 		|| !poly1.project(v2::Y_Axis).overlaps(poly2.project(v2::Y_Axis).slide(centerToCenter.dot(v2::Y_Axis))))
@@ -126,7 +126,7 @@ bool intersection::test(const poly & poly1, const poly & poly2, const v2 & cente
 
 // ============================================================================
 
-intersection::intersection(rigid_body && rb1, rigid_body && rb2, const r32 frameTime) :
+Intersection::Intersection(Rigid_Body && rb1, Rigid_Body && rb2, const r32 frameTime) :
 	m_rb1(std::move(rb1)),
 	m_rb2(std::move(rb2)),
 	m_frameTime(frameTime),
@@ -141,7 +141,7 @@ intersection::intersection(rigid_body && rb1, rigid_body && rb2, const r32 frame
 	m_rb2.translate(m_rb2.getVelocity() * m_frameTime);
 }
 
-intersection::intersection(intersection && other) :
+Intersection::Intersection(Intersection && other) :
 	m_rb1(std::move(other.m_rb1)),
 	m_rb2(std::move(other.m_rb2)),
 	m_frameTime(std::move(other.m_frameTime)),
@@ -153,7 +153,7 @@ intersection::intersection(intersection && other) :
 {
 }
 
-bool intersection::exists() const
+bool Intersection::exists() const
 {
 	if (m_tested)
 		return !m_axis.is_zero();
@@ -174,7 +174,7 @@ bool intersection::exists() const
 	return true;
 }
 
-v2 const & intersection::getIntersectionAxis() const
+v2 const & Intersection::getIntersectionAxis() const
 {
 	if (!m_tested)
 		exists();
@@ -182,7 +182,7 @@ v2 const & intersection::getIntersectionAxis() const
 	return m_axis;
 }
 
-r32 intersection::getOverlapDistance() const
+r32 Intersection::getOverlapDistance() const
 {
 	if (!m_tested)
 		exists();
@@ -190,7 +190,7 @@ r32 intersection::getOverlapDistance() const
 	return m_overlapDistance;
 }
 
-r32 intersection::getTimeOfImpact() const
+r32 Intersection::getTimeOfImpact() const
 {
 	if (!m_tested)
 		exists();
@@ -198,7 +198,7 @@ r32 intersection::getTimeOfImpact() const
 	return m_timeOfImpact;
 }
 
-v2 const & intersection::getImpactLocation() const
+v2 const & Intersection::getImpactLocation() const
 {
 	if (!m_tested)
 		exists();
@@ -206,13 +206,13 @@ v2 const & intersection::getImpactLocation() const
 	return m_impactLocation;
 }
 
-bool intersection::boundsOverlap() const
+bool Intersection::boundsOverlap() const
 {
 	return	m_rb1.project(v2::X_Axis).overlaps(m_rb2.project(v2::X_Axis))
 		   && m_rb1.project(v2::Y_Axis).overlaps(m_rb2.project(v2::Y_Axis));
 }
 
-std::pair<std::vector<v2>, u32> intersection::findPossibleIntersectionAxes() const
+std::pair<std::vector<v2>, u32> Intersection::findPossibleIntersectionAxes() const
 {
 	std::vector<v2> intersectionAxes;
 	m_rb1.findIntersectionAxes(m_rb1, intersectionAxes);
@@ -225,7 +225,7 @@ std::pair<std::vector<v2>, u32> intersection::findPossibleIntersectionAxes() con
 	return std::make_pair(intersectionAxes, shape1Axes);
 }
 
-void intersection::findIntersectionAxis(const std::pair<std::vector<v2>, u32> & possibleAxes) const
+void Intersection::findIntersectionAxis(const std::pair<std::vector<v2>, u32> & possibleAxes) const
 {
 	r32 minimumOverlap = std::numeric_limits<r32>::max();
 	u32 intersectionAxisIndex = 0;
@@ -252,7 +252,7 @@ void intersection::findIntersectionAxis(const std::pair<std::vector<v2>, u32> & 
 		m_axis.invert();
 }
 
-r32 intersection::findTimeOfImpact() const
+r32 Intersection::findTimeOfImpact() const
 {
 	r32 impactTime = m_frameTime;
 	r32 dt = -impactTime / 2;
@@ -269,7 +269,7 @@ r32 intersection::findTimeOfImpact() const
 	return impactTime;
 }
 
-v2 intersection::findImpactVector() const
+v2 Intersection::findImpactVector() const
 {
 	std::vector<v2> closestVertices;
 
@@ -293,7 +293,7 @@ v2 intersection::findImpactVector() const
 
 // ============================================================================
 
-void IntersectionNamespace::getEdgePerpendiculars(const vector<v2> & vertices, std::vector<v2> & perpendiculars)
+void IntersectionNamespace::getEdgePerpendiculars(const Vector<v2> & vertices, std::vector<v2> & perpendiculars)
 {
 	perpendiculars.emplace_back((vertices.front() - vertices.back()).perpendicular());
 	for (u32 i = 1, end = vertices.size(); i < end; ++i)

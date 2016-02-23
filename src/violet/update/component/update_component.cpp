@@ -8,23 +8,23 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * update_component::metadata;
+const Component_Metadata * Update_Component::metadata;
 
 // ============================================================================
 
-update_component::update_component(const handle entity_id)
+Update_Component::Update_Component(const Handle entity_id)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-update_component::update_component(const handle entity_id, component_deserializer & /*deserializer*/)
+Update_Component::Update_Component(const Handle entity_id, Component_Deserializer & /*deserializer*/)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-update_component::update_component(update_component && other)
+Update_Component::Update_Component(Update_Component && other)
 {
 }
 
@@ -32,20 +32,20 @@ update_component::update_component(update_component && other)
 
 void vlt::install_update_component()
 {
-	update_component::metadata = init_component_metadata(tag('u', 'p', 'd', 't'), 0, sizeof(update_component));
-	scene::install_component<update_component>();
+	Update_Component::metadata = init_component_metadata(Tag('u', 'p', 'd', 't'), 0, sizeof(Update_Component));
+	Scene::install_component<Update_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & vlt::operator>>(component_deserializer & deserializer, update_component & /*component*/)
+Component_Deserializer & vlt::operator>>(Component_Deserializer & deserializer, Update_Component & /*component*/)
 {
 	return deserializer;
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const update_component & /*component*/)
+Serializer & vlt::operator<<(Serializer & serializer, const Update_Component & /*component*/)
 {
 	return serializer;
 }

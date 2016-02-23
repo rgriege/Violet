@@ -10,27 +10,20 @@
 
 namespace vlt
 {
-	struct VIOLET_API event_context
+	struct VIOLET_API Event_Context
 	{
-	public:
+		std::unordered_map<u32, std::vector<Delegate_Store>> subscriber_groups;
 
-		event_context();
-		event_context(event_context && other);
+		Event_Context();
+		Event_Context(const Event_Context &) = delete;
+		Event_Context & operator=(const Event_Context &) = delete;
+		Event_Context(Event_Context && other);
 
-		void subscribe(u32 event_id, const delegate_store & func);
-		void unsubscribe(u32 event_id, const delegate_store & func);
+		void subscribe(u32 event_id, const Delegate_Store & func);
+		void unsubscribe(u32 event_id, const Delegate_Store & func);
 
 		template <typename ... Args>
 		void emit(u32 event_id, Args && ... args) const;
-
-	private:
-
-		event_context(const event_context &) = delete;
-		event_context & operator=(const event_context &) = delete;
-
-	private:
-
-		std::unordered_map<u32, std::vector<delegate_store>> subscriber_groups;
 	};
 }
 

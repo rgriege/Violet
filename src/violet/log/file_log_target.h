@@ -1,23 +1,23 @@
 #ifndef VIOLET_FILE_LOG_TARGET_H
 #define VIOLET_FILE_LOG_TARGET_H
 
-#include "violet/log/log.h"
-
 #include <fstream>
-#include <streambuf>
 #include <memory>
+#include <streambuf>
+
+#include "violet/log/log.h"
 
 namespace vlt
 {
-	struct VIOLET_API file_log_target : public log_target
+	struct VIOLET_API File_Log_Target final : public Log_Target
 	{
-		std::filebuf m_file;
-		std::ostream m_stream;
+		std::filebuf file;
+		std::ostream stream;
 
-		static std::unique_ptr<file_log_target> create(const char * filename);
+		static std::unique_ptr<File_Log_Target> create(const char * filename);
 
-		file_log_target(std::filebuf && file);
-		virtual ~file_log_target() override;
+		File_Log_Target(std::filebuf && file);
+		virtual ~File_Log_Target() override;
 
 		virtual void log(const char * entry) override;
 

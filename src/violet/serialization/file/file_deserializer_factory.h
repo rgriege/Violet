@@ -10,32 +10,32 @@
 
 namespace vlt
 {
-	struct VIOLET_API file_deserializer_factory
+	struct VIOLET_API File_Deserializer_Factory
 	{
-		static file_deserializer_factory & instance();
+		static File_Deserializer_Factory & instance();
 
 	private:
 
 		template <typename StreamDeserializer>
-		static std::unique_ptr<deserializer> produce(std::filebuf && file);
+		static std::unique_ptr<Deserializer> produce(std::filebuf && file);
 
 	public:
 
 		template <typename T>
 		void assign(const char * extension);
-		std::unique_ptr<deserializer> create(const char * filename);
+		std::unique_ptr<Deserializer> create(const char * filename);
 		void remove(const char * extension);
 
 	private:
 
-		file_deserializer_factory();
+		File_Deserializer_Factory();
 
-		file_deserializer_factory(const file_deserializer_factory &) = delete;
-		file_deserializer_factory & operator=(const file_deserializer_factory &) = delete;
+		File_Deserializer_Factory(const File_Deserializer_Factory &) = delete;
+		File_Deserializer_Factory & operator=(const File_Deserializer_Factory &) = delete;
 
 	private:
 
-		factory<const char *, std::unique_ptr<deserializer>(std::filebuf &&)> m_factory;
+		Factory<const char *, std::unique_ptr<Deserializer>(std::filebuf &&)> m_factory;
 	};
 }
 

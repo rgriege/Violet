@@ -5,7 +5,7 @@
 #include "editor/editor_system.h"
 #include "violet/core/engine.h"
 #include "violet/component/scene.h"
-#include "violet/log/Log.h"
+#include "violet/log/log.h"
 #include "violet/serialization/file/file_deserializer_factory.h"
 #include "violet/utility/formatted_string.h"
 #include "violet/utility/memory.h"
@@ -21,28 +21,28 @@ static void cleanup(std::string tempFileName);
 
 // ============================================================================
 
-const char * clear_command::get_usage()
+const char * Clear_Command::get_usage()
 {
 	return "clear";
 }
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<command> clear_command::parse(const std::string & text)
+std::unique_ptr<Command> Clear_Command::parse(const std::string & text)
 {
-	return text.empty() ? std::make_unique<clear_command>() : nullptr;
+	return text.empty() ? std::make_unique<Clear_Command>() : nullptr;
 }
 
 // ============================================================================
 
-clear_command::clear_command() :
+Clear_Command::Clear_Command() :
 	temp_filename()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-clear_command::~clear_command()
+Clear_Command::~Clear_Command()
 {
 	if (!temp_filename.empty())
 		cleanup(temp_filename);
@@ -50,29 +50,29 @@ clear_command::~clear_command()
 
 // ----------------------------------------------------------------------------
 
-void clear_command::execute()
+void Clear_Command::execute()
 {
-	const auto & editor = *engine::instance().get_system<editor_system>();
-	const auto & proxy_scene = engine::instance().get_current_scene();
+	const auto & editor = *Engine::instance().get_system<Editor_System>();
+	const auto & proxy_scene = Engine::instance().get_current_scene();
 	const auto & proxied_scene = editor.get_scene();
 	const auto entity_ids = proxied_scene.get_entity_ids();
 	if (!entity_ids.empty())
 	{
-		temp_filename = string_utilities::rightOfFirst(formatted_string<32>().sprintf("%.6f.json", random::ms_generator.generate_0_to_1()), '.');
+		temp_filename = String_Utilities::rightOfFirst(Formatted_String<32>().sprintf("%.6f.json", Random::ms_generator.generate_0_to_1()), '.');
 
 		proxied_scene.save(temp_filename.c_str(), entity_ids);
 
 		for (const auto entity_id : entity_ids)
 			proxied_scene.remove_all(entity_id);
 
-		for (const auto & entity : proxy_scene.get_entity_view<editor_component>())
+		for (const auto & entity : proxy_scene.get_entity_view<Editor_Component>())
 			proxy_scene.remove_all(entity.id);
 	}
 }
 
 // ----------------------------------------------------------------------------
 
-bool clear_command::can_undo() const
+bool Clear_Command::can_undo() const
 {
 	return !temp_filename.empty();
 }
@@ -81,9 +81,9 @@ bool clear_command::can_undo() const
 
 static void propagate_add_task(void * mem)
 {
-	auto entity_ids = make_unique<std::vector<handle>>(mem);
-	auto & editor = engine::instance().get_system<editor_system>();
-	for (const handle entity_id : *entity_ids)
+	auto entity_ids = make_unique<std::vector<Handle>>(mem);
+	auto & editor = Engine::instance().get_system<Editor_System>();
+	for (const Handle entity_id : *entity_ids)
 		editor->propagate_add(entity_id);
 }
 
@@ -96,18 +96,18 @@ static void cleanup_task(void * mem)
 static void undo_task(void * mem)
 {
 	auto data = static_cast<std::string*>(mem);
-	log("clear_command::undo");
-	auto & editor = *engine::instance().get_system<editor_system>();
-	auto entity_ids = new std::vector<handle>(editor.get_scene().load(data->c_str()));
+	log("Clear_Command::undo");
+	auto & editor = *Engine::instance().get_system<Editor_System>();
+	auto entity_ids = new std::vector<Handle>(editor.get_scene().load(data->c_str()));
 	add_task(propagate_add_task, entity_ids, 0, task_type::read);
 	add_task(cleanup_task, data, 0, task_type::read);
 }
 
-void clear_command::undo()
+void Clear_Command::undo()
 {
 	if (!temp_filename.empty())
 	{
-		// todo: assign scene tasks to thread
+		// todo: assign Scene tasks to Thread
 		add_task(undo_task, new std::string(std::move(temp_filename)), 0, task_type::write);
 		temp_filename.clear();
 	}
@@ -117,21 +117,21 @@ void clear_command::undo()
 
 void cleanup(std::string tempFileName)
 {
-	auto deserializer = file_deserializer_factory::instance().create(tempFileName.c_str());
-	if (deserializer == nullptr)
-		log(formatted_string<128>().sprintf("Could not open scene file '%s'", tempFileName.c_str()));
-	else if (!deserializer->is_valid())
-		log(formatted_string<128>().sprintf("Failed to parse scene file '%s'", tempFileName.c_str()));
+	auto Deserializer = File_Deserializer_Factory::instance().create(tempFileName.c_str());
+	if (Deserializer == nullptr)
+		log(Formatted_String<128>().sprintf("Could not open Scene file '%s'", tempFileName.c_str()));
+	else if (!Deserializer->is_valid())
+		log(Formatted_String<128>().sprintf("Failed to parse Scene file '%s'", tempFileName.c_str()));
 	else
 	{
-		std::remove(deserializer->get_string("idFile"));
-		while (deserializer->is_valid())
+		std::remove(Deserializer->get_string("idFile"));
+		while (Deserializer->is_valid())
 		{
-			deserializer->get_string("cpnt");
-			std::remove(deserializer->get_string("file"));
+			Deserializer->get_string("cpnt");
+			std::remove(Deserializer->get_string("file"));
 		}
 	}
-	deserializer.reset();
+	Deserializer.reset();
 	std::remove(tempFileName.c_str());
 }
 

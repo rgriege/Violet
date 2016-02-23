@@ -6,7 +6,7 @@
 // ============================================================================
 
 template <typename NodeType, struct EdgeType>
-vlt::crs_graph<NodeType, EdgeType>::NodeIterator::NodeIterator(const Nodes & nodes, const u32 index) :
+vlt::Crs_Graph<NodeType, EdgeType>::NodeIterator::NodeIterator(const Nodes & nodes, const u32 index) :
 	m_nodesIterator(nodes.begin() + index),
 	m_index(index)
 {
@@ -15,7 +15,7 @@ vlt::crs_graph<NodeType, EdgeType>::NodeIterator::NodeIterator(const Nodes & nod
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-std::pair<u32, const NodeType &> vlt::crs_graph<NodeType, EdgeType>::NodeIterator::operator*()
+std::pair<u32, const NodeType &> vlt::Crs_Graph<NodeType, EdgeType>::NodeIterator::operator*()
 {
 	return std::pair<u32, const NodeType &>(m_index, *m_nodesIterator);
 }
@@ -23,7 +23,7 @@ std::pair<u32, const NodeType &> vlt::crs_graph<NodeType, EdgeType>::NodeIterato
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::NodeIterator & vlt::crs_graph<NodeType, EdgeType>::NodeIterator::operator++()
+typename vlt::Crs_Graph<NodeType, EdgeType>::NodeIterator & vlt::Crs_Graph<NodeType, EdgeType>::NodeIterator::operator++()
 {
 	++m_nodesIterator;
 	++m_index;
@@ -33,7 +33,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::NodeIterator & vlt::crs_graph<NodeT
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-bool vlt::crs_graph<NodeType, EdgeType>::NodeIterator::operator!=(const NodeIterator & other) const
+bool vlt::Crs_Graph<NodeType, EdgeType>::NodeIterator::operator!=(const NodeIterator & other) const
 {
 	return m_index != other.m_index;
 }
@@ -41,7 +41,7 @@ bool vlt::crs_graph<NodeType, EdgeType>::NodeIterator::operator!=(const NodeIter
 // ============================================================================
 
 template <typename NodeType, struct EdgeType>
-vlt::crs_graph<NodeType, EdgeType>::NodeSegment::NodeSegment(NodeIterator begin, NodeIterator end) :
+vlt::Crs_Graph<NodeType, EdgeType>::NodeSegment::NodeSegment(NodeIterator begin, NodeIterator end) :
 	m_begin(begin),
 	m_end(end)
 {
@@ -50,7 +50,7 @@ vlt::crs_graph<NodeType, EdgeType>::NodeSegment::NodeSegment(NodeIterator begin,
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::NodeIterator vlt::crs_graph<NodeType, EdgeType>::NodeSegment::begin()
+typename vlt::Crs_Graph<NodeType, EdgeType>::NodeIterator vlt::Crs_Graph<NodeType, EdgeType>::NodeSegment::begin()
 {
 	return m_begin;
 }
@@ -58,7 +58,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::NodeIterator vlt::crs_graph<NodeTyp
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::NodeIterator vlt::crs_graph<NodeType, EdgeType>::NodeSegment::end()
+typename vlt::Crs_Graph<NodeType, EdgeType>::NodeIterator vlt::Crs_Graph<NodeType, EdgeType>::NodeSegment::end()
 {
 	return m_end;
 }
@@ -66,7 +66,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::NodeIterator vlt::crs_graph<NodeTyp
 // ============================================================================
 
 template <typename NodeType, struct EdgeType>
-vlt::crs_graph<NodeType, EdgeType>::EdgeSegment::EdgeSegment(EdgeIterator begin, EdgeIterator end) :
+vlt::Crs_Graph<NodeType, EdgeType>::EdgeSegment::EdgeSegment(EdgeIterator begin, EdgeIterator end) :
 	m_begin(begin),
 	m_end(end)
 {
@@ -75,7 +75,7 @@ vlt::crs_graph<NodeType, EdgeType>::EdgeSegment::EdgeSegment(EdgeIterator begin,
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::EdgeIterator vlt::crs_graph<NodeType, EdgeType>::EdgeSegment::begin()
+typename vlt::Crs_Graph<NodeType, EdgeType>::EdgeIterator vlt::Crs_Graph<NodeType, EdgeType>::EdgeSegment::begin()
 {
 	return m_begin;
 }
@@ -83,7 +83,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::EdgeIterator vlt::crs_graph<NodeTyp
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::EdgeIterator vlt::crs_graph<NodeType, EdgeType>::EdgeSegment::end()
+typename vlt::Crs_Graph<NodeType, EdgeType>::EdgeIterator vlt::Crs_Graph<NodeType, EdgeType>::EdgeSegment::end()
 {
 	return m_end;
 }
@@ -91,7 +91,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::EdgeIterator vlt::crs_graph<NodeTyp
 // ============================================================================
 
 template <typename NodeType, struct EdgeType>
-vlt::crs_graph<NodeType, EdgeType>::ConstEdgeSegment::ConstEdgeSegment(ConstEdgeIterator begin, ConstEdgeIterator end) :
+vlt::Crs_Graph<NodeType, EdgeType>::ConstEdgeSegment::ConstEdgeSegment(ConstEdgeIterator begin, ConstEdgeIterator end) :
 	m_begin(begin),
 	m_end(end)
 {
@@ -100,7 +100,7 @@ vlt::crs_graph<NodeType, EdgeType>::ConstEdgeSegment::ConstEdgeSegment(ConstEdge
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::ConstEdgeIterator vlt::crs_graph<NodeType, EdgeType>::ConstEdgeSegment::begin() const
+typename vlt::Crs_Graph<NodeType, EdgeType>::ConstEdgeIterator vlt::Crs_Graph<NodeType, EdgeType>::ConstEdgeSegment::begin() const
 {
 	return m_begin;
 }
@@ -108,7 +108,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::ConstEdgeIterator vlt::crs_graph<No
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::ConstEdgeIterator vlt::crs_graph<NodeType, EdgeType>::ConstEdgeSegment::end() const
+typename vlt::Crs_Graph<NodeType, EdgeType>::ConstEdgeIterator vlt::Crs_Graph<NodeType, EdgeType>::ConstEdgeSegment::end() const
 {
 	return m_end;
 }
@@ -116,7 +116,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::ConstEdgeIterator vlt::crs_graph<No
 // ============================================================================
 
 template <typename NodeType, struct EdgeType>
-vlt::crs_graph<NodeType, EdgeType>::crs_graph() :
+vlt::Crs_Graph<NodeType, EdgeType>::Crs_Graph() :
 	m_nodes(),
 	m_edgePointers(),
 	m_edges()
@@ -126,7 +126,7 @@ vlt::crs_graph<NodeType, EdgeType>::crs_graph() :
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-u32 vlt::crs_graph<NodeType, EdgeType>::addNode(const NodeType& node)
+u32 vlt::Crs_Graph<NodeType, EdgeType>::addNode(const NodeType& node)
 {
 	m_nodes.push_back(node);
 	m_edgePointers.push_back(m_edges.size());
@@ -136,7 +136,7 @@ u32 vlt::crs_graph<NodeType, EdgeType>::addNode(const NodeType& node)
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-bool vlt::crs_graph<NodeType, EdgeType>::hasNode(const u32 nodeIndex) const
+bool vlt::Crs_Graph<NodeType, EdgeType>::hasNode(const u32 nodeIndex) const
 {
 	return nodeIndex >= 0 && nodeIndex < m_nodes.size();
 }
@@ -144,7 +144,7 @@ bool vlt::crs_graph<NodeType, EdgeType>::hasNode(const u32 nodeIndex) const
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-NodeType & vlt::crs_graph<NodeType, EdgeType>::getNode(const u32 nodeIndex)
+NodeType & vlt::Crs_Graph<NodeType, EdgeType>::getNode(const u32 nodeIndex)
 {
 	assert(hasNode(nodeIndex));
 	return m_nodes[nodeIndex];
@@ -153,7 +153,7 @@ NodeType & vlt::crs_graph<NodeType, EdgeType>::getNode(const u32 nodeIndex)
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-const NodeType & vlt::crs_graph<NodeType, EdgeType>::getNode(const u32 nodeIndex) const
+const NodeType & vlt::Crs_Graph<NodeType, EdgeType>::getNode(const u32 nodeIndex) const
 {
 	assert(hasNode(nodeIndex));
 	return m_nodes[nodeIndex];
@@ -162,7 +162,7 @@ const NodeType & vlt::crs_graph<NodeType, EdgeType>::getNode(const u32 nodeIndex
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-size_t vlt::crs_graph<NodeType, EdgeType>::numNodes() const
+size_t vlt::Crs_Graph<NodeType, EdgeType>::numNodes() const
 {
 	return m_nodes.size();
 }
@@ -170,7 +170,7 @@ size_t vlt::crs_graph<NodeType, EdgeType>::numNodes() const
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::NodeSegment vlt::crs_graph<NodeType, EdgeType>::getNodes() const
+typename vlt::Crs_Graph<NodeType, EdgeType>::NodeSegment vlt::Crs_Graph<NodeType, EdgeType>::getNodes() const
 {
 	return NodeSegment(NodeIterator(m_nodes, 0), NodeIterator(m_nodes, m_nodes.size()));
 }
@@ -178,7 +178,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::NodeSegment vlt::crs_graph<NodeType
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-void vlt::crs_graph<NodeType, EdgeType>::addEdge(const EdgeType & edge) {
+void vlt::Crs_Graph<NodeType, EdgeType>::addEdge(const EdgeType & edge) {
 	if (!m_edges.empty() && m_edges.back().getSource() <= edge.getSource()) {
 		m_edges.push_back(edge);
 	} else {
@@ -198,7 +198,7 @@ void vlt::crs_graph<NodeType, EdgeType>::addEdge(const EdgeType & edge) {
 	* since potentially lots of edge pointers will need updating.
 	*/
 template <typename NodeType, struct EdgeType>
-void vlt::crs_graph<NodeType, EdgeType>::addEdges(const Edges & edges) {
+void vlt::Crs_Graph<NodeType, EdgeType>::addEdges(const Edges & edges) {
 	if (edges.empty())
 		return;
 
@@ -228,14 +228,14 @@ void vlt::crs_graph<NodeType, EdgeType>::addEdges(const Edges & edges) {
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-u32 vlt::crs_graph<NodeType, EdgeType>::numEdges() const {
+u32 vlt::Crs_Graph<NodeType, EdgeType>::numEdges() const {
 	return m_edges.size();
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::EdgeSegment vlt::crs_graph<NodeType, EdgeType>::getEdges()
+typename vlt::Crs_Graph<NodeType, EdgeType>::EdgeSegment vlt::Crs_Graph<NodeType, EdgeType>::getEdges()
 {
 	return EdgeSegment(m_edges.begin(), m_edges.end());
 }
@@ -243,7 +243,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::EdgeSegment vlt::crs_graph<NodeType
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::ConstEdgeSegment vlt::crs_graph<NodeType, EdgeType>::getEdges() const
+typename vlt::Crs_Graph<NodeType, EdgeType>::ConstEdgeSegment vlt::Crs_Graph<NodeType, EdgeType>::getEdges() const
 {
 	return ConstEdgeSegment(m_edges.begin(), m_edges.end());
 }
@@ -251,7 +251,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::ConstEdgeSegment vlt::crs_graph<Nod
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::EdgeSegment vlt::crs_graph<NodeType, EdgeType>::getEdges(const u32 src)
+typename vlt::Crs_Graph<NodeType, EdgeType>::EdgeSegment vlt::Crs_Graph<NodeType, EdgeType>::getEdges(const u32 src)
 {
 	return EdgeSegment(m_edges.begin() + (src == 0 ? 0 : m_edgePointers[src - 1]), m_edges.begin() + m_edgePointers[src]);
 }
@@ -259,7 +259,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::EdgeSegment vlt::crs_graph<NodeType
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-typename vlt::crs_graph<NodeType, EdgeType>::ConstEdgeSegment vlt::crs_graph<NodeType, EdgeType>::getEdges(const u32 src) const
+typename vlt::Crs_Graph<NodeType, EdgeType>::ConstEdgeSegment vlt::Crs_Graph<NodeType, EdgeType>::getEdges(const u32 src) const
 {
 	return ConstEdgeSegment(m_edges.begin() + (src == 0 ? 0 : m_edgePointers[src - 1]), m_edges.begin() + m_edgePointers[src]);
 }
@@ -267,7 +267,7 @@ typename vlt::crs_graph<NodeType, EdgeType>::ConstEdgeSegment vlt::crs_graph<Nod
 // ----------------------------------------------------------------------------
 
 template <typename NodeType, struct EdgeType>
-void vlt::crs_graph<NodeType, EdgeType>::clear() {
+void vlt::Crs_Graph<NodeType, EdgeType>::clear() {
 	m_nodes.clear();
 	m_edgePointers.clear();
 	m_edges.clear();
@@ -276,7 +276,7 @@ void vlt::crs_graph<NodeType, EdgeType>::clear() {
 // ============================================================================
 
 template <typename NodeType, struct EdgeType>
-bool vlt::crs_graph<NodeType, EdgeType>::compareEdges(const EdgeType & e1, const EdgeType & e2)
+bool vlt::Crs_Graph<NodeType, EdgeType>::compareEdges(const EdgeType & e1, const EdgeType & e2)
 {
 	return e1.getSource() < e2.getSource();
 }

@@ -22,7 +22,7 @@
 #include "violet/input/component/key_input_component.h"
 #include "violet/input/component/mouse_input_component.h"
 #include "violet/input/system/input_system.h"
-#include "violet/log/Log.h"
+#include "violet/log/log.h"
 #include "violet/log/console_log_target.h"
 #include "violet/log/file_log_target.h"
 #include "violet/physics/system/physics_system.h"
@@ -43,7 +43,7 @@
 
 using namespace edt;
 
-vlt::system_factory setup()
+vlt::System_Factory setup()
 {
 	vlt::install_color_component();
 	vlt::install_key_input_component();
@@ -58,46 +58,46 @@ vlt::system_factory setup()
 	vlt::install_world_transform_component();
 	install_editor_component();
 
-	vlt::json_deserializer::install();
-	vlt::json_serializer::install();
-	// vlt::binary_deserializer::install();
+	vlt::Json_Deserializer::install();
+	vlt::Json_Serializer::install();
+	// vlt::Binary_Deserializer::install();
 
-	vlt::lua_script::install();
-	vlt::cpp_script::install();
+	vlt::Lua_Script::install();
+	vlt::Cpp_Script::install();
 
-	vlt::system_factory factory;
-	// vlt::glut_window_system::install(factory);
-	vlt::sdl_window_system::install(factory);
-	vlt::physics_system::install(factory);
-	vlt::render_system::install(factory);
-	vlt::input_system::install(factory);
-	vlt::transform_system::install(factory);
-	vlt::update_system::install(factory);
-	edt::editor_system::install(factory);
+	vlt::System_Factory Factory;
+	// vlt::Glut_Window_System::install(Factory);
+	vlt::Sdl_Window_System::install(Factory);
+	vlt::Physics_System::install(Factory);
+	vlt::Render_System::install(Factory);
+	vlt::Input_System::install(Factory);
+	vlt::Transform_System::install(Factory);
+	vlt::Update_System::install(Factory);
+	edt::Editor_System::install(Factory);
 
-	editor_system::register_command<clear_command>();
-	editor_system::register_command<delete_command>();
-	editor_system::register_command<deselect_command>();
-	editor_system::register_command<move_to_command>();
-	editor_system::register_command<open_command>();
-	editor_system::register_command<resize_command>();
-	editor_system::register_command<save_all_command>();
-	editor_system::register_command<select_command>();
-	editor_system::register_command<set_color_command>();
-	editor_system::register_command<set_text_command>();
+	Editor_System::register_command<Clear_Command>();
+	Editor_System::register_command<Delete_Command>();
+	Editor_System::register_command<Deselect_Command>();
+	Editor_System::register_command<Move_To_Command>();
+	Editor_System::register_command<Open_Command>();
+	Editor_System::register_command<Resize_Command>();
+	Editor_System::register_command<Save_All_Command>();
+	Editor_System::register_command<Select_Command>();
+	Editor_System::register_command<Set_Color_Command>();
+	Editor_System::register_command<Set_Text_Command>();
 
-	return factory;
+	return Factory;
 }
 
 int main(int /*argc*/, char ** /*argv*/)
 {
-	const vlt::log_target::guard consoleLogGuard(vlt::install_log_target(std::make_unique<vlt::console_log_target>()));
-	const vlt::log_target::guard fileLogGuard(vlt::install_log_target(vlt::file_log_target::create("log.txt")));
+	const vlt::Log_Target::Guard consoleLogGuard(vlt::install_log_target(std::make_unique<vlt::Console_Log_Target>()));
+	const vlt::Log_Target::Guard fileLogGuard(vlt::install_log_target(vlt::File_Log_Target::create("Log.txt")));
 
 	auto factory = setup();
-	if (!vlt::engine::bootstrap(factory, "editorConfig.json"))
+	if (!vlt::Engine::bootstrap(factory, "editorConfig.json"))
 	{
-		vlt::log("failed to init engine");
+		vlt::log("failed to init Engine");
 		char c;
 		std::cin >> c;
 		exit(1);

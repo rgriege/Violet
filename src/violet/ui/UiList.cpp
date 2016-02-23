@@ -1,11 +1,11 @@
 // ============================================================================
 
-#include "violet/ui/UiList.h"
+#include "violet/ui/uilist.h"
 
-#include "violet/Engine.h"
-#include "violet/input/system/InputSystem.h"
-#include "violet/script/ScriptComponent.h"
-#include "violet/serialization/file/FileDeserializerFactory.h"
+#include "violet/engine.h"
+#include "violet/input/system/inputsystem.h"
+#include "violet/script/scriptcomponent.h"
+#include "violet/serialization/file/filedeserializerfactory.h"
 
 #include <functional>
 
@@ -32,19 +32,19 @@ void UiList::update(const Entity & entity, const uint32 elementCount)
 	{
 		Engine::getInstance().addWriteTask(entity, [&elementFileName, i, elementHeight](Entity & entity)
 		{
-			auto const deserializer = FileDeserializerFactory::getInstance().create(elementFileName.c_str());
-			if (deserializer != nullptr)
+			auto const Deserializer = FileDeserializerFactory::getInstance().create(elementFileName.c_str());
+			if (Deserializer != nullptr)
 			{
-				auto child = make_unique_val<Entity>(entity.getScene(), *deserializer);
-				auto transform = child->getComponent<TransformComponent>();
-				if (transform != nullptr)
-					transform->m_transform[1][2] -= i * elementHeight;
+				auto child = make_unique_val<Entity>(entity.getScene(), *Deserializer);
+				auto Transform = child->getComponent<TransformComponent>();
+				if (Transform != nullptr)
+					Transform->m_transform[1][2] -= i * elementHeight;
 
-				auto script = child->getComponent<ScriptComponent>();
-				if (script != nullptr)
+				auto Script = child->getComponent<ScriptComponent>();
+				if (Script != nullptr)
 				{
 					uint32 index = i;
-					AssignIndexMethod::run(*script->m_script, child, std::move(index));
+					AssignIndexMethod::run(*Script->m_script, child, std::move(index));
 				}
 
 				entity.addChild(std::move(child));
@@ -54,15 +54,15 @@ void UiList::update(const Entity & entity, const uint32 elementCount)
 
 	for (uint32 i = elementCount; i < childCount; ++i)
 	{
-		// engine.addWriteTask(entity, [i](Entity & entity) { entity.removeChild(entity.getChildren()[i]->getHandle()); 
+		// Engine.addWriteTask(entity, [i](Entity & entity) { entity.removeChild(entity.getChildren()[i]->getHandle()); 
 	}
 }
 
 // ----------------------------------------------------------------------------
 
-void UiList::clean(Script & script)
+void UiList::clean(Script & Script)
 {
-	MouseDownMethod::remove(script);
+	MouseDownMethod::remove(Script);
 }
 
 // ============================================================================

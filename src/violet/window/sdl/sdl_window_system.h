@@ -11,21 +11,21 @@ typedef void * SDL_GLContext;
 
 namespace vlt
 {
-	struct deserializer;
-	struct engine;
-	struct system_factory;
+	struct Deserializer;
+	struct Engine;
+	struct System_Factory;
 
-	struct VIOLET_API sdl_window_system final : public window_system
+	struct VIOLET_API Sdl_Window_System final : public Window_System
 	{
-		static void install(system_factory & factory);
-		static void init(deserializer & deserializer);
+		static void install(System_Factory & factory);
+		static void init(Deserializer & deserializer);
 
-		sdl_window_system(SDL_Window * window, SDL_GLContext context, u32 thread);
-		virtual ~sdl_window_system() override;
+		Sdl_Window_System(SDL_Window * window, SDL_GLContext context, u32 thread);
+		virtual ~Sdl_Window_System() override;
 
 		virtual void render() override;
-		virtual bool get_event(event_type type, event* event) override;
-		virtual void add_event(event event) override;
+		virtual bool get_event(Event_Type type, Event* event) override;
+		virtual void add_event(Event event) override;
 		virtual int get_width() const override;
 		virtual int get_height() const override;
 

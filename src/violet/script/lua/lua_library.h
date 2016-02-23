@@ -1,10 +1,10 @@
 #ifndef VIOLET_LUA_LIBRARY_H
 #define VIOLET_LUA_LIBRARY_H
 
-#include <vector>
 #include <algorithm>
 #include <lua.hpp>
 #include <map>
+#include <vector>
 
 #include "violet/core/engine.h"
 #include "violet/utility/unique_val.h"

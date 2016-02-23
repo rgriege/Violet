@@ -1,20 +1,20 @@
 // ============================================================================
 
-#include "editor/editor_system.h"
+#include <deque>
+
 #include "editor/command/command.h"
 #include "editor/component/editor_component.h"
+#include "editor/editor_system.h"
 #include "violet/graphics/component/color_component.h"
 #include "violet/graphics/component/text_component.h"
 #include "violet/input/component/mouse_input_component.h"
-#include "violet/log/Log.h"
+#include "violet/log/log.h"
 #include "violet/script/script_component.h"
 #include "violet/system/system_factory.h"
 #include "violet/transform/component/local_transform_component.h"
 #include "violet/transform/component/world_transform_component.h"
 #include "violet/utility/formatted_string.h"
 #include "violet/utility/memory.h"
-
-#include <deque>
 
 using namespace edt;
 using namespace vlt;
@@ -23,58 +23,58 @@ using namespace vlt;
 
 namespace EditorNamespace
 {
-	editor_system::CommandFactory ms_commandFactory;
+	Editor_System::CommandFactory ms_commandFactory;
 }
 
 using namespace EditorNamespace;
 
 // ============================================================================
 
-const char * editor_system::get_label_static()
+const char * Editor_System::get_label_static()
 {
 	return "edtr";
 }
 
 // ----------------------------------------------------------------------------
 
-void editor_system::install(vlt::system_factory & factory)
+void Editor_System::install(vlt::System_Factory & factory)
 {
-	factory.assign(get_label_static(), &editor_system::init);
+	factory.assign(get_label_static(), &Editor_System::init);
 }
 
 // ----------------------------------------------------------------------------
 
 struct init_task_data
 {
-	std::string edit_scrit_filename;
+	std::string edit_script_filename;
 };
 
 static void init_task(void * mem)
 {
 	auto data = make_unique<init_task_data>(mem);
-	engine::instance().add_system(std::unique_ptr<editor_system>(new editor_system(std::move(data->edit_scrit_filename))));
+	Engine::instance().add_system(std::unique_ptr<Editor_System>(new Editor_System(std::move(data->edit_script_filename))));
 }
 
-void editor_system::init(vlt::deserializer & deserializer)
+void Editor_System::init(vlt::Deserializer & deserializer)
 {
 	auto segment = deserializer.enter_segment(get_label_static());
 	auto data = new init_task_data;
-	data->edit_scrit_filename = segment->get_string("editScript");
-	add_task(init_task, data, editor_component::metadata->thread, task_type::write);
+	data->edit_script_filename = segment->get_string("editScript");
+	add_task(init_task, data, Editor_Component::metadata->thread, task_type::write);
 }
 
 // ----------------------------------------------------------------------------
 
-void editor_system::register_command(const char * const usage, const CommandFactory::producer & producer)
+void Editor_System::register_command(const char * const usage, const CommandFactory::Producer & producer)
 {
-	ms_commandFactory.assign(string_utilities::left(usage, ' '), producer);
+	ms_commandFactory.assign(String_Utilities::left(usage, ' '), producer);
 }
 
 // ============================================================================
 
-editor_system::editor_system(std::string editScriptFileName) :
-	system(get_label_static()),
-	m_scene(std::make_unique<scene>()),
+Editor_System::Editor_System(std::string editScriptFileName) :
+	System(get_label_static()),
+	m_scene(std::make_unique<Scene>()),
 	m_editScriptFileName(std::move(editScriptFileName)),
 	m_commandHistory(),
 	m_selectedEntities()
@@ -83,68 +83,68 @@ editor_system::editor_system(std::string editScriptFileName) :
 
 // ----------------------------------------------------------------------------
 
-/*void editor_system::update(const r32 dt)
+/*void Editor_System::update(const r32 dt)
 {
-	const auto & engine = engine::instance();
-	const auto & scene = engine.get_current_scene();
-	std::vector<handle> edittedEntityIds;
+	const auto & Engine = Engine::instance();
+	const auto & Scene = Engine.get_current_scene();
+	std::Vector<Handle> edittedEntityIds;
 
 	{
-		const auto & edittedEntities = scene.get_entity_view<editor_component>();
+		const auto & edittedEntities = Scene.get_entity_view<Editor_Component>();
 		entityIds.reserve(edittedEntities.size());
 		for (const auto & entity : edittedEntities)
 		{
-			const handle entity_id = std::get<0>(entity).getEdittedId();
+			const Handle entity_id = std::get<0>(entity).getEdittedId();
 			edittedEntityIds.emplace_back(entity_id);
 			if (!m_scene->hasEntity(entity_id))
 			{
-				engine.add_write_task(scene,
-					[=](scene & scene)
+				Engine.add_write_task(Scene,
+					[=](Scene & Scene)
 					{
-						scene.remove_all(entity_id);
+						Scene.remove_all(entity_id);
 					});
 			}
 		}
 	}
 		
-	for (const auto & entity : scene.get_entity_view<local_transform_component>())
+	for (const auto & entity : Scene.get_entity_view<Local_Transform_Component>())
 		if (!m_scene->hasEntity(std::get<0>(entity).get_entity_id()))
-			engine.add_write_task
+			Engine.add_write_task
 }*/
 
 // ----------------------------------------------------------------------------
 
-scene & editor_system::get_scene()
+Scene & Editor_System::get_scene()
 {
 	return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
 
-const scene & editor_system::get_scene() const
+const Scene & Editor_System::get_scene() const
 {
 	return *m_scene;
 }
 
 // ----------------------------------------------------------------------------
 
-vlt::handle editor_system::get_proxy_id(const handle proxied_id) const
+vlt::Handle Editor_System::get_proxy_id(const Handle proxied_id) const
 {
-	vlt::handle proxy_id;
-	for (const auto & entity : engine::instance().get_current_scene().get_entity_view<edt::editor_component>())
-		if (entity.get<edt::editor_component>().proxied_id == proxied_id)
+	vlt::Handle proxy_id;
+	for (const auto & entity : Engine::instance().get_current_scene().get_entity_view<edt::Editor_Component>())
+		if (entity.get<edt::Editor_Component>().proxied_id == proxied_id)
 			proxy_id = entity.id;
 	return proxy_id;
 }
 
 // ----------------------------------------------------------------------------
 
-b8 editor_system::execute(const std::string & commandString)
+b8 Editor_System::execute(const std::string & commandString)
 {
-	const std::string name = string_utilities::left(commandString, ' ');
+	const std::string name = String_Utilities::left(commandString, ' ');
 	if (ms_commandFactory.has(name))
 	{
-		auto command = ms_commandFactory.create(name, string_utilities::rightOfFirst(commandString, ' '));
+		auto command = ms_commandFactory.create(name, String_Utilities::rightOfFirst(commandString, ' '));
 		if (command != nullptr)
 		{
 			execute(std::move(command));
@@ -152,13 +152,13 @@ b8 editor_system::execute(const std::string & commandString)
 		}
 	}
 
-	log(formatted_string<128>().sprintf("Invalid command '%s'", commandString.c_str()));
+	log(Formatted_String<128>().sprintf("Invalid Command '%s'", commandString.c_str()));
 	return false;
 }
 
 // ----------------------------------------------------------------------------
 
-void editor_system::execute(std::unique_ptr<command> && command)
+void Editor_System::execute(std::unique_ptr<Command> && command)
 {
 	command->execute();
 	if (command->can_undo())
@@ -171,7 +171,7 @@ void editor_system::execute(std::unique_ptr<command> && command)
 
 // ----------------------------------------------------------------------------
 
-void editor_system::undo()
+void Editor_System::undo()
 {
 	if (!m_commandHistory.empty())
 	{
@@ -182,40 +182,40 @@ void editor_system::undo()
 
 // ----------------------------------------------------------------------------
 
-bool editor_system::select(const handle entity_id)
+bool Editor_System::select(const Handle entity_id)
 {
 	const bool selected = m_selectedEntities.emplace(entity_id).second;
 	if (selected)
 	{
 		auto id = entity_id;
-		EntitySelectedEvent::emit(engine::instance(), std::move(id));
+		EntitySelectedEvent::emit(Engine::instance(), std::move(id));
 	}
 	return selected;
 }
 
 // ----------------------------------------------------------------------------
 
-bool editor_system::selected(const handle entity_id) const
+bool Editor_System::selected(const Handle entity_id) const
 {
 	return m_selectedEntities.find(entity_id) != m_selectedEntities.end();
 }
 
 // ----------------------------------------------------------------------------
 
-const std::set<handle> & editor_system::get_selected_entities() const
+const std::set<Handle> & Editor_System::get_selected_entities() const
 {
 	return m_selectedEntities;
 }
 
 // ----------------------------------------------------------------------------
 
-bool editor_system::deselect(const handle entity_id)
+bool Editor_System::deselect(const Handle entity_id)
 {
 	const bool deselected = m_selectedEntities.erase(entity_id) != 0;
 	if (deselected)
 	{
 		auto id = entity_id;
-		EntityDeselectedEvent::emit(engine::instance().event_context, std::move(id));
+		EntityDeselectedEvent::emit(Engine::instance().event_context, std::move(id));
 	}
 	return deselected;
 }
@@ -224,71 +224,71 @@ bool editor_system::deselect(const handle entity_id)
 
 struct editor_system_propagate_add_task_data
 {
-	handle entity_id;
+	Handle entity_id;
 	std::string edit_script_filename;
 };
 
 static void propagate_add_task(void * mem)
 {
 	auto data = make_unique<editor_system_propagate_add_task_data>(mem);
-	auto & scene = engine::instance().get_current_scene();
-	const auto & editor = *engine::instance().get_system<editor_system>();
-	// this thread
-	const handle proxy_id = scene.create_entity();
+	auto & scene = Engine::instance().get_current_scene();
+	const auto & editor = *Engine::instance().get_system<Editor_System>();
+	// this Thread
+	const Handle proxy_id = scene.create_entity();
 
-	// new thread
-	scene.create_component<editor_component>(proxy_id, data->entity_id);
+	// new Thread
+	scene.create_component<Editor_Component>(proxy_id, data->entity_id);
 
-	// new thread
-	scene.create_component<world_transform_component>(proxy_id, editor.get_scene().get_component<world_transform_component>(data->entity_id)->transform);
+	// new Thread
+	scene.create_component<World_Transform_Component>(proxy_id, editor.get_scene().get_component<World_Transform_Component>(data->entity_id)->transform);
 
-	// new thread
-	poly poly(aabb{});
-	const auto * cc = editor.get_scene().get_component<color_component>(data->entity_id);
+	// new Thread
+	Poly poly(aabb{});
+	const auto * cc = editor.get_scene().get_component<Color_Component>(data->entity_id);
 	if (cc)
 	{
-		poly = cc->m_mesh->get_poly();
-		scene.create_component<color_component>(proxy_id, poly, cc->m_shader, cc->color);
+		poly = cc->mesh->get_poly();
+		scene.create_component<Color_Component>(proxy_id, poly, cc->shader, cc->color);
 	}
 
-	// new thread
-	const auto * tc = editor.get_scene().get_component<text_component>(data->entity_id);
+	// new Thread
+	const auto * tc = editor.get_scene().get_component<Text_Component>(data->entity_id);
 	if (tc)
 	{
-		poly = tc->m_mesh->get_poly();
-		scene.create_component<text_component>(proxy_id, *tc);
+		poly = tc->mesh->get_poly();
+		scene.create_component<Text_Component>(proxy_id, *tc);
 	}
 
-	const auto * ltc = editor.get_scene().get_component<local_transform_component>(data->entity_id);
+	const auto * ltc = editor.get_scene().get_component<Local_Transform_Component>(data->entity_id);
 	if (ltc != nullptr)
 	{
-		handle parentId;
-		if (ltc->parent_id != handle::Invalid)
+		Handle parentId;
+		if (ltc->parent_id != Handle::Invalid)
 		{
-			for (const auto & entity : scene.get_entity_view<editor_component>())
+			for (const auto & entity : scene.get_entity_view<Editor_Component>())
 			{
-				if (entity.get<editor_component>().proxied_id == ltc->parent_id)
+				if (entity.get<Editor_Component>().proxied_id == ltc->parent_id)
 				{
 					parentId = entity.id;
 					break;
 				}
 			}
 		}
-		// new thread
-		scene.create_component<local_transform_component>(proxy_id, parentId, ltc->transform);
+		// new Thread
+		scene.create_component<Local_Transform_Component>(proxy_id, parentId, ltc->transform);
 	}
-	// new thread
-	scene.create_component<script_component>(proxy_id, data->edit_script_filename.c_str());
+	// new Thread
+	scene.create_component<Script_Component>(proxy_id, data->edit_script_filename.c_str());
 
-	scene.create_component<mouse_input_component>(proxy_id, std::move(poly));
+	scene.create_component<Mouse_Input_Component>(proxy_id, std::move(poly));
 }
 
-void editor_system::propagate_add(const handle entity_id) const
+void Editor_System::propagate_add(const Handle entity_id) const
 {
-	if (   m_scene->has_component<world_transform_component>(entity_id)
-		&& (   m_scene->has_component<color_component>(entity_id)
-			|| m_scene->has_component<text_component>(entity_id)))
-		add_task(propagate_add_task, new editor_system_propagate_add_task_data{ entity_id, m_editScriptFileName }, editor_component::metadata->thread, task_type::write);
+	if (   m_scene->has_component<World_Transform_Component>(entity_id)
+		&& (   m_scene->has_component<Color_Component>(entity_id)
+			|| m_scene->has_component<Text_Component>(entity_id)))
+		add_task(propagate_add_task, new editor_system_propagate_add_task_data{ entity_id, m_editScriptFileName }, Editor_Component::metadata->thread, task_type::write);
 }
 
 // ============================================================================

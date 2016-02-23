@@ -8,9 +8,10 @@
 
 namespace vlt
 {
-	struct VIOLET_API shader
+	struct VIOLET_API Shader
 	{
-		friend struct shader_program;
+		const std::string filename;
+		const u32 handle;
 
 		enum Type
 		{
@@ -18,50 +19,32 @@ namespace vlt
 			Fragment
 		};
 
-	public:
+		static std::unique_ptr<Shader> create(const char * filename, Type type);
 
-		static std::unique_ptr<shader> create(const char * filename, Type type);
-
-	public:
-
-		~shader();
-
-		const char * get_filename() const;
-
-	private:
-
-		shader(const char * filename, u32 handle);
-
-	private:
-
-		const std::string m_filename;
-		const u32 m_handle;
+		Shader(const char * filename, u32 handle);
+		~Shader();
 	};
 
-	struct VIOLET_API shader_program
+	struct VIOLET_API Shader_Program
 	{
-		static std::unique_ptr<shader_program> load(const char * name);
-		static std::unique_ptr<shader_program> load(const char * vertexShaderFilename, const char * fragmentShaderFilename);
-		static std::unique_ptr<shader_program> create(std::shared_ptr<shader> vertexShader, std::shared_ptr<shader> fragmentShader);
-		typedef resource_cache<shader_program, const char *> Cache;
+		const u32 handle;
+		const std::shared_ptr<Shader> vertex_shader;
+		const std::shared_ptr<Shader> fragment_shader;
+
+		static std::unique_ptr<Shader_Program> load(const char * name);
+		static std::unique_ptr<Shader_Program> load(const char * vertex_shader_filename, const char * fragment_shader_filename);
+		static std::unique_ptr<Shader_Program> create(std::shared_ptr<Shader> vertex_shader, std::shared_ptr<Shader> fragment_shader);
+		typedef Resource_Cache<Shader_Program, const char *> Cache;
 		static Cache & get_cache();
-		static void bind(const shader_program & program);
+		static void bind(const Shader_Program & program);
 		static void unbind();
 
-	public:
-
-		shader_program(u32 handle, std::shared_ptr<shader> vertexShader, std::shared_ptr<shader> fragmentShader);
-		~shader_program();
+		Shader_Program(u32 handle, std::shared_ptr<Shader> vertex_shader, std::shared_ptr<Shader> fragment_shader);
+		~Shader_Program();
 
 		std::string get_name() const;
-		int getAttributeLocation(const char * name);
-		int getUniformLocation(const char * name);
-
-	private:
-
-		const u32 m_handle;
-		const std::shared_ptr<shader> m_vertexShader;
-		const std::shared_ptr<shader> m_fragmentShader;
+		int get_attrib_loc(const char * name);
+		int get_uniform_loc(const char * name);
 	};
 }
 

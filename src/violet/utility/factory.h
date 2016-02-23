@@ -1,26 +1,29 @@
 #ifndef VIOLET_FACTORY_H
 #define VIOLET_FACTORY_H
 
-#include "violet/utility/string_utilities.h"
-
 #include <assert.h>
 #include <functional>
 #include <map>
 #include <mutex>
 
+#include "violet/utility/string_utilities.h"
+
 namespace vlt
 {
 	template <typename Label, typename Signature>
-	struct factory;
+	struct Factory;
 
 	template <typename Label, typename ReturnType, typename... Args>
-	struct factory<Label, ReturnType(Args ...)>
+	struct Factory<Label, ReturnType(Args ...)>
 	{
-		typedef std::function<ReturnType(Args ...)> producer;
+		typedef std::function<ReturnType(Args ...)> Producer;
 
-		factory() = default;
+		std::map<Label, Producer> producers;
+		mutable std::mutex mutex;
 
-		factory(const factory & rhs) :
+		Factory() = default;
+
+		Factory(const Factory & rhs) :
 			producers(rhs.producers),
 			mutex()
 		{
@@ -34,7 +37,7 @@ namespace vlt
 			return (it->second)(std::forward<Args>(args)...);
 		}
 
-		void assign(const Label & label, const producer & producer)
+		void assign(const Label & label, const Producer & producer)
 		{
 			const std::lock_guard<std::mutex> guard(mutex);
 			producers[label] = producer;
@@ -51,23 +54,19 @@ namespace vlt
 			const std::lock_guard<std::mutex> guard(mutex);
 			producers.erase(label);
 		}
-
-		std::map<Label, producer> producers;
-		mutable std::mutex mutex;
 	};
 
 	template <typename ReturnType, typename... Args>
-	struct factory<const char *, ReturnType(Args ...)>
+	struct Factory<const char *, ReturnType(Args ...)>
 	{
-	public:
+		typedef std::function<ReturnType(Args ...)> Producer;
 
-		typedef std::function<ReturnType(Args ...)> producer;
+		std::map<const char *, Producer, String_Utilities::Less> producers;
+		mutable std::mutex mutex;
 
-	public:
+		Factory() = default;
 
-		factory() = default;
-
-		factory(const factory & rhs) :
+		Factory(const Factory & rhs) :
 			producers(rhs.producers),
 			mutex()
 		{
@@ -81,7 +80,7 @@ namespace vlt
 			return (it->second)(std::forward<Args>(args)...);
 		}
 
-		void assign(const char * const label, const producer & producer)
+		void assign(const char * const label, const Producer & producer)
 		{
 			const std::lock_guard<std::mutex> guard(mutex);
 			producers[label] = producer;
@@ -98,9 +97,6 @@ namespace vlt
 			const std::lock_guard<std::mutex> guard(mutex);
 			producers.erase(label);
 		}
-
-		std::map<const char *, producer, string_utilities::Less> producers;
-		mutable std::mutex mutex;
 	};
 }
 

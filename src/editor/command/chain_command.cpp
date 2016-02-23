@@ -8,33 +8,33 @@ using namespace edt;
 
 // ============================================================================
 
-chain_command::chain_command(std::vector<std::unique_ptr<command>> && commands) :
+Chain_Command::Chain_Command(std::vector<std::unique_ptr<Command>> && commands) :
 	m_commands(std::move(commands))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-void chain_command::execute()
+void Chain_Command::execute()
 {
-	for (auto & command : m_commands)
-		command->execute();
+	for (auto & Command : m_commands)
+		Command->execute();
 }
 
 // ----------------------------------------------------------------------------
 
-bool chain_command::can_undo() const
+bool Chain_Command::can_undo() const
 {
-	return std::any_of(m_commands.begin(), m_commands.end(), [](const std::unique_ptr<command> & c) { return c->can_undo(); });
+	return std::any_of(m_commands.begin(), m_commands.end(), [](const std::unique_ptr<Command> & c) { return c->can_undo(); });
 }
 
 // ----------------------------------------------------------------------------
 
-void chain_command::undo()
+void Chain_Command::undo()
 {
-	for (auto & command : m_commands)
-		if (command->can_undo())
-			command->undo();
+	for (auto & Command : m_commands)
+		if (Command->can_undo())
+			Command->undo();
 }
 
 // ============================================================================

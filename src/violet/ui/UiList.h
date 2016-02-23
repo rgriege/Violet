@@ -1,8 +1,8 @@
 #ifndef VIOLET_UiList_H
 #define VIOLET_UiList_H
 
-#include "violet/input/system/InputSystem.h"
-#include "violet/transform/component/TransformComponent.h"
+#include "violet/input/system/inputsystem.h"
+#include "violet/transform/component/transformcomponent.h"
 
 namespace Violet
 {
@@ -17,7 +17,7 @@ namespace Violet
 
 		void update(const Entity & entity, uint32 elementCount);
 
-		void clean(Script & script);
+		void clean(Script & Script);
 
 	private:
 

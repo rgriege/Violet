@@ -8,7 +8,7 @@
 
 namespace vlt
 {
-	struct VIOLET_API tag
+	struct VIOLET_API Tag
 	{
 		union
 		{
@@ -16,25 +16,25 @@ namespace vlt
 			u32 value;
 		};
 
-		tag() = default;
-		tag(char a, char b, char c, char d);
-		explicit tag(const char * str);
-		tag(const tag &) = default;
+		Tag() = default;
+		Tag(char a, char b, char c, char d);
+		explicit Tag(const char * str);
+		Tag(const Tag &) = default;
 
 		std::string as_string() const;
 
-		bool operator<(const tag rhs) const;
-		bool operator==(const tag rhs) const;
-		bool operator!=(const tag rhs) const;
+		bool operator<(const Tag rhs) const;
+		bool operator==(const Tag rhs) const;
+		bool operator!=(const Tag rhs) const;
 	};
 }
 
 namespace std
 {
 	template <>
-	struct hash<vlt::tag>
+	struct hash<vlt::Tag>
 	{
-		std::size_t operator()(const vlt::tag tag) const
+		std::size_t operator()(const vlt::Tag tag) const
 		{
 			return std::hash<u32>()(tag.value);
 		}

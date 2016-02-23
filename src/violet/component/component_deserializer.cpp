@@ -8,16 +8,16 @@ using namespace vlt;
 
 // ============================================================================
 
-component_deserializer::component_deserializer(std::unique_ptr<deserializer> && deserializer, const u32 version, std::shared_ptr<const std::unordered_map<u32, handle>> handleIdMap) :
-	inner_deserializer(std::move(deserializer)),
-	version(version),
-	handleIdMap(std::move(handleIdMap))
+Component_Deserializer::Component_Deserializer(std::unique_ptr<Deserializer> && _deserializer, const u32 _version, std::shared_ptr<const std::unordered_map<u32, Handle>> _handle_id_map) :
+	inner_deserializer(std::move(_deserializer)),
+	version(_version),
+	handle_id_map(std::move(_handle_id_map))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-b8 component_deserializer::is_valid() const
+b8 Component_Deserializer::is_valid() const
 {
 	return inner_deserializer->is_valid();
 }
@@ -25,7 +25,7 @@ b8 component_deserializer::is_valid() const
 // ----------------------------------------------------------------------------
 
 
-std::unique_ptr<deserializer> component_deserializer::enter_segment(const char * const label)
+std::unique_ptr<Deserializer> Component_Deserializer::enter_segment(const char * const label)
 {
 	return inner_deserializer->enter_segment(label);
 }
@@ -33,7 +33,7 @@ std::unique_ptr<deserializer> component_deserializer::enter_segment(const char *
 // ----------------------------------------------------------------------------
 
 
-const char * component_deserializer::next_label() const
+const char * Component_Deserializer::next_label() const
 {
 	return inner_deserializer->next_label();
 }
@@ -41,7 +41,7 @@ const char * component_deserializer::next_label() const
 // ----------------------------------------------------------------------------
 
 
-bool component_deserializer::get_b8(const char * const label)
+bool Component_Deserializer::get_b8(const char * const label)
 {
 	return inner_deserializer->get_b8(label);
 }
@@ -49,7 +49,7 @@ bool component_deserializer::get_b8(const char * const label)
 // ----------------------------------------------------------------------------
 
 
-u32 component_deserializer::get_u32(const char * const label)
+u32 Component_Deserializer::get_u32(const char * const label)
 {
 	return inner_deserializer->get_u32(label);
 }
@@ -57,7 +57,7 @@ u32 component_deserializer::get_u32(const char * const label)
 // ----------------------------------------------------------------------------
 
 
-s32 component_deserializer::get_s32(const char * const label)
+s32 Component_Deserializer::get_s32(const char * const label)
 {
 	return inner_deserializer->get_s32(label);
 }
@@ -65,7 +65,7 @@ s32 component_deserializer::get_s32(const char * const label)
 // ----------------------------------------------------------------------------
 
 
-r32 component_deserializer::get_r32(const char * const label)
+r32 Component_Deserializer::get_r32(const char * const label)
 {
 	return inner_deserializer->get_r32(label);
 }
@@ -73,7 +73,7 @@ r32 component_deserializer::get_r32(const char * const label)
 // ----------------------------------------------------------------------------
 
 
-r64 component_deserializer::get_r64(const char * const label)
+r64 Component_Deserializer::get_r64(const char * const label)
 {
 	return inner_deserializer->get_r64(label);
 }
@@ -81,26 +81,26 @@ r64 component_deserializer::get_r64(const char * const label)
 // ----------------------------------------------------------------------------
 
 
-const char * component_deserializer::get_string(const char * const label)
+const char * Component_Deserializer::get_string(const char * const label)
 {
 	return inner_deserializer->get_string(label);
 }
 
 // ----------------------------------------------------------------------------
 
-u32 component_deserializer::get_version() const
+u32 Component_Deserializer::get_version() const
 {
 	return version;
 }
 
 // ----------------------------------------------------------------------------
 
-handle component_deserializer::get_entity_id(const char * const label) const
+Handle Component_Deserializer::get_entity_id(const char * const label) const
 {
-	const u32 desiredId = inner_deserializer->get_u32(label);
-	const auto it = handleIdMap->find(desiredId);
-	assert(!handle(desiredId, 0).is_valid() || it != handleIdMap->end());
-	return it == handleIdMap->end() ? handle::Invalid : it->second;
+	const u32 desired_id = inner_deserializer->get_u32(label);
+	const auto it = handle_id_map->find(desired_id);
+	assert(!Handle(desired_id, 0).is_valid() || it != handle_id_map->end());
+	return it == handle_id_map->end() ? Handle::Invalid : it->second;
 }
 
 // ============================================================================

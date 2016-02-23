@@ -1,18 +1,18 @@
 #ifndef VIOLET_TEXT_RESOURCE_H
 #define VIOLET_TEXT_RESOURCE_H
 
-#include "violet/utility/unique_val.h"
-
 #include <fstream>
 #include <sstream>
 
+#include "violet/utility/unique_val.h"
+
 namespace vlt
 {
-	struct text_resource
+	struct Text_Resource
 	{
 		std::string name;
 
-		text_resource(std::string name) :
+		Text_Resource(std::string name) :
 			name(std::move(name))
 		{
 		}
@@ -20,12 +20,12 @@ namespace vlt
 		virtual unique_val<std::istream> read() const = 0;
 	};
 
-	struct string_resource final : public text_resource
+	struct String_Resource final : public Text_Resource
 	{
 		const std::string text;
 
-		string_resource(std::string name, std::string text) :
-			text_resource(name),
+		String_Resource(std::string name, std::string text) :
+			Text_Resource(name),
 			text(std::move(text))
 		{
 		}
@@ -36,10 +36,10 @@ namespace vlt
 		}
 	};
 
-	struct file_resource final : public text_resource
+	struct File_Resource final : public Text_Resource
 	{
-		file_resource(std::string filename) :
-			text_resource(filename)
+		File_Resource(std::string filename) :
+			Text_Resource(filename)
 		{
 		}
 

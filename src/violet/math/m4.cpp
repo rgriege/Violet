@@ -162,7 +162,7 @@ m3 vlt::to2d(const m4 & mat)
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const m4 & mat)
+Serializer & vlt::operator<<(Serializer & serializer, const m4 & mat)
 {
 	auto segment = serializer.create_segment("mat");
 	std::string label = "a";
@@ -179,7 +179,7 @@ serializer & vlt::operator<<(serializer & serializer, const m4 & mat)
 
 // ----------------------------------------------------------------------------
 
-deserializer & vlt::operator>>(deserializer & deserializer, m4 & mat)
+Deserializer & vlt::operator>>(Deserializer & deserializer, m4 & mat)
 {
 	auto segment = deserializer.enter_segment("mat");
 	std::string label = "a";

@@ -13,13 +13,13 @@ struct lua_State;
 
 namespace vlt
 {
-	struct VIOLET_API lua_script final : public script
+	struct VIOLET_API Lua_Script final : public Script
 	{
 		static void install();
 
-		lua_script(shared_val<text_resource> source);
-		lua_script(lua_script && other);
-		virtual ~lua_script() override;
+		Lua_Script(shared_val<Text_Resource> source);
+		Lua_Script(Lua_Script && other);
+		virtual ~Lua_Script() override;
 
 		virtual std::string const & get_filename() const override;
 		virtual bool is_valid() const override;
@@ -30,15 +30,15 @@ namespace vlt
 
 	private:
 
-		lua_script(const lua_script &) = delete;
-		lua_script & operator=(const lua_script &) = delete;
+		Lua_Script(const Lua_Script &) = delete;
+		Lua_Script & operator=(const Lua_Script &) = delete;
 
 		void load();
 		void unload();
 
 	private:
 
-		shared_val<text_resource> m_source;
+		shared_val<Text_Resource> m_source;
 		lua_State * m_lua;
 		bool m_valid;
 	};

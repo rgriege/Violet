@@ -7,11 +7,11 @@
 
 namespace vlt
 {
-	struct VIOLET_API serializer
+	struct VIOLET_API Serializer
 	{
-		virtual ~serializer() = default;
+		virtual ~Serializer() = default;
 
-		virtual unique_val<serializer> create_segment(const char * label) = 0;
+		virtual unique_val<Serializer> create_segment(const char * label) = 0;
 
 		virtual void write_b8(const char * label, b8 value) = 0;
 		virtual void write_u32(const char * label, u32 value) = 0;

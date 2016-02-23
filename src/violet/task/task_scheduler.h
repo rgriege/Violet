@@ -3,18 +3,18 @@
 
 #include <atomic>
 #include <condition_variable>
-#include <memory>
+#include <Memory>
 #include <mutex>
 #include <queue>
 #include <set>
-#include <thread>
+#include <Thread>
 
 #include "violet/core/defines.h"
 #include "violet/task/task.h"
 
 namespace vlt
 {
-	struct VIOLET_API task_scheduler final
+	struct VIOLET_API Task_Scheduler final
 	{
 	private:
 
@@ -23,12 +23,12 @@ namespace vlt
 
 	private:
 
-		static void executeTasks(task_scheduler & taskScheduler, u32 index);
+		static void executeTasks(Task_Scheduler & taskScheduler, u32 index);
 
 	public:
 
-		task_scheduler(u32 workerCount);
-		~task_scheduler();
+		Task_Scheduler(u32 workerCount);
+		~Task_Scheduler();
 
 		void add_task(std::unique_ptr<task> && task, int thread = -1);
 		void finishCurrentTasks();
@@ -37,11 +37,11 @@ namespace vlt
 
 		void add_task(std::unique_ptr<task> && task, u32 thread, bool isStopTask);
 
-		task_guard checkout(u32 thread);
+		task_guard checkout(u32 Thread);
 		void checkin(u64 dependency);
 
-		task_scheduler(const task_scheduler &) = delete;
-		task_scheduler & operator=(const task_scheduler &) = delete;
+		Task_Scheduler(const Task_Scheduler &) = delete;
+		Task_Scheduler & operator=(const Task_Scheduler &) = delete;
 
 	private:
 

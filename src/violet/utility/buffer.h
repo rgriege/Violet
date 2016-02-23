@@ -4,11 +4,11 @@
 namespace vlt
 {
 	template <typename T, size_t N>
-	struct stack_buffer
+	struct Stack_Buffer
 	{
 		T data[N];
 
-		stack_buffer() :
+		Stack_Buffer() :
 			data()
 		{
 		}
@@ -17,16 +17,16 @@ namespace vlt
 	};
 
 	template <typename T>
-	struct heap_buffer
+	struct Heap_Buffer
 	{
 		T * const data;
 
-		heap_buffer(size_t n) :
+		Heap_Buffer(size_t n) :
 			data(static_cast<T*>(malloc(n * sizeof(T))))
 		{
 		}
 
-		~heap_buffer()
+		~Heap_Buffer()
 		{
 			free(data);
 		}

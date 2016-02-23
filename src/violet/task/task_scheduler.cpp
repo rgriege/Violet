@@ -2,7 +2,7 @@
 
 #include "violet/task/task_scheduler.h"
 
-#include "violet/log/Log.h"
+#include "violet/log/log.h"
 #include "violet/utility/formatted_string.h"
 
 #include <assert.h>
@@ -44,21 +44,21 @@ private:
 
 // ============================================================================
 
-struct task_scheduler::worker
+struct Task_Scheduler::worker
 {
 	std::queue<std::unique_ptr<task>> m_queue;
 	std::mutex m_queueMutex;
 	std::condition_variable m_tasksAvailableCondition;
-	std::unique_ptr<std::thread> m_thread;
+	std::unique_ptr<std::Thread> m_thread;
 };
 
 // ============================================================================
 
-struct task_scheduler::task_guard
+struct Task_Scheduler::task_guard
 {
 public:
 
-	task_guard(task_scheduler & scheduler, std::unique_ptr<task> && task) :
+	task_guard(Task_Scheduler & scheduler, std::unique_ptr<task> && task) :
 		m_scheduler(scheduler),
 		m_task(std::move(task))
 	{
@@ -97,13 +97,13 @@ private:
 
 private:
 
-	task_scheduler & m_scheduler;
+	Task_Scheduler & m_scheduler;
 	std::unique_ptr<task> m_task;
 };
 
 // ============================================================================
 
-void task_scheduler::executeTasks(task_scheduler & taskScheduler, const u32 index)
+void Task_Scheduler::executeTasks(Task_Scheduler & taskScheduler, const u32 index)
 {
 	try
 	{
@@ -119,13 +119,13 @@ void task_scheduler::executeTasks(task_scheduler & taskScheduler, const u32 inde
 	}
 	catch (std::exception const & e)
 	{
-		log(e.what());
+		Log(e.what());
 	}
 }
 
 // ============================================================================
 
-task_scheduler::task_scheduler(const u32 workerCount) :
+Task_Scheduler::Task_Scheduler(const u32 workerCount) :
 	m_workers(),
 	m_nextTaskWorkerIndex(),
 	m_stopCount(),
@@ -142,12 +142,12 @@ task_scheduler::task_scheduler(const u32 workerCount) :
 		m_workers.emplace_back(std::make_unique<worker>());
 
 	for (u32 i = 0; i < workerCount; ++i)
-		m_workers[i]->m_thread = std::make_unique<std::thread>(std::bind(executeTasks, std::ref(*this), i));
+		m_workers[i]->m_thread = std::make_unique<std::Thread>(std::bind(executeTasks, std::ref(*this), i));
 }
 
 // ----------------------------------------------------------------------------
 
-task_scheduler::~task_scheduler()
+Task_Scheduler::~Task_Scheduler()
 {
 	m_quit = true;
 	for (auto & worker : m_workers)
@@ -159,18 +159,18 @@ task_scheduler::~task_scheduler()
 
 // ----------------------------------------------------------------------------
 
-void task_scheduler::add_task(std::unique_ptr<task> && task, const int thread)
+void Task_Scheduler::add_task(std::unique_ptr<task> && task, const int Thread)
 {
 	assert(task != nullptr);
 	if (!m_workers.empty())
-		add_task(std::move(task), (thread >= 0 && thread < static_cast<int>(m_workers.size())) ? thread : (++m_nextTaskWorkerIndex % m_workers.size()), false);
+		add_task(std::move(task), (Thread >= 0 && Thread < static_cast<int>(m_workers.size())) ? thread : (++m_nextTaskWorkerIndex % m_workers.size()), false);
 	else
 		m_mainThreadTaskQueue.emplace(std::move(task));
 }
 
 // ----------------------------------------------------------------------------
 
-void task_scheduler::finishCurrentTasks()
+void Task_Scheduler::finishCurrentTasks()
 {
 	if (!m_workers.empty())
 	{
@@ -197,11 +197,11 @@ void task_scheduler::finishCurrentTasks()
 
 // ============================================================================
 
-void task_scheduler::add_task(std::unique_ptr<task> && task, const u32 thread, const bool isStopTask)
+void Task_Scheduler::add_task(std::unique_ptr<task> && task, const u32 Thread, const bool isStopTask)
 {
-	auto & worker = m_workers[thread];
+	auto & worker = m_workers[Thread];
 	{
-		const std::lock_guard<std::mutex> guard(worker->m_queueMutex);
+		const std::lock_guard<std::mutex> Guard(worker->m_queueMutex);
 		worker->m_queue.emplace(std::move(task));
 		if (!isStopTask && m_stopCountGoal != 0)
 		{
@@ -214,9 +214,9 @@ void task_scheduler::add_task(std::unique_ptr<task> && task, const u32 thread, c
 
 // ----------------------------------------------------------------------------
 
-task_scheduler::task_guard task_scheduler::checkout(const u32 thread)
+Task_Scheduler::task_guard Task_Scheduler::checkout(const u32 Thread)
 {
-	auto & worker = m_workers[thread];
+	auto & worker = m_workers[Thread];
 	std::unique_ptr<task> task;
 
 	{
@@ -241,12 +241,12 @@ task_scheduler::task_guard task_scheduler::checkout(const u32 thread)
 
 // ----------------------------------------------------------------------------
 
-void task_scheduler::checkin(const u64 dependency)
+void Task_Scheduler::checkin(const u64 dependency)
 {
 	if (dependency != task::Null_Dependency)
 	{
 		{
-			const std::lock_guard<std::mutex> guard(m_busyDependenciesMutex);
+			const std::lock_guard<std::mutex> Guard(m_busyDependenciesMutex);
 			const auto eraseCount = m_busyDependencies.erase(dependency);
 			assert(eraseCount == 1);
 		}

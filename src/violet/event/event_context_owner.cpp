@@ -6,14 +6,14 @@ using namespace vlt;
 
 // ============================================================================
 
-event_context_owner::event_context_owner() :
+Event_Context_Owner::Event_Context_Owner() :
 	event_context()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-event_context_owner::event_context_owner(event_context_owner && other) :
+Event_Context_Owner::Event_Context_Owner(Event_Context_Owner && other) :
 	event_context(std::move(other.event_context))
 {
 }

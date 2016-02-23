@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename Derived, typename ResultType, typename ... Args>
-void vlt::script::method<Derived, ResultType(Args...)>::assign(script & script, const Handler & func)
+void vlt::Script::Method<Derived, ResultType(Args...)>::assign(Script & script, const Handler & func)
 {
 	const auto it = script.m_boundMethods.find(Derived::get_identifier());
 	if (it != script.m_boundMethods.end())
@@ -13,19 +13,19 @@ void vlt::script::method<Derived, ResultType(Args...)>::assign(script & script, 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ResultType, typename ... Args>
-void vlt::script::method<Derived, ResultType(Args...)>::assign(const script & _script, const Handler & func)
+void vlt::Script::Method<Derived, ResultType(Args...)>::assign(const Script & script, const Handler & func)
 {
-	const auto it = _script.m_boundMethods.find(Derived::get_identifier());
-	if (it != _script.m_boundMethods.end())
-		_script.warn(Derived::get_name(), "method already bound");
+	const auto it = script.m_boundMethods.find(Derived::get_identifier());
+	if (it != script.m_boundMethods.end())
+		script.warn(Derived::get_name(), "method already bound");
 
-	add_hook(_script, Derived::get_identifier(), func);
+	add_hook(script, Derived::get_identifier(), func);
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ResultType, typename ... Args>
-bool vlt::script::method<Derived, ResultType(Args...)>::has(const script & script)
+bool vlt::Script::Method<Derived, ResultType(Args...)>::has(const Script & script)
 {
 	return script.m_boundMethods.find(Derived::get_identifier()) != script.m_boundMethods.end();
 }
@@ -33,7 +33,7 @@ bool vlt::script::method<Derived, ResultType(Args...)>::has(const script & scrip
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ResultType, typename ... Args>
-ResultType vlt::script::method<Derived, ResultType(Args...)>::run(const script & script, Args && ... args)
+ResultType vlt::Script::Method<Derived, ResultType(Args...)>::run(const Script & script, Args && ... args)
 {
 	const auto it = script.m_boundMethods.find(Derived::get_identifier());
 	if (it != script.m_boundMethods.end())
@@ -48,7 +48,7 @@ ResultType vlt::script::method<Derived, ResultType(Args...)>::run(const script &
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ResultType, typename ... Args>
-void vlt::script::method<Derived, ResultType(Args...)>::remove(script & script)
+void vlt::Script::Method<Derived, ResultType(Args...)>::remove(Script & script)
 {
 	remove_hook(script, Derived::get_identifier(), Derived::get_name());
 }
@@ -56,7 +56,7 @@ void vlt::script::method<Derived, ResultType(Args...)>::remove(script & script)
 // ----------------------------------------------------------------------------
 
 template <typename Derived, typename ResultType, typename ... Args>
-void vlt::script::method<Derived, ResultType(Args...)>::remove(const script & script)
+void vlt::Script::Method<Derived, ResultType(Args...)>::remove(const Script & script)
 {
 	remove_hook(script, Derived::get_identifier(), Derived::get_name());
 }

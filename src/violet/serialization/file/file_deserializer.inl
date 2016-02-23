@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename StreamDeserializer>
-vlt::file_deserializer<StreamDeserializer>::file_deserializer(std::filebuf && _file) :
+vlt::File_Deserializer<StreamDeserializer>::File_Deserializer(std::filebuf && _file) :
 	file(std::move(_file)),
 	stream(&file),
 	inner_deserializer(stream)
@@ -11,14 +11,14 @@ vlt::file_deserializer<StreamDeserializer>::file_deserializer(std::filebuf && _f
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-vlt::file_deserializer<StreamDeserializer>::~file_deserializer()
+vlt::File_Deserializer<StreamDeserializer>::~File_Deserializer()
 {
 }
 
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-bool vlt::file_deserializer<StreamDeserializer>::is_valid() const
+bool vlt::File_Deserializer<StreamDeserializer>::is_valid() const
 {
 	return inner_deserializer.is_valid();
 }
@@ -26,7 +26,7 @@ bool vlt::file_deserializer<StreamDeserializer>::is_valid() const
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-std::unique_ptr<vlt::deserializer> vlt::file_deserializer<StreamDeserializer>::enter_segment(const char * label)
+std::unique_ptr<vlt::Deserializer> vlt::File_Deserializer<StreamDeserializer>::enter_segment(const char * label)
 {
 	return inner_deserializer.enter_segment(label);
 }
@@ -34,7 +34,7 @@ std::unique_ptr<vlt::deserializer> vlt::file_deserializer<StreamDeserializer>::e
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-const char * vlt::file_deserializer<StreamDeserializer>::next_label() const
+const char * vlt::File_Deserializer<StreamDeserializer>::next_label() const
 {
 	return inner_deserializer.next_label();
 }
@@ -42,7 +42,7 @@ const char * vlt::file_deserializer<StreamDeserializer>::next_label() const
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-bool vlt::file_deserializer<StreamDeserializer>::get_b8(const char * label)
+bool vlt::File_Deserializer<StreamDeserializer>::get_b8(const char * label)
 {
 	return inner_deserializer.get_b8(label);
 }
@@ -50,7 +50,7 @@ bool vlt::file_deserializer<StreamDeserializer>::get_b8(const char * label)
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-u32 vlt::file_deserializer<StreamDeserializer>::get_u32(const char * label)
+u32 vlt::File_Deserializer<StreamDeserializer>::get_u32(const char * label)
 {
 	return inner_deserializer.get_u32(label);
 }
@@ -58,7 +58,7 @@ u32 vlt::file_deserializer<StreamDeserializer>::get_u32(const char * label)
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-s32 vlt::file_deserializer<StreamDeserializer>::get_s32(const char * label)
+s32 vlt::File_Deserializer<StreamDeserializer>::get_s32(const char * label)
 {
 	return inner_deserializer.get_s32(label);
 }
@@ -66,7 +66,7 @@ s32 vlt::file_deserializer<StreamDeserializer>::get_s32(const char * label)
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-r32 vlt::file_deserializer<StreamDeserializer>::get_r32(const char * label)
+r32 vlt::File_Deserializer<StreamDeserializer>::get_r32(const char * label)
 {
 	return inner_deserializer.get_r32(label);
 }
@@ -74,7 +74,7 @@ r32 vlt::file_deserializer<StreamDeserializer>::get_r32(const char * label)
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-r64 vlt::file_deserializer<StreamDeserializer>::get_r64(const char * label)
+r64 vlt::File_Deserializer<StreamDeserializer>::get_r64(const char * label)
 {
 	return inner_deserializer.get_r64(label);
 }
@@ -82,7 +82,7 @@ r64 vlt::file_deserializer<StreamDeserializer>::get_r64(const char * label)
 // ----------------------------------------------------------------------------
 
 template <typename StreamDeserializer>
-const char * vlt::file_deserializer<StreamDeserializer>::get_string(const char * label)
+const char * vlt::File_Deserializer<StreamDeserializer>::get_string(const char * label)
 {
 	return inner_deserializer.get_string(label);
 }

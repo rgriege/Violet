@@ -1,18 +1,17 @@
 // ============================================================================
 
-#include "violet/graphics/texture/texture.h"
-
-#include "violet/utility/Buffer.h"
-
 #include <cstring>
 #include <GL/glew.h>
 #include <png.h>
+
+#include "violet/graphics/texture/texture.h"
+#include "violet/utility/buffer.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-std::unique_ptr<texture> texture::load_png(const char * filename)
+std::unique_ptr<Texture> Texture::load_png(const char * filename)
 {
 	png_image image;
 	memset(&image, 0, (sizeof image));
@@ -20,10 +19,10 @@ std::unique_ptr<texture> texture::load_png(const char * filename)
 
 	if (png_image_begin_read_from_file(&image, filename) != 0)
 	{
-		heap_buffer<png_byte> buffer{ PNG_IMAGE_SIZE(image) };
+		Heap_Buffer<png_byte> buffer{ PNG_IMAGE_SIZE(image) };
 		image.format = PNG_FORMAT_RGBA;
 		if (buffer != NULL && png_image_finish_read(&image, NULL, buffer, 0, NULL) != 0)
-			return std::unique_ptr<texture>(new texture(filename, image.width, image.height, buffer, GL_RGBA));
+			return std::make_unique<Texture>(filename, image.width, image.height, buffer, GL_RGBA);
 	}
 
 	return nullptr;
@@ -31,33 +30,33 @@ std::unique_ptr<texture> texture::load_png(const char * filename)
 
 // ----------------------------------------------------------------------------
 
-void texture::bind(const texture & texture)
+void Texture::bind(const Texture & texture)
 {
-	glBindTexture(GL_TEXTURE_2D, texture.m_handle);
+	glBindTexture(GL_TEXTURE_2D, texture.handle);
 }
 
 // ----------------------------------------------------------------------------
 
-void texture::unbind()
+void Texture::unbind()
 {
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 // ----------------------------------------------------------------------------
 
-texture::Cache & texture::get_cache()
+Texture::Cache & Texture::get_cache()
 {
-	static Cache s_cache(&texture::load_png);
+	static Cache s_cache(&Texture::load_png);
 	return s_cache;
 }
 
 // ============================================================================
 
-texture::texture(std::string filename, const u32 width, const u32 height, const void * const data, const u32 format) :
-	m_filename(std::move(filename)),
-	m_handle(0)
+Texture::Texture(std::string _filename, const u32 width, const u32 height, const void * const data, const u32 format) :
+	filename(std::move(_filename)),
+	handle(0)
 {
-	glGenTextures(1, &m_handle);
+	glGenTextures(1, &handle);
 	bind(*this);
 	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
@@ -71,25 +70,19 @@ texture::texture(std::string filename, const u32 width, const u32 height, const 
 
 // ----------------------------------------------------------------------------
 
-texture::texture(texture && other) :
-	m_handle(other.m_handle)
+Texture::Texture(Texture && other) :
+	handle(other.handle)
 {
-	other.m_handle = 0;
+	other.handle = 0;
 }
 
 // ----------------------------------------------------------------------------
 
-texture::~texture()
+Texture::~Texture()
 {
-	if (m_handle != 0)
-		glDeleteTextures(1, &m_handle);
-}
-
-// ----------------------------------------------------------------------------
-
-std::string const & texture::get_name() const
-{
-	return m_filename;
+	if (handle != 0)
+		glDeleteTextures(1, &handle);
 }
 
 // ============================================================================
+

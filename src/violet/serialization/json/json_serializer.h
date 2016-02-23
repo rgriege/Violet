@@ -8,18 +8,18 @@
 
 namespace vlt
 {
-	struct VIOLET_API json_serializer final : public serializer
+	struct VIOLET_API Json_Serializer final : public Serializer
 	{
 		std::ostream & stream;
 		Json::Value value;
 
 		static void install();
 
-		json_serializer(std::ostream & stream);
-		json_serializer(json_serializer && other);
-		virtual ~json_serializer() override;
+		Json_Serializer(std::ostream & stream);
+		Json_Serializer(Json_Serializer && other);
+		virtual ~Json_Serializer() override;
 
-		virtual unique_val<serializer> create_segment(const char * label) override;
+		virtual unique_val<Serializer> create_segment(const char * label) override;
 
 		virtual void write_b8(const char * label, b8 value) override;
 		virtual void write_u32(const char * label, u32 value) override;

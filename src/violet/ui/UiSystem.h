@@ -1,8 +1,8 @@
 #ifndef VIOLET_UiSystem_H
 #define VIOLET_UiSystem_H
 
-#include "violet/handle/Handle.h"
-#include "violet/system/System.h"
+#include "violet/handle/handle.h"
+#include "violet/system/system.h"
 
 namespace Violet
 {
@@ -14,8 +14,8 @@ namespace Violet
 	public:
 
 		static const char * getStaticLabel();
-		static void install(SystemFactory & factory);
-		static void init(Deserializer & deserializer);
+		static void install(SystemFactory & Factory);
+		static void init(Deserializer & Deserializer);
 
 	public:
 

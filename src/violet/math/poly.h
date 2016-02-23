@@ -7,35 +7,35 @@
 
 namespace vlt
 {
-	struct VIOLET_API poly
+	struct VIOLET_API Poly
 	{
-		vector<v2> vertices;
+		Vector<v2> vertices;
 
-		explicit poly(vector<v2> && vertices);
-		explicit poly(deserializer & deserializer);
-		explicit poly(const aabb & box);
-		poly(const poly & rhs) = default;
-		poly(poly && rhs) = default;
-		poly & operator=(const poly & rhs) = default;
-		poly & operator=(poly && rhs) = default;
+		explicit Poly(Vector<v2> && vertices);
+		explicit Poly(Deserializer & deserializer);
+		explicit Poly(const aabb & box);
+		Poly(const Poly & rhs) = default;
+		Poly(Poly && rhs) = default;
+		Poly & operator=(const Poly & rhs) = default;
+		Poly & operator=(Poly && rhs) = default;
 
 		bool contains(const v2 & point) const;
 		aabb get_bounding_box() const;
 
 		void translate(const v2 delta);
 
-		interval project(const v2 & axis) const;
+		Interval project(const v2 & axis) const;
 		v2 get_center() const;
 
 		v2 & operator[](u32 index);
 		const v2 & operator[](u32 index) const;
 
-		vector<v2>::iterator begin();
-		vector<v2>::iterator end();
+		Vector<v2>::iterator begin();
+		Vector<v2>::iterator end();
 	};
 
-	VIOLET_API serializer & operator<<(serializer & serializer, const poly & poly);
-	VIOLET_API deserializer & operator>>(deserializer & deserializer, poly & poly);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Poly & poly);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, Poly & poly);
 }
 
 #endif

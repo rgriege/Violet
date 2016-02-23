@@ -10,16 +10,16 @@
 
 namespace edt
 {
-	struct EDITOR_API set_text_command final : public command
+	struct EDITOR_API Set_Text_Command final : public Command
 	{
-		vlt::handle entity_id;
+		vlt::Handle entity_id;
 		std::string text;
 
 		static const char * get_usage();
-		static std::unique_ptr<command> parse(const std::string & text);
+		static std::unique_ptr<Command> parse(const std::string & text);
 
-		set_text_command(vlt::handle _entity_id, const std::string & _text);
-		virtual ~set_text_command() override = default;
+		Set_Text_Command(vlt::Handle _entity_id, const std::string & _text);
+		virtual ~Set_Text_Command() override = default;
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;

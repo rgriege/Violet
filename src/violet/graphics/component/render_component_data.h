@@ -7,28 +7,28 @@
 
 namespace vlt
 {
-	struct deserializer;
-	struct serializer;
-	struct shader_program;
+	struct Deserializer;
+	struct Serializer;
+	struct Shader_Program;
 
-	struct VIOLET_API render_component_data
+	struct VIOLET_API Render_Component_Data
 	{
-		u32 m_vertexArrayBuffer;
-		std::unique_ptr<mesh> m_mesh;
-		std::shared_ptr<shader_program> m_shader;
+		u32 vertex_array_buffer;
+		std::unique_ptr<Mesh> mesh;
+		std::shared_ptr<Shader_Program> shader;
 
 	protected:
 
-		render_component_data(deserializer & deserializer);
-		render_component_data(const poly & poly, std::shared_ptr<shader_program> shader);
-		render_component_data(const render_component_data &);
-		render_component_data & operator=(const render_component_data &) = delete;
-		render_component_data(render_component_data && other);
-		~render_component_data();
+		Render_Component_Data(Deserializer & deserializer);
+		Render_Component_Data(const Poly & poly, std::shared_ptr<Shader_Program> shader);
+		Render_Component_Data(const Render_Component_Data &);
+		Render_Component_Data & operator=(const Render_Component_Data &) = delete;
+		Render_Component_Data(Render_Component_Data && other);
+		~Render_Component_Data();
 	};
 
-	deserializer & operator>>(deserializer & deserializer, render_component_data & component);
-	serializer & operator<<(serializer & serializer, const render_component_data & component);
+	Deserializer & operator>>(Deserializer & deserializer, Render_Component_Data & component);
+	Serializer & operator<<(Serializer & serializer, const Render_Component_Data & component);
 }
 
 #endif

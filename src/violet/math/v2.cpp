@@ -43,7 +43,7 @@ v2::v2(const r32 _x, const r32 _y) :
 // ----------------------------------------------------------------------------
 
 
-v2::v2(deserializer & deserializer) :
+v2::v2(Deserializer & deserializer) :
 	x(),
 	y()
 {
@@ -327,7 +327,7 @@ std::ostream & vlt::operator<<(std::ostream & os, const v2 & vec)
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const v2 & vec)
+Serializer & vlt::operator<<(Serializer & serializer, const v2 & vec)
 {
 	auto segment = serializer.create_segment("vec");
 	segment->write_r32("x", vec.x);
@@ -337,7 +337,7 @@ serializer & vlt::operator<<(serializer & serializer, const v2 & vec)
 
 // ----------------------------------------------------------------------------
 
-deserializer & vlt::operator>>(deserializer & deserializer, v2 & vec)
+Deserializer & vlt::operator>>(Deserializer & deserializer, v2 & vec)
 {
 	auto segment = deserializer.enter_segment("vec");
 	vec.x = segment->get_r32("x");

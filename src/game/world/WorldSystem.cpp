@@ -1,9 +1,9 @@
-#include "game/world/WorldSystem.h"
+#include "game/world/worldsystem.h"
 
-#include "violet/component/Component.h"
-#include "violet/Engine.h"
-#include "violet/serialization/Deserializer.h"
-#include "violet/system/SystemFactory.h"
+#include "violet/component/component.h"
+#include "violet/engine.h"
+#include "violet/serialization/deserializer.h"
+#include "violet/system/systemfactory.h"
 
 namespace WorldSystemNamespace
 {
@@ -13,20 +13,20 @@ namespace WorldSystemNamespace
 using namespace WorldSystemNamespace;
 
 
-void WorldSystem::install(Violet::SystemFactory & factory)
+void WorldSystem::install(Violet::SystemFactory & Factory)
 {
-	factory.assign(ms_label, init);
+	Factory.assign(ms_label, init);
 }
 
-void WorldSystem::init(Violet::Deserializer & deserializer)
+void WorldSystem::init(Violet::Deserializer & Deserializer)
 {
-	auto const settingsSegment = deserializer.enterSegment(ms_label);
+	auto const settingsSegment = Deserializer.enterSegment(ms_label);
 	const float timeScale = settingsSegment->getFloat("timeScale");
 
 	Violet::Engine::getInstance().addWriteTask(Violet::Engine::getInstance(),
-		[=](Violet::Engine & engine)
+		[=](Violet::Engine & Engine)
 		{
-			engine.addSystem(std::unique_ptr<System>(new WorldSystem(timeScale)));
+			Engine.addSystem(std::unique_ptr<System>(new WorldSystem(timeScale)));
 		});
 }
 

@@ -13,22 +13,25 @@
 
 namespace vlt
 {
-	struct component_deserializer;
+	struct Component_Deserializer;
 
-	struct VIOLET_API scene
+	struct VIOLET_API Scene
 	{
+		Versioned_Handle_Manager handle_manager;
+		std::vector<Component_Pool> pools;
+
 		template <typename... ComponentTypes>
-		struct view
+		struct View
 		{
 			typedef std::tuple<const ComponentTypes&...> component_tuple;
-			typedef std::tuple<component_pool::const_iterator<ComponentTypes>...> iterator_tuple;
+			typedef std::tuple<Component_Pool::const_iterator<ComponentTypes>...> iterator_tuple;
 
-			struct entity
+			struct Entity
 			{
 				const component_tuple components;
-				handle id;
+				Handle id;
 
-				entity(component_tuple components, handle id);
+				Entity(component_tuple components, Handle id);
 
 				template <typename ComponentType>
 				const ComponentType & get() const;
@@ -39,7 +42,7 @@ namespace vlt
 				explicit iterator(iterator_tuple iterators);
 
 				iterator & operator++();
-				entity operator*();
+				Entity operator*();
 
 				bool operator==(const iterator & other) const;
 				bool operator!=(const iterator & other) const;
@@ -52,8 +55,8 @@ namespace vlt
 
 			private:
 
-				iterator_tuple m_iterators;
-				handle m_entityId;
+				iterator_tuple iterators;
+				Handle entity_id;
 			};
 
 		private:
@@ -62,94 +65,85 @@ namespace vlt
 
 		public:
 
-			explicit view(const scene & scene);
+			explicit View(const Scene & Scene);
 
 			iterator begin();
 			iterator end();
 
 		private:
 
-			const scene & m_manager;
+			const Scene & scene;
 		};
 
 	public:
 
-		typedef factory<tag, component_pool()> pool_factory;
+		typedef Factory<Tag, Component_Pool()> Pool_Factory;
 
 	public:
 
 		template <typename ComponentType>
 		static void install_component();
-		static void install_component(tag const tag, const pool_factory::producer & producer);
+		static void install_component(Tag const tag, const Pool_Factory::Producer & producer);
 
 		template <typename ComponentType>
 		static void uninstall_component();
-		static void uninstall_component(tag const tag);
+		static void uninstall_component(Tag const tag);
 
 	public:
 
-		scene();
-		scene(scene && other);
-		scene & operator=(scene && other);
-		~scene();
+		Scene();
+		Scene(Scene && other);
+		Scene & operator=(Scene && other);
+		~Scene();
 
-		std::vector<handle> load(const char * sceneName);
+		std::vector<Handle> load(const char * sceneName);
 		void save(const char * sceneName) const;
-		void save(const char * sceneName, std::vector<handle> entityIds) const;
+		void save(const char * sceneName, std::vector<Handle> entityIds) const;
 
-		handle create_entity();
+		Handle create_entity();
 		template <typename ComponentType, typename... Args>
-		ComponentType & create_component(handle entity_id, Args &&... args);
+		ComponentType & create_component(Handle entity_id, Args &&... args);
 
 		template <typename ComponentType>
-		component_pool * get_pool();
+		Component_Pool * get_pool();
 		template <typename ComponentType>
-		const component_pool * get_pool() const;
+		const Component_Pool * get_pool() const;
 
-		bool exists(handle entity_id) const;
+		bool exists(Handle entity_id) const;
 		template <typename ComponentType>
-		bool has_component(handle entity_id) const;
+		bool has_component(Handle entity_id) const;
 
 		template <typename ComponentType>
-		ComponentType * get_component(handle entity_id);
+		ComponentType * get_component(Handle entity_id);
 		template <typename ComponentType>
-		const ComponentType * get_component(handle entity_id) const;
+		const ComponentType * get_component(Handle entity_id) const;
 		template <typename... ComponentTypes>
-		view<ComponentTypes...> get_entity_view() const;
-		std::vector<handle> get_entity_ids() const;
+		View<ComponentTypes...> get_entity_view() const;
+		std::vector<Handle> get_entity_ids() const;
 		u16 get_entity_version(u16 id) const;
 		
 		template <typename ComponentType>
-		bool remove(handle entity_id);
-		void remove_all(handle entity_id);
-		void remove_all(handle entity_id) thread_const;
+		bool remove(Handle entity_id);
+		void remove_all(Handle entity_id);
+		void remove_all(Handle entity_id) thread_const;
 		void clear();
 
 	private:
 
 		template <typename ComponentType>
-		static component_pool create_pool();
+		static Component_Pool create_pool();
 
 	private:
 
-		component_pool * get_pool(tag componentTag);
-		const component_pool * get_pool(tag componentTag) const;
+		Component_Pool * get_pool(Tag tag);
+		const Component_Pool * get_pool(Tag tag) const;
 
-		scene(const scene &) = delete;
-		scene & operator=(const scene &) = delete;
-
-	private:
-
-		static pool_factory ms_poolFactory;
-
-	private:
-
-		versioned_handle_manager m_handleManager;
-		std::vector<component_pool> m_pools;
+		Scene(const Scene &) = delete;
+		Scene & operator=(const Scene &) = delete;
 	};
 
 	template <typename... ComponentTypes> 
-	using entity = typename scene::view<ComponentTypes...>::entity;
+	using Entity = typename Scene::View<ComponentTypes...>::Entity;
 }
 
 #include "violet/component/scene.inl"

@@ -11,55 +11,55 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * color_component::metadata;
+const Component_Metadata * Color_Component::metadata;
 
 // ============================================================================
 
-color_component::color_component(const handle entity_id, component_deserializer & deserializer) :
-	render_component_data(deserializer),
+Color_Component::Color_Component(const Handle entity_id, Component_Deserializer & deserializer) :
+	Render_Component_Data(deserializer),
 	color(deserializer)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-color_component::color_component(const handle entity_id, const poly & poly, std::shared_ptr<shader_program> shader, const Color color) :
-	render_component_data(poly, shader),
-	color(color)
+Color_Component::Color_Component(const Handle entity_id, const Poly & poly, std::shared_ptr<Shader_Program> shader, const Color _color) :
+	Render_Component_Data(poly, shader),
+	color(_color)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-color_component::color_component(color_component && other) :
-	render_component_data(std::move(other)),
+Color_Component::Color_Component(Color_Component && other) :
+	Render_Component_Data(std::move(other)),
 	color(std::move(other.color))
 {
-	m_shader.swap(other.m_shader);
+	shader.swap(other.shader);
 }
 
 // ============================================================================
 
 void vlt::install_color_component()
 {
-	color_component::metadata = init_component_metadata(tag('c', 'o', 'l', 'r'), 0, sizeof(color_component));
-	scene::install_component<color_component>();
+	Color_Component::metadata = init_component_metadata(Tag('c', 'o', 'l', 'r'), 0, sizeof(Color_Component));
+	Scene::install_component<Color_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & vlt::operator>>(component_deserializer & deserializer, color_component & component)
+Component_Deserializer & vlt::operator>>(Component_Deserializer & deserializer, Color_Component & component)
 {
-	operator>>(deserializer, static_cast<render_component_data &>(component));
+	operator>>(deserializer, static_cast<Render_Component_Data &>(component));
 	deserializer >> component.color;
 	return deserializer;
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const color_component & component)
+Serializer & vlt::operator<<(Serializer & serializer, const Color_Component & component)
 {
-	operator<<(serializer, static_cast<const render_component_data &>(component));
+	operator<<(serializer, static_cast<const Render_Component_Data &>(component));
 	serializer << component.color;
 	return serializer;
 }

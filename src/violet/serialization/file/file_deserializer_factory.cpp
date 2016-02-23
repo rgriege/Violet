@@ -6,33 +6,33 @@ using namespace vlt;
 
 // ============================================================================
 
-file_deserializer_factory & file_deserializer_factory::instance()
+File_Deserializer_Factory & File_Deserializer_Factory::instance()
 {
-	static file_deserializer_factory ms_instance;
+	static File_Deserializer_Factory ms_instance;
 	return ms_instance;
 }
 
 // ============================================================================
 
-std::unique_ptr<deserializer> file_deserializer_factory::create(const char * filename)
+std::unique_ptr<Deserializer> File_Deserializer_Factory::create(const char * filename)
 {
 	std::filebuf fb;
 	if (!fb.open(filename, std::ios::in))
 		return nullptr;
 	
-	return m_factory.create(string_utilities::rightOfLast(filename, '.'), std::move(fb));
+	return m_factory.create(String_Utilities::rightOfLast(filename, '.'), std::move(fb));
 }
 
 // ----------------------------------------------------------------------------
 
-void file_deserializer_factory::remove(const char * extension)
+void File_Deserializer_Factory::remove(const char * extension)
 {
 	m_factory.remove(extension);
 }
 
 // ============================================================================
 
-file_deserializer_factory::file_deserializer_factory() :
+File_Deserializer_Factory::File_Deserializer_Factory() :
 	m_factory()
 {
 }

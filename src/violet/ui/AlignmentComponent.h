@@ -1,9 +1,9 @@
 #ifndef VIOLET_AlignmentComponent_H
 #define VIOLET_AlignmentComponent_H
 
-#include "violet/component/Component.h"
-#include "violet/math/AABB.h"
-#include "violet/task/Thread.h"
+#include "violet/component/component.h"
+#include "violet/math/aabb.h"
+#include "violet/task/thread.h"
 
 namespace Violet
 {
@@ -20,7 +20,7 @@ namespace Violet
 	public:
 
 		AlignmentComponent(Handle entityId);
-		AlignmentComponent(Handle entityId, Deserializer & deserializer);
+		AlignmentComponent(Handle entityId, Deserializer & Deserializer);
 		AlignmentComponent(AlignmentComponent && other);
 
 	public:
@@ -29,8 +29,8 @@ namespace Violet
 		float m_x, m_y, m_width, m_height;
 	};
 
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, AlignmentComponent & component);
-	VIOLET_API Serializer & operator<<(Serializer & serializer, const AlignmentComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & Deserializer, AlignmentComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & Serializer, const AlignmentComponent & component);
 }
 
 #endif

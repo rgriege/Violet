@@ -10,28 +10,27 @@
 
 namespace vlt
 {
-	struct component_deserializer;
-	struct serializer;
-	struct shader_program;
+	struct Component_Deserializer;
+	struct Serializer;
+	struct Shader_Program;
 
-	struct VIOLET_API color_component final : public render_component_data
+	struct VIOLET_API Color_Component final : public Render_Component_Data
 	{
-		typedef color Color;
 		Color color;
 
-		static const component_metadata * metadata;
+		static const Component_Metadata * metadata;
 
-		color_component(handle entity_id, component_deserializer & deserializer);
-		color_component(handle entity_id, const poly & poly, std::shared_ptr<shader_program> shader, Color color);
-		color_component(const color_component &) = delete;
-		color_component & operator=(const color_component &) = delete;
-		color_component(color_component && other);
+		Color_Component(Handle entity_id, Component_Deserializer & deserializer);
+		Color_Component(Handle entity_id, const Poly & poly, std::shared_ptr<Shader_Program> shader, Color color);
+		Color_Component(const Color_Component &) = delete;
+		Color_Component & operator=(const Color_Component &) = delete;
+		Color_Component(Color_Component && other);
 	};
 
 	VIOLET_API void install_color_component();
 
-	VIOLET_API component_deserializer & operator>>(component_deserializer & deserializer, color_component & component);
-	VIOLET_API serializer & operator<<(serializer & serializer, const color_component & component);
+	VIOLET_API Component_Deserializer & operator>>(Component_Deserializer & deserializer, Color_Component & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Color_Component & component);
 }
 
 #endif

@@ -1,12 +1,12 @@
 #ifndef VIOLET_UiStateComponent_H
 #define VIOLET_UiStateComponent_H
 
-#include "violet/component/Component.h"
+#include "violet/component/component.h"
 #include "violet/utility/unique_val.h"
-#include "violet/handle/Handle.h"
+#include "violet/handle/handle.h"
 
 #include <string>
-#include <vector>
+#include <Vector>
 
 namespace Violet
 {
@@ -17,8 +17,8 @@ namespace Violet
 	{
 	public:
 
-		VIOLET_API friend Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
-		VIOLET_API friend Deserializer & operator>>(Deserializer & deserializer, UiStateComponent & component);
+		VIOLET_API friend Serializer & operator<<(Serializer & Serializer, const UiStateComponent & component);
+		VIOLET_API friend Deserializer & operator>>(Deserializer & Deserializer, UiStateComponent & component);
 
 	public:
 
@@ -26,7 +26,7 @@ namespace Violet
 
 	public:
 
-		UiStateComponent(Handle entityId, Deserializer & deserializer);
+		UiStateComponent(Handle entityId, Deserializer & Deserializer);
 
 		uint32 getCurrentIndex() const;
 		void setCurrentIndex(uint32 index);
@@ -35,11 +35,11 @@ namespace Violet
 
 		uint32 m_currentIndex;
 		Handle m_currentHandle;
-		std::vector<unique_val<Entity>> m_states;
+		std::Vector<unique_val<Entity>> m_states;
 	};
 
-	VIOLET_API Serializer & operator<<(Serializer & serializer, const UiStateComponent & component);
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, UiStateComponent & component);
+	VIOLET_API Serializer & operator<<(Serializer & Serializer, const UiStateComponent & component);
+	VIOLET_API Deserializer & operator>>(Deserializer & Deserializer, UiStateComponent & component);
 }
 
 #endif

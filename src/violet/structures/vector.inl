@@ -2,7 +2,7 @@
 
 template <typename T, typename Allocator>
 template <bool IsConst>
-vlt::vector<T, Allocator>::Iterator<IsConst>::Iterator(pointer ptr) :
+vlt::Vector<T, Allocator>::Iterator<IsConst>::Iterator(pointer ptr) :
 	m_ptr(ptr)
 {
 }
@@ -11,7 +11,7 @@ vlt::vector<T, Allocator>::Iterator<IsConst>::Iterator(pointer ptr) :
 
 template <typename T, typename Allocator>
 template <bool IsConst>
-typename vlt::vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst> & vlt::vector<T, Allocator>::Iterator<IsConst>::operator++()
+typename vlt::Vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst> & vlt::Vector<T, Allocator>::Iterator<IsConst>::operator++()
 {
 	++m_ptr;
 	return *this;
@@ -22,7 +22,7 @@ typename vlt::vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst> & vlt::vecto
 
 template <typename T, typename Allocator>
 template <bool IsConst>
-typename vlt::vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst>::reference vlt::vector<T, Allocator>::Iterator<IsConst>::operator*()
+typename vlt::Vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst>::reference vlt::Vector<T, Allocator>::Iterator<IsConst>::operator*()
 {
 	return *m_ptr;
 }
@@ -31,7 +31,7 @@ typename vlt::vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst>::reference v
 
 template <typename T, typename Allocator>
 template <bool IsConst>
-typename vlt::vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst>::pointer vlt::vector<T, Allocator>::Iterator<IsConst>::operator->()
+typename vlt::Vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst>::pointer vlt::Vector<T, Allocator>::Iterator<IsConst>::operator->()
 {
 	return m_ptr;
 }
@@ -40,7 +40,7 @@ typename vlt::vector<T, Allocator>::TEMPLATE_HINT Iterator<IsConst>::pointer vlt
 
 template <typename T, typename Allocator>
 template <bool IsConst>
-bool vlt::vector<T, Allocator>::Iterator<IsConst>::operator==(const Iterator<IsConst> & other) const
+bool vlt::Vector<T, Allocator>::Iterator<IsConst>::operator==(const Iterator<IsConst> & other) const
 {
 	return m_ptr == other.m_ptr;
 }
@@ -49,7 +49,7 @@ bool vlt::vector<T, Allocator>::Iterator<IsConst>::operator==(const Iterator<IsC
 
 template <typename T, typename Allocator>
 template <bool IsConst>
-bool vlt::vector<T, Allocator>::Iterator<IsConst>::operator!=(const Iterator<IsConst> & other) const
+bool vlt::Vector<T, Allocator>::Iterator<IsConst>::operator!=(const Iterator<IsConst> & other) const
 {
 	return !(m_ptr == other.m_ptr);
 }
@@ -57,7 +57,7 @@ bool vlt::vector<T, Allocator>::Iterator<IsConst>::operator!=(const Iterator<IsC
 // ============================================================================
 
 template <typename T, typename Allocator>
-vlt::vector<T, Allocator>::vector() :
+vlt::Vector<T, Allocator>::Vector() :
 	m_data(nullptr),
 	m_allocator(),
 	m_size(0),
@@ -68,8 +68,8 @@ vlt::vector<T, Allocator>::vector() :
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-vlt::vector<T, Allocator>::vector(std::initializer_list<T> list) :
-	vector()
+vlt::Vector<T, Allocator>::Vector(std::initializer_list<T> list) :
+	Vector()
 {
 	reserve(list.size());
 	for (const value_type & element : list)
@@ -79,8 +79,8 @@ vlt::vector<T, Allocator>::vector(std::initializer_list<T> list) :
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-vlt::vector<T, Allocator>::vector(const vector & rhs) :
-	vector()
+vlt::Vector<T, Allocator>::Vector(const Vector & rhs) :
+	Vector()
 {
 	reserve(rhs.size());
 	for (const value_type & element : rhs)
@@ -90,8 +90,8 @@ vlt::vector<T, Allocator>::vector(const vector & rhs) :
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-vlt::vector<T, Allocator>::vector(vector && rhs) :
-	vector()
+vlt::Vector<T, Allocator>::Vector(Vector && rhs) :
+	Vector()
 {
 	swap(rhs);
 }
@@ -99,7 +99,7 @@ vlt::vector<T, Allocator>::vector(vector && rhs) :
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-vlt::vector<T, Allocator>::~vector()
+vlt::Vector<T, Allocator>::~Vector()
 {
 	clear();
 	if (m_capacity > 0)
@@ -109,7 +109,7 @@ vlt::vector<T, Allocator>::~vector()
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-vlt::vector<T, Allocator> & vlt::vector<T, Allocator>::operator=(const vector & rhs)
+vlt::Vector<T, Allocator> & vlt::Vector<T, Allocator>::operator=(const Vector & rhs)
 {
 	clear();
 	reserve(rhs.size());
@@ -121,7 +121,7 @@ vlt::vector<T, Allocator> & vlt::vector<T, Allocator>::operator=(const vector & 
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-vlt::vector<T, Allocator> & vlt::vector<T, Allocator>::operator=(vector && rhs)
+vlt::Vector<T, Allocator> & vlt::Vector<T, Allocator>::operator=(Vector && rhs)
 {
 	swap(rhs);
 	return *this;
@@ -130,7 +130,7 @@ vlt::vector<T, Allocator> & vlt::vector<T, Allocator>::operator=(vector && rhs)
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::reference vlt::vector<T, Allocator>::operator[](const size_type index)
+typename vlt::Vector<T, Allocator>::reference vlt::Vector<T, Allocator>::operator[](const size_type index)
 {
 	assert(index < m_size);
 	return *(m_data + index);
@@ -139,7 +139,7 @@ typename vlt::vector<T, Allocator>::reference vlt::vector<T, Allocator>::operato
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::const_reference vlt::vector<T, Allocator>::operator[](const size_type index) const
+typename vlt::Vector<T, Allocator>::const_reference vlt::Vector<T, Allocator>::operator[](const size_type index) const
 {
 	assert(index < m_size);
 	return *(m_data + index);
@@ -148,7 +148,7 @@ typename vlt::vector<T, Allocator>::const_reference vlt::vector<T, Allocator>::o
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::reference vlt::vector<T, Allocator>::front()
+typename vlt::Vector<T, Allocator>::reference vlt::Vector<T, Allocator>::front()
 {
 	return *m_data;
 }
@@ -156,7 +156,7 @@ typename vlt::vector<T, Allocator>::reference vlt::vector<T, Allocator>::front()
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::const_reference vlt::vector<T, Allocator>::front() const
+typename vlt::Vector<T, Allocator>::const_reference vlt::Vector<T, Allocator>::front() const
 {
 	return *m_data;
 }
@@ -164,7 +164,7 @@ typename vlt::vector<T, Allocator>::const_reference vlt::vector<T, Allocator>::f
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::reference vlt::vector<T, Allocator>::back()
+typename vlt::Vector<T, Allocator>::reference vlt::Vector<T, Allocator>::back()
 {
 	assert(!empty());
 	return *(m_data + m_size - 1);
@@ -173,7 +173,7 @@ typename vlt::vector<T, Allocator>::reference vlt::vector<T, Allocator>::back()
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::const_reference vlt::vector<T, Allocator>::back() const
+typename vlt::Vector<T, Allocator>::const_reference vlt::Vector<T, Allocator>::back() const
 {
 	assert(!empty());
 	return *(m_data + m_size - 1);
@@ -182,7 +182,7 @@ typename vlt::vector<T, Allocator>::const_reference vlt::vector<T, Allocator>::b
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::pointer vlt::vector<T, Allocator>::data()
+typename vlt::Vector<T, Allocator>::pointer vlt::Vector<T, Allocator>::data()
 {
 	return m_data;
 }
@@ -190,7 +190,7 @@ typename vlt::vector<T, Allocator>::pointer vlt::vector<T, Allocator>::data()
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::const_pointer vlt::vector<T, Allocator>::data() const
+typename vlt::Vector<T, Allocator>::const_pointer vlt::Vector<T, Allocator>::data() const
 {
 	return m_data;
 }
@@ -198,7 +198,7 @@ typename vlt::vector<T, Allocator>::const_pointer vlt::vector<T, Allocator>::dat
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::iterator vlt::vector<T, Allocator>::begin()
+typename vlt::Vector<T, Allocator>::iterator vlt::Vector<T, Allocator>::begin()
 {
 	return iterator(m_data);
 }
@@ -206,7 +206,7 @@ typename vlt::vector<T, Allocator>::iterator vlt::vector<T, Allocator>::begin()
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::const_iterator vlt::vector<T, Allocator>::begin() const
+typename vlt::Vector<T, Allocator>::const_iterator vlt::Vector<T, Allocator>::begin() const
 {
 	return const_iterator(m_data);
 }
@@ -214,7 +214,7 @@ typename vlt::vector<T, Allocator>::const_iterator vlt::vector<T, Allocator>::be
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::iterator vlt::vector<T, Allocator>::end()
+typename vlt::Vector<T, Allocator>::iterator vlt::Vector<T, Allocator>::end()
 {
 	return iterator(m_data + m_size);
 }
@@ -222,7 +222,7 @@ typename vlt::vector<T, Allocator>::iterator vlt::vector<T, Allocator>::end()
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::const_iterator vlt::vector<T, Allocator>::end() const
+typename vlt::Vector<T, Allocator>::const_iterator vlt::Vector<T, Allocator>::end() const
 {
 	return const_iterator(m_data + m_size);
 }
@@ -230,7 +230,7 @@ typename vlt::vector<T, Allocator>::const_iterator vlt::vector<T, Allocator>::en
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-bool vlt::vector<T, Allocator>::empty() const
+bool vlt::Vector<T, Allocator>::empty() const
 {
 	return m_size == 0;
 }
@@ -238,7 +238,7 @@ bool vlt::vector<T, Allocator>::empty() const
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::size_type vlt::vector<T, Allocator>::size() const
+typename vlt::Vector<T, Allocator>::size_type vlt::Vector<T, Allocator>::size() const
 {
 	return m_size;
 }
@@ -246,7 +246,7 @@ typename vlt::vector<T, Allocator>::size_type vlt::vector<T, Allocator>::size() 
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-void vlt::vector<T, Allocator>::reserve(const size_type capacity)
+void vlt::Vector<T, Allocator>::reserve(const size_type capacity)
 {
 	if (capacity > m_capacity)
 	{
@@ -270,7 +270,7 @@ void vlt::vector<T, Allocator>::reserve(const size_type capacity)
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-typename vlt::vector<T, Allocator>::size_type vlt::vector<T, Allocator>::capacity() const
+typename vlt::Vector<T, Allocator>::size_type vlt::Vector<T, Allocator>::capacity() const
 {
 	return m_capacity;
 }
@@ -278,7 +278,7 @@ typename vlt::vector<T, Allocator>::size_type vlt::vector<T, Allocator>::capacit
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-void vlt::vector<T, Allocator>::clear()
+void vlt::Vector<T, Allocator>::clear()
 {
 	for (pointer p = m_data, end = m_data + m_size; p != end; ++p)
 		m_allocator.destroy(p);
@@ -289,7 +289,7 @@ void vlt::vector<T, Allocator>::clear()
 
 template <typename T, typename Allocator>
 template <typename ... Args>
-void vlt::vector<T, Allocator>::emplace_back(Args && ... args)
+void vlt::Vector<T, Allocator>::emplace_back(Args && ... args)
 {
 	if (m_size == m_capacity)
 		grow();
@@ -300,7 +300,7 @@ void vlt::vector<T, Allocator>::emplace_back(Args && ... args)
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-void vlt::vector<T, Allocator>::resize(const size_type size)
+void vlt::Vector<T, Allocator>::resize(const size_type size)
 {
 	if (size < m_size)
 	{
@@ -319,7 +319,7 @@ void vlt::vector<T, Allocator>::resize(const size_type size)
 // ----------------------------------------------------------------------------
 
 template <typename T, typename Allocator>
-void vlt::vector<T, Allocator>::swap(vector & rhs)
+void vlt::Vector<T, Allocator>::swap(Vector & rhs)
 {
 	const pointer data = m_data;
 	allocator_type allocator = std::move(m_allocator);
@@ -340,7 +340,7 @@ void vlt::vector<T, Allocator>::swap(vector & rhs)
 // ============================================================================
 
 template <typename T, typename Allocator>
-void vlt::vector<T, Allocator>::grow()
+void vlt::Vector<T, Allocator>::grow()
 {
 	const size_type newCapacity = m_capacity * 3 / 2;
 	reserve(newCapacity > m_capacity ? newCapacity : m_capacity + 1);

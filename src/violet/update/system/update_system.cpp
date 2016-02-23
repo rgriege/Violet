@@ -1,66 +1,65 @@
 // ============================================================================
 
-#include "violet/update/system/update_system.h"
-
 #include "violet/core/engine.h"
 #include "violet/component/scene.h"
 #include "violet/script/script_component.h"
 #include "violet/serialization/deserializer.h"
 #include "violet/system/system_factory.h"
 #include "violet/update/component/update_component.h"
+#include "violet/update/system/update_system.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-const char * update_system::get_label_static()
+const char * Update_System::get_label_static()
 {
 	return "updt";
 }
 
 // ----------------------------------------------------------------------------
 
-void update_system::install(system_factory & factory)
+void Update_System::install(System_Factory & factory)
 {
-	factory.assign(get_label_static(), &update_system::init);
+	factory.assign(get_label_static(), &Update_System::init);
 }
 
 // ----------------------------------------------------------------------------
 
 static void init_task(void *)
 {
-	engine::instance().add_system(std::unique_ptr<vlt::system>(new update_system));
+	Engine::instance().add_system(std::unique_ptr<vlt::System>(new Update_System));
 }
 
-void update_system::init(deserializer & deserializer)
+void Update_System::init(Deserializer & deserializer)
 {
 	deserializer.enter_segment(get_label_static());
 
-	add_task(init_task, nullptr, script_component::metadata->thread, task_type::write);
+	add_task(init_task, nullptr, Script_Component::metadata->thread, task_type::write);
 }
 
 // ============================================================================
 
-update_system::update_system() :
-	system(get_label_static())
+Update_System::Update_System() :
+	System(get_label_static())
 {
 }
 
 // ---------------------------------------------------------------------------
 
-update_system::update_system(update_system && other) :
-	system(std::move(other))
+Update_System::Update_System(Update_System && other) :
+	System(std::move(other))
 {
 }
 
 // ---------------------------------------------------------------------------
 
-void update_system::update(r32 dt)
+void Update_System::update(r32 dt)
 {
-	for (const auto & entity : engine::instance().get_current_scene().get_entity_view<update_component, script_component>())
+	for (const auto & entity : Engine::instance().get_current_scene().get_entity_view<Update_Component, Script_Component>())
 	{
-		handle id = entity.id;
-		UpdateMethod::run(*entity.get<script_component>().script, std::move(id), std::move(dt));
+		Handle id = entity.id;
+		UpdateMethod::run(*entity.get<Script_Component>().script, std::move(id), std::move(dt));
 	}
 }
 

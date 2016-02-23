@@ -1,127 +1,117 @@
 // ============================================================================
 
-#include "violet/graphics/mesh.h"
-
-#include "violet/math/poly.h"
-
 #include <GL/glew.h>
+
+#include "violet/graphics/mesh.h"
+#include "violet/math/poly.h"
 
 using namespace vlt;
 
 // ============================================================================
 
-namespace MeshNamespace
+void Mesh::bind(const Mesh & mesh)
 {
-	void set_mesh_vertices(mesh & mesh, const poly & poly);
-}
-
-using namespace MeshNamespace;
-
-// ============================================================================
-
-void mesh::bind(const mesh & mesh)
-{
-	glBindBuffer(GL_ARRAY_BUFFER, mesh.m_vertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, mesh.vertex_buffer);
 }
 
 // ----------------------------------------------------------------------------
 
-void mesh::unbind()
+void Mesh::unbind()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 // ============================================================================
 
-mesh::mesh(vector<v2> && vertices) :
-	mesh(poly(std::move(vertices)))
+Mesh::Mesh(Vector<v2> && vertices) :
+	Mesh(Poly(std::move(vertices)))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-mesh::mesh(deserializer & deserializer) :
-	mesh(poly(deserializer))
+Mesh::Mesh(Deserializer & deserializer) :
+	Mesh(Poly(deserializer))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-mesh::mesh(const mesh & other) :
-	mesh(other.get_poly())
+Mesh::Mesh(const Mesh & other) :
+	Mesh(other.get_poly())
 {
 }
 
 // ----------------------------------------------------------------------------
 
-mesh::mesh(mesh && other) :
-	m_vertexBuffer(other.m_vertexBuffer),
-	m_size(other.m_size)
+Mesh::Mesh(Mesh && other) :
+	vertex_buffer(other.vertex_buffer),
+	size(other.size)
 {
-	other.m_vertexBuffer = 0;
+	other.vertex_buffer = 0;
 }
 
 // ----------------------------------------------------------------------------
 
-mesh & mesh::operator=(mesh && other)
+Mesh & Mesh::operator=(Mesh && other)
 {
-	std::swap(m_vertexBuffer, other.m_vertexBuffer);
-	std::swap(m_size, other.m_size);
+	std::swap(vertex_buffer, other.vertex_buffer);
+	std::swap(size, other.size);
 	return *this;
 }
 
 // ----------------------------------------------------------------------------
 
-mesh::mesh(const poly & poly) :
-	m_vertexBuffer(0),
-	m_size(poly.vertices.size())
+Mesh::Mesh(const Poly & poly) :
+	vertex_buffer(0),
+	size(poly.vertices.size())
 {
-	glGenBuffers(1, &m_vertexBuffer);
+	glGenBuffers(1, &vertex_buffer);
 	set_mesh_vertices(*this, poly.vertices);
 }
 
 // ----------------------------------------------------------------------------
 
-mesh::~mesh()
+Mesh::~Mesh()
 {
-	if (m_vertexBuffer != 0)
-		glDeleteBuffers(1, &m_vertexBuffer);
+	if (vertex_buffer != 0)
+		glDeleteBuffers(1, &vertex_buffer);
 }
 
 // ----------------------------------------------------------------------------
 
-poly mesh::get_poly() const
+Poly Mesh::get_poly() const
 {
-	vector<v2> vertices;
-	vertices.resize(m_size);
-	mesh::bind(*this);
-	glGetBufferSubData(GL_ARRAY_BUFFER, 0, m_size * sizeof(v2), vertices.data());
-	mesh::unbind();
-	return poly(std::move(vertices));
+	Vector<v2> vertices;
+	vertices.resize(size);
+	Mesh::bind(*this);
+	glGetBufferSubData(GL_ARRAY_BUFFER, 0, size * sizeof(v2), vertices.data());
+	Mesh::unbind();
+	return Poly(std::move(vertices));
 }
 
 // ============================================================================
 
-void vlt::set_mesh_vertices(mesh & mesh, const vector<v2> & vertices)
+void vlt::set_mesh_vertices(Mesh & mesh, const Vector<v2> & vertices)
 {
-	mesh::bind(mesh);
+	Mesh::bind(mesh);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(v2), vertices.data(), GL_STATIC_DRAW);
-	mesh::unbind();
-	mesh.m_size = vertices.size();
+	Mesh::unbind();
+	mesh.size = vertices.size();
 }
 
 // ----------------------------------------------------------------------------
 
-deserializer & vlt::operator>>(deserializer & deserializer, mesh & mesh)
+Deserializer & vlt::operator>>(Deserializer & deserializer, Mesh & mesh)
 {
-	poly poly(deserializer);
+	Poly poly(deserializer);
 	set_mesh_vertices(mesh, poly.vertices);
 	return deserializer;
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const mesh & mesh)
+Serializer & vlt::operator<<(Serializer & serializer, const Mesh & mesh)
 {
 	return serializer << mesh.get_poly();
 }

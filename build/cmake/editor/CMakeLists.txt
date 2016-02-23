@@ -5,31 +5,39 @@ set (Editor_ROOT ${Violet_SRC}/editor)
 
 # define header and source files for the library
 set (HEADER_FILES
-    ${Editor_ROOT}/CppScriptExports.h
-    ${Editor_ROOT}/Defines.h
-    ${Editor_ROOT}/EditorSystem.h
-    ${Editor_ROOT}/command/Command.h
-    ${Editor_ROOT}/command/ChainCommand.h
-    ${Editor_ROOT}/command/ClearAllCommand.h
-    ${Editor_ROOT}/command/MoveToCommand.h
-    ${Editor_ROOT}/command/file/OpenCommand.h
-    ${Editor_ROOT}/command/file/SaveAllCommand.h
-    ${Editor_ROOT}/command/selection/DeselectCommand.h
-    ${Editor_ROOT}/command/selection/SelectCommand.h
-    ${Editor_ROOT}/component/EditorComponent.h
+	${Editor_ROOT}/command/chain_command.h
+	${Editor_ROOT}/command/clear_command.h
+	${Editor_ROOT}/command/command.h
+	${Editor_ROOT}/command/delete_command.h
+	${Editor_ROOT}/command/file/open_command.h
+	${Editor_ROOT}/command/file/save_all_command.h
+	${Editor_ROOT}/command/move_to_command.h
+	${Editor_ROOT}/command/resize_command.h
+	${Editor_ROOT}/command/selection/deselect_command.h
+	${Editor_ROOT}/command/selection/select_command.h
+	${Editor_ROOT}/command/set_color_command.h
+	${Editor_ROOT}/command/set_text_command.h
+	${Editor_ROOT}/component/editor_component.h
+	${Editor_ROOT}/cpp_script_exports.h
+	${Editor_ROOT}/defines.h
+	${Editor_ROOT}/editor_system.h
 )
 
 set (SOURCE_FILES
-    ${Editor_ROOT}/CppScriptExports.cpp
-    ${Editor_ROOT}/command/ChainCommand.cpp
-    ${Editor_ROOT}/command/ClearAllCommand.cpp
-    ${Editor_ROOT}/command/MoveToCommand.cpp
-    ${Editor_ROOT}/command/file/OpenCommand.cpp
-    ${Editor_ROOT}/command/file/SaveAllCommand.cpp
-    ${Editor_ROOT}/command/selection/DeselectCommand.cpp
-    ${Editor_ROOT}/command/selection/SelectCommand.cpp
-    ${Editor_ROOT}/EditorSystem.cpp
-    ${Editor_ROOT}/component/EditorComponent.cpp
+	${Editor_ROOT}/command/chain_command.cpp
+	${Editor_ROOT}/command/clear_command.cpp
+	${Editor_ROOT}/command/delete_command.cpp
+	${Editor_ROOT}/command/file/open_command.cpp
+	${Editor_ROOT}/command/file/save_all_command.cpp
+	${Editor_ROOT}/command/move_to_command.cpp
+	${Editor_ROOT}/command/resize_command.cpp
+	${Editor_ROOT}/command/selection/deselect_command.cpp
+	${Editor_ROOT}/command/selection/select_command.cpp
+	${Editor_ROOT}/command/set_color_command.cpp
+	${Editor_ROOT}/command/set_text_command.cpp
+	${Editor_ROOT}/component/editor_component.cpp
+	${Editor_ROOT}/cpp_script_exports.cpp
+	${Editor_ROOT}/editor_system.cpp
 )
 
 include_directories (${Violet_SRC})

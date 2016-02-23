@@ -7,18 +7,18 @@
 
 namespace vlt
 {
-	struct VIOLET_API binary_deserializer final : public deserializer
+	struct VIOLET_API Binary_Deserializer final : public Deserializer
 	{
 		std::istream & stream;
 		std::string string_buffer;
 
 		static void install();
 
-		binary_deserializer(std::istream & stream);
+		Binary_Deserializer(std::istream & stream);
 
 		virtual bool is_valid() const override;
 
-		virtual std::unique_ptr<deserializer> enter_segment(const char * label) override;
+		virtual std::unique_ptr<Deserializer> enter_segment(const char * label) override;
 		virtual const char * next_label() const override;
 		
 		virtual bool get_b8(const char * label) override;

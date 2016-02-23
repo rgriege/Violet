@@ -1,9 +1,8 @@
 // ============================================================================
 
-#include "violet/physics/system/physics_system.h"
-
 #include "violet/core/engine.h"
 #include "violet/component/scene.h"
+#include "violet/physics/system/physics_system.h"
 #include "violet/serialization/deserializer.h"
 #include "violet/structures/quad_tree.h"
 #include "violet/system/system_factory.h"
@@ -18,11 +17,11 @@ namespace PhysicsSystemNamespace
 {
 	// ----------------------------------------------------------------------------
 
-	typedef entity<world_transform_component, physics_component> physics_entity;
-	void resolve_collision(const physics_entity & entity, const intersection & intersection, const r32 impulseMagnitude);
+	typedef Entity<World_Transform_Component, Physics_Component> physics_entity;
+	void resolve_collision(const physics_entity & entity, const Intersection & intersection, const r32 impulseMagnitude);
 
-	void update_physics(handle entity_id, const world_transform_component & tc, physics_component & pc, const v2 & gravity, const r32 drag, const r32 dt);
-	void collide(physics_component & physics, const v2 & impulse, r32 angularImpulse);
+	void update_physics(Handle entity_id, const World_Transform_Component & tc, Physics_Component & pc, const v2 & gravity, const r32 drag, const r32 dt);
+	void collide(Physics_Component & physics, const v2 & impulse, r32 angularImpulse);
 
 	// ----------------------------------------------------------------------------
 
@@ -36,16 +35,16 @@ using namespace PhysicsSystemNamespace;
 
 // ============================================================================
 
-const char * physics_system::get_label_static()
+const char * Physics_System::get_label_static()
 {
 	return "phys";
 }
 
 // ----------------------------------------------------------------------------
 
-void physics_system::install(system_factory & factory)
+void Physics_System::install(System_Factory & factory)
 {
-	factory.assign(get_label_static(), &physics_system::init);
+	factory.assign(get_label_static(), &Physics_System::init);
 }
 
 // ----------------------------------------------------------------------------
@@ -62,22 +61,22 @@ namespace
 static void init_task(void * mem)
 {
 	auto data = make_unique<init_task_data>(mem);
-	engine::instance().add_system(std::unique_ptr<vlt::system>(new physics_system(data->drag, data->gravity)));
+	Engine::instance().add_system(std::unique_ptr<vlt::System>(new Physics_System(data->drag, data->gravity)));
 }
 
-void physics_system::init(deserializer & deserializer)
+void Physics_System::init(Deserializer & deserializer)
 {
 	auto settingsSegment = deserializer.enter_segment(get_label_static());
 	auto data = new init_task_data;
 	data->drag = settingsSegment->get_r32("drag");
 	data->gravity = v2(*settingsSegment->enter_segment("gravity"));
-	add_task(init_task, data, physics_component::metadata->thread, task_type::write);
+	add_task(init_task, data, Physics_Component::metadata->thread, task_type::write);
 }
 
 // ============================================================================
 
-physics_system::physics_system(r32 drag, v2 gravity) :
-	system(get_label_static()),
+Physics_System::Physics_System(r32 drag, v2 gravity) :
+	System(get_label_static()),
 	m_drag(drag),
 	m_gravity(std::move(gravity))
 {
@@ -85,8 +84,8 @@ physics_system::physics_system(r32 drag, v2 gravity) :
 
 // ----------------------------------------------------------------------------
 
-physics_system::physics_system(physics_system && other) :
-	system(std::move(other)),
+Physics_System::Physics_System(Physics_System && other) :
+	System(std::move(other)),
 	m_drag(other.m_drag),
 	m_gravity(other.m_gravity)
 {
@@ -96,7 +95,7 @@ physics_system::physics_system(physics_system && other) :
 
 struct update_physics_task_data
 {
-	handle entity_id;
+	Handle entity_id;
 	v2 gravity;
 	r32 drag;
 	r32 dt;
@@ -106,45 +105,45 @@ static void update_physics_task(void * mem)
 {
 	auto data = make_unique<update_physics_task_data>(mem);
 	
-	auto tc = engine::instance().get_current_scene().get_component<world_transform_component>(data->entity_id);
-	auto pc = engine::instance().get_current_scene().get_component<physics_component>(data->entity_id);
+	auto tc = Engine::instance().get_current_scene().get_component<World_Transform_Component>(data->entity_id);
+	auto pc = Engine::instance().get_current_scene().get_component<Physics_Component>(data->entity_id);
 	update_physics(data->entity_id, *tc, *pc, data->gravity, data->drag, data->dt);
 }
 
-void physics_system::update(const r32 dt)
+void Physics_System::update(const r32 dt)
 {
-	const engine & engine = engine::instance();
-	const auto & windowSystem = engine.get_system<window_system>();
+	const Engine & engine = Engine::instance();
+	const auto & windowSystem = engine.get_system<Window_System>();
 	const aabb boundary(0, 0, static_cast<r32>(windowSystem->get_width()), static_cast<r32>(windowSystem->get_height()));
-	quad_tree<rigid_body> tree(boundary, 4);
+	Quad_Tree<Rigid_Body> tree(boundary, 4);
 
-	for (const auto & entity : engine::instance().get_current_scene().get_entity_view<world_transform_component, physics_component>())
+	for (const auto & entity : Engine::instance().get_current_scene().get_entity_view<World_Transform_Component, Physics_Component>())
 	{
-		auto & transformComponent = entity.get<world_transform_component>();
-		auto & physicsComponent = entity.get<physics_component>();
-		tree.insert(rigid_body(transformComponent, physicsComponent), physicsComponent.m_polygon.get_bounding_box().transform(to2d(transformComponent.transform)));
-		add_task(update_physics_task, new update_physics_task_data{ entity.id, m_gravity, m_drag, dt }, physics_component::metadata->thread, task_type::write);
+		auto & transformComponent = entity.get<World_Transform_Component>();
+		auto & physicsComponent = entity.get<Physics_Component>();
+		tree.insert(Rigid_Body(transformComponent, physicsComponent), physicsComponent.m_polygon.get_bounding_box().transform(to2d(transformComponent.transform)));
+		add_task(update_physics_task, new update_physics_task_data{ entity.id, m_gravity, m_drag, dt }, Physics_Component::metadata->thread, task_type::write);
 	}
-	for (const auto & entity : engine::instance().get_current_scene().get_entity_view<world_transform_component, physics_component>())
+	for (const auto & entity : Engine::instance().get_current_scene().get_entity_view<World_Transform_Component, Physics_Component>())
 	{
-		auto & transformComponent = entity.get<world_transform_component>();
-		auto & physicsComponent = entity.get<physics_component>();
-		rigid_body body(transformComponent, physicsComponent);
+		auto & transformComponent = entity.get<World_Transform_Component>();
+		auto & physicsComponent = entity.get<Physics_Component>();
+		Rigid_Body body(transformComponent, physicsComponent);
 
-		std::vector<rigid_body> otherBodies;
+		std::vector<Rigid_Body> otherBodies;
 		tree.retrieve(otherBodies, physicsComponent.m_polygon.get_bounding_box().transform(to2d(transformComponent.transform)));
 
 		for (auto & otherBody : otherBodies)
 		{
-			intersection intersection(std::move(body), std::move(otherBody), dt);
+			Intersection intersection(std::move(body), std::move(otherBody), dt);
 			if (intersection.exists())
 			{
 				printf("collision!\n");
-				/*r32 const impulseMagnitude = (-(1 + ms_restitution) * (otherPhysicsComponent.m_velocity - physicsComponent.m_velocity).dot(intersection.getIntersectionAxis())) /
+				/*r32 const impulseMagnitude = (-(1 + ms_restitution) * (otherPhysicsComponent.m_velocity - physicsComponent.m_velocity).dot(Intersection.getIntersectionAxis())) /
 					(1 / physicsComponent.m_mass + 1 / otherPhysicsComponent.m_mass);
-				resolve_collision(transformComponent, physicsComponent, intersection, impulseMagnitude);
-				resolve_collision(otherWorldtransformComponent, otherPhysicsComponent, intersection, impulseMagnitude);
-				CollisionEvent::emit(engine.event_context, entity, otherEntity.get());*/
+				resolve_collision(transformComponent, physicsComponent, Intersection, impulseMagnitude);
+				resolve_collision(otherWorldtransformComponent, otherPhysicsComponent, Intersection, impulseMagnitude);
+				CollisionEvent::emit(Engine.Event_Context, entity, otherEntity.get());*/
 			}
 		}
 	}
@@ -154,7 +153,7 @@ void physics_system::update(const r32 dt)
 
 struct resolve_collision_task_data
 {
-	handle entity_id;
+	Handle entity_id;
 	v2 impulse;
 	v2 location;
 };
@@ -162,14 +161,14 @@ struct resolve_collision_task_data
 static void resolve_collision_task(void * mem)
 {
 	auto data = make_unique<resolve_collision_task_data>(mem);
-	auto & physicsComponent = *engine::instance().get_current_scene().get_component<physics_component>(data->entity_id);
+	auto & physicsComponent = *Engine::instance().get_current_scene().get_component<Physics_Component>(data->entity_id);
 	collide(physicsComponent, data->impulse / physicsComponent.m_mass, -data->location.cross(data->impulse) / physicsComponent.m_momentOfInertia);
 }
 
-void PhysicsSystemNamespace::resolve_collision(const physics_entity & entity, const intersection & intersection, const r32 impulseMagnitude)
+void PhysicsSystemNamespace::resolve_collision(const physics_entity & entity, const Intersection & intersection, const r32 impulseMagnitude)
 {
-	const auto & transformComponent = entity.get<world_transform_component>();
-	const auto & physicsComponent = entity.get<physics_component>();
+	const auto & transformComponent = entity.get<World_Transform_Component>();
+	const auto & physicsComponent = entity.get<Physics_Component>();
 
 	auto data = new resolve_collision_task_data;
 	data->entity_id = entity.id;
@@ -178,14 +177,14 @@ void PhysicsSystemNamespace::resolve_collision(const physics_entity & entity, co
 	if (data->impulse.dot(data->location) > 0)
 		data->impulse.invert();
 
-	add_task(resolve_collision_task, data, physics_component::metadata->thread, task_type::write);
+	add_task(resolve_collision_task, data, Physics_Component::metadata->thread, task_type::write);
 }
 
 // ============================================================================
 
 struct move_task_data
 {
-	handle entity_id;
+	Handle entity_id;
 	v2 position;
 };
 
@@ -193,12 +192,12 @@ static void move_task(void * mem)
 {
 	auto data = make_unique<move_task_data>(mem);
 
-	auto * tc = engine::instance().get_current_scene().get_component<world_transform_component>(data->entity_id);
+	auto * tc = Engine::instance().get_current_scene().get_component<World_Transform_Component>(data->entity_id);
 	tc->transform[0][2] = data->position.x;
 	tc->transform[1][2] = data->position.y;
 }
 
-void PhysicsSystemNamespace::update_physics(const handle entity_id, const world_transform_component & tc, physics_component & pc, const v2 & gravity, const r32 drag, const r32 dt)
+void PhysicsSystemNamespace::update_physics(const Handle entity_id, const World_Transform_Component & tc, Physics_Component & pc, const v2 & gravity, const r32 drag, const r32 dt)
 {
 	v2 const oldPosition = { tc.transform[0][2], tc.transform[1][2] };
 	v2 newPosition = oldPosition;
@@ -227,12 +226,12 @@ void PhysicsSystemNamespace::update_physics(const handle entity_id, const world_
 	}*/
 
 	if (newPosition != oldPosition)
-		add_task(move_task, new move_task_data{ entity_id, newPosition }, world_transform_component::metadata->thread, task_type::write);
+		add_task(move_task, new move_task_data{ entity_id, newPosition }, World_Transform_Component::metadata->thread, task_type::write);
 }
 
 // ============================================================================
 
-void PhysicsSystemNamespace::collide(physics_component & physicsComponent, const v2 & impulse, const r32 angularImpulse)
+void PhysicsSystemNamespace::collide(Physics_Component & physicsComponent, const v2 & impulse, const r32 angularImpulse)
 {
 	physicsComponent.m_angularVelocity += angularImpulse;
 	physicsComponent.m_velocity += impulse;

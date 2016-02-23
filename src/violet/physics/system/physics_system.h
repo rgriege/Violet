@@ -9,23 +9,23 @@
 
 namespace vlt
 {
-	struct deserializer;
-	struct system_factory;
+	struct Deserializer;
+	struct System_Factory;
 
-	struct VIOLET_API physics_system final : public system
+	struct VIOLET_API Physics_System final : public System
 	{
 	public:
 
 		static const char * get_label_static();
-		static void install(system_factory & factory);
-		static void init(deserializer & deserializer);
+		static void install(System_Factory & factory);
+		static void init(Deserializer & deserializer);
 
 	public:
 
-		physics_system(r32 drag, v2 gravity);
-		physics_system(physics_system && other);
+		Physics_System(r32 drag, v2 gravity);
+		Physics_System(Physics_System && other);
 
-		virtual ~physics_system() override = default;
+		virtual ~Physics_System() override = default;
 		virtual void update(r32 dt) override;
 
 	private:
@@ -34,7 +34,7 @@ namespace vlt
 		v2 m_gravity;
 	};
 
-	DEFINE_EVENT(CollisionEvent, void(handle e1, handle e2));
+	DEFINE_EVENT(CollisionEvent, void(Handle e1, Handle e2));
 }
 
 #endif

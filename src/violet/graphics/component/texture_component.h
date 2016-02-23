@@ -8,28 +8,28 @@
 
 namespace vlt
 {
-	struct component_deserializer;
-	struct serializer;
-	struct shader_program;
+	struct Component_Deserializer;
+	struct Serializer;
+	struct Shader_Program;
 
-	struct VIOLET_API texture_component final : public render_component_data
+	struct VIOLET_API Texture_Component final : public Render_Component_Data
 	{
-		std::shared_ptr<texture> m_texture;
-		std::unique_ptr<mesh> m_texCoords;
+		std::shared_ptr<Texture> texture;
+		std::unique_ptr<Mesh> tex_coords;
 
-		static const component_metadata * metadata;
+		static const Component_Metadata * metadata;
 
-		texture_component(handle entity_id, component_deserializer & deserializer);
-		texture_component(handle entity_id, const poly & p, std::shared_ptr<shader_program> shader, std::shared_ptr<texture> texture, const poly & texCoords);
-		texture_component(const texture_component &) = delete;
-		texture_component & operator=(const texture_component &) = delete;
-		texture_component(texture_component && other);
+		Texture_Component(Handle entity_id, Component_Deserializer & deserializer);
+		Texture_Component(Handle entity_id, const Poly & p, std::shared_ptr<Shader_Program> shader, std::shared_ptr<Texture> texture, const Poly & tex_coords);
+		Texture_Component(const Texture_Component &) = delete;
+		Texture_Component & operator=(const Texture_Component &) = delete;
+		Texture_Component(Texture_Component && other);
 	};
 
 	VIOLET_API void install_texture_component();
 
-	VIOLET_API component_deserializer & operator>>(component_deserializer & deserializer, texture_component & component);
-	VIOLET_API serializer & operator<<(serializer & serializer, const texture_component & component);
+	VIOLET_API Component_Deserializer & operator>>(Component_Deserializer & deserializer, Texture_Component & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Texture_Component & component);
 }
 
 #endif

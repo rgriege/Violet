@@ -10,26 +10,22 @@
 
 namespace vlt
 {
-	struct VIOLET_API handle_manager
+	struct VIOLET_API Handle_Manager
 	{
-		handle_manager();
-		~handle_manager();
+		std::vector<bool> used_list;
+		std::deque<u16> recycle_list;
 
-		handle_manager(handle_manager && other);
-		handle_manager & operator=(handle_manager && other);
+		Handle_Manager();
+		Handle_Manager(Handle_Manager && other) = default;
+		Handle_Manager & operator=(Handle_Manager && other) = default;
 
-		handle create();
-		bool used(handle handle) const;
-		void free(handle handle);
-		void freeAll();
+		Handle create();
+		bool used(Handle handle) const;
+		void free(Handle handle);
+		void free_all();
 
-		u32 getUsedCount() const;
-		std::vector<handle> getUsed() const;
-
-	private:
-
-		std::vector<bool> m_usedList;
-		std::deque<u16> m_recycleList;
+		u32 get_used_count() const;
+		std::vector<Handle> get_used() const;
 	};
 }
 

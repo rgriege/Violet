@@ -7,22 +7,22 @@
 
 namespace vlt
 {
-	struct component_deserializer;
-	struct serializer;
+	struct Component_Deserializer;
+	struct Serializer;
 
-	struct VIOLET_API key_input_component final
+	struct VIOLET_API Key_Input_Component final
 	{
-		static const component_metadata * metadata;
+		static const Component_Metadata * metadata;
 
-		key_input_component(handle entity_id);
-		key_input_component(handle entity_id, component_deserializer & deserializer);
-		key_input_component(key_input_component && other);
+		Key_Input_Component(Handle entity_id);
+		Key_Input_Component(Handle entity_id, Component_Deserializer & deserializer);
+		Key_Input_Component(Key_Input_Component && other);
 	};
 
 	VIOLET_API void install_key_input_component();
 
-	VIOLET_API serializer & operator<<(serializer & serializer, const key_input_component & component);
-	VIOLET_API component_deserializer & operator>>(component_deserializer & deserializer, key_input_component & component);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const Key_Input_Component & component);
+	VIOLET_API Component_Deserializer & operator>>(Component_Deserializer & deserializer, Key_Input_Component & component);
 }
 
 #endif

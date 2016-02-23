@@ -11,21 +11,21 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * local_transform_component::metadata;
+const Component_Metadata * Local_Transform_Component::metadata;
 
 // ============================================================================
 
-local_transform_component::local_transform_component(const handle entity_id, component_deserializer & deserializer) :
-	local_transform_component(entity_id, handle::Invalid, m4::Identity)
+Local_Transform_Component::Local_Transform_Component(const Handle entity_id, Component_Deserializer & deserializer) :
+	Local_Transform_Component(entity_id, Handle::Invalid, m4::Identity)
 {
 	deserializer >> *this;
 }
 
 // ----------------------------------------------------------------------------
 
-local_transform_component::local_transform_component(const handle entity_id, const handle parentId, const m4 & transform) :
-	parent_id(parentId),
-	transform(transform)
+Local_Transform_Component::Local_Transform_Component(const Handle entity_id, const Handle _parent_id, const m4 & _transform) :
+	parent_id(_parent_id),
+	transform(_transform)
 {
 }
 
@@ -33,13 +33,13 @@ local_transform_component::local_transform_component(const handle entity_id, con
 
 void vlt::install_local_transform_component()
 {
-	local_transform_component::metadata = init_component_metadata(tag('l', 't', 'f', 'm'), 1, sizeof(local_transform_component));
-	scene::install_component<local_transform_component>();
+	Local_Transform_Component::metadata = init_component_metadata(Tag('l', 't', 'f', 'm'), 1, sizeof(Local_Transform_Component));
+	Scene::install_component<Local_Transform_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & vlt::operator>>(component_deserializer & deserializer, local_transform_component & component)
+Component_Deserializer & vlt::operator>>(Component_Deserializer & deserializer, Local_Transform_Component & component)
 {
 	component.parent_id = deserializer.get_entity_id("parentId");
 
@@ -65,7 +65,7 @@ component_deserializer & vlt::operator>>(component_deserializer & deserializer, 
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const local_transform_component & component)
+Serializer & vlt::operator<<(Serializer & serializer, const Local_Transform_Component & component)
 {
 	serializer.write_u32("parentId", component.parent_id.id);
 	return serializer << component.transform;

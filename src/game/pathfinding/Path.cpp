@@ -1,9 +1,9 @@
 // ============================================================================
 
-#include "game/pathfinding/Path.h"
+#include "game/pathfinding/path.h"
 
-#include "game/pathfinding/Map.h"
-#include "game/pathfinding/PathfindingComponent.h"
+#include "game/pathfinding/map.h"
+#include "game/pathfinding/pathfindingcomponent.h"
 
 #include <queue>
 
@@ -25,7 +25,7 @@ namespace PathNamespace
 	{
 	public:
 
-		typedef std::vector<AStarNode>::iterator Iterator;
+		typedef std::Vector<AStarNode>::iterator Iterator;
 
 	public:
 
@@ -40,7 +40,7 @@ namespace PathNamespace
 	}
 
 	template <typename T>
-	void reverse(std::vector<T> & vec);
+	void reverse(std::Vector<T> & vec);
 }
 
 using namespace PathNamespace;
@@ -50,7 +50,7 @@ using namespace PathNamespace;
 Path Path::create(const Vec2f & start, const Vec2f & goal, const Map & map)
 {
 	AStarOpenSet openSet;
-	std::vector<AStarNode> closedSet;
+	std::Vector<AStarNode> closedSet;
 
 	uint32 firstNode = 0;
 	uint32 lastNode = 0;
@@ -106,7 +106,7 @@ Path Path::create(const Vec2f & start, const Vec2f & goal, const Map & map)
 		}
 	}
 
-	std::vector<Vec2f> points;
+	std::Vector<Vec2f> points;
 	points.emplace_back(goal);
 	uint32 node = closedSet.size() - 1;
 	while (node != -1)
@@ -128,7 +128,7 @@ Path::Path() :
 
 // ----------------------------------------------------------------------------
 
-Path::Path(std::vector<Vec2f> && points) :
+Path::Path(std::Vector<Vec2f> && points) :
 	m_points(std::move(points))
 {
 }
@@ -142,7 +142,7 @@ Path::Path(Path && other) :
 
 // ----------------------------------------------------------------------------
 
-const std::vector<Vec2f> & Path::getPoints() const
+const std::Vector<Vec2f> & Path::getPoints() const
 {
 	return m_points;
 }
@@ -171,7 +171,7 @@ void PathNamespace::AStarOpenSet::resort()
 // ============================================================================
 
 template <typename T>
-void PathNamespace::reverse(std::vector<T> & vec)
+void PathNamespace::reverse(std::Vector<T> & vec)
 {
 	if (vec.size() < 2)
 		return;

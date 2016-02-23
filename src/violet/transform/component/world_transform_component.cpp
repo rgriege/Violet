@@ -11,27 +11,27 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * world_transform_component::metadata;
+const Component_Metadata * World_Transform_Component::metadata;
 
 // ============================================================================
 
-world_transform_component::world_transform_component(const handle entity_id) :
-	world_transform_component(entity_id, m4::Identity)
+World_Transform_Component::World_Transform_Component(const Handle entity_id) :
+	World_Transform_Component(entity_id, m4::Identity)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-world_transform_component::world_transform_component(const handle entity_id, component_deserializer & deserializer) :
-	world_transform_component(entity_id, m4::Identity)
+World_Transform_Component::World_Transform_Component(const Handle entity_id, Component_Deserializer & deserializer) :
+	World_Transform_Component(entity_id, m4::Identity)
 {
 	deserializer >> *this;
 }
 
 // ----------------------------------------------------------------------------
 
-world_transform_component::world_transform_component(const handle entity_id, const m4 & transform) :
-	transform(transform)
+World_Transform_Component::World_Transform_Component(const Handle entity_id, const m4 & _transform) :
+	transform(_transform)
 {
 }
 
@@ -39,13 +39,13 @@ world_transform_component::world_transform_component(const handle entity_id, con
 
 void vlt::install_world_transform_component()
 {
-	world_transform_component::metadata = init_component_metadata(tag('w', 't', 'f', 'm'), 1, sizeof(world_transform_component));
-	scene::install_component<world_transform_component>();
+	World_Transform_Component::metadata = init_component_metadata(Tag('w', 't', 'f', 'm'), 1, sizeof(World_Transform_Component));
+	Scene::install_component<World_Transform_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & vlt::operator>>(component_deserializer & deserializer, world_transform_component & component)
+Component_Deserializer & vlt::operator>>(Component_Deserializer & deserializer, World_Transform_Component & component)
 {
 	switch (deserializer.get_version())
 	{
@@ -69,7 +69,7 @@ component_deserializer & vlt::operator>>(component_deserializer & deserializer, 
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const world_transform_component & component)
+Serializer & vlt::operator<<(Serializer & serializer, const World_Transform_Component & component)
 {
 	return serializer << component.transform;
 }

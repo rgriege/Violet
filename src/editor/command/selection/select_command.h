@@ -1,28 +1,28 @@
 #ifndef EDITOR_SELECT_COMMAND_H
 #define EDITOR_SELECT_COMMAND_H
 
-#include "editor/command/command.h"
-#include "violet/core/handle.h"
-
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "editor/command/command.h"
+#include "violet/core/handle.h"
+
 namespace edt
 {
-	struct EDITOR_API select_command final : public command
+	struct EDITOR_API Select_Command final : public Command
 	{
 	public:
 
 		static const char * get_usage();
-		static std::unique_ptr<command> parse(const std::string & text);
+		static std::unique_ptr<Command> parse(const std::string & text);
 
 	public:
 
-		explicit select_command(vlt::handle entity_id);
-		explicit select_command(const std::vector<vlt::handle> & entityIds);
-		explicit select_command(std::vector<vlt::handle> && entityIds);
-		virtual ~select_command() override = default;
+		explicit Select_Command(vlt::Handle entity_id);
+		explicit Select_Command(const std::vector<vlt::Handle> & entityIds);
+		explicit Select_Command(std::vector<vlt::Handle> && entityIds);
+		virtual ~Select_Command() override = default;
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;
@@ -30,7 +30,7 @@ namespace edt
 
 	private:
 
-		std::vector<vlt::handle> m_entityIds;
+		std::vector<vlt::Handle> m_entityIds;
 	};
 }
 

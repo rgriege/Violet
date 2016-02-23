@@ -1,11 +1,11 @@
 #ifndef WORLD_SYSTEM_H
 #define WORLD_SYSTEM_H
 
-#include "violet/system/System.h"
-#include "violet/time/Time.h"
-#include "game/Config.h"
+#include "violet/system/system.h"
+#include "violet/time/time.h"
+#include "game/config.h"
 
-#include <memory>
+#include <Memory>
 
 namespace Violet
 {
@@ -19,8 +19,8 @@ class VIOLET_GAME_API WorldSystem : public Violet::System
 {
 public:
 
-	static void install(Violet::SystemFactory & factory);
-	static void init(Violet::Deserializer & deserializer);
+	static void install(Violet::SystemFactory & Factory);
+	static void init(Violet::Deserializer & Deserializer);
 	static const char * getStaticLabel();
 
 public:

@@ -9,31 +9,31 @@
 
 namespace vlt
 {
-	struct VIOLET_API shared_library final
+	struct VIOLET_API Shared_Library final
 	{
 	private:
 
-		struct implementation;
+		struct Implementation;
 
 	public:
 
-		static std::shared_ptr<shared_library> load(const char * filename);
+		static std::shared_ptr<Shared_Library> load(const char * filename);
 		static const char * get_suffix();
 
 	public:
 
-		~shared_library();
+		~Shared_Library();
 
 		std::string get_filename() const;
 		void * get_method_ptr(const char * name);
 
 	private:
 
-		shared_library(unique_val<implementation> && impl);
+		Shared_Library(unique_val<Implementation> && impl);
 
 	private:
 
-		unique_val<implementation> m_impl;
+		unique_val<Implementation> m_impl;
 	};
 }
 

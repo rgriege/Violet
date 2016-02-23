@@ -2,9 +2,9 @@
 #define GAME_Path_H
 
 #include "violet/math/Vec2.h"
-#include "game/Config.h"
+#include "game/config.h"
 
-#include <vector>
+#include <Vector>
 
 class Map;
 
@@ -17,14 +17,14 @@ public:
 public:
 
 	Path();
-	Path(std::vector<Vec2f> && points);
+	Path(std::Vector<Vec2f> && points);
 	Path(Path && other);
 
-	const std::vector<Vec2f> & getPoints() const;
+	const std::Vector<Vec2f> & getPoints() const;
 
 private:
 
-	std::vector<Vec2f> m_points;
+	std::Vector<Vec2f> m_points;
 };
 
 #endif

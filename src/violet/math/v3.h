@@ -8,8 +8,8 @@
 
 namespace vlt
 {
-	struct deserializer;
-	struct serializer;
+	struct Deserializer;
+	struct Serializer;
 
 	struct VIOLET_API v3
 	{
@@ -23,7 +23,7 @@ namespace vlt
 		v3();
 		v3(const v3 & rhs);
 		v3(r32 _x, r32 _y, r32 _z);
-		v3(deserializer & deserializer);
+		v3(Deserializer & deserializer);
 
 		r32 magnitude() const;
 		r32 mag_squared() const;
@@ -58,8 +58,8 @@ namespace vlt
 	VIOLET_API bool operator==(const v3 & lhs, const v3 & rhs);
 	VIOLET_API bool operator!=(const v3 & lhs, const v3 & rhs);
 	VIOLET_API std::ostream & operator<<(std::ostream & os, const v3 & vec);
-	VIOLET_API serializer & operator<<(serializer & serializer, const v3 & vec);
-	VIOLET_API deserializer & operator>>(deserializer & deserializer, v3 & vec);
+	VIOLET_API Serializer & operator<<(Serializer & serializer, const v3 & vec);
+	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, v3 & vec);
 }
 
 #endif

@@ -10,33 +10,33 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * script_component::metadata;
+const Component_Metadata * Script_Component::metadata;
 
 // ============================================================================
 
-script_component::script_component(const handle entity_id, deserializer & deserializer) :
-	script_component(entity_id, deserializer.get_string("file"))
+Script_Component::Script_Component(const Handle entity_id, Deserializer & deserializer) :
+	Script_Component(entity_id, deserializer.get_string("file"))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-script_component::script_component(handle entity_id, const char * const fileName) :
-	script(script_factory::create(fileName))
+Script_Component::Script_Component(Handle entity_id, const char * const fileName) :
+	script(Script_Factory::create(fileName))
 {
 	BindToComponentMethod::run(*script, std::move(entity_id));
 }
 
 // ----------------------------------------------------------------------------
 
-script_component::script_component(script_component && other) :
+Script_Component::Script_Component(Script_Component && other) :
 	script(std::move(other.script))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-script_component::~script_component()
+Script_Component::~Script_Component()
 {
 	UnbindFromComponentMethod::run(*script);
 }
@@ -45,13 +45,13 @@ script_component::~script_component()
 
 void vlt::install_script_component()
 {
-	script_component::metadata = init_component_metadata(tag('s', 'c', 'p', 't'), 0, sizeof(script_component));
-	scene::install_component<script_component>();
+	Script_Component::metadata = init_component_metadata(Tag('s', 'c', 'p', 't'), 0, sizeof(Script_Component));
+	Scene::install_component<Script_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const script_component & component)
+Serializer & vlt::operator<<(Serializer & serializer, const Script_Component & component)
 {
 	serializer.write_string("file", component.script->get_filename().c_str());
 	return serializer;

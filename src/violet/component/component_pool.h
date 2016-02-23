@@ -9,16 +9,16 @@
 
 namespace vlt
 {
-	struct component_deserializer;
-	struct serializer;
+	struct Component_Deserializer;
+	struct Serializer;
 
-	struct VIOLET_API component_pool
+	struct VIOLET_API Component_Pool
 	{
-		const component_metadata * metadata;
-		struct func_table;
-		std::unique_ptr<func_table> ftable;
+		const Component_Metadata * metadata;
+		struct Func_Table;
+		std::unique_ptr<Func_Table> ftable;
 		std::vector<ubyte> components;
-		std::vector<handle> ids;
+		std::vector<Handle> ids;
 
 		template <typename ComponentType, bool IsConst>
 		struct Iterator
@@ -29,18 +29,18 @@ namespace vlt
 		private:
 
 			pointer component_ptr;
-			const handle * id_ptr;
+			const Handle * id_ptr;
 
 		public:
 
-			Iterator(pointer ptr, const handle * idPtr);
+			Iterator(pointer ptr, const Handle * idPtr);
 
 			Iterator<ComponentType, IsConst> & operator++();
-			Iterator<ComponentType, IsConst> & advance_to(handle entity_id);
+			Iterator<ComponentType, IsConst> & advance_to(Handle entity_id);
 
 			reference operator*();
 			pointer operator->();
-			handle get_entity_id() const;
+			Handle get_entity_id() const;
 
 			operator bool() const;
 			bool operator!=(const Iterator<ComponentType, IsConst> & other) const;
@@ -49,12 +49,12 @@ namespace vlt
 		template <typename T> using iterator = Iterator<T, false>;
 		template <typename T> using const_iterator = Iterator<T, true>;
 
-		struct VIOLET_API func_table
+		struct VIOLET_API Func_Table
 		{
-			typedef void(*load_fn)(component_pool &, component_deserializer &);
-			typedef void(*save_fn)(serializer &, const void *);
+			typedef void(*load_fn)(Component_Pool &, Component_Deserializer &);
+			typedef void(*save_fn)(Serializer &, const void *);
 			typedef void(*destroy_fn)(void*);
-			func_table(load_fn load, save_fn save, destroy_fn destroy);
+			Func_Table(load_fn load, save_fn save, destroy_fn destroy);
 
 			load_fn load;
 			save_fn save;
@@ -62,25 +62,25 @@ namespace vlt
 		};
 
 		template <typename ComponentType>
-		static component_pool create();
+		static Component_Pool create();
 		
-		component_pool(component_pool && other);
-		component_pool & operator=(component_pool && other);
-		~component_pool();
+		Component_Pool(Component_Pool && other);
+		Component_Pool & operator=(Component_Pool && other);
+		~Component_Pool();
 
-		void load(component_deserializer & deserializer);
-		void save(serializer & serailizer) const;
-		u32 save(serializer & serailizer, const std::vector<handle> & entity_ids) const;
+		void load(Component_Deserializer & Deserializer);
+		void save(Serializer & serailizer) const;
+		u32 save(Serializer & serailizer, const std::vector<Handle> & entity_ids) const;
 
 		template <typename ComponentType, typename... Args>
-		ComponentType & create(handle entity_id, Args && ... args);
+		ComponentType & create(Handle entity_id, Args && ... args);
 
-		bool has(handle entity_id) const;
+		bool has(Handle entity_id) const;
 
 		template <typename ComponentType>
-		ComponentType * get(handle entity_id);
+		ComponentType * get(Handle entity_id);
 		template <typename ComponentType>
-		const ComponentType * get(handle entity_id) const;
+		const ComponentType * get(Handle entity_id) const;
 
 		template <typename ComponentType>
 		iterator<ComponentType> begin();
@@ -93,22 +93,22 @@ namespace vlt
 
 		u32 size() const;
 
-		bool remove(handle entity_id);
+		bool remove(Handle entity_id);
 		void clear();
 
 	private:
 
-		component_pool(const component_metadata * metadata, std::unique_ptr<func_table> && ftable);
+		Component_Pool(const Component_Metadata * metadata, std::unique_ptr<Func_Table> && ftable);
 
-		component_pool(const component_pool &) = delete;
-		component_pool & operator=(const component_pool &) = delete;
+		Component_Pool(const Component_Pool &) = delete;
+		Component_Pool & operator=(const Component_Pool &) = delete;
 
-		u32 get_index(handle entity_id) const;
+		u32 get_index(Handle entity_id) const;
 
 		void * get(u32 index);
 		const void * get(u32 index) const;
 
-		std::pair<void *, bool> insert(handle entity_id);
+		std::pair<void *, bool> insert(Handle entity_id);
 	};
 }
 

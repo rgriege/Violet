@@ -5,14 +5,14 @@
 
 namespace vlt
 {
-	struct VIOLET_API event_context_owner
+	struct VIOLET_API Event_Context_Owner
 	{
-		event_context event_context;
+		Event_Context event_context;
 
-		event_context_owner();
-		event_context_owner(const event_context_owner &) = delete;
-		event_context_owner & operator=(const event_context_owner &) = delete;
-		event_context_owner(event_context_owner && other);
+		Event_Context_Owner();
+		Event_Context_Owner(const Event_Context_Owner &) = delete;
+		Event_Context_Owner & operator=(const Event_Context_Owner &) = delete;
+		Event_Context_Owner(Event_Context_Owner && other);
 	};
 }
 

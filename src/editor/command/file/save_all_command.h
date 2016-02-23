@@ -9,12 +9,12 @@
 
 namespace edt
 {
-	struct EDITOR_API save_all_command final : public command
+	struct EDITOR_API Save_All_Command final : public Command
 	{
 		static const char * get_usage();
-		static std::unique_ptr<command> parse(const std::string & text);
+		static std::unique_ptr<Command> parse(const std::string & text);
 
-		save_all_command(std::string fileName);
+		Save_All_Command(std::string fileName);
 
 		virtual void execute() override;
 		virtual bool can_undo() const override;

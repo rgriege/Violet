@@ -1,9 +1,11 @@
 // ============================================================================
 
-#include "violet/core/engine.h"
+#include <algorithm>
+#include <thread>
 
 #include "violet/component/scene.h"
-#include "violet/log/Log.h"
+#include "violet/core/engine.h"
+#include "violet/log/log.h"
 #include "violet/serialization/deserializer.h"
 #include "violet/serialization/file/file_deserializer_factory.h"
 #include "violet/serialization/file/file_serializer_factory.h"
@@ -13,186 +15,179 @@
 #include "violet/utility/formatted_string.h"
 #include "violet/utility/profiler.h"
 
-#include <algorithm>
-
 using namespace vlt;
 
 // ============================================================================
 
-namespace engineNamespace
-{
-	std::unique_ptr<engine> ms_instance = nullptr;
-}
-
-using namespace engineNamespace;
+static std::unique_ptr<Engine> g_instance = nullptr;
 
 // ============================================================================
 
-engine & engine::instance()
+Engine & Engine::instance()
 {
 	// For now, just don't...
-	assert(ms_instance != nullptr);
+	assert(g_instance != nullptr);
 
-	return *ms_instance;
+	return *g_instance;
 }
 
 // ----------------------------------------------------------------------------
 
-bool engine::bootstrap(const system_factory & factory, const char * const configFileName)
+bool Engine::bootstrap(const System_Factory & factory, const char * const config_file_name)
 {
 	// For now, just don't...
-	assert(ms_instance == nullptr);
+	assert(g_instance == nullptr);
 
-	auto deserializer = vlt::file_deserializer_factory::instance().create(configFileName);
+	auto deserializer = vlt::File_Deserializer_Factory::instance().create(config_file_name);
 	if (deserializer == nullptr || !deserializer->is_valid())
 	{
 		log("failed to read config file");
 		return false;
 	}
 
-	// assign data to threads and start the thread pool
+	// assign data to threads and start the Thread pool
 	{
-		auto thread_segment = deserializer->enter_segment("thread");
+		auto thread_segment = deserializer->enter_segment("Thread");
 		init_thread_pool(thread_segment->get_u32("worker_cnt"));
 
 		while (thread_segment->is_valid())
 		{
-			const tag tag(thread_segment->get_string("tag"));
+			const Tag tag(thread_segment->get_string("tag"));
 			const u32 thread_idx = thread_segment->get_u32("thread_idx");
 			assign_component_to_thread(tag, thread_idx);
 		}
 	} 
 
-	ms_instance.reset(new engine);
+	g_instance.reset(new Engine);
 
 	// create the systems
 	{
-		auto systemsSegment = deserializer->enter_segment("sysv");
-		if (systemsSegment != nullptr)
+		auto systems_segment = deserializer->enter_segment("sysv");
+		if (systems_segment != nullptr)
 		{
-			while (systemsSegment->is_valid())
+			while (systems_segment->is_valid())
 			{
-				const char * systemLabel = systemsSegment->next_label();
-				factory.create(systemLabel, *systemsSegment);
+				const char * systemLabel = systems_segment->next_label();
+				factory.create(systemLabel, *systems_segment);
 			}
 		}
 	}
 
 	finish_all_tasks();
 
-	// create and run the first scene if systems initalized properly
-	if (ms_instance->m_running)
+	// create and run the first Scene if systems initalized properly
+	if (g_instance->running)
 	{
-		ms_instance->m_scene->load(deserializer->get_string("firstScene"));
-		ms_instance->begin();
+		g_instance->scene->load(deserializer->get_string("firstScene"));
+		g_instance->begin();
 		finish_all_tasks();
 	}
 
 	// cleanup
-	ms_instance->m_scene.reset();
-	ms_instance->m_nextSceneFileName.clear();
-	for (auto it = ms_instance->m_systems.rbegin(), end = ms_instance->m_systems.rend(); it != end; ++it)
+	g_instance->scene.reset();
+	g_instance->next_scene_filename.clear();
+	for (auto it = g_instance->systems.rbegin(), end = g_instance->systems.rend(); it != end; ++it)
 		it->reset();
-	ms_instance->m_systems.clear();
+	g_instance->systems.clear();
 	cleanup_thread_pool();
-	ms_instance.reset();
+	g_instance.reset();
 	return true;
 }
 
 // ============================================================================
 
-engine::~engine()
+Engine::~Engine()
 {
 }
 
 // ----------------------------------------------------------------------------
 
-void engine::switch_scene(const char * filename)
+void Engine::switch_scene(const char * filename)
 {
-	m_nextSceneFileName = filename;
+	next_scene_filename = filename;
 }
 
 // ----------------------------------------------------------------------------
 
-scene & engine::get_current_scene()
+Scene & Engine::get_current_scene()
 {
-	return *m_scene;
+	return *scene;
 }
 
 // ----------------------------------------------------------------------------
 
-const scene & engine::get_current_scene() const
+const Scene & Engine::get_current_scene() const
 {
-	return *m_scene;
+	return *scene;
 }
 
 // ----------------------------------------------------------------------------
 
-void engine::stop()
+void Engine::stop()
 {
-	m_running = false;
+	running = false;
 }
 
 // ----------------------------------------------------------------------------
 
-void engine::add_system(std::unique_ptr<vlt::system> && s)
+void Engine::add_system(std::unique_ptr<vlt::System> && s)
 {
 	assert(s != nullptr);
-	m_systems.emplace_back(std::move(s));
+	systems.emplace_back(std::move(s));
 }
 
 // ============================================================================
 
-engine::engine() :
-	m_systems(),
-	m_scene(std::make_unique<scene>()),
-	m_nextSceneFileName(),
-	m_running(true)
+Engine::Engine() :
+	systems(),
+	scene(std::make_unique<Scene>()),
+	next_scene_filename(),
+	running(true)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-void engine::begin()
+void Engine::begin()
 {
-	r32 const targetFrameTime = 1.f / 60.f;
-	r32 previousFrameTime = targetFrameTime;
+	r32 const target_frame_time = 1.f / 60.f;
+	r32 previous_frame_time = target_frame_time;
 
-	while (m_running)
+	while (running)
 	{
 		{
-			const profiler::block block("frame");
-			run_frame(previousFrameTime);
+			const Profiler::Block block("frame");
+			run_frame(previous_frame_time);
 		}
 
-		r32 const frameTime = profiler::instance().report("frame") / 1000000.f;
-		if (frameTime < targetFrameTime)
+		r32 const frame_time = Profiler::instance().report("frame") / 1000000.f;
+		if (frame_time < target_frame_time)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<u32>((targetFrameTime - frameTime) * 1000)));
-			previousFrameTime = targetFrameTime;
+			std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<u32>((target_frame_time - frame_time) * 1000)));
+			previous_frame_time = target_frame_time;
 		}
 		else
 		{
-			previousFrameTime = frameTime;
-			// log(formatted_string<128>().sprintf("frame timestamp: %.3f", previousFrameTime));
+			previous_frame_time = frame_time;
+			// log(Formatted_String<128>().sprintf("frame Timestamp: %.3f", previous_frame_time));
 		}
 	}
 }
 
 // ----------------------------------------------------------------------------
 
-void engine::run_frame(const r32 frameTime)
+void Engine::run_frame(const r32 frame_time)
 {
-	std::for_each(std::begin(m_systems), std::end(m_systems), [&](std::unique_ptr<system> & system) { system->update(frameTime); });
+	std::for_each(std::begin(systems), std::end(systems), [&](std::unique_ptr<System> & system) { system->update(frame_time); });
 
 	while (get_current_stage() != task_type::last)
 		complete_frame_stage();
 	complete_frame_stage();
 
-	if (!m_nextSceneFileName.empty())
+	if (!next_scene_filename.empty())
 	{
-		m_scene->clear();
-		m_scene->load(m_nextSceneFileName.c_str());
+		scene->clear();
+		scene->load(next_scene_filename.c_str());
 	}
 }
 

@@ -5,11 +5,11 @@
 
 namespace vlt
 {
-	struct VIOLET_API key final
+	struct VIOLET_API Key final
 	{
 	public:
 
-		enum special_key : unsigned char
+		enum Special_Key : unsigned char
 		{
 			Null = 0,
 			Backspace = 8,
@@ -18,7 +18,7 @@ namespace vlt
 			Delete = 127
 		};
 
-		enum modifier
+		enum Modifier
 		{
 			M_NONE = 0x00,
 			M_LSHIFT = 0x01,
@@ -36,8 +36,8 @@ namespace vlt
 
 	public:
 
-		static bool is_numeric(unsigned char key);
-		static bool is_numeric_input(unsigned char key);
+		static bool is_numeric(unsigned char Key);
+		static bool is_numeric_input(unsigned char Key);
 	};
 }
 

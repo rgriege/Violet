@@ -9,26 +9,26 @@ using namespace vlt;
 
 // ============================================================================
 
-const component_metadata * mouse_input_component::metadata;
+const Component_Metadata * Mouse_Input_Component::metadata;
 
 // ============================================================================
 
-mouse_input_component::mouse_input_component(const handle entity_id, component_deserializer & deserializer) :
-	m_mesh(deserializer)
+Mouse_Input_Component::Mouse_Input_Component(const Handle entity_id, Component_Deserializer & deserializer) :
+	mesh(deserializer)
 {
 }
 
 // ----------------------------------------------------------------------------
 
-mouse_input_component::mouse_input_component(const handle entity_id, poly && mesh) :
-	m_mesh(std::move(mesh))
+Mouse_Input_Component::Mouse_Input_Component(const Handle entity_id, Poly && _mesh) :
+	mesh(std::move(_mesh))
 {
 }
 
 // ----------------------------------------------------------------------------
 
-mouse_input_component::mouse_input_component(mouse_input_component && other) :
-	m_mesh(std::move(other.m_mesh))
+Mouse_Input_Component::Mouse_Input_Component(Mouse_Input_Component && other) :
+	mesh(std::move(other.mesh))
 {
 }
 
@@ -36,22 +36,22 @@ mouse_input_component::mouse_input_component(mouse_input_component && other) :
 
 void vlt::install_mouse_input_component()
 {
-	mouse_input_component::metadata = init_component_metadata(tag('m', 'i', 'p', 't'), 0, sizeof(mouse_input_component));
-	scene::install_component<mouse_input_component>();
+	Mouse_Input_Component::metadata = init_component_metadata(Tag('m', 'i', 'p', 't'), 0, sizeof(Mouse_Input_Component));
+	Scene::install_component<Mouse_Input_Component>();
 }
 
 // ----------------------------------------------------------------------------
 
-serializer & vlt::operator<<(serializer & serializer, const mouse_input_component & component)
+Serializer & vlt::operator<<(Serializer & serializer, const Mouse_Input_Component & component)
 {
-	return serializer << component.m_mesh;
+	return serializer << component.mesh;
 }
 
 // ----------------------------------------------------------------------------
 
-component_deserializer & vlt::operator>>(component_deserializer & deserializer, mouse_input_component & component)
+Component_Deserializer & vlt::operator>>(Component_Deserializer & deserializer, Mouse_Input_Component & component)
 {
-	deserializer >> component.m_mesh;
+	deserializer >> component.mesh;
 	return deserializer;
 }
 

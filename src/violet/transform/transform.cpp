@@ -6,14 +6,14 @@ using namespace vlt;
 
 // ============================================================================
 
-v2 transform::get_position(const m4 & mat)
+v2 Transform::get_position(const m4 & mat)
 {
 	return v2(mat[0][3], mat[1][3]);
 }
 
 // ----------------------------------------------------------------------------
 
-void transform::set_position(m4 & mat, const v2 & position)
+void Transform::set_position(m4 & mat, const v2 & position)
 {
 	mat[0][3] = position.x;
 	mat[1][3] = position.y;

@@ -5,33 +5,33 @@
 
 using namespace vlt;
 
-std::string string_utilities::left(std::string const & str, char delimiter)
+std::string String_Utilities::left(std::string const & str, char delimiter)
 {
 	return str.substr(0, str.find(delimiter));
 }
 
-std::string string_utilities::rightOfFirst(std::string const & str, char delimiter)
+std::string String_Utilities::rightOfFirst(std::string const & str, char delimiter)
 {
 	const auto pos = str.find(delimiter);
 	return pos != std::string::npos ? str.substr(pos + 1) : "";
 }
 
-const char * string_utilities::rightOfFirst(const char * str, char delimiter)
+const char * String_Utilities::rightOfFirst(const char * str, char delimiter)
 {
 	return strchr(str, delimiter) + 1;
 }
 
-std::string string_utilities::rightOfLast(std::string const & str, char delimiter)
+std::string String_Utilities::rightOfLast(std::string const & str, char delimiter)
 {
 	return str.substr(std::min(str.find_last_of(delimiter) + 1, str.size()), std::string::npos);
 }
 
-const char * string_utilities::rightOfLast(const char * str, char delimiter)
+const char * String_Utilities::rightOfLast(const char * str, char delimiter)
 {
 	return strrchr(str, delimiter) + 1;
 }
 
-void string_utilities::replace(std::string & haystack, std::string const & needle, std::string const & replacement)
+void String_Utilities::replace(std::string & haystack, std::string const & needle, std::string const & replacement)
 {
 	size_t pos = haystack.find(needle.c_str());
 	while (pos != std::string::npos)
@@ -41,7 +41,7 @@ void string_utilities::replace(std::string & haystack, std::string const & needl
 	}
 }
 
-void string_utilities::split(const std::string & whole, const char delimiter, std::vector<std::string> & pieces)
+void String_Utilities::split(const std::string & whole, const char delimiter, std::vector<std::string> & pieces)
 {
 	size_t start = 0;
 	size_t end = whole.find(delimiter); 

@@ -18,29 +18,29 @@ using namespace vlt;
 
 // ============================================================================
 
-const char * set_color_command::get_usage()
+const char * Set_Color_Command::get_usage()
 {
-	return "color <id> <x> <y>";
+	return "Color <id> <x> <y>";
 }
 
 // ----------------------------------------------------------------------------
 
-std::unique_ptr<command> set_color_command::parse(const std::string & text)
+std::unique_ptr<Command> Set_Color_Command::parse(const std::string & text)
 {
 	std::vector<std::string> arguments;
-	string_utilities::split(text, ' ', arguments);
+	String_Utilities::split(text, ' ', arguments);
 	if (arguments.size() == 2)
 	{
 		const u32 id = std::atoi(arguments[0].c_str());
-		const color c(arguments[1].c_str());
-		return std::make_unique<set_color_command>(handle(id, ~0), c);
+		const Color c(arguments[1].c_str());
+		return std::make_unique<Set_Color_Command>(Handle(id, ~0), c);
 	}
 	return nullptr;
 }
 
 // ============================================================================
 
-set_color_command::set_color_command(const handle _entity_id, const color _new_color) :
+Set_Color_Command::Set_Color_Command(const Handle _entity_id, const Color _new_color) :
 	entity_id(_entity_id),
 	new_color(_new_color)
 {
@@ -50,65 +50,65 @@ set_color_command::set_color_command(const handle _entity_id, const color _new_c
 
 struct set_color_command_store_current_color_task_data
 {
-	handle entity_id;
-	color * color;
+	Handle entity_id;
+	Color * color;
 };
 
 static void set_color_command_store_current_color_task(void * mem)
 {
 	auto data = make_unique<set_color_command_store_current_color_task_data>(mem);
-	const auto * tc = engine::instance().get_current_scene().get_component<color_component>(data->entity_id);
+	const auto * tc = Engine::instance().get_current_scene().get_component<Color_Component>(data->entity_id);
 	*data->color = tc->color;
 }
 
 struct set_color_command_set_color_task_data
 {
-	handle entity_id;
-	color color;
+	Handle entity_id;
+	Color color;
 };
 
 static void set_color_command_set_color_task(void * mem)
 {
 	auto data = make_unique<set_color_command_set_color_task_data>(mem);
-	auto & proxy_scene = engine::instance().get_current_scene();
-	auto * proxy_tc = proxy_scene.get_component<color_component>(data->entity_id);
+	auto & proxy_scene = Engine::instance().get_current_scene();
+	auto * proxy_tc = proxy_scene.get_component<Color_Component>(data->entity_id);
 	if (proxy_tc)
 	{
 		proxy_tc->color = data->color;
 
-		// todo: async (can't read editor_component here)
-		const handle proxied_id = proxy_scene.get_component<editor_component>(data->entity_id)->proxied_id;
-		auto * proxied_tc = engine::instance().get_system<editor_system>()->get_scene().get_component<color_component>(proxied_id);
+		// todo: async (can't read Editor_Component here)
+		const Handle proxied_id = proxy_scene.get_component<Editor_Component>(data->entity_id)->proxied_id;
+		auto * proxied_tc = Engine::instance().get_system<Editor_System>()->get_scene().get_component<Color_Component>(proxied_id);
 		proxied_tc->color = data->color;
 	}
 }
 
-void set_color_command::execute()
+void Set_Color_Command::execute()
 {
-	log(formatted_string<128>().sprintf("set_color::execute %d", entity_id.id));
-	const auto & engine = engine::instance();
+	log(Formatted_String<128>().sprintf("set_color::execute %d", entity_id.id));
+	const auto & engine = Engine::instance();
 	const auto & scene = engine.get_current_scene();
 	entity_id.version = scene.get_entity_version(entity_id.id);
 	
-	if (scene.has_component<color_component>(entity_id))
+	if (scene.has_component<Color_Component>(entity_id))
 	{
 		add_task(set_color_command_store_current_color_task, new set_color_command_store_current_color_task_data{ entity_id, &new_color }, 0, task_type::write);
 		add_task(set_color_command_set_color_task, new set_color_command_set_color_task_data{ entity_id, new_color }, 0, task_type::write);
 	}
 	else
-		entity_id.version = handle::Invalid.version;
+		entity_id.version = Handle::Invalid.version;
 }
 
 // ----------------------------------------------------------------------------
 
-bool set_color_command::can_undo() const
+bool Set_Color_Command::can_undo() const
 {
 	return entity_id.is_valid();
 }
 
 // ----------------------------------------------------------------------------
 
-void set_color_command::undo()
+void Set_Color_Command::undo()
 {
 	add_task(set_color_command_set_color_task, new set_color_command_set_color_task_data{ entity_id, new_color }, 0, task_type::write);
 }

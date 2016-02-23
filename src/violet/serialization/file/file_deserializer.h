@@ -9,19 +9,19 @@
 namespace vlt
 {
 	template <typename StreamDeserializer>
-	struct file_deserializer final : public deserializer
+	struct File_Deserializer final : public Deserializer
 	{
 		std::filebuf file;
 		std::istream stream;
 		StreamDeserializer inner_deserializer;
 		
-		file_deserializer(std::filebuf && file);
-		file_deserializer(const file_deserializer &) = delete;
-		virtual ~file_deserializer() override;
+		File_Deserializer(std::filebuf && file);
+		File_Deserializer(const File_Deserializer &) = delete;
+		virtual ~File_Deserializer() override;
 
 		virtual bool is_valid() const override;
 
-		virtual std::unique_ptr<deserializer> enter_segment(const char * label) override;
+		virtual std::unique_ptr<Deserializer> enter_segment(const char * label) override;
 		virtual const char * next_label() const override;
 
 		virtual bool get_b8(const char * label) override;

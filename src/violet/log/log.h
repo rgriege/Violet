@@ -8,22 +8,22 @@
 
 namespace vlt
 {
-	struct VIOLET_API log_target
+	struct VIOLET_API Log_Target
 	{
-		struct VIOLET_API guard
+		struct VIOLET_API Guard
 		{
 			const u32 handle;
 
-			guard(u32 handle);
-			~guard();
+			Guard(u32 handle);
+			~Guard();
 		};
 
-		virtual ~log_target() = default;
+		virtual ~Log_Target() = default;
 		virtual void log(const char * entry) = 0;
 	};
 
 	VIOLET_API void log(const char * entry);
-	VIOLET_API u32 install_log_target(std::unique_ptr<log_target> && target);
+	VIOLET_API u32 install_log_target(std::unique_ptr<Log_Target> && target);
 	VIOLET_API void remove_log_target(u32 id);
 }
 

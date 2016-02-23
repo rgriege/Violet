@@ -6,7 +6,7 @@
 namespace vlt
 {
 	template <typename T, typename Allocator = std::allocator<T>>
-	struct vector
+	struct Vector
 	{
 	public:
 
@@ -26,8 +26,8 @@ namespace vlt
 		{
 		public:
 
-			typedef std::conditional_t<IsConst, typename vector::const_pointer, typename vector::pointer> pointer;
-			typedef std::conditional_t<IsConst, typename vector::const_reference, typename vector::reference> reference;
+			typedef std::conditional_t<IsConst, typename Vector::const_pointer, typename Vector::pointer> pointer;
+			typedef std::conditional_t<IsConst, typename Vector::const_reference, typename Vector::reference> reference;
 
 		public:
 
@@ -51,13 +51,13 @@ namespace vlt
 
 	public:
 
-		vector();
-		vector(std::initializer_list<value_type> list);
-		vector(const vector & rhs);
-		vector(vector && rhs);
-		~vector();
-		vector & operator=(const vector & rhs);
-		vector & operator=(vector && rhs);
+		Vector();
+		Vector(std::initializer_list<value_type> list);
+		Vector(const Vector & rhs);
+		Vector(Vector && rhs);
+		~Vector();
+		Vector & operator=(const Vector & rhs);
+		Vector & operator=(Vector && rhs);
 
 		reference operator[](size_type index);
 		const_reference operator[](size_type index) const;
@@ -84,7 +84,7 @@ namespace vlt
 		template <typename ... Args>
 		void emplace_back(Args && ... args);
 		void resize(size_type size);
-		void swap(vector & rhs);
+		void swap(Vector & rhs);
 
 	private:
 

@@ -5,7 +5,7 @@
 #include <sstream>
 #include <deque>
 #include <algorithm>
-#include <memory>
+#include <Memory>
 
 namespace vlt
 {

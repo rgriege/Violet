@@ -1,7 +1,7 @@
 // ============================================================================
 
 template <typename ResultType, typename... Args>
-ResultType vlt::cpp_script::run(const char * method, Args&&... args) const
+ResultType vlt::Cpp_Script::run(const char * method, Args&&... args) const
 {
 	if (m_instance != nullptr)
 	{

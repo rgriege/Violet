@@ -12,51 +12,51 @@
 
 namespace vlt
 {
-	struct system_factory;
+	struct System_Factory;
 
-	struct VIOLET_API input_system final : public system
+	struct VIOLET_API Input_System final : public System
 	{
-		struct MouseButtonEvent
+		struct Mouse_Button_Event
 		{
 			const v2 position;
-			mouse_button button;
-			key::modifier modifiers;
+			Mouse_Button button;
+			Key::Modifier modifiers;
 		};
 
-		struct MouseMotionEvent
+		struct Mouse_Motion_Event
 		{
 			const v2 from;
 			const v2 to;
 		};
 
 		static const char * get_label_static();
-		static void install(system_factory & factory);
-		static void init(deserializer & deserializer);
+		static void install(System_Factory & Factory);
+		static void init(Deserializer & deserializer);
 
-		input_system();
-		input_system(input_system && other);
+		Input_System();
+		Input_System(Input_System && other);
 
-		virtual ~input_system() override = default;
+		virtual ~Input_System() override = default;
 		virtual void update(r32 dt) override;
 
-		void focus(handle entity_id);
-		void unfocus(handle entity_id);
+		void focus(Handle entity_id);
+		void unfocus(Handle entity_id);
 		
-		void process_focussed_event(const window_system::key_event & event, window_system::event_type type) thread_const;
-		void process_focussed_event(const MouseButtonEvent & worldEvent, window_system::event_type type) thread_const;
-		void process_focussed_event(const MouseMotionEvent & worldEvent) thread_const;
+		void process_focussed_event(const Window_System::Key_Event & Event, Window_System::Event_Type type) thread_const;
+		void process_focussed_event(const Mouse_Button_Event & worldEvent, Window_System::Event_Type type) thread_const;
+		void process_focussed_event(const Mouse_Motion_Event & worldEvent) thread_const;
 
-		handle m_focussedEntityId;
+		Handle focussed_entity_id;
 	};
 
-	DEFINE_METHOD(KeyDownMethod, void(handle entity_id, const window_system::key_event &));
-	DEFINE_METHOD(KeyUpMethod, void(handle entity_id, const window_system::key_event &));
-	DEFINE_METHOD(MouseDownMethod, input_result(handle entity_id, const input_system::MouseButtonEvent &));
-	DEFINE_METHOD(MouseUpMethod, input_result(handle entity_id, const input_system::MouseButtonEvent &));
-	DEFINE_METHOD(MouseMoveMethod, void(handle entity_id, const input_system::MouseMotionEvent &));
-	DEFINE_METHOD(MouseInMethod, void(handle entity_id));
-	DEFINE_METHOD(MouseOutMethod, void(handle entity_id));
-	DEFINE_METHOD(FocusLostMethod, void(handle entity_id));
+	DEFINE_METHOD(KeyDownMethod, void(Handle entity_id, const Window_System::Key_Event &));
+	DEFINE_METHOD(KeyUpMethod, void(Handle entity_id, const Window_System::Key_Event &));
+	DEFINE_METHOD(MouseDownMethod, Input_Result(Handle entity_id, const Input_System::Mouse_Button_Event &));
+	DEFINE_METHOD(MouseUpMethod, Input_Result(Handle entity_id, const Input_System::Mouse_Button_Event &));
+	DEFINE_METHOD(MouseMoveMethod, void(Handle entity_id, const Input_System::Mouse_Motion_Event &));
+	DEFINE_METHOD(MouseInMethod, void(Handle entity_id));
+	DEFINE_METHOD(MouseOutMethod, void(Handle entity_id));
+	DEFINE_METHOD(FocusLostMethod, void(Handle entity_id));
 	DEFINE_EVENT(QuitEvent, void());
 }
 

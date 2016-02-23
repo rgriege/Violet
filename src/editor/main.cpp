@@ -1,15 +1,15 @@
-#include "violet/core/Engine.h"
-#include "violet/core/script/system/CppScriptSystem.h"
-#include "violet/core/serialization/FileDeserializerFactory.h"
-#include "violet/core/system/SystemFactory.h"
-#include "violet/core/transform/TransformSystem.h"
-#include "violet/editor/system/EngineSystem.h"
-#include "violet/extras/serialization/JsonDeserializer.h"
-#include "violet/extras/serialization/JsonSerializer.h"
-#include "violet/plugins/glut/GlutWindowSystem.h"
-#include "violet/plugins/graphics/system/RenderSystem.h"
-#include "violet/plugins/input/system/InputSystem.h"
-#include "violet/plugins/sdl/SDLWindowSystem.h"
+#include "violet/core/engine.h"
+#include "violet/core/script/system/scriptsystem.h"
+#include "violet/core/serialization/file_deserializer_factory.h"
+#include "violet/core/system/system_factory.h"
+#include "violet/core/transform/transform_system.h"
+#include "violet/editor/system/engine_system.h"
+#include "violet/extras/serialization/jsondeserializer.h"
+#include "violet/extras/serialization/jsonserializer.h"
+#include "violet/plugins/glut/glutwindowsystem.h"
+#include "violet/plugins/graphics/system/rendersystem.h"
+#include "violet/plugins/input/system/inputsystem.h"
+#include "violet/plugins/sdl/sdlwindowsystem.h"
 
 #include <iostream>
 
@@ -18,25 +18,25 @@ Violet::SystemFactory setup()
 	Violet::JsonDeserializer::install();
 	Violet::JsonSerializer::install();
 
-	Violet::SystemFactory factory;
-	Violet::SDLWindowSystem::install(factory);
-	Violet::TransformSystem::install(factory);
-	Violet::RenderSystem::install(factory);
-	Violet::InputSystem::install(factory);
-	Violet::CppScriptSystem::install(factory);
-	//EngineSystem::install(factory);
+	Violet::SystemFactory Factory;
+	Violet::SDLWindowSystem::install(Factory);
+	Violet::TransformSystem::install(Factory);
+	Violet::RenderSystem::install(Factory);
+	Violet::InputSystem::install(Factory);
+	Violet::CppScriptSystem::install(Factory);
+	//EngineSystem::install(Factory);
 
-	return factory;
+	return Factory;
 }
 
 int main(int /*argc*/, char ** /*argv*/)
 {
-	auto factory = setup();
+	auto Factory = setup();
 
-	std::unique_ptr<Violet::Engine> engine;
+	std::unique_ptr<Violet::Engine> Engine;
 	{
-		auto deserializer = Violet::FileDeserializerFactory::getInstance().create("editorConfig.json");
-		if (deserializer == nullptr || !*deserializer)
+		auto Deserializer = Violet::FileDeserializerFactory::getInstance().create("editorConfig.json");
+		if (Deserializer == nullptr || !*deserializer)
 		{
 			std::cout << "failed to read config file" << std::endl;
 			char c;
@@ -44,15 +44,15 @@ int main(int /*argc*/, char ** /*argv*/)
 			exit(1);
 		}
 
-		engine = Violet::Engine::init(factory, *deserializer);
-		if (engine == nullptr)
+		Engine = Violet::Engine::init(Factory, *Deserializer);
+		if (Engine == nullptr)
 		{
-			std::cout << "failed to init engine" << std::endl;
+			std::cout << "failed to init Engine" << std::endl;
 			char c;
 			std::cin >> c;
 			exit(1);
 		}
 	}
 
-	engine->begin();
+	Engine->begin();
 }

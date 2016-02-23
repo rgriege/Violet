@@ -8,10 +8,10 @@
 namespace vlt
 {
 	template <typename T>
-	static vector<T> deserialize_vector(deserializer & d);
+	static Vector<T> deserialize_vector(Deserializer & d);
 
 	template <typename T>
-	static void serialize_vector(serializer & s, const vector<T> & elements);
+	static void serialize_vector(Serializer & s, const Vector<T> & elements);
 }
 
 #include "violet/serialization/serialization_utilities.inl"

@@ -1,10 +1,10 @@
 #ifndef TEST_FACTORY_H
 #define TEST_FACTORY_H
 
-#include "test/core/StatefulTest.h"
-#include "test/core/StatefulTestSuite.h"
-#include "test/core/StatelessTest.h"
-#include "test/core/StatelessTestSuite.h"
+#include "test/core/statefultest.h"
+#include "test/core/statefultestsuite.h"
+#include "test/core/statelesstest.h"
+#include "test/core/statelesstestsuite.h"
 
 namespace vlt
 {
