@@ -87,7 +87,7 @@ static void resize_command_set_dimensions_task(void * mem)
 		const Poly p(box);
 		set_mesh_vertices(*proxy_cc->mesh, p.vertices);
 
-		// todo: async (can't ready Editor_Component here)
+		// todo: async (can't read Editor_Component here)
 		const Handle proxied_id = proxy_scene.get_component<Editor_Component>(data->entity_id)->proxied_id;
 		auto * proxied_cc = Engine::instance().get_system<Editor_System>()->get_scene().get_component<Color_Component>(proxied_id);
 		set_mesh_vertices(*proxied_cc->mesh, p.vertices);
@@ -97,11 +97,10 @@ static void resize_command_set_dimensions_task(void * mem)
 void Resize_Command::execute()
 {
 	log(Formatted_String<128>().sprintf("resize::execute %d", entity_id.id));
-	const auto & Engine = Engine::instance();
-	const auto & Scene = Engine.get_current_scene();
-	entity_id.version = Scene.get_entity_version(entity_id.id);
+	const auto & scene = Engine::instance().get_current_scene();
+	entity_id.version = scene.get_entity_version(entity_id.id);
 	
-	if (Scene.has_component<Color_Component>(entity_id))
+	if (scene.has_component<Color_Component>(entity_id))
 	{
 		add_task(resize_command_store_current_dimensions_task, new resize_command_store_current_dimensions_task_data{ entity_id, &dimensions }, 0, task_type::write);
 		add_task(resize_command_set_dimensions_task, new resize_command_set_dimensions_task_data{ entity_id, dimensions }, 0, task_type::write);

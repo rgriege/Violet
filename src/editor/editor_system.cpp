@@ -77,7 +77,7 @@ Editor_System::Editor_System(std::string editScriptFileName) :
 	m_scene(std::make_unique<Scene>()),
 	m_editScriptFileName(std::move(editScriptFileName)),
 	m_commandHistory(),
-	m_selectedEntities()
+	selected_proxies()
 {
 }
 
@@ -182,12 +182,12 @@ void Editor_System::undo()
 
 // ----------------------------------------------------------------------------
 
-bool Editor_System::select(const Handle entity_id)
+bool Editor_System::select(const Handle proxy_id)
 {
-	const bool selected = m_selectedEntities.emplace(entity_id).second;
+	const bool selected = selected_proxies.emplace(proxy_id).second;
 	if (selected)
 	{
-		auto id = entity_id;
+		auto id = proxy_id;
 		EntitySelectedEvent::emit(Engine::instance(), std::move(id));
 	}
 	return selected;
@@ -195,26 +195,26 @@ bool Editor_System::select(const Handle entity_id)
 
 // ----------------------------------------------------------------------------
 
-bool Editor_System::selected(const Handle entity_id) const
+bool Editor_System::selected(const Handle proxy_id) const
 {
-	return m_selectedEntities.find(entity_id) != m_selectedEntities.end();
+	return selected_proxies.find(proxy_id) != selected_proxies.end();
 }
 
 // ----------------------------------------------------------------------------
 
-const std::set<Handle> & Editor_System::get_selected_entities() const
+const std::set<Handle> & Editor_System::get_selected_proxies() const
 {
-	return m_selectedEntities;
+	return selected_proxies;
 }
 
 // ----------------------------------------------------------------------------
 
-bool Editor_System::deselect(const Handle entity_id)
+bool Editor_System::deselect(const Handle proxy_id)
 {
-	const bool deselected = m_selectedEntities.erase(entity_id) != 0;
+	const bool deselected = selected_proxies.erase(proxy_id) != 0;
 	if (deselected)
 	{
-		auto id = entity_id;
+		auto id = proxy_id;
 		EntityDeselectedEvent::emit(Engine::instance().event_context, std::move(id));
 	}
 	return deselected;

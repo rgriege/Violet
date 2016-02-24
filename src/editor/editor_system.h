@@ -49,10 +49,10 @@ namespace edt
 		void execute(std::unique_ptr<Command> && command);
 		void undo();
 
-		bool select(vlt::Handle entity_id);
-		bool selected(vlt::Handle entity_id) const;
-		const std::set<vlt::Handle> & get_selected_entities() const;
-		bool deselect(vlt::Handle entity_id);
+		bool select(vlt::Handle proxy_id);
+		bool selected(vlt::Handle proxy_id) const;
+		const std::set<vlt::Handle> & get_selected_proxies() const;
+		bool deselect(vlt::Handle proxy_id);
 
 		void propagate_add(vlt::Handle entity_id) const;
 
@@ -61,7 +61,7 @@ namespace edt
 		std::unique_ptr<vlt::Scene> m_scene;
 		std::string m_editScriptFileName;
 		std::deque<std::unique_ptr<Command>> m_commandHistory;
-		std::set<vlt::Handle> m_selectedEntities;
+		std::set<vlt::Handle> selected_proxies;
 	};
 
 	DEFINE_EVENT(EntitySelectedEvent, void(vlt::Handle));
