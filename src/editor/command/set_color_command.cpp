@@ -20,7 +20,7 @@ using namespace vlt;
 
 const char * Set_Color_Command::get_usage()
 {
-	return "Color <id> <x> <y>";
+	return "color <id> <x> <y>";
 }
 
 // ----------------------------------------------------------------------------

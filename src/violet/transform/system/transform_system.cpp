@@ -72,8 +72,8 @@ Transform_System::Transform_System(Transform_System && other) :
 void Transform_System::update(const r32 /*dt*/)
 {
 	m_entityWorldtransformCache = std::map<Handle, m4>{ { Handle::Invalid, m4::Identity } };
-	const auto & Engine = Engine::instance();
-	for (const auto & entity : Engine.get_current_scene().get_entity_view<Local_Transform_Component, World_Transform_Component>())
+	const auto & engine = Engine::instance();
+	for (const auto & entity : engine.get_current_scene().get_entity_view<Local_Transform_Component, World_Transform_Component>())
 		update_world_transform(entity, m_entityWorldtransformCache);
 }
 
