@@ -18,29 +18,29 @@ using namespace vlt;
 
 struct focus_task_data
 {
-	handle entity_id;
+	Handle entity_id;
 };
 
 static void focus_task(void * mem)
 {
 	auto data = make_unique<focus_task_data>(mem);
-	engine::instance().get_system<input_system>()->focus(data->entity_id);
+	Engine::instance().get_system<Input_System>()->focus(data->entity_id);
 }
 
-struct instance final : public cpp_script::instance
+struct Instance final : public Cpp_Script::Instance
 {
 public:
 
-    instance(cpp_script & script) :
-        cpp_script::instance(script),
+    Instance(Cpp_Script & script) :
+        Cpp_Script::Instance(script),
         m_textInput()
     {
-        BindToComponentMethod::assign(script, BindToComponentMethod::Handler::bind<instance, &instance::onBindToComponent>(this));
-        FocusLostMethod::assign(script, FocusLostMethod::Handler::bind<instance, &instance::onFocusLost>(this));
-        KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<instance, &instance::on_key_up>(this));
+        BindToComponentMethod::assign(script, BindToComponentMethod::Handler::bind<Instance, &Instance::onBindToComponent>(this));
+        FocusLostMethod::assign(script, FocusLostMethod::Handler::bind<Instance, &Instance::onFocusLost>(this));
+        KeyUpMethod::assign(script, KeyUpMethod::Handler::bind<Instance, &Instance::on_key_up>(this));
     }
 
-    virtual ~instance() override
+    virtual ~Instance() override
     {
         BindToComponentMethod::remove(script);
         FocusLostMethod::remove(script);
@@ -49,36 +49,36 @@ public:
 
 private:
 
-    void onBindToComponent(const handle entity_id)
+    void onBindToComponent(const Handle entity_id)
     {
-		add_task(focus_task, new focus_task_data{ entity_id }, key_input_component::metadata->thread, task_type::write);
+		add_task(focus_task, new focus_task_data{ entity_id }, Key_Input_Component::metadata->thread, task_type::write);
     }
 
-    void onFocusLost(const handle entity_id)
+    void onFocusLost(const Handle entity_id)
     {
-        const auto & engine = engine::instance();
+        const auto & engine = Engine::instance();
         DialogClosedEvent::emit(engine, std::string());
     }
 
-    void on_key_up(const handle entity_id, const window_system::key_event & event)
+    void on_key_up(const Handle entity_id, const Window_System::Key_Event & event)
     {
-        if (m_textInput.on_key_up(entity_id, event) == ui_text_input_box::S_inactive)
+        if (m_textInput.on_key_up(entity_id, event) == Ui_Text_Input_Box::S_inactive)
         {
-            const engine & engine = engine::instance();
-            const auto * tc = engine.get_current_scene().get_component<text_component>(entity_id);
-            if (tc != nullptr && !tc->m_text.empty())
-                DialogClosedEvent::emit(engine, tc->m_text);
+            const Engine & engine = Engine::instance();
+            const auto * tc = engine.get_current_scene().get_component<Text_Component>(entity_id);
+            if (tc != nullptr && !tc->text.empty())
+                DialogClosedEvent::emit(engine, tc->text);
         }
     }
 
 private:
 
-	ui_text_input_box m_textInput;
+	Ui_Text_Input_Box m_textInput;
 };
 
-VIOLET_SCRIPT_EXPORT void init(cpp_script & script, std::unique_ptr<cpp_script::instance> & i)
+VIOLET_SCRIPT_EXPORT void init(Cpp_Script & script, std::unique_ptr<Cpp_Script::Instance> & i)
 {
-    i = std::make_unique<instance>(script);
+    i = std::make_unique<Instance>(script);
 }
 
 

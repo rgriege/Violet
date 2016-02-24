@@ -137,7 +137,7 @@ void draw(const World_Transform_Component & tsfm_cpnt, const Color_Component & c
 {
 	const m4 & transform = tsfm_cpnt.transform;
 
-	const GLint color_attrib = color_cpnt.shader->get_uniform_loc("Color");
+	const GLint color_attrib = color_cpnt.shader->get_uniform_loc("color");
 	const GLint model_attrib = color_cpnt.shader->get_uniform_loc("model");
 	const GLint view_attribute = color_cpnt.shader->get_uniform_loc("view");
 
@@ -157,7 +157,7 @@ void draw(const World_Transform_Component & tsfm_cpnt, const Text_Component & te
 {
 	const m4 & transform = tsfm_cpnt.transform;
 
-	const GLint color_attrib = text_cpnt.shader->get_uniform_loc("Color");
+	const GLint color_attrib = text_cpnt.shader->get_uniform_loc("color");
 	const GLint model_attrib = text_cpnt.shader->get_uniform_loc("model");
 	const GLint view_attribute = text_cpnt.shader->get_uniform_loc("view");
 
