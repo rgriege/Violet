@@ -3,7 +3,6 @@
 
 #include "violet/core/defines.h"
 
-#include <array>
 #include <string>
 
 namespace vlt
@@ -12,7 +11,7 @@ namespace vlt
 	{
 		union
 		{
-			std::array<char, 4> characters;
+			char characters[4];
 			u32 value;
 		};
 

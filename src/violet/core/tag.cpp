@@ -10,8 +10,12 @@ using namespace vlt;
 // ============================================================================
 
 Tag::Tag(const char a, const char b, const char c, const char d) :
-	characters({a, b, c, d})
+	characters()
 {
+	characters[0] = a;
+	characters[1] = b;
+	characters[2] = c;
+	characters[3] = d;
 }
 
 // ----------------------------------------------------------------------------
