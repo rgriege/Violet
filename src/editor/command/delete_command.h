@@ -12,7 +12,7 @@ namespace edt
 {
 	struct EDITOR_API Delete_Command final : public Command
 	{
-		vlt::Handle entity_id;
+		vlt::Handle root_proxy_id;
 		std::string temp_filename;
 
 		static const char * get_usage();

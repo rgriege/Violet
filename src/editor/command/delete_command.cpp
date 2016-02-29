@@ -7,6 +7,7 @@
 #include "violet/component/scene.h"
 #include "violet/log/log.h"
 #include "violet/serialization/file/file_deserializer_factory.h"
+#include "violet/transform/component/local_transform_component.h"
 #include "violet/utility/formatted_string.h"
 #include "violet/utility/memory.h"
 #include "violet/utility/random.h"
@@ -35,8 +36,8 @@ std::unique_ptr<Command> Delete_Command::parse(const std::string & text)
 
 // ============================================================================
 
-Delete_Command::Delete_Command(const vlt::Handle _entity_id) :
-	entity_id(_entity_id),
+Delete_Command::Delete_Command(const vlt::Handle _proxy_id) :
+	root_proxy_id(_proxy_id),
 	temp_filename()
 {
 }
@@ -54,18 +55,37 @@ Delete_Command::~Delete_Command()
 void Delete_Command::execute()
 {
 	const auto & proxy_scene = Engine::instance().get_current_scene();
-	entity_id.version = proxy_scene.get_entity_version(entity_id.id);
+	root_proxy_id.version = proxy_scene.get_entity_version(root_proxy_id.id);
+	const Handle root_proxied_id = proxy_scene.get_component<Editor_Component>(root_proxy_id)->proxied_id;
 
-	const Handle proxied_id = proxy_scene.get_component<Editor_Component>(entity_id)->proxied_id;
+	// gather all children and delete them as well
+	// todo: more than just 1 level
+	std::vector<Handle> proxy_ids{ root_proxy_id };
+	std::vector<Handle> proxied_ids{ root_proxied_id };
+	for (const auto & entity : proxy_scene.get_entity_view<Local_Transform_Component>())
+	{
+		if (entity.get<Local_Transform_Component>().parent_id == root_proxy_id)
+		{
+			proxy_ids.emplace_back(entity.id);
 
+			auto * ec = proxy_scene.get_component<Editor_Component>(entity.id);
+			if (ec)
+				proxied_ids.emplace_back(ec->proxied_id);
+		}
+	}
+
+	// save
 	const auto & editor = *Engine::instance().get_system<Editor_System>();
 	const auto & proxied_scene = editor.get_scene();
 	temp_filename = String_Utilities::rightOfFirst(Formatted_String<32>().sprintf("%.6f.json", Random::ms_generator.generate_0_to_1()), '.');
+	proxied_scene.save(temp_filename.c_str(), proxied_ids);
 
-	proxied_scene.save(temp_filename.c_str(), { proxied_id });
+	// remove
+	for (const Handle proxy_id : proxy_ids)
+		proxy_scene.remove_all(proxy_id);
 
-	proxy_scene.remove_all(entity_id);
-	proxied_scene.remove_all(proxied_id);
+	for (const Handle proxied_id : proxied_ids)
+		proxied_scene.remove_all(proxied_id);
 }
 
 // ----------------------------------------------------------------------------
