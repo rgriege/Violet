@@ -84,7 +84,7 @@ static void execute_task_world(void * mem)
 void Move_To_Command::execute()
 {
 	const auto & proxy_scene = Engine::instance().get_current_scene();
-	entity_id = Handle(entity_id.id, proxy_scene.get_entity_version(entity_id.id));
+	entity_id.version = proxy_scene.get_entity_version(entity_id.id);
 	log(Formatted_String<128>().sprintf("MoveTo::execute %d", entity_id.id));
 
 	const auto * ltc = proxy_scene.get_component<Local_Transform_Component>(entity_id);
