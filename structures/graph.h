@@ -3,7 +3,7 @@
 
 #include "violet/core/types.h"
 
-typedef struct
+typedef struct graph
 {
 	array nodes;
 	array edge_pointers;
@@ -34,8 +34,8 @@ void graph_add_edge(graph * g, u32 source, u32 dest, void * edge_data);
 * since potentially lots of edge pointers will need updating.
 */
 void graph_add_edges(graph * g);
-getEdges(u32 src);
-getEdges(u32 src);
+void graph_get_edges(const graph * g, u32 src);
+void graph_get_edges(const graph * g, u32 src);
 
 void graph_clear(graph * g);
 void graph_destroy(graph * g);

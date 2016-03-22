@@ -2,41 +2,29 @@
 #define VIOLET_M3_H
 
 #include "violet/math/v2.h"
+#include "violet/math/v3.h"
 
-typedef struct
-{
-	r32 cols[3];
-} _m3_row;
+typedef r32 m3[9];
 
-typedef struct
-{
-	union
-	{
-		_m3_row rows[3];
+extern const m3 g_m3_identity;
+extern const m3 g_m3_zero;
 
-		struct
-		{
-			r32 a, b, c,
-				d, e, f,
-				g, h, i;
-		};
-	};
-} m3;
+void m3_init_rot(m3 m, r32 radians);
 
-extern const g_m3_identity;
-static const g_m3_zero;
+void m3_mul_m(const m3 lhs, const m3 rhs, m3 res);
+void m3_mul_v2(const m3 m, const v2 * v, v2 * res);
+void m3_mul_v3(const m3 m, const v3 * v, v3 * res);
+#define m3_mul(X, Y, Z) _Generic((Y), \
+	m3:        m3_mul_m,              \
+	const m3:  m3_mul_m,              \
+	v2*:       m3_mul_v2,             \
+	const v2*: m3_mul_v2,             \
+	v3*:       m3_mul_v3,             \
+	const v3*: m3_mul_v3              \
+	)(X, Y, Z)
 
-m3 m3_create_rot(r32 radians);
-
-m3 m3_mul_m(const m3 * lhs, const m3 * rhs);
-v2 m3_mul_v(const m3 * m, const v2 * v);
-#define m3_mul(X, Y) _Generic(Y) \
-	m3*: m3_mul_m,               \
-	v2*: m3_mul_v                \
-	)(X, Y)
-
-b8 m3_equal(const m3 * lhs, const m3 * rhs);
-void m3_read(reader * r, m3 * m);
-void m3_write(writer * w, const m3 * m);
+b8 m3_equal(const m3 lhs, const m3 rhs);
+void m3_read(reader * r, m3 m);
+void m3_write(writer * w, const m3 m);
 
 #endif

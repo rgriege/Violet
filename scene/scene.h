@@ -3,19 +3,9 @@
 
 #include "violet/structures/array.h"
 
-typedef struct
+typedef struct scene
 {
-	const u32 tag;
-	const u32 component_size;
-	array * data;
-	array * ids;
-} component_pool;
-
-
-
-typedef struct
-{
-	array * component_pools;
+	array component_pools;
 } scene;
 
 void scene_create(scene * s);

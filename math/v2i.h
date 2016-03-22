@@ -1,18 +1,11 @@
 #ifndef VIOLET_V2I_H
 #define VIOLET_V2I_H
 
-#include "violet/core/defines.h"
+#include "violet/core/types.h"
 
-namespace vlt
+typedef struct v2i
 {
-	struct VIOLET_API v2i
-	{
-		s32 x, y;
-
-		v2i();
-		v2i(const v2i & rhs);
-		v2i(s32 _x, s32 _y);
-	};
-}
+	s32 x, y;
+} v2i;
 
 #endif

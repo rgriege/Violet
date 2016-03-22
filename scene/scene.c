@@ -6,6 +6,15 @@
 
 /* component_pool */
 
+typedef struct component_pool
+{
+	const u32 tag;
+	const u32 component_size;
+	array data;
+	array ids;
+} component_pool;
+
+
 component_pool * component_pool_create(const uint32_t tag, const uint32_t component_size)
 {
 	component_pool temp = {

@@ -1,4 +1,5 @@
 #include <math.h>
+#include <string.h>
 
 #include "violet/math/m2.h"
 
@@ -20,7 +21,7 @@ b8 m2_inverse(const m2 m, m2 result)
 	{
 		const r32 a = m[0];
 		result[0] = m[3];
-		result[1] - -m[1];
+		result[1] = -m[1];
 		result[2] = -m[2];
 		result[3] = a;
 		const r32 s = 1/dt;

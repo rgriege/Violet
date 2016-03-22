@@ -6,7 +6,7 @@
 typedef struct reader reader;
 typedef struct writer writer;
 
-typedef struct
+typedef struct v2
 {
 	union
 	{

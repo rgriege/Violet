@@ -1,9 +1,10 @@
+#include "violet/math/aabb.h"
 #include "violet/math/interval.h"
 #include "violet/math/m2.h"
 #include "violet/math/poly.h"
-#include "violet/serialization/serialization_utilities.h"
+#include "violet/math/v2.h"
 
-void poly_from_box(poly * p, aabb * box)
+void poly_from_box(poly * p, const aabb * box)
 {
 	const v2 top_right = { box->bottom_right.x, box->top_left.y };
 	const v2 bottom_left = { box->top_left.x, box->bottom_right.y };
@@ -19,7 +20,7 @@ static b8 _poly_side_barycentric_contains(const poly * p, const v2 * point, u32 
 {
 	const v2 * p1 = array_get(&p->vertices, start_idx);
 	const v2 * p2 = array_get(&p->vertices, end_idx);
-	const m2 mat = { p1->x, p2->x, p1->y, p2->y };
+	m2 mat = { p1->x, p2->x, p1->y, p2->y };
 	m2_inverse(mat, mat);
 	v2 barycentric_coords;
 	m2_mul(mat, point, &barycentric_coords);
@@ -29,9 +30,9 @@ static b8 _poly_side_barycentric_contains(const poly * p, const v2 * point, u32 
 
 }
 
-b8 poly_contains(const poly * p, const v2 * point) const
+b8 poly_contains(const poly * p, const v2 * point)
 {
-	u32 const n = array_size(&p->vertices);
+	u32 const n = p->vertices.size;
 	b8 inside = _poly_side_barycentric_contains(p, point, n - 1, 0);
 
 	u32 i = 1;
@@ -44,15 +45,15 @@ b8 poly_contains(const poly * p, const v2 * point) const
 	return inside;
 }
 
-aabb poly_bounding_box(const poly * p)
+void poly_bounding_box(const poly * p, aabb * box)
 {
-	aabb result = { poly_center(p), g_v2_zero };
+	const v2 center = poly_center(p);
+	aabb_from_center(box, &center, &g_v2_zero);
 	for (u32 i = 0, n = array_size(&p->vertices); i < n; ++i)
-		aabb_extend(&result, (v2*) array_get(&p->vertices, i));
-	return result;
+		aabb_extend_v(box, array_get(&p->vertices, i));
 }
 
-void poly_translate(const poly * p, const v2 * delta)
+void poly_translate(poly * p, const v2 * delta)
 {
 	for (u32 i = 0, n = array_size(&p->vertices); i < n; ++i)
 	{
@@ -63,15 +64,18 @@ void poly_translate(const poly * p, const v2 * delta)
 
 interval poly_project(const poly * p, const v2 * axis)
 {
-	const v2 & unitAxis = axis.is_unit() ? axis : axis.get_unit();
-	Interval projection;
-	for (const auto & vertex : vertices)
+	v2 unit_axis = *axis;
+	if (!v2_is_unit(&unit_axis))
+		v2_normalize(axis, &unit_axis);
+	interval projection;
+	for (u32 i = 0; i < p->vertices.size; ++i)
 	{
-		const r32 dp = vertex.dot(unitAxis);
-		if (dp < projection.left)
-			projection.left = dp;
-		else if (dp > projection.right)
-			projection.right = dp;
+		const v2 * vertex = array_get(&p->vertices, i);
+		const r32 dp = v2_dot(vertex, &unit_axis);
+		if (dp < projection.l)
+			projection.l = dp;
+		else if (dp > projection.r)
+			projection.r = dp;
 	}
 	return projection;
 }
@@ -82,7 +86,8 @@ v2 poly_center(const poly * p)
 	u32 n = array_size(&p->vertices);
 	for (u32 i = 0; i < n; ++i)
 		v2_add(&center, array_get(&p->vertices, i), &center);
-	v2_mul(&center, 1.f / n);
+	const r32 scale = 1.f / n;
+	v2_scale(&center, scale, scale, &center);
 	return center;
 }
 

@@ -1,63 +1,35 @@
 #ifndef VIOLET_M4_H
 #define VIOLET_M4_H
 
-#include <memory>
-
 #include "violet/math/m3.h"
 #include "violet/math/v3.h"
-#include "violet/template/template_utilities.h"
 
-namespace vlt
+typedef struct m4
 {
-	struct VIOLET_API alignas(16) m4
-	{
-		struct VIOLET_API row
-		{
-			r32 columns[4];
+	_Alignas(16) r32 v[16];
+} m4;
 
-			r32 & operator[](size_t i);
-			const r32 & operator[](size_t i) const;
-		};
+extern const m4 g_m4_identity;
+extern const m4 g_m4_zero;
 
-		row rows[4];
+void m4_mul_m(const m4 lhs, const m4 rhs, m4 res);
+void m4_mul_v3(const m4 lhs, const v3 * rhs, v3 * res);
+#define m4_mul(X, Y, Z) _Generic((Y), \
+	m4:        m4_mul_m,              \
+	const m4:  m4_mul_m,              \
+	v3*:       m4_mul_v3,             \
+	const v3*: m4_mul_v3              \
+	)(X, Y, Z)
 
-		static const m4 Identity;
-		static const m4 Zero;
+b8 m4_equal(const m4 lhs, const m4 rhs);
 
-		m4();
-		m4(std::initializer_list<r32> values);
+void m4_from_m3(m4 dst, const m3 src);
+void m4_to_m3(const m4 src, m3 dst);
 
-		row & operator[](size_t i);
-		row const & operator[](size_t i) const;
+void m4_read(reader * r, m4 m);
+void m4_write(writer * w, const m4 m);
 
-		r32 * data();
-		const r32 * data() const;
-	};
 
-	VIOLET_API m4 operator*(const m4 & lhs, const m4 & rhs);
-	VIOLET_API v3 operator*(const m4 & lhs, const v3 & rhs);
-	VIOLET_API bool operator==(const m4 & lhs, const m4 & rhs);
-	VIOLET_API bool operator!=(const m4 & lhs, const m4 & rhs);
-	VIOLET_API m4 from2d(const m3 & mat);
-	VIOLET_API m3 to2d(const m4 & mat);
-	VIOLET_API Serializer & operator<<(Serializer & serializer, const m4 & vec);
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, m4 & vec);
-	
-	
-	struct VIOLET_API unaligned_m4
-	{
-		std::shared_ptr<r32> data;
-
-		explicit unaligned_m4(const m4 & mat);
-		explicit operator m4() const;
-	};
-	
-
-	template <>
-	struct copyable<m4>
-	{
-		typedef unaligned_m4 type;
-	};
-}
+typedef r32 unaligned_m4[16];
 
 #endif

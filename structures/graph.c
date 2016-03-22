@@ -1,10 +1,9 @@
 #include <assert.h>
-#include <cassert>
 
 #include "violet/structures/array.h"
 #include "violet/structures/graph.h"
 
-void graph_init(graph * g)
+/*void graph_init(graph * g)
 {
 	graph temp = {
 		.nodes = array_create(sizeof(void*)),
@@ -64,4 +63,4 @@ void graph_destroy(graph * g)
 	array_destroy(g->edge_pointers);
 	array_destroy(g->edges);
 	free(g);
-}
+}*/

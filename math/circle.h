@@ -4,14 +4,13 @@
 #include "violet/math/v2.h"
 #include "violet/math/interval.h"
 
-typedef struct
+typedef struct circle
 {
-	const v2 center;
-	const r32 radius;
-
-	Circle();
-	Circle(const v2 & center, r32 radius);
-	Interval project(const v2 & axis) const;
+	v2 center;
+	r32 radius;
 } circle;
 
+interval circle_project(const circle * c, const v2 * axis);
+
 #endif
+

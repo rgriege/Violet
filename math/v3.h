@@ -1,65 +1,39 @@
 #ifndef VIOLET_V3_H
 #define VIOLET_V3_H
 
-#include "violet/core/defines.h"
 #include "violet/core/types.h"
 
-#include <ostream>
+typedef struct reader reader;
+typedef struct writer writer;
 
-namespace vlt
+typedef struct v3
 {
-	struct Deserializer;
-	struct Serializer;
+	r32 x, y, z;
+} v3;
 
-	struct VIOLET_API v3
-	{
-		r32 x, y, z;
+extern const v3 g_v3_x_axis;
+extern const v3 g_v3_y_axis;
+extern const v3 g_v3_z_axis;
+extern const v3 g_v3_zero;
 
-		static const v3 X_Axis;
-		static const v3 Y_Axis;
-		static const v3 Z_Axis;
-		static const v3 Zero;
+r32 v3_mag(const v3 * v);
+r32 v3_mag_squared(const v3 * v);
+void normalize(const v3 * v, v3 * res);
+b8 v3_is_unit(const v3 * v);
+void v3_scale(const v3 * v, r32 sx, r32 sy, r32 sz, v3 * res);
 
-		v3();
-		v3(const v3 & rhs);
-		v3(r32 _x, r32 _y, r32 _z);
-		v3(Deserializer & deserializer);
+void v3_add(const v3 * lhs, const v3 * rhs, v3 * res);
+void v3_sub(const v3 * lhs, const v3 * rhs, v3 * res);
 
-		r32 magnitude() const;
-		r32 mag_squared() const;
-		v3 & normalize();
-		v3 get_unit() const;
-		bool is_unit() const;
-		v3 & scale(r32 sx, r32 sy, r32 sz);
-		v3 & scale(const v3 & scale);
+r32 v3_dot(const v3 * lhs, const v3 * rhs);
+void v3_cross(const v3 * lhs, const v3 * rhs, v3 * res);
+void v3_proj(const v3 * v, const v3 * axis, v3 * res);
+void v3_inverse(const v3 * v, v3 * res);
+b8 v3_is_zero(const v3 * v);
+b8 v3_equal(const v3 * lhs, const v3 * rhs);
 
-		v3 & operator+=(const v3 & rhs);
-		v3 & operator-=(const v3 & rhs);
-		v3 & operator*=(r32 scale);
-		v3 & operator/=(r32 scale);
-		v3 & operator=(const v3 & rhs);
-
-		r32 dot(const v3 & rhs) const;
-		v3 cross(const v3 & rhs) const;
-		v3 project(const v3 & axis) const;
-		v3 operator-() const;
-		v3 inverse() const;
-		void invert();
-		bool is_zero() const;
-		void zero();
-		v3 copy() const;
-	};
-
-	VIOLET_API v3 operator+(v3 lhs, const v3 & rhs);
-	VIOLET_API v3 operator-(v3 lhs, const v3 & rhs);
-	VIOLET_API v3 operator*(r32 scale, v3 vec);
-	VIOLET_API v3 operator*(v3 vec, r32 scale);
-	VIOLET_API v3 operator/(v3 vec, r32 scale);
-	VIOLET_API bool operator==(const v3 & lhs, const v3 & rhs);
-	VIOLET_API bool operator!=(const v3 & lhs, const v3 & rhs);
-	VIOLET_API std::ostream & operator<<(std::ostream & os, const v3 & vec);
-	VIOLET_API Serializer & operator<<(Serializer & serializer, const v3 & vec);
-	VIOLET_API Deserializer & operator>>(Deserializer & deserializer, v3 & vec);
-}
+void v3_read(reader * r, v3 * v);
+void v3_write(writer * w, const v3 * v);
 
 #endif
+

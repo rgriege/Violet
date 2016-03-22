@@ -1,122 +1,63 @@
-// ============================================================================
-
-#include <cmath>
+#include <math.h>
 
 #include "violet/math/m3.h"
-#include "violet/serialization/deserializer.h"
-#include "violet/serialization/serializer.h"
 
-using namespace vlt;
-
-// ============================================================================
-
-r32 & m3::row::operator[](const size_t i)
-{
-	return columns[i];
-}
-
-// ----------------------------------------------------------------------------
-
-const r32 & m3::row::operator[](const size_t i) const
-{
-	return columns[i];
-}
-
-// ============================================================================
-
-const m3 m3::Identity = {
+const m3 g_m3_identity = {
 	1.f, 0.f, 0.f,
 	0.f, 1.f, 0.f,
 	0.f, 0.f, 1.f
 };
 
-// ----------------------------------------------------------------------------
-
-const m3 m3::Zero = {
+const m3 g_m3_zero = {
 	0.f, 0.f, 0.f,
 	0.f, 0.f, 0.f,
 	0.f, 0.f, 0.f
 };
 
-// ============================================================================
-
-m3 m3::createRotation(const r32 radians)
+void m3_init_rot(m3 m, r32 radians)
 {
-	return{
-		std::cos(radians), -std::sin(radians), 0.f,
-		std::sin(radians), std::cos(radians), 0.f,
-		0.f, 0.f, 1.f
-	};
+	m[0] = cos(radians);
+	m[1] = -sin(radians);
+	m[2] = 0;
+	m[3] = sin(radians);
+	m[4] = cos(radians);
+	m[5] = 0;
+	m[6] = 0;
+	m[7] = 0;
+	m[8] = 0;
 }
 
-// ============================================================================
-
-typename m3::row & m3::operator[](const size_t i)
+void m3_mul_m(const m3 lhs, const m3 rhs, m3 res)
 {
-	return rows[i];
-}
-
-// ----------------------------------------------------------------------------
-
-typename m3::row const & m3::operator[](const size_t i) const
-{
-	return rows[i];
-}
-
-// ----------------------------------------------------------------------------
-
-r32 * m3::data()
-{
-	return &rows[0][0];
-}
-
-// ----------------------------------------------------------------------------
-
-const r32 * m3::data() const
-{
-	return &rows[0][0];
-}
-
-// ============================================================================
-
-m3 vlt::operator*(const m3 & lhs, const m3 & rhs)
-{
-	m3 result = m3::Zero;
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			for (int h = 0; h < 3; h++)
-				result[i][j] += lhs[i][h] * rhs[h][j];
-	return result;
+				res[3*i+j] += lhs[3*i+h] * rhs[3*h+j];
 }
 
-// ----------------------------------------------------------------------------
-
-v2 vlt::operator*(const m3 & lhs, const v2 & rhs)
+void m3_mul_v2(const m3 m, const v2 * v, v2 * res)
 {
-	return v2(lhs[0][0] * rhs.x + lhs[0][1] * rhs.y + lhs[0][2], lhs[1][0] * rhs.x + lhs[1][1] * rhs.y + lhs[1][2]);
+	res->x = m[0] * v->x + m[1] * v->y + m[2];
+	res->y = m[3] * v->x + m[4] * v->y + m[5];
 }
 
-// ----------------------------------------------------------------------------
+void m3_mul_v3(const m3 m, const v3 * v, v3 * res)
+{
+	res->x = m[0] * v->x + m[1] * v->y + m[2] * v->z;
+	res->y = m[3] * v->x + m[4] * v->y + m[5] * v->z;
+	res->z = m[6] * v->x + m[7] * v->y + m[8] * v->z;
+}
 
-bool vlt::operator==(const m3 & lhs, const m3 & rhs)
+b8 m3_equal(const m3 lhs, const m3 rhs)
 {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			if (lhs[i][j] != rhs[i][j])
+			if (lhs[3*i+j] != rhs[3*i+j])
 				return false;
 	return true;
 }
 
-// ----------------------------------------------------------------------------
-
-bool vlt::operator!=(const m3 & lhs, const m3 & rhs)
-{
-	return !(lhs == rhs);
-}
-
-// ============================================================================
-
-Serializer & vlt::operator<<(Serializer & serializer, const m3 & mat)
+/*Serializer * vlt_operator<<(Serializer * serializer, const m3 * mat)
 {
 	auto segment = serializer.create_segment("mat");
 	segment->write_r32("a", mat[0][0]);
@@ -133,7 +74,7 @@ Serializer & vlt::operator<<(Serializer & serializer, const m3 & mat)
 
 // ----------------------------------------------------------------------------
 
-Deserializer & vlt::operator>>(Deserializer & deserializer, m3 & mat)
+Deserializer * vlt_operator>>(Deserializer * deserializer, m3 * mat)
 {
 	auto segment = deserializer.enter_segment("mat");
 	mat[0][0] = segment->get_r32("a");
@@ -146,6 +87,5 @@ Deserializer & vlt::operator>>(Deserializer & deserializer, m3 & mat)
 	mat[2][1] = segment->get_r32("h");
 	mat[2][2] = segment->get_r32("i");
 	return deserializer;
-}
+}*/
 
-// ============================================================================

@@ -1,171 +1,85 @@
-// ============================================================================
 
 #include <assert.h>
-#include <cstring>
+#include <string.h>
 #include <nmmintrin.h>
 
 #include "violet/math/m4.h"
 
-#include "violet/serialization/deserializer.h"
-#include "violet/serialization/serializer.h"
-
-using namespace vlt;
-
-// ============================================================================
-
-r32 & m4::row::operator[](const size_t i)
-{
-	return columns[i];
-}
-
-// ----------------------------------------------------------------------------
-
-
-const r32 & m4::row::operator[](const size_t i) const
-{
-	return columns[i];
-}
-
-// ============================================================================
-
-const m4 m4::Identity = {
+const m4 g_m4_identity = {
 	1, 0, 0, 0,
 	0, 1, 0, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 1
 };
 
-// ----------------------------------------------------------------------------
-
-const m4 m4::Zero = {
+const m4 g_m4_zero = {
 	0, 0, 0, 0,
 	0, 0, 0, 0,
 	0, 0, 0, 0,
 	0, 0, 0, 0
 };
 
-// ============================================================================
-
-m4::m4() :
-	rows()
+void m4_mul_m(const m4 lhs, const m4 rhs, m4 res)
 {
-	std::memset(data(), 0, 16 * sizeof(r32));
-}
-
-// ----------------------------------------------------------------------------
-
-m4::m4(std::initializer_list<r32> values) :
-	rows()
-{
-	assert(values.size() == 16);
-	std::memcpy(data(), values.begin(), 16 * sizeof(r32));
-}
-
-// ----------------------------------------------------------------------------
-
-m4::row & m4::operator[](const size_t i)
-{
-	return rows[i];
-}
-
-// ----------------------------------------------------------------------------
-
-const m4::row & m4::operator[](const size_t i) const
-{
-	return rows[i];
-}
-
-// ----------------------------------------------------------------------------
-
-r32 * m4::data()
-{
-	return &rows[0][0];
-}
-
-// ----------------------------------------------------------------------------
-
-const r32 * m4::data() const
-{
-	return &rows[0][0];
-}
-
-// ============================================================================
-
-m4 vlt::operator*(const m4 & lhs, const m4 & rhs)
-{
-	m4 result = m4::Zero;
 	for (int i = 0; i < 4; ++i)
 	{
 		for (int k = 0; k < 4; ++k)
 		{
-			r32 r = lhs[i][k];
-			__m128 rVec = _mm_set_ps(r, r, r, r);
+			r32 r = lhs.v[4*i+k];
+			__m128 r_vec = _mm_set_ps(r, r, r, r);
 
-			__m128 rhsVec = _mm_load_ps(&rhs[k][0]);
-			__m128 resultVec = _mm_load_ps(&result[i][0]);
-			__m128 mul = _mm_mul_ps(rVec, rhsVec);
-			__m128 add = _mm_add_ps(resultVec, mul);
-			_mm_store_ps(&result[i][0], add);
+			__m128 rhs_vec = _mm_load_ps(&rhs.v[4*k]);
+			__m128 res_vec = _mm_load_ps(&res.v[4*i]);
+			__m128 mul = _mm_mul_ps(r_vec, rhs_vec);
+			__m128 add = _mm_add_ps(res_vec, mul);
+			_mm_store_ps(&res.v[4*i], add);
 		}
 	}
-
-	return result;
 }
 
-// ----------------------------------------------------------------------------
-
-v3 vlt::operator*(const m4 & lhs, const v3 & rhs)
+void m4_mul_v3(const m4 lhs, const v3 * rhs, v3 * res)
 {
-	return v3(lhs[0][0] * rhs.x + lhs[0][1] * rhs.y + lhs[0][2], lhs[1][0] * rhs.x + lhs[1][1] * rhs.y + lhs[1][2], lhs[2][0] * rhs.x + lhs[2][1] * rhs.y + lhs[2][2] * rhs.z);
+	res->x = lhs.v[0] * rhs->x + lhs.v[1] * rhs->y + lhs.v[2] * rhs->z + lhs.v[3];
+	res->y = lhs.v[4] * rhs->x + lhs.v[5] * rhs->y + lhs.v[6] * rhs->z + lhs.v[7];
+	res->z = lhs.v[8] * rhs->x + lhs.v[9] * rhs->y + lhs.v[10] * rhs->z + lhs.v[11];
 }
 
-// ----------------------------------------------------------------------------
-
-bool vlt::operator==(const m4 & lhs, const m4 & rhs)
+b8 m4_equal(const m4 lhs, const m4 rhs)
 {
-	for (int i = 0; i < 4; i++)
-		for (int j = 0; j < 4; j++)
-			if (lhs[i][j] != rhs[i][j])
-				return false;
-	return true;
+	return memcmp(lhs.v, rhs.v, 16 * sizeof(r32));
 }
 
-// ----------------------------------------------------------------------------
-
-bool vlt::operator!=(const m4 & lhs, const m4 & rhs)
+void m4_from_m3(m4 dst, const m3 src)
 {
-	return !(lhs == rhs);
+	dst.v[0] = src[0];
+	dst.v[1] = src[1];
+	dst.v[2] = 0;
+	dst.v[3] = src[2];
+	dst.v[4] = src[3];
+	dst.v[5] = src[4];
+	dst.v[6] = 0;
+	dst.v[7] = src[5];
+	dst.v[8] = 0;
+	dst.v[9] = 0;
+	dst.v[10] = 1;
+	dst.v[11] = 0;
+	dst.v[12] = src[6];
+	dst.v[13] = src[7];
+	dst.v[14] = 0;
+	dst.v[15] = src[8];
 }
 
-// ----------------------------------------------------------------------------
-
-m4 vlt::from2d(const m3 & mat)
+void m4_to_m3(const m4 src, m3 dst)
 {
-	return m4 {
-		mat[0][0], mat[0][1], 0, mat[0][2],
-			mat[1][0], mat[1][1], 0, mat[1][2],
-			0, 0, 1, 0,
-			mat[2][0], mat[2][1], 0, mat[2][2]
-	};
+	memcpy(dst, src.v, 3 * sizeof(r32));
+	memcpy(&dst[3], &src.v[4], 3 * sizeof(r32));
+	memcpy(&dst[6], &src.v[8], 3 * sizeof(r32));
 }
 
-// ----------------------------------------------------------------------------
-
-m3 vlt::to2d(const m4 & mat)
-{
-	return m3 {
-		mat[0][0], mat[0][1], mat[0][3],
-			mat[1][0], mat[1][1], mat[1][3],
-			mat[3][0], mat[3][1], mat[3][3]
-	};
-}
-
-// ----------------------------------------------------------------------------
-
-Serializer & vlt::operator<<(Serializer & serializer, const m4 & mat)
+/*Serializer & vlt_operator<<(Serializer & serializer, const m4 & mat)
 {
 	auto segment = serializer.create_segment("mat");
-	std::string label = "a";
+	std_string label = "a";
 	for (int i = 0; i < 4; ++i)
 	{
 		for (int j = 0; j < 4; ++j)
@@ -179,10 +93,10 @@ Serializer & vlt::operator<<(Serializer & serializer, const m4 & mat)
 
 // ----------------------------------------------------------------------------
 
-Deserializer & vlt::operator>>(Deserializer & deserializer, m4 & mat)
+Deserializer & vlt_operator>>(Deserializer & deserializer, m4 & mat)
 {
 	auto segment = deserializer.enter_segment("mat");
-	std::string label = "a";
+	std_string label = "a";
 	for (int i = 0; i < 4; ++i)
 	{
 		for (int j = 0; j < 4; ++j)
@@ -192,24 +106,5 @@ Deserializer & vlt::operator>>(Deserializer & deserializer, m4 & mat)
 		}
 	}
 	return deserializer;
-}
+}*/
 
-// ============================================================================
-
-unaligned_m4::unaligned_m4(const m4 & mat) :
-	data(new r32[16], std::default_delete<r32[]>())
-{
-	memcpy(data.get(), mat.data(), 16 * sizeof(r32));
-}
-
-// ----------------------------------------------------------------------------
-
-
-unaligned_m4::operator m4() const
-{
-	m4 result;
-	memcpy(result.data(), data.get(), 16 * sizeof(r32));
-	return result;
-}
-
-// ============================================================================

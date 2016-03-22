@@ -10,7 +10,7 @@ const v2 g_v2_zero = { 0, 0 };
 
 r32 v2_mag(const v2 * v)
 {
-	sqrt(v2_mag_squared(v));
+	return sqrt(v2_mag_squared(v));
 }
 
 r32 v2_mag_squared(const v2 * v)
