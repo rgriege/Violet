@@ -65,6 +65,7 @@ static b8 _vson_read_rest_of_line(istream * s, array * str)
 		_vson_skip_rest_of_line(s);
 		return false;
 	}
+	array_append(str, &g_str_end);
 	return true;
 }
 

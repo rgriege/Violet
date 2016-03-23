@@ -42,7 +42,7 @@ void stream_vwrite(ostream * s, const char * format, va_list args)
 		va_copy(args_sz, args);
 		const u32 sz = vsnprintf(NULL, 0, format, args_sz);
 		va_end(args_sz);
-		array_reserve(s->arr, s->arr->size + sz);
+		array_reserve(s->arr, s->arr->size + sz + 1);
 		vsprintf(s->arr->data + s->arr->size, format, args);
 		s->arr->size += sz;
 	}
