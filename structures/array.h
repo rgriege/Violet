@@ -14,6 +14,7 @@ typedef struct array
 void array_init(array * a, u32 elem_size);
 void array_copy(array * dest, const array * src);
 void array_destroy(array * a);
+void array_destroy_recurse(array * a, void (*destroy_elem)(void*));
 
 void * array_get(const array * a, u32 idx);
 void * array_first(array * a);

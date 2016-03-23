@@ -11,13 +11,14 @@ static const char g_str_end = '\0';
 
 static b8 _vson_read_label(istream * s, const char * label)
 {
-	char c;
+	b8 retval = false;
+	char c = 0;
 	while (stream_read(s, &c, sizeof(char)) && isspace(c))
 		;
 	if (isspace(c))
 	{
 		log_write("vson: failed reading label %s", label);
-		return false;
+		goto out;
 	}
 
 	array str;
@@ -29,19 +30,21 @@ static b8 _vson_read_label(istream * s, const char * label)
 	if (c != ':')
 	{
 		log_write("vson: missing colon after label %s", label);
-		return false;
+		goto err;
 	}
 
 	array_append(&str, &g_str_end);
 	if (strcmp(str.data, label) != 0)
 	{
 		log_write("vson: expected %s, got %s", label, str.data);
-		array_destroy(&str);
-		return false;
+		goto err;
 	}
-	array_destroy(&str);
 
-	return stream_read(s, &c, sizeof(char)) && c == ' ';
+	retval = stream_read(s, &c, sizeof(char)) && c == ' ';
+err:
+	array_destroy(&str);
+out:
+	return retval;
 }
 
 static b8 _vson_skip_rest_of_line(istream * s)

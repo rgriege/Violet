@@ -31,6 +31,13 @@ void array_destroy(array * a)
 	}
 }
 
+void array_destroy_recurse(array * a, void (*destroy_elem)(void*))
+{
+	for (u32 i = 0; i < a->size; ++i)
+		destroy_elem(array_get(a, i));
+	array_destroy(a);
+}
+
 void * array_get(const array * a, u32 idx)
 {
 	assert(idx < a->size);
