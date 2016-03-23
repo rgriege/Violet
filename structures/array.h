@@ -28,6 +28,7 @@ void array_remove(array * a, u32 idx);
 void array_clear(array * a);
 void * array_append(array * a, const void * elem);
 void * array_append_null(array * a);
+void * array_append_zero(array * a);
 void array_reserve(array * a, u32 capacity);
 
 #endif

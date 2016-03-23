@@ -97,6 +97,13 @@ void * array_append_null(array * a)
 	return a->data + a->size++ * a->elem_size;
 }
 
+void * array_append_zero(array * a)
+{
+	void * p = array_append_null(a);
+	memset(p, 0, a->elem_size);
+	return p;
+}
+
 void array_reserve(array * a, u32 capacity)
 {
 	if (capacity > a->capacity)
