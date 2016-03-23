@@ -1,15 +1,10 @@
 #ifndef VIOLET_MATH_H
 #define VIOLET_MATH_H
 
-inline int max(int lhs, int rhs)
-{
-	return lhs < rhs ? rhs : lhs;
-}
+#include "violet/core/types.h"
 
-inline int min(int lhs, int rhs)
-{
-	return lhs > rhs ? rhs : lhs;
-}
+#define max(X, Y) (((X) < (Y)) ? (Y) : (X))
+#define min(X, Y) (((X) > (Y)) ? (Y) : (X))
 
 #define PI 3.1415
 
