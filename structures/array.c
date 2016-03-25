@@ -31,7 +31,7 @@ void array_destroy(array * a)
 	}
 }
 
-void array_destroy_recurse(array * a, void (*destroy_elem)(void*))
+void array_destroy_each(array * a, void (*destroy_elem)(void*))
 {
 	for (u32 i = 0; i < a->size; ++i)
 		destroy_elem(array_get(a, i));
@@ -102,6 +102,15 @@ void * array_append_zero(array * a)
 	void * p = array_append_null(a);
 	memset(p, 0, a->elem_size);
 	return p;
+}
+
+void * array_insert_null(array * a, u32 idx)
+{
+	assert(idx <= a->size);
+	array_append_null(a);
+	for (u32 i = a->size - 1; i > idx; --i)
+		memcpy(array_get(a, i), array_get(a, i - 1), a->elem_size);
+	return array_get(a, idx);
 }
 
 void array_reserve(array * a, u32 capacity)
