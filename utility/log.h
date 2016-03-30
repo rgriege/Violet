@@ -1,6 +1,8 @@
 #ifndef VIOLET_LOG_H
 #define VIOLET_LOG_H
 
+#include "violet/core/types.h"
+
 typedef struct ostream ostream;
 
 void log_init();
