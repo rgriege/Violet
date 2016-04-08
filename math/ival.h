@@ -10,8 +10,6 @@ typedef struct ival
 } ival;
 
 
-extern const ival g_0_to_1;
-
 void ival_slide(ival * i, s32 d);
 s32 ival_length(const ival * i);
 

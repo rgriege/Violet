@@ -1,10 +1,7 @@
 #include <math.h>
 
 #include "violet/math/ival.h"
-
-
-const ival g_0_to_1 = { 0, 1 };
-
+#include "violet/math/math.h"
 
 void ival_slide(ival * i, s32 d)
 {
@@ -24,12 +21,12 @@ b8 ival_contains_s(const ival * i, s32 x)
 
 b8 ival_contains_i(const ival * lhs, const ival * rhs)
 {
-	return ival_contains_r(lhs, rhs->l) && ival_contains_r(lhs, rhs->r);
+	return ival_contains_s(lhs, rhs->l) && ival_contains_s(lhs, rhs->r);
 }
 
 b8 ival_overlaps(const ival * lhs, const ival * rhs)
 {
-	return ival_contains_r(lhs, rhs->l) || ival_contains_r(lhs, rhs->r);
+	return ival_contains_s(lhs, rhs->l) || ival_contains_s(lhs, rhs->r);
 }
 
 s32 ival_overlap(const ival * lhs, const ival * rhs)
