@@ -9,6 +9,7 @@ void poly_from_box(poly * p, const aabb * box)
 	const v2 top_right = { box->bottom_right.x, box->top_left.y };
 	const v2 bottom_left = { box->top_left.x, box->bottom_right.y };
 
+	array_init(&p->vertices, sizeof(v2));
 	array_reserve(&p->vertices, 4);
 	array_append(&p->vertices, &box->bottom_right);
 	array_append(&p->vertices, &top_right);

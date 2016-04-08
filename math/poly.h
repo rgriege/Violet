@@ -1,6 +1,7 @@
 #ifndef VIOLET_POLYGON_H
 #define VIOLET_POLYGON_H
 
+#include "violet/math/interval.h"
 #include "violet/math/v2.h"
 #include "violet/structures/array.h"
 
