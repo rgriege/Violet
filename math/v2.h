@@ -28,6 +28,8 @@ void v2_scale(const v2 * v, r32 sx, r32 sy, v2 * result);
 
 void v2_add(const v2 * lhs, const v2 * rhs, v2 * result);
 void v2_sub(const v2 * lhs, const v2 * rhs, v2 * result);
+void v2_mul(const v2 * lhs, const v2 * rhs, v2 * result);
+void v2_div(const v2 * lhs, const v2 * rhs, v2 * result);
 
 void v2_rot(const v2 * v, r32 radians, v2 * result);
 r32 v2_dot(const v2 * lhs, const v2 * rhs);

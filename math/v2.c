@@ -47,6 +47,18 @@ void v2_sub(const v2 * lhs, const v2 * rhs, v2 * result)
 	result->y = lhs->y - rhs->y;
 }
 
+void v2_mul(const v2 * lhs, const v2 * rhs, v2 * result)
+{
+	result->x = lhs->x * rhs->x;
+	result->y = lhs->y * rhs->y;
+}
+
+void v2_div(const v2 * lhs, const v2 * rhs, v2 * result)
+{
+	result->x = lhs->x / rhs->x;
+	result->y = lhs->y / rhs->y;
+}
+
 void v2_rot(const v2 * v, r32 radians, v2 * result)
 {
 	r32 x = v->x;

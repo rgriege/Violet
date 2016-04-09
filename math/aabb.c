@@ -3,6 +3,12 @@
 #include "violet/math/math.h"
 #include "violet/math/poly.h"
 
+void aabb_init_point(aabb * b, const v2 * p)
+{
+	b->top_left = *p;
+	b->bottom_right = *p;
+}
+
 void aabb_from_line(aabb * box, const v2 * start, const v2 * end)
 {
 	r32 xmin, xmax, ymin, ymax;

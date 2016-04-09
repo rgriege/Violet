@@ -10,6 +10,7 @@ typedef struct aabb
 	v2 bottom_right;
 } aabb;
 
+void aabb_init_point(aabb * b, const v2 * p);
 void aabb_from_line(aabb * b, const v2 * start, const v2 * end);
 void aabb_from_center(aabb * b, const v2 * center, const v2 * half_dim);
 void aabb_from_dims(aabb * b, r32 left, r32 top, r32 right, r32 bottom);
@@ -28,8 +29,8 @@ b8 aabb_overlaps(const aabb * lhs, const aabb * rhs);
 void aabb_extend_v(aabb * b, const v2 * p);
 void aabb_extend_b(aabb * b, const aabb * other);
 #define aabb_extend(X, Y) _Generic((Y), \
-	v2*  : aabb_extend_v,               \
-	aabb*: aabb_extend_b                \
+	const v2*  : aabb_extend_v,         \
+	const aabb*: aabb_extend_b          \
 	)(X, Y)
 
 void aabb_translate(aabb * b, const v2 * v);
