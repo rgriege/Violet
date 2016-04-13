@@ -10,10 +10,10 @@
 #include "violet/structures/array_map.h"
 #include "violet/utility/log.h"
 
-#include "mixEngine/font.h"
-#include "mixEngine/mesh.h"
-#include "mixEngine/shader.h"
-#include "mixEngine/texture.h"
+#include "violet/gui/font.h"
+#include "violet/gui/mesh.h"
+#include "violet/gui/shader.h"
+#include "violet/gui/texture.h"
 
 
 // FT_Library

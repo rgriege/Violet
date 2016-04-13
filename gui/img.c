@@ -9,10 +9,10 @@
 #include "violet/math/poly.h"
 #include "violet/utility/log.h"
 
-#include "mixEngine/img.h"
-#include "mixEngine/mesh.h"
-#include "mixEngine/shader.h"
-#include "mixEngine/texture.h"
+#include "violet/gui/img.h"
+#include "violet/gui/mesh.h"
+#include "violet/gui/shader.h"
+#include "violet/gui/texture.h"
 
 
 typedef struct vlt_img

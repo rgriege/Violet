@@ -1,6 +1,6 @@
 #include <GL/glew.h>
 
-#include "mixEngine/mesh.h"
+#include "violet/gui/mesh.h"
 #include "violet/math/poly.h"
 
 void vlt_mesh_init(vlt_mesh * m, const array * vertices)

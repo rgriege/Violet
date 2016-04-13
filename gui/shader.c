@@ -6,7 +6,7 @@
 
 #include "violet/utility/log.h"
 
-#include "shader.h"
+#include "violet/gui/shader.h"
 
 b8 vlt_shader_init(vlt_shader * shader, const char * filename, shader_type type)
 {

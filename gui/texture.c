@@ -2,8 +2,8 @@
 #include <png.h>
 #include <stdlib.h>
 
-#include "mixEngine/mesh.h"
-#include "mixEngine/texture.h"
+#include "violet/gui/mesh.h"
+#include "violet/gui/texture.h"
 
 #include "violet/math/aabb.h"
 #include "violet/math/poly.h"

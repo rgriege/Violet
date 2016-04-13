@@ -10,12 +10,12 @@
 #include "violet/math/poly.h"
 #include "violet/utility/log.h"
 
-#include "font.h"
-#include "gui.h"
-#include "img.h"
-#include "mesh.h"
-#include "shader.h"
-#include "texture.h"
+#include "violet/gui/font.h"
+#include "violet/gui/gui.h"
+#include "violet/gui/img.h"
+#include "violet/gui/mesh.h"
+#include "violet/gui/shader.h"
+#include "violet/gui/texture.h"
 
 const vlt_color g_black = { .r = 0, .g = 0, .b = 0, .a = 255 };
 const vlt_color g_white = { .r = 255, .g = 255, .b = 255, .a = 255 };
