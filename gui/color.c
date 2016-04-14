@@ -1,10 +1,12 @@
 #include <stdlib.h>
-#include <stdio.h>
+#include <string.h>
 
 #include "violet/gui/color.h"
+#include "violet/utility/log.h"
 
 const vlt_color g_black = { .r = 0, .g = 0, .b = 0, .a = 255 };
 const vlt_color g_white = { .r = 255, .g = 255, .b = 255, .a = 255 };
+const vlt_color g_nocolor = { .r = 0, .g = 0, .b = 0, .a = 0 };
 
 void vlt_color_as_float_array(float * f, vlt_color c)
 {
@@ -14,29 +16,37 @@ void vlt_color_as_float_array(float * f, vlt_color c)
 	f[3] = c.a / 255.f;
 }
 
-void vlt_color_from_hex(vlt_color * c, const char * hex)
+vlt_color vlt_color_from_hex(const char * hex)
 {
+	vlt_color c = g_nocolor;
 	if (*hex == '#')
 		++hex;
 
 	const u32 val = strtoul(hex, NULL, 16);
-	printf("hex val = %x\n", val);
-	if (val <= 0xffffff)
+	const u32 len = strlen(hex);
+	switch (len)
 	{
+	case 6:
 		// no alpha
-		printf("no alpha\n");
-		c->r = (val >> 16) & 0xff;
-		c->g = (val >> 8) & 0xff;
-		c->b = val & 0xff;
-		c->a = 255;
-	}
-	else
-	{
+		c.r = (val >> 16) & 0xff;
+		c.g = (val >> 8) & 0xff;
+		c.b = val & 0xff;
+		c.a = 255;
+		break;
+
+	case 8:
 		// with alpha
-		c->r = (val >> 24) & 0xff;
-		c->g = (val >> 16) & 0xff;
-		c->b = (val >> 8) & 0xff;
-		c->a = val & 0xff;
+		c.r = (val >> 24) & 0xff;
+		c.g = (val >> 16) & 0xff;
+		c.b = (val >> 8) & 0xff;
+		c.a = val & 0xff;
+		break;
+
+	default:
+		log_write("invalid color string '%s'", hex);
+		break;
 	}
+
+	return c;
 }
 

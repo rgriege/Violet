@@ -10,9 +10,10 @@ typedef struct vlt_color
 
 extern const vlt_color g_black;
 extern const vlt_color g_white;
+extern const vlt_color g_nocolor;
 
 void vlt_color_as_float_array(float * f, vlt_color c);
-void vlt_color_from_hex(vlt_color * c, const char * hex);
+vlt_color vlt_color_from_hex(const char * hex);
 
 #endif
 
