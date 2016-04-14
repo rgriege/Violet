@@ -115,7 +115,7 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 		return false;
 
 	gui->font = vlt_font_create();
-	if (!vlt_font_load(gui->font, "Vera.ttf", 20))
+	if (!vlt_font_load(gui->font, "Vera.ttf", 45))
 		return false;
 
 	return true;
@@ -208,7 +208,7 @@ void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * filename)
 	vlt_img_free(img);
 }
 
-void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 h, const char * txt,
+void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
                  vlt_color c)
 {
 	vlt_shader_program_bind(&gui->txt_shader);
@@ -216,7 +216,7 @@ void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 h, const char * txt,
 	_set_color_attrib(&gui->txt_shader, c);
 	_set_win_halfdim_attrib(gui, &gui->txt_shader);
 
-	vlt_font_render(gui->font, txt, x, y, &gui->txt_shader, FONT_ALIGN_CENTER);
+	vlt_font_render(gui->font, txt, x, y, &gui->txt_shader, FONT_ALIGN_LEFT);
 
 	vlt_shader_program_unbind();
 }
