@@ -131,6 +131,7 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 	FT_ULong charcode;
 	FT_UInt glyph_idx;
 	charcode = FT_Get_First_Char(face, &glyph_idx);
+	u32 max_bitmap_top = 0;
 	while (glyph_idx != 0)
 	{
 		if (charcode > 127)
@@ -188,13 +189,13 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 			array coords;
 			array_init(&coords, sizeof(v2));
 			array_reserve(&coords, 4);
-			const v2 coord0 = { .x=0, .y=1 };
+			const v2 coord0 = { .x=0, .y=0 };
 			array_append(&coords, &coord0);
-			const v2 coord1 = { .x=0, .y=0 };
+			const v2 coord1 = { .x=0, .y=1 };
 			array_append(&coords, &coord1);
-			const v2 coord2 = { .x=1, .y=0 };
+			const v2 coord2 = { .x=1, .y=1 };
 			array_append(&coords, &coord2);
-			const v2 coord3 = { .x=1, .y=1 };
+			const v2 coord3 = { .x=1, .y=0 };
 			array_append(&coords, &coord3);
 			vlt_mesh_init(&glyph->tex_coords, &coords);
 			glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
@@ -204,7 +205,8 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 			glBindVertexArray(0);
 
 			glyph->offset.x = face->glyph->bitmap_left;
-			glyph->offset.y = face->glyph->bitmap_top - (r32)tex_height;
+			glyph->offset.y = face->glyph->bitmap_top;
+			max_bitmap_top = max(max_bitmap_top, face->glyph->bitmap_top);
 			glyph->advance = face->glyph->advance.x >> 6;
 
 			free(pixels);
@@ -215,6 +217,12 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 			log_write("Charcode has no bitmap: %lu", charcode);
 
 		charcode = FT_Get_Next_Char(face, charcode, &glyph_idx);
+	}
+	array_map_iter it = {0};
+	while (array_map_iterate(&f->glyphs, &it))
+	{
+		vlt_glyph * glyph = it.val;
+		glyph->offset.y = max_bitmap_top - glyph->offset.y;
 	}
 	retval = true;
 
