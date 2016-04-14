@@ -2,17 +2,7 @@
 #define VIOLET_GUI_H
 
 #include "violet/core/types.h"
-
-typedef struct vlt_color
-{
-	u8 r, g, b, a;
-} vlt_color;
-
-extern const vlt_color g_black;
-extern const vlt_color g_white;
-
-void vlt_color_as_float_array(float * f, vlt_color c);
-
+#include "violet/gui/color.h"
 
 typedef struct vlt_gui vlt_gui;
 
