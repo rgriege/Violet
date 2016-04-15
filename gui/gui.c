@@ -249,8 +249,8 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
 		&gui->win_halfdim.y);
 	v2i_div(&gui->win_halfdim, 2, 2, &gui->win_halfdim);
-	gui->mouse_pos.x = gui->mouse_pos.x - gui->win_halfdim.x;
-	gui->mouse_pos.y = -gui->mouse_pos.y + gui->win_halfdim.y;
+	if (gui->mouse_btn & SDL_BUTTON_LMASK)
+		log_write("<%d,%d>", gui->mouse_pos.x, gui->mouse_pos.y);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
