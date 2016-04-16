@@ -115,7 +115,7 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 		return false;
 
 	gui->font = vlt_font_create();
-	if (!vlt_font_load(gui->font, "Vera.ttf", 45))
+	if (!vlt_font_load(gui->font, "MyriadProRegular.ttf", 45))
 		return false;
 
 	return true;
@@ -154,7 +154,7 @@ static void _set_win_halfdim_attrib(vlt_gui * gui, vlt_shader_program * p)
 	glUniform2f(win_attrib, gui->win_halfdim.x, gui->win_halfdim.y);
 }
 
-void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c)
+void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color lc)
 {
 	aabb box;
 	aabb_from_dims(&box, x, y + h, x + w, y);
@@ -179,6 +179,8 @@ void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c)
 	_set_win_halfdim_attrib(gui, &gui->poly_shader);
 
 	glDrawArrays(GL_TRIANGLE_FAN, 0, mesh.sz);
+	_set_color_attrib(&gui->poly_shader, lc);
+	glDrawArrays(GL_LINE_LOOP, 0, mesh.sz);
 
 	vlt_shader_program_unbind();
 
@@ -221,9 +223,9 @@ void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
 	vlt_shader_program_unbind();
 }
 
-b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c)
+b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color lc)
 {
-	vlt_gui_rect(gui, x, y, w, h, c);
+	vlt_gui_rect(gui, x, y, w, h, c, lc);
 	ibox box;
 	ibox_from_dims(&box, x, y + h, x + w, y);
 	return (gui->mouse_btn & SDL_BUTTON_LMASK)

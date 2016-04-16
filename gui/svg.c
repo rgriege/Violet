@@ -20,7 +20,8 @@
 typedef struct gui_rect
 {
 	s32 x, y, w, h;
-	vlt_color color;
+	vlt_color fill_color;
+	vlt_color line_color;
 } gui_rect;
 
 
@@ -165,12 +166,14 @@ b8 svg_rect(gui_rect * r, ezxml_t node)
 	const char * height_attr = ezxml_attr(node, "height");
 	r->h = height_attr ? atoi(height_attr) : 0;
 	const char * color_attr = ezxml_attr(node, "fill");
-	r->color = color_attr ? vlt_color_from_hex(color_attr) : g_nocolor;
+	r->fill_color = color_attr ? vlt_color_from_hex(color_attr) : g_nocolor;
+	const char * stroke_attr = ezxml_attr(node, "stroke");
+	r->line_color = stroke_attr ? vlt_color_from_hex(stroke_attr) : g_nocolor;
 	const char * opacity_attr = ezxml_attr(node, "opacity");
 	if (opacity_attr)
-		r->color.a = strtof(opacity_attr, NULL) * 255;
+		r->fill_color.a = strtof(opacity_attr, NULL) * 255;
 
-	return r->w != 0 && r->h != 0 && r->color.a != 0;
+	return r->w != 0 && r->h != 0 && r->fill_color.a != 0;
 }
 
 void svg_rects(array * rects, ezxml_t container)
@@ -178,9 +181,7 @@ void svg_rects(array * rects, ezxml_t container)
 	for (ezxml_t rect = ezxml_child(container, "rect"); rect; rect = rect->next)
 	{
 		gui_rect * r = array_append_null(rects);
-		if (svg_rect(r, rect))
-			log_write("rect: [%u %u %u %u] [%u %u %u %u]", r->x, r->y, r->w, r->h, r->color.r, r->color.g, r->color.b, r->color.a);
-		else
+		if (!svg_rect(r, rect))
 		{
 			log_write("invalid rect");
 			array_remove(rects, array_size(rects) - 1);
@@ -445,12 +446,12 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 		for (u32 i = 0, end = array_size(&l->rects); i < end; ++i)
 		{
 			const gui_rect * r = array_get(&l->rects, i);
-			vlt_gui_rect(gui, r->x, r->y, r->w, r->h, r->color);
+			vlt_gui_rect(gui, r->x, r->y, r->w, r->h, r->fill_color, r->line_color);
 		}
 		for (u32 i = 0, end = array_size(&l->btns); i < end; ++i)
 		{
 			const gui_btn * b = array_get(&l->btns, i);
-			if(vlt_gui_btn(gui, b->rect.x, b->rect.y, b->rect.w, b->rect.h, b->rect.color))
+			if(vlt_gui_btn(gui, b->rect.x, b->rect.y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
 				btn_press(b, state, "", btn_hooks);
 		}
 		for (u32 i = 0, end = array_size(&l->texts); i < end; ++i)
@@ -467,12 +468,12 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 			for (u32 i = 0, end = array_size(&s->rects); i < end; ++i)
 			{
 				const gui_rect * r = array_get(&s->rects, i);
-				vlt_gui_rect(gui, r->x + sref->x, r->y + sref->y, r->w, r->h, r->color);
+				vlt_gui_rect(gui, r->x + sref->x, r->y + sref->y, r->w, r->h, r->fill_color, r->line_color);
 			}
 			for (u32 i = 0, end = array_size(&s->btns); i < end; ++i)
 			{
 				const gui_btn * b = array_get(&s->btns, i);
-				if(vlt_gui_btn(gui, b->rect.x + sref->x, b->rect.y + sref->y, b->rect.w, b->rect.h, b->rect.color))
+				if(vlt_gui_btn(gui, b->rect.x + sref->x, b->rect.y + sref->y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
 					btn_press(b, state, sref->hook_prefix, btn_hooks);
 			}
 			for (u32 i = 0, end = array_size(&s->texts); i < end; ++i)
