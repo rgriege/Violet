@@ -1,6 +1,4 @@
 #include <string.h>
-#define __USE_POSIX199309
-#include <time.h>
 
 #include <glew.h>
 #include <SDL.h>
@@ -261,7 +259,5 @@ void vlt_gui_end_frame(vlt_gui * gui)
 {
 	glFlush();
 	SDL_GL_SwapWindow(gui->window);
-	struct timespec ts = { .tv_nsec = 60000000 };
-	nanosleep(&ts, NULL);
 }
 
