@@ -297,7 +297,10 @@ vlt_svg * vlt_svg_create(const char * filename)
 	vlt_svg * g = NULL;
 	ezxml_t doc = ezxml_parse_file(filename);
 	if (!doc)
+	{
+		log_write("failed to open svg '%s'", filename);
 		goto err_file;
+	}
 
 	aabb window;
 	if (!svg_view_box(&window, doc))
