@@ -19,4 +19,24 @@ void vlt_sleep_milli(u32 milli)
 	nanosleep(&t, NULL);
 }
 
+#elif(_WIN32)
+
+void vlt_get_time(vlt_time * t)
+{
+	QueryPerformanceCounter(t);
+}
+
+u32 vlt_diff_milli(vlt_time * start, vlt_time * end)
+{
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return (end->QuadPart - start->QuadPart) * 1000  / frequency.QuadPart;
+}
+
+void vlt_sleep_milli(u32 milli)
+{
+	Sleep(milli);
+}
+
 #endif
+

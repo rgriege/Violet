@@ -1,7 +1,7 @@
 
 #include <assert.h>
 #include <string.h>
-#include <nmmintrin.h>
+#include <x86intrin.h>
 
 #include "violet/math/m4.h"
 

@@ -13,9 +13,9 @@ static b8 _vson_read_label(istream * s, const char * label)
 {
 	b8 retval = false;
 	char c = 0;
-	while (stream_read(s, &c, sizeof(char)) && isspace(c))
+	while (stream_read(s, &c, sizeof(char)) && isspace((u8)c))
 		;
-	if (isspace(c))
+	if (isspace((u8)c))
 	{
 		log_write("vson: failed reading label %s", label);
 		goto out;

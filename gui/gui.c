@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include <glew.h>
+#include <GL/glew.h>
 #include <SDL.h>
 
 #include "violet/math/aabb.h"
