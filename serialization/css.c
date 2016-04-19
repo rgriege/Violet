@@ -21,7 +21,7 @@ void vlt_css_parse(vlt_css * style, const char * txt)
 		++p;
 
 		if (strcmp(label, "fill") == 0)
-			vlt_color_from_hex(&style->color, value);
+			style->color = vlt_color_from_hex(value);
 		else
 			log_write("invalid/unsupported css label '%s'", label);
 	}
