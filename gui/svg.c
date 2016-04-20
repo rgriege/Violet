@@ -35,11 +35,14 @@ typedef struct gui_btn
 void gui_btn_init(gui_btn * b)
 {
 	b->hook = malloc(GUI_TEXT_BUF_SZ);
+	b->params = NULL;
 }
 
 void gui_btn_destroy(gui_btn * b)
 {
 	free(b->hook);
+	if (b->params)
+		free(b->params);
 }
 
 
@@ -442,12 +445,12 @@ void text_get(gui_text * t, void * state, const char * addl_params, array_map * 
 {
 	char params[GUI_TEXT_BUF_SZ] = "";
 	if (addl_params)
-	{
 		strncpy(params, addl_params, GUI_TEXT_BUF_SZ);
-		strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
-	}
 	if (t->params)
+	{
+		strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
 		strncat(params, t->params, GUI_TEXT_BUF_SZ - strlen(params) - 1);
+	}
 	const u32 id = vlt_hash(t->hook);
 	void ** fn = array_map_get(hooks, &id);
 	if (fn)
@@ -460,12 +463,12 @@ void btn_press(const gui_btn * b, void * state, const char * addl_params, array_
 {
 	char params[GUI_TEXT_BUF_SZ] = "";
 	if (addl_params)
-	{
 		strncpy(params, addl_params, GUI_TEXT_BUF_SZ);
+	if (b->params)
+	{
+		strncat(params, b->params, GUI_TEXT_BUF_SZ - strlen(params) - 1);
 		strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
 	}
-	if (b->params)
-		strncat(params, b->params, GUI_TEXT_BUF_SZ - strlen(params) - 1);
 	const u32 id = vlt_hash(b->hook);
 	void ** fn = array_map_get(hooks, &id);
 	if (fn)
