@@ -145,31 +145,45 @@ void gui_layer_destroy(gui_layer * l)
 }
 
 
-void svg_pos(const char * transform_attr, s32 * x, s32 * y)
+b8 svg_pos(ezxml_t node, s32 * x, s32 * y)
 {
-	const char * p = transform_attr;
-	while (*p != '(')
-		++p;
-	++p;
-
-	char * end;
-	for (u32 i = 0; i < 4; ++i)
+	const char * x_attr = ezxml_attr(node, "x");
+	const char * y_attr = ezxml_attr(node, "y");
+	if (x_attr && y_attr)
 	{
-		strtof(p, &end);
-		p = end;
+		*x = atoi(x_attr);
+		*y = atoi(y_attr);
+		return true;
 	}
 
-	*x = strtof(p, &end);
-	p = end;
-	*y = strtof(p, &end);
+	const char * transform_attr = ezxml_attr(node, "transform");
+	if (transform_attr)
+	{
+		const char * p = transform_attr;
+		while (*p != '(')
+			++p;
+		++p;
+
+		char * end;
+		for (u32 i = 0; i < 4; ++i)
+		{
+			strtof(p, &end);
+			p = end;
+		}
+
+		*x = strtof(p, &end);
+		p = end;
+		*y = strtof(p, &end);
+		return true;
+	}
+
+	return false;
 }
 
 b8 svg_rect(gui_rect * r, ezxml_t node)
 {
-	const char * x_attr = ezxml_attr(node, "x");
-	r->x = x_attr ? atoi(x_attr) : 0;
-	const char * y_attr = ezxml_attr(node, "y");
-	r->y = y_attr ? atoi(y_attr) : 0;
+	if (!svg_pos(node, &r->x, &r->y))
+		r->x = r->y = 0;
 	const char * width_attr = ezxml_attr(node, "width");
 	r->w = width_attr ? atoi(width_attr) : 0;
 	const char * height_attr = ezxml_attr(node, "height");
@@ -235,11 +249,8 @@ void svg_btns(array * btns, ezxml_t container)
 
 b8 svg_text(gui_text * t, ezxml_t node)
 {
-	const char * pos_attr = ezxml_attr(node, "transform");
-	if (!pos_attr)
+	if (!svg_pos(node, &t->x, &t->y))
 		return false;
-
-	svg_pos(pos_attr, &t->x, &t->y);
 
 	const char * color_attr = ezxml_attr(node, "fill");
 	t->color = color_attr ? vlt_color_from_hex(color_attr) : g_nocolor;
@@ -401,8 +412,8 @@ vlt_svg * vlt_svg_create(const char * filename)
 				continue;
 			}
 
-			const char * pos_attr = ezxml_attr(sym_node, "transform");
-			if (!pos_attr)
+			s32 x, y;
+			if (!svg_pos(sym_node, &x, &y))
 			{
 				log_write("symbol ref '%s' has no position data", ref);
 				continue;
@@ -411,7 +422,8 @@ vlt_svg * vlt_svg_create(const char * filename)
 			gui_symbol_ref * sref = array_append_null(&layer->symbol_refs);
 			gui_symbol_ref_init(sref);
 			sref->symbol = symbol;
-			svg_pos(pos_attr, &sref->x, &sref->y);
+			sref->x = x;
+			sref->y = y;
 
 			const char * params_attr = ezxml_attr(sym_node, "params");
 			if (params_attr)
