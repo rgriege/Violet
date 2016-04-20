@@ -5,6 +5,7 @@
 
 #include "violet/math/aabb.h"
 #include "violet/math/ibox.h"
+#include "violet/math/math.h"
 #include "violet/math/poly.h"
 #include "violet/utility/log.h"
 
@@ -68,7 +69,7 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-	gui->window = SDL_CreateWindow(title, x, y, w, h, SDL_WINDOW_OPENGL);
+	gui->window = SDL_CreateWindow(title, max(x, 5), max(y, 30), w, h, SDL_WINDOW_OPENGL);
 	if (gui->window == NULL)
 	{
 		log_write("SDL_CreateWindow failed: %s", SDL_GetError());
