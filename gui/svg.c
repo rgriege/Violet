@@ -29,6 +29,7 @@ typedef struct gui_btn
 {
 	gui_rect rect;
 	char * hook;
+	char * params;
 } gui_btn;
 
 void gui_btn_init(gui_btn * b)
@@ -54,6 +55,7 @@ typedef struct gui_text
 	gui_text_type type;
 	char * txt;
 	char * hook;
+	char * params;
 	vlt_color color;
 } gui_text;
 
@@ -61,13 +63,16 @@ void gui_text_init(gui_text * t)
 {
 	t->txt = malloc(20);
 	t->hook = NULL;
+	t->params = NULL;
 }
 
 void gui_text_destroy(gui_text * t)
 {
 	free(t->txt);
-	if(t->hook)
+	if (t->hook)
 		free(t->hook);
+	if (t->params)
+		free(t->params);
 }
 
 
@@ -96,18 +101,19 @@ void gui_symbol_destroy(gui_symbol * s)
 typedef struct gui_symbol_ref
 {
 	s32 x, y;
-	char * hook_prefix;
+	char * params;
 	const gui_symbol * symbol;
 } gui_symbol_ref;
 
 void gui_symbol_ref_init(gui_symbol_ref * sref)
 {
-	sref->hook_prefix = malloc(GUI_TEXT_BUF_SZ);
+	sref->params = NULL;
 }
 
 void gui_symbol_ref_destroy(gui_symbol_ref * sref)
 {
-	free(sref->hook_prefix);
+	if (sref->params)
+		free(sref->params);
 }
 
 
@@ -198,6 +204,13 @@ b8 svg_btn(gui_btn * b, ezxml_t node)
 	if (!hook_attr)
 		return false;
 
+	const char * params_attr = ezxml_attr(node, "params");
+	if (params_attr)
+	{
+		b->params = malloc(GUI_TEXT_BUF_SZ);
+		strncpy(b->params, params_attr, GUI_TEXT_BUF_SZ);
+	}
+
 	strncpy(b->hook, hook_attr, GUI_TEXT_BUF_SZ);
 	return true;
 }
@@ -237,6 +250,13 @@ b8 svg_text(gui_text * t, ezxml_t node)
 		t->type = GUI_TEXT_DYNAMIC;
 		t->hook = malloc(GUI_TEXT_BUF_SZ);
 		strncpy(t->hook, hook_attr, GUI_TEXT_BUF_SZ);
+
+		const char * params_attr = ezxml_attr(node, "params");
+		if (params_attr)
+		{
+			t->params = malloc(GUI_TEXT_BUF_SZ);
+			strncpy(t->params, params_attr, GUI_TEXT_BUF_SZ);
+		}
 	}
 	else
 	{
@@ -390,8 +410,12 @@ vlt_svg * vlt_svg_create(const char * filename)
 			sref->symbol = symbol;
 			svg_pos(pos_attr, &sref->x, &sref->y);
 
-			const char * hook_attr = ezxml_attr(sym_node, "hook");
-			strncpy(sref->hook_prefix, hook_attr ? hook_attr : "", GUI_TEXT_BUF_SZ);
+			const char * params_attr = ezxml_attr(sym_node, "params");
+			if (params_attr)
+			{
+				sref->params = malloc(GUI_TEXT_BUF_SZ);
+				strncpy(sref->params, params_attr, GUI_TEXT_BUF_SZ);
+			}
 		}
 	}
 
@@ -414,28 +438,38 @@ const aabb * vlt_svg_window(vlt_svg * s)
 	return &s->window;
 }
 
-void text_get(gui_text * t, void * state, const char * prefix, array_map * hooks)
+void text_get(gui_text * t, void * state, const char * addl_params, array_map * hooks)
 {
-	char buf[GUI_TEXT_BUF_SZ];
-	strncpy(buf, prefix, GUI_TEXT_BUF_SZ);
-	strncat(buf, t->hook, GUI_TEXT_BUF_SZ - strlen(t->hook) - 1);
-	const u32 id = vlt_hash(buf);
+	char params[GUI_TEXT_BUF_SZ] = "";
+	if (addl_params)
+	{
+		strncpy(params, addl_params, GUI_TEXT_BUF_SZ);
+		strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
+	}
+	if (t->params)
+		strncat(params, t->params, GUI_TEXT_BUF_SZ - strlen(params) - 1);
+	const u32 id = vlt_hash(t->hook);
 	void ** fn = array_map_get(hooks, &id);
 	if (fn)
-		((void(*)(void*,char*))*fn)(state, t->txt);
+		((void(*)(void*,const char*,char*))*fn)(state, params, t->txt);
 	else
-		strncpy(t->txt, buf, GUI_TEXT_BUF_SZ);
+		strncpy(t->txt, t->hook, GUI_TEXT_BUF_SZ);
 }
 
-void btn_press(const gui_btn * b, void * state, const char * prefix, array_map * hooks)
+void btn_press(const gui_btn * b, void * state, const char * addl_params, array_map * hooks)
 {
-	char buf[GUI_TEXT_BUF_SZ];
-	strncpy(buf, prefix, GUI_TEXT_BUF_SZ);
-	strncat(buf, b->hook, GUI_TEXT_BUF_SZ - strlen(buf) - 1);
-	const u32 id = vlt_hash(buf);
+	char params[GUI_TEXT_BUF_SZ] = "";
+	if (addl_params)
+	{
+		strncpy(params, addl_params, GUI_TEXT_BUF_SZ);
+		strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
+	}
+	if (b->params)
+		strncat(params, b->params, GUI_TEXT_BUF_SZ - strlen(params) - 1);
+	const u32 id = vlt_hash(b->hook);
 	void ** fn = array_map_get(hooks, &id);
 	if (fn)
-		((void(*)(void*))*fn)(state);
+		((void(*)(void*,char*))*fn)(state, params);
 }
 
 void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
@@ -455,13 +489,13 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 		{
 			const gui_btn * b = array_get(&l->btns, i);
 			if(vlt_gui_btn(gui, b->rect.x, b->rect.y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
-				btn_press(b, state, "", btn_hooks);
+				btn_press(b, state, NULL, btn_hooks);
 		}
 		for (u32 i = 0, end = array_size(&l->texts); i < end; ++i)
 		{
 			gui_text * t = array_get(&l->texts, i);
 			if (t->type == GUI_TEXT_DYNAMIC)
-				text_get(t, state, "", text_hooks);
+				text_get(t, state, NULL, text_hooks);
 			vlt_gui_txt(gui, t->x, t->y, t->sz, t->txt, t->color);
 		}
 		for (u32 i = 0, end = array_size(&l->symbol_refs); i < end; ++i)
@@ -477,13 +511,13 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 			{
 				const gui_btn * b = array_get(&s->btns, i);
 				if(vlt_gui_btn(gui, b->rect.x + sref->x, b->rect.y + sref->y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
-					btn_press(b, state, sref->hook_prefix, btn_hooks);
+					btn_press(b, state, sref->params, btn_hooks);
 			}
 			for (u32 i = 0, end = array_size(&s->texts); i < end; ++i)
 			{
 				gui_text * t = array_get(&s->texts, i);
 				if (t->type == GUI_TEXT_DYNAMIC)
-					text_get(t, state, sref->hook_prefix, text_hooks);
+					text_get(t, state, sref->params, text_hooks);
 				vlt_gui_txt(gui, t->x + sref->x, t->y + sref->y, t->sz, t->txt, t->color);
 			}
 		}
