@@ -54,11 +54,12 @@ vlt_gui * vlt_gui_create()
 b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
                        vlt_color c, const char * title)
 {
+	b8 retval = 0;
 	SDL_SetMainReady();
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
 		log_write("SDL_Init(VIDEO) failed: %s", SDL_GetError());
-		return false;
+		goto out;
 	}
 
 	// Use OpenGL 3.1 core
@@ -71,14 +72,14 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	if (gui->window == NULL)
 	{
 		log_write("SDL_CreateWindow failed: %s", SDL_GetError());
-		return false;
+		goto err_win;
 	}
 
 	gui->gl_context = SDL_GL_CreateContext(gui->window);
 	if (gui->gl_context == NULL)
 	{
 		log_write("SDL_CreateContext failed: %s", SDL_GetError());
-		return false;
+		goto err_ctx;
 	}
 
 	SDL_SetEventFilter(SDL_FilterEvent, NULL);
@@ -88,7 +89,7 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	if (glew_err != GLEW_OK)
 	{
 		log_write("glewInit error: %s", glewGetErrorString(glew_err));
-		return false;
+		goto err_glew;
 	}
 
 	log_write("GL version: %s", glGetString(GL_VERSION));
@@ -101,29 +102,48 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	if (!vlt_shader_program_load(&gui->poly_shader, "poly"))
-		return false;
+		goto err_glew;
 
 	if (!vlt_shader_program_load(&gui->tex_shader, "texu"))
-		return false;
+		goto err_poly;
 
 	if (!vlt_shader_program_load(&gui->txt_shader, "text"))
-		return false;
+		goto err_texu;
 
 	if (!vlt_font_install())
-		return false;
+		goto err_text;
 
 	gui->font = vlt_font_create();
 	if (!vlt_font_load(gui->font, "MyriadProRegular.ttf", 45))
-		return false;
+		goto err_font;
 
-	return true;
+	retval = 1;
+	goto out;
+
+err_font:
+	vlt_font_destroy(gui->font);
+	vlt_font_uninstall();
+err_text:
+	vlt_shader_program_destroy(&gui->txt_shader);
+err_texu:
+	vlt_shader_program_destroy(&gui->tex_shader);
+err_poly:
+	vlt_shader_program_destroy(&gui->poly_shader);
+err_glew:
+	SDL_GL_DeleteContext(gui->gl_context);
+err_ctx:
+	SDL_DestroyWindow(gui->window);
+err_win:
+	SDL_Quit();
+out:
+	return retval;
 }
 
 void vlt_gui_destroy_window(vlt_gui * gui)
 {
-	vlt_font_uninstall();
 	vlt_font_destroy(gui->font);
 	vlt_font_free(gui->font);
+	vlt_font_uninstall();
 	vlt_shader_program_destroy(&gui->poly_shader);
 	vlt_shader_program_destroy(&gui->tex_shader);
 	vlt_shader_program_destroy(&gui->txt_shader);
