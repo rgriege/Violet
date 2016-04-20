@@ -230,14 +230,14 @@ void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * filename)
 }
 
 void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
-                 vlt_color c)
+                 vlt_color c, font_align align)
 {
 	vlt_shader_program_bind(&gui->txt_shader);
 
 	_set_color_attrib(&gui->txt_shader, c);
 	_set_win_halfdim_attrib(gui, &gui->txt_shader);
 
-	vlt_font_render(gui->font, txt, x, y, &gui->txt_shader, FONT_ALIGN_LEFT);
+	vlt_font_render(gui->font, txt, x, y, &gui->txt_shader, align);
 
 	vlt_shader_program_unbind();
 }

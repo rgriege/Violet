@@ -238,7 +238,7 @@ void vlt_font_destroy(vlt_font * f)
 	array_map_destroy_each(&f->glyphs, NULL, (void(*)(void*))_glyph_destroy);
 }
 
-static r32 _half_width(vlt_font * f, const char * txt)
+static r32 _width(vlt_font * f, const char * txt)
 {
 	r32 width = 0;
 	for (u32 i = 0, end = strlen(txt); i < end; ++i)
@@ -255,15 +255,19 @@ static r32 _half_width(vlt_font * f, const char * txt)
 				log_write("unknown character: '%x'", character);
 		}
 	}
-	return width / 2.f;
+	return width;
 }
 
 void vlt_font_render(vlt_font * f, const char * txt, s32 _x, s32 y,
                      vlt_shader_program * p, font_align align)
 {
-	const s32 off = align == FONT_ALIGN_CENTER ? _half_width(f, txt) : 0;
-	s32 x = _x;
+	s32 off = 0;
+	if (align == FONT_ALIGN_CENTER)
+		off = _width(f, txt) / 2.f;
+	else if (align == FONT_ALIGN_RIGHT)
+		off = _width(f, txt);
 
+	s32 x = _x;
 	for (u32 i = 0, end = strlen(txt); i < end; ++i)
 	{
 		const char character = txt[i];

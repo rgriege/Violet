@@ -5,8 +5,9 @@
 
 typedef enum font_align
 {
+	FONT_ALIGN_LEFT,
 	FONT_ALIGN_CENTER,
-	FONT_ALIGN_LEFT
+	FONT_ALIGN_RIGHT
 } font_align;
 
 typedef struct vlt_font vlt_font;

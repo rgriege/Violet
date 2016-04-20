@@ -60,6 +60,7 @@ typedef struct gui_text
 	char * hook;
 	char * params;
 	vlt_color color;
+	font_align align;
 } gui_text;
 
 void gui_text_init(gui_text * t)
@@ -67,6 +68,7 @@ void gui_text_init(gui_text * t)
 	t->txt = malloc(20);
 	t->hook = NULL;
 	t->params = NULL;
+	t->align = FONT_ALIGN_LEFT;
 }
 
 void gui_text_destroy(gui_text * t)
@@ -276,6 +278,15 @@ b8 svg_text(gui_text * t, ezxml_t node)
 	{
 		t->type = GUI_TEXT_STATIC;
 		strncpy(t->txt, node->txt, GUI_TEXT_BUF_SZ);
+	}
+
+	const char * align_attr = ezxml_attr(node, "font-align");
+	if (align_attr)
+	{
+		if (strcmp(align_attr, "right") == 0)
+			t->align = FONT_ALIGN_RIGHT;
+		else if (strcmp(align_attr, "center") == 0)
+			t->align = FONT_ALIGN_CENTER;
 	}
 
 	return    t->color.a != 0
@@ -511,7 +522,7 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 			gui_text * t = array_get(&l->texts, i);
 			if (t->type == GUI_TEXT_DYNAMIC)
 				text_get(t, state, NULL, text_hooks);
-			vlt_gui_txt(gui, t->x, t->y, t->sz, t->txt, t->color);
+			vlt_gui_txt(gui, t->x, t->y, t->sz, t->txt, t->color, t->align);
 		}
 		for (u32 i = 0, end = array_size(&l->symbol_refs); i < end; ++i)
 		{
@@ -533,7 +544,7 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 				gui_text * t = array_get(&s->texts, i);
 				if (t->type == GUI_TEXT_DYNAMIC)
 					text_get(t, state, sref->params, text_hooks);
-				vlt_gui_txt(gui, t->x + sref->x, t->y + sref->y, t->sz, t->txt, t->color);
+				vlt_gui_txt(gui, t->x + sref->x, t->y + sref->y, t->sz, t->txt, t->color, t->align);
 			}
 		}
 	}
