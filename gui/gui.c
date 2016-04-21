@@ -34,6 +34,37 @@ int SDL_FilterEvent(void * userdata, SDL_Event * event)
 	}
 }
 
+typedef enum key
+{
+	KEY_RETURN = 13,
+	KEY_BACKSPACE = 8
+} key;
+
+b8 _convert_scancode(SDL_Scancode code, char * c)
+{
+	const SDL_Keycode key = SDL_GetKeyFromScancode(code);
+	if (key >= 0 && key <= 255)
+		*c = key;
+	else if (key >= SDLK_KP_DIVIDE && key <= SDLK_KP_PERIOD)
+	{
+		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = {
+			'/', '*', '-', '+', KEY_RETURN, '1', '2', '3', '4', '5', '6',
+			'7', '8', '9', '0', '.'
+		};
+		*c = keys[key - SDLK_KP_DIVIDE];
+	}
+	else
+		return false;
+
+	if (*c == KEY_RETURN)
+	{
+		*c = 0;
+		return false;
+	}
+	else
+		return true;
+}
+
 typedef struct vlt_gui
 {
 	SDL_Window * window;
@@ -44,6 +75,7 @@ typedef struct vlt_gui
 	v2i win_halfdim;
 	v2i mouse_pos;
 	u32 mouse_btn;
+	char key;
 	vlt_font * font;
 } vlt_gui;
 
@@ -242,6 +274,26 @@ void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
 	vlt_shader_program_unbind();
 }
 
+void vlt_gui_npt(vlt_gui * gui, s32 x, s32 y, s32 sz, char * txt, u32 n,
+                 vlt_color c, font_align align)
+{
+	if (gui->key != 0)
+	{
+		const u32 len = strlen(txt);
+		if (len > 0 && gui->key == KEY_BACKSPACE)
+		{
+			txt[len-1] = '\0';
+		}
+		else
+		{
+			char buf[2] = { gui->key, '\0' };
+			strncat(txt, buf, n - len - 1);
+		}
+	}
+
+	vlt_gui_txt(gui, x, y, sz, txt, c, align);
+}
+
 b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color lc)
 {
 	vlt_gui_rect(gui, x, y, w, h, c, lc);
@@ -267,9 +319,17 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 
 	gui->mouse_btn = SDL_GetMouseState(&gui->mouse_pos.x,
 		&gui->mouse_pos.y);
+
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
 		&gui->win_halfdim.y);
 	v2i_div(&gui->win_halfdim, 2, 2, &gui->win_halfdim);
+
+	gui->key = 0;
+	s32 key_cnt;
+	const u8 * keys = SDL_GetKeyboardState(&key_cnt);
+	for (s32 i = 0; i < key_cnt; ++i)
+		if (keys[i] && _convert_scancode(i, &gui->key))
+			break;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
