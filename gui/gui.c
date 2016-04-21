@@ -3,35 +3,22 @@
 #include <GL/glew.h>
 #include <SDL.h>
 
-#include "violet/math/aabb.h"
-#include "violet/math/ibox.h"
-#include "violet/math/math.h"
-#include "violet/math/poly.h"
-#include "violet/utility/log.h"
-
 #include "violet/gui/font.h"
 #include "violet/gui/gui.h"
 #include "violet/gui/img.h"
 #include "violet/gui/mesh.h"
 #include "violet/gui/shader.h"
 #include "violet/gui/texture.h"
+#include "violet/math/aabb.h"
+#include "violet/math/ibox.h"
+#include "violet/math/math.h"
+#include "violet/math/poly.h"
+#include "violet/utility/log.h"
+#include "violet/utility/time.h"
 
 int SDL_FilterEvent(void * userdata, SDL_Event * event)
 {
-	switch (event->type)
-	{
-	//case SDL_KEYDOWN:
-	//case SDL_KEYUP:
-	case SDL_MOUSEBUTTONDOWN:
-	case SDL_MOUSEBUTTONUP:
-	//case SDL_MOUSEMOTION:
-	case SDL_QUIT:
-		return 1;
-
-	default:
-		return 0;
-		break;
-	}
+	return event->type == SDL_QUIT;
 }
 
 typedef enum key
@@ -67,6 +54,7 @@ b8 _convert_scancode(SDL_Scancode code, char * c)
 
 typedef struct vlt_gui
 {
+	vlt_time last_update_time;
 	SDL_Window * window;
 	SDL_GLContext gl_context;
 	vlt_shader_program poly_shader;
@@ -75,7 +63,10 @@ typedef struct vlt_gui
 	v2i win_halfdim;
 	v2i mouse_pos;
 	u32 mouse_btn;
+	char _pressed_key;
 	char key;
+	u32 key_repeat_delay;
+	u32 key_repeat_timer;
 	vlt_font * font;
 } vlt_gui;
 
@@ -149,6 +140,11 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	gui->font = vlt_font_create();
 	if (!vlt_font_load(gui->font, "MyriadProRegular.ttf", 45))
 		goto err_font;
+
+	vlt_get_time(&gui->last_update_time);
+
+	gui->key_repeat_delay = 500;
+	gui->key_repeat_timer = gui->key_repeat_delay;
 
 	retval = 1;
 	goto out;
@@ -305,6 +301,11 @@ b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color
 
 b8 vlt_gui_begin_frame(vlt_gui * gui)
 {
+	vlt_time now;
+	vlt_get_time(&now);
+	const u32 frame_milli = vlt_diff_milli(&gui->last_update_time, &now);
+	gui->last_update_time = now;
+
 	b8 quit = false;
 	SDL_Event evt;
 	while (SDL_PollEvent(&evt) == 1)
@@ -324,12 +325,32 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 		&gui->win_halfdim.y);
 	v2i_div(&gui->win_halfdim, 2, 2, &gui->win_halfdim);
 
+	const char prev_key = gui->_pressed_key;
+	gui->_pressed_key = 0;
 	gui->key = 0;
 	s32 key_cnt;
 	const u8 * keys = SDL_GetKeyboardState(&key_cnt);
 	for (s32 i = 0; i < key_cnt; ++i)
-		if (keys[i] && _convert_scancode(i, &gui->key))
+		if (keys[i] && _convert_scancode(i, &gui->_pressed_key))
 			break;
+	if (gui->_pressed_key != 0)
+	{
+		if (gui->_pressed_key == prev_key)
+		{
+			if (gui->key_repeat_timer <= frame_milli)
+			{
+				gui->key_repeat_timer = 0;
+				gui->key = gui->_pressed_key;
+			}
+			else
+				gui->key_repeat_timer -= frame_milli;
+		}
+		else
+		{
+			gui->key_repeat_timer = gui->key_repeat_delay;
+			gui->key = gui->_pressed_key;
+		}
+	}
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
