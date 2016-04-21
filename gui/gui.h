@@ -14,13 +14,19 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
                        vlt_color c, const char * title);
 void vlt_gui_destroy_window(vlt_gui * gui);
 
-void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color lc);
+void vlt_gui_line(vlt_gui * gui, s32 x1, s32 y1, s32 x2, s32 y2, u32 sz,
+                  vlt_color c);
+void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
+                  vlt_color lc);
 void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * img);
 void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
                  vlt_color c, font_align align);
 void vlt_gui_npt(vlt_gui * gui, s32 x, s32 y, s32 sz, char * txt, u32 n,
                  vlt_color c, font_align align);
-b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color lc);
+b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
+               vlt_color lc);
+
+void vlt_gui_mouse_pos(vlt_gui * gui, s32 * x, s32 * y);
 
 b8 vlt_gui_begin_frame(vlt_gui * gui);
 void vlt_gui_end_frame(vlt_gui * gui);

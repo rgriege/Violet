@@ -201,14 +201,11 @@ static void _set_win_halfdim_attrib(vlt_gui * gui, vlt_shader_program * p)
 	glUniform2f(win_attrib, gui->win_halfdim.x, gui->win_halfdim.y);
 }
 
-void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color lc)
+static void _vlt_gui_mesh(vlt_gui * gui, array * vertices, vlt_color c,
+                          vlt_color lc)
 {
-	aabb box;
-	aabb_from_dims(&box, x, y + h, x + w, y);
-	poly p;
-	poly_from_box(&p, &box);
 	vlt_mesh mesh;
-	vlt_mesh_init(&mesh, &p.vertices);
+	vlt_mesh_init(&mesh, vertices);
 
 	u32 vao;
 	glGenVertexArrays(1, &vao);
@@ -237,6 +234,36 @@ void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_co
 	glDeleteVertexArrays(1, &vao);
 
 	vlt_mesh_destroy(&mesh);
+}
+
+void vlt_gui_line(vlt_gui * gui, s32 x1, s32 y1, s32 x2, s32 y2, u32 sz,
+                  vlt_color c)
+{
+	array vertices;
+	array_init(&vertices, sizeof(v2));
+	v2 * vertex1 = array_append_null(&vertices);
+	vertex1->x = x1;
+	vertex1->y = y1;
+	v2 * vertex2 = array_append_null(&vertices);
+	vertex2->x = x2;
+	vertex2->y = y2;
+
+	_vlt_gui_mesh(gui, &vertices, g_nocolor, c);
+
+	array_destroy(&vertices);
+}
+
+void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
+                  vlt_color lc)
+{
+	aabb box;
+	aabb_from_dims(&box, x, y + h, x + w, y);
+	poly p;
+	poly_from_box(&p, &box);
+
+	_vlt_gui_mesh(gui, &p.vertices, c, lc);
+
+	array_destroy(&p.vertices);
 }
 
 void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * filename)
@@ -297,6 +324,12 @@ b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color
 	ibox_from_dims(&box, x, y + h, x + w, y);
 	return (gui->mouse_btn & SDL_BUTTON_LMASK)
 	       && ibox_contains(&box, &gui->mouse_pos);
+}
+
+void vlt_gui_mouse_pos(vlt_gui * gui, s32 * x, s32 * y)
+{
+	*x = gui->mouse_pos.x;
+	*y = gui->mouse_pos.y;
 }
 
 b8 vlt_gui_begin_frame(vlt_gui * gui)
