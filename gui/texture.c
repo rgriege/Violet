@@ -1,30 +1,40 @@
 #include <GL/glew.h>
 #include <png.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "violet/gui/mesh.h"
 #include "violet/gui/texture.h"
-
 #include "violet/math/aabb.h"
 #include "violet/math/poly.h"
+#include "violet/utility/log.h"
 
 b8 vlt_load_png(vlt_texture * tex, const char * filename)
 {
 	b8 ret = false;
 	png_image image = {0};
-	// memset(&image, 0, (sizeof image));
 	image.version = PNG_IMAGE_VERSION;
 
-	if (png_image_begin_read_from_file(&image, filename) != 0)
+	if (png_image_begin_read_from_file(&image, filename))
 	{
-		png_byte * buf = malloc(PNG_IMAGE_SIZE(image));
 		image.format = PNG_FORMAT_RGBA;
-		if (png_image_finish_read(&image, NULL, buf, 0, NULL) != 0)
+		png_bytep buf = malloc(PNG_IMAGE_SIZE(image));
+		if (buf)
 		{
-			vlt_texture_init(tex, image.width, image.height, GL_RGBA, buf);
-			ret = true;
+			if (png_image_finish_read(&image, NULL, buf, 0, NULL))
+			{
+				vlt_texture_init(tex, image.width, image.height, GL_RGBA, buf);
+				ret = true;
+				free(buf);
+			}
+			else
+			{
+				log_write("png '%s' read: %s", filename, image.message);
+				png_image_free(&image);
+			}
 		}
-		free(buf);
+		else
+			log_write("png read: out of memory");
 	}
 
 	return ret;
