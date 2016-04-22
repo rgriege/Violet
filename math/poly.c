@@ -4,17 +4,27 @@
 #include "violet/math/poly.h"
 #include "violet/math/v2.h"
 
+void poly_init(poly * p)
+{
+	array_init(&p->vertices, sizeof(v2));
+}
+
 void poly_from_box(poly * p, const aabb * box)
 {
 	const v2 top_right = { box->bottom_right.x, box->top_left.y };
 	const v2 bottom_left = { box->top_left.x, box->bottom_right.y };
 
-	array_init(&p->vertices, sizeof(v2));
+	poly_init(p);
 	array_reserve(&p->vertices, 4);
 	array_append(&p->vertices, &box->bottom_right);
 	array_append(&p->vertices, &top_right);
 	array_append(&p->vertices, &box->top_left);
 	array_append(&p->vertices, &bottom_left);
+}
+
+void poly_destroy(poly * p)
+{
+	array_destroy(&p->vertices);
 }
 
 static b8 _poly_side_barycentric_contains(const poly * p, const v2 * point, u32 start_idx, u32 end_idx)
@@ -92,17 +102,26 @@ v2 poly_center(const poly * p)
 	return center;
 }
 
-/*Serializer & vlt_operator<<(Serializer & serializer, const poly & poly)
+r32 poly_area(const poly * p)
 {
-	auto segment = serializer.create_segment(ms_segmentLabel);
-	serialize_vector(*segment, poly.vertices);
-	return serializer;
+	const v2 center = poly_center(p);
+	r32 area = 0.f;
+	u32 n = array_size(&p->vertices);
+	for (u32 i = 0; i < n; ++i)
+	{
+		const v2 * a = array_get(&p->vertices, i);
+		const v2 * b = array_get(&p->vertices, i < n - 1 ? i + 1 : 0);
+		v2 ab;
+		v2_sub(b, a, &ab);
+		v2 ac;
+		v2_sub(&center, a, &ac);
+		v2 height_axis;
+		v2_perp(&ab, false, &height_axis);
+		v2_normalize(&height_axis, &height_axis);
+		v2 height;
+		v2_proj(&ac, &height_axis, &height);
+		area += 0.5f * v2_mag(&ab) * v2_mag(&height);
+	}
+	return area;
 }
-
-Deserializer & vlt_operator>>(Deserializer & deserializer, poly & poly)
-{
-	auto segment = deserializer.enter_segment(ms_segmentLabel);
-	poly.vertices = deserialize_vector<v2>(*segment);
-	return deserializer;
-}*/
 

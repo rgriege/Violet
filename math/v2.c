@@ -20,8 +20,8 @@ r32 v2_mag_squared(const v2 * v)
 
 void v2_normalize(const v2 * v, v2 * result)
 {
-	const r32 mag = v2_mag(v);
-	v2_scale(v, mag, mag, result);
+	const r32 inv_mag = 1.f / v2_mag(v);
+	v2_scale(v, inv_mag, inv_mag, result);
 }
 
 b8 v2_is_unit(const v2 * v)

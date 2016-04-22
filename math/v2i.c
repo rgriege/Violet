@@ -20,6 +20,11 @@ void v2i_div(const v2i * v, s32 sx, s32 sy, v2i * result)
 	result->y = v->y / sy;
 }
 
+s32 v2i_mag(const v2i * v)
+{
+	return sqrtf(v->x * v->x + v->y * v->y);
+}
+
 b8 v2i_equal(const v2i * lhs, const v2i * rhs)
 {
 	return lhs->x == rhs->x && lhs->y == rhs->y;
