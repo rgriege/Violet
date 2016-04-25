@@ -90,13 +90,15 @@ void v2_perp(const v2 * v, b8 left, v2 * result)
 {
 	if (left)
 	{
-		result->x = v->y;
-		result->y = -v->x;
+		const r32 y = v->x;
+		result->x = -v->y;
+		result->y = y;
 	}
 	else
 	{
-		result->x = -v->y;
-		result->y = v->x;
+		const r32 y = -v->x;
+		result->x = v->y;
+		result->y = y;
 	}
 }
 
