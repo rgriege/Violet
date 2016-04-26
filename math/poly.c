@@ -1,5 +1,8 @@
+#include <assert.h>
+
 #include "violet/math/aabb.h"
 #include "violet/math/interval.h"
+#include "violet/math/line.h"
 #include "violet/math/m2.h"
 #include "violet/math/poly.h"
 #include "violet/math/v2.h"
@@ -27,33 +30,28 @@ void poly_destroy(poly * p)
 	array_destroy(&p->vertices);
 }
 
-static b8 _poly_side_barycentric_contains(const poly * p, const v2 * point, u32 start_idx, u32 end_idx)
+b8 poly_contains(const poly * poly, const v2 * point)
 {
-	const v2 * p1 = array_get(&p->vertices, start_idx);
-	const v2 * p2 = array_get(&p->vertices, end_idx);
-	m2 mat = { p1->x, p2->x, p1->y, p2->y };
-	m2_inverse(mat, mat);
-	v2 barycentric_coords;
-	m2_mul(mat, point, &barycentric_coords);
-	return    interval_contains(&g_0_to_1, barycentric_coords.x)
-	       && interval_contains(&g_0_to_1, barycentric_coords.y)
-		   && barycentric_coords.x + barycentric_coords.y <= 1;
+	aabb box;
+	poly_bounding_box(poly, &box);
+	if (!aabb_contains(&box, point))
+		return false;
 
-}
+	v2 outside_point;
+	v2_sub(&box.top_left, &box.bottom_right, &outside_point);
+	v2_add(&outside_point, &box.top_left, &outside_point);
 
-b8 poly_contains(const poly * p, const v2 * point)
-{
-	u32 const n = p->vertices.size;
-	b8 inside = _poly_side_barycentric_contains(p, point, n - 1, 0);
-
-	u32 i = 1;
-	while (!inside && i < n)
+	u32 intersections = 0;
+	r32 t, u;
+	for (u32 i = 0, n = array_size(&poly->vertices); i < n; ++i)
 	{
-		inside = _poly_side_barycentric_contains(p, point, i, i - 1);
-		++i;
+		const v2 * a = array_get(&poly->vertices, i);
+		const v2 * b = array_get(&poly->vertices, i < n - 1 ? i + 1 : 0);
+		if (   line_intersect_coords(a, b, &outside_point, point, &t, &u)
+		    && 0 < t && t <= 1 && 0 < u && u < 1)
+			++intersections;
 	}
-
-	return inside;
+	return intersections % 2 == 1;
 }
 
 void poly_bounding_box(const poly * p, aabb * box)
@@ -93,7 +91,7 @@ interval poly_project(const poly * p, const v2 * axis)
 
 v2 poly_center(const poly * p)
 {
-	v2 center;
+	v2 center = { .x=0, .y=0 };
 	u32 n = array_size(&p->vertices);
 	for (u32 i = 0; i < n; ++i)
 		v2_add(&center, array_get(&p->vertices, i), &center);
@@ -123,5 +121,25 @@ r32 poly_area(const poly * p)
 		area += 0.5f * v2_mag(&ab) * v2_mag(&height);
 	}
 	return area;
+}
+
+b8 poly_is_cc(const poly * p)
+{
+	assert(array_size(&p->vertices) > 0);
+
+	r32 sine_sum = 0;
+	for (u32 i = 0, last = array_size(&p->vertices) - 1; i <= last; ++i)
+	{
+		const v2 * a = array_get(&p->vertices, i > 0 ? i - 1 : last);
+		const v2 * b = array_get(&p->vertices, i);
+		const v2 * c = array_get(&p->vertices, i < last ? i + 1 : 0);
+
+		v2 ab, bc;
+		v2_sub(b, a, &ab);
+		v2_sub(c, b, &bc);
+
+		sine_sum += v2_cross(&ab, &bc) / v2_mag(&ab) / v2_mag(&bc);
+	}
+	return sine_sum > 0.f;
 }
 

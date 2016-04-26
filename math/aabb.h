@@ -20,8 +20,8 @@ b8 aabb_empty(const aabb * b);
 b8 aabb_contains_v(const aabb * b, const v2 * p);
 b8 aabb_contains_b(const aabb * lhs, const aabb * rhs);
 #define aabb_contains(X, Y) _Generic((Y), \
-	v2*  : aabb_contains_v,               \
-	aabb*: aabb_contains_b                \
+	const v2*: aabb_contains_v,           \
+	aabb*:     aabb_contains_b            \
 	)(X, Y)
 
 b8 aabb_overlaps(const aabb * lhs, const aabb * rhs);

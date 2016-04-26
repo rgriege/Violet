@@ -8,6 +8,8 @@
 
 r32 clamp(r32 lo, r32 val, r32 hi);
 
+u32 usub_capped(u32 lhs, u32 rhs);
+
 #define PI 3.1415
 
 #endif
