@@ -26,5 +26,6 @@ void poly_translate(poly * p, const v2 * delta);
 interval poly_project(const poly * p, const v2 * axis);
 v2 poly_center(const poly * p);
 r32 poly_area(const poly * p);
+b8 poly_is_cc(const poly * p);
 
 #endif

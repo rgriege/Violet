@@ -18,6 +18,13 @@ r32 v2_mag_squared(const v2 * v)
 	return v->x * v->x + v->y * v->y;
 }
 
+r32 v2_dist(const v2 * lhs, const v2 * rhs)
+{
+	v2 diff;
+	v2_sub(lhs, rhs, &diff);
+	return v2_mag(&diff);
+}
+
 void v2_normalize(const v2 * v, v2 * result)
 {
 	const r32 inv_mag = 1.f / v2_mag(v);
@@ -82,7 +89,7 @@ void v2_proj(const v2 * v, const v2 * axis, v2 * result)
 {
 	v2 dir;
 	v2_normalize(axis, &dir);
-	r32 scale = v2_dot(v, axis);
+	r32 scale = v2_dot(v, &dir);
 	v2_scale(&dir, scale, scale, result);
 }
 
@@ -90,13 +97,15 @@ void v2_perp(const v2 * v, b8 left, v2 * result)
 {
 	if (left)
 	{
-		result->x = v->y;
-		result->y = -v->x;
+		const r32 y = v->x;
+		result->x = -v->y;
+		result->y = y;
 	}
 	else
 	{
-		result->x = -v->y;
-		result->y = v->x;
+		const r32 y = -v->x;
+		result->x = v->y;
+		result->y = y;
 	}
 }
 

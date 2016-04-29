@@ -104,6 +104,11 @@ void * array_append_zero(array * a)
 	return p;
 }
 
+void array_insert(array * a, u32 idx, const void * elem)
+{
+	memcpy(array_insert_null(a, idx), elem, a->elem_size);
+}
+
 void * array_insert_null(array * a, u32 idx)
 {
 	assert(idx <= a->size);

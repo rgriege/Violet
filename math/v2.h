@@ -22,6 +22,7 @@ extern const v2 g_v2_zero;
 
 r32 v2_mag(const v2 * v);
 r32 v2_mag_squared(const v2 * v);
+r32 v2_dist(const v2 * lhs, const v2 * rhs);
 void v2_normalize(const v2 * v, v2 * result);
 b8 v2_is_unit(const v2 * v);
 void v2_scale(const v2 * v, r32 sx, r32 sy, v2 * result);

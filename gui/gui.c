@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <string.h>
 
 #include <GL/glew.h>
@@ -13,6 +14,7 @@
 #include "violet/math/ibox.h"
 #include "violet/math/math.h"
 #include "violet/math/poly.h"
+#include "violet/structures/array_map.h"
 #include "violet/utility/log.h"
 #include "violet/utility/time.h"
 
@@ -67,7 +69,7 @@ typedef struct vlt_gui
 	char key;
 	u32 key_repeat_delay;
 	u32 key_repeat_timer;
-	vlt_font * font;
+	array_map fonts; // sz -> vlt_font *
 } vlt_gui;
 
 vlt_gui * vlt_gui_create()
@@ -137,9 +139,7 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	if (!vlt_font_install())
 		goto err_text;
 
-	gui->font = vlt_font_create();
-	if (!vlt_font_load(gui->font, "MyriadProRegular.ttf", 45))
-		goto err_font;
+	array_map_init(&gui->fonts, sizeof(u32), sizeof(vlt_font*));
 
 	vlt_get_time(&gui->last_update_time);
 
@@ -149,9 +149,6 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	retval = 1;
 	goto out;
 
-err_font:
-	vlt_font_destroy(gui->font);
-	vlt_font_uninstall();
 err_text:
 	vlt_shader_program_destroy(&gui->txt_shader);
 err_texu:
@@ -168,10 +165,16 @@ out:
 	return retval;
 }
 
+static void _font_clear(void * f)
+{
+	vlt_font * font = *(vlt_font**)f;
+	vlt_font_destroy(font);
+	vlt_font_free(font);
+}
+
 void vlt_gui_destroy_window(vlt_gui * gui)
 {
-	vlt_font_destroy(gui->font);
-	vlt_font_free(gui->font);
+	array_map_destroy_each(&gui->fonts, NULL, _font_clear);
 	vlt_font_uninstall();
 	vlt_shader_program_destroy(&gui->poly_shader);
 	vlt_shader_program_destroy(&gui->tex_shader);
@@ -284,6 +287,25 @@ void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * filename)
 	vlt_img_free(img);
 }
 
+static vlt_font * _get_font(vlt_gui * gui, u32 sz)
+{
+	vlt_font ** f = array_map_get(&gui->fonts, &sz);
+	if (f)
+		return *f;
+
+	vlt_font * font = vlt_font_create();
+	if (vlt_font_load(font, "MyriadProRegular.ttf", sz))
+	{
+		array_map_insert(&gui->fonts, &sz, &font);
+		return font;
+	}
+	else
+	{
+		vlt_font_free(font);
+		return NULL;
+	}
+}
+
 void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
                  vlt_color c, font_align align)
 {
@@ -292,7 +314,9 @@ void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
 	_set_color_attrib(&gui->txt_shader, c);
 	_set_win_halfdim_attrib(gui, &gui->txt_shader);
 
-	vlt_font_render(gui->font, txt, x, y, &gui->txt_shader, align);
+	vlt_font * font = _get_font(gui, sz);
+	assert(font);
+	vlt_font_render(font, txt, x, y, &gui->txt_shader, align);
 
 	vlt_shader_program_unbind();
 }
