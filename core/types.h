@@ -32,4 +32,6 @@ typedef struct
 	};
 } tag;
 
+#define UNUSED(x) ((void)(x))
+
 #endif
