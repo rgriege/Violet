@@ -377,9 +377,9 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 
 	gui->mouse_btn = SDL_GetMouseState(&gui->mouse_pos.x,
 		&gui->mouse_pos.y);
-
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
 		&gui->win_halfdim.y);
+	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
 	v2i_div(&gui->win_halfdim, 2, 2, &gui->win_halfdim);
 
 	const char prev_key = gui->_pressed_key;

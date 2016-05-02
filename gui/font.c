@@ -142,7 +142,8 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 		err = FT_Load_Glyph(face, glyph_idx, FT_LOAD_RENDER);
 		if (err != FT_Err_Ok)
 		{
-			log_write("FT_Load_Glyph error: ", err);
+			charcode = FT_Get_Next_Char(face, charcode, &glyph_idx);
+			log_write("FT_Load_Glyph(%s, %u) error: 0x%x", filename, charcode, err);
 			continue;
 		}
 
@@ -188,13 +189,13 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 			array coords;
 			array_init(&coords, sizeof(v2));
 			array_reserve(&coords, 4);
-			const v2 coord0 = { .x=0, .y=0 };
+			const v2 coord0 = { .x=0, .y=1 };
 			array_append(&coords, &coord0);
-			const v2 coord1 = { .x=0, .y=1 };
+			const v2 coord1 = { .x=0, .y=0 };
 			array_append(&coords, &coord1);
-			const v2 coord2 = { .x=1, .y=1 };
+			const v2 coord2 = { .x=1, .y=0 };
 			array_append(&coords, &coord2);
-			const v2 coord3 = { .x=1, .y=0 };
+			const v2 coord3 = { .x=1, .y=1 };
 			array_append(&coords, &coord3);
 			vlt_mesh_init(&glyph->tex_coords, &coords);
 			glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
@@ -204,7 +205,7 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 			glBindVertexArray(0);
 
 			glyph->offset.x = face->glyph->bitmap_left;
-			glyph->offset.y = -face->glyph->bitmap_top;
+			glyph->offset.y = face->glyph->bitmap_top - (r32)tex_height;
 			glyph->advance = face->glyph->advance.x >> 6;
 
 			free(pixels);
@@ -244,7 +245,7 @@ static r32 _width(vlt_font * f, const char * txt)
 			if (glyph)
 				width += glyph->advance;
 			else
-				log_write("unknown character: '%x'", character);
+				log_write("unknown character: '%u'", character);
 		}
 	}
 	return width;
