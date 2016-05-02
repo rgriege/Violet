@@ -65,9 +65,12 @@ typedef struct gui_text
 
 void gui_text_init(gui_text * t)
 {
+	t->x = t->y = t->sz = 0;
+	t->type = GUI_TEXT_STATIC;
 	t->txt = malloc(20);
 	t->hook = NULL;
 	t->params = NULL;
+	t->color = g_black;
 	t->align = FONT_ALIGN_LEFT;
 }
 
@@ -289,7 +292,12 @@ b8 svg_text(gui_text * t, ezxml_t node)
 			t->align = FONT_ALIGN_CENTER;
 	}
 
+	const char * font_sz_attr = ezxml_attr(node, "font-size");
+	if (font_sz_attr)
+		t->sz = atoi(font_sz_attr);
+
 	return    t->color.a != 0
+	       && t->sz != 0
 	       && (t->type == GUI_TEXT_STATIC ? strlen(t->txt) > 0 : strlen(t->hook) > 0);
 }
 
