@@ -201,7 +201,7 @@ b8 svg_rect(gui_rect * r, ezxml_t node)
 	if (opacity_attr)
 		r->fill_color.a = strtof(opacity_attr, NULL) * 255;
 
-	return r->w != 0 && r->h != 0 && r->fill_color.a != 0;
+	return r->w != 0 && r->h != 0 && (r->fill_color.a != 0 || r->line_color.a != 0);
 }
 
 void svg_rects(array * rects, ezxml_t container)

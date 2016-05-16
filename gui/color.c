@@ -53,3 +53,7 @@ vlt_color vlt_color_from_hex(const char * hex)
 	return c;
 }
 
+b8 vlt_color_equal(vlt_color lhs, vlt_color rhs)
+{
+	return memcmp(&lhs, &rhs, sizeof(vlt_color)) == 0;
+}

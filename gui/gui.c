@@ -222,12 +222,19 @@ static void _vlt_gui_mesh(vlt_gui * gui, array * vertices, vlt_color c,
 
 	vlt_shader_program_bind(&gui->poly_shader);
 
-	_set_color_attrib(&gui->poly_shader, c);
 	_set_win_halfdim_attrib(gui, &gui->poly_shader);
 
-	glDrawArrays(GL_TRIANGLE_FAN, 0, mesh.sz);
-	_set_color_attrib(&gui->poly_shader, lc);
-	glDrawArrays(GL_LINE_LOOP, 0, mesh.sz);
+	if (!vlt_color_equal(c, g_nocolor))
+	{
+		_set_color_attrib(&gui->poly_shader, c);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, mesh.sz);
+	}
+
+	if (!vlt_color_equal(lc, g_nocolor))
+	{
+		_set_color_attrib(&gui->poly_shader, lc);
+		glDrawArrays(GL_LINE_LOOP, 0, mesh.sz);
+	}
 
 	vlt_shader_program_unbind();
 

@@ -18,5 +18,7 @@ extern const vlt_color g_nocolor;
 void vlt_color_as_float_array(float * f, vlt_color c);
 vlt_color vlt_color_from_hex(const char * hex);
 
+b8 vlt_color_equal(vlt_color lhs, vlt_color rhs);
+
 #endif
 
