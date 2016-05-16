@@ -14,7 +14,7 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
                        vlt_color c, const char * title);
 void vlt_gui_destroy_window(vlt_gui * gui);
 
-void vlt_gui_line(vlt_gui * gui, s32 x1, s32 y1, s32 x2, s32 y2, u32 sz,
+void vlt_gui_line(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
                   vlt_color c);
 void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
                   vlt_color lc);

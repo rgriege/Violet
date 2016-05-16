@@ -17,6 +17,13 @@
 #define GUI_TEXT_BUF_SZ 20
 
 
+typedef struct gui_line
+{
+	s32 x0, y0, x1, y1;
+	vlt_color color;
+} gui_line;
+
+
 typedef struct gui_rect
 {
 	s32 x, y, w, h;
@@ -86,6 +93,7 @@ void gui_text_destroy(gui_text * t)
 
 typedef struct gui_symbol
 {
+	array lines;
 	array rects;
 	array texts;
 	array btns;
@@ -93,6 +101,7 @@ typedef struct gui_symbol
 
 void gui_symbol_init(gui_symbol * s)
 {
+	array_init(&s->lines, sizeof(gui_line));
 	array_init(&s->rects, sizeof(gui_rect));
 	array_init(&s->texts, sizeof(gui_text));
 	array_init(&s->btns, sizeof(gui_btn));
@@ -100,6 +109,7 @@ void gui_symbol_init(gui_symbol * s)
 
 void gui_symbol_destroy(gui_symbol * s)
 {
+	array_destroy(&s->lines);
 	array_destroy(&s->rects);
 	array_destroy_each(&s->texts, (void(*)(void*))gui_text_destroy);
 	array_destroy_each(&s->btns, (void(*)(void*))gui_btn_destroy);
@@ -127,6 +137,7 @@ void gui_symbol_ref_destroy(gui_symbol_ref * sref)
 
 typedef struct gui_layer
 {
+	array lines;
 	array rects;
 	array texts;
 	array btns;
@@ -135,6 +146,7 @@ typedef struct gui_layer
 
 void gui_layer_init(gui_layer * l)
 {
+	array_init(&l->lines, sizeof(gui_line));
 	array_init(&l->rects, sizeof(gui_rect));
 	array_init(&l->texts, sizeof(gui_text));
 	array_init(&l->btns, sizeof(gui_btn));
@@ -143,6 +155,7 @@ void gui_layer_init(gui_layer * l)
 
 void gui_layer_destroy(gui_layer * l)
 {
+	array_destroy(&l->lines);
 	array_destroy(&l->rects);
 	array_destroy_each(&l->texts, (void(*)(void*))gui_text_destroy);
 	array_destroy_each(&l->btns, (void(*)(void*))gui_btn_destroy);
@@ -183,6 +196,38 @@ b8 svg_pos(ezxml_t node, s32 * x, s32 * y)
 	}
 
 	return false;
+}
+
+b8 svg_line(gui_line * l, ezxml_t node)
+{
+	const char * x0_attr = ezxml_attr(node, "x0");
+	const char * y0_attr = ezxml_attr(node, "y0");
+	const char * x1_attr = ezxml_attr(node, "x1");
+	const char * y1_attr = ezxml_attr(node, "y1");
+	const char * stroke_attr = ezxml_attr(node, "stroke");
+	l->color = stroke_attr ? vlt_color_from_hex(stroke_attr) : g_nocolor;
+	if (x0_attr && y0_attr && x1_attr && y1_attr && l->color.a != 0)
+	{
+		l->x0 = atoi(x0_attr);
+		l->y0 = atoi(y0_attr);
+		l->x1 = atoi(x1_attr);
+		l->y1 = atoi(y1_attr);
+		return l->x0 != l->x1 || l->y0 != l->y1;
+	}
+	return false;
+}
+
+void svg_lines(array * lines, ezxml_t container)
+{
+	for (ezxml_t line = ezxml_child(container, "line"); line; line = line->next)
+	{
+		gui_line * l = array_append_null(lines);
+		if (!svg_line(l, line))
+		{
+			log_write("invalid line");
+			array_remove(lines, array_size(lines) - 1);
+		}
+	}
 }
 
 b8 svg_rect(gui_rect * r, ezxml_t node)
@@ -374,6 +419,7 @@ vlt_svg * vlt_svg_create(const char * filename)
 		const u32 id = vlt_hash(ezxml_attr(node, "id"));
 		gui_symbol * symbol = array_map_insert_null(&g->symbols, &id);
 		gui_symbol_init(symbol);
+		svg_lines(&symbol->lines, node);
 		svg_rects(&symbol->rects, node);
 		svg_texts(&symbol->texts, node);
 		svg_btns(&symbol->btns, node);
@@ -410,6 +456,7 @@ vlt_svg * vlt_svg_create(const char * filename)
 		log_write("layer '%s'", ezxml_attr(node, "id"));
 		gui_layer * layer = array_append_null(&g->layers);
 		gui_layer_init(layer);
+		svg_lines(&layer->lines, node);
 		svg_rects(&layer->rects, node);
 		svg_texts(&layer->texts, node);
 		svg_btns(&layer->btns, node);
@@ -513,28 +560,33 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 		 layer_idx < layer_end;
 		 ++layer_idx)
 	{
-		const gui_layer * l = array_get(&s->layers, layer_idx);
-		for (u32 i = 0, end = array_size(&l->rects); i < end; ++i)
+		const gui_layer * layer = array_get(&s->layers, layer_idx);
+		for (u32 i = 0, end = array_size(&layer->rects); i < end; ++i)
 		{
-			const gui_rect * r = array_get(&l->rects, i);
+			const gui_rect * r = array_get(&layer->rects, i);
 			vlt_gui_rect(gui, r->x, r->y, r->w, r->h, r->fill_color, r->line_color);
 		}
-		for (u32 i = 0, end = array_size(&l->btns); i < end; ++i)
+		for (u32 i = 0, end = array_size(&layer->btns); i < end; ++i)
 		{
-			const gui_btn * b = array_get(&l->btns, i);
+			const gui_btn * b = array_get(&layer->btns, i);
 			if(vlt_gui_btn(gui, b->rect.x, b->rect.y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
 				btn_press(b, state, NULL, btn_hooks);
 		}
-		for (u32 i = 0, end = array_size(&l->texts); i < end; ++i)
+		for (u32 i = 0, end = array_size(&layer->texts); i < end; ++i)
 		{
-			gui_text * t = array_get(&l->texts, i);
+			gui_text * t = array_get(&layer->texts, i);
 			if (t->type == GUI_TEXT_DYNAMIC)
 				text_get(t, state, NULL, text_hooks);
 			vlt_gui_txt(gui, t->x, t->y, t->sz, t->txt, t->color, t->align);
 		}
-		for (u32 i = 0, end = array_size(&l->symbol_refs); i < end; ++i)
+		for (u32 i = 0, end = array_size(&layer->lines); i < end; ++i)
 		{
-			const gui_symbol_ref * sref = array_get(&l->symbol_refs, i);
+			const gui_line * l = array_get(&layer->lines, i);
+			vlt_gui_line(gui, l->x0, l->y0, l->x1, l->y1, 1, l->color);
+		}
+		for (u32 i = 0, end = array_size(&layer->symbol_refs); i < end; ++i)
+		{
+			const gui_symbol_ref * sref = array_get(&layer->symbol_refs, i);
 			const gui_symbol * s = sref->symbol;
 			for (u32 i = 0, end = array_size(&s->rects); i < end; ++i)
 			{
@@ -553,6 +605,11 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 				if (t->type == GUI_TEXT_DYNAMIC)
 					text_get(t, state, sref->params, text_hooks);
 				vlt_gui_txt(gui, t->x + sref->x, t->y + sref->y, t->sz, t->txt, t->color, t->align);
+			}
+			for (u32 i = 0, end = array_size(&s->lines); i < end; ++i)
+			{
+				const gui_line * l = array_get(&s->lines, i);
+				vlt_gui_line(gui, sref->x + l->x0, sref->y + l->y0, sref->x + l->x1, sref->y + l->y1, 1, l->color);
 			}
 		}
 	}

@@ -246,17 +246,17 @@ static void _vlt_gui_mesh(vlt_gui * gui, array * vertices, vlt_color c,
 	vlt_mesh_destroy(&mesh);
 }
 
-void vlt_gui_line(vlt_gui * gui, s32 x1, s32 y1, s32 x2, s32 y2, u32 sz,
+void vlt_gui_line(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
                   vlt_color c)
 {
 	array vertices;
 	array_init(&vertices, sizeof(v2));
 	v2 * vertex1 = array_append_null(&vertices);
-	vertex1->x = x1;
-	vertex1->y = y1;
+	vertex1->x = x0;
+	vertex1->y = y0;
 	v2 * vertex2 = array_append_null(&vertices);
-	vertex2->x = x2;
-	vertex2->y = y2;
+	vertex2->x = x1;
+	vertex2->y = y1;
 
 	_vlt_gui_mesh(gui, &vertices, g_nocolor, c);
 
