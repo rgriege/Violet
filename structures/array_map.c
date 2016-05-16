@@ -69,7 +69,7 @@ void * array_map_insert_null(array_map * m, const void * key)
 	assert(!array_map_has(m, key));
 	void * p = array_append_null(&m->pairs);
 	memcpy(p, key, m->key_size);
-	return p + m->key_size;
+	return (byte*)p + m->key_size;
 }
 
 u32 array_map_size(const array_map * m)
@@ -88,7 +88,7 @@ void * array_map_get(const array_map * m, const void * key)
 	{
 		void * elem = array_get(&m->pairs, i);
 		if (memcmp(key, elem, m->key_size) == 0)
-			return elem + m->key_size;
+			return (byte*)elem + m->key_size;
 	}
 
 	return NULL;
@@ -105,7 +105,7 @@ b8 array_map_iterate(const array_map * m, array_map_iter * iter)
 		return false;
 
 	iter->key = array_get(&m->pairs, iter->next_idx);
-	iter->val = iter->key + m->key_size;
+	iter->val = (byte*)iter->key + m->key_size;
 	++iter->next_idx;
 	return true;
 }

@@ -12,7 +12,7 @@ b8 stream_read(istream * s, void * buf, u32 sz)
 	{
 	case MEMORY_STREAM:
 		memcpy(buf, s->buf, sz);
-		s->buf += sz;
+		(byte*)s->buf += sz;
 		return true;
 
 	case FILE_STREAM:
@@ -43,7 +43,7 @@ void stream_vwrite(ostream * s, const char * format, va_list args)
 		const u32 sz = vsnprintf(NULL, 0, format, args_sz);
 		va_end(args_sz);
 		array_reserve(s->arr, s->arr->size + sz + 1);
-		vsprintf(s->arr->data + s->arr->size, format, args);
+		vsprintf((byte*)s->arr->data + s->arr->size, format, args);
 		s->arr->size += sz;
 	}
 		break;

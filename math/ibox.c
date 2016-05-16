@@ -38,7 +38,7 @@ void ibox_from_center(ibox * box, const v2i * center, const v2i * half_dim)
 	v2i_add(center, half_dim, &box->bottom_right);
 }
 
-void ibox_from_dims(ibox * box, const s32 left, const s32 top, const s32 right, const s32 bottom)
+void ibox_from_dims(ibox * box, s32 left, s32 top, s32 right, s32 bottom)
 {
 	box->top_left.x = left;
 	box->top_left.y = top;
@@ -51,7 +51,7 @@ b8 ibox_empty(const ibox * box)
 	return v2i_equal(&box->top_left, &box->bottom_right);
 }
 
-b8 ibox_contains_v(const ibox * box, const v2i * point)
+b8 ibox_contains_point(const ibox * box, const v2i * point)
 {
 	return point->x >= box->top_left.x
 		&& point->x <= box->bottom_right.x
@@ -59,13 +59,13 @@ b8 ibox_contains_v(const ibox * box, const v2i * point)
 		&& point->y >= box->bottom_right.y;
 }
 
-b8 ibox_contains_b(const ibox * lhs, const ibox * rhs)
+b8 ibox_contains_ibox(const ibox * lhs, const ibox * rhs)
 {
 	ival lhs_x = { lhs->top_left.x, lhs->bottom_right.x };
 	ival rhs_x = { rhs->top_left.x, rhs->bottom_right.x };
 	ival lhs_y = { lhs->top_left.y, lhs->bottom_right.y };
 	ival rhs_y = { rhs->top_left.y, rhs->bottom_right.y };
-	return ival_contains(&lhs_x, &rhs_x) && ival_contains(&lhs_y, &rhs_y);
+	return ival_contains_ival(&lhs_x, &rhs_x) && ival_contains_ival(&lhs_y, &rhs_y);
 }
 
 b8 ibox_overlaps(const ibox * lhs, const ibox * rhs)
@@ -77,7 +77,7 @@ b8 ibox_overlaps(const ibox * lhs, const ibox * rhs)
 	return ival_overlaps(&lhs_x, &rhs_x) && ival_overlaps(&lhs_y, &rhs_y);
 }
 
-void ibox_extend_v(ibox * box, const v2i * point)
+void ibox_extend_point(ibox * box, const v2i * point)
 {
 	ibox_from_dims(box,
 		min(box->top_left.x, point->x),
@@ -86,10 +86,10 @@ void ibox_extend_v(ibox * box, const v2i * point)
 		min(box->bottom_right.y, point->y));
 }
 
-void ibox_extend_b(ibox * lhs, const ibox * rhs)
+void ibox_extend_ibox(ibox * lhs, const ibox * rhs)
 {
-	ibox_extend_v(lhs, &rhs->top_left);
-	ibox_extend_v(lhs, &rhs->bottom_right);
+	ibox_extend_point(lhs, &rhs->top_left);
+	ibox_extend_point(lhs, &rhs->bottom_right);
 }
 
 void ibox_translate(ibox * box, const v2i * off)

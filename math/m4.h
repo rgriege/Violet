@@ -12,14 +12,8 @@ typedef struct m4
 extern const m4 g_m4_identity;
 extern const m4 g_m4_zero;
 
-void m4_mul_m(const m4 lhs, const m4 rhs, m4 res);
+void m4_mul_m4(const m4 lhs, const m4 rhs, m4 res);
 void m4_mul_v3(const m4 lhs, const v3 * rhs, v3 * res);
-#define m4_mul(X, Y, Z) _Generic((Y), \
-	m4:        m4_mul_m,              \
-	const m4:  m4_mul_m,              \
-	v3*:       m4_mul_v3,             \
-	const v3*: m4_mul_v3              \
-	)(X, Y, Z)
 
 b8 m4_equal(const m4 lhs, const m4 rhs);
 

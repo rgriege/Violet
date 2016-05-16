@@ -27,7 +27,7 @@ void m3_init_rot(m3 m, r32 radians)
 	m[8] = 0;
 }
 
-void m3_mul_m(const m3 lhs, const m3 rhs, m3 res)
+void m3_mul_m3(const m3 lhs, const m3 rhs, m3 res)
 {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)

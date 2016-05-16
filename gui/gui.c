@@ -347,7 +347,7 @@ b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color
 	ibox box;
 	ibox_from_dims(&box, x, y + h, x + w, y);
 	return (gui->mouse_btn & SDL_BUTTON_LMASK)
-	       && ibox_contains(&box, &gui->mouse_pos);
+	       && ibox_contains_point(&box, &gui->mouse_pos);
 }
 
 void vlt_gui_mouse_pos(vlt_gui * gui, s32 * x, s32 * y)

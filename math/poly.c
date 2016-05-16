@@ -34,7 +34,7 @@ b8 poly_contains(const poly * poly, const v2 * point)
 {
 	aabb box;
 	poly_bounding_box(poly, &box);
-	if (!aabb_contains(&box, point))
+	if (!aabb_contains_point(&box, point))
 		return false;
 
 	v2 outside_point;
@@ -59,7 +59,7 @@ void poly_bounding_box(const poly * p, aabb * box)
 	const v2 center = poly_center(p);
 	aabb_from_center(box, &center, &g_v2_zero);
 	for (u32 i = 0, n = array_size(&p->vertices); i < n; ++i)
-		aabb_extend_v(box, array_get(&p->vertices, i));
+		aabb_extend_point(box, array_get(&p->vertices, i));
 }
 
 void poly_translate(poly * p, const v2 * delta)
@@ -76,7 +76,7 @@ interval poly_project(const poly * p, const v2 * axis)
 	v2 unit_axis = *axis;
 	if (!v2_is_unit(&unit_axis))
 		v2_normalize(axis, &unit_axis);
-	interval projection;
+	interval projection = { .l = 0,.r = 0 };
 	for (u32 i = 0; i < p->vertices.size; ++i)
 	{
 		const v2 * vertex = array_get(&p->vertices, i);

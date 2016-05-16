@@ -67,7 +67,7 @@ void vlt_texture_coords_from_poly(vlt_mesh * tex_coords, const poly * p)
 	for (u32 i = 1, end = array_size(&p->vertices); i < end; ++i)
 	{
 		const v2 * vertex = array_get(&p->vertices, i);
-		aabb_extend(&extent, vertex);
+		aabb_extend_point(&extent, vertex);
 	}
 	v2 minimum, dimension;
 	aabb_get_min(&extent, &minimum);

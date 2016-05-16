@@ -25,7 +25,7 @@ b8 m2_inverse(const m2 m, m2 result)
 		result[2] = -m[2];
 		result[3] = a;
 		const r32 s = 1/dt;
-		m2_mul_s(result, s, result);
+		m2_scale(result, s, result);
 		return true;
 	}
 	return false;
@@ -36,7 +36,7 @@ r32 m2_determinant(const m2 m)
 	return m[0] * m[3] - m[2] * m[1];
 }
 
-void m2_mul_s(const m2 m, r32 s, m2 result)
+void m2_scale(const m2 m, r32 s, m2 result)
 {
 	result[0] = m[0] * s;
 	result[1] = m[1] * s;
@@ -44,7 +44,7 @@ void m2_mul_s(const m2 m, r32 s, m2 result)
 	result[3] = m[3] * s;
 }
 
-void m2_mul_v(const m2 m, const v2 * v, v2 * result)
+void m2_mul_v2(const m2 m, const v2 * v, v2 * result)
 {
 	result->x = v->x * m[0] + v->y * m[1];
 	result->y = v->x * m[2] + v->y * m[3];

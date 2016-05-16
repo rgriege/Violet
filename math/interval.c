@@ -17,19 +17,19 @@ r32 interval_length(const interval * i)
 	return i->r - i->l;
 }
 
-b8 interval_contains_r(const interval * i, r32 x)
+b8 interval_contains_val(const interval * i, r32 x)
 {
 	return x >= i->l && x <= i->r;
 }
 
-b8 interval_contains_i(const interval * lhs, const interval * rhs)
+b8 interval_contains_interval(const interval * lhs, const interval * rhs)
 {
-	return interval_contains_r(lhs, rhs->l) && interval_contains_r(lhs, rhs->r);
+	return interval_contains_val(lhs, rhs->l) && interval_contains_val(lhs, rhs->r);
 }
 
 b8 interval_overlaps(const interval * lhs, const interval * rhs)
 {
-	return interval_contains_r(lhs, rhs->l) || interval_contains_r(lhs, rhs->r);
+	return interval_contains_val(lhs, rhs->l) || interval_contains_val(lhs, rhs->r);
 }
 
 r32 interval_overlap(const interval * lhs, const interval * rhs)

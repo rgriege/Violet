@@ -14,19 +14,19 @@ s32 ival_length(const ival * i)
 	return i->r - i->l;
 }
 
-b8 ival_contains_s(const ival * i, s32 x)
+b8 ival_contains_val(const ival * i, s32 x)
 {
 	return x >= i->l && x <= i->r;
 }
 
-b8 ival_contains_i(const ival * lhs, const ival * rhs)
+b8 ival_contains_ival(const ival * lhs, const ival * rhs)
 {
-	return ival_contains_s(lhs, rhs->l) && ival_contains_s(lhs, rhs->r);
+	return ival_contains_val(lhs, rhs->l) && ival_contains_val(lhs, rhs->r);
 }
 
 b8 ival_overlaps(const ival * lhs, const ival * rhs)
 {
-	return ival_contains_s(lhs, rhs->l) || ival_contains_s(lhs, rhs->r);
+	return ival_contains_val(lhs, rhs->l) || ival_contains_val(lhs, rhs->r);
 }
 
 s32 ival_overlap(const ival * lhs, const ival * rhs)

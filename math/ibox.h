@@ -15,21 +15,13 @@ void ibox_from_dims(ibox * b, s32 left, s32 top, s32 right, s32 bottom);
 
 b8 ibox_empty(const ibox * b);
 
-b8 ibox_contains_v(const ibox * b, const v2i * p);
-b8 ibox_contains_b(const ibox * lhs, const ibox * rhs);
-#define ibox_contains(X, Y) _Generic((Y), \
-	v2i* : ibox_contains_v,               \
-	ibox*: ibox_contains_b                \
-	)(X, Y)
+b8 ibox_contains_point(const ibox * b, const v2i * p);
+b8 ibox_contains_ibox(const ibox * lhs, const ibox * rhs);
 
 b8 ibox_overlaps(const ibox * lhs, const ibox * rhs);
 
-void ibox_extend_v(ibox * b, const v2i * p);
-void ibox_extend_b(ibox * b, const ibox * other);
-#define ibox_extend(X, Y) _Generic((Y), \
-	v2i* : ibox_extend_v,               \
-	ibox*: ibox_extend_b                \
-	)(X, Y)
+void ibox_extend_point(ibox * b, const v2i * p);
+void ibox_extend_ibox(ibox * b, const ibox * other);
 
 void ibox_translate(ibox * b, const v2i * v);
 

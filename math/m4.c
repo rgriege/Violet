@@ -19,7 +19,7 @@ const m4 g_m4_zero = {
 	0, 0, 0, 0
 };
 
-void m4_mul_m(const m4 lhs, const m4 rhs, m4 res)
+void m4_mul_m4(const m4 lhs, const m4 rhs, m4 res)
 {
 	for (int i = 0; i < 4; ++i)
 	{

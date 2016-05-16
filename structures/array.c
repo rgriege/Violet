@@ -41,7 +41,7 @@ void array_destroy_each(array * a, void (*destroy_elem)(void*))
 void * array_get(const array * a, u32 idx)
 {
 	assert(idx < a->size);
-	return a->data + idx * a->elem_size;
+	return (byte*)a->data + idx * a->elem_size;
 }
 
 void * array_first(array * a)
@@ -53,7 +53,7 @@ void * array_first(array * a)
 void * array_last(array * a)
 {
 	assert(a->size > 0);
-	return a->data + (a->size - 1) * a->elem_size;
+	return (byte*)a->data + (a->size - 1) * a->elem_size;
 }
 
 u32 array_size(const array * a)
@@ -94,7 +94,7 @@ void * array_append_null(array * a)
 {
 	if (a->size >= a->capacity)
 		array_reserve(a, max(a->capacity * 3 / 2, a->capacity + 1));
-	return a->data + a->size++ * a->elem_size;
+	return (byte*)a->data + a->size++ * a->elem_size;
 }
 
 void * array_append_zero(array * a)
