@@ -526,7 +526,8 @@ void text_get(gui_text * t, void * state, const char * addl_params, array_map * 
 		strncpy(params, addl_params, GUI_TEXT_BUF_SZ);
 	if (t->params)
 	{
-		strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
+		if (addl_params)
+			strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
 		strncat(params, t->params, GUI_TEXT_BUF_SZ - strlen(params) - 1);
 	}
 	const u32 id = vlt_hash(t->hook);
@@ -544,8 +545,9 @@ void btn_press(const gui_btn * b, void * state, const char * addl_params, array_
 		strncpy(params, addl_params, GUI_TEXT_BUF_SZ);
 	if (b->params)
 	{
+		if (addl_params)
+			strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
 		strncat(params, b->params, GUI_TEXT_BUF_SZ - strlen(params) - 1);
-		strncat(params, " ", GUI_TEXT_BUF_SZ - strlen(params) - 1);
 	}
 	const u32 id = vlt_hash(b->hook);
 	void ** fn = array_map_get(hooks, &id);
