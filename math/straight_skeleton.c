@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <float.h>
 #include <limits.h>
+#include <math.h>
 #include <string.h>
 
 #include "violet/math/line.h"
@@ -422,60 +423,27 @@ void straight_skeleton_destroy(straight_skeleton * s)
 	array_map_destroy(&s->edges);
 }
 
-/*void polygon_inset(straight_skeleton * s, r32 inset, poly * out)
+void polygon_inset(straight_skeleton * s, r32 inset, poly * out)
 {
+	// TODO(rgriege): actually use straight skeleton
 	for (u32 i = 0, n = s->src->vertices.size; i < n; ++i)
 	{
-		const ss_edge_pair * dst = array_map_get(&s->src->vertices, &i);
+		const u32 iprev = i > 0 ? i - 1 : n - 1;
 		const u32 inext = i < n - 1 ? i + 1 : 0;
-		const v2 * a = array_get(&s->src->vertices, i);
-		const v2 * b = array_get(&s->src->vertices, inext);
-		const v2 * c = ss_vertex(s, dst->dst_idx0);
-		v2 ab, ab_perp, bc;
-		v2_sub(b, a, &ab);
-		v2_perp(&ab, false, &ab_perp); // not always true - cc?
-		ab_normalize(&ab_perp, &ab_perp);
-		v2_sub(c, b, &bc);
-		const r32 d = v2_dot(&ab, &bc);
-		if (d <= inset)
-		{
-			v2 ac;
-			v2_sub(c, a, &ac);
-			v2_normalize(&ac, &ac);
-			
-		}
-		else
-		{
-			
-		}
+		const v2 * a = array_get(&s->src->vertices, iprev);
+		const v2 * b = array_get(&s->src->vertices, i);
+		const v2 * c = array_get(&s->src->vertices, inext);
+
+		v2 bc_perp;
+		v2_sub(c, b, &bc_perp);
+		v2_perp(&bc_perp, true, &bc_perp);
+		v2_normalize(&bc_perp, &bc_perp);
+
+		v2 bisector, p;
+		_compute_bisector(b, c, b, a, &bisector);
+		const r32 scale = inset / fabs(v2_dot(&bisector, &bc_perp));
+		v2_scale(&bisector, scale, scale, &p);
+		v2_add(b, &p, &p);
+		array_append(&out->vertices, &p);
 	}
-
-	const u32 n = s->src->vertices.size;
-	array_map_iter it = {0};
-	while (array_map_iterate(&s->edges, &it))
-	{
-		const u32 * src_idx = it.key;
-		const ss_edge_pair * dst = it.val;
-
-		const u32 next_idx = i < n - 1 ? i + 1 : 0;
-		const v2 * a = array_get(&s->src->vertices, src_idx);
-		const v2 * b = array_get(&s->src->vertices, next_idx);
-		const v2 * c = ss_vertex(s, dst->dst_idx0);
-		v2 ab, ab_perp, bc;
-		v2_sub(b, a, &ab);
-		v2_perp(&ab, true, &ab_perp); // not always true - cc?
-		ab_normalize(&ab_perp, &ab_perp);
-		v2_sub(c, b, &bc);
-		const r32 d = v2_dot(&ab, &bc);
-		if (d <= inset)
-		{
-			
-		}
-
-		if (dst->dst_idx1 != UINT_MAX)
-		{
-			
-		}
-	}
-}*/
-
+}

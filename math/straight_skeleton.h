@@ -51,6 +51,6 @@ b8 poly_ss_debug(poly * p, straight_skeleton * s, ss_debug * dbg);
 const v2 * ss_vertex(straight_skeleton * s, u32 idx);
 void straight_skeleton_destroy(straight_skeleton * s);
 
-void polygon_inset(straight_skeleton * s, poly * out);
+void polygon_inset(straight_skeleton * s, r32 inset, poly * out);
 
 #endif
