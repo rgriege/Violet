@@ -79,6 +79,10 @@ void vlt_img_render(vlt_img * img, s32 x, s32 y, vlt_shader_program * p)
 
 	vlt_texture_bind(&img->texture);
 
+	const GLint offset_attrib = vlt_shader_program_uniform(p,
+		"offset");
+	glUniform2f(offset_attrib, x, y);
+
 	glDrawArrays(GL_TRIANGLE_FAN, 0, img->mesh.sz);
 
 	vlt_texture_unbind();

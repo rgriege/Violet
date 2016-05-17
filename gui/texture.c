@@ -83,6 +83,8 @@ void vlt_texture_coords_from_poly(vlt_mesh * tex_coords, const poly * p)
 		v2 tex_coord;
 		v2_sub(vertex, &minimum, &tex_coord);
 		v2_div(&tex_coord, &dimension, &tex_coord);
+		// TODO(rgriege): figure out why this is necessary (font too)
+		tex_coord.v = 1 - tex_coord.v;
 		array_append(&coords, &tex_coord);
 	}
 	vlt_mesh_init(tex_coords, &coords);
