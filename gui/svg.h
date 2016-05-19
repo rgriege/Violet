@@ -39,6 +39,16 @@ void svg_btn_init(svg_btn * b);
 void svg_btn_destroy(svg_btn * b);
 
 
+typedef struct svg_img
+{
+	s32 x, y;
+	char * src;
+} svg_img;
+
+void svg_img_init(svg_img * i);
+void svg_img_destroy(svg_img * i);
+
+
 typedef enum svg_text_type
 {
 	SVG_TEXT_STATIC,
@@ -66,6 +76,7 @@ typedef struct svg_symbol
 	array rects;
 	array texts;
 	array btns;
+	array imgs;
 } svg_symbol;
 
 void svg_symbol_init(svg_symbol * s);
@@ -89,6 +100,7 @@ typedef struct svg_layer
 	array rects;
 	array texts;
 	array btns;
+	array imgs;
 	array symbol_refs;
 } svg_layer;
 

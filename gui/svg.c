@@ -28,6 +28,17 @@ void svg_btn_destroy(svg_btn * b)
 }
 
 
+void svg_img_init(svg_img * i)
+{
+	i->src = malloc(SVG_TEXT_BUF_SZ);
+}
+
+void svg_img_destroy(svg_img * i)
+{
+	free(i->src);
+}
+
+
 void svg_text_init(svg_text * t)
 {
 	t->x = t->y = t->sz = 0;
@@ -55,6 +66,7 @@ void svg_symbol_init(svg_symbol * s)
 	array_init(&s->rects, sizeof(svg_rect));
 	array_init(&s->texts, sizeof(svg_text));
 	array_init(&s->btns, sizeof(svg_btn));
+	array_init(&s->imgs, sizeof(svg_img));
 }
 
 void svg_symbol_destroy(svg_symbol * s)
@@ -63,6 +75,7 @@ void svg_symbol_destroy(svg_symbol * s)
 	array_destroy(&s->rects);
 	array_destroy_each(&s->texts, (void(*)(void*))svg_text_destroy);
 	array_destroy_each(&s->btns, (void(*)(void*))svg_btn_destroy);
+	array_destroy_each(&s->imgs, (void(*)(void*))svg_img_destroy);
 }
 
 
@@ -84,6 +97,7 @@ void svg_layer_init(svg_layer * l)
 	array_init(&l->rects, sizeof(svg_rect));
 	array_init(&l->texts, sizeof(svg_text));
 	array_init(&l->btns, sizeof(svg_btn));
+	array_init(&l->imgs, sizeof(svg_img));
 	array_init(&l->symbol_refs, sizeof(svg_symbol_ref));
 }
 
@@ -93,6 +107,7 @@ void svg_layer_destroy(svg_layer * l)
 	array_destroy(&l->rects);
 	array_destroy_each(&l->texts, (void(*)(void*))svg_text_destroy);
 	array_destroy_each(&l->btns, (void(*)(void*))svg_btn_destroy);
+	array_destroy_each(&l->imgs, (void(*)(void*))svg_img_destroy);
 	array_destroy_each(&l->symbol_refs, (void(*)(void*))svg_symbol_ref_destroy);
 }
 
@@ -216,7 +231,7 @@ static b8 _svg_parse_btn(svg_btn * b, ezxml_t node)
 	return true;
 }
 
-void svg_btns(array * btns, ezxml_t container)
+void _svg_parse_btns(array * btns, ezxml_t container)
 {
 	for (ezxml_t node = ezxml_child(container, "btn"); node; node = node->next)
 	{
@@ -227,6 +242,34 @@ void svg_btns(array * btns, ezxml_t container)
 			log_write("invalid btn");
 			svg_btn_destroy(b);
 			array_remove(btns, array_size(btns) - 1);
+		}
+	}
+}
+
+static b8 _svg_parse_img(svg_img * i, ezxml_t node)
+{
+	if (!_svg_parse_pos(node, &i->x, &i->y))
+		return false;
+
+	const char * src_attr = ezxml_attr(node, "src");
+	if (!src_attr)
+		return false;
+
+	strncpy(i->src, src_attr, SVG_TEXT_BUF_SZ);
+	return true;
+}
+
+void _svg_parse_imgs(array * imgs, ezxml_t container)
+{
+	for (ezxml_t node = ezxml_child(container, "img"); node; node = node->next)
+	{
+		svg_img * i = array_append_null(imgs);
+		svg_img_init(i);
+		if (!_svg_parse_img(i, node))
+		{
+			log_write("invalid img");
+			svg_img_destroy(i);
+			array_remove(imgs, array_size(imgs) - 1);
 		}
 	}
 }
@@ -355,7 +398,8 @@ b8 vlt_svg_init_from_file(vlt_svg * g, const char * filename)
 		_svg_parse_lines(&symbol->lines, node);
 		_svg_parse_rects(&symbol->rects, node);
 		_svg_parse_texts(&symbol->texts, node);
-		svg_btns(&symbol->btns, node);
+		_svg_parse_btns(&symbol->btns, node);
+		_svg_parse_imgs(&symbol->imgs, node);
 
 		aabb view = {0};
 		if (_svg_parse_viewbox(&view, node) && (view.top_left.x != 0 || view.top_left.y != 0))
@@ -392,7 +436,8 @@ b8 vlt_svg_init_from_file(vlt_svg * g, const char * filename)
 		_svg_parse_lines(&layer->lines, node);
 		_svg_parse_rects(&layer->rects, node);
 		_svg_parse_texts(&layer->texts, node);
-		svg_btns(&layer->btns, node);
+		_svg_parse_btns(&layer->btns, node);
+		_svg_parse_imgs(&layer->imgs, node);
 		for (ezxml_t sym_node = ezxml_child(node, "use"); sym_node; sym_node = sym_node->next)
 		{
 			const char * ref = ezxml_attr(sym_node, "xlink:href");
@@ -519,6 +564,11 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 			const svg_line * l = array_get(&layer->lines, i);
 			vlt_gui_line(gui, l->x0, l->y0, l->x1, l->y1, 1, l->color);
 		}
+		for (u32 i = 0, end = array_size(&layer->imgs); i < end; ++i)
+		{
+			const svg_img * img = array_get(&layer->imgs, i);
+			vlt_gui_img(gui, img->x, img->y, img->src);
+		}
 		for (u32 i = 0, end = array_size(&layer->symbol_refs); i < end; ++i)
 		{
 			const svg_symbol_ref * sref = array_get(&layer->symbol_refs, i);
@@ -545,6 +595,11 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 			{
 				const svg_line * l = array_get(&s->lines, i);
 				vlt_gui_line(gui, sref->x + l->x0, sref->y + l->y0, sref->x + l->x1, sref->y + l->y1, 1, l->color);
+			}
+			for (u32 i = 0, end = array_size(&s->imgs); i < end; ++i)
+			{
+				const svg_img * img = array_get(&s->imgs, i);
+				vlt_gui_img(gui, img->x, img->y, img->src);
 			}
 		}
 	}
