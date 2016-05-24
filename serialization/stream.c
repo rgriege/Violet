@@ -12,7 +12,7 @@ b8 stream_read(istream * s, void * buf, u32 sz)
 	{
 	case MEMORY_STREAM:
 		memcpy(buf, s->buf, sz);
-		(byte*)s->buf += sz;
+		s->buf = (byte*)s->buf + sz;
 		return true;
 
 	case FILE_STREAM:
