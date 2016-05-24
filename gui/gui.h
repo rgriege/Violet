@@ -27,6 +27,7 @@ b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
                vlt_color lc);
 
 void vlt_gui_mouse_pos(vlt_gui * gui, s32 * x, s32 * y);
+void vlt_gui_mouse_scroll(vlt_gui * gui, s32 * dir);
 
 b8 vlt_gui_begin_frame(vlt_gui * gui);
 void vlt_gui_end_frame(vlt_gui * gui);

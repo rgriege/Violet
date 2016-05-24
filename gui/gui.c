@@ -18,9 +18,22 @@
 #include "violet/utility/log.h"
 #include "violet/utility/time.h"
 
+// the highest SDL Button def is SDL_BUTTON_X2, which is set to 5
+#define VLT_BUTTON_WHEELUP 6
+#define VLT_BUTTON_WHEELDOWN 7
+#define VLT_BUTTON_WHEELUPMASK SDL_BUTTON(VLT_BUTTON_WHEELUP)
+#define VLT_BUTTON_WHEELDOWNMASK SDL_BUTTON(VLT_BUTTON_WHEELDOWN)
+
 int SDL_FilterEvent(void * userdata, SDL_Event * event)
 {
-	return event->type == SDL_QUIT;
+	switch (event->type)
+	{
+	case SDL_QUIT:
+	case SDL_MOUSEWHEEL:
+		return true;
+	default:
+		return false;
+	}
 }
 
 typedef enum key
@@ -363,6 +376,16 @@ void vlt_gui_mouse_pos(vlt_gui * gui, s32 * x, s32 * y)
 	*y = gui->mouse_pos.y;
 }
 
+void vlt_gui_mouse_scroll(vlt_gui * gui, s32 * dir)
+{
+	if (gui->mouse_btn & VLT_BUTTON_WHEELUPMASK)
+		*dir = 1;
+	else if (gui->mouse_btn & VLT_BUTTON_WHEELDOWNMASK)
+		*dir = -1;
+	else
+		*dir = 0;
+}
+
 b8 vlt_gui_begin_frame(vlt_gui * gui)
 {
 	vlt_time now;
@@ -372,6 +395,7 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 
 	b8 quit = false;
 	SDL_Event evt;
+	gui->mouse_btn = 0;
 	while (SDL_PollEvent(&evt) == 1)
 	{
 		switch(evt.type)
@@ -379,10 +403,15 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 		case SDL_QUIT:
 			quit = true;
 			break;
+		case SDL_MOUSEWHEEL:
+			gui->mouse_btn |= (evt.wheel.y > 0 ?
+				VLT_BUTTON_WHEELUPMASK :
+				VLT_BUTTON_WHEELDOWNMASK);
+			break;
 		}
 	}
 
-	gui->mouse_btn = SDL_GetMouseState(&gui->mouse_pos.x,
+	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x,
 		&gui->mouse_pos.y);
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
 		&gui->win_halfdim.y);
