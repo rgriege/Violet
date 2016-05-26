@@ -93,21 +93,13 @@ void svg_symbol_ref_destroy(svg_symbol_ref * sref)
 
 void svg_layer_init(svg_layer * l)
 {
-	array_init(&l->lines, sizeof(svg_line));
-	array_init(&l->rects, sizeof(svg_rect));
-	array_init(&l->texts, sizeof(svg_text));
-	array_init(&l->btns, sizeof(svg_btn));
-	array_init(&l->imgs, sizeof(svg_img));
+	svg_symbol_init(&l->global_elems);
 	array_init(&l->symbol_refs, sizeof(svg_symbol_ref));
 }
 
 void svg_layer_destroy(svg_layer * l)
 {
-	array_destroy(&l->lines);
-	array_destroy(&l->rects);
-	array_destroy_each(&l->texts, (void(*)(void*))svg_text_destroy);
-	array_destroy_each(&l->btns, (void(*)(void*))svg_btn_destroy);
-	array_destroy_each(&l->imgs, (void(*)(void*))svg_img_destroy);
+	svg_symbol_destroy(&l->global_elems);
 	array_destroy_each(&l->symbol_refs, (void(*)(void*))svg_symbol_ref_destroy);
 }
 
@@ -359,6 +351,15 @@ static b8 _svg_parse_viewbox(aabb * dims, ezxml_t node)
 	return true;
 }
 
+static void _svg_parse_symbol(svg_symbol * symbol, ezxml_t node)
+{
+	_svg_parse_lines(&symbol->lines, node);
+	_svg_parse_rects(&symbol->rects, node);
+	_svg_parse_texts(&symbol->texts, node);
+	_svg_parse_btns(&symbol->btns, node);
+	_svg_parse_imgs(&symbol->imgs, node);
+}
+
 
 
 void vlt_svg_init(vlt_svg * g)
@@ -395,11 +396,7 @@ b8 vlt_svg_init_from_file(vlt_svg * g, const char * filename)
 		const u32 id = vlt_hash(ezxml_attr(node, "id"));
 		svg_symbol * symbol = array_map_insert_null(&g->symbols, &id);
 		svg_symbol_init(symbol);
-		_svg_parse_lines(&symbol->lines, node);
-		_svg_parse_rects(&symbol->rects, node);
-		_svg_parse_texts(&symbol->texts, node);
-		_svg_parse_btns(&symbol->btns, node);
-		_svg_parse_imgs(&symbol->imgs, node);
+		_svg_parse_symbol(symbol, node);
 
 		aabb view = {0};
 		if (_svg_parse_viewbox(&view, node) && (view.top_left.x != 0 || view.top_left.y != 0))
@@ -433,11 +430,7 @@ b8 vlt_svg_init_from_file(vlt_svg * g, const char * filename)
 		log_write("layer '%s'", ezxml_attr(node, "id"));
 		svg_layer * layer = array_append_null(&g->layers);
 		svg_layer_init(layer);
-		_svg_parse_lines(&layer->lines, node);
-		_svg_parse_rects(&layer->rects, node);
-		_svg_parse_texts(&layer->texts, node);
-		_svg_parse_btns(&layer->btns, node);
-		_svg_parse_imgs(&layer->imgs, node);
+		_svg_parse_symbol(&layer->global_elems, node);
 		for (ezxml_t sym_node = ezxml_child(node, "use"); sym_node; sym_node = sym_node->next)
 		{
 			const char * ref = ezxml_attr(sym_node, "xlink:href");
@@ -492,12 +485,7 @@ void vlt_svg_destroy(vlt_svg * g)
 }
 
 
-const aabb * vlt_svg_window(vlt_svg * s)
-{
-	return &s->window;
-}
-
-void text_get(svg_text * t, void * state, const char * addl_params, array_map * hooks)
+static void _text_get(svg_text * t, void * state, const char * addl_params, array_map * hooks)
 {
 	char params[SVG_TEXT_BUF_SZ] = "";
 	if (addl_params)
@@ -516,7 +504,7 @@ void text_get(svg_text * t, void * state, const char * addl_params, array_map * 
 		strncpy(t->txt, t->hook, SVG_TEXT_BUF_SZ);
 }
 
-void btn_press(const svg_btn * b, void * state, const char * addl_params, array_map * hooks)
+static void _btn_press(const svg_btn * b, void * state, const char * addl_params, array_map * hooks)
 {
 	char params[SVG_TEXT_BUF_SZ] = "";
 	if (addl_params)
@@ -533,6 +521,40 @@ void btn_press(const svg_btn * b, void * state, const char * addl_params, array_
 		((void(*)(void*,char*))*fn)(state, params);
 }
 
+static void _render_symbol(vlt_gui * gui, const svg_symbol * symbol, s32 x, s32 y,
+                           const char * params, void * state,
+                           array_map * text_hooks, array_map * btn_hooks)
+{
+	for (u32 i = 0, end = array_size(&symbol->rects); i < end; ++i)
+	{
+		const svg_rect * r = array_get(&symbol->rects, i);
+		vlt_gui_rect(gui, r->x + x, r->y + y, r->w, r->h, r->fill_color, r->line_color);
+	}
+	for (u32 i = 0, end = array_size(&symbol->btns); i < end; ++i)
+	{
+		const svg_btn * b = array_get(&symbol->btns, i);
+		if (vlt_gui_btn(gui, b->rect.x + x, b->rect.y + y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
+			_btn_press(b, state, params, btn_hooks);
+	}
+	for (u32 i = 0, end = array_size(&symbol->texts); i < end; ++i)
+	{
+		svg_text * t = array_get(&symbol->texts, i);
+		if (t->type == SVG_TEXT_DYNAMIC)
+			_text_get(t, state, params, text_hooks);
+		vlt_gui_txt(gui, t->x + x, t->y + y, t->sz, t->txt, t->color, t->align);
+	}
+	for (u32 i = 0, end = array_size(&symbol->lines); i < end; ++i)
+	{
+		const svg_line * l = array_get(&symbol->lines, i);
+		vlt_gui_line(gui, x + l->x0, y + l->y0, x + l->x1, y + l->y1, 1, l->color);
+	}
+	for (u32 i = 0, end = array_size(&symbol->imgs); i < end; ++i)
+	{
+		const svg_img * img = array_get(&symbol->imgs, i);
+		vlt_gui_img(gui, img->x, img->y, img->src);
+	}
+}
+
 void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
                     array_map * text_hooks, array_map * btn_hooks)
 {
@@ -541,66 +563,12 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
 		 ++layer_idx)
 	{
 		const svg_layer * layer = array_get(&s->layers, layer_idx);
-		for (u32 i = 0, end = array_size(&layer->rects); i < end; ++i)
-		{
-			const svg_rect * r = array_get(&layer->rects, i);
-			vlt_gui_rect(gui, r->x, r->y, r->w, r->h, r->fill_color, r->line_color);
-		}
-		for (u32 i = 0, end = array_size(&layer->btns); i < end; ++i)
-		{
-			const svg_btn * b = array_get(&layer->btns, i);
-			if(vlt_gui_btn(gui, b->rect.x, b->rect.y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
-				btn_press(b, state, NULL, btn_hooks);
-		}
-		for (u32 i = 0, end = array_size(&layer->texts); i < end; ++i)
-		{
-			svg_text * t = array_get(&layer->texts, i);
-			if (t->type == SVG_TEXT_DYNAMIC)
-				text_get(t, state, NULL, text_hooks);
-			vlt_gui_txt(gui, t->x, t->y, t->sz, t->txt, t->color, t->align);
-		}
-		for (u32 i = 0, end = array_size(&layer->lines); i < end; ++i)
-		{
-			const svg_line * l = array_get(&layer->lines, i);
-			vlt_gui_line(gui, l->x0, l->y0, l->x1, l->y1, 1, l->color);
-		}
-		for (u32 i = 0, end = array_size(&layer->imgs); i < end; ++i)
-		{
-			const svg_img * img = array_get(&layer->imgs, i);
-			vlt_gui_img(gui, img->x, img->y, img->src);
-		}
+		_render_symbol(gui, &layer->global_elems, 0, 0, NULL, state, text_hooks, btn_hooks);
 		for (u32 i = 0, end = array_size(&layer->symbol_refs); i < end; ++i)
 		{
 			const svg_symbol_ref * sref = array_get(&layer->symbol_refs, i);
 			const svg_symbol * s = sref->symbol;
-			for (u32 i = 0, end = array_size(&s->rects); i < end; ++i)
-			{
-				const svg_rect * r = array_get(&s->rects, i);
-				vlt_gui_rect(gui, r->x + sref->x, r->y + sref->y, r->w, r->h, r->fill_color, r->line_color);
-			}
-			for (u32 i = 0, end = array_size(&s->btns); i < end; ++i)
-			{
-				const svg_btn * b = array_get(&s->btns, i);
-				if(vlt_gui_btn(gui, b->rect.x + sref->x, b->rect.y + sref->y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
-					btn_press(b, state, sref->params, btn_hooks);
-			}
-			for (u32 i = 0, end = array_size(&s->texts); i < end; ++i)
-			{
-				svg_text * t = array_get(&s->texts, i);
-				if (t->type == SVG_TEXT_DYNAMIC)
-					text_get(t, state, sref->params, text_hooks);
-				vlt_gui_txt(gui, t->x + sref->x, t->y + sref->y, t->sz, t->txt, t->color, t->align);
-			}
-			for (u32 i = 0, end = array_size(&s->lines); i < end; ++i)
-			{
-				const svg_line * l = array_get(&s->lines, i);
-				vlt_gui_line(gui, sref->x + l->x0, sref->y + l->y0, sref->x + l->x1, sref->y + l->y1, 1, l->color);
-			}
-			for (u32 i = 0, end = array_size(&s->imgs); i < end; ++i)
-			{
-				const svg_img * img = array_get(&s->imgs, i);
-				vlt_gui_img(gui, img->x, img->y, img->src);
-			}
+			_render_symbol(gui, s, sref->x, sref->y, sref->params, state, text_hooks, btn_hooks);
 		}
 	}
 }

@@ -96,11 +96,7 @@ void svg_symbol_ref_destroy(svg_symbol_ref * sref);
 
 typedef struct svg_layer
 {
-	array lines;
-	array rects;
-	array texts;
-	array btns;
-	array imgs;
+	svg_symbol global_elems;
 	array symbol_refs;
 } svg_layer;
 
