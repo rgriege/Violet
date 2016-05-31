@@ -10,7 +10,7 @@
 typedef struct vlt_gui vlt_gui;
 
 
-#define SVG_TEXT_BUF_SZ 20
+#define SVG_TEXT_BUF_SZ 32
 
 
 typedef struct svg_line
@@ -87,6 +87,7 @@ typedef struct svg_symbol_ref
 {
 	s32 x, y;
 	char * params;
+	u32 symbol_id;
 	const svg_symbol * symbol;
 } svg_symbol_ref;
 
@@ -116,6 +117,16 @@ void vlt_svg_destroy(vlt_svg * g);
 
 void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
                     array_map * text_hooks, array_map * btn_hooks);
+
+
+/* Use the Retained-Mode gui API */
+
+typedef struct vlt_rsvg vlt_rsvg;
+
+vlt_rsvg * vlt_svg_retain(vlt_svg * svg, vlt_gui * gui);
+void vlt_rsvg_destroy(vlt_rsvg * rsvg);
+void vlt_rsvg_render(vlt_gui * gui, vlt_rsvg * s, void * state,
+                     array_map * text_hooks, array_map * btn_hooks);
 
 #endif
 

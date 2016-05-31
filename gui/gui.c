@@ -202,6 +202,95 @@ void vlt_gui_destroy(vlt_gui * gui)
 	free(gui);
 }
 
+void vlt_gui_mouse_pos(vlt_gui * gui, s32 * x, s32 * y)
+{
+	*x = gui->mouse_pos.x;
+	*y = gui->mouse_pos.y;
+}
+
+void vlt_gui_mouse_scroll(vlt_gui * gui, s32 * dir)
+{
+	if (gui->mouse_btn & VLT_BUTTON_WHEELUPMASK)
+		*dir = 1;
+	else if (gui->mouse_btn & VLT_BUTTON_WHEELDOWNMASK)
+		*dir = -1;
+	else
+		*dir = 0;
+}
+
+b8 vlt_gui_begin_frame(vlt_gui * gui)
+{
+	vlt_time now;
+	vlt_get_time(&now);
+	const u32 frame_milli = vlt_diff_milli(&gui->last_update_time, &now);
+	gui->last_update_time = now;
+
+	b8 quit = false;
+	SDL_Event evt;
+	gui->mouse_btn = 0;
+	while (SDL_PollEvent(&evt) == 1)
+	{
+		switch (evt.type)
+		{
+		case SDL_QUIT:
+			quit = true;
+			break;
+		case SDL_MOUSEWHEEL:
+			gui->mouse_btn |= (evt.wheel.y > 0 ?
+				VLT_BUTTON_WHEELUPMASK :
+				VLT_BUTTON_WHEELDOWNMASK);
+			break;
+		}
+	}
+
+	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x,
+		&gui->mouse_pos.y);
+	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
+		&gui->win_halfdim.y);
+	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
+	v2i_div(&gui->win_halfdim, 2, 2, &gui->win_halfdim);
+
+	const char prev_key = gui->_pressed_key;
+	gui->_pressed_key = 0;
+	gui->key = 0;
+	s32 key_cnt;
+	const u8 * keys = SDL_GetKeyboardState(&key_cnt);
+	for (s32 i = 0; i < key_cnt; ++i)
+		if (keys[i] && _convert_scancode(i, &gui->_pressed_key))
+			break;
+	if (gui->_pressed_key != 0)
+	{
+		if (gui->_pressed_key == prev_key)
+		{
+			if (gui->key_repeat_timer <= frame_milli)
+			{
+				gui->key_repeat_timer = 0;
+				gui->key = gui->_pressed_key;
+			}
+			else
+				gui->key_repeat_timer -= frame_milli;
+		}
+		else
+		{
+			gui->key_repeat_timer = gui->key_repeat_delay;
+			gui->key = gui->_pressed_key;
+		}
+	}
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	return !quit;
+}
+
+void vlt_gui_end_frame(vlt_gui * gui)
+{
+	glFlush();
+	SDL_GL_SwapWindow(gui->window);
+}
+
+
+/* Retained Mode API */
+
 static void _set_color_attrib(vlt_shader_program * p, vlt_color c)
 {
 	const GLint color_attrib = vlt_shader_program_uniform(p, "color");
@@ -217,50 +306,23 @@ static void _set_win_halfdim_attrib(vlt_gui * gui, vlt_shader_program * p)
 	glUniform2f(win_attrib, gui->win_halfdim.x, gui->win_halfdim.y);
 }
 
-static void _vlt_gui_mesh(vlt_gui * gui, array * vertices, vlt_color c,
-                          vlt_color lc)
+void vlt_rmgui_poly_init(vlt_gui * gui, array * vertices,
+                         vlt_mesh * mesh, u32 * vao)
 {
-	vlt_mesh mesh;
-	vlt_mesh_init(&mesh, vertices);
+	vlt_mesh_init(mesh, vertices);
 
-	u32 vao;
-	glGenVertexArrays(1, &vao);
+	glGenVertexArrays(1, vao);
 
-	glBindVertexArray(vao);
-	vlt_mesh_bind(&mesh);
+	glBindVertexArray(*vao);
+	vlt_mesh_bind(mesh);
 
 	const GLint pos_attrib = vlt_shader_program_attrib(&gui->poly_shader, "position");
 	glVertexAttribPointer(pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(pos_attrib);
-
-	vlt_shader_program_bind(&gui->poly_shader);
-
-	_set_win_halfdim_attrib(gui, &gui->poly_shader);
-
-	if (!vlt_color_equal(c, g_nocolor))
-	{
-		_set_color_attrib(&gui->poly_shader, c);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, mesh.sz);
-	}
-
-	if (!vlt_color_equal(lc, g_nocolor))
-	{
-		_set_color_attrib(&gui->poly_shader, lc);
-		glDrawArrays(GL_LINE_LOOP, 0, mesh.sz);
-	}
-
-	vlt_shader_program_unbind();
-
-	glBindVertexArray(0);
-	vlt_mesh_unbind(&mesh);
-
-	glDeleteVertexArrays(1, &vao);
-
-	vlt_mesh_destroy(&mesh);
 }
 
-void vlt_gui_line(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
-                  vlt_color c)
+void vlt_rmgui_line_init(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
+                         vlt_color c, vlt_rmgui_poly * line)
 {
 	array vertices;
 	array_init(&vertices, sizeof(v2));
@@ -271,22 +333,94 @@ void vlt_gui_line(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
 	vertex2->x = x1;
 	vertex2->y = y1;
 
-	_vlt_gui_mesh(gui, &vertices, g_nocolor, c);
+	vlt_rmgui_poly_init(gui, &vertices, &line->mesh, &line->vao);
+	line->line_color = c;
+	line->fill_color = g_nocolor;
 
 	array_destroy(&vertices);
 }
 
-void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
-                  vlt_color lc)
+
+void vlt_rmgui_rect_init(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
+                         vlt_color fill, vlt_color line, vlt_rmgui_poly * rect)
 {
 	aabb box;
 	aabb_from_dims(&box, x, y + h, x + w, y);
 	poly p;
 	poly_from_box(&p, &box);
 
-	_vlt_gui_mesh(gui, &p.vertices, c, lc);
+	vlt_rmgui_poly_init(gui, &p.vertices, &rect->mesh, &rect->vao);
+	rect->fill_color = fill;
+	rect->line_color = line;
 
-	array_destroy(&p.vertices);
+	poly_destroy(&p);
+}
+
+void vlt_rmgui_poly_draw(vlt_gui * gui, const vlt_rmgui_poly * poly, s32 x, s32 y)
+{
+	glBindVertexArray(poly->vao);
+	vlt_mesh_bind(&poly->mesh);
+	vlt_shader_program_bind(&gui->poly_shader);
+
+	_set_win_halfdim_attrib(gui, &gui->poly_shader);
+
+	const GLint offset_attrib = vlt_shader_program_uniform(&gui->poly_shader,
+		"offset");
+	glUniform2f(offset_attrib, x, y);
+
+	if (!vlt_color_equal(poly->fill_color, g_nocolor))
+	{
+		_set_color_attrib(&gui->poly_shader, poly->fill_color);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, poly->mesh.sz);
+	}
+
+	if (!vlt_color_equal(poly->line_color, g_nocolor))
+	{
+		_set_color_attrib(&gui->poly_shader, poly->line_color);
+		glDrawArrays(GL_LINE_LOOP, 0, poly->mesh.sz);
+	}
+}
+
+void vlt_rmgui_poly_destroy(vlt_rmgui_poly * poly)
+{
+	glBindVertexArray(0);
+	vlt_mesh_unbind(&poly->mesh);
+
+	glDeleteVertexArrays(1, &poly->vao);
+
+	vlt_mesh_destroy(&poly->mesh);
+}
+
+void vlt_rmgui_img_draw(vlt_gui * gui, vlt_img * img, s32 x, s32 y)
+{
+	vlt_shader_program_bind(&gui->tex_shader);
+
+	_set_win_halfdim_attrib(gui, &gui->tex_shader);
+
+	vlt_img_render(img, x, y, &gui->tex_shader);
+
+	vlt_shader_program_unbind();
+}
+
+
+/* Immediate Mode API */
+
+void vlt_gui_line(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
+                  vlt_color c)
+{
+	vlt_rmgui_poly line;
+	vlt_rmgui_line_init(gui, x0, y0, x1, y1, sz, c, &line);
+	vlt_rmgui_poly_draw(gui, &line, 0, 0);
+	vlt_rmgui_poly_destroy(&line);
+}
+
+void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
+                  vlt_color lc)
+{
+	vlt_rmgui_poly rect;
+	vlt_rmgui_rect_init(gui, x, y, w, h, c, lc, &rect);
+	vlt_rmgui_poly_draw(gui, &rect, 0, 0);
+	vlt_rmgui_poly_destroy(&rect);
 }
 
 void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * filename)
@@ -295,13 +429,7 @@ void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * filename)
 	if (!vlt_img_load(img, filename))
 		return;
 
-	vlt_shader_program_bind(&gui->tex_shader);
-
-	_set_win_halfdim_attrib(gui, &gui->tex_shader);
-
-	vlt_img_render(img, x, y, &gui->tex_shader);
-
-	vlt_shader_program_unbind();
+	vlt_rmgui_img_draw(gui, img, x, y);
 
 	vlt_img_destroy(img);
 	vlt_img_free(img);
@@ -364,95 +492,13 @@ void vlt_gui_npt(vlt_gui * gui, s32 x, s32 y, s32 sz, char * txt, u32 n,
 b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color lc)
 {
 	vlt_gui_rect(gui, x, y, w, h, c, lc);
+	return vlt_gui_btn_invis(gui, x, y, w, h);
+}
+
+b8 vlt_gui_btn_invis(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h)
+{
 	ibox box;
 	ibox_from_dims(&box, x, y + h, x + w, y);
-	return (gui->mouse_btn & SDL_BUTTON_LMASK)
-	       && ibox_contains_point(&box, &gui->mouse_pos);
+	return (   gui->mouse_btn & SDL_BUTTON_LMASK)
+	        && ibox_contains_point(&box, &gui->mouse_pos);
 }
-
-void vlt_gui_mouse_pos(vlt_gui * gui, s32 * x, s32 * y)
-{
-	*x = gui->mouse_pos.x;
-	*y = gui->mouse_pos.y;
-}
-
-void vlt_gui_mouse_scroll(vlt_gui * gui, s32 * dir)
-{
-	if (gui->mouse_btn & VLT_BUTTON_WHEELUPMASK)
-		*dir = 1;
-	else if (gui->mouse_btn & VLT_BUTTON_WHEELDOWNMASK)
-		*dir = -1;
-	else
-		*dir = 0;
-}
-
-b8 vlt_gui_begin_frame(vlt_gui * gui)
-{
-	vlt_time now;
-	vlt_get_time(&now);
-	const u32 frame_milli = vlt_diff_milli(&gui->last_update_time, &now);
-	gui->last_update_time = now;
-
-	b8 quit = false;
-	SDL_Event evt;
-	gui->mouse_btn = 0;
-	while (SDL_PollEvent(&evt) == 1)
-	{
-		switch(evt.type)
-		{
-		case SDL_QUIT:
-			quit = true;
-			break;
-		case SDL_MOUSEWHEEL:
-			gui->mouse_btn |= (evt.wheel.y > 0 ?
-				VLT_BUTTON_WHEELUPMASK :
-				VLT_BUTTON_WHEELDOWNMASK);
-			break;
-		}
-	}
-
-	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x,
-		&gui->mouse_pos.y);
-	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
-		&gui->win_halfdim.y);
-	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
-	v2i_div(&gui->win_halfdim, 2, 2, &gui->win_halfdim);
-
-	const char prev_key = gui->_pressed_key;
-	gui->_pressed_key = 0;
-	gui->key = 0;
-	s32 key_cnt;
-	const u8 * keys = SDL_GetKeyboardState(&key_cnt);
-	for (s32 i = 0; i < key_cnt; ++i)
-		if (keys[i] && _convert_scancode(i, &gui->_pressed_key))
-			break;
-	if (gui->_pressed_key != 0)
-	{
-		if (gui->_pressed_key == prev_key)
-		{
-			if (gui->key_repeat_timer <= frame_milli)
-			{
-				gui->key_repeat_timer = 0;
-				gui->key = gui->_pressed_key;
-			}
-			else
-				gui->key_repeat_timer -= frame_milli;
-		}
-		else
-		{
-			gui->key_repeat_timer = gui->key_repeat_delay;
-			gui->key = gui->_pressed_key;
-		}
-	}
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	return !quit;
-}
-
-void vlt_gui_end_frame(vlt_gui * gui)
-{
-	glFlush();
-	SDL_GL_SwapWindow(gui->window);
-}
-
