@@ -105,6 +105,7 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	gui->window = SDL_CreateWindow(title, max(x, 5), max(y, 30), w, h, SDL_WINDOW_OPENGL);
@@ -139,6 +140,10 @@ b8 vlt_gui_init_window(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0x00);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	if (!vlt_shader_program_load(&gui->poly_shader, "poly"))
 		goto err_glew;
@@ -277,7 +282,7 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 		}
 	}
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	return !quit;
 }
@@ -467,6 +472,24 @@ void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
 	vlt_font_render(font, txt, x, y, &gui->txt_shader, align);
 
 	vlt_shader_program_unbind();
+}
+
+void vlt_gui_mask(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h)
+{
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	glDepthMask(GL_FALSE);
+	glStencilMask(0xFF);
+	vlt_gui_rect(gui, x, y, w, h, g_black, g_black);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glDepthMask(GL_TRUE);
+	glStencilMask(0x00);
+	glStencilFunc(GL_EQUAL, 1, 0xFF);
+}
+
+void vlt_gui_unmask(vlt_gui * gui)
+{
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glClear(GL_STENCIL_BUFFER_BIT);
 }
 
 void vlt_gui_npt(vlt_gui * gui, s32 x, s32 y, s32 sz, char * txt, u32 n,
