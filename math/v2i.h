@@ -5,7 +5,11 @@
 
 typedef struct v2i
 {
-	s32 x, y;
+	union
+	{
+		struct { s32 x, y; };
+		struct { s32 j, i; };
+	};
 } v2i;
 
 void v2i_add(const v2i * lhs, const v2i * rhs, v2i * result);
