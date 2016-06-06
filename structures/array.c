@@ -31,7 +31,7 @@ void array_destroy(array * a)
 	}
 }
 
-void array_destroy_each(array * a, void (*destroy_elem)(void*))
+void array_destroy_each_ex(array * a, void (*destroy_elem)(void*))
 {
 	for (u32 i = 0; i < a->size; ++i)
 		destroy_elem(array_get(a, i));

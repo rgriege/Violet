@@ -16,9 +16,10 @@ void array_map_copy_each(array_map * dest,
                          void(*copy_key)(void*,const void*),
                          void(*copy_val)(void*,const void*));
 void array_map_destroy(array_map * m);
-void array_map_destroy_each(array_map * m, 
-                            void(*destroy_key)(void*),
-                            void(*destroy_val)(void*));
+void array_map_destroy_each_ex(array_map * m,
+                               void(*destroy_key)(void*),
+                               void(*destroy_val)(void*));
+#define array_map_destroy_each(m,k,v) array_map_destroy_each_ex(m, (void(*)(void*))k, (void(*)(void*))v)
 void array_map_insert(array_map * m, const void * key, const void * val);
 void * array_map_insert_null(array_map * m, const void * key);
 u32 array_map_size(const array_map * m);

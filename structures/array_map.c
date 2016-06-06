@@ -43,9 +43,9 @@ void array_map_destroy(array_map * m)
 	array_destroy(&m->pairs);
 }
 
-void array_map_destroy_each(array_map * m, 
-                            void(*destroy_key)(void*),
-                            void(*destroy_val)(void*))
+void array_map_destroy_each_ex(array_map * m,
+                               void(*destroy_key)(void*),
+                               void(*destroy_val)(void*))
 {
 	array_map_iter it = {0};
 	while(array_map_iterate(m, &it))
