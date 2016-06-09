@@ -253,7 +253,8 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
 		&gui->win_halfdim.y);
 	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
-	v2i_div(&gui->win_halfdim, 2, 2, &gui->win_halfdim);
+	static const v2i g_v2i_2 = { .x=2, .y=2 };
+	v2i_div(&gui->win_halfdim, &g_v2i_2, &gui->win_halfdim);
 
 	const char prev_key = gui->_pressed_key;
 	gui->_pressed_key = 0;
@@ -330,11 +331,11 @@ void vlt_rmgui_line_init(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
                          vlt_color c, vlt_rmgui_poly * line)
 {
 	array vertices;
-	array_init(&vertices, sizeof(v2));
-	v2 * vertex1 = array_append_null(&vertices);
+	array_init(&vertices, sizeof(v2f));
+	v2f * vertex1 = array_append_null(&vertices);
 	vertex1->x = x0;
 	vertex1->y = y0;
-	v2 * vertex2 = array_append_null(&vertices);
+	v2f * vertex2 = array_append_null(&vertices);
 	vertex2->x = x1;
 	vertex2->y = y1;
 

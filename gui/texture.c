@@ -66,23 +66,23 @@ void vlt_texture_coords_from_poly(vlt_mesh * tex_coords, const poly * p)
 	aabb_init_point(&extent, array_get(&p->vertices, 0));
 	for (u32 i = 1, end = array_size(&p->vertices); i < end; ++i)
 	{
-		const v2 * vertex = array_get(&p->vertices, i);
+		const v2f * vertex = array_get(&p->vertices, i);
 		aabb_extend_point(&extent, vertex);
 	}
-	v2 minimum, dimension;
+	v2f minimum, dimension;
 	aabb_get_min(&extent, &minimum);
 	aabb_get_max(&extent, &dimension);
-	v2_sub(&dimension, &minimum, &dimension);
+	v2f_sub(&dimension, &minimum, &dimension);
 
 	array coords;
-	array_init(&coords, sizeof(v2));
+	array_init(&coords, sizeof(v2f));
 	array_reserve(&coords, array_size(&p->vertices));
 	for (u32 i = 0, end = array_size(&p->vertices); i < end; ++i)
 	{
-		const v2 * vertex = array_get(&p->vertices, i);
-		v2 tex_coord;
-		v2_sub(vertex, &minimum, &tex_coord);
-		v2_div(&tex_coord, &dimension, &tex_coord);
+		const v2f * vertex = array_get(&p->vertices, i);
+		v2f tex_coord;
+		v2f_sub(vertex, &minimum, &tex_coord);
+		v2f_div(&tex_coord, &dimension, &tex_coord);
 		// TODO(rgriege): figure out why this is necessary (font too)
 		tex_coord.v = 1 - tex_coord.v;
 		array_append(&coords, &tex_coord);

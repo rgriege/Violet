@@ -35,7 +35,7 @@ void m3_mul_m3(const m3 lhs, const m3 rhs, m3 res)
 				res[3*i+j] += lhs[3*i+h] * rhs[3*h+j];
 }
 
-void m3_mul_v2(const m3 m, const v2 * v, v2 * res)
+void m3_mul_v2f(const m3 m, const v2f * v, v2f * res)
 {
 	res->x = m[0] * v->x + m[1] * v->y + m[2];
 	res->y = m[3] * v->x + m[4] * v->y + m[5];
