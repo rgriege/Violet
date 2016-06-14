@@ -15,16 +15,19 @@
 #include "violet/structures/array_map.h"
 
 
+#define DEFAULT_STR_BUF_SZ 64
+
+
 void svg_btn_init(svg_btn * b)
 {
-	b->hook = malloc(SVG_TEXT_BUF_SZ);
-	b->hook[0] = '\0';
+	b->hook = NULL;
 	b->params = NULL;
 }
 
 void svg_btn_destroy(svg_btn * b)
 {
-	free(b->hook);
+	if (b->hook)
+		free(b->hook);
 	if (b->params)
 		free(b->params);
 }
@@ -32,13 +35,13 @@ void svg_btn_destroy(svg_btn * b)
 
 void svg_img_init(svg_img * i)
 {
-	i->src = malloc(SVG_TEXT_BUF_SZ);
-	i->src[0] = '\0';
+	i->src = NULL;
 }
 
 void svg_img_destroy(svg_img * i)
 {
-	free(i->src);
+	if (i->src)
+		free(i->src);
 }
 
 
@@ -219,11 +222,12 @@ static b8 _svg_parse_btn(svg_btn * b, ezxml_t node)
 	const char * params_attr = ezxml_attr(node, "params");
 	if (params_attr)
 	{
-		b->params = malloc(SVG_TEXT_BUF_SZ);
-		strncpy(b->params, params_attr, SVG_TEXT_BUF_SZ);
+		b->params = malloc(strlen(params_attr) + 1);
+		strcpy(b->params, params_attr);
 	}
 
-	strncpy(b->hook, hook_attr, SVG_TEXT_BUF_SZ);
+	b->hook = malloc(strlen(hook_attr) + 1);
+	strcpy(b->hook, hook_attr);
 	return true;
 }
 
@@ -251,7 +255,8 @@ static b8 _svg_parse_img(svg_img * i, ezxml_t node)
 	if (!src_attr)
 		return false;
 
-	strncpy(i->src, src_attr, SVG_TEXT_BUF_SZ);
+	i->src = malloc(strlen(src_attr) + 1);
+	strcpy(i->src, src_attr);
 	return true;
 }
 
@@ -285,20 +290,21 @@ static b8 _svg_parse_text(svg_text * t, ezxml_t node)
 	if (hook_attr)
 	{
 		t->type = SVG_TEXT_DYNAMIC;
-		t->hook = malloc(SVG_TEXT_BUF_SZ);
-		strncpy(t->hook, hook_attr, SVG_TEXT_BUF_SZ);
+		t->hook = malloc(strlen(hook_attr) + 1);
+		strcpy(t->hook, hook_attr);
 
 		const char * params_attr = ezxml_attr(node, "params");
 		if (params_attr)
 		{
-			t->params = malloc(SVG_TEXT_BUF_SZ);
-			strncpy(t->params, params_attr, SVG_TEXT_BUF_SZ);
+			t->params = malloc(strlen(params_attr) + 1);
+			strcpy(t->params, params_attr);
 		}
 	}
 	else
 	{
 		t->type = SVG_TEXT_STATIC;
-		strncpy(t->txt, node->txt, SVG_TEXT_BUF_SZ);
+		t->txt = realloc(t->txt, strlen(node->txt) + 1);
+		strcpy(t->txt, node->txt);
 	}
 
 	const char * align_attr = ezxml_attr(node, "font-align");
@@ -316,7 +322,7 @@ static b8 _svg_parse_text(svg_text * t, ezxml_t node)
 
 	return    t->color.a != 0
 	       && t->sz != 0
-	       && (t->type == SVG_TEXT_STATIC ? strlen(t->txt) > 0 : strlen(t->hook) > 0);
+	       && (t->type == SVG_TEXT_STATIC ? strlen(t->txt) > 0 : t->hook != NULL);
 }
 
 static void _svg_parse_texts(array * texts, ezxml_t container)
@@ -392,6 +398,8 @@ b8 vlt_svg_init_from_file(vlt_svg * g, const char * filename)
 
 	vlt_svg_init(g);
 	g->window = window;
+	g->_str_buffer.str = malloc(DEFAULT_STR_BUF_SZ);
+	g->_str_buffer.sz = DEFAULT_STR_BUF_SZ;
 
 
 	for (ezxml_t node = ezxml_child(doc, "symbol"); node; node = node->next)
@@ -470,8 +478,8 @@ b8 vlt_svg_init_from_file(vlt_svg * g, const char * filename)
 			const char * params_attr = ezxml_attr(sym_node, "params");
 			if (params_attr)
 			{
-				sref->params = malloc(SVG_TEXT_BUF_SZ);
-				strncpy(sref->params, params_attr, SVG_TEXT_BUF_SZ);
+				sref->params = malloc(strlen(params_attr) + 1);
+				strcpy(sref->params, params_attr);
 			}
 		}
 	}
@@ -487,49 +495,68 @@ void vlt_svg_destroy(vlt_svg * g)
 {
 	array_destroy_each(&g->layers, (void(*)(void*))svg_layer_destroy);
 	array_map_destroy_each(&g->symbols, NULL, (void(*)(void*))svg_symbol_destroy);
+	free(g->_str_buffer.str);
 }
 
 
-static void _text_get(svg_text * t, void * state, const char * addl_params, array_map * hooks)
+static void _text_get(svg_text *t, void *state, const char *addl_params,
+                      array_map *hooks, vlt_str str_buffer)
 {
-	char params[SVG_TEXT_BUF_SZ] = "";
-	if (addl_params)
-		strncpy(params, addl_params, SVG_TEXT_BUF_SZ);
-	if (t->params)
+	const char *final_params = NULL;
+	if (!addl_params)
+		final_params = t->params;
+	else if (!t->params)
+		final_params = addl_params;
+	else
 	{
-		if (addl_params)
-			strncat(params, " ", SVG_TEXT_BUF_SZ - strlen(params) - 1);
-		strncat(params, t->params, SVG_TEXT_BUF_SZ - strlen(params) - 1);
+		const size_t params_sz = strlen(t->params);
+		const size_t sz = params_sz + strlen(addl_params) + 2;
+		if (sz > str_buffer.sz)
+			realloc(str_buffer.str, sz);
+		strcpy(str_buffer.str, t->params);
+		str_buffer.str[params_sz] = ' ';
+		strcpy(str_buffer.str + params_sz + 1, addl_params);
+		final_params = str_buffer.str;
 	}
 	const u32 id = vlt_hash(t->hook);
 	void ** fn = array_map_get(hooks, &id);
 	if (fn)
-		((void(*)(void*,const char*,char*))*fn)(state, params, t->txt);
+		((void(*)(void*,const char*,char*))*fn)(state, final_params, t->txt);
 	else
+	{
 		strncpy(t->txt, t->hook, SVG_TEXT_BUF_SZ);
+		t->txt[SVG_TEXT_BUF_SZ - 1] = '\0';
+	}
 }
 
-static void _btn_press(const char * hook, const char * params,
-                       const char * addl_params, void * state, array_map * hooks)
+static void _btn_press(const char *hook, const char *params, const char *addl_params,
+                       void *state, array_map *hooks, vlt_str str_buffer)
 {
-	char param_buf[SVG_TEXT_BUF_SZ] = "";
-	if (addl_params)
-		strncpy(param_buf, addl_params, SVG_TEXT_BUF_SZ);
-	if (params)
+	const char *final_params = NULL;
+	if (!addl_params)
+		final_params = params;
+	else if (!params)
+		final_params = addl_params;
+	else
 	{
-		if (addl_params)
-			strncat(param_buf, " ", SVG_TEXT_BUF_SZ - strlen(param_buf) - 1);
-		strncat(param_buf, params, SVG_TEXT_BUF_SZ - strlen(param_buf) - 1);
+		const size_t params_sz = strlen(params);
+		const size_t sz = params_sz + strlen(addl_params) + 2;
+		if (sz > str_buffer.sz)
+			realloc(str_buffer.str, sz);
+		strcpy(str_buffer.str, params);
+		str_buffer.str[params_sz] = ' ';
+		strcpy(str_buffer.str + params_sz + 1, addl_params);
+		final_params = str_buffer.str;
 	}
 	const u32 id = vlt_hash(hook);
 	void ** fn = array_map_get(hooks, &id);
 	if (fn)
-		((void(*)(void*,char*))*fn)(state, param_buf);
+		((void(*)(void*,char*))*fn)(state, final_params);
 }
 
-static void _render_symbol(vlt_gui * gui, const svg_symbol * symbol, s32 x, s32 y,
-                           const char * params, void * state,
-                           array_map * text_hooks, array_map * btn_hooks)
+static void _render_symbol(vlt_gui *gui, const svg_symbol *symbol, s32 x, s32 y,
+                           const char *params, void *state,
+                           array_map *text_hooks, array_map *btn_hooks, vlt_str str_buffer)
 {
 	for (u32 i = 0, end = array_size(&symbol->rects); i < end; ++i)
 	{
@@ -540,13 +567,13 @@ static void _render_symbol(vlt_gui * gui, const svg_symbol * symbol, s32 x, s32 
 	{
 		const svg_btn * b = array_get(&symbol->btns, i);
 		if (vlt_gui_btn(gui, b->rect.x + x, b->rect.y + y, b->rect.w, b->rect.h, b->rect.fill_color, b->rect.line_color))
-			_btn_press(b->hook, b->params, params, state, btn_hooks);
+			_btn_press(b->hook, b->params, params, state, btn_hooks, str_buffer);
 	}
 	for (u32 i = 0, end = array_size(&symbol->texts); i < end; ++i)
 	{
 		svg_text * t = array_get(&symbol->texts, i);
 		if (t->type == SVG_TEXT_DYNAMIC)
-			_text_get(t, state, params, text_hooks);
+			_text_get(t, state, params, text_hooks, str_buffer);
 		vlt_gui_txt(gui, t->x + x, t->y + y, t->sz, t->txt, t->color, t->align);
 	}
 	for (u32 i = 0, end = array_size(&symbol->lines); i < end; ++i)
@@ -561,20 +588,22 @@ static void _render_symbol(vlt_gui * gui, const svg_symbol * symbol, s32 x, s32 
 	}
 }
 
-void vlt_svg_render(vlt_gui * gui, vlt_svg * s, void * state,
+void vlt_svg_render(vlt_gui * gui, vlt_svg * svg, void * state,
                     array_map * text_hooks, array_map * btn_hooks)
 {
-	for (u32 layer_idx = 0, layer_end = array_size(&s->layers);
+	for (u32 layer_idx = 0, layer_end = array_size(&svg->layers);
 		 layer_idx < layer_end;
 		 ++layer_idx)
 	{
-		const svg_layer * layer = array_get(&s->layers, layer_idx);
-		_render_symbol(gui, &layer->global_elems, 0, 0, NULL, state, text_hooks, btn_hooks);
+		const svg_layer * layer = array_get(&svg->layers, layer_idx);
+		_render_symbol(gui, &layer->global_elems, 0, 0, NULL, state,
+			text_hooks, btn_hooks, svg->_str_buffer);
 		for (u32 i = 0, end = array_size(&layer->symbol_refs); i < end; ++i)
 		{
 			const svg_symbol_ref * sref = array_get(&layer->symbol_refs, i);
 			const svg_symbol * s = sref->symbol;
-			_render_symbol(gui, s, sref->x, sref->y, sref->params, state, text_hooks, btn_hooks);
+			_render_symbol(gui, s, sref->x, sref->y, sref->params, state,
+				text_hooks, btn_hooks, svg->_str_buffer);
 		}
 	}
 }
@@ -592,14 +621,14 @@ typedef struct _rsvg_btn
 
 static void _rsvg_btn_init(_rsvg_btn * b)
 {
-	b->hook = malloc(SVG_TEXT_BUF_SZ);
-	b->hook[0] = '\0';
+	b->hook = NULL;
 	b->params = NULL;
 }
 
 static void _rsvg_btn_destroy(_rsvg_btn * b)
 {
-	free(b->hook);
+	if (b->hook)
+		free(b->hook);
 	if (b->params)
 		free(b->params);
 }
@@ -685,6 +714,7 @@ typedef struct vlt_rsvg
 {
 	array_map symbols;
 	array layers;
+	vlt_str str_buffer;
 } vlt_rsvg;
 
 
@@ -709,11 +739,17 @@ static void _retain_symbol(vlt_gui * gui, _rsvg_symbol * scene_sym,
 		btn->y = b->rect.y;
 		btn->w = b->rect.w;
 		btn->h = b->rect.h;
-		strncpy(btn->hook, b->hook, SVG_TEXT_BUF_SZ);
+		if (b->hook)
+		{
+			const size_t sz = strlen(b->hook) + 1;
+			btn->hook = malloc(sz);
+			strcpy(btn->hook, b->hook);
+		}
 		if (b->params)
 		{
-			btn->params = malloc(SVG_TEXT_BUF_SZ);
-			strncpy(btn->params, b->params, SVG_TEXT_BUF_SZ);
+			const size_t sz = strlen(b->params) + 1;
+			btn->params = malloc(sz);
+			strcpy(btn->params, b->params);
 		}
 	}
 	for (u32 i = 0, end = array_size(&svg_sym->texts); i < end; ++i)
@@ -723,16 +759,17 @@ static void _retain_symbol(vlt_gui * gui, _rsvg_symbol * scene_sym,
 		memcpy(dst, src, sizeof(svg_text));
 		if (src->hook)
 		{
-			dst->hook = malloc(SVG_TEXT_BUF_SZ);
-			strncpy(dst->hook, src->hook, SVG_TEXT_BUF_SZ);
+			dst->hook = malloc(strlen(src->hook) + 1);
+			strcpy(dst->hook, src->hook);
 		}
 		if (src->params)
 		{
-			dst->params = malloc(SVG_TEXT_BUF_SZ);
-			strncpy(dst->params, src->params, SVG_TEXT_BUF_SZ);
+			dst->params = malloc(strlen(src->params + 1));
+			strcpy(dst->params, src->params);
 		}
-		dst->txt = malloc(SVG_TEXT_BUF_SZ);
-		strncpy(dst->txt, src->txt, SVG_TEXT_BUF_SZ);
+
+		dst->txt = realloc(dst->txt, strlen(src->txt) + 1);
+		strcpy(dst->txt, src->txt);
 	}
 	for (u32 i = 0, end = array_size(&svg_sym->lines); i < end; ++i)
 	{
@@ -756,6 +793,8 @@ vlt_rsvg * vlt_svg_retain(vlt_svg * svg, vlt_gui * gui)
 	vlt_rsvg * rsvg = malloc(sizeof(vlt_rsvg));
 	array_map_init(&rsvg->symbols, sizeof(u32), sizeof(_rsvg_symbol));
 	array_init(&rsvg->layers, sizeof(_rsvg_layer));
+	rsvg->str_buffer.str = malloc(DEFAULT_STR_BUF_SZ);
+	rsvg->str_buffer.sz = DEFAULT_STR_BUF_SZ;
 
 	array_reserve(&rsvg->symbols.pairs, svg->symbols.pairs.size);
 	array_map_iter it = { 0 };
@@ -788,8 +827,8 @@ vlt_rsvg * vlt_svg_retain(vlt_svg * svg, vlt_gui * gui)
 			rsvg_sref->y = svg_sref->y;
 			if (svg_sref->params)
 			{
-				rsvg_sref->params = malloc(SVG_TEXT_BUF_SZ);
-				strncpy(rsvg_sref->params, svg_sref->params, SVG_TEXT_BUF_SZ);
+				rsvg_sref->params = malloc(strlen(svg_sref->params) + 1);
+				strcpy(rsvg_sref->params, svg_sref->params);
 			}
 			rsvg_sref->symbol = array_map_get(&rsvg->symbols, &svg_sref->symbol_id);
 		}
@@ -802,11 +841,12 @@ void vlt_rsvg_destroy(vlt_rsvg * rsvg)
 {
 	array_destroy_each(&rsvg->layers, (void(*)(void*))_rsvg_layer_destroy);
 	array_map_destroy_each(&rsvg->symbols, NULL, (void(*)(void*))_rsvg_symbol_destroy);
+	free(rsvg->str_buffer.str);
 }
 
-static void _render_rsymbol(vlt_gui * gui, const _rsvg_symbol * symbol, s32 x, s32 y,
-                            const char * params, void * state,
-                            array_map * text_hooks, array_map * btn_hooks)
+static void _render_rsymbol(vlt_gui *gui, const _rsvg_symbol *symbol, s32 x, s32 y,
+                            const char *params, void *state,
+                            array_map *text_hooks, array_map *btn_hooks, vlt_str str_buffer)
 {
 	for (u32 i = 0, end = array_size(&symbol->polys); i < end; ++i)
 	{
@@ -817,13 +857,13 @@ static void _render_rsymbol(vlt_gui * gui, const _rsvg_symbol * symbol, s32 x, s
 	{
 		const _rsvg_btn * b = array_get(&symbol->btns, i);
 		if (vlt_gui_btn_invis(gui, b->x + x, b->y + y, b->w, b->h))
-			_btn_press(b->hook, b->params, params, state, btn_hooks);
+			_btn_press(b->hook, b->params, params, state, btn_hooks, str_buffer);
 	}
 	for (u32 i = 0, end = array_size(&symbol->texts); i < end; ++i)
 	{
 		svg_text * t = array_get(&symbol->texts, i);
 		if (t->type == SVG_TEXT_DYNAMIC)
-			_text_get(t, state, params, text_hooks);
+			_text_get(t, state, params, text_hooks, str_buffer);
 		vlt_gui_txt(gui, t->x + x, t->y + y, t->sz, t->txt, t->color, t->align);
 	}
 	for (u32 i = 0, end = array_size(&symbol->imgs); i < end; ++i)
@@ -833,20 +873,22 @@ static void _render_rsymbol(vlt_gui * gui, const _rsvg_symbol * symbol, s32 x, s
 	}
 }
 
-void vlt_rsvg_render(vlt_gui * gui, vlt_rsvg * s, void * state,
+void vlt_rsvg_render(vlt_gui * gui, vlt_rsvg * rsvg, void * state,
                      array_map * text_hooks, array_map * btn_hooks)
 {
-	for (u32 layer_idx = 0, layer_end = array_size(&s->layers);
+	for (u32 layer_idx = 0, layer_end = array_size(&rsvg->layers);
 		layer_idx < layer_end;
 		++layer_idx)
 	{
-		const _rsvg_layer * layer = array_get(&s->layers, layer_idx);
-		_render_rsymbol(gui, &layer->global_elems, 0, 0, NULL, state, text_hooks, btn_hooks);
+		const _rsvg_layer * layer = array_get(&rsvg->layers, layer_idx);
+		_render_rsymbol(gui, &layer->global_elems, 0, 0, NULL, state,
+			text_hooks, btn_hooks, rsvg->str_buffer);
 		for (u32 i = 0, end = array_size(&layer->symbol_refs); i < end; ++i)
 		{
 			const _rsvg_symbol_ref * sref = array_get(&layer->symbol_refs, i);
 			const _rsvg_symbol * s = sref->symbol;
-			_render_rsymbol(gui, s, sref->x, sref->y, sref->params, state, text_hooks, btn_hooks);
+			_render_rsymbol(gui, s, sref->x, sref->y, sref->params, state,
+				text_hooks, btn_hooks, rsvg->str_buffer);
 		}
 	}
 }

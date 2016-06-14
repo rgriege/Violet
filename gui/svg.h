@@ -13,6 +13,13 @@ typedef struct vlt_gui vlt_gui;
 #define SVG_TEXT_BUF_SZ 32
 
 
+typedef struct vlt_str
+{
+	char *str;
+	size_t sz;
+} vlt_str;
+
+
 typedef struct svg_line
 {
 	s32 x0, y0, x1, y1;
@@ -109,6 +116,7 @@ typedef struct vlt_svg
 	aabb window;
 	array_map symbols;
 	array layers;
+	vlt_str _str_buffer;
 } vlt_svg;
 
 void vlt_svg_init(vlt_svg * g);
