@@ -10,30 +10,30 @@
 
 typedef struct _ss_edge
 {
-	v2 start;
-	v2 end;
+	v2f start;
+	v2f end;
 } _ss_edge;
 
 typedef struct _ss_active_vtx
 {
 	u32 src_idx;
 	_ss_edge edges[2];
-	v2 bisector;
+	v2f bisector;
 	b8 reflex;
 } _ss_active_vtx;
 
-static void _compute_bisector(const v2 * a0, const v2 * a1,
-                              const v2 * b0, const v2 * b1, v2 * bisector)
+static void _compute_bisector(const v2f * a0, const v2f * a1,
+                              const v2f * b0, const v2f * b1, v2f * bisector)
 {
-	v2 a, b;
-	v2_sub(a1, a0, &a);
-	v2_normalize(&a, &a);
+	v2f a, b;
+	v2f_sub(a1, a0, &a);
+	v2f_normalize(&a, &a);
 
-	v2_sub(b1, b0, &b);
-	v2_normalize(&b, &b);
+	v2f_sub(b1, b0, &b);
+	v2f_normalize(&b, &b);
 
-	v2_add(&a, &b, bisector);
-	v2_normalize(bisector, bisector);
+	v2f_add(&a, &b, bisector);
+	v2f_normalize(bisector, bisector);
 }
 
 static void _ss_active_vtx_compute_bisector(_ss_active_vtx * vtx)
@@ -46,7 +46,7 @@ static void _ss_active_vtx_compute_bisector(_ss_active_vtx * vtx)
 typedef struct _ss_isec
 {
 	r32 t;
-	v2 p;
+	v2f p;
 	u32 src_idcs[2];
 	u32 split_src_idx;
 	u32 vertex_list_idx;
@@ -58,7 +58,7 @@ static b8 _ss_isec_less(void * lhs, void * rhs)
 }
 
 
-const v2 * ss_vertex(straight_skeleton * s, u32 idx)
+const v2f * ss_vertex(straight_skeleton * s, u32 idx)
 {
 	const u32 src_sz = array_size(&s->src->vertices);
 	assert(idx < src_sz + array_size(&s->spine_vertices));
@@ -76,8 +76,8 @@ static void _add_intersection(straight_skeleton * s, const _ss_active_vtx * a,
 		ss_vertex(s, b->src_idx), &b->bisector, &t, &u) && t > 0 && u > 0)
 	{
 		_ss_isec isec;
-		v2_scale(&a->bisector, t, t, &isec.p);
-		v2_add(&isec.p, ss_vertex(s, a->src_idx), &isec.p);
+		v2f_scale(&a->bisector, t, t, &isec.p);
+		v2f_add(&isec.p, ss_vertex(s, a->src_idx), &isec.p);
 
 		isec.src_idcs[0] = a->src_idx;
 		isec.src_idcs[1] = b->src_idx;
@@ -93,15 +93,15 @@ static void _add_split_intersection(array * vertices, straight_skeleton * s,
                                     const _ss_active_vtx * vtx, pqueue * isecs,
                                     u32 vertex_list_idx, b8 cc)
 {
-	const v2 * vtx_p = ss_vertex(s, vtx->src_idx);
+	const v2f * vtx_p = ss_vertex(s, vtx->src_idx);
 	_ss_isec isec = { .t = FLT_MAX, .split_src_idx = vtx->src_idx,
 		.vertex_list_idx = vertex_list_idx };
 
 	for (u32 i = 0, n = array_size(vertices); i < n; ++i)
 	{
-		const v2 * e0 = array_get(vertices, i);
+		const v2f * e0 = array_get(vertices, i);
 		const u32 inext = i < n - 1 ? i + 1 : 0;
-		const v2 * e1 = array_get(vertices, inext);
+		const v2f * e1 = array_get(vertices, inext);
 
 		r32 t0, u0, t1, u1;
 		if (   line_intersect_coords(&vtx->edges[0].end, &vtx->edges[0].start, e0, e1, &t0, &u0)
@@ -109,46 +109,46 @@ static void _add_split_intersection(array * vertices, straight_skeleton * s,
 			&& line_intersect_coords(&vtx->edges[1].end, &vtx->edges[1].start, e0, e1, &t1, &u1)
 			&& t1 > 1)
 		{
-			v2 a, b;
+			v2f a, b;
 			line_extrapolate(&vtx->edges[0].end, &vtx->edges[0].start, t0, &a);
 			line_extrapolate(&vtx->edges[1].end, &vtx->edges[1].start, t1, &b);
-			r32 a_len = v2_dist(&b, vtx_p);
-			r32 b_len = v2_dist(&a, vtx_p);
-			r32 c_len = v2_dist(&a, &b);
-			v2 a_contrib, b_contrib, c_contrib, incenter = { 0, 0 };
-			v2_scale(&a, a_len, a_len, &a_contrib);
-			v2_scale(&b, b_len, b_len, &b_contrib);
-			v2_scale(vtx_p, c_len, c_len, &c_contrib);
-			v2_add(&incenter, &a_contrib, &incenter);
-			v2_add(&incenter, &b_contrib, &incenter);
-			v2_add(&incenter, &c_contrib, &incenter);
+			r32 a_len = v2f_dist(&b, vtx_p);
+			r32 b_len = v2f_dist(&a, vtx_p);
+			r32 c_len = v2f_dist(&a, &b);
+			v2f a_contrib, b_contrib, c_contrib, incenter = { 0, 0 };
+			v2f_scale(&a, a_len, a_len, &a_contrib);
+			v2f_scale(&b, b_len, b_len, &b_contrib);
+			v2f_scale(vtx_p, c_len, c_len, &c_contrib);
+			v2f_add(&incenter, &a_contrib, &incenter);
+			v2f_add(&incenter, &b_contrib, &incenter);
+			v2f_add(&incenter, &c_contrib, &incenter);
 			const r32 denom = 1.f / (a_len + b_len + c_len);
-			v2_scale(&incenter, denom, denom, &incenter);
+			v2f_scale(&incenter, denom, denom, &incenter);
 
 			const u32 iprev = i > 0 ? i - 1 : n - 1;
-			const v2 * e0_prev = array_get(vertices, iprev);
+			const v2f * e0_prev = array_get(vertices, iprev);
 			const u32 inextnext = inext < n - 1 ? inext + 1 : 0;
-			const v2 * e1_next = array_get(vertices, inextnext);
-			v2 e, e_prev, e_next;
-			v2_sub(e1, e0, &e);
-			v2_sub(e0, e0_prev, &e_prev);
-			v2_sub(e1_next, e1, &e_next);
+			const v2f * e1_next = array_get(vertices, inextnext);
+			v2f e, e_prev, e_next;
+			v2f_sub(e1, e0, &e);
+			v2f_sub(e0, e0_prev, &e_prev);
+			v2f_sub(e1_next, e1, &e_next);
 
-			v2 e0_bisector, e1_bisector;
+			v2f e0_bisector, e1_bisector;
 			_compute_bisector(e0, e0_prev, e0, e1, &e0_bisector);
-			if (cc != (v2_cross(&e_prev, &e) > 0.f))
-				v2_scale(&e0_bisector, -1, -1, &e0_bisector);
+			if (cc != (v2f_cross(&e_prev, &e) > 0.f))
+				v2f_scale(&e0_bisector, -1, -1, &e0_bisector);
 			_compute_bisector(e1, e0, e1, e1_next, &e1_bisector);
-			if (cc != (v2_cross(&e, &e_next) > 0.f))
-				v2_scale(&e1_bisector, -1, -1, &e1_bisector);
+			if (cc != (v2f_cross(&e, &e_next) > 0.f))
+				v2f_scale(&e1_bisector, -1, -1, &e1_bisector);
 
-			v2 e0_to_incenter, e1_to_incenter;
-			v2_sub(&incenter, e0, &e0_to_incenter);
-			v2_sub(&incenter, e1, &e1_to_incenter);
+			v2f e0_to_incenter, e1_to_incenter;
+			v2f_sub(&incenter, e0, &e0_to_incenter);
+			v2f_sub(&incenter, e1, &e1_to_incenter);
 
-			const r32 x = v2_cross(&e0_bisector, &e0_to_incenter);
-			const r32 y = v2_cross(&e, &e0_to_incenter);
-			const r32 z = v2_cross(&e1_bisector, &e1_to_incenter);
+			const r32 x = v2f_cross(&e0_bisector, &e0_to_incenter);
+			const r32 y = v2f_cross(&e, &e0_to_incenter);
+			const r32 z = v2f_cross(&e1_bisector, &e1_to_incenter);
 			if (x < 0.f && y > 0.f && z > 0.f)
 			{
 				const r32 isec_t = point_to_line_dist(e0, e1, &incenter);
@@ -206,7 +206,7 @@ b8 poly_ss_debug(poly * p, straight_skeleton * s, ss_debug * dbg)
 	if (!dbg->init)
 	{
 		s->src = p;
-		array_init(&s->spine_vertices, sizeof(v2));
+		array_init(&s->spine_vertices, sizeof(v2f));
 		array_map_init(&s->edges, sizeof(u32), sizeof(ss_edge_pair));
 
 		dbg->cc = poly_is_cc(p);
@@ -217,9 +217,9 @@ b8 poly_ss_debug(poly * p, straight_skeleton * s, ss_debug * dbg)
 		array_init(active_vertices, sizeof(_ss_active_vtx));
 		for (u32 i = 0, n = array_size(&p->vertices); i < n; ++i)
 		{
-			const v2 * a = array_get(&p->vertices, i > 0 ? i - 1 : n - 1);
-			const v2 * b = array_get(&p->vertices, i);
-			const v2 * c = array_get(&p->vertices, i < n - 1 ? i + 1 : 0);
+			const v2f * a = array_get(&p->vertices, i > 0 ? i - 1 : n - 1);
+			const v2f * b = array_get(&p->vertices, i);
+			const v2f * c = array_get(&p->vertices, i < n - 1 ? i + 1 : 0);
 
 			_ss_active_vtx * active_vtx = array_append_null(active_vertices);
 			active_vtx->src_idx = i;
@@ -231,12 +231,12 @@ b8 poly_ss_debug(poly * p, straight_skeleton * s, ss_debug * dbg)
 
 			_ss_active_vtx_compute_bisector(active_vtx);
 
-			v2 ab, bc;
-			v2_sub(b, a, &ab);
-			v2_sub(c, b, &bc);
-			if (dbg->cc != (v2_cross(&ab, &bc) > 0.f))
+			v2f ab, bc;
+			v2f_sub(b, a, &ab);
+			v2f_sub(c, b, &bc);
+			if (dbg->cc != (v2f_cross(&ab, &bc) > 0.f))
 			{
-				v2_scale(&active_vtx->bisector, -1, -1, &active_vtx->bisector);
+				v2f_scale(&active_vtx->bisector, -1, -1, &active_vtx->bisector);
 				active_vtx->reflex = true;
 			}
 			else
@@ -430,20 +430,20 @@ void polygon_inset(straight_skeleton * s, r32 inset, poly * out)
 	{
 		const u32 iprev = i > 0 ? i - 1 : n - 1;
 		const u32 inext = i < n - 1 ? i + 1 : 0;
-		const v2 * a = array_get(&s->src->vertices, iprev);
-		const v2 * b = array_get(&s->src->vertices, i);
-		const v2 * c = array_get(&s->src->vertices, inext);
+		const v2f * a = array_get(&s->src->vertices, iprev);
+		const v2f * b = array_get(&s->src->vertices, i);
+		const v2f * c = array_get(&s->src->vertices, inext);
 
-		v2 bc_perp;
-		v2_sub(c, b, &bc_perp);
-		v2_perp(&bc_perp, true, &bc_perp);
-		v2_normalize(&bc_perp, &bc_perp);
+		v2f bc_perp;
+		v2f_sub(c, b, &bc_perp);
+		v2f_perp(&bc_perp, true, &bc_perp);
+		v2f_normalize(&bc_perp, &bc_perp);
 
-		v2 bisector, p;
+		v2f bisector, p;
 		_compute_bisector(b, c, b, a, &bisector);
-		const r32 scale = inset / fabs(v2_dot(&bisector, &bc_perp));
-		v2_scale(&bisector, scale, scale, &p);
-		v2_add(b, &p, &p);
+		const r32 scale = inset / fabs(v2f_dot(&bisector, &bc_perp));
+		v2f_scale(&bisector, scale, scale, &p);
+		v2f_add(b, &p, &p);
 		array_append(&out->vertices, &p);
 	}
 }

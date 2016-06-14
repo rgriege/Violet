@@ -44,7 +44,7 @@ void m2_scale(const m2 m, r32 s, m2 result)
 	result[3] = m[3] * s;
 }
 
-void m2_mul_v2(const m2 m, const v2 * v, v2 * result)
+void m2_mul_v2f(const m2 m, const v2f * v, v2f * result)
 {
 	result->x = v->x * m[0] + v->y * m[1];
 	result->y = v->x * m[2] + v->y * m[3];

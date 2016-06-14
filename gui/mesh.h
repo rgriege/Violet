@@ -2,7 +2,7 @@
 #define VIOLET_MESH_H
 
 #include "violet/core/types.h"
-#include "violet/math/v2.h"
+#include "violet/math/v2f.h"
 #include "violet/structures/array.h"
 
 typedef struct poly poly;

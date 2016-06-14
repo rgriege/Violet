@@ -27,20 +27,20 @@ typedef struct ss_debug
 } ss_debug;
 typedef struct ss_debug_edge
 {
-	v2 start;
-	v2 end;
+	v2f start;
+	v2f end;
 } ss_debug_edge;
 typedef struct ss_debug_vtx
 {
 	u32 src_idx;
 	ss_debug_edge edges[2];
-	v2 bisector;
+	v2f bisector;
 	b8 reflex;
 } ss_debug_vtx;
 typedef struct ss_debug_isec
 {
 	r32 t;
-	v2 p;
+	v2f p;
 	u32 src_idcs[2];
 	u32 split_src_idx;
 	u32 vertex_list_idx;
@@ -48,7 +48,7 @@ typedef struct ss_debug_isec
 
 void poly_straight_skeleton(poly * p, straight_skeleton * s);
 b8 poly_ss_debug(poly * p, straight_skeleton * s, ss_debug * dbg);
-const v2 * ss_vertex(straight_skeleton * s, u32 idx);
+const v2f * ss_vertex(straight_skeleton * s, u32 idx);
 void straight_skeleton_destroy(straight_skeleton * s);
 
 void polygon_inset(straight_skeleton * s, r32 inset, poly * out);

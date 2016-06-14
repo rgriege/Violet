@@ -18,21 +18,4 @@ typedef int64_t s64;
 typedef float r32;
 typedef double r64;
 
-typedef struct
-{
-	u16 id;
-	u16 version;
-} handle;
-
-typedef struct
-{
-	union
-	{
-		char str[4];
-		u32 val;
-	};
-} tag;
-
-#define UNUSED(x) ((void)(x))
-
 #endif

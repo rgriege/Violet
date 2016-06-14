@@ -1,5 +1,6 @@
 #include <assert.h>
 
+#include "violet/core/macros.h"
 #include "violet/utility/uuid.h"
 
 #ifdef _WIN32

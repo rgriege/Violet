@@ -253,7 +253,8 @@ b8 vlt_gui_begin_frame(vlt_gui * gui)
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
 		&gui->win_halfdim.y);
 	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
-	v2i_div(&gui->win_halfdim, 2, 2, &gui->win_halfdim);
+	static const v2i g_v2i_2 = { .x=2, .y=2 };
+	v2i_div(&gui->win_halfdim, &g_v2i_2, &gui->win_halfdim);
 
 	const char prev_key = gui->_pressed_key;
 	gui->_pressed_key = 0;
@@ -330,11 +331,11 @@ void vlt_rmgui_line_init(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
                          vlt_color c, vlt_rmgui_poly * line)
 {
 	array vertices;
-	array_init(&vertices, sizeof(v2));
-	v2 * vertex1 = array_append_null(&vertices);
+	array_init(&vertices, sizeof(v2f));
+	v2f * vertex1 = array_append_null(&vertices);
 	vertex1->x = x0;
 	vertex1->y = y0;
-	v2 * vertex2 = array_append_null(&vertices);
+	v2f * vertex2 = array_append_null(&vertices);
 	vertex2->x = x1;
 	vertex2->y = y1;
 
@@ -357,6 +358,28 @@ void vlt_rmgui_rect_init(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	vlt_rmgui_poly_init(gui, &p.vertices, &rect->mesh, &rect->vao);
 	rect->fill_color = fill;
 	rect->line_color = line;
+
+	poly_destroy(&p);
+}
+
+void vlt_rmgui_circ_init(vlt_gui * gui, s32 x, s32 y, s32 r, vlt_color fill,
+                         vlt_color line, vlt_rmgui_poly * circ)
+{
+	poly p;
+	poly_init(&p);
+
+	const u32 n = 4 + 2 * r;
+	const r32 radians_slice = 2 * PI / n;
+	for (u32 i = 0; i < n; ++i)
+	{
+		const r32 radians = i * radians_slice;
+		const v2f v = { .x=x+r*cos(radians), .y=y+r*sin(radians) };
+		array_append(&p.vertices, &v);
+	}
+
+	vlt_rmgui_poly_init(gui, &p.vertices, &circ->mesh, &circ->vao);
+	circ->fill_color = fill;
+	circ->line_color = line;
 
 	poly_destroy(&p);
 }
@@ -426,6 +449,15 @@ void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
 	vlt_rmgui_rect_init(gui, x, y, w, h, c, lc, &rect);
 	vlt_rmgui_poly_draw(gui, &rect, 0, 0);
 	vlt_rmgui_poly_destroy(&rect);
+}
+
+void vlt_gui_circ(vlt_gui * gui, s32 x, s32 y, s32 r, vlt_color c,
+                  vlt_color lc)
+{
+	vlt_rmgui_poly circ;
+	vlt_rmgui_circ_init(gui, x, y, r, c, lc, &circ);
+	vlt_rmgui_poly_draw(gui, &circ, 0, 0);
+	vlt_rmgui_poly_destroy(&circ);
 }
 
 void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * filename)

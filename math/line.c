@@ -1,16 +1,16 @@
 #include "violet/math/line.h"
 #include "violet/math/math.h"
 
-void line_extrapolate(const v2 * a, const v2 * b, r32 t, v2 * p)
+void line_extrapolate(const v2f * a, const v2f * b, r32 t, v2f * p)
 {
-	v2 ab;
-	v2_sub(b, a, &ab);
-	v2_scale(&ab, t, t, p);
-	v2_add(p, a, p);
+	v2f ab;
+	v2f_sub(b, a, &ab);
+	v2f_scale(&ab, t, t, p);
+	v2f_add(p, a, p);
 }
 
-b8 ray_intersect_coords(const v2 * a, const v2 * adir,
-                        const v2 * b, const v2 * bdir, r32 * t, r32 * u)
+b8 ray_intersect_coords(const v2f * a, const v2f * adir,
+                        const v2f * b, const v2f * bdir, r32 * t, r32 * u)
 {
 	/*
 	 * (uppercase = vector, lowercase = scalar)
@@ -23,9 +23,9 @@ b8 ray_intersect_coords(const v2 * a, const v2 * adir,
 	 * u = (B - A) X R / (R X S)
 	 */
 
-	v2 ab;
-	v2_sub(b, a, &ab);
-	const r32 rxs = v2_cross(adir, bdir);
+	v2f ab;
+	v2f_sub(b, a, &ab);
+	const r32 rxs = v2f_cross(adir, bdir);
 
 	if (rxs == 0)
 	{
@@ -35,24 +35,24 @@ b8 ray_intersect_coords(const v2 * a, const v2 * adir,
 	}
 	else
 	{
-		*t = v2_cross(&ab, bdir) / rxs;
-		*u = v2_cross(&ab, adir) / rxs;
+		*t = v2f_cross(&ab, bdir) / rxs;
+		*u = v2f_cross(&ab, adir) / rxs;
 		return true;
 	}
 }
 
-b8 line_intersect_coords(const v2 * a0, const v2 * a1,
-                         const v2 * b0, const v2 * b1, r32 * t, r32 * u)
+b8 line_intersect_coords(const v2f * a0, const v2f * a1,
+                         const v2f * b0, const v2f * b1, r32 * t, r32 * u)
 {
-	v2 a;
-	v2_sub(a1, a0, &a);
-	v2 b;
-	v2_sub(b1, b0, &b);
+	v2f a;
+	v2f_sub(a1, a0, &a);
+	v2f b;
+	v2f_sub(b1, b0, &b);
 	return ray_intersect_coords(a0, &a, b0, &b, t, u);
 }
 
-b8 line_intersect(const v2 * a0, const v2 * a1,
-                  const v2 * b0, const v2 * b1, v2 * isec)
+b8 line_intersect(const v2f * a0, const v2f * a1,
+                  const v2f * b0, const v2f * b1, v2f * isec)
 {
 	r32 t, u;
 	const b8 result = line_intersect_coords(a0, a1, b0, b1, &t, &u);
@@ -60,8 +60,8 @@ b8 line_intersect(const v2 * a0, const v2 * a1,
 	return result;
 }
 
-b8 segment_intersect(const v2 * a0, const v2 * a1,
-                     const v2 * b0, const v2 * b1, v2 * isec)
+b8 segment_intersect(const v2f * a0, const v2f * a1,
+                     const v2f * b0, const v2f * b1, v2f * isec)
 {
 	r32 t, u;
 	const b8 result = line_intersect_coords(a0, a1, b0, b1, &t, &u)
@@ -70,38 +70,38 @@ b8 segment_intersect(const v2 * a0, const v2 * a1,
 	return result;
 }
 
-void nearest_point_on_segment(const v2 * a, const v2 * b, const v2 * p,
-                              v2 * result)
+void nearest_point_on_segment(const v2f * a, const v2f * b, const v2f * p,
+                              v2f * result)
 {
-	v2 ab, ap, proj;
-	v2_sub(b, a, &ab);
-	v2_sub(p, a, &ap);
-	const r32 t = clamp(0, v2_dot(&ap, &ab) / v2_mag_squared(&ab), 1);
-	v2_scale(&ab, t, t, &proj);
-	v2_add(a, &proj, result);
+	v2f ab, ap, proj;
+	v2f_sub(b, a, &ab);
+	v2f_sub(p, a, &ap);
+	const r32 t = clamp(0, v2f_dot(&ap, &ab) / v2f_mag_squared(&ab), 1);
+	v2f_scale(&ab, t, t, &proj);
+	v2f_add(a, &proj, result);
 }
 
-void nearest_point_on_line(const v2 * a, const v2 * b, const v2 * p,
-                           v2 * result)
+void nearest_point_on_line(const v2f * a, const v2f * b, const v2f * p,
+                           v2f * result)
 {
-	v2 ab, ap, proj;
-	v2_sub(b, a, &ab);
-	v2_sub(p, a, &ap);
-	const r32 t = v2_dot(&ap, &ab) / v2_mag_squared(&ab);
-	v2_scale(&ab, t, t, &proj);
-	v2_add(a, &proj, result);
+	v2f ab, ap, proj;
+	v2f_sub(b, a, &ab);
+	v2f_sub(p, a, &ap);
+	const r32 t = v2f_dot(&ap, &ab) / v2f_mag_squared(&ab);
+	v2f_scale(&ab, t, t, &proj);
+	v2f_add(a, &proj, result);
 }
 
-r32 point_to_segment_dist(const v2 * a, const v2 * b, const v2 * p)
+r32 point_to_segment_dist(const v2f * a, const v2f * b, const v2f * p)
 {
-	v2 nearest_point;
+	v2f nearest_point;
 	nearest_point_on_segment(a, b, p, &nearest_point);
-	return v2_dist(p, &nearest_point);
+	return v2f_dist(p, &nearest_point);
 }
 
-r32 point_to_line_dist(const v2 * a, const v2 * b, const v2 * p)
+r32 point_to_line_dist(const v2f * a, const v2f * b, const v2f * p)
 {
-	v2 nearest_point;
+	v2f nearest_point;
 	nearest_point_on_line(a, b, p, &nearest_point);
-	return v2_dist(p, &nearest_point);
+	return v2f_dist(p, &nearest_point);
 }

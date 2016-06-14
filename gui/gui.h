@@ -39,6 +39,8 @@ void vlt_rmgui_line_init(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
                          vlt_color c, vlt_rmgui_poly * line);
 void vlt_rmgui_rect_init(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
                          vlt_color fill, vlt_color line, vlt_rmgui_poly * rect);
+void vlt_rmgui_circ_init(vlt_gui * gui, s32 x, s32 y, s32 r, vlt_color fill,
+                         vlt_color line, vlt_rmgui_poly * circ);
 void vlt_rmgui_poly_draw(vlt_gui * gui, const vlt_rmgui_poly * poly, s32 x, s32 y);
 void vlt_rmgui_poly_destroy(vlt_rmgui_poly * poly);
 
@@ -50,6 +52,8 @@ void vlt_rmgui_img_draw(vlt_gui * gui, vlt_img * img, s32 x, s32 y);
 void vlt_gui_line(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
                   vlt_color c);
 void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
+                  vlt_color lc);
+void vlt_gui_circ(vlt_gui * gui, s32 x, s32 y, s32 r, vlt_color c,
                   vlt_color lc);
 void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * img);
 void vlt_gui_txt(vlt_gui * gui, s32 x, s32 y, s32 sz, const char * txt,
