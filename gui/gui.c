@@ -362,6 +362,28 @@ void vlt_rmgui_rect_init(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
 	poly_destroy(&p);
 }
 
+void vlt_rmgui_circ_init(vlt_gui * gui, s32 x, s32 y, s32 r, vlt_color fill,
+                         vlt_color line, vlt_rmgui_poly * circ)
+{
+	poly p;
+	poly_init(&p);
+
+	const u32 n = 4 + 2 * r;
+	const r32 radians_slice = 2 * PI / n;
+	for (u32 i = 0; i < n; ++i)
+	{
+		const r32 radians = i * radians_slice;
+		const v2f v = { .x=x+r*cos(radians), .y=y+r*sin(radians) };
+		array_append(&p.vertices, &v);
+	}
+
+	vlt_rmgui_poly_init(gui, &p.vertices, &circ->mesh, &circ->vao);
+	circ->fill_color = fill;
+	circ->line_color = line;
+
+	poly_destroy(&p);
+}
+
 void vlt_rmgui_poly_draw(vlt_gui * gui, const vlt_rmgui_poly * poly, s32 x, s32 y)
 {
 	glBindVertexArray(poly->vao);
@@ -427,6 +449,15 @@ void vlt_gui_rect(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
 	vlt_rmgui_rect_init(gui, x, y, w, h, c, lc, &rect);
 	vlt_rmgui_poly_draw(gui, &rect, 0, 0);
 	vlt_rmgui_poly_destroy(&rect);
+}
+
+void vlt_gui_circ(vlt_gui * gui, s32 x, s32 y, s32 r, vlt_color c,
+                  vlt_color lc)
+{
+	vlt_rmgui_poly circ;
+	vlt_rmgui_circ_init(gui, x, y, r, c, lc, &circ);
+	vlt_rmgui_poly_draw(gui, &circ, 0, 0);
+	vlt_rmgui_poly_destroy(&circ);
 }
 
 void vlt_gui_img(vlt_gui * gui, s32 x, s32 y, const char * filename)
