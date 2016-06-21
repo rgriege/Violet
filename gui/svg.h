@@ -19,6 +19,8 @@ typedef struct vlt_str
 	size_t sz;
 } vlt_str;
 
+void vlt_str_realloc(vlt_str *s, size_t n);
+
 
 typedef struct svg_line
 {

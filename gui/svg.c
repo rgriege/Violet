@@ -18,6 +18,13 @@
 #define DEFAULT_STR_BUF_SZ 64
 
 
+void vlt_str_realloc(vlt_str *s, size_t n)
+{
+	s->str = realloc(s->str, n);
+	s->sz = n;
+}
+
+
 void svg_btn_init(svg_btn * b)
 {
 	b->hook = NULL;
@@ -500,7 +507,7 @@ void vlt_svg_destroy(vlt_svg * g)
 
 
 static void _text_get(svg_text *t, void *state, const char *addl_params,
-                      array_map *hooks, vlt_str str_buffer)
+                      array_map *hooks, vlt_str *str_buffer)
 {
 	const char *final_params = NULL;
 	if (!addl_params)
@@ -511,12 +518,12 @@ static void _text_get(svg_text *t, void *state, const char *addl_params,
 	{
 		const size_t params_sz = strlen(t->params);
 		const size_t sz = params_sz + strlen(addl_params) + 2;
-		if (sz > str_buffer.sz)
-			realloc(str_buffer.str, sz);
-		strcpy(str_buffer.str, t->params);
-		str_buffer.str[params_sz] = ' ';
-		strcpy(str_buffer.str + params_sz + 1, addl_params);
-		final_params = str_buffer.str;
+		if (sz > str_buffer->sz)
+			vlt_str_realloc(str_buffer, sz);
+		strcpy(str_buffer->str, t->params);
+		str_buffer->str[params_sz] = ' ';
+		strcpy(str_buffer->str + params_sz + 1, addl_params);
+		final_params = str_buffer->str;
 	}
 	const u32 id = vlt_hash(t->hook);
 	void ** fn = array_map_get(hooks, &id);
@@ -530,7 +537,7 @@ static void _text_get(svg_text *t, void *state, const char *addl_params,
 }
 
 static void _btn_press(const char *hook, const char *params, const char *addl_params,
-                       void *state, array_map *hooks, vlt_str str_buffer)
+                       void *state, array_map *hooks, vlt_str *str_buffer)
 {
 	const char *final_params = NULL;
 	if (!addl_params)
@@ -541,22 +548,22 @@ static void _btn_press(const char *hook, const char *params, const char *addl_pa
 	{
 		const size_t params_sz = strlen(params);
 		const size_t sz = params_sz + strlen(addl_params) + 2;
-		if (sz > str_buffer.sz)
-			realloc(str_buffer.str, sz);
-		strcpy(str_buffer.str, params);
-		str_buffer.str[params_sz] = ' ';
-		strcpy(str_buffer.str + params_sz + 1, addl_params);
-		final_params = str_buffer.str;
+		if (sz > str_buffer->sz)
+			vlt_str_realloc(str_buffer, sz);
+		strcpy(str_buffer->str, params);
+		str_buffer->str[params_sz] = ' ';
+		strcpy(str_buffer->str + params_sz + 1, addl_params);
+		final_params = str_buffer->str;
 	}
 	const u32 id = vlt_hash(hook);
 	void ** fn = array_map_get(hooks, &id);
 	if (fn)
-		((void(*)(void*,char*))*fn)(state, final_params);
+		((void(*)(void*,const char*))*fn)(state, final_params);
 }
 
 static void _render_symbol(vlt_gui *gui, const svg_symbol *symbol, s32 x, s32 y,
                            const char *params, void *state,
-                           array_map *text_hooks, array_map *btn_hooks, vlt_str str_buffer)
+                           array_map *text_hooks, array_map *btn_hooks, vlt_str *str_buffer)
 {
 	for (u32 i = 0, end = array_size(&symbol->rects); i < end; ++i)
 	{
@@ -597,13 +604,13 @@ void vlt_svg_render(vlt_gui * gui, vlt_svg * svg, void * state,
 	{
 		const svg_layer * layer = array_get(&svg->layers, layer_idx);
 		_render_symbol(gui, &layer->global_elems, 0, 0, NULL, state,
-			text_hooks, btn_hooks, svg->_str_buffer);
+			text_hooks, btn_hooks, &svg->_str_buffer);
 		for (u32 i = 0, end = array_size(&layer->symbol_refs); i < end; ++i)
 		{
 			const svg_symbol_ref * sref = array_get(&layer->symbol_refs, i);
 			const svg_symbol * s = sref->symbol;
 			_render_symbol(gui, s, sref->x, sref->y, sref->params, state,
-				text_hooks, btn_hooks, svg->_str_buffer);
+				text_hooks, btn_hooks, &svg->_str_buffer);
 		}
 	}
 }
@@ -764,11 +771,11 @@ static void _retain_symbol(vlt_gui * gui, _rsvg_symbol * scene_sym,
 		}
 		if (src->params)
 		{
-			dst->params = malloc(strlen(src->params + 1));
+			dst->params = malloc(strlen(src->params) + 1);
 			strcpy(dst->params, src->params);
 		}
 
-		dst->txt = realloc(dst->txt, strlen(src->txt) + 1);
+		dst->txt = malloc(strlen(src->txt) + 1);
 		strcpy(dst->txt, src->txt);
 	}
 	for (u32 i = 0, end = array_size(&svg_sym->lines); i < end; ++i)
@@ -846,7 +853,7 @@ void vlt_rsvg_destroy(vlt_rsvg * rsvg)
 
 static void _render_rsymbol(vlt_gui *gui, const _rsvg_symbol *symbol, s32 x, s32 y,
                             const char *params, void *state,
-                            array_map *text_hooks, array_map *btn_hooks, vlt_str str_buffer)
+                            array_map *text_hooks, array_map *btn_hooks, vlt_str *str_buffer)
 {
 	for (u32 i = 0, end = array_size(&symbol->polys); i < end; ++i)
 	{
@@ -882,13 +889,13 @@ void vlt_rsvg_render(vlt_gui * gui, vlt_rsvg * rsvg, void * state,
 	{
 		const _rsvg_layer * layer = array_get(&rsvg->layers, layer_idx);
 		_render_rsymbol(gui, &layer->global_elems, 0, 0, NULL, state,
-			text_hooks, btn_hooks, rsvg->str_buffer);
+			text_hooks, btn_hooks, &rsvg->str_buffer);
 		for (u32 i = 0, end = array_size(&layer->symbol_refs); i < end; ++i)
 		{
 			const _rsvg_symbol_ref * sref = array_get(&layer->symbol_refs, i);
 			const _rsvg_symbol * s = sref->symbol;
 			_render_rsymbol(gui, s, sref->x, sref->y, sref->params, state,
-				text_hooks, btn_hooks, rsvg->str_buffer);
+				text_hooks, btn_hooks, &rsvg->str_buffer);
 		}
 	}
 }
