@@ -62,9 +62,11 @@ void vlt_gui_mask(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h);
 void vlt_gui_unmask(vlt_gui * gui);
 void vlt_gui_npt(vlt_gui * gui, s32 x, s32 y, s32 sz, char * txt, u32 n,
                  vlt_color c, font_align align);
+// TODO(rgriege): removeme - clutters API to save 1 extra function call
 b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
                vlt_color lc);
 b8 vlt_gui_btn_invis(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h);
+b8 vlt_gui_btn_circ(vlt_gui * gui, s32 x, s32 y, s32 r);
 
 #endif
 

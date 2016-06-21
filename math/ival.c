@@ -1,37 +1,39 @@
 #include <math.h>
-
-#include "violet/math/ival.h"
 #include "violet/math/math.h"
 
-void ival_slide(ival * i, s32 d)
+
+const IVAL IVALG_(0_to_1) = { 0, 1 };
+
+
+void IVAL_(slide)(IVAL *i, SCALAR d)
 {
 	i->l += d;
 	i->r += d;
 }
 
-s32 ival_length(const ival * i)
+SCALAR IVAL_(length)(const IVAL *i)
 {
 	return i->r - i->l;
 }
 
-b8 ival_contains_val(const ival * i, s32 x)
+b8 IVAL_(contains_val)(const IVAL *i, SCALAR x)
 {
 	return x >= i->l && x <= i->r;
 }
 
-b8 ival_contains_ival(const ival * lhs, const ival * rhs)
+b8 IVAL_(contains_ival)(const IVAL *lhs, const IVAL *rhs)
 {
-	return ival_contains_val(lhs, rhs->l) && ival_contains_val(lhs, rhs->r);
+	return IVAL_(contains_val)(lhs, rhs->l) && IVAL_(contains_val)(lhs, rhs->r);
 }
 
-b8 ival_overlaps(const ival * lhs, const ival * rhs)
+b8 IVAL_(overlaps)(const IVAL *lhs, const IVAL *rhs)
 {
-	return ival_contains_val(lhs, rhs->l) || ival_contains_val(lhs, rhs->r);
+	return IVAL_(contains_val)(lhs, rhs->l) || IVAL_(contains_val)(lhs, rhs->r);
 }
 
-s32 ival_overlap(const ival * lhs, const ival * rhs)
+SCALAR IVAL_(overlap)(const IVAL *lhs, const IVAL *rhs)
 {
-	s32 diff1 = lhs->r - rhs->l;
-	s32 diff2 = rhs->r - lhs->l;
-	return diff1 < 0 || diff2 < 0 ? 0 : min(min(diff1, diff2), min(ival_length(lhs), ival_length(rhs)));
+	SCALAR diff1 = lhs->r - rhs->l;
+	SCALAR diff2 = rhs->r - lhs->l;
+	return diff1 < 0 || diff2 < 0 ? 0 : min(min(diff1, diff2), min(IVAL_(length)(lhs), IVAL_(length)(rhs)));
 }

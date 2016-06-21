@@ -1,20 +1,18 @@
 #include <math.h>
 
-#include "violet/math/m3.h"
-
-const m3 g_m3_identity = {
-	1.f, 0.f, 0.f,
-	0.f, 1.f, 0.f,
-	0.f, 0.f, 1.f
+const M3 M3G_(identity) = {
+	1, 0, 0,
+	0, 1, 0,
+	0, 0, 1
 };
 
-const m3 g_m3_zero = {
-	0.f, 0.f, 0.f,
-	0.f, 0.f, 0.f,
-	0.f, 0.f, 0.f
+const M3 M3G_(zero) = {
+	0, 0, 0,
+	0, 0, 0,
+	0, 0, 0
 };
 
-void m3_init_rot(m3 m, r32 radians)
+void M3_(init_rot)(M3 m, r32 radians)
 {
 	m[0] = cos(radians);
 	m[1] = -sin(radians);
@@ -27,7 +25,7 @@ void m3_init_rot(m3 m, r32 radians)
 	m[8] = 0;
 }
 
-void m3_mul_m3(const m3 lhs, const m3 rhs, m3 res)
+void M3_(mul_m3)(const M3 lhs, const M3 rhs, M3 res)
 {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
@@ -35,20 +33,20 @@ void m3_mul_m3(const m3 lhs, const m3 rhs, m3 res)
 				res[3*i+j] += lhs[3*i+h] * rhs[3*h+j];
 }
 
-void m3_mul_v2f(const m3 m, const v2f * v, v2f * res)
+void M3_(mul_v2)(const M3 m, const V2 *v, V2 *res)
 {
 	res->x = m[0] * v->x + m[1] * v->y + m[2];
 	res->y = m[3] * v->x + m[4] * v->y + m[5];
 }
 
-void m3_mul_v3(const m3 m, const v3 * v, v3 * res)
+void M3_(mul_v3)(const M3 m, const V3 *v, V3 *res)
 {
 	res->x = m[0] * v->x + m[1] * v->y + m[2] * v->z;
 	res->y = m[3] * v->x + m[4] * v->y + m[5] * v->z;
 	res->z = m[6] * v->x + m[7] * v->y + m[8] * v->z;
 }
 
-b8 m3_equal(const m3 lhs, const m3 rhs)
+b8 M3_(equal)(const M3 lhs, const M3 rhs)
 {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
@@ -56,36 +54,4 @@ b8 m3_equal(const m3 lhs, const m3 rhs)
 				return false;
 	return true;
 }
-
-/*Serializer * vlt_operator<<(Serializer * serializer, const m3 * mat)
-{
-	auto segment = serializer.create_segment("mat");
-	segment->write_r32("a", mat[0][0]);
-	segment->write_r32("b", mat[0][1]);
-	segment->write_r32("c", mat[0][2]);
-	segment->write_r32("d", mat[1][0]);
-	segment->write_r32("e", mat[1][1]);
-	segment->write_r32("f", mat[1][2]);
-	segment->write_r32("g", mat[2][0]);
-	segment->write_r32("h", mat[2][1]);
-	segment->write_r32("i", mat[2][2]);
-	return serializer;
-}
-
-// ----------------------------------------------------------------------------
-
-Deserializer * vlt_operator>>(Deserializer * deserializer, m3 * mat)
-{
-	auto segment = deserializer.enter_segment("mat");
-	mat[0][0] = segment->get_r32("a");
-	mat[0][1] = segment->get_r32("b");
-	mat[0][2] = segment->get_r32("c");
-	mat[1][0] = segment->get_r32("d");
-	mat[1][1] = segment->get_r32("e");
-	mat[1][2] = segment->get_r32("f");
-	mat[2][0] = segment->get_r32("g");
-	mat[2][1] = segment->get_r32("h");
-	mat[2][2] = segment->get_r32("i");
-	return deserializer;
-}*/
 

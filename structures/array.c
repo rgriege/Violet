@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "violet/math/math.h"
+#include "violet/math/common.h"
 #include "violet/structures/array.h"
 
 void array_init(array * a, u32 elem_size)

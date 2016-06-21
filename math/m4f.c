@@ -1,25 +1,24 @@
-
 #include <assert.h>
 #include <string.h>
 #include <x86intrin.h>
 
-#include "violet/math/m4.h"
+#include "violet/math/m4f.h"
 
-const m4 g_m4_identity = {
+const m4f g_m4f_identity = {
 	1, 0, 0, 0,
 	0, 1, 0, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 1
 };
 
-const m4 g_m4_zero = {
+const m4f g_m4f_zero = {
 	0, 0, 0, 0,
 	0, 0, 0, 0,
 	0, 0, 0, 0,
 	0, 0, 0, 0
 };
 
-void m4_mul_m4(const m4 lhs, const m4 rhs, m4 res)
+void m4f_mul_m4(const m4f lhs, const m4f rhs, m4f res)
 {
 	for (int i = 0; i < 4; ++i)
 	{
@@ -37,19 +36,19 @@ void m4_mul_m4(const m4 lhs, const m4 rhs, m4 res)
 	}
 }
 
-void m4_mul_v3(const m4 lhs, const v3 * rhs, v3 * res)
+void m4f_mul_v3(const m4f lhs, const v3 *rhs, v3 *res)
 {
 	res->x = lhs.v[0] * rhs->x + lhs.v[1] * rhs->y + lhs.v[2] * rhs->z + lhs.v[3];
 	res->y = lhs.v[4] * rhs->x + lhs.v[5] * rhs->y + lhs.v[6] * rhs->z + lhs.v[7];
 	res->z = lhs.v[8] * rhs->x + lhs.v[9] * rhs->y + lhs.v[10] * rhs->z + lhs.v[11];
 }
 
-b8 m4_equal(const m4 lhs, const m4 rhs)
+b8 m4f_equal(const m4f lhs, const m4f rhs)
 {
-	return memcmp(lhs.v, rhs.v, 16 * sizeof(r32));
+	return memcmp(lhs.v, rhs.v, 16 * sizeof(r32)) == 0;
 }
 
-void m4_from_m3(m4 dst, const m3 src)
+void m4f_from_m3(m4f dst, const m3 src)
 {
 	dst.v[0] = src[0];
 	dst.v[1] = src[1];
@@ -69,42 +68,10 @@ void m4_from_m3(m4 dst, const m3 src)
 	dst.v[15] = src[8];
 }
 
-void m4_to_m3(const m4 src, m3 dst)
+void m4f_to_m3(const m4f src, m3 dst)
 {
 	memcpy(dst, src.v, 3 * sizeof(r32));
 	memcpy(&dst[3], &src.v[4], 3 * sizeof(r32));
 	memcpy(&dst[6], &src.v[8], 3 * sizeof(r32));
 }
-
-/*Serializer & vlt_operator<<(Serializer & serializer, const m4 & mat)
-{
-	auto segment = serializer.create_segment("mat");
-	std_string label = "a";
-	for (int i = 0; i < 4; ++i)
-	{
-		for (int j = 0; j < 4; ++j)
-		{
-			segment->write_r32(label.c_str(), mat[i][j]);
-			++label[0];
-		}
-	}
-	return serializer;
-}
-
-// ----------------------------------------------------------------------------
-
-Deserializer & vlt_operator>>(Deserializer & deserializer, m4 & mat)
-{
-	auto segment = deserializer.enter_segment("mat");
-	std_string label = "a";
-	for (int i = 0; i < 4; ++i)
-	{
-		for (int j = 0; j < 4; ++j)
-		{
-			mat[i][j] = segment->get_r32(label.c_str());
-			++label[0];
-		}
-	}
-	return deserializer;
-}*/
 

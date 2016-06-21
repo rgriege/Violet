@@ -1,108 +1,86 @@
 #include <math.h>
 
-#include "violet/math/v3.h"
+const V3 V3G_(x_axis) = { 1, 0, 0 };
+const V3 V3G_(y_axis) = { 0, 1, 0 };
+const V3 V3G_(z_axis) = { 0, 0, 1 };
+const V3 V3G_(zero) = { 0, 0, 0 };
 
-const v3 g_v3_x_Axis = { 1, 0, 0 };
-const v3 g_v3_y_Axis = { 0, 1, 0 };
-const v3 g_v3_z_Axis = { 0, 0, 1 };
-const v3 g_v3_zero = { 0, 0, 0 };
-
-r32 v3_mag(const v3 * v)
+SCALAR V3_(mag)(const V3 *v)
 {
-	return sqrt(v3_mag_squared(v));
+	return sqrt(V3_(mag_squared)(v));
 }
 
-r32 v3_mag_squared(const v3 * v)
+SCALAR V3_(mag_squared)(const V3 *v)
 {
 	return v->x * v->x + v->y * v->y + v->z * v->z;
 }
 
-void v3_normalize(const v3 * v, v3 * res)
+void V3_(normalize)(const V3 *v, V3 *res)
 {
-	r32 scale = 1.f / v3_mag_squared(v);
-	v3_scale(v, scale, scale, scale, res);
+	SCALAR scale = 1.f / V3_(mag_squared)(v);
+	V3_(scale)(v, scale, scale, scale, res);
 }
 
-b8 v3_is_unit(const v3 * v)
+b8 V3_(is_unit)(const V3 *v)
 {
-	return v3_mag_squared(v) == 1;
+	return V3_(mag_squared)(v) == 1;
 }
 
-void v3_scale(const v3 * v, const r32 sx, const r32 sy, const r32 sz, v3 * res)
+void V3_(scale)(const V3 *v, SCALAR sx, SCALAR sy, SCALAR sz, V3 *res)
 {
 	res->x = v->x * sx;
 	res->y = v->y * sy;
 	res->z = v->z * sz;
 }
 
-void v3_add(const v3 * lhs, const v3 * rhs, v3 * res)
+void V3_(add)(const V3 *lhs, const V3 *rhs, V3 *res)
 {
 	res->x = lhs->x + rhs->x;
 	res->y = lhs->y + rhs->y;
 	res->z = lhs->z + rhs->z;
 }
 
-void v3_sub(const v3 * lhs, const v3 * rhs, v3 * res)
+void V3_(sub)(const V3 *lhs, const V3 *rhs, V3 *res)
 {
 	res->x = lhs->x - rhs->x;
 	res->y = lhs->y - rhs->y;
 	res->z = lhs->z - rhs->z;
 }
 
-r32 v3_dot(const v3 * lhs, const v3 * rhs)
+SCALAR V3_(dot)(const V3 *lhs, const V3 *rhs)
 {
 	return lhs->x * rhs->x + lhs->y * rhs->y + lhs->z * rhs->z;
 }
 
-void v3_cross(const v3 * lhs, const v3 * rhs, v3 * res)
+void V3_(cross)(const V3 *lhs, const V3 *rhs, V3 *res)
 {
 	res->x = lhs->y * rhs->z - lhs->z * rhs->y;
 	res->y = lhs->z * rhs->x - lhs->x * rhs->z;
 	res->z = lhs->x * rhs->y - lhs->y * rhs->x;
 }
 
-void v3_proj(const v3 * v, const v3 * axis, v3 * res)
+void V3_(proj)(const V3 *v, const V3 *axis, V3 *res)
 {
-	v3 unit_axis;
-	v3_normalize(axis, &unit_axis);
-	r32 scale = v3_dot(v, axis);
-	v3_scale(&unit_axis, scale, scale, scale, res);
+	V3 unit_axis;
+	V3_(normalize)(axis, &unit_axis);
+	SCALAR scale = V3_(dot)(v, axis);
+	V3_(scale)(&unit_axis, scale, scale, scale, res);
 }
 
-void v3_inverse(const v3 * v, v3 * res)
+void V3_(inverse)(const V3 *v, V3 *res)
 {
 	res->x = -v->x;
 	res->y = -v->y;
 	res->z = -v->z;
 }
 
-b8 v3_is_zero(const v3 * v)
+b8 V3_(is_zero)(const V3 *v)
 {
-	return v3_equal(v, &g_v3_zero);
+	return V3_(equal)(v, &V3G_(zero));
 }
 
-b8 v3_equal(const v3 * lhs, const v3 * rhs)
+b8 V3_(equal)(const V3 *lhs, const V3 *rhs)
 {
 	return lhs->x == rhs->x && lhs->y == rhs->y && lhs->z == rhs->z;
 }
-
-/*Serializer * vlt_operator<<(Serializer * serializer, const v3 * vec)
-{
-	auto segment = serializer.create_segment("vec");
-	segment->write_r32("x", vec.x);
-	segment->write_r32("y", vec.y);
-	segment->write_r32("z", vec.z);
-	return serializer;
-}
-
-// ----------------------------------------------------------------------------
-
-Deserializer * vlt_operator>>(Deserializer * deserializer, v3 * vec)
-{
-	auto segment = deserializer.enter_segment("vec");
-	vec.x = segment->get_r32("x");
-	vec.y = segment->get_r32("y");
-	vec.z = segment->get_r32("z");
-	return deserializer;
-}*/
 

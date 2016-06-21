@@ -1,22 +1,27 @@
-#ifndef VIOLET_IVAL_H
-#define VIOLET_IVAL_H
+#ifndef _MATH_INTERFACE_END
 
-#include "violet/core/types.h"
+#define IVAL CONCAT(ival, SUFFIX)
+#define IVAL_(name) CONCAT(IVAL, CONCAT(_, name))
+#define IVALG_(name) CONCAT(g_, IVAL_(name))
 
-
-typedef struct ival
+typedef struct IVAL
 {
-	s32 l, r;
-} ival;
+	SCALAR l, r;
+} IVAL;
 
+extern const IVAL IVALG_(0_to_1);
 
-void ival_slide(ival * i, s32 d);
-s32 ival_length(const ival * i);
+void IVAL_(slide)(IVAL *i, SCALAR d);
+SCALAR IVAL_(length)(const IVAL *i);
 
-b8 ival_contains_val(const ival * i, s32 x);
-b8 ival_contains_ival(const ival * lhs, const ival * rhs);
+b8 IVAL_(contains_val)(const IVAL *i, SCALAR x);
+b8 IVAL_(contains_ival)(const IVAL *lhs, const IVAL *rhs);
 
-b8 ival_overlaps(const ival * lhs, const ival * rhs);
-s32 ival_overlap(const ival * lhs, const ival * rhs);
+b8 IVAL_(overlaps)(const IVAL *lhs, const IVAL *rhs);
+SCALAR IVAL_(overlap)(const IVAL *lhs, const IVAL *rhs);
 
-#endif
+#else // _MATH_INTERFACE_END
+#undef IVAL
+#undef IVAL_
+#undef IVALG_
+#endif // _MATH_INTERFACE_END

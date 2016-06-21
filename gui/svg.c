@@ -7,8 +7,6 @@
 #include "violet/gui/gui.h"
 #include "violet/gui/img.h"
 #include "violet/gui/svg.h"
-#include "violet/math/aabb.h"
-#include "violet/math/v2f.h"
 #include "violet/utility/hash.h"
 #include "violet/utility/log.h"
 #include "violet/structures/array.h"
@@ -349,7 +347,7 @@ static void _svg_parse_texts(array * texts, ezxml_t container)
 	}
 }
 
-static b8 _svg_parse_viewbox(aabb * dims, ezxml_t node)
+static b8 _svg_parse_viewbox(box2f * dims, ezxml_t node)
 {
 	const char * view_attr = ezxml_attr(node, "viewBox");
 	if (!view_attr)
@@ -381,7 +379,7 @@ static void _svg_parse_symbol(svg_symbol * symbol, ezxml_t node)
 
 void vlt_svg_init(vlt_svg * g)
 {
-	memset(&g->window, 0, sizeof(aabb));
+	memset(&g->window, 0, sizeof(box2f));
 	array_map_init(&g->symbols, sizeof(u32), sizeof(svg_symbol));
 	array_init(&g->layers, sizeof(svg_layer));
 }
@@ -396,7 +394,7 @@ b8 vlt_svg_init_from_file(vlt_svg * g, const char * filename)
 		goto err_file;
 	}
 
-	aabb window;
+	box2f window;
 	if (!_svg_parse_viewbox(&window, doc))
 	{
 		log_write("failed to find svg viewBox attr");
@@ -417,7 +415,7 @@ b8 vlt_svg_init_from_file(vlt_svg * g, const char * filename)
 		svg_symbol_init(symbol);
 		_svg_parse_symbol(symbol, node);
 
-		aabb view = {0};
+		box2f view = {0};
 		if (_svg_parse_viewbox(&view, node) && (view.top_left.x != 0 || view.top_left.y != 0))
 		{
 			log_write("view box offset: %d %d", view.top_left.x, view.top_left.y);

@@ -1,31 +1,24 @@
-#ifndef VIOLET_POLYGON_H
-#define VIOLET_POLYGON_H
-
-#include "violet/math/interval.h"
-#include "violet/math/v2f.h"
+#ifndef _MATH_INTERFACE_END
 #include "violet/structures/array.h"
 
-typedef struct aabb aabb;
+#define POLY CONCAT(poly, SUFFIX)
+#define POLY_(name) CONCAT(POLY, CONCAT(_, name))
 
+void POLY_(init)(array *p);
+void POLY_(from_box)(array *p, const BOX2 *box);
+void POLY_(destroy)(array *p);
 
-typedef struct poly
-{
-	array vertices;
-} poly;
+b8 POLY_(contains)(const array *p, const V2 *point);
+void POLY_(bounding_box)(const array *p, BOX2 *box);
 
+void POLY_(translate)(array *p, const V2 *delta);
 
-void poly_init(poly * p);
-void poly_from_box(poly * p, const aabb * box);
-void poly_destroy(poly * p);
+IVAL POLY_(project)(const array *p, const V2 *axis);
+V2 POLY_(center)(const array *p);
+SCALAR POLY_(area)(const array *p);
+b8 POLY_(is_cc)(const array *p);
 
-b8 poly_contains(const poly * p, const v2f * point);
-void poly_bounding_box(const poly * p, aabb * box);
-
-void poly_translate(poly * p, const v2f * delta);
-
-interval poly_project(const poly * p, const v2f * axis);
-v2f poly_center(const poly * p);
-r32 poly_area(const poly * p);
-b8 poly_is_cc(const poly * p);
-
-#endif
+#else // _MATH_INTERFACE_END
+#undef POLY_
+#undef POLY
+#endif // _MATH_INTERFACE_END

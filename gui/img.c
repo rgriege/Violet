@@ -4,9 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "violet/math/aabb.h"
-#include "violet/math/math.h"
-#include "violet/math/poly.h"
+#include "violet/math/r32.h"
 #include "violet/utility/log.h"
 
 #include "violet/gui/img.h"
@@ -23,17 +21,17 @@ typedef struct vlt_img
 	vlt_mesh tex_coords;
 } vlt_img;
 
-vlt_img * vlt_img_create()
+vlt_img *vlt_img_create()
 {
 	return calloc(sizeof(vlt_img), 1);
 }
 
-void vlt_img_free(vlt_img * img)
+void vlt_img_free(vlt_img *img)
 {
 	free(img);
 }
 
-b8 vlt_img_load(vlt_img * img, const char * filename)
+b8 vlt_img_load(vlt_img *img, const char *filename)
 {
 	b8 retval = false;
 
@@ -46,26 +44,26 @@ b8 vlt_img_load(vlt_img * img, const char * filename)
 		return retval;
 	}
 
-	aabb box;
-	aabb_from_dims(&box, 0, img->texture.height, img->texture.width, 0);
-	poly p;
-	poly_from_box(&p, &box);
+	box2f box;
+	box2f_from_dims(&box, 0, img->texture.height, img->texture.width, 0);
+	array poly;
+	polyf_from_box(&poly, &box);
 
-	vlt_mesh_init(&img->mesh, &p.vertices);
+	vlt_mesh_init(&img->mesh, &poly);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0);
 	glEnableVertexAttribArray(0);
 
-	vlt_texture_coords_from_poly(&img->tex_coords, &p);
+	vlt_texture_coords_from_poly(&img->tex_coords, &poly);
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
 	glEnableVertexAttribArray(1);
 
-	array_destroy(&p.vertices);
+	polyf_destroy(&poly);
 	glBindVertexArray(0);
 	retval = true;
 	return retval;
 }
 
-void vlt_img_destroy(vlt_img * img)
+void vlt_img_destroy(vlt_img *img)
 {
 	vlt_mesh_destroy(&img->mesh);
 	vlt_mesh_destroy(&img->tex_coords);
@@ -73,7 +71,7 @@ void vlt_img_destroy(vlt_img * img)
 	glDeleteVertexArrays(1, &img->vao);
 }
 
-void vlt_img_render(vlt_img * img, s32 x, s32 y, vlt_shader_program * p)
+void vlt_img_render(vlt_img *img, s32 x, s32 y, vlt_shader_program *p)
 {
 	glBindVertexArray(img->vao);
 

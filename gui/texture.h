@@ -4,7 +4,6 @@
 #include "violet/core/types.h"
 
 typedef struct vlt_mesh vlt_mesh;
-typedef struct poly poly;
 
 
 typedef struct vlt_texture
@@ -14,13 +13,13 @@ typedef struct vlt_texture
 	u32 height;
 } vlt_texture;
 
-b8 vlt_load_png(vlt_texture * tex, const char * filename);
-void vlt_texture_init(vlt_texture * tex, u32 w, u32 h, u32 fmt, void * data);
-void vlt_texture_destroy(vlt_texture * tex);
+b8 vlt_load_png(vlt_texture *tex, const char *filename);
+void vlt_texture_init(vlt_texture *tex, u32 w, u32 h, u32 fmt, void *data);
+void vlt_texture_destroy(vlt_texture *tex);
 
-void vlt_texture_coords_from_poly(vlt_mesh * tex_coords, const poly * p);
+void vlt_texture_coords_from_poly(vlt_mesh *tex_coords, const array *p);
 
-void vlt_texture_bind(const vlt_texture * tex);
+void vlt_texture_bind(const vlt_texture *tex);
 void vlt_texture_unbind();
 
 #endif

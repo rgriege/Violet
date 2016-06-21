@@ -5,11 +5,10 @@
 
 #include "violet/gui/mesh.h"
 #include "violet/gui/texture.h"
-#include "violet/math/aabb.h"
-#include "violet/math/poly.h"
+#include "violet/math/r32.h"
 #include "violet/utility/log.h"
 
-b8 vlt_load_png(vlt_texture * tex, const char * filename)
+b8 vlt_load_png(vlt_texture *tex, const char *filename)
 {
 	b8 ret = false;
 	png_image image = {0};
@@ -40,7 +39,7 @@ b8 vlt_load_png(vlt_texture * tex, const char * filename)
 	return ret;
 }
 
-void vlt_texture_init(vlt_texture * tex, u32 w, u32 h, u32 fmt, void * data)
+void vlt_texture_init(vlt_texture *tex, u32 w, u32 h, u32 fmt, void *data)
 {
 	glGenTextures(1, &tex->handle);
 	tex->width = w;
@@ -54,32 +53,32 @@ void vlt_texture_init(vlt_texture * tex, u32 w, u32 h, u32 fmt, void * data)
 	vlt_texture_unbind();
 }
 
-void vlt_texture_destroy(vlt_texture * tex)
+void vlt_texture_destroy(vlt_texture *tex)
 {
 	if (tex->handle != 0)
 		glDeleteTextures(1, &tex->handle);
 }
 
-void vlt_texture_coords_from_poly(vlt_mesh * tex_coords, const poly * p)
+void vlt_texture_coords_from_poly(vlt_mesh *tex_coords, const array *poly)
 {
-	aabb extent;
-	aabb_init_point(&extent, array_get(&p->vertices, 0));
-	for (u32 i = 1, end = array_size(&p->vertices); i < end; ++i)
+	box2f extent;
+	box2f_init_point(&extent, array_get(poly, 0));
+	for (u32 i = 1, end = array_size(poly); i < end; ++i)
 	{
-		const v2f * vertex = array_get(&p->vertices, i);
-		aabb_extend_point(&extent, vertex);
+		const v2f *vertex = array_get(poly, i);
+		box2f_extend_point(&extent, vertex);
 	}
 	v2f minimum, dimension;
-	aabb_get_min(&extent, &minimum);
-	aabb_get_max(&extent, &dimension);
+	box2f_get_min(&extent, &minimum);
+	box2f_get_max(&extent, &dimension);
 	v2f_sub(&dimension, &minimum, &dimension);
 
 	array coords;
 	array_init(&coords, sizeof(v2f));
-	array_reserve(&coords, array_size(&p->vertices));
-	for (u32 i = 0, end = array_size(&p->vertices); i < end; ++i)
+	array_reserve(&coords, array_size(poly));
+	for (u32 i = 0, end = array_size(poly); i < end; ++i)
 	{
-		const v2f * vertex = array_get(&p->vertices, i);
+		const v2f *vertex = array_get(poly, i);
 		v2f tex_coord;
 		v2f_sub(vertex, &minimum, &tex_coord);
 		v2f_div(&tex_coord, &dimension, &tex_coord);
@@ -91,7 +90,7 @@ void vlt_texture_coords_from_poly(vlt_mesh * tex_coords, const poly * p)
 	array_destroy(&coords);
 }
 
-void vlt_texture_bind(const vlt_texture * tex)
+void vlt_texture_bind(const vlt_texture *tex)
 {
 	glBindTexture(GL_TEXTURE_2D, tex->handle);
 }

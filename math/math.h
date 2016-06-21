@@ -1,18 +1,14 @@
-#ifndef VIOLET_MATH_H
-#define VIOLET_MATH_H
+#ifndef _MATH_INTERFACE_END
 
-#include "violet/core/types.h"
+#define MATH CONCAT(math, SUFFIX)
+#define MATH_(name) CONCAT(MATH, CONCAT(_, name))
 
-#define max(X, Y) (((X) < (Y)) ? (Y) : (X))
-#define min(X, Y) (((X) > (Y)) ? (Y) : (X))
+SCALAR MATH_(clamp)(SCALAR lo, SCALAR val, SCALAR hi);
 
-r32 clamp(r32 lo, r32 val, r32 hi);
+SCALAR MATH_(deg2rad)(SCALAR deg);
+SCALAR MATH_(rad2deg)(SCALAR rad);
 
-u32 usub_capped(u32 lhs, u32 rhs);
-
-r32 radians_to_degrees(r32 rad);
-r32 degrees_to_radians(r32 deg);
-
-#define PI 3.14159265359
-
-#endif
+#else // _MATH_INTERFACE_END
+#undef MATH
+#undef MATH_
+#endif // _MATH_INTERFACE_END

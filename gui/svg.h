@@ -3,7 +3,7 @@
 
 #include "violet/core/types.h"
 #include "violet/gui/color.h"
-#include "violet/math/aabb.h"
+#include "violet/math/r32.h"
 #include "violet/structures/array.h"
 #include "violet/structures/array_map.h"
 
@@ -115,7 +115,7 @@ void svg_layer_destroy(svg_layer * l);
 
 typedef struct vlt_svg
 {
-	aabb window;
+	box2f window;
 	array_map symbols;
 	array layers;
 	vlt_str _str_buffer;

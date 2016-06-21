@@ -1,22 +1,24 @@
-#ifndef VIOLET_M3_H
-#define VIOLET_M3_H
+#ifndef _MATH_INTERFACE_END
 
-#include "violet/math/v2f.h"
-#include "violet/math/v3.h"
+#define M3 CONCAT(m3, SUFFIX)
+#define M3_(name) CONCAT(M3, CONCAT(_, name))
+#define M3G_(name) CONCAT(g_, M3_(name))
 
-typedef r32 m3[9];
+typedef SCALAR M3[9];
 
-extern const m3 g_m3_identity;
-extern const m3 g_m3_zero;
+extern const M3 M3G_(identity);
+extern const M3 M3G_(zero);
 
-void m3_init_rot(m3 m, r32 radians);
+void M3_(init_rot)(M3 m, r32 radians);
 
-void m3_mul_m3(const m3 lhs, const m3 rhs, m3 res);
-void m3_mul_v2f(const m3 m, const v2f * v, v2f * res);
-void m3_mul_v3(const m3 m, const v3 * v, v3 * res);
+void M3_(mul_m3)(const M3 lhs, const M3 rhs, M3 res);
+void M3_(mul_v2)(const M3 m, const V2 *v, V2 *res);
+void M3_(mul_v3)(const M3 m, const V3 *v, V3 *res);
 
-b8 m3_equal(const m3 lhs, const m3 rhs);
-void m3_read(reader * r, m3 m);
-void m3_write(writer * w, const m3 m);
+b8 M3_(equal)(const M3 lhs, const M3 rhs);
 
-#endif
+#else // _MATH_INTERFACE_END
+#undef M3G_
+#undef M3_
+#undef M3
+#endif // _MATH_INTERFACE_END

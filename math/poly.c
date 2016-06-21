@@ -1,86 +1,81 @@
 #include <assert.h>
 
-#include "violet/math/aabb.h"
-#include "violet/math/interval.h"
 #include "violet/math/line.h"
-#include "violet/math/m2.h"
-#include "violet/math/poly.h"
-#include "violet/math/v2f.h"
 
-void poly_init(poly * p)
+void POLY_(init)(array *p)
 {
-	array_init(&p->vertices, sizeof(v2f));
+	array_init(p, sizeof(V2));
 }
 
-void poly_from_box(poly * p, const aabb * box)
+void POLY_(from_box)(array *p, const BOX2 *box)
 {
-	const v2f top_right = { box->bottom_right.x, box->top_left.y };
-	const v2f bottom_left = { box->top_left.x, box->bottom_right.y };
+	const V2 top_right = { box->bottom_right.x, box->top_left.y };
+	const V2 bottom_left = { box->top_left.x, box->bottom_right.y };
 
-	poly_init(p);
-	array_reserve(&p->vertices, 4);
-	array_append(&p->vertices, &box->bottom_right);
-	array_append(&p->vertices, &top_right);
-	array_append(&p->vertices, &box->top_left);
-	array_append(&p->vertices, &bottom_left);
+	POLY_(init)(p);
+	array_reserve(p, 4);
+	array_append(p, &box->bottom_right);
+	array_append(p, &top_right);
+	array_append(p, &box->top_left);
+	array_append(p, &bottom_left);
 }
 
-void poly_destroy(poly * p)
+void POLY_(destroy)(array *p)
 {
-	array_destroy(&p->vertices);
+	array_destroy(p);
 }
 
-b8 poly_contains(const poly * poly, const v2f * point)
+b8 POLY_(contains)(const array *poly, const V2 *point)
 {
-	aabb box;
-	poly_bounding_box(poly, &box);
-	if (!aabb_contains_point(&box, point))
+	BOX2 box;
+	POLY_(bounding_box)(poly, &box);
+	if (!BOX2_(contains_point)(&box, point))
 		return false;
 
-	v2f outside_point;
-	v2f_sub(&box.top_left, &box.bottom_right, &outside_point);
-	v2f_add(&outside_point, &box.top_left, &outside_point);
+	V2 outside_point;
+	V2_(sub)(&box.top_left, &box.bottom_right, &outside_point);
+	V2_(add)(&outside_point, &box.top_left, &outside_point);
 
 	u32 intersections = 0;
-	r32 t, u;
-	for (u32 i = 0, n = array_size(&poly->vertices); i < n; ++i)
+	SCALAR t, u;
+	for (u32 i = 0, n = array_size(poly); i < n; ++i)
 	{
-		const v2f * a = array_get(&poly->vertices, i);
-		const v2f * b = array_get(&poly->vertices, i < n - 1 ? i + 1 : 0);
-		if (   line_intersect_coords(a, b, &outside_point, point, &t, &u)
+		const V2 *a = array_get(poly, i);
+		const V2 *b = array_get(poly, i < n - 1 ? i + 1 : 0);
+		if (   MATH_(line_intersect_coords)(a, b, &outside_point, point, &t, &u)
 		    && 0 < t && t <= 1 && 0 < u && u < 1)
 			++intersections;
 	}
 	return intersections % 2 == 1;
 }
 
-void poly_bounding_box(const poly * p, aabb * box)
+void POLY_(bounding_box)(const array *p, BOX2 *box)
 {
-	const v2f center = poly_center(p);
-	aabb_from_center(box, &center, &g_v2f_zero);
-	for (u32 i = 0, n = array_size(&p->vertices); i < n; ++i)
-		aabb_extend_point(box, array_get(&p->vertices, i));
+	const V2 center = POLY_(center)(p);
+	BOX2_(from_center)(box, &center, &V2G_(zero));
+	for (u32 i = 0, n = array_size(p); i < n; ++i)
+		BOX2_(extend_point)(box, array_get(p, i));
 }
 
-void poly_translate(poly * p, const v2f * delta)
+void POLY_(translate)(array *p, const V2 *delta)
 {
-	for (u32 i = 0, n = array_size(&p->vertices); i < n; ++i)
+	for (u32 i = 0, n = array_size(p); i < n; ++i)
 	{
-		v2f * vertex = array_get(&p->vertices, i);
-		v2f_add(vertex, delta, vertex);
+		V2 *vertex = array_get(p, i);
+		V2_(add)(vertex, delta, vertex);
 	}
 }
 
-interval poly_project(const poly * p, const v2f * axis)
+IVAL POLY_(project)(const array *p, const V2 *axis)
 {
-	v2f unit_axis = *axis;
-	if (!v2f_is_unit(&unit_axis))
-		v2f_normalize(axis, &unit_axis);
-	interval projection = { .l = 0,.r = 0 };
-	for (u32 i = 0; i < p->vertices.size; ++i)
+	V2 unit_axis = *axis;
+	if (!V2_(is_unit)(&unit_axis))
+		V2_(normalize)(axis, &unit_axis);
+	IVAL projection = { .l = 0,.r = 0 };
+	for (u32 i = 0; i < p->size; ++i)
 	{
-		const v2f * vertex = array_get(&p->vertices, i);
-		const r32 dp = v2f_dot(vertex, &unit_axis);
+		const V2 *vertex = array_get(p, i);
+		const SCALAR dp = V2_(dot)(vertex, &unit_axis);
 		if (dp < projection.l)
 			projection.l = dp;
 		else if (dp > projection.r)
@@ -89,57 +84,57 @@ interval poly_project(const poly * p, const v2f * axis)
 	return projection;
 }
 
-v2f poly_center(const poly * p)
+V2 POLY_(center)(const array *p)
 {
-	v2f center = { .x=0, .y=0 };
-	u32 n = array_size(&p->vertices);
+	V2 center = { .x=0, .y=0 };
+	const u32 n = array_size(p);
 	for (u32 i = 0; i < n; ++i)
-		v2f_add(&center, array_get(&p->vertices, i), &center);
-	const r32 scale = 1.f / n;
-	v2f_scale(&center, scale, scale, &center);
+		V2_(add)(&center, array_get(p, i), &center);
+	center.x /= n;
+	center.y /= n;
 	return center;
 }
 
-r32 poly_area(const poly * p)
+SCALAR POLY_(area)(const array *p)
 {
-	const v2f center = poly_center(p);
-	r32 area = 0.f;
-	u32 n = array_size(&p->vertices);
+	const V2 center = POLY_(center)(p);
+	SCALAR area = 0;
+	const u32 n = array_size(p);
 	for (u32 i = 0; i < n; ++i)
 	{
-		const v2f * a = array_get(&p->vertices, i);
-		const v2f * b = array_get(&p->vertices, i < n - 1 ? i + 1 : 0);
-		v2f ab;
-		v2f_sub(b, a, &ab);
-		v2f ac;
-		v2f_sub(&center, a, &ac);
-		v2f height_axis;
-		v2f_perp(&ab, false, &height_axis);
-		v2f_normalize(&height_axis, &height_axis);
-		v2f height;
-		v2f_proj(&ac, &height_axis, &height);
-		area += 0.5f * v2f_mag(&ab) * v2f_mag(&height);
+		const V2 *a = array_get(p, i);
+		const V2 *b = array_get(p, i < n - 1 ? i + 1 : 0);
+		V2 ab;
+		V2_(sub)(b, a, &ab);
+		V2 ac;
+		V2_(sub)(&center, a, &ac);
+		V2 height_axis;
+		V2_(perp)(&ab, false, &height_axis);
+		V2_(normalize)(&height_axis, &height_axis);
+		V2 height;
+		V2_(proj)(&ac, &height_axis, &height);
+		area += 0.5 * V2_(mag)(&ab) * V2_(mag)(&height);
 	}
 	return area;
 }
 
-b8 poly_is_cc(const poly * p)
+b8 POLY_(is_cc)(const array *p)
 {
-	assert(array_size(&p->vertices) > 0);
+	assert(array_size(p) > 0);
 
-	r32 sine_sum = 0;
-	for (u32 i = 0, last = array_size(&p->vertices) - 1; i <= last; ++i)
+	SCALAR sine_sum = 0;
+	for (u32 i = 0, last = array_size(p) - 1; i <= last; ++i)
 	{
-		const v2f * a = array_get(&p->vertices, i > 0 ? i - 1 : last);
-		const v2f * b = array_get(&p->vertices, i);
-		const v2f * c = array_get(&p->vertices, i < last ? i + 1 : 0);
+		const V2 *a = array_get(p, i > 0 ? i - 1 : last);
+		const V2 *b = array_get(p, i);
+		const V2 *c = array_get(p, i < last ? i + 1 : 0);
 
-		v2f ab, bc;
-		v2f_sub(b, a, &ab);
-		v2f_sub(c, b, &bc);
+		V2 ab, bc;
+		V2_(sub)(b, a, &ab);
+		V2_(sub)(c, b, &bc);
 
-		sine_sum += v2f_cross(&ab, &bc) / v2f_mag(&ab) / v2f_mag(&bc);
+		sine_sum += V2_(cross)(&ab, &bc) / V2_(mag)(&ab) / V2_(mag)(&bc);
 	}
-	return sine_sum > 0.f;
+	return sine_sum > 0;
 }
 

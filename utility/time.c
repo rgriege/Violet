@@ -1,10 +1,10 @@
 #include <assert.h>
-#include <time.h>
 
 #include "violet/utility/time.h"
 
-static b8 timespec_diff(const struct timespec * start, const struct timespec * stop,
-                        struct timespec * res)
+static b8 _timespec_diff(const struct timespec * start,
+                         const struct timespec * stop,
+                         struct timespec * res)
 {
 	struct timespec mod_start;
 	mod_start.tv_nsec = start->tv_nsec;
@@ -15,7 +15,7 @@ static b8 timespec_diff(const struct timespec * start, const struct timespec * s
 		mod_start.tv_nsec -= 1000000000;
 		++mod_start.tv_sec;
 	}
-	/* C standard requires states that tv_nsec should be [0, 999,999,999] */
+	/* C standard states that tv_nsec should be [0, 999,999,999] */
 	assert(stop->tv_nsec - mod_start.tv_nsec < 1000000000);
 
 	if (stop->tv_sec >= mod_start.tv_sec)
@@ -37,9 +37,10 @@ void vlt_get_time(vlt_time * t)
 
 u32 vlt_diff_milli(vlt_time * start, vlt_time * end)
 {
-	// TODO(rgriege): handle start > end (see timespec_diff)
-	return (end->tv_sec * 1000 + end->tv_nsec / 1000000) -
-		(start->tv_sec * 1000 + start->tv_nsec / 1000000);
+	// TODO(rgriege): handle start > end
+	vlt_time res;
+	assert(_timespec_diff(start, end, &res));
+	return res.tv_sec * 1000 + res.tv_nsec / 1000000;
 }
 
 void vlt_sleep_milli(u32 milli)

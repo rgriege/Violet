@@ -5,8 +5,8 @@
 #include <math.h>
 #include <string.h>
 
-#include "violet/math/math.h"
-#include "violet/math/v2i.h"
+#include "violet/math/r32.h"
+#include "violet/math/s32.h"
 #include "violet/structures/array_map.h"
 #include "violet/utility/log.h"
 
@@ -238,6 +238,8 @@ static r32 _line_offset_x(vlt_font * f, const char * txt, font_align align)
 	r32 factor = 0.f; // FONT_ALIGN_LEFT by default
 	switch (align)
 	{
+	case FONT_ALIGN_LEFT:
+		break;
 	case FONT_ALIGN_CENTER:
 		factor = 0.5f;
 		break;

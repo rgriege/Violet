@@ -1,39 +1,38 @@
-#ifndef VIOLET_V3_H
-#define VIOLET_V3_H
+#ifndef _MATH_INTERFACE_END
 
-#include "violet/core/types.h"
+#define V3 CONCAT(v3, SUFFIX)
+#define V3_(name) CONCAT(V3, CONCAT(_, name))
+#define V3G_(name) CONCAT(g_, V3_(name))
 
-typedef struct reader reader;
-typedef struct writer writer;
-
-typedef struct v3
+typedef struct V3
 {
-	r32 x, y, z;
-} v3;
+	SCALAR x, y, z;
+} V3;
 
-extern const v3 g_v3_x_axis;
-extern const v3 g_v3_y_axis;
-extern const v3 g_v3_z_axis;
-extern const v3 g_v3_zero;
+extern const V3 V3G_(x_axis);
+extern const V3 V3G_(y_axis);
+extern const V3 V3G_(z_axis);
+extern const V3 V3G_(zero);
 
-r32 v3_mag(const v3 * v);
-r32 v3_mag_squared(const v3 * v);
-void normalize(const v3 * v, v3 * res);
-b8 v3_is_unit(const v3 * v);
-void v3_scale(const v3 * v, r32 sx, r32 sy, r32 sz, v3 * res);
+SCALAR V3_(mag)(const V3 *v);
+SCALAR V3_(mag_squared)(const V3 *v);
+void V3_(normalize)(const V3 *v, V3 *res);
+b8 V3_(is_unit)(const V3 *v);
+void V3_(scale)(const V3 *v, SCALAR sx, SCALAR sy, SCALAR sz, V3 *res);
 
-void v3_add(const v3 * lhs, const v3 * rhs, v3 * res);
-void v3_sub(const v3 * lhs, const v3 * rhs, v3 * res);
+void V3_(add)(const V3 *lhs, const V3 *rhs, V3 *res);
+void V3_(sub)(const V3 *lhs, const V3 *rhs, V3 *res);
 
-r32 v3_dot(const v3 * lhs, const v3 * rhs);
-void v3_cross(const v3 * lhs, const v3 * rhs, v3 * res);
-void v3_proj(const v3 * v, const v3 * axis, v3 * res);
-void v3_inverse(const v3 * v, v3 * res);
-b8 v3_is_zero(const v3 * v);
-b8 v3_equal(const v3 * lhs, const v3 * rhs);
+SCALAR V3_(dot)(const V3 *lhs, const V3 *rhs);
+void V3_(cross)(const V3 *lhs, const V3 *rhs, V3 *res);
+void V3_(proj)(const V3 *v, const V3 *axis, V3 *res);
+void V3_(inverse)(const V3 *v, V3 *res);
+b8 V3_(is_zero)(const V3 *v);
+b8 V3_(equal)(const V3 *lhs, const V3 *rhs);
 
-void v3_read(reader * r, v3 * v);
-void v3_write(writer * w, const v3 * v);
-
-#endif
+#else // _MATH_INTERFACE_END
+#undef V3
+#undef V3_
+#undef V3G_
+#endif // _MATH_INTERFACE_END
 

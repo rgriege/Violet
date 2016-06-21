@@ -10,10 +10,8 @@
 #include "violet/gui/mesh.h"
 #include "violet/gui/shader.h"
 #include "violet/gui/texture.h"
-#include "violet/math/aabb.h"
-#include "violet/math/ibox.h"
-#include "violet/math/math.h"
-#include "violet/math/poly.h"
+#include "violet/math/r32.h"
+#include "violet/math/s32.h"
 #include "violet/structures/array_map.h"
 #include "violet/utility/log.h"
 #include "violet/utility/time.h"
@@ -350,23 +348,23 @@ void vlt_rmgui_line_init(vlt_gui * gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
 void vlt_rmgui_rect_init(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h,
                          vlt_color fill, vlt_color line, vlt_rmgui_poly * rect)
 {
-	aabb box;
-	aabb_from_dims(&box, x, y + h, x + w, y);
-	poly p;
-	poly_from_box(&p, &box);
+	box2f box;
+	box2f_from_dims(&box, x, y + h, x + w, y);
+	array poly;
+	polyf_from_box(&poly, &box);
 
-	vlt_rmgui_poly_init(gui, &p.vertices, &rect->mesh, &rect->vao);
+	vlt_rmgui_poly_init(gui, &poly, &rect->mesh, &rect->vao);
 	rect->fill_color = fill;
 	rect->line_color = line;
 
-	poly_destroy(&p);
+	polyf_destroy(&poly);
 }
 
 void vlt_rmgui_circ_init(vlt_gui * gui, s32 x, s32 y, s32 r, vlt_color fill,
                          vlt_color line, vlt_rmgui_poly * circ)
 {
-	poly p;
-	poly_init(&p);
+	array poly;
+	polyf_init(&poly);
 
 	const u32 n = 4 + 2 * r;
 	const r32 radians_slice = 2 * PI / n;
@@ -374,14 +372,14 @@ void vlt_rmgui_circ_init(vlt_gui * gui, s32 x, s32 y, s32 r, vlt_color fill,
 	{
 		const r32 radians = i * radians_slice;
 		const v2f v = { .x=x+r*cos(radians), .y=y+r*sin(radians) };
-		array_append(&p.vertices, &v);
+		array_append(&poly, &v);
 	}
 
-	vlt_rmgui_poly_init(gui, &p.vertices, &circ->mesh, &circ->vao);
+	vlt_rmgui_poly_init(gui, &poly, &circ->mesh, &circ->vao);
 	circ->fill_color = fill;
 	circ->line_color = line;
 
-	poly_destroy(&p);
+	polyf_destroy(&poly);
 }
 
 void vlt_rmgui_poly_draw(vlt_gui * gui, const vlt_rmgui_poly * poly, s32 x, s32 y)
@@ -552,8 +550,15 @@ b8 vlt_gui_btn(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color
 
 b8 vlt_gui_btn_invis(vlt_gui * gui, s32 x, s32 y, s32 w, s32 h)
 {
-	ibox box;
-	ibox_from_dims(&box, x, y + h, x + w, y);
+	box2i box;
+	box2i_from_dims(&box, x, y + h, x + w, y);
 	return (   gui->mouse_btn & SDL_BUTTON_LMASK)
-	        && ibox_contains_point(&box, &gui->mouse_pos);
+	        && box2i_contains_point(&box, &gui->mouse_pos);
+}
+
+b8 vlt_gui_btn_circ(vlt_gui * gui, s32 x, s32 y, s32 r)
+{
+	v2i pos = { .x=x, .y=y };
+	return (gui->mouse_btn & SDL_BUTTON_LMASK)
+		   && v2i_dist(&pos, &gui->mouse_pos) <= r;
 }
