@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -221,7 +222,7 @@ static b8 _svg_parse_btn(svg_btn * b, ezxml_t node)
 		return false;
 
 	const char * hook_attr = ezxml_attr(node, "hook");
-	if (!hook_attr)
+	if (!hook_attr || strlen(hook_attr) == 0)
 		return false;
 
 	const char * params_attr = ezxml_attr(node, "params");
@@ -327,7 +328,7 @@ static b8 _svg_parse_text(svg_text * t, ezxml_t node)
 
 	return    t->color.a != 0
 	       && t->sz != 0
-	       && (t->type == SVG_TEXT_STATIC ? strlen(t->txt) > 0 : t->hook != NULL);
+	       && (t->type == SVG_TEXT_STATIC ? strlen(t->txt) > 0 : strlen(t->hook) > 0);
 }
 
 static void _svg_parse_texts(array * texts, ezxml_t container)
@@ -526,7 +527,10 @@ static void _text_get(svg_text *t, void *state, const char *addl_params,
 	const u32 id = vlt_hash(t->hook);
 	void ** fn = array_map_get(hooks, &id);
 	if (fn)
+	{
 		((void(*)(void*,const char*,char*))*fn)(state, final_params, t->txt);
+		assert(strlen(t->txt) < SVG_TEXT_BUF_SZ);
+	}
 	else
 	{
 		strncpy(t->txt, t->hook, SVG_TEXT_BUF_SZ);
@@ -744,12 +748,9 @@ static void _retain_symbol(vlt_gui * gui, _rsvg_symbol * scene_sym,
 		btn->y = b->rect.y;
 		btn->w = b->rect.w;
 		btn->h = b->rect.h;
-		if (b->hook)
-		{
-			const size_t sz = strlen(b->hook) + 1;
-			btn->hook = malloc(sz);
-			strcpy(btn->hook, b->hook);
-		}
+		const size_t hook_sz = strlen(b->hook) + 1;
+		btn->hook = malloc(hook_sz);
+		strcpy(btn->hook, b->hook);
 		if (b->params)
 		{
 			const size_t sz = strlen(b->params) + 1;
