@@ -42,7 +42,7 @@ b8 vlt_img_load(vlt_img * img, const char * filename)
 
 	if (!vlt_load_png(&img->texture, filename))
 	{
-		log_write("img_load error");
+		log_write("img_load(%s) error", filename);
 		return retval;
 	}
 
