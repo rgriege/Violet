@@ -18,8 +18,8 @@ void array_destroy_each_ex(array * a, void (*destroy_elem)(void*));
 #define array_destroy_each(a, f) array_destroy_each_ex(a, (void(*)(void*))f)
 
 void * array_get(const array * a, u32 idx);
-void * array_first(array * a);
-void * array_last(array * a);
+void * array_first(const array * a);
+void * array_last(const array * a);
 
 u32 array_size(const array * a);
 b8 array_empty(const array * a);

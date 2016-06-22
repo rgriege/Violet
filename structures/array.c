@@ -44,13 +44,13 @@ void * array_get(const array * a, u32 idx)
 	return (byte*)a->data + idx * a->elem_size;
 }
 
-void * array_first(array * a)
+void * array_first(const array * a)
 {
 	assert(a->size > 0);
 	return a->data;
 }
 
-void * array_last(array * a)
+void * array_last(const array * a)
 {
 	assert(a->size > 0);
 	return (byte*)a->data + (a->size - 1) * a->elem_size;
