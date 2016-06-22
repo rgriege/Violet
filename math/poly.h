@@ -17,6 +17,7 @@ IVAL POLY_(project)(const array *p, const V2 *axis);
 V2 POLY_(center)(const array *p);
 SCALAR POLY_(area)(const array *p);
 b8 POLY_(is_cc)(const array *p);
+b8 POLY_(segment_intersect)(const array *p, const V2 *v0, const V2 *v1);
 
 #else // _MATH_INTERFACE_END
 #undef POLY_

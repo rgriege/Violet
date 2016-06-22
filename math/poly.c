@@ -138,3 +138,16 @@ b8 POLY_(is_cc)(const array *p)
 	return sine_sum > 0;
 }
 
+b8 POLY_(segment_intersect)(const array *p, const V2 *v0, const V2 *v1)
+{
+	for (u32 i = 0, n = p->size; i < n; ++i)
+	{
+		const V2 *a = array_get(p, i);
+		const V2 *b = array_get(p, (i+1)%n);
+		V2 isec;
+		if (MATH_(segment_intersect)(a, b, v0, v1, &isec))
+			return true;
+	}
+	return false;
+}
+
