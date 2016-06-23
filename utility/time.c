@@ -2,9 +2,11 @@
 
 #include "violet/utility/time.h"
 
+#ifdef __unix__
+
 static b8 _timespec_diff(const struct timespec * start,
-                         const struct timespec * stop,
-                         struct timespec * res)
+	const struct timespec * stop,
+	struct timespec * res)
 {
 	struct timespec mod_start;
 	mod_start.tv_nsec = start->tv_nsec;
@@ -27,8 +29,6 @@ static b8 _timespec_diff(const struct timespec * start,
 	else
 		return false;
 }
-
-#ifdef __unix__
 
 void vlt_get_time(vlt_time * t)
 {
