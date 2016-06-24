@@ -71,8 +71,11 @@ IVAL POLY_(project)(const array *p, const V2 *axis)
 	V2 unit_axis = *axis;
 	if (!V2_(is_unit)(&unit_axis))
 		V2_(normalize)(axis, &unit_axis);
-	IVAL projection = { .l = 0,.r = 0 };
-	for (u32 i = 0; i < p->size; ++i)
+
+	const SCALAR v0_proj = V2_(dot)(array_get(p, 0), &unit_axis);
+	IVAL projection = { .l = v0_proj, .r = v0_proj };
+
+	for (u32 i = 1; i < p->size; ++i)
 	{
 		const V2 *vertex = array_get(p, i);
 		const SCALAR dp = V2_(dot)(vertex, &unit_axis);
