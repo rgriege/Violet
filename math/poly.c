@@ -25,6 +25,35 @@ void POLY_(destroy)(array *p)
 	array_destroy(p);
 }
 
+b8 POLY_(is_convex)(const array *p)
+{
+	assert(p->size >= 3);
+
+	b8 cc_determined = false, cc;
+	for (u32 i = 0, last = array_size(p) - 1; i <= last; ++i)
+	{
+		const V2 *a = array_get(p, i > 0 ? i - 1 : last);
+		const V2 *b = array_get(p, i);
+		const V2 *c = array_get(p, i < last ? i + 1 : 0);
+
+		V2 ab, bc;
+		V2_(sub)(b, a, &ab);
+		V2_(sub)(c, b, &bc);
+		const SCALAR cross = V2_(cross)(&ab, &bc);
+		if (cross != 0.f)
+		{
+			if (!cc_determined)
+			{
+				cc_determined = true;
+				cc = cross > 0.f;
+			}
+			else if ((cross > 0.f) != cc)
+			return false;
+		}
+	}
+	return true;
+}
+
 b8 POLY_(contains)(const array *poly, const V2 *point)
 {
 	BOX2 box;

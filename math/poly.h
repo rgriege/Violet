@@ -8,6 +8,8 @@ void POLY_(init)(array *p);
 void POLY_(from_box)(array *p, const BOX2 *box);
 void POLY_(destroy)(array *p);
 
+b8 POLY_(is_convex)(const array *p);
+
 b8 POLY_(contains)(const array *p, const V2 *point);
 void POLY_(bounding_box)(const array *p, BOX2 *box);
 
