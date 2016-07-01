@@ -25,6 +25,31 @@ void POLY_(destroy)(array *p)
 	array_destroy(p);
 }
 
+b8 POLY_(is_simple)(const array *p)
+{
+	assert(p->size >= 3);
+
+	V2 isec;
+	const V2 *a0 = array_last(p);
+	u32 jend = p->size - 1;
+	for (u32 i = 0; i < p->size - 2; ++i)
+	{
+		const V2 *a1 = array_get(p, i);
+		const V2 *b0 = array_get(p, i + 1);
+		for (u32 j = i + 2; j < jend; ++j)
+		{
+			const V2 *b1 = array_get(p, j);
+			if (MATH_(segment_intersect)(a0, a1, b0, b1, &isec))
+				return false;
+			b0 = b1;
+		}
+		a0 = a1;
+		jend = p->size;
+	}
+
+	return true;
+}
+
 b8 POLY_(is_convex)(const array *p)
 {
 	assert(p->size >= 3);
@@ -80,9 +105,9 @@ b8 POLY_(contains)(const array *poly, const V2 *point)
 
 void POLY_(bounding_box)(const array *p, BOX2 *box)
 {
-	const V2 center = POLY_(center)(p);
-	BOX2_(from_center)(box, &center, &V2G_(zero));
-	for (u32 i = 0, n = array_size(p); i < n; ++i)
+	const V2 *first = array_first(p);
+	BOX2_(from_center)(box, first, &V2G_(zero));
+	for (u32 i = 1, n = array_size(p); i < n; ++i)
 		BOX2_(extend_point)(box, array_get(p, i));
 }
 
@@ -139,6 +164,24 @@ SCALAR POLY_(area)(const array *p)
 		prev = cur;
 	}
 	return fabs(area * 0.5);
+}
+
+V2 POLY_(centroid)(const array *p)
+{
+	const SCALAR denom = 6 * POLY_(area)(p);
+	V2 centroid = { .x=0, .y=0 };
+	const V2 *prev = array_last(p);
+	for (u32 i = 0; i < p->size; ++i)
+	{
+		const V2 *cur = array_get(p, i);
+		const SCALAR cross = V2_(cross)(prev, cur);
+		centroid.x += (prev->x + cur->x) * cross;
+		centroid.y += (prev->y + cur->y) * cross;
+		prev = cur;
+	}
+	centroid.x /= denom;
+	centroid.y /= denom;
+	return centroid;
 }
 
 b8 POLY_(is_cc)(const array *p)
