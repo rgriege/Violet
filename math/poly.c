@@ -127,27 +127,18 @@ V2 POLY_(center)(const array *p)
 	return center;
 }
 
+// NOTE(rgriege): Green's theorem
 SCALAR POLY_(area)(const array *p)
 {
-	const V2 center = POLY_(center)(p);
 	SCALAR area = 0;
-	const u32 n = array_size(p);
-	for (u32 i = 0; i < n; ++i)
+	const V2 *prev = array_last(p);
+	for (u32 i = 0; i < p->size; ++i)
 	{
-		const V2 *a = array_get(p, i);
-		const V2 *b = array_get(p, i < n - 1 ? i + 1 : 0);
-		V2 ab;
-		V2_(sub)(b, a, &ab);
-		V2 ac;
-		V2_(sub)(&center, a, &ac);
-		V2 height_axis;
-		V2_(perp)(&ab, false, &height_axis);
-		V2_(normalize)(&height_axis, &height_axis);
-		V2 height;
-		V2_(proj)(&ac, &height_axis, &height);
-		area += 0.5 * V2_(mag)(&ab) * V2_(mag)(&height);
+		const V2 *cur = array_get(p, i);
+		area += V2_(cross)(prev, cur);
+		prev = cur;
 	}
-	return area;
+	return fabs(area * 0.5);
 }
 
 b8 POLY_(is_cc)(const array *p)
