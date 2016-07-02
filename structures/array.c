@@ -132,7 +132,7 @@ void array_reserve(array *a, u32 capacity)
 
 void array_reverse(array *a)
 {
-	ubyte scratch[a->elem_size];
+	ubyte *scratch = malloc(a->elem_size);
 	for (u32 i = 0, n = a->size / 2; i < n; ++i)
 	{
 		void *l = array_get(a, i);
@@ -141,6 +141,7 @@ void array_reverse(array *a)
 		memcpy(r, l, a->elem_size);
 		memcpy(l, scratch, a->elem_size);
 	}
+	free(scratch);
 }
 
 void array_qsort(array *a, int(*comp)(const void *, const void *))
