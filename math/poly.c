@@ -198,3 +198,21 @@ b8 POLY_(segment_intersect)(const V2 *v, u32 n,
 	return false;
 }
 
+b8 POLY_(intersect)(const V2 *p1, u32 n1, const V2 *p2, u32 n2)
+{
+	V2 isec;
+	for (u32 i=0; i<n1; ++i)
+	{
+		const V2 *p1a = p1+i;
+		const V2 *p1b = p1+((i+1)%n1);
+		for (u32 j=0; j<n2; ++j)
+		{
+			const V2 *p2a = p2+j;
+			const V2 *p2b = p2+((j+1)%n2);
+			if (MATH_(segment_intersect)(p1a, p1b, p2a, p2b, &isec))
+				return true;
+		}
+	}
+	return false;
+}
+
