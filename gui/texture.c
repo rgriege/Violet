@@ -59,15 +59,11 @@ void vlt_texture_destroy(vlt_texture *tex)
 		glDeleteTextures(1, &tex->handle);
 }
 
-void vlt_texture_coords_from_poly(vlt_mesh *tex_coords, const array *poly)
+void vlt_texture_coords_from_poly(vlt_mesh *tex_coords,
+                                  const v2f *v, u32 n)
 {
 	box2f extent;
-	box2f_init_point(&extent, array_get(poly, 0));
-	for (u32 i = 1, end = array_size(poly); i < end; ++i)
-	{
-		const v2f *vertex = array_get(poly, i);
-		box2f_extend_point(&extent, vertex);
-	}
+	polyf_bounding_box(v, n, &extent);
 	v2f minimum, dimension;
 	box2f_get_min(&extent, &minimum);
 	box2f_get_max(&extent, &dimension);
@@ -75,18 +71,17 @@ void vlt_texture_coords_from_poly(vlt_mesh *tex_coords, const array *poly)
 
 	array coords;
 	array_init(&coords, sizeof(v2f));
-	array_reserve(&coords, array_size(poly));
-	for (u32 i = 0, end = array_size(poly); i < end; ++i)
+	array_reserve(&coords, n);
+	for (const v2f *vn=v+n; v!=vn; ++v)
 	{
-		const v2f *vertex = array_get(poly, i);
 		v2f tex_coord;
-		v2f_sub(vertex, &minimum, &tex_coord);
+		v2f_sub(v, &minimum, &tex_coord);
 		v2f_div(&tex_coord, &dimension, &tex_coord);
 		// TODO(rgriege): figure out why this is necessary (font too)
 		tex_coord.v = 1 - tex_coord.v;
 		array_append(&coords, &tex_coord);
 	}
-	vlt_mesh_init(tex_coords, &coords);
+	vlt_mesh_init(tex_coords, coords.data, n);
 	array_destroy(&coords);
 }
 

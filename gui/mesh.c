@@ -2,10 +2,10 @@
 
 #include "violet/gui/mesh.h"
 
-void vlt_mesh_init(vlt_mesh *m, const array *vertices)
+void vlt_mesh_init(vlt_mesh *m, const v2f *poly, u32 n)
 {
 	glGenBuffers(1, &m->vbo);
-	vlt_mesh_set_vertices(m, vertices);
+	vlt_mesh_set_vertices(m, poly, n);
 }
 
 void vlt_mesh_destroy(vlt_mesh *m)
@@ -20,7 +20,8 @@ void vlt_mesh_poly(const vlt_mesh *m, array *poly)
 	array_reserve(poly, m->sz);
 	poly->size = m->sz;
 	vlt_mesh_bind(m);
-	glGetBufferSubData(GL_ARRAY_BUFFER, 0, m->sz * 2 * sizeof(GL_FLOAT), poly->data);
+	glGetBufferSubData(GL_ARRAY_BUFFER, 0, m->sz * 2 * sizeof(GL_FLOAT),
+		poly->data);
 }
 
 void vlt_mesh_bind(const vlt_mesh *m)
@@ -33,10 +34,11 @@ void vlt_mesh_unbind()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void vlt_mesh_set_vertices(vlt_mesh *m, const array *vertices)
+void vlt_mesh_set_vertices(vlt_mesh *m, const v2f *v, u32 n)
 {
 	vlt_mesh_bind(m);
-	m->sz = array_size(vertices);
-	glBufferData(GL_ARRAY_BUFFER, m->sz * 2 * sizeof(GL_FLOAT), vertices->data, GL_STATIC_DRAW);
+	m->sz = n;
+	glBufferData(GL_ARRAY_BUFFER, m->sz * 2 * sizeof(GL_FLOAT), v,
+		GL_STATIC_DRAW);
 }
 

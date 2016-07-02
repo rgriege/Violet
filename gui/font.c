@@ -171,38 +171,26 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 			vlt_texture_init(&glyph->texture, tex_width, tex_height,
 				GL_RED, pixels);
 
-			array vertices;
-			array_init(&vertices, sizeof(v2f));
-			array_reserve(&vertices, 4);
-			const v2f vert0 = { .x=0, .y=0 };
-			array_append(&vertices, &vert0);
-			const v2f vert1 = { .x=0, .y=tex_height };
-			array_append(&vertices, &vert1);
-			const v2f vert2 = { .x=tex_width, .y=tex_height };
-			array_append(&vertices, &vert2);
-			const v2f vert3 = { .x=tex_width, .y=0 };
-			array_append(&vertices, &vert3);
-			vlt_mesh_init(&glyph->mesh, &vertices);
+			v2f vertices[4] = {
+				{ .x=0, .y=0 },
+				{ .x=0, .y=tex_height },
+				{ .x=tex_width, .y=tex_height },
+				{ .x=tex_width, .y=0 }
+			};
+			vlt_mesh_init(&glyph->mesh, vertices, 4);
 			glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0);
 			glEnableVertexAttribArray(0);
-			array_destroy(&vertices);
 
 			
-			array coords;
-			array_init(&coords, sizeof(v2f));
-			array_reserve(&coords, 4);
-			const v2f coord0 = { .x=0, .y=1 };
-			array_append(&coords, &coord0);
-			const v2f coord1 = { .x=0, .y=0 };
-			array_append(&coords, &coord1);
-			const v2f coord2 = { .x=1, .y=0 };
-			array_append(&coords, &coord2);
-			const v2f coord3 = { .x=1, .y=1 };
-			array_append(&coords, &coord3);
-			vlt_mesh_init(&glyph->tex_coords, &coords);
+			v2f coords[4] = {
+				{ .x=0, .y=1 },
+				{ .x=0, .y=0 },
+				{ .x=1, .y=0 },
+				{ .x=1, .y=0 }
+			};
+			vlt_mesh_init(&glyph->tex_coords, coords, 4);
 			glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
 			glEnableVertexAttribArray(1);
-			array_destroy(&coords);
 
 			glBindVertexArray(0);
 

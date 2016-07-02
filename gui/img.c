@@ -46,18 +46,17 @@ b8 vlt_img_load(vlt_img *img, const char *filename)
 
 	box2f box;
 	box2f_from_dims(&box, 0, img->texture.height, img->texture.width, 0);
-	array poly;
-	polyf_from_box(&poly, &box);
+	v2f poly[4];
+	polyf_from_box(poly, &box);
 
-	vlt_mesh_init(&img->mesh, &poly);
+	vlt_mesh_init(&img->mesh, poly, 4);
 	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0);
 	glEnableVertexAttribArray(0);
 
-	vlt_texture_coords_from_poly(&img->tex_coords, &poly);
+	vlt_texture_coords_from_poly(&img->tex_coords, poly, 4);
 	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
 	glEnableVertexAttribArray(1);
 
-	polyf_destroy(&poly);
 	glBindVertexArray(0);
 	retval = true;
 	return retval;

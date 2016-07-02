@@ -105,19 +105,16 @@ void BOX2_(translate)(BOX2 *box, const V2 *off)
 
 void BOX2_(transform)(BOX2 *box, const M3 mat)
 {
-	array poly;
-	POLY_(init)(&poly);
+	V2 poly[4];
 	const V2 top_right = { box->bottom_right.x, box->top_left.y };
 	const V2 bottom_left = { box->top_left.x, box->bottom_right.y };
 
-	M3_(mul_v2)(mat, &box->top_left, array_append_null(&poly));
-	M3_(mul_v2)(mat, &box->top_left, array_append_null(&poly));
-	M3_(mul_v2)(mat, &top_right, array_append_null(&poly));
-	M3_(mul_v2)(mat, &box->bottom_right, array_append_null(&poly));
-	M3_(mul_v2)(mat, &bottom_left, array_append_null(&poly));
+	M3_(mul_v2)(mat, &box->top_left, poly);
+	M3_(mul_v2)(mat, &top_right, poly+1);
+	M3_(mul_v2)(mat, &box->bottom_right, poly+2);
+	M3_(mul_v2)(mat, &bottom_left, poly+3);
 
-	POLY_(bounding_box)(&poly, box);
-	POLY_(destroy)(&poly);
+	POLY_(bounding_box)(poly, 4, box);
 }
 
 void BOX2_(get_center)(const BOX2 *box, V2 *center)
