@@ -143,3 +143,8 @@ void array_reverse(array *a)
 	}
 }
 
+void array_qsort(array *a, int(*comp)(const void *, const void *))
+{
+	qsort(a->data, a->size, a->elem_size, comp);
+}
+

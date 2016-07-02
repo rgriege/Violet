@@ -35,5 +35,6 @@ void *array_insert_null(array *a, u32 idx);
 void array_reserve(array *a, u32 capacity);
 
 void array_reverse(array *a);
+void array_qsort(array *a, int(*comp)(const void *, const void *));
 
 #endif
