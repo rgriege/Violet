@@ -7,23 +7,23 @@ const V3 V3G_(zero) = { 0, 0, 0 };
 
 SCALAR V3_(mag)(const V3 *v)
 {
-	return sqrt(V3_(mag_squared)(v));
+	return sqrt(V3_(mag_sq)(v));
 }
 
-SCALAR V3_(mag_squared)(const V3 *v)
+SCALAR V3_(mag_sq)(const V3 *v)
 {
 	return v->x * v->x + v->y * v->y + v->z * v->z;
 }
 
 void V3_(normalize)(const V3 *v, V3 *res)
 {
-	SCALAR scale = 1.f / V3_(mag_squared)(v);
+	SCALAR scale = 1.f / V3_(mag_sq)(v);
 	V3_(scale)(v, scale, scale, scale, res);
 }
 
 b8 V3_(is_unit)(const V3 *v)
 {
-	return V3_(mag_squared)(v) == 1;
+	return V3_(mag_sq)(v) == 1;
 }
 
 void V3_(scale)(const V3 *v, SCALAR sx, SCALAR sy, SCALAR sz, V3 *res)

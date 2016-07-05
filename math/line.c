@@ -77,7 +77,7 @@ void MATH_(nearest_point_on_segment)(const V2 *a, const V2 *b, const V2 *p,
 	V2 ab, ap, proj;
 	V2_(sub)(b, a, &ab);
 	V2_(sub)(p, a, &ap);
-	const SCALAR t = MATH_(clamp)(0, V2_(dot)(&ap, &ab) / V2_(mag_squared)(&ab), 1);
+	const SCALAR t = MATH_(clamp)(0, V2_(dot)(&ap, &ab) / V2_(mag_sq)(&ab), 1);
 	V2_(scale)(&ab, t, t, &proj);
 	V2_(add)(a, &proj, result);
 }
@@ -88,7 +88,7 @@ void MATH_(nearest_point_on_line)(const V2 *a, const V2 *b, const V2 *p,
 	V2 ab, ap, proj;
 	V2_(sub)(b, a, &ab);
 	V2_(sub)(p, a, &ap);
-	const SCALAR t = V2_(dot)(&ap, &ab) / V2_(mag_squared)(&ab);
+	const SCALAR t = V2_(dot)(&ap, &ab) / V2_(mag_sq)(&ab);
 	V2_(scale)(&ab, t, t, &proj);
 	V2_(add)(a, &proj, result);
 }

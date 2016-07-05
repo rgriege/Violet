@@ -15,7 +15,7 @@ extern const V3 V3G_(z_axis);
 extern const V3 V3G_(zero);
 
 SCALAR V3_(mag)(const V3 *v);
-SCALAR V3_(mag_squared)(const V3 *v);
+SCALAR V3_(mag_sq)(const V3 *v);
 void V3_(normalize)(const V3 *v, V3 *res);
 b8 V3_(is_unit)(const V3 *v);
 void V3_(scale)(const V3 *v, SCALAR sx, SCALAR sy, SCALAR sz, V3 *res);
