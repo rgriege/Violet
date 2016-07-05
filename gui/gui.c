@@ -469,7 +469,13 @@ static vlt_font *_get_font(vlt_gui *gui, u32 sz)
 		return *f;
 
 	vlt_font *font = vlt_font_create();
+#ifdef __unix__
+	// TODO(rgriege): find either a version of Myriad that works on ubuntu
+	// or a font that matches Myriad more closely
+	if (vlt_font_load(font, "UbuntuMono.ttf", sz))
+#else
 	if (vlt_font_load(font, "MyriadProRegular.ttf", sz))
+#endif
 	{
 		array_map_insert(&gui->fonts, &sz, &font);
 		return font;
