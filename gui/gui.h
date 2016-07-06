@@ -66,6 +66,7 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 sz, char *txt, u32 n,
 b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
                vlt_color lc);
 b8 vlt_gui_btn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h);
+b8 vlt_gui_rbtn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h);
 b8 vlt_gui_btn_circ(vlt_gui *gui, s32 x, s32 y, s32 r);
 
 #endif

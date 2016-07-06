@@ -546,12 +546,23 @@ b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color 
 	return vlt_gui_btn_invis(gui, x, y, w, h);
 }
 
-b8 vlt_gui_btn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
+static
+b8 _vlt_gui_btn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, u32 mask)
 {
 	box2i box;
 	box2i_from_dims(&box, x, y + h, x + w, y);
-	return (   gui->mouse_btn & SDL_BUTTON_LMASK)
+	return (   gui->mouse_btn & mask)
 	        && box2i_contains_point(&box, &gui->mouse_pos);
+}
+
+b8 vlt_gui_btn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	return _vlt_gui_btn_invis(gui, x, y, w, h, SDL_BUTTON_LMASK);
+}
+
+b8 vlt_gui_rbtn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	return _vlt_gui_btn_invis(gui, x, y, w, h, SDL_BUTTON_RMASK);
 }
 
 b8 vlt_gui_btn_circ(vlt_gui *gui, s32 x, s32 y, s32 r)
