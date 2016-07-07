@@ -55,7 +55,7 @@ typedef struct vlt_glyph
 	u32 advance;
 } vlt_glyph;
 
-static void _glyph_render(vlt_glyph * g, vlt_shader_program * p)
+static void _glyph_render(vlt_glyph *g, vlt_shader_program *p)
 {
 	glBindVertexArray(g->vao);
 
@@ -68,7 +68,7 @@ static void _glyph_render(vlt_glyph * g, vlt_shader_program * p)
 	glBindVertexArray(0);
 }
 
-static void _glyph_destroy(vlt_glyph * g)
+static void _glyph_destroy(vlt_glyph *g)
 {
 	vlt_mesh_destroy(&g->mesh);
 	vlt_mesh_destroy(&g->tex_coords);
@@ -86,17 +86,17 @@ typedef struct vlt_font
 	u32 line_dist;
 } vlt_font;
 
-vlt_font * vlt_font_create()
+vlt_font *vlt_font_create()
 {
 	return calloc(sizeof(vlt_font), 1);
 }
 
-void vlt_font_free(vlt_font * f)
+void vlt_font_free(vlt_font *f)
 {
 	free(f);
 }
 
-b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
+b8 vlt_font_load(vlt_font *f, const char *filename, u32 sz)
 {
 	b8 retval = false;
 
@@ -225,12 +225,12 @@ err_face:
 	return retval;
 }
 
-void vlt_font_destroy(vlt_font * f)
+void vlt_font_destroy(vlt_font *f)
 {
 	array_map_destroy_each(&f->glyphs, NULL, (void(*)(void*))_glyph_destroy);
 }
 
-static r32 _line_offset_x(vlt_font * f, const char * txt, font_align align)
+static r32 _line_offset_x(vlt_font *f, const char *txt, font_align align)
 {
 	r32 factor = 0.f; // FONT_ALIGN_LEFT by default
 	switch (align)
@@ -271,40 +271,45 @@ out:
 	return width * factor;
 }
 
-void vlt_font_render(vlt_font * f, const char * txt, s32 _x, s32 _y,
-                     vlt_shader_program * p, font_align align)
+void vlt_font_render(vlt_font *f, const char *txt, s32 x, s32 y,
+                        vlt_shader_program *p, font_align align)
 {
+	vlt_font_render_ex(f, txt, &x, &y, p, align);
+}
+
+void vlt_font_render_ex(vlt_font *f, const char *txt, s32 *x, s32 *y,
+                        vlt_shader_program *p, font_align align)
+{
+	const s32 x_orig = *x;
 	s32 off = _line_offset_x(f, txt, align);
-	v2i pos = { .x=_x, .y=_y };
 	for (u32 i = 0, end = strlen(txt); i < end; ++i)
 	{
 		const char character = txt[i];
 		switch (character)
 		{
 		case ' ':
-			pos.x += f->space_width;
+			*x += f->space_width;
 			break;
 
 		case '\r':
-			pos.y -= f->line_dist;
-			pos.x = _x;
+			*y -= f->line_dist;
+			*x = x_orig;
 			if (i < end - 1)
 				off = _line_offset_x(f, txt + i + 1, align);
 			break;
 
 		default:
 		{
-			vlt_glyph * glyph = array_map_get(&f->glyphs, &character);
+			vlt_glyph *glyph = array_map_get(&f->glyphs, &character);
 			if (glyph)
 			{
 				// looks bad if offset not rounded
 				const GLint offset_attrib =
 					vlt_shader_program_uniform(p, "offset");
-				v2i offset;
-				v2i_add(&pos, &glyph->offset, &offset);
-				glUniform2f(offset_attrib, offset.x - off, offset.y);
+				glUniform2f(offset_attrib, *x + glyph->offset.x - off,
+					*y + glyph->offset.y);
 				_glyph_render(glyph, p);
-				pos.x += glyph->advance;
+				*x += glyph->advance;
 			}
 		}
 			break;

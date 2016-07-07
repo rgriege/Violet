@@ -16,12 +16,6 @@
 #include "violet/utility/log.h"
 #include "violet/utility/time.h"
 
-// the highest SDL Button def is SDL_BUTTON_X2, which is set to 5
-#define VLT_BUTTON_WHEELUP 6
-#define VLT_BUTTON_WHEELDOWN 7
-#define VLT_BUTTON_WHEELUPMASK SDL_BUTTON(VLT_BUTTON_WHEELUP)
-#define VLT_BUTTON_WHEELDOWNMASK SDL_BUTTON(VLT_BUTTON_WHEELDOWN)
-
 int SDL_FilterEvent(void *userdata, SDL_Event *event)
 {
 	switch (event->type)
@@ -65,9 +59,17 @@ b8 _convert_scancode(SDL_Scancode code, char *c)
 		return true;
 }
 
+typedef enum _hot_stage
+{
+	NONE,
+	HOVER,
+	INITIATE
+} _hot_stage;
+
 typedef struct vlt_gui
 {
-	vlt_time last_update_time;
+	vlt_time creation_time;
+	vlt_time frame_start_time;
 	SDL_Window *window;
 	SDL_GLContext gl_context;
 	vlt_shader_program poly_shader;
@@ -76,27 +78,26 @@ typedef struct vlt_gui
 	v2i win_halfdim;
 	v2i mouse_pos;
 	u32 mouse_btn;
+	u32 mouse_btn_diff;
 	char _pressed_key;
 	char key;
 	u32 key_repeat_delay;
 	u32 key_repeat_timer;
 	array_map fonts; // sz -> vlt_font *
+	vlt_style style;
+	u64 hot_id;
+	_hot_stage hot_stage;
+	u64 active_id;
 } vlt_gui;
 
-vlt_gui *vlt_gui_create()
+vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 {
-	return calloc(1, sizeof(vlt_gui));
-}
-
-b8 vlt_gui_init_window(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
-                       vlt_color c, const char *title)
-{
-	b8 retval = 0;
+	vlt_gui *gui = calloc(1, sizeof(vlt_gui));
 	SDL_SetMainReady();
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
 		log_write("SDL_Init(VIDEO) failed: %s", SDL_GetError());
-		goto out;
+		goto err_sdl;
 	}
 
 	// Use OpenGL 3.1 core
@@ -132,9 +133,6 @@ b8 vlt_gui_init_window(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 
 	log_write("GL version: %s", glGetString(GL_VERSION));
 
-	float color[4];
-	vlt_color_as_float_array(color, c);
-	glClearColor(color[0], color[1], color[2], color[3]);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -157,12 +155,27 @@ b8 vlt_gui_init_window(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 
 	array_map_init(&gui->fonts, sizeof(u32), sizeof(vlt_font*));
 
-	vlt_get_time(&gui->last_update_time);
+	vlt_get_time(&gui->creation_time);
+	gui->frame_start_time = gui->creation_time;
 
 	gui->key_repeat_delay = 500;
 	gui->key_repeat_timer = gui->key_repeat_delay;
 
-	retval = 1;
+	const vlt_color bg_color = { .r=0x37, .g=0x3e, .b=0x48, .a=0xff };
+	gui->style.bg_color = bg_color;
+	const vlt_color fill_color = { .r=0x1c, .g=0x1f, .b=0x24, .a=0xff };
+	gui->style.fill_color = fill_color;
+	gui->style.outline_color = g_nocolor;
+	const vlt_color text_color = { .r=0xdb, .g=0xde, .b=0xe3, .a=0xff };
+	gui->style.text_color = text_color;
+	const vlt_color baseline_color = { .r=0x6f, .g=0x7c, .b=0x91, .a=0xff };
+	gui->style.baseline_color = baseline_color;
+	const vlt_color hot_color = { .r=0x0b, .g=0x17, .b=0x28, .a=0xff };
+	gui->style.hot_color = hot_color;
+
+	gui->hot_id = gui->active_id = 0;
+	gui->hot_stage = NONE;
+
 	goto out;
 
 err_text:
@@ -177,8 +190,11 @@ err_ctx:
 	SDL_DestroyWindow(gui->window);
 err_win:
 	SDL_Quit();
+err_sdl:
+	free(gui);
+	gui = NULL;
 out:
-	return retval;
+	return gui;
 }
 
 static void _font_clear(void *f)
@@ -205,17 +221,32 @@ void vlt_gui_destroy(vlt_gui *gui)
 	free(gui);
 }
 
-void vlt_gui_mouse_pos(vlt_gui *gui, s32 *x, s32 *y)
+void vlt_gui_mouse_pos(const vlt_gui *gui, s32 *x, s32 *y)
 {
 	*x = gui->mouse_pos.x;
 	*y = gui->mouse_pos.y;
 }
 
-void vlt_gui_mouse_scroll(vlt_gui *gui, s32 *dir)
+b8 vlt_gui_mouse_press(const vlt_gui *gui, u32 mask)
 {
-	if (gui->mouse_btn & VLT_BUTTON_WHEELUPMASK)
+	return (gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
+}
+
+b8 vlt_gui_mouse_down(const vlt_gui *gui, u32 mask)
+{
+	return gui->mouse_btn & mask;
+}
+
+b8 vlt_gui_mouse_release(const vlt_gui *gui, u32 mask)
+{
+	return !(gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
+}
+
+void vlt_gui_mouse_scroll(const vlt_gui *gui, s32 *dir)
+{
+	if (gui->mouse_btn & VLT_MB_WHEELUP)
 		*dir = 1;
-	else if (gui->mouse_btn & VLT_BUTTON_WHEELDOWNMASK)
+	else if (gui->mouse_btn & VLT_MB_WHEELDOWN)
 		*dir = -1;
 	else
 		*dir = 0;
@@ -225,11 +256,12 @@ b8 vlt_gui_begin_frame(vlt_gui *gui)
 {
 	vlt_time now;
 	vlt_get_time(&now);
-	const u32 frame_milli = vlt_diff_milli(&gui->last_update_time, &now);
-	gui->last_update_time = now;
+	const u32 frame_milli = vlt_diff_milli(&gui->frame_start_time, &now);
+	gui->frame_start_time = now;
 
 	b8 quit = false;
 	SDL_Event evt;
+	const u32 last_mouse_btn = gui->mouse_btn;
 	gui->mouse_btn = 0;
 	while (SDL_PollEvent(&evt) == 1)
 	{
@@ -240,14 +272,15 @@ b8 vlt_gui_begin_frame(vlt_gui *gui)
 			break;
 		case SDL_MOUSEWHEEL:
 			gui->mouse_btn |= (evt.wheel.y > 0 ?
-				VLT_BUTTON_WHEELUPMASK :
-				VLT_BUTTON_WHEELDOWNMASK);
+				VLT_MB_WHEELUP :
+				VLT_MB_WHEELDOWN);
 			break;
 		}
 	}
 
 	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x,
 		&gui->mouse_pos.y);
+	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
 		&gui->win_halfdim.y);
 	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
@@ -281,6 +314,9 @@ b8 vlt_gui_begin_frame(vlt_gui *gui)
 		}
 	}
 
+	float color[4];
+	vlt_color_as_float_array(color, gui->style.bg_color);
+	glClearColor(color[0], color[1], color[2], color[3]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	return !quit;
@@ -325,7 +361,7 @@ void vlt_rmgui_poly_init(vlt_gui *gui, const v2f *v, u32 n,
 	glEnableVertexAttribArray(pos_attrib);
 }
 
-void vlt_rmgui_line_init(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
+void vlt_rmgui_line_init(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1,
                          vlt_color c, vlt_rmgui_poly *line)
 {
 	v2f vertices[2] = {
@@ -423,29 +459,29 @@ void vlt_rmgui_img_draw(vlt_gui *gui, vlt_img *img, s32 x, s32 y)
 
 /* Immediate Mode API */
 
-void vlt_gui_line(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1, u32 sz,
+void vlt_gui_line(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1,
                   vlt_color c)
 {
 	vlt_rmgui_poly line;
-	vlt_rmgui_line_init(gui, x0, y0, x1, y1, sz, c, &line);
+	vlt_rmgui_line_init(gui, x0, y0, x1, y1, c, &line);
 	vlt_rmgui_poly_draw(gui, &line, 0, 0);
 	vlt_rmgui_poly_destroy(&line);
 }
 
-void vlt_gui_rect(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, vlt_color c,
-                  vlt_color lc)
+void vlt_gui_rect(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                  vlt_color fill, vlt_color line)
 {
 	vlt_rmgui_poly rect;
-	vlt_rmgui_rect_init(gui, x, y, w, h, c, lc, &rect);
+	vlt_rmgui_rect_init(gui, x, y, w, h, fill, line, &rect);
 	vlt_rmgui_poly_draw(gui, &rect, 0, 0);
 	vlt_rmgui_poly_destroy(&rect);
 }
 
-void vlt_gui_circ(vlt_gui *gui, s32 x, s32 y, s32 r, vlt_color c,
-                  vlt_color lc)
+void vlt_gui_circ(vlt_gui *gui, s32 x, s32 y, s32 r,
+                  vlt_color fill, vlt_color line)
 {
 	vlt_rmgui_poly circ;
-	vlt_rmgui_circ_init(gui, x, y, r, c, lc, &circ);
+	vlt_rmgui_circ_init(gui, x, y, r, fill, line, &circ);
 	vlt_rmgui_poly_draw(gui, &circ, 0, 0);
 	vlt_rmgui_poly_destroy(&circ);
 }
@@ -487,19 +523,26 @@ static vlt_font *_get_font(vlt_gui *gui, u32 sz)
 	}
 }
 
-void vlt_gui_txt(vlt_gui *gui, s32 x, s32 y, s32 sz, const char *txt,
-                 vlt_color c, font_align align)
+static
+void _vlt_gui_txt_ex(vlt_gui *gui, s32 *x, s32 *y, s32 sz,
+                     const char *txt, font_align align)
 {
 	vlt_shader_program_bind(&gui->txt_shader);
 
-	_set_color_attrib(&gui->txt_shader, c);
+	_set_color_attrib(&gui->txt_shader, gui->style.text_color);
 	_set_win_halfdim_attrib(gui, &gui->txt_shader);
 
 	vlt_font *font = _get_font(gui, sz);
 	assert(font);
-	vlt_font_render(font, txt, x, y, &gui->txt_shader, align);
+	vlt_font_render_ex(font, txt, x, y, &gui->txt_shader, align);
 
 	vlt_shader_program_unbind();
+}
+
+void vlt_gui_txt(vlt_gui *gui, s32 x, s32 y, s32 sz,
+                 const char *txt, font_align align)
+{
+	_vlt_gui_txt_ex(gui, &x, &y, sz, txt, align);
 }
 
 void vlt_gui_mask(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
@@ -520,54 +563,212 @@ void vlt_gui_unmask(vlt_gui *gui)
 	glClear(GL_STENCIL_BUFFER_BIT);
 }
 
-void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 sz, char *txt, u32 n,
-                 vlt_color c, font_align align)
+static
+b8 _allow_new_interaction(const vlt_gui *gui)
 {
-	if (gui->key != 0)
+	switch (gui->hot_stage)
 	{
-		const u32 len = strlen(txt);
-		if (len > 0 && gui->key == KEY_BACKSPACE)
+	case NONE:
+	case HOVER:
+		return !vlt_gui_mouse_down(gui,
+			VLT_MB_LEFT | VLT_MB_MIDDLE | VLT_MB_RIGHT);
+	case INITIATE:
+		break;
+	}
+	return false;
+}
+
+void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 sz,
+                 char *txt, u32 n, font_align align)
+{
+	const u64 id = (u64)txt;
+	box2i box;
+	box2i_from_dims(&box, x, y+sz, x+w, y);
+	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
+	if (gui->active_id == id)
+	{
+		if (gui->key != 0)
 		{
-			txt[len-1] = '\0';
+			const u32 len = strlen(txt);
+			if (len > 0 && gui->key == KEY_BACKSPACE)
+			{
+				txt[len-1] = '\0';
+			}
+			else
+			{
+				char buf[2] = { gui->key, '\0' };
+				strncat(txt, buf, n-len-1);
+			}
 		}
-		else
+		if (   vlt_gui_mouse_press(gui, VLT_MB_LEFT)
+			&& !contains_mouse)
 		{
-			char buf[2] = { gui->key, '\0' };
-			strncat(txt, buf, n - len - 1);
+			gui->active_id = 0;
 		}
 	}
+	else if (gui->hot_id == id)
+	{
+		switch (gui->hot_stage)
+		{
+		case NONE:
+		case INITIATE:
+			assert(false);
+			break;
+		case HOVER:
+			if (!contains_mouse)
+			{
+				gui->hot_id = 0;
+				gui->hot_stage = NONE;
+			}
+			else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
+			{
+				gui->active_id = id;
+				gui->hot_id = 0;
+				gui->hot_stage = NONE;
+			}
+			break;
+		}
+	}
+	else if (   _allow_new_interaction(gui)
+	         && contains_mouse)
+	{
+		gui->hot_id = id;
+		gui->hot_stage = HOVER;
+	}
 
-	vlt_gui_txt(gui, x, y, sz, txt, c, align);
+
+	const vlt_color c = gui->hot_id == id || gui->active_id == id
+		? gui->style.text_color : gui->style.baseline_color;
+	vlt_gui_line(gui, x, y-2, x+w, y-2, c);
+	_vlt_gui_txt_ex(gui, &x, &y, sz, txt, align);
+	if (gui->active_id == id)
+	{
+		const u32 milli_since_creation =
+			vlt_diff_milli(&gui->creation_time, &gui->frame_start_time);
+		if (milli_since_creation % 1000 < 500)
+			vlt_gui_line(gui, x+1, y, x+1, y+sz, gui->style.text_color);
+	}
 }
 
-b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, vlt_color c, vlt_color lc)
+b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
-	vlt_gui_rect(gui, x, y, w, h, c, lc);
-	return vlt_gui_btn_invis(gui, x, y, w, h);
-}
-
-static
-b8 _vlt_gui_btn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, u32 mask)
-{
+	b8 retval = false;
+	const u64 id = (u64)txt;
 	box2i box;
-	box2i_from_dims(&box, x, y + h, x + w, y);
-	return (   gui->mouse_btn & mask)
-	        && box2i_contains_point(&box, &gui->mouse_pos);
+	box2i_from_dims(&box, x, y+h, x+w, y);
+	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
+	if (gui->hot_id == id)
+	{
+		switch (gui->hot_stage)
+		{
+		case NONE:
+			assert(false);
+			break;
+		case HOVER:
+			if (!contains_mouse)
+			{
+				gui->hot_id = 0;
+				gui->hot_stage = NONE;
+			}
+			else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
+			{
+				gui->hot_stage = INITIATE;
+			}
+			break;
+		case INITIATE:
+			if (vlt_gui_mouse_release(gui, VLT_MB_LEFT))
+			{
+				if (contains_mouse)
+				{
+					gui->hot_stage = HOVER;
+					retval = true;
+				}
+				else
+				{
+					gui->hot_id = 0;
+					gui->hot_stage = NONE;
+				}
+			}
+			break;
+		}
+	}
+	else if (   _allow_new_interaction(gui)
+	         && contains_mouse)
+	{
+		gui->hot_id = id;
+		gui->hot_stage = HOVER;
+	}
+
+
+	const vlt_color c = gui->hot_id == id && contains_mouse
+		? gui->style.hot_color : gui->style.fill_color;
+	vlt_gui_rect(gui, x, y, w, h, c, gui->style.outline_color);
+	vlt_gui_txt(gui, x+w/2, y, h, txt, FONT_ALIGN_CENTER);
+	return retval;
 }
 
-b8 vlt_gui_btn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
+void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 {
-	return _vlt_gui_btn_invis(gui, x, y, w, h, SDL_BUTTON_LMASK);
+	assert(*val >= 0.f && *val <= 1.f);
+
+	const u64 id = (u64)val;
+	box2i box;
+	{
+		const v2i center = { .x=x+h/2+(w-h)**val, .y=y+h/2 };
+		const v2i halfdim = { .x=h/2, .y=h/2 };
+		box2i_from_center(&box, &center, &halfdim);
+	}
+	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
+
+	if (gui->hot_id == id)
+	{
+		switch (gui->hot_stage)
+		{
+		case NONE:
+			assert(false);
+		case HOVER:
+			if (!contains_mouse)
+			{
+				gui->hot_id = 0;
+				gui->hot_stage = NONE;
+			}
+			else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
+			{
+				gui->hot_stage = INITIATE;
+			}
+			break;
+		case INITIATE:
+			if (!vlt_gui_mouse_release(gui, VLT_MB_LEFT))
+			{
+				const r32 min_x = x+h/2;
+				const r32 max_x = x+w-h/2;
+				*val = mathf_clamp(0,
+					(gui->mouse_pos.x - min_x) / (max_x - min_x), 1.f);
+			}
+			else
+			{
+				gui->hot_id = 0;
+				gui->hot_stage = NONE;
+			}
+			break;
+		}
+	}
+	else if (   _allow_new_interaction(gui)
+	         && contains_mouse)
+	{
+		gui->hot_id = id;
+		gui->hot_stage = HOVER;
+	}
+
+	vlt_gui_line(gui, x+h/2, y+h/2, x+w-h/2, y+h/2,
+		gui->style.baseline_color);
+	const vlt_color c = gui->hot_id == id
+		? gui->style.hot_color : gui->style.fill_color;
+	vlt_gui_rect(gui, x+(w-h)**val, y, h, h, c, gui->style.outline_color);
 }
 
-b8 vlt_gui_rbtn_invis(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
+vlt_style *vlt_gui_style(vlt_gui *gui)
 {
-	return _vlt_gui_btn_invis(gui, x, y, w, h, SDL_BUTTON_RMASK);
+	return &gui->style;
 }
 
-b8 vlt_gui_btn_circ(vlt_gui *gui, s32 x, s32 y, s32 r)
-{
-	v2i pos = { .x=x, .y=y };
-	return (gui->mouse_btn & SDL_BUTTON_LMASK)
-		   && v2i_dist(&pos, &gui->mouse_pos) <= r;
-}
