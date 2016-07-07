@@ -133,7 +133,7 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 	FT_ULong charcode;
 	FT_UInt glyph_idx;
 	charcode = FT_Get_First_Char(face, &glyph_idx);
-	u32 pixel_buf_sz = 32*32;
+	u32 pixel_buf_sz = 16*16;
 	u8 *pixels = malloc(pixel_buf_sz);
 	while (glyph_idx != 0)
 	{
