@@ -4,9 +4,9 @@
 
 #ifdef __unix__
 
-static b8 _timespec_diff(const struct timespec * start,
-	const struct timespec * stop,
-	struct timespec * res)
+static b8 _timespec_diff(const struct timespec *start,
+	const struct timespec *stop,
+	struct timespec *res)
 {
 	struct timespec mod_start;
 	mod_start.tv_nsec = start->tv_nsec;
@@ -30,12 +30,12 @@ static b8 _timespec_diff(const struct timespec * start,
 		return false;
 }
 
-void vlt_get_time(vlt_time * t)
+void vlt_get_time(vlt_time *t)
 {
 	clock_gettime(CLOCK_MONOTONIC, t);
 }
 
-u32 vlt_diff_milli(vlt_time * start, vlt_time * end)
+u32 vlt_diff_milli(const vlt_time *start, const vlt_time *end)
 {
 	// TODO(rgriege): handle start > end
 	vlt_time res;
@@ -51,16 +51,16 @@ void vlt_sleep_milli(u32 milli)
 
 #elif(_WIN32)
 
-void vlt_get_time(vlt_time * t)
+void vlt_get_time(vlt_time *t)
 {
 	QueryPerformanceCounter(t);
 }
 
-u32 vlt_diff_milli(vlt_time * start, vlt_time * end)
+u32 vlt_diff_milli(const vlt_time *start, const vlt_time *end)
 {
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
-	return (end->QuadPart - start->QuadPart) * 1000  / frequency.QuadPart;
+	return (end->QuadPart - start->QuadPart) * 1000 / frequency.QuadPart;
 }
 
 void vlt_sleep_milli(u32 milli)
