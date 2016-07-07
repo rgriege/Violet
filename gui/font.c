@@ -133,6 +133,8 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 	FT_ULong charcode;
 	FT_UInt glyph_idx;
 	charcode = FT_Get_First_Char(face, &glyph_idx);
+	u32 pixel_buf_sz = 32*32;
+	u8 *pixels = malloc(pixel_buf_sz);
 	while (glyph_idx != 0)
 	{
 		if (charcode > 127)
@@ -153,17 +155,25 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 		if (bitmap.buffer)
 		{
 			vlt_glyph * glyph = array_map_insert_null(&f->glyphs, &charcode);
-			const u32 tex_height = pow(2, ceil(log2(bitmap.rows)));
-			const u32 tex_width = max(4u, pow(2, ceil(log2(bitmap.width)))); // For some reason 2 doesn't work...
-			u8 * pixels = malloc(tex_height * tex_width);
+			// NOTE(rgriege): having issues with textures smaller than this
+			const u32 tex_height = max(16u,pow(2,ceil(log2(bitmap.rows))));
+			const u32 tex_width = max(16u,pow(2,ceil(log2(bitmap.width))));
+			const u32 tex_sz = tex_width*tex_height;
+			if (tex_sz > pixel_buf_sz)
+			{
+				free(pixels);
+				pixels = malloc(tex_sz);
+			}
 
 			for (int i = 0; i < bitmap.rows; ++i)
 			{
-				memcpy(pixels + i * tex_width, bitmap.buffer + i * bitmap.width, bitmap.width);
-				memset(pixels + i * tex_width + bitmap.width, 0, tex_width - bitmap.width);
+				memcpy(pixels+i*tex_width, bitmap.buffer+i*bitmap.width,
+					bitmap.width);
+				memset(pixels+i*tex_width+bitmap.width, 0,
+					tex_width-bitmap.width);
 			}
-			for (u32 i = bitmap.rows; i < tex_height; ++i)
-				memset(pixels + i * tex_width, 0, tex_width);
+			memset(pixels+bitmap.rows*tex_width, 0,
+				tex_width*(tex_height-bitmap.rows));
 
 			glGenVertexArrays(1, &glyph->vao);
 			glBindVertexArray(glyph->vao);
@@ -197,8 +207,6 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 			glyph->offset.x = face->glyph->bitmap_left;
 			glyph->offset.y = face->glyph->bitmap_top - (r32)tex_height;
 			glyph->advance = face->glyph->advance.x >> 6;
-
-			free(pixels);
 		}
 		else if (charcode == 32)
 			f->space_width = face->glyph->advance.x >> 6;
@@ -207,6 +215,7 @@ b8 vlt_font_load(vlt_font * f, const char * filename, u32 sz)
 
 		charcode = FT_Get_Next_Char(face, charcode, &glyph_idx);
 	}
+	free(pixels);
 	retval = true;
 
 err_face:
