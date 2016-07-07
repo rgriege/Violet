@@ -38,8 +38,10 @@ void BOX2_(from_line)(BOX2 *box, const V2 *start, const V2 *end)
 
 void BOX2_(from_center)(BOX2 *box, const V2 *center, const V2 *half_dim)
 {
-	V2_(sub)(center, half_dim, &box->top_left);
-	V2_(add)(center, half_dim, &box->bottom_right);
+	box->top_left.x = center->x - half_dim->x;
+	box->top_left.y = center->y + half_dim->x;
+	box->bottom_right.x = center->x + half_dim->x;
+	box->bottom_right.y = center->y - half_dim->x;
 }
 
 void BOX2_(from_dims)(BOX2 *box, SCALAR left, SCALAR top,
