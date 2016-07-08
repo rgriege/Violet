@@ -242,6 +242,13 @@ b8 vlt_gui_mouse_release(const vlt_gui *gui, u32 mask)
 	return !(gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
 }
 
+b8 vlt_gui_mouse_release_bg(const vlt_gui *gui, u32 mask)
+{
+	return vlt_gui_mouse_release(gui, mask)
+		&& gui->hot_id == 0
+		&& gui->active_id == 0;
+}
+
 void vlt_gui_mouse_scroll(const vlt_gui *gui, s32 *dir)
 {
 	if (gui->mouse_btn & VLT_MB_WHEELUP)

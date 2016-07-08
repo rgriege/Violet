@@ -27,6 +27,7 @@ void vlt_gui_mouse_pos(const vlt_gui *gui, s32 *x, s32 *y);
 b8 vlt_gui_mouse_press(const vlt_gui *gui, u32 mask);
 b8 vlt_gui_mouse_down(const vlt_gui *gui, u32 mask);
 b8 vlt_gui_mouse_release(const vlt_gui *gui, u32 mask);
+b8 vlt_gui_mouse_release_bg(const vlt_gui *gui, u32 mask);
 void vlt_gui_mouse_scroll(const vlt_gui *gui, s32 *dir);
 
 char vlt_gui_key(const vlt_gui *gui);
