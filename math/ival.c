@@ -23,12 +23,15 @@ b8 IVAL_(contains_val)(const IVAL *i, SCALAR x)
 
 b8 IVAL_(contains_ival)(const IVAL *lhs, const IVAL *rhs)
 {
-	return IVAL_(contains_val)(lhs, rhs->l) && IVAL_(contains_val)(lhs, rhs->r);
+	return    IVAL_(contains_val)(lhs, rhs->l)
+	       && IVAL_(contains_val)(lhs, rhs->r);
 }
 
 b8 IVAL_(overlaps)(const IVAL *lhs, const IVAL *rhs)
 {
-	return IVAL_(contains_val)(lhs, rhs->l) || IVAL_(contains_val)(lhs, rhs->r);
+	return    IVAL_(contains_val)(lhs, rhs->l)
+	       || IVAL_(contains_val)(lhs, rhs->r)
+	       || IVAL_(contains_val)(rhs, lhs->l);
 }
 
 SCALAR IVAL_(overlap)(const IVAL *lhs, const IVAL *rhs)
