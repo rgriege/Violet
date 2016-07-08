@@ -252,6 +252,11 @@ void vlt_gui_mouse_scroll(const vlt_gui *gui, s32 *dir)
 		*dir = 0;
 }
 
+char vlt_gui_key(const vlt_gui *gui)
+{
+	return gui->key;
+}
+
 b8 vlt_gui_begin_frame(vlt_gui *gui)
 {
 	vlt_time now;
