@@ -77,6 +77,8 @@ void vlt_gui_unmask(vlt_gui *gui);
 void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 sz,
                  char *txt, u32 n, font_align align);
 b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
+void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+                 b8 *val);
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
 
 
@@ -88,6 +90,7 @@ typedef struct vlt_style
 	vlt_color text_color;
 	vlt_color baseline_color;
 	vlt_color hot_color;
+	vlt_color chk_color;
 } vlt_style;
 
 vlt_style *vlt_gui_style(vlt_gui *gui);

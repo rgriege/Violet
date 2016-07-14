@@ -161,17 +161,19 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 	gui->key_repeat_delay = 500;
 	gui->key_repeat_timer = gui->key_repeat_delay;
 
-	const vlt_color bg_color = { .r=0x37, .g=0x3e, .b=0x48, .a=0xff };
+	vlt_color bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff };
 	gui->style.bg_color = bg_color;
-	const vlt_color fill_color = { .r=0x1c, .g=0x1f, .b=0x24, .a=0xff };
+	vlt_color fill_color = { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff };
 	gui->style.fill_color = fill_color;
 	gui->style.outline_color = g_nocolor;
-	const vlt_color text_color = { .r=0xdb, .g=0xde, .b=0xe3, .a=0xff };
+	vlt_color text_color = { .r=0xff, .g=0xff, .b=0xff, .a=0xff };
 	gui->style.text_color = text_color;
-	const vlt_color baseline_color = { .r=0x6f, .g=0x7c, .b=0x91, .a=0xff };
+	vlt_color baseline_color = { .r=0x33, .g=0x31, .b=0x31, .a=0xff };
 	gui->style.baseline_color = baseline_color;
-	const vlt_color hot_color = { .r=0x0b, .g=0x17, .b=0x28, .a=0xff };
+	vlt_color hot_color = { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff };
 	gui->style.hot_color = hot_color;
+	vlt_color chk_color = { .r=0xff, .g=0x92, .b=0x1e, .a=0xff };
+	gui->style.chk_color = chk_color;
 
 	gui->hot_id = gui->active_id = 0;
 	gui->hot_stage = NONE;
@@ -662,7 +664,9 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 sz,
 	}
 }
 
-b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
+static
+b8 _vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+                vlt_color default_fill)
 {
 	b8 retval = false;
 	const u64 id = (u64)txt;
@@ -713,10 +717,23 @@ b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 
 
 	const vlt_color c = gui->hot_id == id && contains_mouse
-		? gui->style.hot_color : gui->style.fill_color;
+		? gui->style.hot_color : default_fill;
 	vlt_gui_rect(gui, x, y, w, h, c, gui->style.outline_color);
 	vlt_gui_txt(gui, x+w/2, y, h, txt, FONT_ALIGN_CENTER);
 	return retval;
+}
+
+b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
+{
+	return _vlt_gui_btn(gui, x, y, w, h, txt, gui->style.fill_color);
+}
+
+void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+                 b8 *val)
+{
+	vlt_color c = *val ? gui->style.chk_color : gui->style.fill_color;
+	if (_vlt_gui_btn(gui, x, y, w, h, txt, c))
+		*val = !*val;
 }
 
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
