@@ -36,5 +36,6 @@ void array_reserve(array *a, u32 capacity);
 
 void array_reverse(array *a);
 void array_qsort(array *a, int(*comp)(const void *, const void *));
+b8 array_contains(const array *a, const void *elem);
 
 #endif

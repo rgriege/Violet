@@ -149,3 +149,13 @@ void array_qsort(array *a, int(*comp)(const void *, const void *))
 	qsort(a->data, a->size, a->elem_size, comp);
 }
 
+b8 array_contains(const array *a, const void *elem)
+{
+	for (u32 i = 0; i < a->size; ++i)
+	{
+		if (memcmp(elem, array_get(a, i), a->elem_size) == 0)
+			return true;
+	}
+	return false;
+}
+
