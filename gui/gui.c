@@ -500,6 +500,15 @@ void vlt_gui_circ(vlt_gui *gui, s32 x, s32 y, s32 r,
 	vlt_rmgui_poly_destroy(&circ);
 }
 
+void vlt_gui_poly(vlt_gui *gui, const v2f *v, u32 n,
+                  vlt_color fill, vlt_color line)
+{
+	vlt_rmgui_poly poly = { .fill_color = fill, .line_color = line };
+	vlt_rmgui_poly_init(gui, v, n, &poly.mesh, &poly.vao);
+	vlt_rmgui_poly_draw(gui, &poly, 0, 0);
+	vlt_rmgui_poly_destroy(&poly);
+}
+
 void vlt_gui_img(vlt_gui *gui, s32 x, s32 y, const char *filename)
 {
 	vlt_img *img = vlt_img_create();

@@ -69,6 +69,8 @@ void vlt_gui_rect(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                   vlt_color fill, vlt_color line);
 void vlt_gui_circ(vlt_gui *gui, s32 x, s32 y, s32 r,
                   vlt_color fill, vlt_color line);
+void vlt_gui_poly(vlt_gui *gui, const v2f *v, u32 n,
+                  vlt_color fill, vlt_color line);
 void vlt_gui_img(vlt_gui *gui, s32 x, s32 y, const char *img);
 void vlt_gui_txt(vlt_gui *gui, s32 x, s32 y, s32 sz, const char *txt,
                  font_align align);
