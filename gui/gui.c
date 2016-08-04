@@ -704,15 +704,9 @@ b8 _vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 			if (vlt_gui_mouse_release(gui, VLT_MB_LEFT))
 			{
 				if (contains_mouse)
-				{
-					gui->hot_stage = HOVER;
 					retval = true;
-				}
-				else
-				{
-					gui->hot_id = 0;
-					gui->hot_stage = NONE;
-				}
+				gui->hot_id = 0;
+				gui->hot_stage = NONE;
 			}
 			break;
 		}
