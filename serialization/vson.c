@@ -9,7 +9,7 @@
 
 static const char g_str_end = '\0';
 
-static b8 _vson_read_label(istream * s, const char * label)
+static b8 _vson_read_label(istream *s, const char *label)
 {
 	b8 retval = false;
 	char c = 0;
@@ -47,7 +47,7 @@ out:
 	return retval;
 }
 
-static b8 _vson_skip_rest_of_line(istream * s)
+static b8 _vson_skip_rest_of_line(istream *s)
 {
 	char c;
 	while (stream_read(s, &c, sizeof(char)) && c != '\n')
@@ -55,7 +55,7 @@ static b8 _vson_skip_rest_of_line(istream * s)
 	return c == '\n';
 }
 
-static b8 _vson_read_rest_of_line(istream * s, array * str)
+static b8 _vson_read_rest_of_line(istream *s, array *str)
 {
 	char c;
 	while (stream_read(s, &c, sizeof(char)) && c != '\n')
@@ -69,7 +69,7 @@ static b8 _vson_read_rest_of_line(istream * s, array * str)
 	return true;
 }
 
-b8 vson_read_b8(istream * s, const char * label, b8 * val)
+b8 vson_read_b8(istream *s, const char *label, b8 *val)
 {
 	char c;
 	if (   _vson_read_label(s, label)
@@ -83,7 +83,7 @@ b8 vson_read_b8(istream * s, const char * label, b8 * val)
 	return false;
 }
 
-b8 vson_read_s32(istream * s, const char * label, s32 * val)
+b8 vson_read_s32(istream *s, const char *label, s32 *val)
 {
 	if (!_vson_read_label(s, label))
 	{
@@ -104,7 +104,7 @@ b8 vson_read_s32(istream * s, const char * label, s32 * val)
 	return true;
 }
 
-b8 vson_read_u32(istream * s, const char * label, u32 * val)
+b8 vson_read_u32(istream *s, const char *label, u32 *val)
 {
 	if (!_vson_read_label(s, label))
 	{
@@ -125,7 +125,7 @@ b8 vson_read_u32(istream * s, const char * label, u32 * val)
 	return true;
 }
 
-b8 vson_read_r32(istream * s, const char * label, r32 * val)
+b8 vson_read_r32(istream *s, const char *label, r32 *val)
 {
 	if (!_vson_read_label(s, label))
 	{
@@ -146,7 +146,7 @@ b8 vson_read_r32(istream * s, const char * label, r32 * val)
 	return true;
 }
 
-b8 vson_read_str(istream * s, const char * label, char * val, u32 sz)
+b8 vson_read_str(istream *s, const char *label, char *val, u32 sz)
 {
 	if (!_vson_read_label(s, label))
 	{
@@ -154,7 +154,7 @@ b8 vson_read_str(istream * s, const char * label, char * val, u32 sz)
 		return false;
 	}
 
-	char * p = val;
+	char *p = val;
 	u32 i = 0;
 	while (i < sz && stream_read(s, p, sizeof(char)) && *p != '\n')
 	{
@@ -171,5 +171,31 @@ b8 vson_read_str(istream * s, const char * label, char * val, u32 sz)
 
 	*p = '\0';
 	return true;
+}
+
+
+void vson_write_b8(ostream *s, const char *label, b8 val)
+{
+	stream_write(s, "%s: %c\n", label, val ? 't' : 'f');
+}
+
+void vson_write_s32(ostream *s, const char *label, s32 val)
+{
+	stream_write(s, "%s: %d\n", label, val);
+}
+
+void vson_write_u32(ostream *s, const char *label, u32 val)
+{
+	stream_write(s, "%s: %u\n", label, val);
+}
+
+void vson_write_r32(ostream *s, const char *label, r32 val)
+{
+	stream_write(s, "%s: %f\n", label, val);
+}
+
+void vson_write_str(ostream *s, const char *label, const char *val)
+{
+	stream_write(s, "%s: %s\n", label, val);
 }
 
