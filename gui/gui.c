@@ -376,18 +376,46 @@ void vlt_rmgui_poly_init(vlt_gui *gui, const v2f *v, u32 n,
 }
 
 void vlt_rmgui_line_init(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1,
-                         vlt_color c, vlt_rmgui_poly *line)
+                         s32 w, vlt_color c, vlt_rmgui_poly *line)
 {
-	v2f vertices[2] = {
-		{ x0, y0 },
-		{ x1, y1 }
-	};
+	assert(w >= 1);
+	if (w == 1)
+	{
+		v2f vertices[2] = {
+			{ x0, y0 },
+			{ x1, y1 }
+		};
+		vlt_rmgui_poly_init(gui, vertices, 2, &line->mesh, &line->vao);
+		line->line_color = c;
+		line->fill_color = g_nocolor;
+	}
+	else
+	{
+		v2f vertices[4] = {
+			{ x0, y0 },
+			{ x0, y0 },
+			{ x1, y1 },
+			{ x1, y1 }
+		};
+		v2f dir, perp;
+		v2f_sub(vertices+2, vertices, &dir);
+		v2f_normalize(&dir, &dir);
+		v2f_scale(&dir, w/2.f, w/2.f, &dir);
+		v2f_perp(&dir, true, &perp);
+		v2f_sub(vertices, &dir, vertices);
+		v2f_sub(vertices, &perp, vertices);
+		v2f_sub(vertices+1, &dir, vertices+1);
+		v2f_add(vertices+1, &perp, vertices+1);
+		v2f_add(vertices+2, &dir, vertices+2);
+		v2f_add(vertices+2, &perp, vertices+2);
+		v2f_add(vertices+3, &dir, vertices+3);
+		v2f_sub(vertices+3, &perp, vertices+3);
 
-	vlt_rmgui_poly_init(gui, vertices, 2, &line->mesh, &line->vao);
-	line->line_color = c;
-	line->fill_color = g_nocolor;
+		vlt_rmgui_poly_init(gui, vertices, 4, &line->mesh, &line->vao);
+		line->line_color = g_nocolor;
+		line->fill_color = c;
+	}
 }
-
 
 void vlt_rmgui_rect_init(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                          vlt_color fill, vlt_color line, vlt_rmgui_poly *rect)
@@ -473,11 +501,11 @@ void vlt_rmgui_img_draw(vlt_gui *gui, vlt_img *img, s32 x, s32 y)
 
 /* Immediate Mode API */
 
-void vlt_gui_line(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1,
+void vlt_gui_line(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w,
                   vlt_color c)
 {
 	vlt_rmgui_poly line;
-	vlt_rmgui_line_init(gui, x0, y0, x1, y1, c, &line);
+	vlt_rmgui_line_init(gui, x0, y0, x1, y1, w, c, &line);
 	vlt_rmgui_poly_draw(gui, &line, 0, 0);
 	vlt_rmgui_poly_destroy(&line);
 }
@@ -662,14 +690,17 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 sz,
 
 	const vlt_color c = gui->hot_id == id || gui->active_id == id
 		? gui->style.text_color : gui->style.baseline_color;
-	vlt_gui_line(gui, x, y-2, x+w, y-2, c);
+	vlt_gui_line(gui, x, y-2, x+w, y-2, 1, c);
 	_vlt_gui_txt_ex(gui, &x, &y, sz, txt, align);
 	if (gui->active_id == id)
 	{
 		const u32 milli_since_creation =
 			vlt_diff_milli(&gui->creation_time, &gui->frame_start_time);
 		if (milli_since_creation % 1000 < 500)
-			vlt_gui_line(gui, x+1, y, x+1, y+sz, gui->style.text_color);
+		{
+			vlt_gui_line(gui, x+1, y, x+1, y+sz, 1,
+				gui->style.text_color);
+		}
 	}
 }
 
@@ -792,7 +823,7 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 		gui->hot_stage = HOVER;
 	}
 
-	vlt_gui_line(gui, x+h/2, y+h/2, x+w-h/2, y+h/2,
+	vlt_gui_line(gui, x+h/2, y+h/2, x+w-h/2, y+h/2, 1,
 		gui->style.baseline_color);
 	const vlt_color c = gui->hot_id == id
 		? gui->style.hot_color : gui->style.fill_color;
