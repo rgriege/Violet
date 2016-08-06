@@ -13,6 +13,7 @@
 #include "violet/math/r32.h"
 #include "violet/math/s32.h"
 #include "violet/structures/array_map.h"
+#include "violet/utility/hash.h"
 #include "violet/utility/log.h"
 #include "violet/utility/time.h"
 
@@ -709,7 +710,8 @@ b8 _vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                 vlt_color default_fill)
 {
 	b8 retval = false;
-	const u64 id = (u64)txt;
+	const u64 _x = x, _y = y;
+	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
