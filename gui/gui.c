@@ -706,8 +706,8 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 sz,
 }
 
 static
-b8 _vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
-                vlt_color default_fill, u64 id)
+b8 _vlt_gui_btn_logic(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                      const char *txt, u64 id, b8 *hot_hover)
 {
 	b8 retval = false;
 	box2i box;
@@ -748,30 +748,41 @@ b8 _vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 		gui->hot_id = id;
 		gui->hot_stage = HOVER;
 	}
-
-
-	const vlt_color c = gui->hot_id == id && contains_mouse
-		? gui->style.hot_color : default_fill;
-	vlt_gui_rect(gui, x, y, w, h, c, gui->style.outline_color);
-	vlt_gui_txt(gui, x+w/2, y, h, txt, FONT_ALIGN_CENTER);
+	*hot_hover = gui->hot_id == id && contains_mouse;
 	return retval;
+}
+
+static
+void _vlt_gui_btn_render(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                         const char *txt, vlt_color fill)
+{
+	vlt_gui_rect(gui, x, y, w, h, fill, gui->style.outline_color);
+	vlt_gui_txt(gui, x+w/2, y, h, txt, FONT_ALIGN_CENTER);
 }
 
 b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
 	const u64 _x = x, _y = y;
 	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
-	return _vlt_gui_btn(gui, x, y, w, h, txt, gui->style.fill_color, id);
+	b8 hot_hover;
+	const b8 result = _vlt_gui_btn_logic(gui, x, y, w, h, txt, id,
+		&hot_hover);
+	_vlt_gui_btn_render(gui, x, y, w, h, txt,
+		hot_hover ? gui->style.hot_color : gui->style.fill_color);
+	return result;
 }
 
 void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                  b8 *val)
 {
-	vlt_color c = *val ? gui->style.chk_color : gui->style.fill_color;
 	const u64 _x = x, _y = y;
 	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
-	if (_vlt_gui_btn(gui, x, y, w, h, txt, c, id))
+	b8 hot_hover;
+	if (_vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &hot_hover))
 		*val = !*val;
+	_vlt_gui_btn_render(gui, x, y, w, h, txt,
+		hot_hover ? gui->style.hot_color :
+		*val ? gui->style.chk_color : gui->style.fill_color);
 }
 
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
@@ -838,12 +849,15 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, u32 *val, u32 opt)
 {
 	const b8 selected = *val == opt;
-	vlt_color c = selected ? gui->style.chk_color : gui->style.fill_color;
 	const u64 _opt = opt;
 	const u64 id = (_opt << 32) | (u64)val;
-	if (   _vlt_gui_btn(gui, x, y, w, h, txt, c, id)
+	b8 hot_hover;
+	if (   _vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &hot_hover)
 	    && !selected)
 		*val = opt;
+	_vlt_gui_btn_render(gui, x, y, w, h, txt,
+		hot_hover ? gui->style.hot_color :
+		*val == opt ? gui->style.chk_color : gui->style.fill_color);
 }
 
 vlt_style *vlt_gui_style(vlt_gui *gui)
