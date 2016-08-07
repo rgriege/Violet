@@ -107,6 +107,8 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
 	gui->window = SDL_CreateWindow(title, max(x, 5), max(y, 30), w, h, SDL_WINDOW_OPENGL);
 	if (gui->window == NULL)
@@ -141,6 +143,7 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0x00);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glEnable(GL_MULTISAMPLE);
 
 	if (!vlt_shader_program_load(&gui->poly_shader, "poly"))
 		goto err_glew;
