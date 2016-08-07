@@ -692,11 +692,11 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 		gui->hot_stage = HOVER;
 	}
 
-
 	const vlt_color c = gui->hot_id == id || gui->active_id == id
 		? gui->style.text_color : gui->style.baseline_color;
-	vlt_gui_line(gui, x, y-2, x+w, y-2, 1, c);
-	s32 txt_y = y + (1.f-gui->style.font_ratio)/2.f;
+	vlt_gui_rect(gui, x, y, w, h, g_nocolor, c);
+	x += 2;
+	s32 txt_y = y + h*(1.f-gui->style.font_ratio)/2.f;
 	_vlt_gui_txt_ex(gui, &x, &txt_y, h*gui->style.font_ratio, txt, align);
 	if (gui->active_id == id)
 	{
@@ -704,7 +704,7 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 			vlt_diff_milli(&gui->creation_time, &gui->frame_start_time);
 		if (milli_since_creation % 1000 < 500)
 		{
-			vlt_gui_line(gui, x+1, y, x+1, y+h, 1,
+			vlt_gui_line(gui, x+1, txt_y, x+1, y+h-2, 1,
 				gui->style.text_color);
 		}
 	}
