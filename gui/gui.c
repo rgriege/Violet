@@ -175,6 +175,7 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 	gui->style.hot_color = hot_color;
 	vlt_color chk_color = { .r=0xff, .g=0x92, .b=0x1e, .a=0xff };
 	gui->style.chk_color = chk_color;
+	gui->style.font_ratio = 0.6f;
 
 	gui->hot_id = gui->active_id = 0;
 	gui->hot_stage = NONE;
@@ -630,12 +631,12 @@ b8 _allow_new_interaction(const vlt_gui *gui)
 	return false;
 }
 
-void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 sz,
+void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                  char *txt, u32 n, font_align align)
 {
 	const u64 id = (u64)txt;
 	box2i box;
-	box2i_from_dims(&box, x, y+sz, x+w, y);
+	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
 	if (gui->active_id == id)
 	{
@@ -692,14 +693,15 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 sz,
 	const vlt_color c = gui->hot_id == id || gui->active_id == id
 		? gui->style.text_color : gui->style.baseline_color;
 	vlt_gui_line(gui, x, y-2, x+w, y-2, 1, c);
-	_vlt_gui_txt_ex(gui, &x, &y, sz, txt, align);
+	s32 txt_y = y + (1.f-gui->style.font_ratio)/2.f;
+	_vlt_gui_txt_ex(gui, &x, &txt_y, h*gui->style.font_ratio, txt, align);
 	if (gui->active_id == id)
 	{
 		const u32 milli_since_creation =
 			vlt_diff_milli(&gui->creation_time, &gui->frame_start_time);
 		if (milli_since_creation % 1000 < 500)
 		{
-			vlt_gui_line(gui, x+1, y, x+1, y+sz, 1,
+			vlt_gui_line(gui, x+1, y, x+1, y+h, 1,
 				gui->style.text_color);
 		}
 	}
@@ -757,7 +759,9 @@ void _vlt_gui_btn_render(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                          const char *txt, vlt_color fill)
 {
 	vlt_gui_rect(gui, x, y, w, h, fill, gui->style.outline_color);
-	vlt_gui_txt(gui, x+w/2, y, h, txt, FONT_ALIGN_CENTER);
+	const s32 txt_y = y + h*(1.f-gui->style.font_ratio)/2.f;
+	vlt_gui_txt(gui, x+w/2, txt_y, h*gui->style.font_ratio, txt,
+		FONT_ALIGN_CENTER);
 }
 
 b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
