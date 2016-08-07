@@ -853,8 +853,7 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, u32 *val, u32 opt)
 {
 	const b8 selected = *val == opt;
-	const u64 _opt = opt;
-	const u64 id = (_opt << 32) | (u64)val;
+	const u64 id = (u64)val + opt;
 	b8 hot_hover;
 	if (   _vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &hot_hover)
 	    && !selected)
