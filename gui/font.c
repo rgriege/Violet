@@ -83,7 +83,7 @@ typedef struct vlt_font
 	u32 sz;
 	array_map glyphs; // char -> vlt_glyph
 	u32 space_width;
-	u32 line_dist;
+	u32 newline_dist;
 } vlt_font;
 
 vlt_font *vlt_font_create()
@@ -125,7 +125,7 @@ b8 vlt_font_load(vlt_font *f, const char *filename, u32 sz)
 	f->filename = filename;
 	f->sz = sz;
 	f->space_width = sz; // default
-	f->line_dist = face->height >> 6;
+	f->newline_dist = face->height >> 6;
 	array_map_init(&f->glyphs, sizeof(char), sizeof(vlt_glyph));
 	array_reserve(&f->glyphs.pairs, 128);
 
@@ -135,6 +135,7 @@ b8 vlt_font_load(vlt_font *f, const char *filename, u32 sz)
 	charcode = FT_Get_First_Char(face, &glyph_idx);
 	u32 pixel_buf_sz = 16*16;
 	u8 *pixels = malloc(pixel_buf_sz);
+	s32 min_y = 0;
 	while (glyph_idx != 0)
 	{
 		if (charcode > 127)
@@ -154,7 +155,7 @@ b8 vlt_font_load(vlt_font *f, const char *filename, u32 sz)
 		const FT_Bitmap bitmap = face->glyph->bitmap;
 		if (bitmap.buffer)
 		{
-			vlt_glyph * glyph = array_map_insert_null(&f->glyphs, &charcode);
+			vlt_glyph *glyph = array_map_insert_null(&f->glyphs, &charcode);
 			// NOTE(rgriege): having issues with textures smaller than this
 			const u32 tex_height = max(16u,pow(2,ceil(log2(bitmap.rows))));
 			const u32 tex_width = max(16u,pow(2,ceil(log2(bitmap.width))));
@@ -205,7 +206,10 @@ b8 vlt_font_load(vlt_font *f, const char *filename, u32 sz)
 			glBindVertexArray(0);
 
 			glyph->offset.x = face->glyph->bitmap_left;
-			glyph->offset.y = face->glyph->bitmap_top - (r32)tex_height;
+			glyph->offset.y = face->glyph->bitmap_top - tex_height;
+			const s32 y = face->glyph->bitmap_top - bitmap.rows;
+			if (y < min_y)
+				min_y = y;
 			glyph->advance = face->glyph->advance.x >> 6;
 		}
 		else if (charcode == 32)
@@ -215,6 +219,14 @@ b8 vlt_font_load(vlt_font *f, const char *filename, u32 sz)
 
 		charcode = FT_Get_Next_Char(face, charcode, &glyph_idx);
 	}
+
+	array_map_iter it = {0};
+	while (array_map_iterate(&f->glyphs, &it))
+	{
+		vlt_glyph *g = it.val;
+		g->offset.y -= min_y;
+	}
+
 	free(pixels);
 	retval = true;
 
@@ -292,7 +304,7 @@ void vlt_font_render_ex(vlt_font *f, const char *txt, s32 *x, s32 *y,
 			break;
 
 		case '\r':
-			*y -= f->line_dist;
+			*y -= f->newline_dist;
 			*x = x_orig;
 			if (i < end - 1)
 				off = _line_offset_x(f, txt + i + 1, align);
