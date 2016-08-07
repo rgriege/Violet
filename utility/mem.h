@@ -10,11 +10,9 @@ static inline void memswp(void *a, void *b, u32 sz, void *tmp)
 	memcpy(b, tmp, sz);
 }
 
-static inline void memswp_s(void *a, void *b, u32 sz, char *tmp)
-{
-	assert(sz <= sizeof(tmp));
+#define memswp_s(a, b, sz, tmp) \
+	assert(sz <= sizeof(tmp)); \
 	memswp(a, b, sz, tmp);
-}
 
 #endif
 
