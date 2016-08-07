@@ -82,6 +82,8 @@ b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                  b8 *val);
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
+void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                    const char *txt, u32 *val, u32 opt);
 
 
 typedef struct vlt_style

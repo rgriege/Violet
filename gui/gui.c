@@ -707,11 +707,9 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 sz,
 
 static
 b8 _vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
-                vlt_color default_fill)
+                vlt_color default_fill, u64 id)
 {
 	b8 retval = false;
-	const u64 _x = x, _y = y;
-	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
@@ -761,14 +759,18 @@ b8 _vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 
 b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
-	return _vlt_gui_btn(gui, x, y, w, h, txt, gui->style.fill_color);
+	const u64 _x = x, _y = y;
+	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
+	return _vlt_gui_btn(gui, x, y, w, h, txt, gui->style.fill_color, id);
 }
 
 void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                  b8 *val)
 {
 	vlt_color c = *val ? gui->style.chk_color : gui->style.fill_color;
-	if (_vlt_gui_btn(gui, x, y, w, h, txt, c))
+	const u64 _x = x, _y = y;
+	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
+	if (_vlt_gui_btn(gui, x, y, w, h, txt, c, id))
 		*val = !*val;
 }
 
@@ -830,6 +832,18 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 	const vlt_color c = gui->hot_id == id
 		? gui->style.hot_color : gui->style.fill_color;
 	vlt_gui_rect(gui, x+(w-h)**val, y, h, h, c, gui->style.outline_color);
+}
+
+void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                    const char *txt, u32 *val, u32 opt)
+{
+	const b8 selected = *val == opt;
+	vlt_color c = selected ? gui->style.chk_color : gui->style.fill_color;
+	const u64 _opt = opt;
+	const u64 id = (_opt << 32) | (u64)val;
+	if (   _vlt_gui_btn(gui, x, y, w, h, txt, c, id)
+	    && !selected)
+		*val = opt;
 }
 
 vlt_style *vlt_gui_style(vlt_gui *gui)
