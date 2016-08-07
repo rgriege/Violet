@@ -167,17 +167,14 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 
 	vlt_color bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff };
 	gui->style.bg_color = bg_color;
-	vlt_color fill_color = { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff };
-	gui->style.fill_color = fill_color;
+	gui->style.fill_color = g_lightblue;
 	gui->style.outline_color = g_nocolor;
-	vlt_color text_color = { .r=0xff, .g=0xff, .b=0xff, .a=0xff };
-	gui->style.text_color = text_color;
+	gui->style.text_color = g_white;
 	vlt_color baseline_color = { .r=0x33, .g=0x31, .b=0x31, .a=0xff };
 	gui->style.baseline_color = baseline_color;
 	vlt_color hot_color = { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff };
 	gui->style.hot_color = hot_color;
-	vlt_color chk_color = { .r=0xff, .g=0x92, .b=0x1e, .a=0xff };
-	gui->style.chk_color = chk_color;
+	gui->style.chk_color = g_orange;
 	gui->style.font_ratio = 0.6f;
 
 	gui->hot_id = gui->active_id = 0;

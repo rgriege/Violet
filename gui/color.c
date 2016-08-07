@@ -5,11 +5,15 @@
 #include "violet/utility/log.h"
 
 const vlt_color g_black = { .r = 0, .g = 0, .b = 0, .a = 255 };
-const vlt_color g_white = { .r = 255, .g = 255, .b = 255, .a = 255 };
-const vlt_color g_red = { .r = 255, .g = 0, .b = 0, .a = 255 };
-const vlt_color g_green = { .r = 0, .g = 255, .b = 0, .a = 255 };
-const vlt_color g_blue = { .r = 0, .g = 0, .b = 255, .a = 255 };
 const vlt_color g_grey128 = { .r = 128, .g = 128, .b = 128, .a = 255 };
+const vlt_color g_white = { .r = 255, .g = 255, .b = 255, .a = 255 };
+
+const vlt_color g_red = { .r = 255, .g = 0, .b = 0, .a = 255 };
+const vlt_color g_orange = { .r = 0xff, .g = 0x92, .b = 0x1e, .a = 255 };
+const vlt_color g_green = { .r = 0, .g = 255, .b = 0, .a = 255 };
+const vlt_color g_lightblue = { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff };
+const vlt_color g_blue = { .r = 0, .g = 0, .b = 255, .a = 255 };
+
 const vlt_color g_nocolor = { .r = 0, .g = 0, .b = 0, .a = 0 };
 
 void vlt_color_as_float_array(float * f, vlt_color c)
