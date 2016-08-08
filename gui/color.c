@@ -4,19 +4,7 @@
 #include "violet/gui/color.h"
 #include "violet/utility/log.h"
 
-const vlt_color g_black = { .r = 0, .g = 0, .b = 0, .a = 255 };
-const vlt_color g_grey128 = { .r = 128, .g = 128, .b = 128, .a = 255 };
-const vlt_color g_white = { .r = 255, .g = 255, .b = 255, .a = 255 };
-
-const vlt_color g_red = { .r = 255, .g = 0, .b = 0, .a = 255 };
-const vlt_color g_orange = { .r = 0xff, .g = 0x92, .b = 0x1e, .a = 255 };
-const vlt_color g_green = { .r = 0, .g = 255, .b = 0, .a = 255 };
-const vlt_color g_lightblue = { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff };
-const vlt_color g_blue = { .r = 0, .g = 0, .b = 255, .a = 255 };
-
-const vlt_color g_nocolor = { .r = 0, .g = 0, .b = 0, .a = 0 };
-
-void vlt_color_as_float_array(float * f, vlt_color c)
+void vlt_color_as_float_array(float *f, vlt_color c)
 {
 	f[0] = c.r / 255.f;
 	f[1] = c.g / 255.f;
@@ -24,7 +12,7 @@ void vlt_color_as_float_array(float * f, vlt_color c)
 	f[3] = c.a / 255.f;
 }
 
-vlt_color vlt_color_from_hex(const char * hex)
+vlt_color vlt_color_from_hex(const char *hex)
 {
 	vlt_color c = g_nocolor;
 	if (*hex == '#')
@@ -62,3 +50,4 @@ b8 vlt_color_equal(vlt_color lhs, vlt_color rhs)
 {
 	return memcmp(&lhs, &rhs, sizeof(vlt_color)) == 0;
 }
+

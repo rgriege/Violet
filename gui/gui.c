@@ -17,6 +17,22 @@
 #include "violet/utility/log.h"
 #include "violet/utility/time.h"
 
+
+const vlt_style g_default_style = {
+	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
+	.fill_color = { .r=0x4d, .g=0x4d, .b=0x4d, .a=0xff },
+	.hot_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+	.active_color = g_orange,
+	.outline_color = g_nocolor,
+	.hot_line_color = g_nocolor,
+	.active_line_color = g_nocolor,
+	.text_color = g_white,
+	.hot_text_color = g_white,
+	.active_text_color = g_white,
+	.font_ratio = 0.6f
+};
+
+
 int SDL_FilterEvent(void *userdata, SDL_Event *event)
 {
 	switch (event->type)
@@ -67,6 +83,13 @@ typedef enum _hot_stage
 	INITIATE
 } _hot_stage;
 
+typedef enum _engagement
+{
+	INACTIVE,
+	HOT,
+	ACTIVE
+} _engagement;
+
 typedef struct vlt_gui
 {
 	vlt_time creation_time;
@@ -85,6 +108,7 @@ typedef struct vlt_gui
 	u32 key_repeat_delay;
 	u32 key_repeat_timer;
 	array_map fonts; // sz -> vlt_font *
+	vlt_style default_style;
 	vlt_style style;
 	u64 hot_id;
 	_hot_stage hot_stage;
@@ -165,17 +189,8 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 	gui->key_repeat_delay = 500;
 	gui->key_repeat_timer = gui->key_repeat_delay;
 
-	vlt_color bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff };
-	gui->style.bg_color = bg_color;
-	gui->style.fill_color = g_lightblue;
-	gui->style.outline_color = g_nocolor;
-	gui->style.text_color = g_white;
-	vlt_color baseline_color = { .r=0x33, .g=0x31, .b=0x31, .a=0xff };
-	gui->style.baseline_color = baseline_color;
-	vlt_color hot_color = { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff };
-	gui->style.hot_color = hot_color;
-	gui->style.chk_color = g_orange;
-	gui->style.font_ratio = 0.6f;
+	gui->default_style = g_default_style;
+	vlt_gui_style_default(gui);
 
 	gui->hot_id = gui->active_id = 0;
 	gui->hot_stage = NONE;
@@ -578,11 +593,11 @@ static vlt_font *_get_font(vlt_gui *gui, u32 sz)
 
 static
 void _vlt_gui_txt_ex(vlt_gui *gui, s32 *x, s32 *y, s32 sz,
-                     const char *txt, font_align align)
+                     const char *txt, font_align align, vlt_color c)
 {
 	vlt_shader_program_bind(&gui->txt_shader);
 
-	_set_color_attrib(&gui->txt_shader, gui->style.text_color);
+	_set_color_attrib(&gui->txt_shader, c);
 	_set_win_halfdim_attrib(gui, &gui->txt_shader);
 
 	vlt_font *font = _get_font(gui, sz);
@@ -595,7 +610,7 @@ void _vlt_gui_txt_ex(vlt_gui *gui, s32 *x, s32 *y, s32 sz,
 void vlt_gui_txt(vlt_gui *gui, s32 x, s32 y, s32 sz,
                  const char *txt, font_align align)
 {
-	_vlt_gui_txt_ex(gui, &x, &y, sz, txt, align);
+	_vlt_gui_txt_ex(gui, &x, &y, sz, txt, align, gui->style.text_color);
 }
 
 void vlt_gui_mask(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
@@ -631,6 +646,45 @@ b8 _allow_new_interaction(const vlt_gui *gui)
 	return false;
 }
 
+static
+void _engagement_color(const vlt_gui *gui, _engagement engagement,
+                       vlt_color *fill, vlt_color *outline)
+{
+	switch (engagement)
+	{
+	case INACTIVE:
+		*fill = gui->style.fill_color;
+		*outline = gui->style.outline_color;
+	break;
+	case HOT:
+		*fill = gui->style.hot_color;
+		*outline = gui->style.hot_line_color;
+	break;
+	case ACTIVE:
+		*fill = gui->style.active_color;
+		*outline = gui->style.active_line_color;
+	break;
+	}
+}
+
+static
+void _engagement_text_color(const vlt_gui *gui, _engagement engagement,
+                            vlt_color *c)
+{
+	switch (engagement)
+	{
+	case INACTIVE:
+		*c = gui->style.text_color;
+	break;
+	case HOT:
+		*c = gui->style.hot_text_color;
+	break;
+	case ACTIVE:
+		*c = gui->style.active_text_color;
+	break;
+	}
+}
+
 void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                  char *txt, u32 n, font_align align)
 {
@@ -638,6 +692,7 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
+	_engagement engagement = INACTIVE;
 	if (gui->active_id == id)
 	{
 		if (gui->key != 0)
@@ -657,7 +712,10 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 			&& !contains_mouse)
 		{
 			gui->active_id = 0;
+			engagement = INACTIVE;
 		}
+		else
+			engagement = ACTIVE;
 	}
 	else if (gui->hot_id == id)
 	{
@@ -672,13 +730,17 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 			{
 				gui->hot_id = 0;
 				gui->hot_stage = NONE;
+				engagement = INACTIVE;
 			}
 			else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
 			{
 				gui->active_id = id;
 				gui->hot_id = 0;
 				gui->hot_stage = NONE;
+				engagement = ACTIVE;
 			}
+			else
+				engagement = HOT;
 			break;
 		}
 	}
@@ -687,23 +749,24 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	{
 		gui->hot_id = id;
 		gui->hot_stage = HOVER;
+		engagement = HOT;
 	}
 
-	const vlt_color c = gui->hot_id == id || gui->active_id == id
-		? gui->style.text_color : gui->style.baseline_color;
-	vlt_gui_rect(gui, x, y, w, h, g_nocolor, c);
+
+	vlt_color fill, line, text_color;
+	_engagement_color(gui, engagement, &fill, &line);
+	_engagement_text_color(gui, engagement, &text_color);
+	vlt_gui_rect(gui, x, y, w, h, fill, line);
 	x += 2;
 	s32 txt_y = y + h*(1.f-gui->style.font_ratio)/2.f;
-	_vlt_gui_txt_ex(gui, &x, &txt_y, h*gui->style.font_ratio, txt, align);
+	_vlt_gui_txt_ex(gui, &x, &txt_y, h*gui->style.font_ratio, txt, align,
+		text_color);
 	if (gui->active_id == id)
 	{
 		const u32 milli_since_creation =
 			vlt_diff_milli(&gui->creation_time, &gui->frame_start_time);
 		if (milli_since_creation % 1000 < 500)
-		{
-			vlt_gui_line(gui, x+1, txt_y, x+1, y+h-2, 1,
-				gui->style.text_color);
-		}
+			vlt_gui_line(gui, x+1, txt_y, x+1, y+h-2, 1, text_color);
 	}
 }
 
@@ -786,7 +849,7 @@ void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 		*val = !*val;
 	_vlt_gui_btn_render(gui, x, y, w, h, txt,
 		hot_hover ? gui->style.hot_color :
-		*val ? gui->style.chk_color : gui->style.fill_color);
+		*val ? gui->style.active_color : gui->style.fill_color);
 }
 
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
@@ -843,7 +906,7 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 	}
 
 	vlt_gui_line(gui, x+h/2, y+h/2, x+w-h/2, y+h/2, 1,
-		gui->style.baseline_color);
+		gui->style.outline_color);
 	const vlt_color c = gui->hot_id == id
 		? gui->style.hot_color : gui->style.fill_color;
 	vlt_gui_rect(gui, x+(w-h)**val, y, h, h, c, gui->style.outline_color);
@@ -860,11 +923,21 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 		*val = opt;
 	_vlt_gui_btn_render(gui, x, y, w, h, txt,
 		hot_hover ? gui->style.hot_color :
-		*val == opt ? gui->style.chk_color : gui->style.fill_color);
+		*val == opt ? gui->style.active_color : gui->style.fill_color);
 }
 
-vlt_style *vlt_gui_style(vlt_gui *gui)
+vlt_style *vlt_gui_get_style(vlt_gui *gui)
 {
 	return &gui->style;
+}
+
+void vlt_gui_style(vlt_gui *gui, const vlt_style *style)
+{
+	gui->style = *style;
+}
+
+void vlt_gui_style_default(vlt_gui *gui)
+{
+	vlt_gui_style(gui, &gui->default_style);
 }
 
