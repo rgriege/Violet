@@ -101,7 +101,7 @@ typedef struct vlt_style
 	r32 font_ratio;
 } vlt_style;
 
-vlt_style *vlt_gui_get_style(vlt_gui *gui);
+const vlt_style *vlt_gui_get_style(vlt_gui *gui);
 void vlt_gui_style(vlt_gui *gui, const vlt_style *style);
 void vlt_gui_style_default(vlt_gui *gui);
 

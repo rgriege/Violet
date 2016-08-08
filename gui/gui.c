@@ -926,7 +926,7 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 		*val == opt ? gui->style.active_color : gui->style.fill_color);
 }
 
-vlt_style *vlt_gui_get_style(vlt_gui *gui)
+const vlt_style *vlt_gui_get_style(vlt_gui *gui)
 {
 	return &gui->style;
 }
