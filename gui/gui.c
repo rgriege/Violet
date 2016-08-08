@@ -113,6 +113,7 @@ typedef struct vlt_gui
 	u64 hot_id;
 	_hot_stage hot_stage;
 	u64 active_id;
+	v2i drag_offset;
 } vlt_gui;
 
 vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
@@ -194,6 +195,8 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 
 	gui->hot_id = gui->active_id = 0;
 	gui->hot_stage = NONE;
+
+	gui->drag_offset = g_v2i_zero;
 
 	goto out;
 
@@ -924,6 +927,91 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	_vlt_gui_btn_render(gui, x, y, w, h, txt,
 		hot_hover ? gui->style.hot_color :
 		*val == opt ? gui->style.active_color : gui->style.fill_color);
+}
+
+static
+b8 _vlt_gui_drag(vlt_gui *gui, s32 *x, s32 *y, b8 contains_mouse,
+                 vlt_mb mb, _engagement *engagement)
+{
+	b8 retval = false;
+	const u64 id = (u64)x;
+	if (gui->hot_id == id)
+	{
+		switch (gui->hot_stage)
+		{
+		case NONE:
+		case INITIATE:
+			assert(false);
+			break;
+		case HOVER:
+			if (!contains_mouse)
+			{
+				gui->hot_id = 0;
+				gui->hot_stage = NONE;
+				*engagement = INACTIVE;
+			}
+			else if (vlt_gui_mouse_press(gui, mb))
+			{
+				gui->active_id = id;
+				gui->drag_offset.x = *x - gui->mouse_pos.x;
+				gui->drag_offset.y = *y - gui->mouse_pos.y;
+				gui->hot_id = 0;
+				gui->hot_stage = NONE;
+				*engagement = ACTIVE;
+			}
+			else
+				*engagement = HOT;
+			break;
+		}
+	}
+	else if (gui->active_id == id)
+	{
+		*x = gui->mouse_pos.x + gui->drag_offset.x;
+		*y = gui->mouse_pos.y + gui->drag_offset.y;
+		retval = true;
+		if (vlt_gui_mouse_release(gui, mb))
+		{
+			gui->active_id = 0;
+			*engagement = INACTIVE;
+		}
+		else
+			*engagement = ACTIVE;
+	}
+	else if (   _allow_new_interaction(gui)
+	         && contains_mouse)
+	{
+		gui->hot_id = id;
+		gui->hot_stage = HOVER;
+		*engagement = HOT;
+	}
+	else
+		*engagement = INACTIVE;
+	return retval;
+}
+
+b8 vlt_gui_drag(vlt_gui *gui, s32 *x, s32 *y, u32 w, u32 h, vlt_mb mb)
+{
+	box2i box;
+	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
+	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
+	_engagement engagement;
+	const b8 ret=_vlt_gui_drag(gui, x, y, contains_mouse, mb, &engagement);
+	vlt_color fill, outline;
+	_engagement_color(gui, engagement, &fill, &outline);
+	vlt_gui_rect(gui, *x, *y, w, h, fill, outline);
+	return ret;
+}
+
+b8 vlt_gui_cdrag(vlt_gui *gui, s32 *x, s32 *y, u32 r, vlt_mb mb)
+{
+	const v2i pos = { .x=*x, .y=*y };
+	const b8 contains_mouse = v2i_dist_sq(&pos, &gui->mouse_pos) <= r*r;
+	_engagement engagement;
+	const b8 ret=_vlt_gui_drag(gui, x, y, contains_mouse, mb, &engagement);
+	vlt_color fill, outline;
+	_engagement_color(gui, engagement, &fill, &outline);
+	vlt_gui_circ(gui, *x, *y, r, fill, outline);
+	return ret;
 }
 
 const vlt_style *vlt_gui_get_style(vlt_gui *gui)
