@@ -1,4 +1,4 @@
-#ifndef _MATH_INTERFACE_END
+#ifdef _MATH_DEFINES
 #include <math.h>
 
 #include "violet/core/macros.h"
@@ -7,6 +7,10 @@
 #define V2 CONCAT(v2, SUFFIX)
 #define V2_(name) CONCAT(V2, CONCAT(_, name))
 #define V2G_(name) CONCAT(g_, V2_(name))
+
+#endif // _MATH_DEFINES
+
+#ifdef _MATH_INTERFACE
 
 typedef struct V2
 {
@@ -173,8 +177,10 @@ static inline b8 V2_(share_quadrant)(const V2 * lhs, const V2 * rhs)
 	return V2_(dot)(lhs, rhs) >= 0;
 }
 
-#else // _MATH_INTERFACE_END
+#endif // _MATH_INTERFACE
+
+#ifdef _MATH_UNDEFINES
 #undef V2_
 #undef V2
-#endif // _MATH_INTERFACE_END
+#endif // _MATH_UNDEFINES
 

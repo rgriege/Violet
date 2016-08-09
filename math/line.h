@@ -1,4 +1,4 @@
-#ifndef _MATH_INTERFACE_END
+#ifdef _MATH_INTERFACE
 
 void MATH_(line_extrapolate)(const V2 *a, const V2 *b, SCALAR t, V2 *p);
 b8 MATH_(ray_intersect_coords)(const V2 *a, const V2 *adir,
@@ -18,5 +18,5 @@ void MATH_(nearest_point_on_line)(const V2 *a, const V2 *b, const V2 *p,
 SCALAR MATH_(point_to_segment_dist)(const V2 *a, const V2 *b, const V2 *p);
 SCALAR MATH_(point_to_line_dist)(const V2 *a, const V2 *b, const V2 *p);
 
-#endif // _MATH_INTERFACE_END
+#endif // _MATH_INTERFACE
 

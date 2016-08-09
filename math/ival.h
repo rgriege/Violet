@@ -1,8 +1,12 @@
-#ifndef _MATH_INTERFACE_END
+#ifdef _MATH_DEFINES
 
 #define IVAL CONCAT(ival, SUFFIX)
 #define IVAL_(name) CONCAT(IVAL, CONCAT(_, name))
 #define IVALG_(name) CONCAT(g_, IVAL_(name))
+
+#endif // _MATH_DEFINES
+
+#ifdef _MATH_INTERFACE
 
 typedef struct IVAL
 {
@@ -20,8 +24,11 @@ b8 IVAL_(contains_ival)(const IVAL *lhs, const IVAL *rhs);
 b8 IVAL_(overlaps)(const IVAL *lhs, const IVAL *rhs);
 SCALAR IVAL_(overlap)(const IVAL *lhs, const IVAL *rhs);
 
-#else // _MATH_INTERFACE_END
+#endif // _MATH_INTERFACE
+
+#ifdef _MATH_UNDEFINES
 #undef IVAL
 #undef IVAL_
 #undef IVALG_
-#endif // _MATH_INTERFACE_END
+#endif // _MATH_UNDEFINES
+

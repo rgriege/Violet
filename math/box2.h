@@ -1,7 +1,11 @@
-#ifndef _MATH_INTERFACE_END
+#ifdef _MATH_DEFINES
 
 #define BOX2 CONCAT(box2, SUFFIX)
 #define BOX2_(name) CONCAT(BOX2, CONCAT(_, name))
+
+#endif // _MATH_DEFINES
+
+#ifdef _MATH_INTERFACE
 
 typedef struct BOX2
 {
@@ -33,8 +37,10 @@ void BOX2_(get_half_dim)(const BOX2 *b, V2 *half_dim);
 void BOX2_(get_min)(const BOX2 *b, V2 *min);
 void BOX2_(get_max)(const BOX2 *b, V2 *max);
 
-#else // _MATH_INTERFACE_END
+#endif // _MATH_INTERFACE
+
+#ifdef _MATH_UNDEFINES
 #undef BOX2_
 #undef BOX2
-#endif // _MATH_INTERFACE_END
+#endif // _MATH_UNDEFINES
 

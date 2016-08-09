@@ -1,8 +1,12 @@
-#ifndef _MATH_INTERFACE_END
+#ifdef _MATH_DEFINES
 
 #define M3 CONCAT(m3, SUFFIX)
 #define M3_(name) CONCAT(M3, CONCAT(_, name))
 #define M3G_(name) CONCAT(g_, M3_(name))
+
+#endif // _MATH_DEFINES
+
+#ifdef _MATH_INTERFACE
 
 typedef SCALAR M3[9];
 
@@ -17,8 +21,11 @@ void M3_(mul_v3)(const M3 m, const V3 *v, V3 *res);
 
 b8 M3_(equal)(const M3 lhs, const M3 rhs);
 
-#else // _MATH_INTERFACE_END
+#endif // _MATH_INTERFACE
+
+#ifdef _MATH_UNDEFINES
 #undef M3G_
 #undef M3_
 #undef M3
-#endif // _MATH_INTERFACE_END
+#endif // _MATH_UNDEFINES
+

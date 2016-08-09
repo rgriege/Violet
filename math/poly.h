@@ -1,7 +1,11 @@
-#ifndef _MATH_INTERFACE_END
+#ifdef _MATH_DEFINES
 
 #define POLY CONCAT(poly, SUFFIX)
 #define POLY_(name) CONCAT(POLY, CONCAT(_, name))
+
+#endif // _MATH_DEFINES
+
+#ifdef _MATH_INTERFACE
 
 void POLY_(from_box)(V2 *v, const BOX2 *box);
 
@@ -22,7 +26,10 @@ b8 POLY_(segment_intersect)(const V2 *v, u32 n,
                             const V2 *v0, const V2 *v1);
 b8 POLY_(intersect)(const V2 *p1, u32 n1, const V2 *p2, u32 n2);
 
-#else // _MATH_INTERFACE_END
+#endif // _MATH_INTERFACE
+
+#ifdef _MATH_UNDEFINES
 #undef POLY_
 #undef POLY
-#endif // _MATH_INTERFACE_END
+#endif // _MATH_UNDEFINES
+

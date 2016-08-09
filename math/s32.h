@@ -1,5 +1,12 @@
 #ifndef VIOLET_S32MATH_H
 #define VIOLET_S32MATH_H
+#define _MATH_DEFINES
+#define _MATH_INTERFACE
+#elif defined(_MATH_EXT)
+#define _MATH_DEFINES
+#endif // VIOLET_S32MATH_H
+
+#ifdef _MATH_DEFINES
 
 #include "violet/core/macros.h"
 #include "violet/core/types.h"
@@ -8,34 +15,24 @@
 #define SCALAR s32
 #define SUFFIX i
 
-#include "violet/math/math.h"
-#include "violet/math/v2.h"
-#include "violet/math/v3.h"
-#include "violet/math/m2.h"
-#include "violet/math/m3.h"
-#include "violet/math/ival.h"
-#include "violet/math/line.h"
-#include "violet/math/box2.h"
-#include "violet/math/poly.h"
+#include "violet/math/templates.h"
 
-#ifndef _MATH_IMPLEMENTATION
-#define _MATH_INTERFACE_END
+#undef _MATH_DEFINES
+#endif // _MATH_DEFINES
 
-#include "violet/math/math.h"
-#include "violet/math/v2.h"
-#include "violet/math/v3.h"
-#include "violet/math/m2.h"
-#include "violet/math/m3.h"
-#include "violet/math/ival.h"
-#include "violet/math/line.h"
-#include "violet/math/box2.h"
-#include "violet/math/poly.h"
+#ifdef _MATH_INTERFACE
+#undef _MATH_INTERFACE
+#endif // _MATH_INTERFACE
 
-#undef _MATH_INTERFACE_END
+#if !defined(_MATH_IMPLEMENTATION) && !defined(_MATH_EXT)
+#define _MATH_UNDEFINES
+
+#include "violet/math/templates.h"
+
+#undef _MATH_UNDEFINES
 
 #undef SUFFIX
 #undef SCALAR
 
 #endif // _MATH_IMPLEMENTATION
 
-#endif // VIOLET_S32MATH_H

@@ -1,8 +1,12 @@
-#ifndef _MATH_INTERFACE_END
+#ifdef _MATH_DEFINES
 
 #define V3 CONCAT(v3, SUFFIX)
 #define V3_(name) CONCAT(V3, CONCAT(_, name))
 #define V3G_(name) CONCAT(g_, V3_(name))
+
+#endif // _MATH_DEFINES
+
+#ifdef _MATH_INTERFACE
 
 typedef struct V3
 {
@@ -30,9 +34,11 @@ void V3_(inverse)(const V3 *v, V3 *res);
 b8 V3_(is_zero)(const V3 *v);
 b8 V3_(equal)(const V3 *lhs, const V3 *rhs);
 
-#else // _MATH_INTERFACE_END
+#endif // _MATH_INTERFACE
+
+#ifdef _MATH_UNDEFINES
 #undef V3
 #undef V3_
 #undef V3G_
-#endif // _MATH_INTERFACE_END
+#endif // _MATH_UNDEFINES
 
