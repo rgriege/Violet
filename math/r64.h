@@ -14,6 +14,7 @@
 
 #define SCALAR r64
 #define SUFFIX d
+#define ABS fabs
 
 #include "violet/math/templates.h"
 
@@ -25,14 +26,14 @@
 #endif // _MATH_INTERFACE
 
 #if !defined(_MATH_IMPLEMENTATION) && !defined(_MATH_EXT)
+
 #define _MATH_UNDEFINES
-
 #include "violet/math/templates.h"
-
 #undef _MATH_UNDEFINES
 
 #undef SUFFIX
 #undef SCALAR
+#undef ABS
 
 #endif // _MATH_IMPLEMENTATION
 

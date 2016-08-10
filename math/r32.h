@@ -14,6 +14,7 @@
 
 #define SCALAR r32
 #define SUFFIX f
+#define ABS fabsf
 
 #include "violet/math/templates.h"
 
@@ -33,6 +34,7 @@
 
 #undef SUFFIX
 #undef SCALAR
+#undef ABS
 
 #endif // _MATH_IMPLEMENTATION
 
