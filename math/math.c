@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 static const SCALAR g_d2r = PI / 180;
 
 SCALAR MATH_(clamp)(SCALAR lo, SCALAR val, SCALAR hi)
@@ -14,3 +16,9 @@ SCALAR MATH_(rad2deg)(SCALAR rad)
 {
 	return rad / g_d2r;
 }
+
+b8 MATH_(eq)(SCALAR a, SCALAR b, SCALAR err)
+{
+	return ABS(a-b) <= err;
+}
+
