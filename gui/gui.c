@@ -267,7 +267,7 @@ b8 vlt_gui_mouse_release(const vlt_gui *gui, u32 mask)
 b8 vlt_gui_mouse_release_bg(const vlt_gui *gui, u32 mask)
 {
 	return vlt_gui_mouse_release(gui, mask)
-		&& gui->hot_id == 0
+		&& (gui->hot_id == 0 || gui->hot_stage == HOVER)
 		&& gui->active_id == 0;
 }
 
