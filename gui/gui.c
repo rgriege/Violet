@@ -20,7 +20,7 @@
 
 const vlt_style g_default_style = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
-	.fill_color = { .r=0x4d, .g=0x4d, .b=0x4d, .a=0xff },
+	.fill_color = g_grey77,
 	.hot_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
 	.active_color = g_orange,
 	.outline_color = g_nocolor,

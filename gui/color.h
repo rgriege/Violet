@@ -9,6 +9,7 @@ typedef struct vlt_color
 } vlt_color;
 
 #define g_black (vlt_color)     { .r=0,    .g=0,    .b=0,    .a=0xff }
+#define g_grey77 (vlt_color)    { .r=0x4d, .g=0x4d, .b=0x4d, .a=0xff }
 #define g_grey128 (vlt_color)   { .r=0x80, .g=0x80, .b=0x80, .a=0xff }
 #define g_white (vlt_color)     { .r=0xff, .g=0xff, .b=0xff, .a=0xff }
 
