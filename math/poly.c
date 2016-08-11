@@ -216,3 +216,15 @@ b8 POLY_(intersect)(const V2 *p1, u32 n1, const V2 *p2, u32 n2)
 	return false;
 }
 
+SCALAR POLY_(pt_dist)(const V2 *v, u32 n, const V2 *p)
+{
+	SCALAR min_dist = SCALAR_MAX;
+	const V2 *prev = v+n-1;
+	for (const V2 *vn=v+n; v!=vn; ++v)
+	{
+		const SCALAR d = MATH_(point_to_segment_dist)(prev, v, p);
+		min_dist = min(min_dist, d);
+	}
+	return min_dist;
+}
+

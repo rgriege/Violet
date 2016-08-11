@@ -8,6 +8,8 @@
 
 #ifdef _MATH_DEFINES
 
+#include <float.h>
+
 #include "violet/core/macros.h"
 #include "violet/core/types.h"
 #include "violet/math/common.h"
@@ -15,6 +17,8 @@
 #define SCALAR r64
 #define SUFFIX d
 #define ABS fabs
+#define SCALAR_MIN DBL_MIN
+#define SCALAR_MAX DBL_MAX
 
 #include "violet/math/templates.h"
 
@@ -34,6 +38,8 @@
 #undef SUFFIX
 #undef SCALAR
 #undef ABS
+#undef SCALAR_MIN
+#undef SCALAR_MAX
 
 #endif // _MATH_IMPLEMENTATION
 
