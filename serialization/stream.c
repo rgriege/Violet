@@ -50,6 +50,7 @@ void stream_vwrite(ostream * s, const char * format, va_list args)
 
 	case FILE_STREAM:
 		vfprintf(s->file, format, args);
+		fflush(s->file);
 		break;
 	}
 }
