@@ -20,15 +20,15 @@
 
 const vlt_style g_default_style = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
-	.fill_color = g_grey77,
+	.fill_color = gi_grey77,
 	.hot_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
-	.active_color = g_orange,
-	.outline_color = g_nocolor,
-	.hot_line_color = g_nocolor,
-	.active_line_color = g_nocolor,
-	.text_color = g_white,
-	.hot_text_color = g_white,
-	.active_text_color = g_white,
+	.active_color = gi_orange,
+	.outline_color = gi_nocolor,
+	.hot_line_color = gi_nocolor,
+	.active_line_color = gi_nocolor,
+	.text_color = gi_white,
+	.hot_text_color = gi_white,
+	.active_text_color = gi_white,
 	.font_ratio = 0.6f
 };
 
