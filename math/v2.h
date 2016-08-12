@@ -25,6 +25,7 @@ static const V2 V2G_(x_axis) = { 1, 0 };
 static const V2 V2G_(y_axis) = { 0, 1 };
 static const V2 V2G_(zero) = { 0, 0 };
 
+static inline void V2_(set)(V2 *v, SCALAR x, SCALAR y);
 static inline SCALAR V2_(mag)(const V2 *v);
 static inline SCALAR V2_(mag_sq)(const V2 *v);
 static inline SCALAR V2_(dist)(const V2 *lhs, const V2 *rhs);
@@ -51,6 +52,12 @@ static inline b8 V2_(share_quadrant)(const V2 *lhs, const V2 *rhs);
 
 
 /* Implementation */
+
+static inline void V2_(set)(V2 *v, SCALAR x, SCALAR y)
+{
+	v->x = x;
+	v->y = y;
+}
 
 static inline SCALAR V2_(mag)(const V2 *v)
 {
