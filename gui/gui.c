@@ -94,6 +94,7 @@ typedef struct vlt_gui
 {
 	vlt_time creation_time;
 	vlt_time frame_start_time;
+	u32 frame_time_milli;
 	SDL_Window *window;
 	SDL_GLContext gl_context;
 	vlt_shader_program poly_shader;
@@ -103,11 +104,11 @@ typedef struct vlt_gui
 	v2i mouse_pos;
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
-	char _pressed_key;
-	char key;
-	u32 key_repeat_delay;
-	u32 key_repeat_timer;
-	array_map fonts; // sz -> vlt_font *
+	char prev_key, key;
+	u32 repeat_delay;
+	u32 repeat_interval;
+	u32 repeat_timer;
+	array_map fonts; // sz -> vlt_font*
 	vlt_style default_style;
 	vlt_style style;
 	u64 hot_id;
@@ -186,9 +187,11 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 
 	vlt_get_time(&gui->creation_time);
 	gui->frame_start_time = gui->creation_time;
+	gui->frame_time_milli = 0;
 
-	gui->key_repeat_delay = 500;
-	gui->key_repeat_timer = gui->key_repeat_delay;
+	gui->repeat_delay = 500;
+	gui->repeat_interval = 100;
+	gui->repeat_timer = gui->repeat_delay;
 
 	gui->default_style = g_default_style;
 	vlt_gui_style_default(gui);
@@ -281,16 +284,26 @@ void vlt_gui_mouse_scroll(const vlt_gui *gui, s32 *dir)
 		*dir = 0;
 }
 
-char vlt_gui_key(const vlt_gui *gui)
+char vlt_gui_key_press(const vlt_gui *gui)
+{
+	return gui->key != gui->prev_key ? gui->key : 0;
+}
+
+char vlt_gui_key_down(const vlt_gui *gui)
 {
 	return gui->key;
+}
+
+char vlt_gui_key_release(const vlt_gui *gui)
+{
+	return gui->key != gui->prev_key ? gui->prev_key : 0;
 }
 
 b8 vlt_gui_begin_frame(vlt_gui *gui)
 {
 	vlt_time now;
 	vlt_get_time(&now);
-	const u32 frame_milli = vlt_diff_milli(&gui->frame_start_time, &now);
+	gui->frame_time_milli = vlt_diff_milli(&gui->frame_start_time, &now);
 	gui->frame_start_time = now;
 
 	b8 quit = false;
@@ -321,32 +334,13 @@ b8 vlt_gui_begin_frame(vlt_gui *gui)
 	static const v2i g_v2i_2 = { .x=2, .y=2 };
 	v2i_div(&gui->win_halfdim, &g_v2i_2, &gui->win_halfdim);
 
-	const char prev_key = gui->_pressed_key;
-	gui->_pressed_key = 0;
+	gui->prev_key = gui->key;
 	gui->key = 0;
 	s32 key_cnt;
 	const u8 *keys = SDL_GetKeyboardState(&key_cnt);
 	for (s32 i = 0; i < key_cnt; ++i)
-		if (keys[i] && _convert_scancode(i, &gui->_pressed_key))
+		if (keys[i] && _convert_scancode(i, &gui->key))
 			break;
-	if (gui->_pressed_key != 0)
-	{
-		if (gui->_pressed_key == prev_key)
-		{
-			if (gui->key_repeat_timer <= frame_milli)
-			{
-				gui->key_repeat_timer = 0;
-				gui->key = gui->_pressed_key;
-			}
-			else
-				gui->key_repeat_timer -= frame_milli;
-		}
-		else
-		{
-			gui->key_repeat_timer = gui->key_repeat_delay;
-			gui->key = gui->_pressed_key;
-		}
-	}
 
 	float color[4];
 	vlt_color_as_float_array(color, gui->style.bg_color);
@@ -688,6 +682,20 @@ void _engagement_text_color(const vlt_gui *gui, _engagement engagement,
 	}
 }
 
+static
+b8 _repeat(vlt_gui *gui)
+{
+	if (gui->repeat_timer <= gui->frame_time_milli)
+	{
+		gui->repeat_timer = gui->repeat_interval -
+			(gui->frame_time_milli - gui->repeat_timer);
+		return true;
+	}
+	else
+		gui->repeat_timer -= gui->frame_time_milli;
+	return false;
+}
+
 void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                  char *txt, u32 n, font_align align)
 {
@@ -700,17 +708,30 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	{
 		if (gui->key != 0)
 		{
-			const u32 len = strlen(txt);
-			if (len > 0 && gui->key == KEY_BACKSPACE)
+			b8 modify = false;
+			if (gui->key != gui->prev_key)
 			{
-				txt[len-1] = '\0';
+				modify = true;
+				gui->repeat_timer = gui->repeat_delay;
 			}
-			else
+			else if (_repeat(gui))
+				modify = true;
+			if (modify)
 			{
-				char buf[2] = { gui->key, '\0' };
-				strncat(txt, buf, n-len-1);
+				const u32 len = strlen(txt);
+				if (len > 0 && gui->key == KEY_BACKSPACE)
+				{
+					txt[len-1] = '\0';
+				}
+				else
+				{
+					char buf[2] = { gui->key, '\0' };
+					strncat(txt, buf, n-len-1);
+				}
 			}
 		}
+		else
+			gui->repeat_timer = gui->repeat_delay;
 		if (   vlt_gui_mouse_press(gui, VLT_MB_LEFT)
 			&& !contains_mouse)
 		{
@@ -774,10 +795,10 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 }
 
 static
-b8 _vlt_gui_btn_logic(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
-                      const char *txt, u64 id, b8 *hot_hover)
+vlt_btn_val _vlt_gui_btn_logic(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                               const char *txt, u64 id, b8 *hot_hover)
 {
-	b8 retval = false;
+	vlt_btn_val retval = VLT_BTN_NONE;
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
@@ -797,16 +818,20 @@ b8 _vlt_gui_btn_logic(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 			else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
 			{
 				gui->hot_stage = INITIATE;
+				gui->repeat_timer = gui->repeat_delay;
 			}
 			break;
 		case INITIATE:
 			if (vlt_gui_mouse_release(gui, VLT_MB_LEFT))
 			{
 				if (contains_mouse)
-					retval = true;
+					retval = VLT_BTN_PRESS;
 				gui->hot_id = 0;
 				gui->hot_stage = NONE;
+				gui->repeat_timer = gui->repeat_delay;
 			}
+			else if (_repeat(gui))
+				retval = VLT_BTN_HOLD;
 			break;
 		}
 	}
@@ -830,16 +855,17 @@ void _vlt_gui_btn_render(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 		FONT_ALIGN_CENTER);
 }
 
-b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
+vlt_btn_val vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                        const char *txt)
 {
 	const u64 _x = x, _y = y;
 	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
 	b8 hot_hover;
-	const b8 result = _vlt_gui_btn_logic(gui, x, y, w, h, txt, id,
+	const vlt_btn_val ret = _vlt_gui_btn_logic(gui, x, y, w, h, txt, id,
 		&hot_hover);
 	_vlt_gui_btn_render(gui, x, y, w, h, txt,
 		hot_hover ? gui->style.hot_color : gui->style.fill_color);
-	return result;
+	return ret;
 }
 
 void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
@@ -848,7 +874,8 @@ void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 	const u64 _x = x, _y = y;
 	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
 	b8 hot_hover;
-	if (_vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &hot_hover))
+	if (_vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &hot_hover)
+	        == VLT_BTN_PRESS)
 		*val = !*val;
 	_vlt_gui_btn_render(gui, x, y, w, h, txt,
 		hot_hover ? gui->style.hot_color :
@@ -922,6 +949,7 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = (u64)val + opt;
 	b8 hot_hover;
 	if (   _vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &hot_hover)
+	           == VLT_BTN_PRESS
 	    && !selected)
 		*val = opt;
 	_vlt_gui_btn_render(gui, x, y, w, h, txt,

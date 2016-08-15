@@ -30,7 +30,9 @@ b8 vlt_gui_mouse_release(const vlt_gui *gui, u32 mask);
 b8 vlt_gui_mouse_release_bg(const vlt_gui *gui, u32 mask);
 void vlt_gui_mouse_scroll(const vlt_gui *gui, s32 *dir);
 
-char vlt_gui_key(const vlt_gui *gui);
+char vlt_gui_key_press(const vlt_gui *gui);
+char vlt_gui_key_down(const vlt_gui *gui);
+char vlt_gui_key_release(const vlt_gui *gui);
 
 b8 vlt_gui_begin_frame(vlt_gui *gui);
 void vlt_gui_end_frame(vlt_gui *gui);
@@ -63,6 +65,13 @@ void vlt_rmgui_img_draw(vlt_gui *gui, vlt_img *img, s32 x, s32 y);
 
 /* Immediate Mode API */
 
+typedef enum vlt_btn_val
+{
+	VLT_BTN_NONE,
+	VLT_BTN_PRESS,
+	VLT_BTN_HOLD
+} vlt_btn_val;
+
 void vlt_gui_line(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w,
                   vlt_color c);
 void vlt_gui_rect(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
@@ -78,7 +87,8 @@ void vlt_gui_mask(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h);
 void vlt_gui_unmask(vlt_gui *gui);
 void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                  char *txt, u32 n, font_align align);
-b8 vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
+vlt_btn_val vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                        const char *txt);
 void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                  b8 *val);
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
