@@ -67,13 +67,7 @@ b8 _convert_scancode(SDL_Scancode code, char *c)
 	else
 		return false;
 
-	if (*c == KEY_RETURN)
-	{
-		*c = 0;
-		return false;
-	}
-	else
-		return true;
+	return true;
 }
 
 typedef enum _hot_stage
@@ -696,14 +690,15 @@ b8 _repeat(vlt_gui *gui)
 	return false;
 }
 
-void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
-                 char *txt, u32 n, font_align align)
+b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+               char *txt, u32 n, font_align align)
 {
 	const u64 id = (u64)txt;
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
 	_engagement engagement = INACTIVE;
+	b8 complete = false;
 	if (gui->active_id == id)
 	{
 		if (gui->key != 0)
@@ -722,6 +717,12 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 				if (len > 0 && gui->key == KEY_BACKSPACE)
 				{
 					txt[len-1] = '\0';
+				}
+				else if (gui->key == KEY_RETURN)
+				{
+					gui->active_id = 0;
+					engagement = INACTIVE;
+					complete = true;
 				}
 				else
 				{
@@ -792,6 +793,7 @@ void vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 		if (milli_since_creation % 1000 < 500)
 			vlt_gui_line(gui, x+1, txt_y, x+1, y+h-2, 1, text_color);
 	}
+	return complete;
 }
 
 static
