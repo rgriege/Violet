@@ -70,20 +70,6 @@ b8 _convert_scancode(SDL_Scancode code, char *c)
 	return true;
 }
 
-typedef enum _hot_stage
-{
-	NONE,
-	HOVER,
-	INITIATE
-} _hot_stage;
-
-typedef enum _engagement
-{
-	INACTIVE,
-	HOT,
-	ACTIVE
-} _engagement;
-
 typedef struct vlt_gui
 {
 	vlt_time creation_time;
@@ -106,7 +92,6 @@ typedef struct vlt_gui
 	vlt_style default_style;
 	vlt_style style;
 	u64 hot_id;
-	_hot_stage hot_stage;
 	u64 active_id;
 	v2i drag_offset;
 } vlt_gui;
@@ -191,7 +176,6 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 	vlt_gui_style_default(gui);
 
 	gui->hot_id = gui->active_id = 0;
-	gui->hot_stage = NONE;
 
 	gui->drag_offset = g_v2i_zero;
 
@@ -264,7 +248,6 @@ b8 vlt_gui_mouse_release(const vlt_gui *gui, u32 mask)
 b8 vlt_gui_mouse_release_bg(const vlt_gui *gui, u32 mask)
 {
 	return vlt_gui_mouse_release(gui, mask)
-		&& (gui->hot_id == 0 || gui->hot_stage == HOVER)
 		&& gui->active_id == 0;
 }
 
@@ -625,54 +608,47 @@ void vlt_gui_unmask(vlt_gui *gui)
 static
 b8 _allow_new_interaction(const vlt_gui *gui)
 {
-	switch (gui->hot_stage)
-	{
-	case NONE:
-	case HOVER:
-		return !vlt_gui_mouse_down(gui,
-			VLT_MB_LEFT | VLT_MB_MIDDLE | VLT_MB_RIGHT);
-	case INITIATE:
-		break;
-	}
-	return false;
+	return !vlt_gui_mouse_down(gui,
+		VLT_MB_LEFT | VLT_MB_MIDDLE | VLT_MB_RIGHT);
 }
 
-static
-void _engagement_color(const vlt_gui *gui, _engagement engagement,
-                       vlt_color *fill, vlt_color *outline)
+typedef enum _widget_style
 {
-	switch (engagement)
-	{
-	case INACTIVE:
-		*fill = gui->style.fill_color;
-		*outline = gui->style.outline_color;
-	break;
-	case HOT:
-		*fill = gui->style.hot_color;
-		*outline = gui->style.hot_line_color;
-	break;
-	case ACTIVE:
-		*fill = gui->style.active_color;
-		*outline = gui->style.active_line_color;
-	break;
-	}
-}
+	INACTIVE,
+	HOT,
+	ACTIVE
+} _widget_style;
 
 static
-void _engagement_text_color(const vlt_gui *gui, _engagement engagement,
-                            vlt_color *c)
+void _widget_color(const vlt_gui *gui, u64 id,
+                   vlt_color *fill, vlt_color *outline, vlt_color *text)
 {
-	switch (engagement)
+	if (gui->active_id == id)
 	{
-	case INACTIVE:
-		*c = gui->style.text_color;
-	break;
-	case HOT:
-		*c = gui->style.hot_text_color;
-	break;
-	case ACTIVE:
-		*c = gui->style.active_text_color;
-	break;
+		if (fill)
+			*fill = gui->style.active_color;
+		if (outline)
+			*outline = gui->style.active_line_color;
+		if (text)
+			*text = gui->style.active_text_color;
+	}
+	else if (gui->hot_id == id)
+	{
+		if (fill)
+			*fill = gui->style.hot_color;
+		if (outline)
+			*outline = gui->style.hot_line_color;
+		if (text)
+			*text = gui->style.hot_text_color;
+	}
+	else
+	{
+		if (fill)
+			*fill = gui->style.fill_color;
+		if (outline)
+			*outline = gui->style.outline_color;
+		if (text)
+			*text = gui->style.text_color;
 	}
 }
 
@@ -697,7 +673,6 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
-	_engagement engagement = INACTIVE;
 	b8 complete = false;
 	if (gui->active_id == id)
 	{
@@ -721,7 +696,6 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 				else if (gui->key == KEY_RETURN)
 				{
 					gui->active_id = 0;
-					engagement = INACTIVE;
 					complete = true;
 				}
 				else
@@ -737,50 +711,29 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 			&& !contains_mouse)
 		{
 			gui->active_id = 0;
-			engagement = INACTIVE;
 		}
-		else
-			engagement = ACTIVE;
 	}
 	else if (gui->hot_id == id)
 	{
-		switch (gui->hot_stage)
+		if (!contains_mouse)
 		{
-		case NONE:
-		case INITIATE:
-			assert(false);
-			break;
-		case HOVER:
-			if (!contains_mouse)
-			{
-				gui->hot_id = 0;
-				gui->hot_stage = NONE;
-				engagement = INACTIVE;
-			}
-			else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
-			{
-				gui->active_id = id;
-				gui->hot_id = 0;
-				gui->hot_stage = NONE;
-				engagement = ACTIVE;
-			}
-			else
-				engagement = HOT;
-			break;
+			gui->hot_id = 0;
+		}
+		else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
+		{
+			gui->active_id = id;
+			gui->hot_id = 0;
 		}
 	}
 	else if (   _allow_new_interaction(gui)
 	         && contains_mouse)
 	{
 		gui->hot_id = id;
-		gui->hot_stage = HOVER;
-		engagement = HOT;
 	}
 
 
 	vlt_color fill, line, text_color;
-	_engagement_color(gui, engagement, &fill, &line);
-	_engagement_text_color(gui, engagement, &text_color);
+	_widget_color(gui, id, &fill, &line, &text_color);
 	vlt_gui_rect(gui, x, y, w, h, fill, line);
 	x += 2;
 	s32 txt_y = y + h*(1.f-gui->style.font_ratio)/2.f;
@@ -798,52 +751,44 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 
 static
 vlt_btn_val _vlt_gui_btn_logic(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
-                               const char *txt, u64 id, b8 *hot_hover)
+                               const char *txt, u64 id, b8 *contains_mouse)
 {
 	vlt_btn_val retval = VLT_BTN_NONE;
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
-	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
+	*contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
 	if (gui->hot_id == id)
 	{
-		switch (gui->hot_stage)
+		if (!*contains_mouse)
 		{
-		case NONE:
-			assert(false);
-			break;
-		case HOVER:
-			if (!contains_mouse)
-			{
-				gui->hot_id = 0;
-				gui->hot_stage = NONE;
-			}
-			else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
-			{
-				gui->hot_stage = INITIATE;
-				gui->repeat_timer = gui->repeat_delay;
-			}
-			break;
-		case INITIATE:
-			if (vlt_gui_mouse_release(gui, VLT_MB_LEFT))
-			{
-				if (contains_mouse)
-					retval = VLT_BTN_PRESS;
-				gui->hot_id = 0;
-				gui->hot_stage = NONE;
-				gui->repeat_timer = gui->repeat_delay;
-			}
-			else if (_repeat(gui))
-				retval = VLT_BTN_HOLD;
-			break;
+			gui->hot_id = 0;
+		}
+		else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
+		{
+			gui->hot_id = 0;
+			gui->active_id = id;
+			gui->repeat_timer = gui->repeat_delay;
 		}
 	}
+	else if (gui->active_id == id)
+	{
+		if (vlt_gui_mouse_release(gui, VLT_MB_LEFT))
+		{
+			if (*contains_mouse)
+				retval = VLT_BTN_PRESS;
+			gui->active_id = 0;
+			gui->repeat_timer = gui->repeat_delay;
+		}
+		else if (!*contains_mouse)
+			gui->repeat_timer = gui->repeat_delay;
+		else if (_repeat(gui))
+			retval = VLT_BTN_HOLD;
+	}
 	else if (   _allow_new_interaction(gui)
-	         && contains_mouse)
+	         && *contains_mouse)
 	{
 		gui->hot_id = id;
-		gui->hot_stage = HOVER;
 	}
-	*hot_hover = gui->hot_id == id && contains_mouse;
 	return retval;
 }
 
@@ -862,11 +807,16 @@ vlt_btn_val vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	const u64 _x = x, _y = y;
 	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
-	b8 hot_hover;
+	b8 contains_mouse;
 	const vlt_btn_val ret = _vlt_gui_btn_logic(gui, x, y, w, h, txt, id,
-		&hot_hover);
-	_vlt_gui_btn_render(gui, x, y, w, h, txt,
-		hot_hover ? gui->style.hot_color : gui->style.fill_color);
+		&contains_mouse);
+
+	vlt_color c = gui->style.fill_color;
+	if (gui->active_id == id)
+		c = contains_mouse ? gui->style.active_color : gui->style.hot_color;
+	else if (gui->hot_id == id)
+		c = gui->style.hot_color;
+	_vlt_gui_btn_render(gui, x, y, w, h, txt, c);
 	return ret;
 }
 
@@ -875,13 +825,20 @@ void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 {
 	const u64 _x = x, _y = y;
 	const u64 id = (_x << 48) | (_y << 32) | vlt_hash(txt);
-	b8 hot_hover;
-	if (_vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &hot_hover)
+	b8 contains_mouse;
+	const b8 was_checked = *val;
+	if (_vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &contains_mouse)
 	        == VLT_BTN_PRESS)
 		*val = !*val;
-	_vlt_gui_btn_render(gui, x, y, w, h, txt,
-		hot_hover ? gui->style.hot_color :
-		*val ? gui->style.active_color : gui->style.fill_color);
+
+	vlt_color c = gui->style.fill_color;
+	if (gui->active_id == id || (*val && !was_checked))
+		c = gui->style.active_color;
+	if (gui->hot_id == id && contains_mouse)
+		c = gui->style.hot_color;
+	else if (*val)
+		c = gui->style.active_color;
+	_vlt_gui_btn_render(gui, x, y, w, h, txt, c);
 }
 
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
@@ -899,48 +856,41 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 
 	if (gui->hot_id == id)
 	{
-		switch (gui->hot_stage)
+		if (!contains_mouse)
 		{
-		case NONE:
-			assert(false);
-		case HOVER:
-			if (!contains_mouse)
-			{
-				gui->hot_id = 0;
-				gui->hot_stage = NONE;
-			}
-			else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
-			{
-				gui->hot_stage = INITIATE;
-			}
-			break;
-		case INITIATE:
-			if (!vlt_gui_mouse_release(gui, VLT_MB_LEFT))
-			{
-				const r32 min_x = x+h/2;
-				const r32 max_x = x+w-h/2;
-				*val = mathf_clamp(0,
-					(gui->mouse_pos.x - min_x) / (max_x - min_x), 1.f);
-			}
-			else
-			{
-				gui->hot_id = 0;
-				gui->hot_stage = NONE;
-			}
-			break;
+			gui->hot_id = 0;
 		}
+		else if (vlt_gui_mouse_press(gui, VLT_MB_LEFT))
+		{
+			gui->hot_id = 0;
+			gui->active_id = id;
+		}
+	}
+	else if (gui->active_id == id)
+	{
+		if (!vlt_gui_mouse_release(gui, VLT_MB_LEFT))
+		{
+			const r32 min_x = x+h/2;
+			const r32 max_x = x+w-h/2;
+			*val = mathf_clamp(0,
+				(gui->mouse_pos.x - min_x) / (max_x - min_x), 1.f);
+		}
+		else
+			gui->active_id = 0;
 	}
 	else if (   _allow_new_interaction(gui)
 	         && contains_mouse)
 	{
 		gui->hot_id = id;
-		gui->hot_stage = HOVER;
 	}
 
 	vlt_gui_line(gui, x+h/2, y+h/2, x+w-h/2, y+h/2, 1,
 		gui->style.outline_color);
-	const vlt_color c = gui->hot_id == id
-		? gui->style.hot_color : gui->style.fill_color;
+	vlt_color c = gui->style.fill_color;
+	if (gui->active_id == id)
+		c = gui->style.active_color;
+	else if (gui->hot_id == id)
+		c = gui->style.hot_color;
 	vlt_gui_rect(gui, x+(w-h)**val, y, h, h, c, gui->style.outline_color);
 }
 
@@ -949,49 +899,41 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	const b8 selected = *val == opt;
 	const u64 id = (u64)val + opt;
-	b8 hot_hover;
-	if (   _vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &hot_hover)
+	b8 contains_mouse;
+	if (   _vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &contains_mouse)
 	           == VLT_BTN_PRESS
 	    && !selected)
+	{
 		*val = opt;
-	_vlt_gui_btn_render(gui, x, y, w, h, txt,
-		hot_hover ? gui->style.hot_color :
-		*val == opt ? gui->style.active_color : gui->style.fill_color);
+	}
+
+	vlt_color c = gui->style.fill_color;
+	if (gui->active_id == id || *val == opt)
+		c = gui->style.active_color;
+	if (gui->hot_id == id && contains_mouse)
+		c = gui->style.hot_color;
+	_vlt_gui_btn_render(gui, x, y, w, h, txt, c);
 }
 
 static
 b8 _vlt_gui_drag(vlt_gui *gui, s32 *x, s32 *y, b8 contains_mouse,
-                 vlt_mb mb, _engagement *engagement)
+                 vlt_mb mb, u64 *_id)
 {
 	b8 retval = false;
 	const u64 id = (u64)x;
+	*_id = id;
 	if (gui->hot_id == id)
 	{
-		switch (gui->hot_stage)
+		if (!contains_mouse)
 		{
-		case NONE:
-		case INITIATE:
-			assert(false);
-			break;
-		case HOVER:
-			if (!contains_mouse)
-			{
-				gui->hot_id = 0;
-				gui->hot_stage = NONE;
-				*engagement = INACTIVE;
-			}
-			else if (vlt_gui_mouse_press(gui, mb))
-			{
-				gui->active_id = id;
-				gui->drag_offset.x = *x - gui->mouse_pos.x;
-				gui->drag_offset.y = *y - gui->mouse_pos.y;
-				gui->hot_id = 0;
-				gui->hot_stage = NONE;
-				*engagement = ACTIVE;
-			}
-			else
-				*engagement = HOT;
-			break;
+			gui->hot_id = 0;
+		}
+		else if (vlt_gui_mouse_press(gui, mb))
+		{
+			gui->hot_id = 0;
+			gui->active_id = id;
+			gui->drag_offset.x = *x - gui->mouse_pos.x;
+			gui->drag_offset.y = *y - gui->mouse_pos.y;
 		}
 	}
 	else if (gui->active_id == id)
@@ -1000,22 +942,13 @@ b8 _vlt_gui_drag(vlt_gui *gui, s32 *x, s32 *y, b8 contains_mouse,
 		*y = gui->mouse_pos.y + gui->drag_offset.y;
 		retval = true;
 		if (vlt_gui_mouse_release(gui, mb))
-		{
 			gui->active_id = 0;
-			*engagement = INACTIVE;
-		}
-		else
-			*engagement = ACTIVE;
 	}
 	else if (   _allow_new_interaction(gui)
 	         && contains_mouse)
 	{
 		gui->hot_id = id;
-		gui->hot_stage = HOVER;
-		*engagement = HOT;
 	}
-	else
-		*engagement = INACTIVE;
 	return retval;
 }
 
@@ -1024,10 +957,10 @@ b8 vlt_gui_drag(vlt_gui *gui, s32 *x, s32 *y, u32 w, u32 h, vlt_mb mb)
 	box2i box;
 	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
-	_engagement engagement;
-	const b8 ret=_vlt_gui_drag(gui, x, y, contains_mouse, mb, &engagement);
+	u64 id;
+	const b8 ret=_vlt_gui_drag(gui, x, y, contains_mouse, mb, &id);
 	vlt_color fill, outline;
-	_engagement_color(gui, engagement, &fill, &outline);
+	_widget_color(gui, id, &fill, &outline, NULL);
 	vlt_gui_rect(gui, *x, *y, w, h, fill, outline);
 	return ret;
 }
@@ -1036,10 +969,10 @@ b8 vlt_gui_cdrag(vlt_gui *gui, s32 *x, s32 *y, u32 r, vlt_mb mb)
 {
 	const v2i pos = { .x=*x, .y=*y };
 	const b8 contains_mouse = v2i_dist_sq(&pos, &gui->mouse_pos) <= r*r;
-	_engagement engagement;
-	const b8 ret=_vlt_gui_drag(gui, x, y, contains_mouse, mb, &engagement);
+	u64 id;
+	const b8 ret=_vlt_gui_drag(gui, x, y, contains_mouse, mb, &id);
 	vlt_color fill, outline;
-	_engagement_color(gui, engagement, &fill, &outline);
+	_widget_color(gui, id, &fill, &outline, NULL);
 	vlt_gui_circ(gui, *x, *y, r, fill, outline);
 	return ret;
 }
