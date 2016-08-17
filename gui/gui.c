@@ -565,9 +565,8 @@ static vlt_font *_get_font(vlt_gui *gui, u32 sz)
 	}
 }
 
-static
-void _vlt_gui_txt_ex(vlt_gui *gui, s32 *x, s32 *y, s32 sz,
-                     const char *txt, font_align align, vlt_color c)
+void _vlt_gui_txt(vlt_gui *gui, s32 *x, s32 *y, s32 sz, const char *txt,
+                  vlt_color c, font_align align)
 {
 	vlt_shader_program_bind(&gui->txt_shader);
 
@@ -581,10 +580,10 @@ void _vlt_gui_txt_ex(vlt_gui *gui, s32 *x, s32 *y, s32 sz,
 	vlt_shader_program_unbind();
 }
 
-void vlt_gui_txt(vlt_gui *gui, s32 x, s32 y, s32 sz,
-                 const char *txt, font_align align)
+void vlt_gui_txt(vlt_gui *gui, s32 x, s32 y, s32 sz, const char *txt,
+                 vlt_color c, font_align align)
 {
-	_vlt_gui_txt_ex(gui, &x, &y, sz, txt, align, gui->style.text_color);
+	_vlt_gui_txt(gui, &x, &y, sz, txt, c, align);
 }
 
 void vlt_gui_mask(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
@@ -737,8 +736,8 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	vlt_gui_rect(gui, x, y, w, h, fill, line);
 	x += 2;
 	s32 txt_y = y + h*(1.f-gui->style.font_ratio)/2.f;
-	_vlt_gui_txt_ex(gui, &x, &txt_y, h*gui->style.font_ratio, txt, align,
-		text_color);
+	_vlt_gui_txt(gui, &x, &txt_y, h*gui->style.font_ratio, txt,
+		text_color, align);
 	if (gui->active_id == id)
 	{
 		const u32 milli_since_creation =
@@ -794,12 +793,13 @@ vlt_btn_val _vlt_gui_btn_logic(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 
 static
 void _vlt_gui_btn_render(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
-                         const char *txt, vlt_color fill)
+                         const char *txt, vlt_color fill,
+                         vlt_color text_color)
 {
 	vlt_gui_rect(gui, x, y, w, h, fill, gui->style.outline_color);
 	const s32 txt_y = y + h*(1.f-gui->style.font_ratio)/2.f;
 	vlt_gui_txt(gui, x+w/2, txt_y, h*gui->style.font_ratio, txt,
-		FONT_ALIGN_CENTER);
+		text_color, FONT_ALIGN_CENTER);
 }
 
 vlt_btn_val vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
@@ -812,11 +812,26 @@ vlt_btn_val vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 		&contains_mouse);
 
 	vlt_color c = gui->style.fill_color;
+	vlt_color text_color = gui->style.text_color;
 	if (gui->active_id == id)
-		c = contains_mouse ? gui->style.active_color : gui->style.hot_color;
+	{
+		if (contains_mouse)
+		{
+			c = gui->style.active_color;
+			text_color = gui->style.active_text_color;
+		}
+		else
+		{
+			c = gui->style.hot_color;
+			text_color = gui->style.hot_text_color;
+		}
+	}
 	else if (gui->hot_id == id)
+	{
 		c = gui->style.hot_color;
-	_vlt_gui_btn_render(gui, x, y, w, h, txt, c);
+		text_color = gui->style.hot_text_color;
+	}
+	_vlt_gui_btn_render(gui, x, y, w, h, txt, c, text_color);
 	return ret;
 }
 
@@ -832,13 +847,23 @@ void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 		*val = !*val;
 
 	vlt_color c = gui->style.fill_color;
+	vlt_color text_color = gui->style.text_color;
 	if (gui->active_id == id || (*val && !was_checked))
+	{
 		c = gui->style.active_color;
+		text_color = gui->style.active_text_color;
+	}
 	if (gui->hot_id == id && contains_mouse)
+	{
 		c = gui->style.hot_color;
+		text_color = gui->style.hot_text_color;
+	}
 	else if (*val)
+	{
 		c = gui->style.active_color;
-	_vlt_gui_btn_render(gui, x, y, w, h, txt, c);
+		text_color = gui->style.active_text_color;
+	}
+	_vlt_gui_btn_render(gui, x, y, w, h, txt, c, text_color);
 }
 
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
@@ -908,11 +933,18 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	}
 
 	vlt_color c = gui->style.fill_color;
+	vlt_color text_color = gui->style.text_color;
 	if (gui->active_id == id || *val == opt)
+	{
 		c = gui->style.active_color;
+		text_color = gui->style.active_text_color;
+	}
 	if (gui->hot_id == id && contains_mouse)
+	{
 		c = gui->style.hot_color;
-	_vlt_gui_btn_render(gui, x, y, w, h, txt, c);
+		text_color = gui->style.hot_text_color;
+	}
+	_vlt_gui_btn_render(gui, x, y, w, h, txt, c, text_color);
 }
 
 static

@@ -82,7 +82,7 @@ void vlt_gui_poly(vlt_gui *gui, const v2f *v, u32 n,
                   vlt_color fill, vlt_color line);
 void vlt_gui_img(vlt_gui *gui, s32 x, s32 y, const char *img);
 void vlt_gui_txt(vlt_gui *gui, s32 x, s32 y, s32 sz, const char *txt,
-                 font_align align);
+                 vlt_color c, font_align align);
 void vlt_gui_mask(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h);
 void vlt_gui_unmask(vlt_gui *gui);
 b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
