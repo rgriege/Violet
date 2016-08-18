@@ -115,7 +115,22 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
-	gui->window = SDL_CreateWindow(title, max(x, 5), max(y, 30), w, h, SDL_WINDOW_OPENGL);
+	if (SDL_GetNumVideoDisplays() < 1)
+	{
+		log_write("could not create window: no video displays found");
+		goto err_win;
+	}
+
+	SDL_DisplayMode display_mode;
+	if (SDL_GetCurrentDisplayMode(0, &display_mode) != 0)
+	{
+		log_write("SDL_GetCurrentDisplayMode failed: %s", SDL_GetError());
+		goto err_win;
+	}
+
+	gui->window = SDL_CreateWindow(title, x, y,
+		min(w, display_mode.w), min(h, display_mode.h - 60),
+		SDL_WINDOW_OPENGL | SDL_WINDOW_MAXIMIZED);
 	if (gui->window == NULL)
 	{
 		log_write("SDL_CreateWindow failed: %s", SDL_GetError());
