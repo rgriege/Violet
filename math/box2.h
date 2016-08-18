@@ -9,8 +9,8 @@
 
 typedef struct BOX2
 {
-	V2 top_left;
-	V2 bottom_right;
+	V2 min;
+	V2 max;
 } BOX2;
 
 void BOX2_(init_point)(BOX2 *b, const V2 *p);
@@ -34,8 +34,6 @@ void BOX2_(transform)(BOX2 *b, const M3 mat);
 
 void BOX2_(get_center)(const BOX2 *b, V2 *center);
 void BOX2_(get_half_dim)(const BOX2 *b, V2 *half_dim);
-void BOX2_(get_min)(const BOX2 *b, V2 *min);
-void BOX2_(get_max)(const BOX2 *b, V2 *max);
 
 #endif // _MATH_INTERFACE
 

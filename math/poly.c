@@ -4,13 +4,13 @@
 
 void POLY_(from_box)(V2 *v, const BOX2 *box)
 {
-	const V2 top_right = { box->bottom_right.x, box->top_left.y };
-	const V2 bottom_left = { box->top_left.x, box->bottom_right.y };
+	const V2 top_left = { box->min.x, box->max.y };
+	const V2 bottom_right = { box->max.x, box->min.y };
 
-	*v++ = box->bottom_right;
-	*v++ = top_right;
-	*v++ = box->top_left;
-	*v = bottom_left;
+	*v++ = bottom_right;
+	*v++ = box->max;
+	*v++ = top_left;
+	*v = box->min;
 }
 
 b8 POLY_(is_simple)(const V2 *v, u32 n)
@@ -75,8 +75,8 @@ b8 POLY_(contains)(const V2 *v, u32 n, const V2 *point)
 		return false;
 
 	V2 out_p;
-	V2_(sub)(&box.top_left, &box.bottom_right, &out_p);
-	V2_(add)(&out_p, &box.top_left, &out_p);
+	V2_(sub)(&box.max, &box.min, &out_p);
+	V2_(add)(&out_p, &box.max, &out_p);
 
 	u32 intersections = 0;
 	SCALAR t, u;

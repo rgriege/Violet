@@ -64,10 +64,8 @@ void vlt_texture_coords_from_poly(vlt_mesh *tex_coords,
 {
 	box2f extent;
 	polyf_bounding_box(v, n, &extent);
-	v2f minimum, dimension;
-	box2f_get_min(&extent, &minimum);
-	box2f_get_max(&extent, &dimension);
-	v2f_sub(&dimension, &minimum, &dimension);
+	v2f dimension;
+	v2f_sub(&extent.max, &extent.min, &dimension);
 
 	array coords;
 	array_init(&coords, sizeof(v2f));
@@ -75,7 +73,7 @@ void vlt_texture_coords_from_poly(vlt_mesh *tex_coords,
 	for (const v2f *vn=v+n; v!=vn; ++v)
 	{
 		v2f tex_coord;
-		v2f_sub(v, &minimum, &tex_coord);
+		v2f_sub(v, &extent.min, &tex_coord);
 		v2f_div(&tex_coord, &dimension, &tex_coord);
 		// TODO(rgriege): figure out why this is necessary (font too)
 		tex_coord.v = 1 - tex_coord.v;
