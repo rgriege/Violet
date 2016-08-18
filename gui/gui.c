@@ -96,7 +96,8 @@ typedef struct vlt_gui
 	v2i drag_offset;
 } vlt_gui;
 
-vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
+vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
+                        vlt_gui_flags flags)
 {
 	vlt_gui *gui = calloc(1, sizeof(vlt_gui));
 	SDL_SetMainReady();
@@ -128,9 +129,15 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title)
 		goto err_win;
 	}
 
+	u32 sdl_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_MAXIMIZED;
+	s32 min_h = display_mode.h - 60;
+	if (flags | VLT_WINDOW_BORDERLESS)
+	{
+		sdl_flags |= SDL_WINDOW_BORDERLESS;
+		min_h += 30;
+	}
 	gui->window = SDL_CreateWindow(title, x, y,
-		min(w, display_mode.w), min(h, display_mode.h - 60),
-		SDL_WINDOW_OPENGL | SDL_WINDOW_MAXIMIZED);
+		min(w, display_mode.w), min(h, min_h), sdl_flags);
 	if (gui->window == NULL)
 	{
 		log_write("SDL_CreateWindow failed: %s", SDL_GetError());

@@ -9,7 +9,12 @@
 typedef struct vlt_img vlt_img;
 typedef struct vlt_gui vlt_gui;
 
-vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title);
+typedef enum vlt_gui_flags
+{
+	VLT_WINDOW_BORDERLESS = 1 << 0
+} vlt_gui_flags;
+vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
+                        vlt_gui_flags flags);
 void vlt_gui_destroy(vlt_gui *gui);
 
 typedef enum vlt_mb
