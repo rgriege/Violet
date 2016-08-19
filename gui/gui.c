@@ -640,7 +640,9 @@ void vlt_gui_mask(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h)
 void vlt_gui_unmask(vlt_gui *gui)
 {
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0xFF);
 	glClear(GL_STENCIL_BUFFER_BIT);
+	glStencilMask(0x00);
 }
 
 static
