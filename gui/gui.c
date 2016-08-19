@@ -908,12 +908,27 @@ void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 {
 	assert(*val >= 0.f && *val <= 1.f);
+	assert(w != h);
 
 	const u64 id = (u64)val;
+	b8 vert;
+	s32 s;
+	if (w > h)
+	{
+		vert = false;
+		s = h;
+	}
+	else
+	{
+		vert = true;
+		s = w;
+	}
 	box2i box;
 	{
-		const v2i center = { .x=x+h/2+(w-h)**val, .y=y+h/2 };
-		const v2i halfdim = { .x=h/2, .y=h/2 };
+		const v2i center = vert
+			? (v2i){ .x=x+s/2, .y=y+s/2+(h-s)**val }
+			: (v2i){ .x=x+s/2+(w-s)**val, .y=y+s/2 };
+		const v2i halfdim = { .x=s/2, .y=s/2 };
 		box2i_from_center(&box, &center, &halfdim);
 	}
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
@@ -934,10 +949,20 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 	{
 		if (!vlt_gui_mouse_release(gui, VLT_MB_LEFT))
 		{
-			const r32 min_x = x+h/2;
-			const r32 max_x = x+w-h/2;
-			*val = mathf_clamp(0,
-				(gui->mouse_pos.x - min_x) / (max_x - min_x), 1.f);
+			if (vert)
+			{
+				const r32 min_y = y+s/2;
+				const r32 max_y = y+h-s/2;
+				*val = mathf_clamp(0,
+					(gui->mouse_pos.y - min_y) / (max_y - min_y), 1.f);
+			}
+			else
+			{
+				const r32 min_x = x+s/2;
+				const r32 max_x = x+w-s/2;
+				*val = mathf_clamp(0,
+					(gui->mouse_pos.x - min_x) / (max_x - min_x), 1.f);
+			}
 		}
 		else
 			gui->active_id = 0;
@@ -948,14 +973,20 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 		gui->hot_id = id;
 	}
 
-	vlt_gui_line(gui, x+h/2, y+h/2, x+w-h/2, y+h/2, 1,
-		gui->style.outline_color);
+	const vlt_color outline = gui->style.outline_color;
+	if (vert)
+		vlt_gui_line(gui, x+s/2, y+s/2, x+s/2, y+h-s/2, 1, outline);
+	else
+		vlt_gui_line(gui, x+s/2, y+s/2, x+w-s/2, y+s/2, 1, outline);
 	vlt_color c = gui->style.fill_color;
 	if (gui->active_id == id)
 		c = gui->style.active_color;
 	else if (gui->hot_id == id)
 		c = gui->style.hot_color;
-	vlt_gui_rect(gui, x+(w-h)**val, y, h, h, c, gui->style.outline_color);
+	if (vert)
+		vlt_gui_rect(gui, x, y+(h-s)**val, s, s, c, outline);
+	else
+		vlt_gui_rect(gui, x+(w-s)**val, y, s, s, c, outline);
 }
 
 void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
