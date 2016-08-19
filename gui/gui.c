@@ -129,14 +129,16 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_win;
 	}
 
-	u32 sdl_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_MAXIMIZED;
+	u32 sdl_flags = SDL_WINDOW_OPENGL;
 	s32 min_h = display_mode.h - 60;
-	if (flags | VLT_WINDOW_BORDERLESS)
+	if (flags & VLT_WINDOW_BORDERLESS)
 	{
 		sdl_flags |= SDL_WINDOW_BORDERLESS;
 		min_h += 30;
 	}
-	gui->window = SDL_CreateWindow(title, x, y,
+	if (flags & VLT_WINDOW_RESIZABLE)
+		sdl_flags |= SDL_WINDOW_RESIZABLE;
+	gui->window = SDL_CreateWindow(title, x, max(y, 30),
 		min(w, display_mode.w), min(h, min_h), sdl_flags);
 	if (gui->window == NULL)
 	{
@@ -246,6 +248,17 @@ void vlt_gui_destroy(vlt_gui *gui)
 	free(gui);
 }
 
+void vlt_gui_dim(const vlt_gui *gui, s32 *x, s32 *y)
+{
+	*x = gui->win_halfdim.x * 2;
+	*y = gui->win_halfdim.y * 2;
+}
+
+void vlt_gui_minimize(vlt_gui *gui)
+{
+	SDL_MinimizeWindow(gui->window);
+}
+
 void vlt_gui_mouse_pos(const vlt_gui *gui, s32 *x, s32 *y)
 {
 	*x = gui->mouse_pos.x;
@@ -327,11 +340,14 @@ b8 vlt_gui_begin_frame(vlt_gui *gui)
 	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x,
 		&gui->mouse_pos.y);
 	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
+	const v2i prev_win_halfdim = gui->win_halfdim;
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x,
 		&gui->win_halfdim.y);
 	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
 	static const v2i g_v2i_2 = { .x=2, .y=2 };
 	v2i_div(&gui->win_halfdim, &g_v2i_2, &gui->win_halfdim);
+	if (!v2i_equal(&prev_win_halfdim, &gui->win_halfdim))
+		glViewport(0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
 
 	gui->prev_key = gui->key;
 	gui->key = 0;
@@ -383,7 +399,8 @@ void vlt_rmgui_poly_init(vlt_gui *gui, const v2f *v, u32 n,
 	glBindVertexArray(*vao);
 	vlt_mesh_bind(mesh);
 
-	const GLint pos_attrib = vlt_shader_program_attrib(&gui->poly_shader, "position");
+	const GLint pos_attrib =
+		vlt_shader_program_attrib(&gui->poly_shader, "position");
 	glVertexAttribPointer(pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(pos_attrib);
 }
@@ -473,8 +490,8 @@ void vlt_rmgui_poly_draw(vlt_gui *gui, const vlt_rmgui_poly *poly, s32 x, s32 y)
 
 	_set_win_halfdim_attrib(gui, &gui->poly_shader);
 
-	const GLint offset_attrib = vlt_shader_program_uniform(&gui->poly_shader,
-		"offset");
+	const GLint offset_attrib =
+		vlt_shader_program_uniform(&gui->poly_shader, "offset");
 	glUniform2f(offset_attrib, x, y);
 
 	if (!vlt_color_equal(poly->fill_color, g_nocolor))

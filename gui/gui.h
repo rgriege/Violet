@@ -11,11 +11,15 @@ typedef struct vlt_gui vlt_gui;
 
 typedef enum vlt_gui_flags
 {
-	VLT_WINDOW_BORDERLESS = 1 << 0
+	VLT_WINDOW_BORDERLESS = 1 << 0,
+	VLT_WINDOW_RESIZABLE = 1 << 1
 } vlt_gui_flags;
 vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         vlt_gui_flags flags);
 void vlt_gui_destroy(vlt_gui *gui);
+
+void vlt_gui_dim(const vlt_gui *gui, s32 *x, s32 *y);
+void vlt_gui_minimize(vlt_gui *gui);
 
 typedef enum vlt_mb
 {
