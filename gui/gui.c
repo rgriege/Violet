@@ -138,8 +138,13 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 	if (flags & VLT_WINDOW_RESIZABLE)
 		sdl_flags |= SDL_WINDOW_RESIZABLE;
+#ifdef _WIN32
+	gui->window = SDL_CreateWindow(title, x, y,
+		min(w, display_mode.w), min(h, min_h), sdl_flags);
+#else
 	gui->window = SDL_CreateWindow(title, x, max(y, 30),
 		min(w, display_mode.w), min(h, min_h), sdl_flags);
+#endif
 	if (gui->window == NULL)
 	{
 		log_write("SDL_CreateWindow failed: %s", SDL_GetError());
