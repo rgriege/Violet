@@ -65,4 +65,34 @@ b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
 		IID_IFileSaveDialog);
 }
 
+#else
+
+#include <stdio.h>
+
+b8 _vlt_file_dialog(char *filename, u32 n, const char *cmd)
+{
+	b8 retval = false;
+	FILE *pipe = popen(cmd, "r");
+	if (!pipe)
+		goto out;
+
+	if (fgets(filename, n-1, pipe) != NULL)
+		retval = true;
+
+	pclose(pipe);
+out:
+	return retval;
+}
+
+b8 vlt_file_open_dialog(char *filename, u32 n, const char *ext)
+{
+	return _vlt_file_dialog(filename, n, "zenity --file-selection");
+}
+
+b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
+{
+	return _vlt_file_dialog(filename, n,
+		"zenity --file-selection --save");
+}
+
 #endif
