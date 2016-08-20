@@ -76,6 +76,12 @@ b8 BOX2_(contains_box)(const BOX2 *lhs, const BOX2 *rhs)
 		&& IVAL_(contains_ival)(&lhs_y, &rhs_y);
 }
 
+void BOX2_(clamp_point)(const BOX2 *b, V2 *p)
+{
+	p->x = MATH_(clamp)(b->min.x, p->x, b->max.x);
+	p->y = MATH_(clamp)(b->min.y, p->y, b->max.y);
+}
+
 b8 BOX2_(overlaps)(const BOX2 *lhs, const BOX2 *rhs)
 {
 	IVAL lhs_x = { lhs->min.x, lhs->max.x };
