@@ -68,6 +68,7 @@ b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
 #else
 
 #include <stdio.h>
+#include <string.h>
 
 b8 _vlt_file_dialog(char *filename, u32 n, const char *cmd)
 {
@@ -77,7 +78,13 @@ b8 _vlt_file_dialog(char *filename, u32 n, const char *cmd)
 		goto out;
 
 	if (fgets(filename, n-1, pipe) != NULL)
+	{
+		// NOTE(rgriege): newline char added for some reason
+		char *c = strchr(filename, '\n');
+		if (c)
+			*c = 0;
 		retval = true;
+	}
 
 	pclose(pipe);
 out:
