@@ -135,7 +135,8 @@ V2 POLY_(center)(const V2 *v, u32 n)
 }
 
 // NOTE(rgriege): Green's theorem
-SCALAR POLY_(area)(const V2 *v, u32 n)
+static
+SCALAR POLY_(_area)(const V2 *v, u32 n)
 {
 	SCALAR area = 0;
 	const V2 *prev = v+n-1;
@@ -144,12 +145,17 @@ SCALAR POLY_(area)(const V2 *v, u32 n)
 		area += V2_(cross)(prev, v);
 		prev = v;
 	}
-	return fabs(area * 0.5);
+	return area/2;
+}
+
+SCALAR POLY_(area)(const V2 *v, u32 n)
+{
+	return ABS(POLY_(_area)(v, n));
 }
 
 V2 POLY_(centroid)(const V2 *v, u32 n)
 {
-	const SCALAR denom = 6 * POLY_(area)(v, n);
+	const SCALAR denom = 6 * POLY_(_area)(v, n);
 	V2 centroid = { .x=0, .y=0 };
 	const V2 *prev = v+n-1;
 	for (const V2 *vn = v+n; v != vn; ++v)
