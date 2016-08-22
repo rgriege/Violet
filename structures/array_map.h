@@ -27,6 +27,7 @@ u32 array_map_size(const array_map *m);
 u32 array_map_val_size(const array_map *m);
 void *array_map_get(const array_map *m, const void *key);
 b8 array_map_has(const array_map *m, const void *key);
+void array_map_remove(array_map *m, const void *key);
 
 typedef struct array_map_iter
 {

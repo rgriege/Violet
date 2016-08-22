@@ -99,6 +99,20 @@ b8 array_map_has(const array_map *m, const void *key)
 	return array_map_get(m, key) != NULL;
 }
 
+void array_map_remove(array_map *m, const void *key)
+{
+	assert(array_map_has(m, key));
+	for (u32 i = 0, n = array_map_size(m); i < n; ++i)
+	{
+		void *elem = array_get(&m->pairs, i);
+		if (memcmp(key, elem, m->key_size) == 0)
+		{
+			array_remove(&m->pairs, i);
+			return;
+		}
+	}
+}
+
 b8 array_map_iterate(const array_map *m, array_map_iter *iter)
 {
 	if (iter->next_idx >= array_map_size(m))
