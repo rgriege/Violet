@@ -15,11 +15,24 @@ void array_init(array *a, u32 elem_size)
 
 void array_copy(array *dest, const array *src)
 {
+	// TODO(rgriege): check all use cases to make sure this is safe first
+	/*assert(dest->elem_size == 0 || dest->elem_size == src->elem_size);
+	array_destroy(dest);*/
 	dest->elem_size = src->elem_size;
 	dest->size = src->size;
 	dest->capacity = src->capacity;
 	dest->data = malloc(dest->capacity * dest->elem_size);
 	memcpy(dest->data, src->data, dest->size * dest->elem_size);
+}
+
+void array_move(array *dest, array *src)
+{
+	assert(dest->elem_size == 0 || dest->elem_size == src->elem_size);
+	array_destroy(dest);
+	memcpy(dest, src, sizeof(array));
+	src->data = NULL;
+	src->size = 0;
+	src->capacity = 0;
 }
 
 void array_destroy(array *a)
