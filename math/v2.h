@@ -14,11 +14,7 @@
 
 typedef struct V2
 {
-	union
-	{
-		struct { SCALAR x, y; };
-		struct { SCALAR u, v; };
-	};
+	SCALAR x, y;
 } V2;
 
 static const V2 V2G_(x_axis) = { 1, 0 };

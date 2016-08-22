@@ -76,7 +76,7 @@ void vlt_texture_coords_from_poly(vlt_mesh *tex_coords,
 		v2f_sub(v, &extent.min, &tex_coord);
 		v2f_div(&tex_coord, &dimension, &tex_coord);
 		// TODO(rgriege): figure out why this is necessary (font too)
-		tex_coord.v = 1 - tex_coord.v;
+		tex_coord.y = 1 - tex_coord.y;
 		array_append(&coords, &tex_coord);
 	}
 	vlt_mesh_init(tex_coords, coords.data, n);
