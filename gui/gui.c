@@ -754,9 +754,10 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 			if (modify)
 			{
 				const u32 len = strlen(txt);
-				if (len > 0 && gui->key == KEY_BACKSPACE)
+				if (gui->key == KEY_BACKSPACE)
 				{
-					txt[len-1] = '\0';
+					if (len > 0)
+						txt[len-1] = '\0';
 				}
 				else if (gui->key == KEY_RETURN)
 				{
