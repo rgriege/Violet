@@ -37,10 +37,10 @@ void vlt_get_time(vlt_time *t)
 
 u32 vlt_diff_milli(const vlt_time *start, const vlt_time *end)
 {
-	// TODO(rgriege): handle start > end
 	vlt_time res;
-	assert(_timespec_diff(start, end, &res));
-	return res.tv_sec * 1000 + res.tv_nsec / 1000000;
+	return _timespec_diff(start, end, &res)
+		? res.tv_sec * 1000 + res.tv_nsec / 1000000
+		: 0;
 }
 
 void vlt_sleep_milli(u32 milli)
