@@ -200,18 +200,19 @@ void polyf_decompose(const v2f *v, u32 n, array *polys)
 			polyf_decompose(upper_poly.data, upper_poly.size, polys);
 			polyf_decompose(lower_poly.data, lower_poly.size, polys);
 		}
-		return;
+		goto out;
 
 inxt:
 		vi0 = vi1;
 	}
-
-	array_destroy(&lower_poly);
-	array_destroy(&upper_poly);
 
 	array *poly = array_append_null(polys);
 	array_init(poly, sizeof(v2f));
 	array_reserve(poly, n);
 	poly->size = n;
 	memcpy(poly->data, v, n*sizeof(v2f));
+
+out:
+	array_destroy(&lower_poly);
+	array_destroy(&upper_poly);
 }

@@ -581,8 +581,9 @@ void vlt_gui_poly(vlt_gui *gui, const v2f *v, u32 n,
 		polyf_decompose(v, n, &polys);
 		for (u32 i = 0; i < polys.size; ++i)
 		{
-			const array *poly = array_get(&polys, i);
+			array *poly = array_get(&polys, i);
 			vlt_gui_poly(gui, poly->data, poly->size, fill, g_nocolor);
+			array_destroy(poly);
 		}
 		array_destroy(&polys);
 
