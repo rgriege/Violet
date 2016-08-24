@@ -24,7 +24,7 @@ V2 POLY_(centroid)(const V2 *v, u32 n);
 b8 POLY_(is_cc)(const V2 *v, u32 n);
 b8 POLY_(segment_intersect)(const V2 *v, u32 n,
                             const V2 *v0, const V2 *v1);
-b8 POLY_(intersect)(const V2 *p1, u32 n1, const V2 *p2, u32 n2);
+b8 POLY_(intersect)(const V2 *p1, u32 n1, const V2 *p2, u32 n2, V2 *isec);
 SCALAR POLY_(pt_dist)(const V2 *v, u32 n, const V2 *p);
 
 #endif // _MATH_INTERFACE
