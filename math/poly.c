@@ -230,6 +230,7 @@ SCALAR POLY_(pt_dist)(const V2 *v, u32 n, const V2 *p)
 	{
 		const SCALAR d = MATH_(point_to_segment_dist)(prev, v, p);
 		min_dist = min(min_dist, d);
+		prev = v;
 	}
 	return min_dist;
 }
