@@ -194,10 +194,10 @@ b8 vlt_font_load(vlt_font *f, const char *filename, u32 sz)
 
 			
 			v2f coords[4] = {
-				{ .x=0, .y=1 },
 				{ .x=0, .y=0 },
-				{ .x=1, .y=0 },
-				{ .x=1, .y=1 }
+				{ .x=0, .y=1 },
+				{ .x=1, .y=1 },
+				{ .x=1, .y=0 }
 			};
 			vlt_mesh_init(&glyph->tex_coords, coords, 4);
 			glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
