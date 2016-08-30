@@ -111,11 +111,12 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	// Use OpenGL 3.1 core
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+		SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	if (SDL_GetNumVideoDisplays() < 1)
 	{
@@ -171,6 +172,7 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	log_write("GL version: %s", glGetString(GL_VERSION));
 
+	glEnable(GL_MULTISAMPLE);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -178,7 +180,6 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0x00);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glEnable(GL_MULTISAMPLE);
 
 	if (!vlt_shader_program_load(&gui->poly_shader, "poly"))
 		goto err_glew;
