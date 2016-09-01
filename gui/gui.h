@@ -103,6 +103,8 @@ void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
 void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, u32 *val, u32 opt);
+void vlt_gui_mselect(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                     const char *txt, u32 *val, u32 opt);
 b8 vlt_gui_drag(vlt_gui *gui, s32 *x, s32 *y, u32 w, u32 h, vlt_mb mb);
 b8 vlt_gui_cdrag(vlt_gui *gui, s32 *x, s32 *y, u32 r, vlt_mb mb);
 

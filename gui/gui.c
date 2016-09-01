@@ -1044,6 +1044,35 @@ void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	_vlt_gui_btn_render(gui, x, y, w, h, txt, c, text_color);
 }
 
+void vlt_gui_mselect(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                     const char *txt, u32 *val, u32 opt)
+{
+	const u64 id = (u64)val + opt;
+	b8 contains_mouse;
+	if (_vlt_gui_btn_logic(gui, x, y, w, h, txt, id, &contains_mouse)
+	      == VLT_BTN_PRESS)
+	{
+	  if (!(*val & opt))
+			*val |= opt;
+		else if (*val & ~opt)
+			*val &= ~opt;
+	}
+
+	vlt_color c = gui->style.fill_color;
+	vlt_color text_color = gui->style.text_color;
+	if (gui->active_id == id || (*val & opt))
+	{
+		c = gui->style.active_color;
+		text_color = gui->style.active_text_color;
+	}
+	if (gui->hot_id == id && contains_mouse)
+	{
+		c = gui->style.hot_color;
+		text_color = gui->style.hot_text_color;
+	}
+	_vlt_gui_btn_render(gui, x, y, w, h, txt, c, text_color);
+}
+
 static
 b8 _vlt_gui_drag(vlt_gui *gui, s32 *x, s32 *y, b8 contains_mouse,
                  vlt_mb mb, u64 *_id)
