@@ -2,8 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "violet/core/macros.h"
 #include "violet/math/common.h"
 #include "violet/structures/array.h"
+
+#ifdef DEBUG
+#define ARRAY_MALLOC(num, sz) calloc((num),(sz))
+#else
+#define ARRAY_MALLOC(num, sz) malloc((num)*(sz))
+#endif
 
 void array_init(array *a, u32 elem_size)
 {
@@ -13,23 +20,27 @@ void array_init(array *a, u32 elem_size)
 	a->capacity = 0;
 }
 
-void array_copy(array *dest, const array *src)
+void _array_copy_prepare(array *dst, const array *src)
 {
-	// TODO(rgriege): check all use cases to make sure this is safe first
-	/*assert(dest->elem_size == 0 || dest->elem_size == src->elem_size);
-	array_destroy(dest);*/
-	dest->elem_size = src->elem_size;
-	dest->size = src->size;
-	dest->capacity = src->capacity;
-	dest->data = malloc(dest->capacity * dest->elem_size);
-	memcpy(dest->data, src->data, dest->size * dest->elem_size);
+	VLT_ASSERT_DBG(dst->data == NULL);
+
+	dst->elem_size = src->elem_size;
+	dst->size = src->size;
+	dst->capacity = src->capacity;
+	dst->data = ARRAY_MALLOC(dst->capacity, dst->elem_size);
 }
 
-void array_move(array *dest, array *src)
+void array_copy(array *dst, const array *src)
 {
-	assert(dest->elem_size == 0 || dest->elem_size == src->elem_size);
-	array_destroy(dest);
-	memcpy(dest, src, sizeof(array));
+	_array_copy_prepare(dst, src);
+	memcpy(dst->data, src->data, dst->size * dst->elem_size);
+}
+
+void array_move(array *dst, array *src)
+{
+	VLT_ASSERT_DBG(dst->data == NULL);
+
+	memcpy(dst, src, sizeof(array));
 	src->data = NULL;
 	src->size = 0;
 	src->capacity = 0;
@@ -42,13 +53,6 @@ void array_destroy(array *a)
 		free(a->data);
 		memset(a, 0, sizeof(array));
 	}
-}
-
-void array_destroy_each_ex(array *a, void (*destroy_elem)(void*))
-{
-	for (u32 i = 0; i < a->size; ++i)
-		destroy_elem(array_get(a, i));
-	array_destroy(a);
 }
 
 void *array_get(const array *a, u32 idx)
@@ -135,7 +139,7 @@ void array_reserve(array *a, u32 capacity)
 {
 	if (capacity > a->capacity)
 	{
-		void *data = malloc(capacity * a->elem_size);
+		void *data = ARRAY_MALLOC(capacity, a->elem_size);
 		memcpy(data, a->data, a->size * a->elem_size);
 		free(a->data);
 		a->data = data;

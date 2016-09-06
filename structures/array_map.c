@@ -10,52 +10,15 @@ void array_map_init(array_map *m, u32 key_size, u32 val_size)
 	m->key_size = key_size;
 }
 
-void array_map_copy(array_map *dest, const array_map *src)
+void array_map_copy(array_map *dst, const array_map *src)
 {
-	array_copy(&dest->pairs, &src->pairs);
-	dest->key_size = src->key_size;
-}
-
-void array_map_copy_each(array_map *dest,
-                         const array_map *src,
-                         void(*copy_key)(void*,const void*),
-                         void(*copy_val)(void*,const void*))
-{
-	array_map_copy(dest, src);
-	array_map_iter src_it = {0};
-	array_map_iter dest_it = {0};
-	while (array_map_iterate(src, &src_it))
-	{
-		array_map_iterate(dest, &dest_it);
-		if (copy_key)
-			copy_key(dest_it.key, src_it.key);
-		else
-			memcpy(dest_it.key, src_it.key, dest->key_size);
-		if (copy_val)
-			copy_val(dest_it.val, src_it.val);
-		else
-			memcpy(dest_it.val, src_it.val, array_map_val_size(dest));
-	}
+	array_copy(&dst->pairs, &src->pairs);
+	dst->key_size = src->key_size;
 }
 
 void array_map_destroy(array_map *m)
 {
 	array_destroy(&m->pairs);
-}
-
-void array_map_destroy_each_ex(array_map *m,
-                               void(*destroy_key)(void*),
-                               void(*destroy_val)(void*))
-{
-	array_map_iter it = {0};
-	while(array_map_iterate(m, &it))
-	{
-		if (destroy_key)
-			destroy_key(it.key);
-		if (destroy_val)
-			destroy_val(it.val);
-	}
-	array_map_destroy(m);
 }
 
 void array_map_insert(array_map *m, const void *key, const void *val)

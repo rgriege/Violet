@@ -12,11 +12,20 @@ typedef struct array
 } array;
 
 void array_init(array *a, u32 elem_size);
-void array_copy(array *dest, const array *src);
-void array_move(array *dest, array *src);
+void _array_copy_prepare(array *dst, const array *src);
+void array_copy(array *dst, const array *src);
+#define array_copy_deep(dst, src, copy_elem) \
+	_array_copy_prepare(dst, src); \
+	for (u32 _i = 0; _i < (src)->size; ++_i) \
+		copy_elem(array_get(dst, _i), array_get(src, _i));
+void array_move(array *dst, array *src);
 void array_destroy(array *a);
-void array_destroy_each_ex(array *a, void (*destroy_elem)(void*));
-#define array_destroy_each(a, f) array_destroy_each_ex(a, (void(*)(void*))f)
+#define array_destroy_each(a, destroy_elem) \
+	for (u32 _i = 0; _i < (a)->size; ++_i) \
+		destroy_elem(array_get(a, _i));
+#define array_destroy_deep(a, destroy_elem) \
+	array_destroy_each(a, destroy_elem); \
+	array_destroy(a);
 
 void *array_get(const array *a, u32 idx);
 void *array_first(const array *a);

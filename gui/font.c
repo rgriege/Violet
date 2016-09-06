@@ -239,7 +239,7 @@ err_face:
 
 void vlt_font_destroy(vlt_font *f)
 {
-	array_map_destroy_each(&f->glyphs, NULL, (void(*)(void*))_glyph_destroy);
+	array_map_destroy_deep(&f->glyphs, _glyph_destroy);
 }
 
 static r32 _line_offset_x(vlt_font *f, const char *txt, font_align align)

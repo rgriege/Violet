@@ -240,7 +240,7 @@ static void _font_clear(void *f)
 
 void vlt_gui_destroy_window(vlt_gui *gui)
 {
-	array_map_destroy_each(&gui->fonts, NULL, _font_clear);
+	array_map_destroy_deep(&gui->fonts, _font_clear);
 	vlt_font_uninstall();
 	vlt_shader_program_destroy(&gui->poly_shader);
 	vlt_shader_program_destroy(&gui->tex_shader);
