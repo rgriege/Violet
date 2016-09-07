@@ -18,4 +18,10 @@ typedef int64_t s64;
 typedef float r32;
 typedef double r64;
 
+typedef union uintptr
+{
+	uintptr_t i;
+	void *p;
+} uintptr;
+
 #endif
