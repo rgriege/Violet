@@ -932,31 +932,25 @@ void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 	_vlt_gui_btn_render(gui, x, y, w, h, txt, c, text_color);
 }
 
-void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
+static
+void _slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+             s32 hnd_len, r32 *val)
 {
 	assert(*val >= 0.f && *val <= 1.f);
 	assert(w != h);
 
 	const u64 id = (u64)val;
-	b8 vert;
-	s32 s;
-	if (w > h)
+	const b8 vert = w < h;
+	box2i box;
+	if (vert)
 	{
-		vert = false;
-		s = h;
+		box.min = (v2i){ .x=x, .y=y+(h-hnd_len)**val };
+		box.max = (v2i){ .x=x+w, .y=y+hnd_len+(h-hnd_len)**val };
 	}
 	else
 	{
-		vert = true;
-		s = w;
-	}
-	box2i box;
-	{
-		const v2i center = vert
-			? (v2i){ .x=x+s/2, .y=y+s/2+(h-s)**val }
-			: (v2i){ .x=x+s/2+(w-s)**val, .y=y+s/2 };
-		const v2i halfdim = { .x=s/2, .y=s/2 };
-		box2i_from_center(&box, &center, &halfdim);
+		box.min = (v2i){ .x=x+(w-hnd_len)**val, .y=y };
+		box.max = (v2i){ .x=x+hnd_len+(w-hnd_len)**val, .y=y+h };
 	}
 	const b8 contains_mouse = box2i_contains_point(&box, &gui->mouse_pos);
 
@@ -970,6 +964,10 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 		{
 			gui->hot_id = 0;
 			gui->active_id = id;
+			gui->drag_offset.x =
+				box.min.x+(box.max.x-box.min.x)/2-gui->mouse_pos.x;
+			gui->drag_offset.y =
+				box.min.y+(box.max.y-box.min.y)/2-gui->mouse_pos.y;
 		}
 	}
 	else if (gui->active_id == id)
@@ -978,17 +976,17 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 		{
 			if (vert)
 			{
-				const r32 min_y = y+s/2;
-				const r32 max_y = y+h-s/2;
-				*val = mathf_clamp(0,
-					(gui->mouse_pos.y - min_y) / (max_y - min_y), 1.f);
+				const r32 min_y = y+hnd_len/2;
+				const r32 max_y = y+h-hnd_len/2;
+				const s32 mouse_y = gui->mouse_pos.y+gui->drag_offset.y;
+				*val = mathf_clamp(0, (mouse_y-min_y)/(max_y-min_y), 1.f);
 			}
 			else
 			{
-				const r32 min_x = x+s/2;
-				const r32 max_x = x+w-s/2;
-				*val = mathf_clamp(0,
-					(gui->mouse_pos.x - min_x) / (max_x - min_x), 1.f);
+				const r32 min_x = x+hnd_len/2;
+				const r32 max_x = x+w-hnd_len/2;
+				const s32 mouse_x = gui->mouse_pos.x+gui->drag_offset.x;
+				*val = mathf_clamp(0, (mouse_x-min_x)/(max_x-min_x), 1.f);
 			}
 		}
 		else
@@ -1002,18 +1000,30 @@ void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 
 	const vlt_color outline = gui->style.outline_color;
 	if (vert)
-		vlt_gui_line(gui, x+s/2, y+s/2, x+s/2, y+h-s/2, 1, outline);
+	{
+		vlt_gui_line(gui, x+w/2, y+hnd_len/2, x+w/2, y+h-hnd_len/2, 1,
+			outline);
+	}
 	else
-		vlt_gui_line(gui, x+s/2, y+s/2, x+w-s/2, y+s/2, 1, outline);
+	{
+		vlt_gui_line(gui, x+hnd_len/2, y+h/2, x+w-hnd_len/2, y+h/2, 1,
+			outline);
+	}
 	vlt_color c = gui->style.fill_color;
 	if (gui->active_id == id)
 		c = gui->style.active_color;
 	else if (gui->hot_id == id)
 		c = gui->style.hot_color;
 	if (vert)
-		vlt_gui_rect(gui, x, y+(h-s)**val, s, s, c, outline);
+		vlt_gui_rect(gui, x, y+(h-hnd_len)**val, w, hnd_len, c, outline);
 	else
-		vlt_gui_rect(gui, x+(w-s)**val, y, s, s, c, outline);
+		vlt_gui_rect(gui, x+(w-hnd_len)**val, y, hnd_len, h, c, outline);
+}
+
+void vlt_gui_slider(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
+{
+	const s32 hnd_len = min(w, h);
+	_slider(gui, x, y, w, h, hnd_len, val);
 }
 
 void vlt_gui_select(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
@@ -1133,6 +1143,23 @@ b8 vlt_gui_cdrag(vlt_gui *gui, s32 *x, s32 *y, u32 r, vlt_mb mb)
 	_widget_color(gui, id, &fill, &outline, NULL);
 	vlt_gui_circ(gui, *x, *y, r, fill, outline);
 	return ret;
+}
+
+void vlt_gui_scrollbar(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                       s32 ttl_dim, r32 *off)
+{
+	assert(w != h);
+	assert(ttl_dim > max(w, h));
+
+	if (w < h)
+		*off = 1.f - *off;
+
+	const s32 miss = ttl_dim-max(w, h);
+	const s32 hnd_len = max(min(w, h), max(w, h)-miss);
+	_slider(gui, x, y, w, h, hnd_len, off);
+
+	if (w < h)
+		*off = 1.f - *off;
 }
 
 const vlt_style *vlt_gui_get_style(vlt_gui *gui)
