@@ -1,9 +1,14 @@
 #include "violet/utility/os.h"
 
+#include <assert.h>
+
 #ifdef _WIN32
 
 #include <windows.h>
+
+#include <ShlObj.h>
 #include <shobjidl.h>
+#include <stdio.h>
 
 static
 b8 _vlt_file_dialog(char *filename, u32 n, const char *ext, CLSID clsid, IID iid)
@@ -65,10 +70,50 @@ b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
 		IID_IFileSaveDialog);
 }
 
+void path_append(char *lhs, const char *rhs)
+{
+	strcat(lhs, "\\");
+	strcat(lhs, rhs);
+}
+
+static
+b8 _mkdir(const char *path)
+{
+	// catch drive creation
+	if (strlen(path) == 2 && path[1] == ':')
+		return true;
+
+	return CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
+}
+
+b8 app_data_dir(char *path, u32 n)
+{
+	FILE *fp = fopen(".access_check", "w");
+	if (!fp)
+	{
+		PWSTR psz_file_path;
+		if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path) != S_OK)
+			return false;
+
+		wcstombs(path, psz_file_path, n);
+		CoTaskMemFree(psz_file_path);
+		return true;
+	}
+	else
+	{
+		fclose(fp);
+		remove(".access_check");
+		path[0] = '.';
+		path[1] = '\0';
+		return true;
+	}
+}
+
 #else
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 
 b8 _vlt_file_dialog(char *filename, u32 n, const char *cmd)
 {
@@ -102,4 +147,79 @@ b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
 		"zenity --file-selection --save");
 }
 
+void path_append(char *lhs, const char *rhs)
+{
+	strcat(lhs, "/");
+	strcat(lhs, rhs);
+}
+
+static
+b8 _mkdir(const char *path)
+{
+	return mkdir(path, S_IRWXU) != 0;
+}
+
+b8 app_data_dir(char *path, u32 n)
+{
+	FILE *fp = fopen(".access_check", "w");
+	if (fp)
+	{
+		fclose(fp);
+		remove(".access_check");
+		path[0] = '.';
+		path[1] = '\0';
+		return true;
+	}
+	return false;
+}
+
 #endif
+
+b8 mkdir(const char *path)
+{
+	char _path[256];
+	if (strlen(path) > sizeof(_path))
+		return false;
+
+	if (path[0] == '.')
+	{
+		assert(path[1] == '/' || path[1] == '\\');
+		strcpy(_path, path + 2);
+	}
+	else
+		strcpy(_path, path);
+
+	if (strlen(_path) == 0)
+		return true;
+
+	errno = 0;
+
+	u32 pos = 0, dot_pos = 0;
+	for (char *p = _path + 1; *p; ++p)
+	{
+		switch (*p)
+		{
+		case '/':
+		case '\\':
+		{
+			char c = *p;
+			*p = '\0';
+
+			if (!_mkdir(_path) && errno != EEXIST)
+				return false;
+
+			*p = c;
+			pos = 0;
+		}
+		break;
+		case '.':
+			dot_pos = pos;
+		break;
+		default:
+			++pos;
+		break;
+		}
+	}
+
+	return dot_pos != 0 || _mkdir(_path) || errno == EEXIST;
+}
