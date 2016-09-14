@@ -111,6 +111,7 @@ b8 app_data_dir(char *path, u32 n)
 
 #else
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -156,7 +157,7 @@ void path_append(char *lhs, const char *rhs)
 static
 b8 _mkdir(const char *path)
 {
-	return mkdir(path, S_IRWXU) != 0;
+	return mkdir(path, S_IRWXU) == 0;
 }
 
 b8 app_data_dir(char *path, u32 n)
@@ -175,7 +176,7 @@ b8 app_data_dir(char *path, u32 n)
 
 #endif
 
-b8 mkdir(const char *path)
+b8 mkpath(const char *path)
 {
 	char _path[256];
 	if (strlen(path) > sizeof(_path))
