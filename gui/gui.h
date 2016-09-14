@@ -108,6 +108,9 @@ void vlt_gui_mselect(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 b8 vlt_gui_drag(vlt_gui *gui, s32 *x, s32 *y, u32 w, u32 h, vlt_mb mb);
 b8 vlt_gui_cdrag(vlt_gui *gui, s32 *x, s32 *y, u32 r, vlt_mb mb);
 
+void vlt_gui_scrollbar(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
+                       s32 ttl_dim, r32 *off);
+
 
 typedef struct vlt_style
 {
