@@ -241,7 +241,7 @@ static void _font_clear(void *f)
 	vlt_font_free(font);
 }
 
-void vlt_gui_destroy_window(vlt_gui *gui)
+void vlt_gui_destroy(vlt_gui *gui)
 {
 	array_destroy(&gui->pw_buf);
 	array_map_destroy_deep(&gui->fonts, _font_clear);
@@ -252,10 +252,6 @@ void vlt_gui_destroy_window(vlt_gui *gui)
 	SDL_GL_DeleteContext(gui->gl_context);
 	SDL_DestroyWindow(gui->window);
 	SDL_Quit();
-}
-
-void vlt_gui_destroy(vlt_gui *gui)
-{
 	free(gui);
 }
 

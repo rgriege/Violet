@@ -41,6 +41,7 @@ b8 vlt_font_uninstall()
 		log_write("FT_Done_FreeType error: %d", err);
 		return false;
 	}
+	g_freetype_lib = NULL;
 	return true;
 }
 
