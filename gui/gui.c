@@ -800,7 +800,18 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	vlt_color fill, line, text_color;
 	_widget_color(gui, id, &fill, &line, &text_color);
 	vlt_gui_rect(gui, x, y, w, h, fill, line);
-	x += 2;
+	switch (align)
+	{
+	case FONT_ALIGN_LEFT:
+		x += 2;
+	break;
+	case FONT_ALIGN_CENTER:
+		x = x+w/2;
+	break;
+	case FONT_ALIGN_RIGHT:
+		x = x+w-2;
+	break;
+	}
 	s32 txt_y = y + h*(1.f-gui->style.font_ratio)/2.f;
 	_vlt_gui_txt(gui, &x, &txt_y, h*gui->style.font_ratio, txt,
 		text_color, align);

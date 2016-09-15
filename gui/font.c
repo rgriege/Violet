@@ -327,5 +327,6 @@ void vlt_font_render_ex(vlt_font *f, const char *txt, s32 *x, s32 *y,
 			break;
 		}
 	}
+	*x -= off;
 }
 
