@@ -74,13 +74,7 @@ void vlt_rmgui_img_draw(vlt_gui *gui, vlt_img *img, s32 x, s32 y);
 
 /* Immediate Mode API */
 
-typedef enum vlt_btn_val
-{
-	VLT_BTN_NONE,
-	VLT_BTN_PRESS,
-	VLT_BTN_HOLD
-} vlt_btn_val;
-
+/* Primitives */
 void vlt_gui_line(vlt_gui *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w,
                   vlt_color c);
 void vlt_gui_rect(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
@@ -94,8 +88,22 @@ void vlt_gui_txt(vlt_gui *gui, s32 x, s32 y, s32 sz, const char *txt,
                  vlt_color c, font_align align);
 void vlt_gui_mask(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h);
 void vlt_gui_unmask(vlt_gui *gui);
+
+/* Widgets */
+typedef enum vlt_btn_val
+{
+	VLT_BTN_NONE,
+	VLT_BTN_PRESS,
+	VLT_BTN_HOLD
+} vlt_btn_val;
+
+typedef enum vlt_npt_flags
+{
+	VLT_NPT_PASSWORD = 1 << 0
+} vlt_npt_flags;
+
 b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
-               char *txt, u32 n, font_align align);
+               char *txt, u32 n, font_align align, vlt_npt_flags flags);
 vlt_btn_val vlt_gui_btn(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
                         const char *txt);
 void vlt_gui_chk(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,

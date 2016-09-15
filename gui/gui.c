@@ -95,6 +95,7 @@ typedef struct vlt_gui
 	u64 hot_id;
 	u64 active_id;
 	v2i drag_offset;
+	array pw_buf;
 } vlt_gui;
 
 vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
@@ -210,6 +211,8 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->drag_offset = g_v2i_zero;
 
+	array_init(&gui->pw_buf, sizeof(char));
+
 	goto out;
 
 err_text:
@@ -240,6 +243,7 @@ static void _font_clear(void *f)
 
 void vlt_gui_destroy_window(vlt_gui *gui)
 {
+	array_destroy(&gui->pw_buf);
 	array_map_destroy_deep(&gui->fonts, _font_clear);
 	vlt_font_uninstall();
 	vlt_shader_program_destroy(&gui->poly_shader);
@@ -731,7 +735,7 @@ b8 _repeat(vlt_gui *gui)
 }
 
 b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
-               char *txt, u32 n, font_align align)
+               char *txt, u32 n, font_align align, vlt_npt_flags flags)
 {
 	const u64 id = (u64)txt;
 	box2i box;
@@ -813,8 +817,22 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 	break;
 	}
 	s32 txt_y = y + h*(1.f-gui->style.font_ratio)/2.f;
-	_vlt_gui_txt(gui, &x, &txt_y, h*gui->style.font_ratio, txt,
-		text_color, align);
+	if (flags & VLT_NPT_PASSWORD)
+	{
+		const u32 sz = strlen(txt);
+		array_reserve(&gui->pw_buf, sz+1);
+		char *pw = gui->pw_buf.data;
+		for (u32 i = 0; i < sz; ++i)
+			pw[i] = '*';
+		pw[sz] = '\0';
+		_vlt_gui_txt(gui, &x, &txt_y, h*gui->style.font_ratio, pw,
+			text_color, align);
+	}
+	else
+	{
+		_vlt_gui_txt(gui, &x, &txt_y, h*gui->style.font_ratio, txt,
+			text_color, align);
+	}
 	if (gui->active_id == id)
 	{
 		const u32 milli_since_creation =
