@@ -52,11 +52,32 @@ typedef enum key
 	KEY_BACKSPACE = 8
 } key;
 
-b8 _convert_scancode(SDL_Scancode code, char *c)
+static const char g_caps[128] = {
+	  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
+	 10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
+	 20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
+	 30,  31,  32,  33,  34,  35,  36,  37,  38,  34,
+	 40,  41,  42,  43,  60,  95,  62,  63,  41,  33,
+	 64,  35,  36,  37,  94,  38,  42,  40,  58,  58,
+	 60,  43,  62,  63,  64,  65,  66,  67,  68,  69,
+	 70,  71,  72,  73,  74,  75,  76,  77,  78,  79,
+	 80,  81,  82,  83,  84,  85,  86,  87,  88,  89,
+	 90, 123, 124, 125,  94,  95, 126,  65,  66,  67,
+	 68,  69,  70,  71,  72,  73,  74,  75,  76,  77,
+	 78,  79,  80,  81,  82,  83,  84,  85,  86,  87,
+	 88,  89,  90, 123, 124, 125, 126, 127
+};
+
+b8 _convert_scancode(SDL_Scancode code, b8 caps, char *c)
 {
 	const SDL_Keycode key = SDL_GetKeyFromScancode(code);
-	if (key >= 0 && key <= 255)
-		*c = key;
+	if (key < 128)
+	{
+		if (caps)
+			*c = g_caps[key];
+		else
+			*c = key;
+	}
 	else if (key >= SDLK_KP_DIVIDE && key <= SDLK_KP_PERIOD)
 	{
 		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = {
@@ -360,8 +381,10 @@ b8 vlt_gui_begin_frame(vlt_gui *gui)
 	gui->key = 0;
 	s32 key_cnt;
 	const u8 *keys = SDL_GetKeyboardState(&key_cnt);
+	const SDL_Keymod mod = SDL_GetModState();
+	const b8 caps = ((mod & KMOD_SHIFT) != 0) != ((mod & KMOD_CAPS) != 0);
 	for (s32 i = 0; i < key_cnt; ++i)
-		if (keys[i] && _convert_scancode(i, &gui->key))
+		if (keys[i] && _convert_scancode(i, caps, &gui->key))
 			break;
 
 	float color[4];
@@ -763,7 +786,7 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 					gui->active_id = 0;
 					complete = true;
 				}
-				else
+				else if (gui->key >= 32)
 				{
 					char buf[2] = { gui->key, '\0' };
 					strncat(txt, buf, n-len-1);
