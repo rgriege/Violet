@@ -18,9 +18,10 @@ b8 _vlt_file_dialog(char *filename, u32 n, const char *ext, CLSID clsid, IID iid
 	if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 		goto out;
 
-	IFileDialog *dialog = NULL;
-	if (!SUCCEEDED(CoCreateInstance(&clsid, NULL, CLSCTX_ALL, &iid, &dialog)))
+	void *vp = NULL;
+	if (!SUCCEEDED(CoCreateInstance(&clsid, NULL, CLSCTX_ALL, &iid, &vp)))
 		goto err_init;
+	IFileDialog *dialog = vp;
 
 	PWSTR psz_ext = malloc(sizeof(wchar_t)*n);
 	mbstowcs(psz_ext, ext, n);
