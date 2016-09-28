@@ -1,6 +1,7 @@
 #include "violet/utility/os.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 
@@ -110,8 +111,35 @@ b8 app_data_dir(char *path, u32 n)
 	}
 }
 
+lib_handle lib_load(const char *_filename)
+{
+	const u32 sz = strlen(_filename);
+	char *filename = malloc(sz+4);
+	strcpy(filename, _filename);
+	strcat(filename, ".dll");
+	lib_handle hnd = LoadLibrary(filename);
+	free(filename);
+	return hnd;
+}
+
+void *lib_func(lib_handle hnd, const char *name)
+{
+	return GetProcAddress(hnd, name);
+}
+
+b8 lib_close(lib_handle hnd)
+{
+	return FreeLibrary(hnd);
+}
+
+const char *lib_err()
+{
+	return GetLastError();
+}
+
 #else
 
+#include <dlfcn.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -173,6 +201,32 @@ b8 app_data_dir(char *path, u32 n)
 		return true;
 	}
 	return false;
+}
+
+lib_handle lib_load(const char *_filename)
+{
+	const u32 sz = strlen(_filename);
+	char *filename = malloc(sz+4);
+	strcpy(filename, _filename);
+	strcat(filename, ".so");
+	lib_handle hnd = dlopen(filename, RTLD_NOW | RTLD_LOCAL);
+	free(filename);
+	return hnd;
+}
+
+void *lib_func(lib_handle hnd, const char *name)
+{
+	return dlsym(hnd, name);
+}
+
+b8 lib_close(lib_handle hnd)
+{
+	return dlclose(hnd) == 0;
+}
+
+const char *lib_err()
+{
+	return dlerror();
 }
 
 #endif
