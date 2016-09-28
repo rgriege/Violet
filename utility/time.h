@@ -12,7 +12,7 @@ typedef struct timespec vlt_time;
 
 #elif(_WIN32)
 
-#include <windows.h>
+#include "violet/core/windows.h"
 
 typedef LARGE_INTEGER vlt_time;
 

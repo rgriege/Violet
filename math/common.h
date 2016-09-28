@@ -3,6 +3,11 @@
 
 #include "violet/core/types.h"
 
+#ifdef _WIN32
+#undef min
+#undef max
+#endif
+
 #define max(X, Y) (((X) < (Y)) ? (Y) : (X))
 #define min(X, Y) (((X) > (Y)) ? (Y) : (X))
 

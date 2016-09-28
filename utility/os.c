@@ -4,7 +4,7 @@
 
 #ifdef _WIN32
 
-#include <windows.h>
+#include "violet/core/windows.h"
 
 #include <ShlObj.h>
 #include <shobjidl.h>
@@ -18,8 +18,9 @@ b8 _vlt_file_dialog(char *filename, u32 n, const char *ext, CLSID clsid, IID iid
 	if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 		goto out;
 
-	IFileDialog *dialog;
-	if (!SUCCEEDED(CoCreateInstance(&clsid, NULL, CLSCTX_ALL, &iid, &dialog)))
+	IFileDialog *dialog = NULL;
+	void *pdialog = dialog;
+	if (!SUCCEEDED(CoCreateInstance(&clsid, NULL, CLSCTX_ALL, &iid, &pdialog)))
 		goto err_init;
 
 	PWSTR psz_ext = malloc(sizeof(wchar_t)*n);
