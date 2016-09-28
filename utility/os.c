@@ -19,8 +19,7 @@ b8 _vlt_file_dialog(char *filename, u32 n, const char *ext, CLSID clsid, IID iid
 		goto out;
 
 	IFileDialog *dialog = NULL;
-	void *pdialog = dialog;
-	if (!SUCCEEDED(CoCreateInstance(&clsid, NULL, CLSCTX_ALL, &iid, &pdialog)))
+	if (!SUCCEEDED(CoCreateInstance(&clsid, NULL, CLSCTX_ALL, &iid, &dialog)))
 		goto err_init;
 
 	PWSTR psz_ext = malloc(sizeof(wchar_t)*n);
