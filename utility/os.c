@@ -72,6 +72,13 @@ b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
 		IID_IFileSaveDialog);
 }
 
+b8 dir_exists(const char *path)
+{
+	const DWORD attrib = GetFileAttributes(path);
+	return attrib != INVALID_FILE_ATTRIBUTES
+	    && (attrib & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 void path_append(char *lhs, const char *rhs)
 {
 	strcat(lhs, "\\");
@@ -177,6 +184,12 @@ b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
 		"zenity --file-selection --save");
 }
 
+b8 dir_exists(const char *path)
+{
+	struct stat s;
+	return stat(path, &s) == 0 && S_ISDIR(s.st_mode);
+}
+
 void path_append(char *lhs, const char *rhs)
 {
 	strcat(lhs, "/");
@@ -237,11 +250,9 @@ b8 mkpath(const char *path)
 	if (strlen(path) > sizeof(_path))
 		return false;
 
-	if (path[0] == '.')
-	{
-		assert(path[1] == '/' || path[1] == '\\');
+	if (   path[0] == '.'
+	    && (path[1] == '/' || path[1] == '\\'))
 		strcpy(_path, path + 2);
-	}
 	else
 		strcpy(_path, path);
 
