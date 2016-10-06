@@ -1,7 +1,9 @@
-#include "violet/utility/os.h"
-
 #include <assert.h>
 #include <stdlib.h>
+
+#include <tinydir/tinydir.h>
+
+#include "violet/utility/os.h"
 
 #ifdef _WIN32
 
@@ -85,6 +87,12 @@ void path_append(char *lhs, const char *rhs)
 	strcat(lhs, rhs);
 }
 
+void path_appendn(char *lhs, const char *rhs, u32 sz)
+{
+	strcat(lhs, "\\");
+	strncat(lhs, rhs, sz);
+}
+
 static
 b8 _mkdir(const char *path)
 {
@@ -151,6 +159,7 @@ const char *lib_err()
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 b8 _vlt_file_dialog(char *filename, u32 n, const char *cmd)
 {
@@ -194,6 +203,12 @@ void path_append(char *lhs, const char *rhs)
 {
 	strcat(lhs, "/");
 	strcat(lhs, rhs);
+}
+
+void path_appendn(char *lhs, const char *rhs, u32 sz)
+{
+	strcat(lhs, "/");
+	strncat(lhs, rhs, sz);
 }
 
 static
@@ -240,6 +255,11 @@ b8 lib_close(lib_handle hnd)
 const char *lib_err()
 {
 	return dlerror();
+}
+
+void exec(char *const argv[])
+{
+	execv(argv[0], argv);
 }
 
 #endif
@@ -290,3 +310,52 @@ b8 mkpath(const char *path)
 
 	return dot_pos != 0 || _mkdir(_path) || errno == EEXIST;
 }
+
+#ifdef VLT_USE_TINYDIR
+b8 rmdir_f(const char *path)
+{
+	b8 success = false;
+	tinydir_dir dir;
+	if (tinydir_open(&dir, path) == -1)
+	{
+		printf("rmdir: error reading directory '%s'\n", path);
+		goto out;
+	}
+	while (dir.has_next)
+	{
+		tinydir_file file;
+		if (tinydir_readfile(&dir, &file) != -1)
+		{
+			if (   strcmp(file.name, ".") != 0
+			    && strcmp(file.name, "..") != 0)
+			{
+				if (file.is_dir)
+					rmdir_f(file.path);
+				else if (remove(file.path))
+				{
+					printf("rmdir: error removing '%s'", file.path);
+					goto out;
+				}
+			}
+		}
+		else
+		{
+			printf("rmdir: error examining file\n");
+			goto out;
+		}
+		if (tinydir_next(&dir) == -1)
+		{
+			printf("rmdir: error iterating directory\n");
+			goto out;
+		}
+	}
+	if (remove(path))
+		printf("error removing '%s'\n", path);
+	else
+		success = true;
+out:
+	tinydir_close(&dir);
+	return success;
+}
+#endif // VLT_USE_TINYDIR
+
