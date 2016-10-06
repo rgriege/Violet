@@ -3,15 +3,75 @@
 
 #include <tinydir/tinydir.h>
 
+#include "violet/utility/log.h"
 #include "violet/utility/os.h"
 
 #ifdef _WIN32
 
 #include "violet/core/windows.h"
 
+#include <process.h>
 #include <ShlObj.h>
 #include <shobjidl.h>
 #include <stdio.h>
+
+#define execv _execv
+#define popen _popen
+#define pclose _pclose
+#define WIFEXITED(x) 1
+#define WEXITSTATUS(x) (x)
+
+static
+SSIZE_T getdelim(char **lineptr, size_t *n, int delim, FILE *stream)
+{
+	if (!lineptr || !n || !stream)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (!*lineptr)
+	{
+		*n = 32;
+		*lineptr = malloc(*n);
+	}
+	else if (*n == 0)
+	{
+		errno = EINVAL;
+		return -1;
+	}
+
+	int i = 0, c;
+	while ((c = fgetc(stream)) != EOF)
+	{
+		if (i == *n-1)
+		{
+			*n *= 2;
+			*lineptr = realloc(*lineptr, *n);
+		}
+		(*lineptr)[i++] = c;
+		if (c == delim)
+			break;
+	}
+
+	if (ferror(stream) || feof(stream))
+		return -1;
+
+	(*lineptr)[i] = '\0';
+	return i;
+}
+
+static
+SSIZE_T getline(char **lineptr, size_t *n, FILE *stream)
+{
+	return getdelim(lineptr, n, '\n', stream);
+}
+
+static
+int rmdir(const char *path)
+{
+	return !RemoveDirectory(path);
+}
 
 static
 b8 _vlt_file_dialog(char *filename, u32 n, const char *ext, CLSID clsid, IID iid)
@@ -149,7 +209,10 @@ b8 lib_close(lib_handle hnd)
 
 const char *lib_err()
 {
-	return GetLastError();
+	static char buf[256];
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
+	return buf;
 }
 
 #else
@@ -257,11 +320,6 @@ const char *lib_err()
 	return dlerror();
 }
 
-void exec(char *const argv[])
-{
-	execv(argv[0], argv);
-}
-
 #endif
 
 b8 mkpath(const char *path)
@@ -318,7 +376,7 @@ b8 rmdir_f(const char *path)
 	tinydir_dir dir;
 	if (tinydir_open(&dir, path) == -1)
 	{
-		printf("rmdir: error reading directory '%s'\n", path);
+		log_write("rmdir: error reading directory '%s'", path);
 		goto out;
 	}
 	while (dir.has_next)
@@ -333,24 +391,24 @@ b8 rmdir_f(const char *path)
 					rmdir_f(file.path);
 				else if (remove(file.path))
 				{
-					printf("rmdir: error removing '%s'", file.path);
+					log_write("rmdir: error removing '%s'", file.path);
 					goto out;
 				}
 			}
 		}
 		else
 		{
-			printf("rmdir: error examining file\n");
+			log_write("rmdir: error examining file");
 			goto out;
 		}
 		if (tinydir_next(&dir) == -1)
 		{
-			printf("rmdir: error iterating directory\n");
+			log_write("rmdir: error iterating directory");
 			goto out;
 		}
 	}
-	if (remove(path))
-		printf("error removing '%s'\n", path);
+	if (rmdir(path))
+		log_write("error removing '%s'", path);
 	else
 		success = true;
 out:
@@ -359,3 +417,29 @@ out:
 }
 #endif // VLT_USE_TINYDIR
 
+void exec(char *const argv[])
+{
+	execv(argv[0], argv);
+}
+
+int run(const char *command)
+{
+	FILE *fp = popen(command, "r");
+	if (!fp)
+	{
+		log_write("failed to execute %s", command);
+		return -1;
+	}
+	char *log_buf = NULL;
+	size_t log_buf_sz;
+	while ((log_buf_sz = getline(&log_buf, &log_buf_sz, fp)) != -1)
+	{
+		assert(log_buf_sz != 0);
+		if (log_buf[log_buf_sz - 1] == '\n')
+			log_buf[log_buf_sz - 1] = '\0';
+		log_write(log_buf);
+	}
+	free(log_buf);
+	int status = pclose(fp);
+	return status != -1 && WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+}

@@ -16,6 +16,7 @@ b8 rmdir_f(const char *path);
 #endif
 
 #ifdef _WIN32
+#include "violet/core/windows.h"
 typedef HMODULE lib_handle;
 #else
 typedef void* lib_handle;
@@ -27,5 +28,6 @@ b8 lib_close(lib_handle hnd);
 const char *lib_err();
 
 void exec(char *const argv[]);
+int run(const char *command);
 
 #endif
