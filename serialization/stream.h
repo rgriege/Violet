@@ -10,8 +10,8 @@ typedef struct array array;
 
 typedef enum
 {
-	FILE_STREAM,
-	MEMORY_STREAM
+	STREAM_FILE,
+	STREAM_MEMORY
 } stream_type;
 
 typedef struct istream
@@ -19,12 +19,12 @@ typedef struct istream
 	stream_type type;
 	union
 	{
-		FILE * file;
-		void * buf;
+		FILE *file;
+		void *buf;
 	};
 } istream;
 
-b8 stream_read(istream * s, void * buf, u32 sz);
+b8 stream_read(istream *s, void *buf, u32 sz);
 
 
 typedef struct ostream
@@ -32,13 +32,13 @@ typedef struct ostream
 	stream_type type;
 	union
 	{
-		FILE * file;
-		array * arr;
+		FILE *file;
+		array *arr;
 	};
 } ostream;
 
-void stream_write(ostream * s, const char * format, ...);
-void stream_vwrite(ostream * s, const char * format, va_list args);
+void stream_write(ostream *s, const char *format, ...);
+void stream_vwrite(ostream *s, const char *format, va_list args);
 
 #endif
 

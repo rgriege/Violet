@@ -5,17 +5,17 @@
 #include "violet/serialization/stream.h"
 #include "violet/structures/array.h"
 
-b8 stream_read(istream * s, void * buf, u32 sz)
+b8 stream_read(istream *s, void *buf, u32 sz)
 {
 	assert(sz > 0);
 	switch (s->type)
 	{
-	case MEMORY_STREAM:
+	case STREAM_MEMORY:
 		memcpy(buf, s->buf, sz);
 		s->buf = (byte*)s->buf + sz;
 		return true;
 
-	case FILE_STREAM:
+	case STREAM_FILE:
 		return fread(buf, 1, sz, s->file) == sz;
 
 	default:
@@ -24,7 +24,7 @@ b8 stream_read(istream * s, void * buf, u32 sz)
 	}
 }
 
-void stream_write(ostream * s, const char * format, ...)
+void stream_write(ostream *s, const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -32,11 +32,11 @@ void stream_write(ostream * s, const char * format, ...)
 	va_end(args);
 }
 
-void stream_vwrite(ostream * s, const char * format, va_list args)
+void stream_vwrite(ostream *s, const char *format, va_list args)
 {
 	switch (s->type)
 	{
-	case MEMORY_STREAM:
+	case STREAM_MEMORY:
 	{
 		va_list args_sz;
 		va_copy(args_sz, args);
@@ -48,10 +48,9 @@ void stream_vwrite(ostream * s, const char * format, va_list args)
 	}
 		break;
 
-	case FILE_STREAM:
+	case STREAM_FILE:
 		vfprintf(s->file, format, args);
 		fflush(s->file);
 		break;
 	}
 }
-

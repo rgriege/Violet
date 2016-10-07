@@ -17,16 +17,16 @@ void log_destroy()
 	array_destroy(&g_streams);
 }
 
-void log_add_stream(ostream * s)
+void log_add_stream(ostream *s)
 {
 	array_append(&g_streams, &s);
 }
 
-b8 log_remove_stream(ostream * s)
+b8 log_remove_stream(ostream *s)
 {
 	for (u32 i = 0, n = array_size(&g_streams); i < n; ++i)
 	{
-		ostream ** entry = array_get(&g_streams, i);
+		ostream **entry = array_get(&g_streams, i);
 		if (s == *entry)
 		{
 			array_remove(&g_streams, i);
@@ -36,7 +36,7 @@ b8 log_remove_stream(ostream * s)
 	return false;
 }
 
-void log_write(const char * format, ...)
+void log_write(const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
@@ -44,11 +44,10 @@ void log_write(const char * format, ...)
 	{
 		va_list args_cp;
 		va_copy(args_cp, args);
-		ostream ** s = array_get(&g_streams, i);
+		ostream **s = array_get(&g_streams, i);
 		stream_vwrite(*s, format, args_cp);
 		stream_write(*s, "\n");
 		va_end(args_cp);
 	}
 	va_end(args);
 }
-
