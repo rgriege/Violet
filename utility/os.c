@@ -134,6 +134,13 @@ b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
 		IID_IFileSaveDialog);
 }
 
+b8 file_exists(const char *path)
+{
+	const DWORD attrib = GetFileAttributes(path);
+	return attrib != INVALID_FILE_ATTRIBUTES
+	    && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 b8 dir_exists(const char *path)
 {
 	const DWORD attrib = GetFileAttributes(path);
@@ -254,6 +261,12 @@ b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
 {
 	return _vlt_file_dialog(filename, n,
 		"zenity --file-selection --save");
+}
+
+b8 file_exists(const char *path)
+{
+	struct stat s;
+	return stat(path, &s) == 0 && !S_ISDIR(s.st_mode);
 }
 
 b8 dir_exists(const char *path)
