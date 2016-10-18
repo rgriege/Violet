@@ -13,24 +13,6 @@
 #include "violet/gui/texture.h"
 
 
-typedef struct vlt_img
-{
-	u32 vao;
-	vlt_texture texture;
-	vlt_mesh mesh;
-	vlt_mesh tex_coords;
-} vlt_img;
-
-vlt_img *vlt_img_create()
-{
-	return calloc(sizeof(vlt_img), 1);
-}
-
-void vlt_img_free(vlt_img *img)
-{
-	free(img);
-}
-
 b8 vlt_img_load(vlt_img *img, const char *filename)
 {
 	b8 retval = false;

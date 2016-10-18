@@ -331,3 +331,32 @@ void vlt_font_render_ex(vlt_font *f, const char *txt, s32 *x, s32 *y,
 	*x -= off;
 }
 
+void vlt_font_bounds(vlt_font *f, const char *txt, s32 *x, s32 *y,
+                     font_align align)
+{
+	const s32 x_orig = *x;
+	for (u32 i = 0, end = strlen(txt); i < end; ++i)
+	{
+		const char character = txt[i];
+		switch (character)
+		{
+		case ' ':
+			*x += f->space_width;
+			break;
+
+		case '\r':
+			*y -= f->newline_dist;
+			*x = x_orig;
+			break;
+
+		default:
+		{
+			vlt_glyph *glyph = array_map_get(&f->glyphs, &character);
+			if (glyph)
+				*x += glyph->advance;
+		}
+		break;
+		}
+	}
+}
+

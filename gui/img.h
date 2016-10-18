@@ -2,12 +2,20 @@
 #define VIOLET_IMG_H
 
 #include "violet/core/types.h"
+#include "violet/gui/mesh.h"
+#include "violet/gui/texture.h"
 
-typedef struct vlt_img vlt_img;
 typedef struct vlt_shader_program vlt_shader_program;
 
-vlt_img *vlt_img_create();
-void vlt_img_free(vlt_img *img);
+
+typedef struct vlt_img
+{
+	u32 vao;
+	vlt_texture texture;
+	vlt_mesh mesh;
+	vlt_mesh tex_coords;
+} vlt_img;
+
 b8 vlt_img_load(vlt_img *img, const char *filename);
 void vlt_img_destroy(vlt_img *img);
 

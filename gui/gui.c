@@ -618,14 +618,13 @@ void vlt_gui_poly(vlt_gui *gui, const v2f *v, u32 n,
 
 void vlt_gui_img(vlt_gui *gui, s32 x, s32 y, const char *filename)
 {
-	vlt_img *img = vlt_img_create();
-	if (!vlt_img_load(img, filename))
+	vlt_img img;
+	if (!vlt_img_load(&img, filename))
 		return;
 
-	vlt_rmgui_img_draw(gui, img, x, y);
+	vlt_rmgui_img_draw(gui, &img, x, y);
 
-	vlt_img_destroy(img);
-	vlt_img_free(img);
+	vlt_img_destroy(&img);
 }
 
 static vlt_font *_get_font(vlt_gui *gui, u32 sz)

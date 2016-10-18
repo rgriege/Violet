@@ -26,5 +26,7 @@ void vlt_font_render(vlt_font *f, const char *txt, s32 x, s32 y,
                      vlt_shader_program *p, font_align align);
 void vlt_font_render_ex(vlt_font *f, const char *txt, s32 *x, s32 *y,
                         vlt_shader_program *p, font_align align);
+void vlt_font_bounds(vlt_font *f, const char *txt, s32 *x, s32 *y,
+                     font_align align);
 
 #endif
