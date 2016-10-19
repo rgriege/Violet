@@ -92,6 +92,14 @@ b8 BOX2_(overlaps)(const BOX2 *lhs, const BOX2 *rhs)
 		&& IVAL_(overlaps)(&lhs_y, &rhs_y);
 }
 
+b8 BOX2_(eq)(const BOX2 *lhs, const BOX2 *rhs)
+{
+	return lhs->min.x == rhs->min.x
+	    && lhs->min.y == rhs->min.y
+	    && lhs->max.x == rhs->max.x
+	    && lhs->max.y == rhs->max.y;
+}
+
 void BOX2_(extend_point)(BOX2 *box, const V2 *point)
 {
 	BOX2_(from_dims)(box,

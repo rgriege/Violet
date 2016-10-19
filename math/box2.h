@@ -27,6 +27,7 @@ b8 BOX2_(contains_box)(const BOX2 *lhs, const BOX2 *rhs);
 void BOX2_(clamp_point)(const BOX2 *b, V2 *p);
 
 b8 BOX2_(overlaps)(const BOX2 *lhs, const BOX2 *rhs);
+b8 BOX2_(eq)(const BOX2 *lhs, const BOX2 *rhs);
 
 void BOX2_(extend_point)(BOX2 *b, const V2 *p);
 void BOX2_(extend_box)(BOX2 *b, const BOX2 *other);
