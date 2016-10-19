@@ -52,15 +52,18 @@ void vlt_img_destroy(vlt_img *img)
 	glDeleteVertexArrays(1, &img->vao);
 }
 
-void vlt_img_render(vlt_img *img, s32 x, s32 y, vlt_shader_program *p)
+void vlt_img_render(const vlt_img *img, s32 x, s32 y, r32 sx, r32 sy,
+                    vlt_shader_program *p)
 {
 	glBindVertexArray(img->vao);
 
 	vlt_texture_bind(&img->texture);
 
-	const GLint offset_attrib = vlt_shader_program_uniform(p,
-		"offset");
+	const GLint offset_attrib = vlt_shader_program_uniform(p, "offset");
 	glUniform2f(offset_attrib, x, y);
+
+	const GLint scale_attrib = vlt_shader_program_uniform(p, "scale");
+	glUniform2f(scale_attrib, sx, sy);
 
 	glDrawArrays(GL_TRIANGLE_FAN, 0, img->mesh.sz);
 

@@ -547,17 +547,19 @@ void vlt_rmgui_poly_destroy(vlt_rmgui_poly *poly)
 	vlt_mesh_destroy(&poly->mesh);
 }
 
-void vlt_rmgui_img_draw(vlt_gui *gui, vlt_img *img, s32 x, s32 y)
+void vlt_rmgui_img_draw(vlt_gui *gui, const vlt_img *img, s32 x, s32 y)
 {
-	vlt_shader_program_bind(&gui->tex_shader);
-
-	_set_win_halfdim_attrib(gui, &gui->tex_shader);
-
-	vlt_img_render(img, x, y, &gui->tex_shader);
-
-	vlt_shader_program_unbind();
+	vlt_rmgui_img_draw_ex(gui, img, x, y, 1.f, 1.f);
 }
 
+void vlt_rmgui_img_draw_ex(vlt_gui *gui, const vlt_img *img, s32 x, s32 y,
+                           r32 sx, r32 sy)
+{
+	vlt_shader_program_bind(&gui->tex_shader);
+	_set_win_halfdim_attrib(gui, &gui->tex_shader);
+	vlt_img_render(img, x, y, sx, sy, &gui->tex_shader);
+	vlt_shader_program_unbind();
+}
 
 /* Immediate Mode API */
 

@@ -69,7 +69,9 @@ void vlt_rmgui_poly_draw(vlt_gui *gui, const vlt_rmgui_poly *poly,
                          s32 x, s32 y);
 void vlt_rmgui_poly_destroy(vlt_rmgui_poly *poly);
 
-void vlt_rmgui_img_draw(vlt_gui *gui, vlt_img *img, s32 x, s32 y);
+void vlt_rmgui_img_draw(vlt_gui *gui, const vlt_img *img, s32 x, s32 y);
+void vlt_rmgui_img_draw_ex(vlt_gui *gui, const vlt_img *img, s32 x, s32 y,
+                           r32 sx, r32 sy);
 
 
 /* Immediate Mode API */
