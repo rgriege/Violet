@@ -46,6 +46,10 @@ void array_reserve(array *a, u32 capacity);
 
 void array_reverse(array *a);
 void array_qsort(array *a, int(*comp)(const void *, const void *));
+void *array_bsearch(array *a, const void *key,
+                    int(*comp)(const void *, const void *));
 b8 array_contains(const array *a, const void *elem);
+void *array_upper(array *a, const void *key,
+                  int(*comp)(const void *, const void*));
 
 #endif

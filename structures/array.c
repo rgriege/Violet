@@ -166,13 +166,37 @@ void array_qsort(array *a, int(*comp)(const void *, const void *))
 	qsort(a->data, a->size, a->elem_size, comp);
 }
 
+void *array_bsearch(array *a, const void *key,
+                    int(*comp)(const void *, const void *))
+{
+	return bsearch(key, a->data, a->size, a->elem_size, comp);
+}
+
 b8 array_contains(const array *a, const void *elem)
 {
 	for (u32 i = 0; i < a->size; ++i)
-	{
 		if (memcmp(elem, array_get(a, i), a->elem_size) == 0)
 			return true;
-	}
 	return false;
+}
+
+void *array_upper(array *a, const void *key,
+                  int(*comp)(const void *, const void*))
+{
+	u32 left = 0, right = a->size, mid = a->size/2;
+	void *res = NULL;
+	while (left != right)
+	{
+		void *p = array_get(a, mid);
+		if (comp(key, p) < 0)
+		{
+			res = p;
+			right = mid;
+		}
+		else
+			left = mid+1;
+		mid = (right+left)/2;
+	}
+	return res;
 }
 
