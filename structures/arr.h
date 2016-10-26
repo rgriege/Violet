@@ -43,9 +43,15 @@
 #define arr_reverse(a)          _arr_reverse(a, sizeof(*a))
 #define arr_qsort(a, cmp)       qsort(a, arr_sz(a), sizeof(*a), cmp)
 #define arr_bsearch(a, e, cmp)  bsearch(e, a, arr_sz(a), sizeof(*a), cmp)
-#define arr_contains(a, e)      (_arr_contains(a, e, sizeof(*a))!=-1)
-#define arr_index(a, e, i)      ((i=_arr_contains(a, e, sizeof(*a)))!=-1)
-#define arr_upper(a, e, cmp)    _arr_upper(a, e, cmp, sizeof(*a))
+#define arr_contains(a, e)      arr_contains_ex(a, e, memcmp)
+#define arr_index(a, e, i)      arr_index_ex(a, e, i, memcmp)
+#define arr_upper(a, e, cmp)    _arr_upper(a, e, sizeof(*a), cmp)
+
+#define arr_contains_ex(a, e, cmp) \
+	(_arr_contains(a, e, sizeof(*a), cmp)!=-1)
+#define arr_index_ex(a, e, i, cmp) \
+	((i=_arr_contains(a, e, sizeof(*a), cmp))!=-1)
+
 
 
 void *_arr_create();
@@ -53,8 +59,9 @@ void *_arr_reserve(void *a, size_t nmemb, size_t sz);
 void *_arr_insert_null(void *a, u32 idx, size_t sz);
 void _arr_remove(void *a, void *e, size_t sz);
 void _arr_reverse(void *a, size_t sz);
-u32 _arr_contains(void *a, const void *elem, size_t sz);
-void *_arr_upper(void *a, const void *elem,
-                 int(*comp)(const void *, const void*), size_t sz);
+u32 _arr_contains(void *a, const void *elem, size_t sz,
+                  int(*cmp)(const void *, const void *, size_t));
+void *_arr_upper(void *a, const void *elem, size_t sz,
+                 int(*cmp)(const void *, const void*));
 
 #endif

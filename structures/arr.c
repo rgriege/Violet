@@ -59,17 +59,18 @@ void _arr_reverse(void *_a, size_t sz)
 	free(scratch);
 }
 
-u32 _arr_contains(void *_a, const void *elem, size_t sz)
+u32 _arr_contains(void *_a, const void *elem, size_t sz,
+                  int(*cmp)(const void *, const void *, size_t))
 {
 	byte *a = _a;
 	for (byte *p=a, *end=a+arr_sz(a)*sz; p!=end; p+=sz)
-		if (memcmp(elem, p, sz) == 0)
+		if (cmp(elem, p, sz) == 0)
 			return (p-a)/sz;
 	return -1;
 }
 
-void *_arr_upper(void *_a, const void *key,
-                 int(*comp)(const void *, const void*), size_t sz)
+void *_arr_upper(void *_a, const void *elem, size_t sz,
+                 int(*cmp)(const void *, const void*))
 {
 	byte *a = _a;
 	u32 left = 0, right = arr_sz(a), mid = arr_sz(a)/2;
@@ -77,7 +78,7 @@ void *_arr_upper(void *_a, const void *key,
 	while (left != right)
 	{
 		void *p = a+mid*sz;
-		if (comp(key, p) < 0)
+		if (cmp(elem, p) < 0)
 		{
 			res = p;
 			right = mid;
