@@ -61,12 +61,20 @@ b8 MATH_(line_intersect)(const V2 *a0, const V2 *a1,
 	return result;
 }
 
+b8 MATH_(segment_intersect_coords)(const V2 *a0, const V2 *a1,
+                                   const V2 *b0, const V2 *b1,
+                                   SCALAR *t, SCALAR *u)
+{
+	return MATH_(line_intersect_coords)(a0, a1, b0, b1, t, u)
+	    && 0 < *u && *u < 1 && 0 < *t && *t < 1;
+}
+
 b8 MATH_(segment_intersect)(const V2 *a0, const V2 *a1,
                             const V2 *b0, const V2 *b1, V2 *isec)
 {
 	SCALAR t, u;
-	const b8 result = MATH_(line_intersect_coords)(a0, a1, b0, b1, &t, &u)
-	    && 0 < u && u < 1 && 0 < t && t < 1;
+	const b8 result =
+		MATH_(segment_intersect_coords)(a0, a1, b0, b1, &t, &u);
 	MATH_(line_extrapolate)(a0, a1, t, isec);
 	return result;
 }
