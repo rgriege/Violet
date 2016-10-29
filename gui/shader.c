@@ -19,12 +19,15 @@ b8 vlt_shader_init(vlt_shader * shader, const char * filename, shader_type type)
 	}
 
 	fseek(file, 0, SEEK_END);
-	const u32 size = ftell(file);
+	const size_t size = ftell(file);
 	rewind(file);
 	char * file_buf = malloc(size + 1);
-	fread(file_buf, 1, size, file);
+	if (fread(file_buf, 1, size, file) != size)
+	{
+		log_write("Failed to read shader file '%s'", filename);
+		goto err;
+	}
 	file_buf[size] = 0;
-	fclose(file);
 
 	GLuint const shader_handle = glCreateShader(type == VERTEX_SHADER ?
 		GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
@@ -49,6 +52,7 @@ b8 vlt_shader_init(vlt_shader * shader, const char * filename, shader_type type)
 	retval = true;
 err:
 	free(file_buf);
+	fclose(file);
 	return retval;
 }
 

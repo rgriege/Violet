@@ -9,8 +9,10 @@
 
 SCALAR MATH_(clamp)(SCALAR lo, SCALAR val, SCALAR hi);
 
+#ifdef HAS_DECIMAL
 SCALAR MATH_(deg2rad)(SCALAR deg);
 SCALAR MATH_(rad2deg)(SCALAR rad);
+#endif
 
 b8 MATH_(eq)(SCALAR a, SCALAR b, SCALAR err);
 

@@ -19,6 +19,7 @@
 #define ABS fabsf
 #define SCALAR_MIN FLT_MIN
 #define SCALAR_MAX FLT_MAX
+#define HAS_DECIMAL
 
 #include "violet/math/templates.h"
 
@@ -41,6 +42,7 @@
 #undef ABS
 #undef SCALAR_MIN
 #undef SCALAR_MAX
+#undef HAS_DECIMAL
 
 #endif // _MATH_IMPLEMENTATION
 

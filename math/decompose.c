@@ -50,9 +50,9 @@ void polyf_decompose(const v2f *v, u32 n, array *polys)
 {
 	assert(polyf_is_cc(v, n));
 
-	v2f upper_int, lower_int, p;
+	v2f upper_int={0}, lower_int={0}, p;
 	r32 upper_dist, lower_dist, d, closest_dist;
-	u32 upper_idx, lower_idx, closest_idx;
+	u32 upper_idx=0, lower_idx=0, closest_idx=0;
 	array lower_poly, upper_poly;
 
 	array_init(&lower_poly, sizeof(v2f));
