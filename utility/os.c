@@ -74,9 +74,12 @@ int rmdir(const char *path)
 }
 
 static
-b8 _vlt_file_dialog(char *filename, u32 n, const char *ext, CLSID clsid, IID iid)
+b8 _file_dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
+                CLSID clsid, IID iid)
 {
 	b8 retval = false;
+	PWSTR ext_buf = NULL;
+	COMDLG_FILTERSPEC filters = NULL;
 
 	if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 		goto out;
@@ -86,14 +89,25 @@ b8 _vlt_file_dialog(char *filename, u32 n, const char *ext, CLSID clsid, IID iid
 		goto err_init;
 	IFileDialog *dialog = vp;
 
-	PWSTR psz_ext = malloc(sizeof(wchar_t)*n);
-	mbstowcs(psz_ext, ext, n);
-	if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, psz_ext)))
-		goto err_ext;
+	if (n_ext)
+	{
+		ext_buf = malloc(8*(n_ext+1)*sizeof(wchar_t));
+		mbstowcs(ext_buf, ext[0], 8);
+		if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, psz_ext)))
+			goto err_ext;
 
-	COMDLG_FILTERSPEC filters[1] = { { L"", psz_ext } };
-	if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, 1, filters)))
-		goto err_ext;
+		filters = malloc(n_ext*sizeof(COMDLG_FILTERSPEC));
+		for (u32 i = 0; i < ext_n; ++i)
+		{
+			filters[i].pszName = L"";
+			filters[i].pszSpec = ext_buf+(i+1)*8;
+			filters[i].pszSpec[0] = L'*';
+			filters[i].pszSpec[1] = L'.';
+			mbstowcs(filters[i].pszSpec+2, ext[i], 6);
+		}
+		if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, ext_n, filters)))
+			goto err_ext;
+	}
 
 	if (!SUCCEEDED(dialog->lpVtbl->Show(dialog, NULL)))
 		goto err_dlg;
@@ -115,22 +129,35 @@ err_itm:
 err_dlg:
 	dialog->lpVtbl->Release(dialog);
 err_ext:
-	free(psz_ext);
+	free(filters);
+	free(ext_buf);
 err_init:
 	CoUninitialize();
 out:
 	return retval;
 }
 
-b8 vlt_file_open_dialog(char *filename, u32 n, const char *ext)
+b8 file_open_dialog(char *fname, u32 n, const char *ext)
 {
-	return _vlt_file_dialog(filename, n, ext, CLSID_FileOpenDialog,
+	const char *extensions[1] = { ext };
+	file_open_dialog_ex(fname, n, ext, ext ? 1 : 0);
+}
+
+b8 file_save_dialog(char *fname, u32 n, const char *ext)
+{
+	const char *extensions[1] = { ext };
+	file_save_dialog_ex(fname, n, ext, ext ? 1 : 0);
+}
+
+b8 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+{
+	return _file_dialog(fname, n, ext, n_ext, CLSID_FileOpenDialog,
 		IID_IFileOpenDialog);
 }
 
-b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
+b8 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
 {
-	return _vlt_file_dialog(filename, n, ext, CLSID_FileSaveDialog,
+	return _file_dialog(fname, n, ext, n_ext, CLSID_FileSaveDialog,
 		IID_IFileSaveDialog);
 }
 
@@ -231,7 +258,7 @@ const char *lib_err()
 #include <sys/stat.h>
 #include <unistd.h>
 
-b8 _vlt_file_dialog(char *filename, u32 n, const char *cmd)
+b8 _file_dialog(char *filename, u32 n, const char *cmd)
 {
 	b8 retval = false;
 	FILE *pipe = popen(cmd, "r");
@@ -252,15 +279,24 @@ out:
 	return retval;
 }
 
-b8 vlt_file_open_dialog(char *filename, u32 n, const char *ext)
+b8 file_open_dialog(char *fname, u32 n, const char *ext)
 {
-	return _vlt_file_dialog(filename, n, "zenity --file-selection");
+	return _file_dialog(fname, n, "zenity --file-selection");
 }
 
-b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext)
+b8 file_save_dialog(char *fname, u32 n, const char *ext)
 {
-	return _vlt_file_dialog(filename, n,
-		"zenity --file-selection --save");
+	return _file_dialog(fname, n, "zenity --file-selection --save");
+}
+
+b8 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+{
+	return file_open_dialog(fname, n, NULL);
+}
+
+b8 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+{
+	return file_save_dialog(fname, n, NULL);
 }
 
 b8 file_exists(const char *path)

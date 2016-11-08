@@ -3,8 +3,10 @@
 
 #include "violet/core/types.h"
 
-b8 vlt_file_open_dialog(char *filename, u32 n, const char *ext);
-b8 vlt_file_save_dialog(char *filename, u32 n, const char *ext);
+b8 file_open_dialog(char *fname, u32 n, const char *ext);
+b8 file_save_dialog(char *fname, u32 n, const char *ext);
+b8 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext);
+b8 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext);
 
 b8 file_exists(const char *path);
 b8 dir_exists(const char *path);
