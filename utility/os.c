@@ -79,7 +79,7 @@ b8 _file_dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 {
 	b8 retval = false;
 	PWSTR ext_buf = NULL;
-	COMDLG_FILTERSPEC filters = NULL;
+	COMDLG_FILTERSPEC *filters = NULL;
 
 	if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
 		goto out;
@@ -93,19 +93,20 @@ b8 _file_dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 	{
 		ext_buf = malloc(8*(n_ext+1)*sizeof(wchar_t));
 		mbstowcs(ext_buf, ext[0], 8);
-		if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, psz_ext)))
+		if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, ext_buf)))
 			goto err_ext;
 
 		filters = malloc(n_ext*sizeof(COMDLG_FILTERSPEC));
-		for (u32 i = 0; i < ext_n; ++i)
+		for (u32 i = 0; i < n_ext; ++i)
 		{
 			filters[i].pszName = L"";
-			filters[i].pszSpec = ext_buf+(i+1)*8;
-			filters[i].pszSpec[0] = L'*';
-			filters[i].pszSpec[1] = L'.';
-			mbstowcs(filters[i].pszSpec+2, ext[i], 6);
+			PWSTR spec = ext_buf+(i+1)*8;
+			spec[0] = L'*';
+			spec[1] = L'.';
+			mbstowcs(spec+2, ext[i], 6);
+			filters[i].pszSpec = spec;
 		}
-		if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, ext_n, filters)))
+		if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, n_ext, filters)))
 			goto err_ext;
 	}
 
@@ -140,13 +141,13 @@ out:
 b8 file_open_dialog(char *fname, u32 n, const char *ext)
 {
 	const char *extensions[1] = { ext };
-	file_open_dialog_ex(fname, n, ext, ext ? 1 : 0);
+	return file_open_dialog_ex(fname, n, extensions, ext ? 1 : 0);
 }
 
 b8 file_save_dialog(char *fname, u32 n, const char *ext)
 {
 	const char *extensions[1] = { ext };
-	file_save_dialog_ex(fname, n, ext, ext ? 1 : 0);
+	return file_save_dialog_ex(fname, n, extensions, ext ? 1 : 0);
 }
 
 b8 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
