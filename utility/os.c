@@ -473,7 +473,13 @@ void exec(char *const argv[])
 
 int run(const char *command)
 {
+#ifndef _WIN32
+	char _command[256] = "./";
+	strcpy(_command+2, command);
+	FILE *fp = popen(_command, "r");
+#else
 	FILE *fp = popen(command, "r");
+#endif
 	if (!fp)
 	{
 		log_write("failed to execute %s", command);
