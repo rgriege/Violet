@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <ctype.h>
 #include <string.h>
 
 #include <GL/glew.h>
@@ -790,8 +791,12 @@ b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
 				}
 				else if (gui->key >= 32)
 				{
-					char buf[2] = { gui->key, '\0' };
-					strncat(txt, buf, n-len-1);
+					if (   (flags & VLT_NPT_NUMERIC) == 0
+					    || isdigit(gui->key))
+					{
+						char buf[2] = { gui->key, '\0' };
+						strncat(txt, buf, n-len-1);
+					}
 				}
 			}
 		}

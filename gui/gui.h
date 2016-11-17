@@ -101,7 +101,8 @@ typedef enum vlt_btn_val
 
 typedef enum vlt_npt_flags
 {
-	VLT_NPT_PASSWORD = 1 << 0
+	VLT_NPT_PASSWORD = 1 << 0,
+	VLT_NPT_NUMERIC  = 1 << 1,
 } vlt_npt_flags;
 
 b8 vlt_gui_npt(vlt_gui *gui, s32 x, s32 y, s32 w, s32 h,
