@@ -115,6 +115,7 @@ typedef struct vlt_gui
 	vlt_style style;
 	u64 hot_id;
 	u64 active_id;
+	u64 active_id_at_frame_start;
 	v2i drag_offset;
 	array pw_buf;
 } vlt_gui;
@@ -229,6 +230,7 @@ vlt_gui *vlt_gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	vlt_gui_style_default(gui);
 
 	gui->hot_id = gui->active_id = 0;
+	gui->active_id_at_frame_start = 0;
 
 	gui->drag_offset = g_v2i_zero;
 
@@ -311,7 +313,8 @@ b8 vlt_gui_mouse_release(const vlt_gui *gui, u32 mask)
 b8 vlt_gui_mouse_release_bg(const vlt_gui *gui, u32 mask)
 {
 	return vlt_gui_mouse_release(gui, mask)
-		&& gui->active_id == 0;
+	    && gui->active_id == 0
+	    && gui->active_id_at_frame_start == 0;
 }
 
 void vlt_gui_mouse_scroll(const vlt_gui *gui, s32 *dir)
@@ -386,6 +389,8 @@ b8 vlt_gui_begin_frame(vlt_gui *gui)
 	for (s32 i = 0; i < key_cnt; ++i)
 		if (keys[i] && _convert_scancode(i, caps, &gui->key))
 			break;
+
+	gui->active_id_at_frame_start = gui->active_id;
 
 	float color[4];
 	vlt_color_as_float_array(color, gui->style.bg_color);
