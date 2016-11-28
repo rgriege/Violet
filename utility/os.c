@@ -1,7 +1,9 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#ifdef VLT_USE_TINYDIR
 #include <tinydir/tinydir.h>
+#endif
 
 #include "violet/utility/log.h"
 #include "violet/utility/os.h"
