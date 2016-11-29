@@ -18,6 +18,14 @@
 		u32 sz, cap; \
 	} type##_a;
 
+#define DECLARE_ARRAY_NTYPEDEF(type) \
+	typedef struct type##_a \
+	{ \
+		struct type *d; \
+		u32 sz, cap; \
+	} type##_a;
+
+
 
 #define arr_init(a)     ((a).d=0, (a).sz=(a).cap=0)
 #define arr_destroy(a)  (free((a).d), arr_init(a))
