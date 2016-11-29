@@ -45,6 +45,8 @@ char vlt_gui_key_release(const vlt_gui *gui);
 
 b8 vlt_gui_begin_frame(vlt_gui *gui);
 void vlt_gui_end_frame(vlt_gui *gui);
+void vlt_gui_run(vlt_gui *gui, u32 fps,
+                 b8(*ufunc)(vlt_gui *gui, void *udata), void *udata);
 
 
 /* Retained Mode API */

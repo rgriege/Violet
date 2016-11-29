@@ -407,6 +407,25 @@ void vlt_gui_end_frame(vlt_gui *gui)
 	SDL_GL_SwapWindow(gui->window);
 }
 
+void vlt_gui_run(vlt_gui *gui, u32 fps,
+                 b8(*ufunc)(vlt_gui *gui, void *udata), void *udata)
+{
+	const u32 target_frame_milli = 1000/fps;
+	vlt_time start, end;
+	b8 quit = false;
+	while(vlt_gui_begin_frame(gui) && !quit)
+	{
+		vlt_get_time(&start);
+		quit = ufunc(gui, udata);
+		vlt_gui_end_frame(gui);
+		vlt_get_time(&end);
+		const u32 frame_milli = vlt_diff_milli(&start, &end);
+		if (frame_milli < target_frame_milli)
+			vlt_sleep_milli(target_frame_milli - frame_milli);
+		else
+			log_write("long frame: %ums", frame_milli);
+	}
+}
 
 /* Retained Mode API */
 
