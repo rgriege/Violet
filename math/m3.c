@@ -18,11 +18,11 @@ void M3_(init_rot)(M3 m, r32 radians)
 	m[1] = -sin(radians);
 	m[2] = 0;
 	m[3] = sin(radians);
-	m[4] = cos(radians);
+	m[4] = m[0];
 	m[5] = 0;
 	m[6] = 0;
 	m[7] = 0;
-	m[8] = 0;
+	m[8] = 1;
 }
 
 void M3_(mul_m3)(const M3 lhs, const M3 rhs, M3 res)
