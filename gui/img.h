@@ -17,6 +17,7 @@ typedef struct vlt_img
 } vlt_img;
 
 b8 vlt_img_load(vlt_img *img, const char *filename);
+void vlt_img_init(vlt_img *img, u32 w, u32 h, u32 fmt, void *data);
 void vlt_img_destroy(vlt_img *img);
 
 void vlt_img_render(const vlt_img *img, s32 x, s32 y, r32 sx, r32 sy,
