@@ -32,10 +32,11 @@
 
 #define _arr_dsz(a) sizeof(*(a).d)
 
-#define arr_cp(dst, src) \
-	arr_reserve(dst, (src).sz); \
-	(dst).sz=(src).sz; \
-	memcpy((dst).d, (src).d, (src).sz*_arr_dsz(src))
+#define arr_cpn(dst, src, n) \
+	arr_reserve(dst, n); \
+	(dst).sz=n; \
+	memcpy((dst).d, (src).d, n*_arr_dsz(src))
+#define arr_cp(dst, src) arr_cpn(dst, src, (src).sz)
 
 #define arr_last(a)               ((a).d+(a).sz-1)
 #define arr_end(a)                ((a).d+(a).sz)
