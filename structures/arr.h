@@ -48,27 +48,27 @@
 #define arr_append_null(a) \
 	((a).sz == (a).cap ? arr_grow(a) : 0, ++(a).sz, arr_last(a))
 #define arr_append(a, e) \
-	UNUSED(arr_append_null(a)), memcpy(arr_last(a), e, _arr_dsz(a))
+	UNUSED(arr_append_null(a)), memcpy(arr_last(a), &(e), _arr_dsz(a))
 #define arr_insert_null(a, i) \
 	(UNUSED(arr_append_null(a)), _arr_insert_null(&(a), i, _arr_dsz(a)))
 #define arr_insert(a, i, e) \
-	memcpy(arr_insert_null(a, i), e, _arr_dsz(a))
+	memcpy(arr_insert_null(a, i), &(e), _arr_dsz(a))
 
-#define arr_remove(a, e)   _arr_remove(&(a), e, _arr_dsz(a))
-#define arr_pop(a)         arr_remove(a, arr_last(a))
+#define arr_remove(a, e)   _arr_remove(&(a), &(e), _arr_dsz(a))
+#define arr_pop(a)         --(a).sz
 #define arr_clear(a)       (a).sz=0
 
 #define arr_reverse(a)         _arr_reverse(&(a), _arr_dsz(a))
 #define arr_qsort(a, cmp)      qsort((a).d, (a).sz, _arr_dsz(a), cmp)
-#define arr_bsearch(a, e, cmp) bsearch(e, (a).d, (a).sz, _arr_dsz(a), cmp)
-#define arr_contains(a, e)     arr_contains(a, e, memcmp)
+#define arr_bsearch(a, e, cmp) bsearch(&(e), (a).d, (a).sz, _arr_dsz(a), cmp)
+#define arr_contains(a, e)     arr_contains_ex(a, e, memcmp)
 #define arr_index(a, e, i)     arr_index_ex(a, e, i, memcmp)
-#define arr_upper(a, e, cmp)   _arr_upper(&(a), e, cmp, _arr_dsz(a))
+#define arr_upper(a, e, cmp)   _arr_upper(&(a), &(e), cmp, _arr_dsz(a))
 
 #define arr_contains_ex(a, e, cmp) \
-	(_arr_contains(&(a), e, _arr_dsz(a), cmp)!=-1)
+	(_arr_contains(&(a), &(e), _arr_dsz(a), cmp)!=-1)
 #define arr_index_ex(a, e, i, cmp) \
-	((i=_arr_contains(&(a), e, _arr_dsz(a), cmp))!=-1)
+	((i=_arr_contains(&(a), &(e), _arr_dsz(a), cmp))!=-1)
 
 
 void _arr_reserve(void *a, size_t nmemb, size_t sz);
