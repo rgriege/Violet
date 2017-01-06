@@ -38,6 +38,7 @@
 	memcpy((dst).d, (src).d, n*_arr_dsz(src))
 #define arr_cp(dst, src) arr_cpn(dst, src, (src).sz)
 
+#define arr_first(a)              ((a).d)
 #define arr_last(a)               ((a).d+(a).sz-1)
 #define arr_end(a)                ((a).d+(a).sz)
 #define arr_foreach(a, type, it) \
