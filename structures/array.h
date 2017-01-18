@@ -30,6 +30,7 @@ void array_destroy(array *a);
 void *array_get(const array *a, u32 idx);
 void *array_first(const array *a);
 void *array_last(const array *a);
+void *array_end(const array *a);
 
 u32 array_size(const array *a);
 b8 array_empty(const array *a);

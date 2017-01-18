@@ -73,6 +73,12 @@ void *array_last(const array *a)
 	return (byte*)a->data + (a->size - 1) * a->elem_size;
 }
 
+void *array_end(const array *a)
+{
+	assert(a->size > 0);
+	return (byte*)a->data + a->size * a->elem_size;
+}
+
 u32 array_size(const array *a)
 {
 	return a->size;
