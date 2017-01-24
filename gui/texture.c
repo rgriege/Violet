@@ -11,6 +11,28 @@
 b8 vlt_load_png(vlt_texture *tex, const char *filename)
 {
 	b8 ret = false;
+#if PNG_LIBPNG_VER_MINOR == 6 // 1.6
+	png_image image = { 0 };
+	image.version = PNG_IMAGE_VERSION;
+	if (png_image_begin_read_from_file(&image, filename)) {
+		image.format = PNG_FORMAT_RGBA;
+		png_bytep buf = malloc(PNG_IMAGE_SIZE(image));
+		if (buf) {
+			if (png_image_finish_read(&image, NULL, buf, 0, NULL)) {
+				vlt_texture_init(tex, image.width, image.height, GL_RGBA, buf);
+				ret = true;
+				free(buf);
+			}
+			else {
+				log_write("png '%s' read: %s", filename, image.message);
+				png_image_free(&image);
+			}
+		}
+		else {
+			log_write("png read: out of memory");
+		}
+	}
+#else // fallback to 1.2
 	FILE *fp;
 	png_byte header[8];
 	png_structp png_ptr;
@@ -80,6 +102,7 @@ err:
 err_png:
 	fclose(fp);
 out:
+#endif
 	return ret;
 }
 
