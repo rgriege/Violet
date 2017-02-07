@@ -1,16 +1,66 @@
+#ifndef VIOLET_OS_H
+#define VIOLET_OS_H
+
+#include "violet/core.h"
+
+#ifdef _WIN32
+#define byte _byte_win
+#define NOMINMAX
+#include <windows.h>
+#undef byte
+#endif
+
+/* File system */
+
+b32  file_open_dialog(char *fname, u32 n, const char *ext);
+b32  file_save_dialog(char *fname, u32 n, const char *ext);
+b32  file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext);
+b32  file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext);
+
+b32  file_exists(const char *path);
+b32  dir_exists(const char *path);
+void path_append(char *lhs, const char *rhs);
+void path_appendn(char *lhs, const char *rhs, u32 sz);
+b32  mkpath(const char *path);
+b32  app_data_dir(char *path, u32 n);
+#ifdef VLT_USE_TINYDIR
+b32  rmdir_f(const char *path);
+#endif
+
+/* Dynamic library */
+
+#ifdef _WIN32
+typedef HMODULE lib_handle;
+#else
+typedef void* lib_handle;
+#endif
+
+lib_handle  lib_load(const char *filename);
+void       *lib_func(lib_handle hnd, const char *name);
+b32         lib_close(lib_handle hnd);
+const char *lib_err();
+
+/* Other applications */
+
+void exec(char *const argv[]);
+int  run(const char *command);
+
+#endif
+
+
+/* Implementation */
+
+#ifdef OS_IMPLEMENTATION
+
 #include <assert.h>
 #include <stdlib.h>
 
 #ifdef VLT_USE_TINYDIR
+#define TINYDIR_IMPLEMENTATION
 #include <tinydir/tinydir.h>
 #endif
 
-#include "violet/utility/log.h"
-#include "violet/utility/os.h"
-
 #ifdef _WIN32
-
-#include "violet/core/windows.h"
 
 #include <process.h>
 #include <ShlObj.h>
@@ -26,28 +76,22 @@
 static
 SSIZE_T getdelim(char **lineptr, size_t *n, int delim, FILE *stream)
 {
-	if (!lineptr || !n || !stream)
-	{
+	if (!lineptr || !n || !stream) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	if (!*lineptr)
-	{
+	if (!*lineptr) {
 		*n = 32;
 		*lineptr = malloc(*n);
-	}
-	else if (*n == 0)
-	{
+	} else if (*n == 0) {
 		errno = EINVAL;
 		return -1;
 	}
 
 	int i = 0, c;
-	while ((c = fgetc(stream)) != EOF)
-	{
-		if (i == *n-1)
-		{
+	while ((c = fgetc(stream)) != EOF) {
+		if (i == *n-1) {
 			*n *= 2;
 			*lineptr = realloc(*lineptr, *n);
 		}
@@ -76,14 +120,15 @@ int rmdir(const char *path)
 }
 
 static
-b8 _file_dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
-                CLSID clsid, IID iid)
+b32 file__dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
+                 CLSID clsid, IID iid)
 {
-	b8 retval = false;
+	b32 retval = false;
 	PWSTR ext_buf = NULL;
 	COMDLG_FILTERSPEC *filters = NULL;
 
-	if (!SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE)))
+	if (!SUCCEEDED(CoInitializeEx(NULL,   COINIT_APARTMENTTHREADED
+	                                    | COINIT_DISABLE_OLE1DDE)))
 		goto out;
 
 	void *vp = NULL;
@@ -91,16 +136,14 @@ b8 _file_dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 		goto err_init;
 	IFileDialog *dialog = vp;
 
-	if (n_ext)
-	{
+	if (n_ext) {
 		ext_buf = malloc(8*(n_ext+1)*sizeof(wchar_t));
 		mbstowcs(ext_buf, ext[0], 8);
 		if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, ext_buf)))
 			goto err_ext;
 
 		filters = malloc(n_ext*sizeof(COMDLG_FILTERSPEC));
-		for (u32 i = 0; i < n_ext; ++i)
-		{
+		for (u32 i = 0; i < n_ext; ++i) {
 			filters[i].pszName = L"";
 			PWSTR spec = ext_buf+(i+1)*8;
 			spec[0] = L'*';
@@ -120,7 +163,8 @@ b8 _file_dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 		goto err_dlg;
 
 	PWSTR psz_file_path;
-	if (!SUCCEEDED(item->lpVtbl->GetDisplayName(item, SIGDN_FILESYSPATH, &psz_file_path)))
+	if (!SUCCEEDED(item->lpVtbl->GetDisplayName(item, SIGDN_FILESYSPATH,
+	                                            &psz_file_path)))
 		goto err_itm;
 
 	CoTaskMemFree(psz_file_path);
@@ -140,42 +184,42 @@ out:
 	return retval;
 }
 
-b8 file_open_dialog(char *fname, u32 n, const char *ext)
+b32 file_open_dialog(char *fname, u32 n, const char *ext)
 {
 	const char *extensions[1] = { ext };
 	return file_open_dialog_ex(fname, n, extensions, ext ? 1 : 0);
 }
 
-b8 file_save_dialog(char *fname, u32 n, const char *ext)
+b32 file_save_dialog(char *fname, u32 n, const char *ext)
 {
 	const char *extensions[1] = { ext };
 	return file_save_dialog_ex(fname, n, extensions, ext ? 1 : 0);
 }
 
-b8 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+b32 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
 {
-	return _file_dialog(fname, n, ext, n_ext, CLSID_FileOpenDialog,
-		IID_IFileOpenDialog);
+	return file__dialog(fname, n, ext, n_ext, CLSID_FileOpenDialog,
+	                    IID_IFileOpenDialog);
 }
 
-b8 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+b32 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
 {
-	return _file_dialog(fname, n, ext, n_ext, CLSID_FileSaveDialog,
-		IID_IFileSaveDialog);
+	return file__dialog(fname, n, ext, n_ext, CLSID_FileSaveDialog,
+	                    IID_IFileSaveDialog);
 }
 
-b8 file_exists(const char *path)
+b32 file_exists(const char *path)
 {
 	const DWORD attrib = GetFileAttributes(path);
-	return attrib != INVALID_FILE_ATTRIBUTES
-	    && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
+	return    attrib != INVALID_FILE_ATTRIBUTES
+	       && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-b8 dir_exists(const char *path)
+b32 dir_exists(const char *path)
 {
 	const DWORD attrib = GetFileAttributes(path);
-	return attrib != INVALID_FILE_ATTRIBUTES
-	    && (attrib & FILE_ATTRIBUTE_DIRECTORY);
+	return    attrib != INVALID_FILE_ATTRIBUTES
+	       && (attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 void path_append(char *lhs, const char *rhs)
@@ -191,7 +235,7 @@ void path_appendn(char *lhs, const char *rhs, u32 sz)
 }
 
 static
-b8 _mkdir(const char *path)
+b32 _mkdir(const char *path)
 {
 	// catch drive creation
 	if (strlen(path) == 2 && path[1] == ':')
@@ -200,21 +244,19 @@ b8 _mkdir(const char *path)
 	return CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
 }
 
-b8 app_data_dir(char *path, u32 n)
+b32 app_data_dir(char *path, u32 n)
 {
 	FILE *fp = fopen(".access_check", "w");
-	if (!fp)
-	{
+	if (!fp) {
 		PWSTR psz_file_path;
-		if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path) != S_OK)
+		if (   SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path)
+		    != S_OK)
 			return false;
 
 		wcstombs(path, psz_file_path, n);
 		CoTaskMemFree(psz_file_path);
 		return true;
-	}
-	else
-	{
+	} else {
 		fclose(fp);
 		remove(".access_check");
 		path[0] = '.';
@@ -222,6 +264,8 @@ b8 app_data_dir(char *path, u32 n)
 		return true;
 	}
 }
+
+/* Dynamic library */
 
 lib_handle lib_load(const char *_filename)
 {
@@ -239,7 +283,7 @@ void *lib_func(lib_handle hnd, const char *name)
 	return GetProcAddress(hnd, name);
 }
 
-b8 lib_close(lib_handle hnd)
+b32 lib_close(lib_handle hnd)
 {
 	return FreeLibrary(hnd);
 }
@@ -248,7 +292,7 @@ const char *lib_err()
 {
 	static char buf[256];
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
+	              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
 	return buf;
 }
 
@@ -261,9 +305,9 @@ const char *lib_err()
 #include <sys/stat.h>
 #include <unistd.h>
 
-b8 _file_dialog(char *filename, u32 n, const char *cmd)
+b32 file__dialog(char *filename, u32 n, const char *cmd)
 {
-	b8 retval = false;
+	b32 retval = false;
 	FILE *pipe = popen(cmd, "r");
 	if (!pipe)
 		goto out;
@@ -282,33 +326,33 @@ out:
 	return retval;
 }
 
-b8 file_open_dialog(char *fname, u32 n, const char *ext)
+b32 file_open_dialog(char *fname, u32 n, const char *ext)
 {
-	return _file_dialog(fname, n, "zenity --file-selection");
+	return file__dialog(fname, n, "zenity --file-selection");
 }
 
-b8 file_save_dialog(char *fname, u32 n, const char *ext)
+b32 file_save_dialog(char *fname, u32 n, const char *ext)
 {
-	return _file_dialog(fname, n, "zenity --file-selection --save");
+	return file__dialog(fname, n, "zenity --file-selection --save");
 }
 
-b8 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+b32 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
 {
 	return file_open_dialog(fname, n, NULL);
 }
 
-b8 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+b32 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
 {
 	return file_save_dialog(fname, n, NULL);
 }
 
-b8 file_exists(const char *path)
+b32 file_exists(const char *path)
 {
 	struct stat s;
 	return stat(path, &s) == 0 && !S_ISDIR(s.st_mode);
 }
 
-b8 dir_exists(const char *path)
+b32 dir_exists(const char *path)
 {
 	struct stat s;
 	return stat(path, &s) == 0 && S_ISDIR(s.st_mode);
@@ -327,16 +371,15 @@ void path_appendn(char *lhs, const char *rhs, u32 sz)
 }
 
 static
-b8 _mkdir(const char *path)
+b32 _mkdir(const char *path)
 {
 	return mkdir(path, S_IRWXU) == 0;
 }
 
-b8 app_data_dir(char *path, u32 n)
+b32 app_data_dir(char *path, u32 n)
 {
 	FILE *fp = fopen(".access_check", "w");
-	if (fp)
-	{
+	if (fp) {
 		fclose(fp);
 		remove(".access_check");
 		path[0] = '.';
@@ -345,6 +388,8 @@ b8 app_data_dir(char *path, u32 n)
 	}
 	return false;
 }
+
+/* Dynamic library */
 
 lib_handle lib_load(const char *_filename)
 {
@@ -362,7 +407,7 @@ void *lib_func(lib_handle hnd, const char *name)
 	return dlsym(hnd, name);
 }
 
-b8 lib_close(lib_handle hnd)
+b32 lib_close(lib_handle hnd)
 {
 	return dlclose(hnd) == 0;
 }
@@ -374,14 +419,13 @@ const char *lib_err()
 
 #endif
 
-b8 mkpath(const char *path)
+b32 mkpath(const char *path)
 {
 	char _path[256];
 	if (strlen(path) > sizeof(_path))
 		return false;
 
-	if (   path[0] == '.'
-	    && (path[1] == '/' || path[1] == '\\'))
+	if (path[0] == '.' && (path[1] == '/' || path[1] == '\\'))
 		strcpy(_path, path + 2);
 	else
 		strcpy(_path, path);
@@ -392,13 +436,10 @@ b8 mkpath(const char *path)
 	errno = 0;
 
 	u32 pos = 0, dot_pos = 0;
-	for (char *p = _path + 1; *p; ++p)
-	{
-		switch (*p)
-		{
+	for (char *p = _path + 1; *p; ++p) {
+		switch (*p) {
 		case '/':
-		case '\\':
-		{
+		case '\\': {
 			char c = *p;
 			*p = '\0';
 
@@ -422,39 +463,31 @@ b8 mkpath(const char *path)
 }
 
 #ifdef VLT_USE_TINYDIR
-b8 rmdir_f(const char *path)
+b32 rmdir_f(const char *path)
 {
-	b8 success = false;
+	b32 success = false;
 	tinydir_dir dir;
-	if (tinydir_open(&dir, path) == -1)
-	{
+	if (tinydir_open(&dir, path) == -1) {
 		log_write("rmdir: error reading directory '%s'", path);
 		goto out;
 	}
-	while (dir.has_next)
-	{
+	while (dir.has_next) {
 		tinydir_file file;
-		if (tinydir_readfile(&dir, &file) != -1)
-		{
+		if (tinydir_readfile(&dir, &file) != -1) {
 			if (   strcmp(file.name, ".") != 0
-			    && strcmp(file.name, "..") != 0)
-			{
-				if (file.is_dir)
+			    && strcmp(file.name, "..") != 0) {
+				if (file.is_dir) {
 					rmdir_f(file.path);
-				else if (remove(file.path))
-				{
+				} else if (remove(file.path)) {
 					log_write("rmdir: error removing '%s'", file.path);
 					goto out;
 				}
 			}
-		}
-		else
-		{
+		} else {
 			log_write("rmdir: error examining file");
 			goto out;
 		}
-		if (tinydir_next(&dir) == -1)
-		{
+		if (tinydir_next(&dir) == -1) {
 			log_write("rmdir: error iterating directory");
 			goto out;
 		}
@@ -468,6 +501,8 @@ out:
 	return success;
 }
 #endif // VLT_USE_TINYDIR
+
+/* Other applications */
 
 void exec(char *const argv[])
 {
@@ -483,21 +518,22 @@ int run(const char *command)
 #else
 	FILE *fp = popen(command, "r");
 #endif
-	if (!fp)
-	{
+	if (!fp) {
 		log_write("failed to execute %s", command);
 		return -1;
 	}
 	char *log_buf = NULL;
 	size_t log_buf_sz;
-	while ((log_buf_sz = getline(&log_buf, &log_buf_sz, fp)) != -1)
-	{
+	while ((log_buf_sz = getline(&log_buf, &log_buf_sz, fp)) != -1) {
 		assert(log_buf_sz != 0);
 		if (log_buf[log_buf_sz - 1] == '\n')
 			log_buf[log_buf_sz - 1] = '\0';
-		log_write(log_buf);
+		log_write("%s", log_buf);
 	}
 	free(log_buf);
 	int status = pclose(fp);
 	return status != -1 && WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
+
+#undef OS_IMPLEMENTATION
+#endif // OS_IMPLEMENTAITON

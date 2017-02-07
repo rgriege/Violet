@@ -1,0 +1,191 @@
+#ifndef VIOLET_ARRAY_H
+#define VIOLET_ARRAY_H
+
+#ifndef array_size_t
+#define array_size_t size_t
+#endif
+
+#ifdef ARRAY_STATIC
+#define ARRDEF static
+#else
+#define ARRDEF
+#endif
+
+#if defined ARRAY_STATIC && !defined ARRAY_IMPLEMENTATION
+#define ARRAY_IMPLEMENTATION
+#endif
+
+#include <stdlib.h>
+
+typedef struct array__head
+{
+	array_size_t sz, cap;
+} array__head;
+
+#define array__get_head(a)       (((array__head*) (a)) - 1)
+#define array_create()           array__create()
+#define array_destroy(a)         free(array__get_head(a))
+
+#define array__elem_sz(a)        sizeof(*(a))
+#define array_sz(a)              array__get_head(a)->sz
+#define array_cap(a)             array__get_head(a)->cap
+
+#define array_copy(dst, src)     (dst=array__copy(dst, src, array__elem_sz(src)))
+
+#define array_from_end(a, i)     ((a)[array_sz(a)-i])
+#define array_last(a)            array_from_end(a, 1)
+#define array_end(a)             ((a)+array_sz(a))
+
+#define array_foreach(a, type, it) for (type *it = a; it != array_end(a); ++it)
+
+#define array_reserve(a, n)      (a=array__reserve(a, n, array__elem_sz(a)))
+#define array_append_null(a)     (a=array__append_null(a, array__elem_sz(a)), \
+                                   (a)+array_sz(a) - 1)
+#define array_append(a, e)       *array_append_null(a) = e
+#define array_insert_null(a, i)  (a=array__insert_null(a, i, array__elem_sz(a)), \
+                                   (a)+i)
+#define array_insert(a, i, e)    *array_insert_null(a, i) = e
+#define array_remove(a, i)       array__remove(a, i, array__elem_sz(a))
+#define array_remove_fast(a, i)  array__remove_fast(a, i, array__elem_sz(a))
+#define array_pop(a)             array_remove(a, array_sz(a)-1)
+#define array_clear(a)           array_sz(a) = 0
+
+#define array_reverse(a)         array__reverse(a, array__elem_sz(a))
+#define array_qsort(a, cmp)      qsort(a, array_sz(a), array__elem_sz(a), cmp)
+#define array_bsearch(a, e, cmp) bsearch(e, a, array_sz(a), array__elem_sz(a), cmp)
+#define array_find(a, e)         array__index(a, e, array__elem_sz(a), memcmp)
+#define array_find_ex(a, e, cmp) array__index(a, e, array__elem_sz(a), cmp)
+#define array_has(a, e)          array_find(a, e) != ~0
+#define array_has_ex(a, e, cmp)  array_find_ex(a, e, cmp) != ~0
+#define array_upper(a, e, cmp)   array__upper(a, e, array__elem_sz(a), cmp)
+
+
+ARRDEF void *array__create();
+ARRDEF void *array__reserve(void *a, array_size_t nmemb, size_t sz);
+ARRDEF void *array__copy(void *dst, const void *src, size_t sz);
+ARRDEF void *array__append_null(void *a, size_t sz);
+ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz);
+ARRDEF void array__remove(void *a, array_size_t idx, size_t sz);
+ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz);
+ARRDEF void array__reverse(void *a, size_t sz);
+ARRDEF array_size_t array__index(void *a, const void *elem, size_t sz,
+                                 int(*cmp)(const void *, const void *, size_t));
+ARRDEF void *array__upper(void *a, const void *elem, size_t sz,
+                          int(*cmp)(const void *, const void*));
+
+#endif
+
+#ifdef ARRAY_IMPLEMENTATION
+
+#include <assert.h>
+#include <string.h>
+
+typedef char *arr_bytep;
+
+ARRDEF void *array__create()
+{
+	array__head *head = malloc(sizeof(array__head));
+	head->sz = head->cap = 0;
+	return head + 1;
+}
+
+ARRDEF void *array__reserve(void *array, array_size_t nmemb, size_t sz)
+{
+	array__head *head = ((array__head*)array) - 1;
+	if (nmemb > head->cap) {
+		head = realloc(head, sizeof(array__head) + nmemb * sz);
+		head->cap = nmemb;
+		return head + 1;
+	}
+	return array;
+}
+
+ARRDEF void *array__copy(void *dst, const void *src, size_t sz)
+{
+	dst = array__reserve(dst, array_sz(src), sz);
+	array_sz(dst) = array_sz(src);
+	memcpy(dst, src, array_sz(src) * sz);
+	return dst;
+}
+
+ARRDEF void *array__append_null(void *a, size_t sz)
+{
+	if (array_sz(a) == array_cap(a))
+		a = array__reserve(a, array_cap(a)*3/2+1, sz);
+	++array_sz(a);
+	return a;
+}
+
+ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz)
+{
+	a = array__append_null(a, sz);
+	assert(idx <= array_sz(a));
+	for (arr_bytep p = (arr_bytep)a+(array_sz(a)-1)*sz,
+	               end = (arr_bytep)a+idx*sz;
+	     p != end; p -= sz)
+		memcpy(p, p - sz, sz);
+	return a;
+}
+
+ARRDEF void array__remove(void *a, array_size_t idx, size_t sz)
+{
+	assert(idx < array_sz(a));
+	for (arr_bytep p = (arr_bytep)a+(idx+1)*sz, end = (arr_bytep)a+array_sz(a)*sz;
+	     p != end; p += sz)
+		memcpy(p - sz, p, sz);
+	--array_sz(a);
+}
+
+ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz)
+{
+	assert(array_sz(a) > 0);
+	if (idx != array_sz(a) - 1)
+		memcpy((arr_bytep)a + idx * sz, (arr_bytep)a + (array_sz(a) - 1) * sz, sz);
+	--array_sz(a);
+}
+
+ARRDEF void array__reverse(void *a, size_t sz)
+{
+	arr_bytep scratch = malloc(sz);
+	for (array_size_t i = 0, n = array_sz(a)/2; i < n; ++i)
+	{
+		arr_bytep l = (arr_bytep)a+i*sz;
+		arr_bytep r = (arr_bytep)a+(array_sz(a)-1-i)*sz;
+		memcpy(scratch, r, sz);
+		memcpy(r, l, sz);
+		memcpy(l, scratch, sz);
+	}
+	free(scratch);
+}
+
+ARRDEF array_size_t array__index(void *a, const void *elem, size_t sz,
+                                 int(*cmp)(const void *, const void *, size_t))
+{
+	for (arr_bytep p=a, end=(arr_bytep)a+array_sz(a)*sz; p!=end; p+=sz)
+		if (cmp(elem, p, sz) == 0)
+			return (p-(arr_bytep)a)/sz;
+	return ~0;
+}
+
+ARRDEF void *array__upper(void *a, const void *elem, size_t sz,
+                          int(*cmp)(const void *, const void*))
+{
+	size_t left = 0, right = array_sz(a), mid = right/2;
+	void *res = NULL;
+	while (left != right)
+	{
+		void *p = (arr_bytep)a+mid*sz;
+		if (cmp(elem, p) < 0)
+		{
+			res = p;
+			right = mid;
+		}
+		else
+			left = mid+1;
+		mid = (right+left)/2;
+	}
+	return res;
+}
+
+#undef ARRAY_IMPLEMENTATION
+#endif // ARRAY_IMPLEMENTATION
