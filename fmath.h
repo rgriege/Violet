@@ -98,10 +98,10 @@ typedef struct v3f
 	r32 x, y, z;
 } v3f;
 
-FMDECL const v3f g_v3f_x_axis;
-FMDECL const v3f g_v3f_y_axis;
-FMDECL const v3f g_v3f_z_axis;
-FMDECL const v3f g_v3f_zero;
+FMGDECL const v3f g_v3f_x_axis;
+FMGDECL const v3f g_v3f_y_axis;
+FMGDECL const v3f g_v3f_z_axis;
+FMGDECL const v3f g_v3f_zero;
 
 FMDEF r32 v3f_mag(v3f v);
 FMDEF r32 v3f_mag_sq(v3f v);
@@ -238,7 +238,7 @@ FMDEF r32   polyf_pt_dist(const v2f *v, u32 n, v2f p);
 
 FMGDEF const v2f g_v2f_x_axis = { 1, 0 };
 FMGDEF const v2f g_v2f_y_axis = { 0, 1 };
-FMGDEF const v2f g_v2f_zero = { 0, 0 };
+FMGDEF const v2f g_v2f_zero   = { 0, 0 };
 
 FMDEF void v2f_set(v2f *v, r32 x, r32 y)
 {
@@ -308,8 +308,7 @@ FMDEF void v2f_add_eq(v2f *lhs, v2f rhs)
 
 FMDEF v2f v2f_sub(v2f lhs, v2f rhs)
 {
-	v2f result = { .x = lhs.x - rhs.x, .y = lhs.y - rhs.y };
-	return result;
+	return (v2f){ .x = lhs.x - rhs.x, .y = lhs.y - rhs.y };
 }
 
 FMDEF void v2f_sub_eq(v2f *lhs, v2f rhs)
@@ -320,8 +319,7 @@ FMDEF void v2f_sub_eq(v2f *lhs, v2f rhs)
 
 FMDEF v2f v2f_div(v2f lhs, v2f rhs)
 {
-	v2f result = { .x = lhs.x / rhs.x, .y = lhs.y / rhs.y };
-	return result;
+	return (v2f){ .x = lhs.x / rhs.x, .y = lhs.y / rhs.y };
 }
 
 FMDEF void v2f_div_eq(v2f *lhs, v2f rhs)
@@ -334,8 +332,7 @@ FMDEF v2f v2f_rot(v2f v, r32 radians)
 {
 	const r32 c = cosf(radians);
 	const r32 s = sinf(radians);
-	v2f result = { .x = v.x * c - v.y * s, .y = v.x * s + v.y * c };
-	return result;
+	return (v2f){ .x = v.x * c - v.y * s, .y = v.x * s + v.y * c };
 }
 
 FMDEF r32 v2f_dot(v2f lhs, v2f rhs)
@@ -355,20 +352,17 @@ FMDEF v2f v2f_proj(v2f v, v2f axis)
 
 FMDEF v2f v2f_lperp(v2f v)
 {
-	v2f result = { .x = -v.y, .y = v.x };
-	return result;
+	return (v2f){ .x = -v.y, .y = v.x };
 }
 
 FMDEF v2f v2f_rperp(v2f v)
 {
-	v2f result = { .x = v.y, .y = -v.x };
-	return result;
+	return (v2f){ .x = v.y, .y = -v.x };
 }
 
 FMDEF v2f v2f_inverse(v2f v)
 {
-	v2f result = { .x = -v.x, .y = -v.y };
-	return result;
+	return (v2f){ .x = -v.x, .y = -v.y };
 }
 
 FMDEF void v2f_inverse_eq(v2f *v)
@@ -398,7 +392,7 @@ FMDEF b32 v2f_share_quadrant(v2f lhs, v2f rhs)
 FMGDEF const v3f g_v3f_x_axis = { 1, 0, 0 };
 FMGDEF const v3f g_v3f_y_axis = { 0, 1, 0 };
 FMGDEF const v3f g_v3f_z_axis = { 0, 0, 1 };
-FMGDEF const v3f g_v3f_zero = { 0, 0, 0 };
+FMGDEF const v3f g_v3f_zero   = { 0, 0, 0 };
 
 FMDEF r32 v3f_mag(v3f v)
 {
@@ -407,7 +401,7 @@ FMDEF r32 v3f_mag(v3f v)
 
 FMDEF r32 v3f_mag_sq(v3f v)
 {
-	return v->x * v->x + v->y * v->y + v->z * v->z;
+	return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 
 FMDEF v3f v3f_normalize(v3f v)
@@ -440,7 +434,7 @@ FMDEF r32 v3f_dot(v3f lhs, v3f rhs)
 	return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 }
 
-FMDEF void v3f_cross(v3f lhs, v3f rhs, v3f *res)
+FMDEF v3f v3f_cross(v3f lhs, v3f rhs)
 {
 	return (v3f){
 		.x = lhs.y * rhs.z - lhs.z * rhs.y,
@@ -559,7 +553,7 @@ FMDEF void m4f_mul_m4(const m4f lhs, const m4f rhs, m4f res)
 			rhs_k = rhs.v + 4 * k;
 			lhs_ik = lhs_i[k];
 #ifndef FMATH_NO_SSE
-			__m128 r_vec = _mm_set_ps(lhs_ik, lhs_ik, lhs_ik, lhs_ik);
+			__m128 r_vec = _mm_set_ps1(lhs_ik);
 			__m128 rhs_vec = _mm_load_ps(rhs_k);
 			__m128 res_vec = _mm_load_ps(res_i);
 			__m128 mul = _mm_mul_ps(r_vec, rhs_vec);

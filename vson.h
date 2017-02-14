@@ -15,7 +15,7 @@ b32  vson_read_r32(FILE *fp, const char *label, r32 *val);
 b32  vson_read_r64(FILE *fp, const char *label, r64 *val);
 b32  vson_read_str(FILE *fp, const char *label, char *val, u32 sz);
 void vson_write_header(FILE *fp, const char *label);
-void vson_write_bool(FILE *fp, const char *label, b32 val);
+void vson_write_b32(FILE *fp, const char *label, b32 val);
 void vson_write_s32(FILE *fp, const char *label, s32 val);
 void vson_write_u32(FILE *fp, const char *label, u32 val);
 void vson_write_r32(FILE *fp, const char *label, r32 val);
@@ -159,13 +159,8 @@ b32 vson_read_str(FILE *fp, const char *label, char *val, u32 sz)
 		*(p++) = c;
 	if (p == val + sz)
 		return fgetc(fp) == '\n';
-	if (*p != '\n') {
-		*p = '\0';
-		return false;
-	}
-
 	*p = '\0';
-	return true;
+	return c == '\n';
 }
 
 
@@ -174,7 +169,7 @@ void vson_write_header(FILE *fp, const char *label)
 	fprintf(fp, "\n%s: \n", label);
 }
 
-void vson_write_bool(FILE *fp, const char *label, b32 val)
+void vson_write_b32(FILE *fp, const char *label, b32 val)
 {
 	fprintf(fp, "%s: %c\n", label, val ? 't' : 'f');
 }

@@ -182,7 +182,7 @@ typedef enum gui_flags_t
 } gui_flags_t;
 
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
-                      gui_flags_t flags);
+                  gui_flags_t flags);
 void   gui_destroy(gui_t *gui);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
 void   gui_minimize(gui_t *gui);
@@ -1134,8 +1134,7 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 	v2f *upper_poly = array_create();
 
 	v2f vi0 = v[n-1];
-	for (u32 i = 0; i < n; ++i)
-	{
+	for (u32 i = 0; i < n; ++i) {
 		v2f vi1 = v[i];
 		v2f vi2 = v[(i+1)%n];
 		if (!tri_is_reflex(vi0, vi1, vi2))
@@ -1143,34 +1142,25 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 
 		upper_dist = lower_dist =  FLT_MAX;
 		v2f vj0 = v[n-1];
-		for (u32 j = 0; j < n; ++j)
-		{
+		for (u32 j = 0; j < n; ++j) {
 			v2f vj1 = v[j];
 			v2f vj2 = v[(j+1)%n];
-			if (   tri_left(vi0, vi1, vj1)
-			    && tri_right_on(vi0, vi1, vj0))
-			{
+			if (tri_left(vi0, vi1, vj1) && tri_right_on(vi0, vi1, vj0)) {
 				assert(fmath_line_intersect(vi0, vi1, vj0, vj1, &p));
-				if (tri_right(vi2, vi1, p))
-				{
+				if (tri_right(vi2, vi1, p)) {
 					d = v2f_dist_sq(vi1, p);
-					if (d < lower_dist)
-					{
+					if (d < lower_dist) {
 						lower_dist = d;
 						lower_int = p;
 						lower_idx = j;
 					}
 				}
 			}
-			if (   tri_left(vi2, vi1, vj2)
-			    && tri_right_on(vi2, vi1, vj1))
-			{
+			if (tri_left(vi2, vi1, vj2) && tri_right_on(vi2, vi1, vj1)) {
 				assert(fmath_line_intersect(vi2, vi1, vj1, vj2, &p));
-				if (tri_left(vi0, vi1, p))
-				{
+				if (tri_left(vi0, vi1, p)) {
 					d = v2f_dist_sq(vi1, p);
-					if (d < upper_dist)
-					{
+					if (d < upper_dist) {
 						upper_dist = d;
 						upper_int = p;
 						upper_idx = j;
@@ -1180,33 +1170,25 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 			vj0 = vj1;
 		}
 
-		if (lower_idx == (upper_idx+1)%n)
-		{
+		if (lower_idx == (upper_idx+1)%n) {
 			// case 1: no vertices to connect to, choose a point in the middle
 			p.x = (lower_int.x+upper_int.x)/2;
 			p.y = (lower_int.y+upper_int.y)/2;
 
-			if (i < upper_idx)
-			{
+			if (i < upper_idx) {
 				for (u32 j = i; j <= upper_idx; ++j)
 					array_append(lower_poly, v[j]);
 				array_append(lower_poly, p);
 				array_append(upper_poly, p);
 				if (lower_idx != 0)
-				{
 					for (u32 j = lower_idx; j < n; ++j)
 						array_append(upper_poly, v[j]);
-				}
 				for (u32 j = 0; j <= i; ++j)
 					array_append(upper_poly, v[j]);
-			}
-			else
-			{
+			} else {
 				if (i != 0)
-				{
 					for (u32 j = i; j < n; ++j)
 						array_append(lower_poly, v[j]);
-				}
 				for (u32 j = 0; j <= upper_idx; ++j)
 					array_append(lower_poly, v[j]);
 				array_append(lower_poly, p);
@@ -1214,49 +1196,35 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 				for (u32 j = lower_idx; j <= i; ++j)
 					array_append(upper_poly, v[j]);
 			}
-		}
-		else
-		{
+		} else {
 			// case 2: connect to closest point within the triangle
 			if (lower_idx > upper_idx)
 				upper_idx += n;
 			closest_dist = FLT_MAX;
 
-			for (u32 j = lower_idx; j <= upper_idx; ++j)
-			{
+			for (u32 j = lower_idx; j <= upper_idx; ++j) {
 				v2f vj = j < 0 ? v[j%n+n] : v[j%n];
-				if (   tri_left_on(vi0, vi1, vj)
-				    && tri_right_on(vi2, vi1, vj))
-				{
+				if (tri_left_on(vi0, vi1, vj) && tri_right_on(vi2, vi1, vj)) {
 					d = v2f_dist_sq(vi1, vj);
-					if (d < closest_dist)
-					{
+					if (d < closest_dist) {
 						closest_dist = d;
 						closest_idx = j % n;
 					}
 				}
-
 			}
 
-			if (i < closest_idx)
-			{
+			if (i < closest_idx) {
 				for (u32 j = i; j <= closest_idx; ++j)
 					array_append(lower_poly, v[j]);
 				if (closest_idx != 0)
-				{
 					for (u32 j = closest_idx; j < n; ++j)
 						array_append(upper_poly, v[j]);
-				}
 				for (u32 j = 0; j <= i; ++j)
 					array_append(upper_poly, v[j]);
-			}
-			else
-			{
+			} else {
 				if (i != 0)
-				{
 					for (u32 j = i; j < n; ++j)
 						array_append(lower_poly, v[j]);
-				}
 				for (u32 j = 0; j <= closest_idx; ++j)
 					array_append(lower_poly, v[j]);
 				for (u32 j = closest_idx; j <= i; ++j)
@@ -1265,13 +1233,10 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 		}
 
 		// solve smallest poly first
-		if (array_sz(lower_poly) < array_sz(upper_poly))
-		{
+		if (array_sz(lower_poly) < array_sz(upper_poly)) {
 			polyf_decompose(lower_poly, array_sz(lower_poly), polys);
 			polyf_decompose(upper_poly, array_sz(upper_poly), polys);
-		}
-		else
-		{
+		} else {
 			polyf_decompose(upper_poly, array_sz(upper_poly), polys);
 			polyf_decompose(lower_poly, array_sz(lower_poly), polys);
 		}

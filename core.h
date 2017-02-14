@@ -56,6 +56,9 @@ typedef union uintptr
 #define ASSERT_DBG(x) UNUSED(x)
 #endif
 
+#define CONCAT_(a, b) a##b
+#define CONCAT(a, b) CONCAT_(a, b)
+
 #define memswp(a, b, type) \
 	do { type tmp = a; a = b; b = tmp; } while(0)
 
@@ -75,14 +78,20 @@ void        time_sleep_milli(u32 milli);
 #define LOG_STREAM_CAP 3
 void  log_add_stream(FILE *fp);
 void  log_remove_stream(FILE *fp);
-FILE *log_get_stream(u32 idx);
-u32   log_stream_cnt();
+FILE *log__get_stream(u32 idx);
+u32   log__stream_cnt();
 #define log_write(fmt, ...) \
 	do { \
-		for (u32 i = 0; i < log_stream_cnt(); ++i) { \
-			fprintf(log_get_stream(i), fmt, ##__VA_ARGS__); \
-			fputc('\n', log_get_stream(i)); \
+		for (u32 i = 0; i < log__stream_cnt(); ++i) { \
+			fprintf(log__get_stream(i), fmt, ##__VA_ARGS__); \
+			fputc('\n', log__get_stream(i)); \
+			fflush(log__get_stream(i)); \
 		} \
+	} while (0)
+#define log_newline() \
+	do { \
+		for (u32 i = 0; i < log__stream_cnt(); ++i) \
+			fputc('\n', log__get_stream(i)); \
 	} while (0)
 
 #endif // VIOLET_CORE_H
@@ -193,13 +202,13 @@ void log_remove_stream(FILE *fp)
 	ASSERT_DBG(false);
 }
 
-FILE *log_get_stream(u32 idx)
+FILE *log__get_stream(u32 idx)
 {
 	ASSERT_DBG(idx < g_log_stream_cnt);
 	return g_log_streams[idx];
 }
 
-u32 log_stream_cnt()
+u32 log__stream_cnt()
 {
 	return g_log_stream_cnt;
 }

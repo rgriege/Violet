@@ -49,10 +49,17 @@ typedef struct v2i
 	s32 x, y;
 } v2i;
 
-FMGDECL const v2i g_v2i_zero;
+IMGDECL const v2i g_v2i_zero;
 
+IMDEF void v2i_set(v2i *v, s32 x, s32 y);
 IMDEF s32  v2i_mag_sq(v2i v);
 IMDEF s32  v2i_dist_sq(v2i lhs, v2i rhs);
+IMDEF v2i  v2i_scale(v2i v, s32 s);
+IMDEF void v2i_scale_eq(v2i *v, s32 s);
+IMDEF v2i  v2i_add(v2i lhs, v2i rhs);
+IMDEF void v2i_add_eq(v2i *lhs, v2i rhs);
+IMDEF v2i  v2i_sub(v2i lhs, v2i rhs);
+IMDEF void v2i_sub_eq(v2i *lhs, v2i rhs);
 IMDEF v2i  v2i_div(v2i lhs, v2i rhs);
 IMDEF void v2i_div_eq(v2i *lhs, v2i rhs);
 IMDEF b32  v2i_equal(v2i lhs, v2i rhs);
@@ -67,6 +74,14 @@ typedef struct box2i
 
 IMDEF void box2i_from_dims(box2i *b, s32 left, s32 top, s32 right, s32 bottom);
 IMDEF b32  box2i_contains_point(box2i b, v2i p);
+IMDEF void box2i_clamp_point(box2i b, v2i *p);
+IMDEF b32  box2i_eq(box2i lhs, box2i rhs);
+IMDEF v2i  box2i_get_center(box2i b);
+IMDEF v2i  box2i_get_half_dim(box2i b);
+
+/* Polygon */
+
+IMDEF v2i polyi_center(const v2i *v, u32 n);
 
 #endif // IMATH_H
 
@@ -78,7 +93,13 @@ IMDEF b32  box2i_contains_point(box2i b, v2i p);
 
 /* 2D Vector */
 
-FMGDEF const v2i g_v2i_zero = { 0, 0 };
+IMGDEF const v2i g_v2i_zero = { 0, 0 };
+
+IMDEF void v2i_set(v2i *v, s32 x, s32 y)
+{
+	v->x = x;
+	v->y = y;
+}
 
 IMDEF s32 v2i_mag_sq(v2i v)
 {
@@ -90,6 +111,36 @@ IMDEF s32 v2i_dist_sq(v2i lhs, v2i rhs)
 	lhs.x -= rhs.x;
 	lhs.y -= rhs.y;
 	return v2i_mag_sq(lhs);
+}
+
+IMDEF v2i v2i_scale(v2i v, s32 s)
+{
+	return (v2i){ v.x * s, v.y * s };
+}
+
+IMDEF void v2i_scale_eq(v2i *v, s32 s)
+{
+	*v = v2i_scale(*v, s);
+}
+
+IMDEF v2i v2i_add(v2i lhs, v2i rhs)
+{
+	return (v2i){ .x = lhs.x + rhs.x, .y = lhs.y + rhs.y };
+}
+
+IMDEF void v2i_add_eq(v2i *lhs, v2i rhs)
+{
+	*lhs = v2i_add(*lhs, rhs);
+}
+
+IMDEF v2i v2i_sub(v2i lhs, v2i rhs)
+{
+	return (v2i){ .x = lhs.x - rhs.x, .y = lhs.y - rhs.y };
+}
+
+IMDEF void v2i_sub_eq(v2i *lhs, v2i rhs)
+{
+	*lhs = v2i_sub(*lhs, rhs);
 }
 
 IMDEF v2i v2i_div(v2i lhs, v2i rhs)
@@ -124,6 +175,40 @@ IMDEF b32 box2i_contains_point(box2i box, v2i point)
 	       && point.x <= box.max.x
 	       && point.y >= box.min.y
 	       && point.y <= box.max.y;
+}
+
+IMDEF void box2i_clamp_point(box2i b, v2i *p)
+{
+	p->x = imath_clamp(b.min.x, p->x, b.max.x);
+	p->y = imath_clamp(b.min.y, p->y, b.max.y);
+}
+
+IMDEF b32 box2i_eq(box2i lhs, box2i rhs)
+{
+	return    lhs.min.x == rhs.min.x
+	       && lhs.min.y == rhs.min.y
+	       && lhs.max.x == rhs.max.x
+	       && lhs.max.y == rhs.max.y;
+}
+
+IMDEF v2i box2i_get_center(box2i box)
+{
+	return v2i_add(box.min, box2i_get_half_dim(box));
+}
+
+IMDEF v2i box2i_get_half_dim(box2i box)
+{
+	return v2i_div(v2i_sub(box.max, box.min), (v2i){2,2});
+}
+
+/* Polygon */
+
+IMDEF v2i polyi_center(const v2i *v, u32 n)
+{
+	v2i center = { .x=0, .y=0 };
+	for (const v2i *vn = v+n; v != vn; ++v)
+		v2i_add_eq(&center, *v);
+	return v2i_div(center, (v2i){n,n});
 }
 
 #undef IMATH_IMPLEMENTATION

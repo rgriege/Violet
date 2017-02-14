@@ -22,42 +22,43 @@ typedef struct array__head
 	array_size_t sz, cap;
 } array__head;
 
-#define array__get_head(a)       (((array__head*) (a)) - 1)
-#define array_create()           array__create()
-#define array_destroy(a)         free(array__get_head(a))
+#define array__get_head(a)         (((array__head*)(a)) - 1)
+#define array_create()             array__create()
+#define array_destroy(a)           free(array__get_head(a))
 
-#define array__elem_sz(a)        sizeof(*(a))
-#define array_sz(a)              array__get_head(a)->sz
-#define array_cap(a)             array__get_head(a)->cap
+#define array__esz(a)              (sizeof(*(a)))
+#define array_sz(a)                (array__get_head(a)->sz)
+#define array_cap(a)               (array__get_head(a)->cap)
+#define array_empty(a)             (array_sz(a) == 0)
 
-#define array_copy(dst, src)     (dst=array__copy(dst, src, array__elem_sz(src)))
+#define array_copy(dst, src)       ((dst)=array__copy(dst, src, array__esz(src)))
 
-#define array_from_end(a, i)     ((a)[array_sz(a)-i])
-#define array_last(a)            array_from_end(a, 1)
-#define array_end(a)             ((a)+array_sz(a))
+#define array_from_end(a, i)       ((a)[array_sz(a)-i])
+#define array_first(a)             ((a)[0])
+#define array_last(a)              array_from_end(a, 1)
+#define array_end(a)               ((a)+array_sz(a))
 
-#define array_foreach(a, type, it) for (type *it = a; it != array_end(a); ++it)
+#define array_foreach(a, type, it) for (type *it = (a); it != array_end(a); ++it)
 
-#define array_reserve(a, n)      (a=array__reserve(a, n, array__elem_sz(a)))
-#define array_append_null(a)     (a=array__append_null(a, array__elem_sz(a)), \
-                                   (a)+array_sz(a) - 1)
-#define array_append(a, e)       *array_append_null(a) = e
-#define array_insert_null(a, i)  (a=array__insert_null(a, i, array__elem_sz(a)), \
-                                   (a)+i)
-#define array_insert(a, i, e)    *array_insert_null(a, i) = e
-#define array_remove(a, i)       array__remove(a, i, array__elem_sz(a))
-#define array_remove_fast(a, i)  array__remove_fast(a, i, array__elem_sz(a))
-#define array_pop(a)             array_remove(a, array_sz(a)-1)
-#define array_clear(a)           array_sz(a) = 0
+#define array_reserve(a, n)        ((a)=array__reserve(a, n, array__esz(a)))
+#define array_append_null(a)       ((a)=array__append_null(a, array__esz(a)), \
+                                                           (a)+array_sz(a) - 1)
+#define array_append(a, e)         (*array_append_null(a) = e)
+#define array_insert_null(a, i)    ((a)=array__insert_null(a, i, array__esz(a)), \
+                                                           (a)+i)
+#define array_insert(a, i, e)      (*array_insert_null(a, i) = e)
+#define array_remove(a, i)         array__remove(a, i, array__esz(a))
+#define array_remove_fast(a, i)    array__remove_fast(a, i, array__esz(a))
+#define array_pop(a)               (--array_sz(a))
+#define array_clear(a)             (array_sz(a) = 0)
 
-#define array_reverse(a)         array__reverse(a, array__elem_sz(a))
-#define array_qsort(a, cmp)      qsort(a, array_sz(a), array__elem_sz(a), cmp)
-#define array_bsearch(a, e, cmp) bsearch(e, a, array_sz(a), array__elem_sz(a), cmp)
-#define array_find(a, e)         array__index(a, e, array__elem_sz(a), memcmp)
-#define array_find_ex(a, e, cmp) array__index(a, e, array__elem_sz(a), cmp)
-#define array_has(a, e)          array_find(a, e) != ~0
-#define array_has_ex(a, e, cmp)  array_find_ex(a, e, cmp) != ~0
-#define array_upper(a, e, cmp)   array__upper(a, e, array__elem_sz(a), cmp)
+#define array_reverse(a)           array__reverse(a, array__esz(a))
+#define array_qsort(a, cmp)        qsort(a, array_sz(a), array__esz(a), cmp)
+#define array_bsearch(a, e, cmp)   bsearch(&(e), a, array_sz(a), \
+                                           array__esz(a), cmp)
+#define array_find(a, p, cmp)      array__find(a, p, array__esz(a), cmp)
+#define array_index(a, p, cmp)     array__index(a, p, array__esz(a), cmp)
+#define array_upper(a, e, cmp)     array__upper(a, &(e), array__esz(a), cmp)
 
 
 ARRDEF void *array__create();
@@ -68,8 +69,10 @@ ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz);
 ARRDEF void array__remove(void *a, array_size_t idx, size_t sz);
 ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz);
 ARRDEF void array__reverse(void *a, size_t sz);
-ARRDEF array_size_t array__index(void *a, const void *elem, size_t sz,
-                                 int(*cmp)(const void *, const void *, size_t));
+ARRDEF void *array__find(void *a, const void *userp, size_t sz,
+                         int(*cmp)(const void *, const void *));
+ARRDEF array_size_t array__index(void *a, const void *userp, size_t sz,
+                                 int(*cmp)(const void *, const void *));
 ARRDEF void *array__upper(void *a, const void *elem, size_t sz,
                           int(*cmp)(const void *, const void*));
 
@@ -158,11 +161,20 @@ ARRDEF void array__reverse(void *a, size_t sz)
 	free(scratch);
 }
 
-ARRDEF array_size_t array__index(void *a, const void *elem, size_t sz,
-                                 int(*cmp)(const void *, const void *, size_t))
+ARRDEF void *array__find(void *a, const void *userp, size_t sz,
+                         int(*cmp)(const void *, const void *))
 {
 	for (arr_bytep p=a, end=(arr_bytep)a+array_sz(a)*sz; p!=end; p+=sz)
-		if (cmp(elem, p, sz) == 0)
+		if (cmp(p, userp) == 0)
+			return p;
+	return NULL;
+}
+
+ARRDEF array_size_t array__index(void *a, const void *userp, size_t sz,
+                                 int(*cmp)(const void *, const void *))
+{
+	for (arr_bytep p=a, end=(arr_bytep)a+array_sz(a)*sz; p!=end; p+=sz)
+		if (cmp(p, userp) == 0)
 			return (p-(arr_bytep)a)/sz;
 	return ~0;
 }
