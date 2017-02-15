@@ -8,7 +8,11 @@
 #include <string.h>
 
 #ifndef FMATH_NO_SSE
+#ifndef _WIN32
 #include <x86intrin.h>
+#else
+#include <intrin.h>
+#endif
 #endif
 
 #ifdef FMATH_STANDALONE
@@ -136,8 +140,10 @@ typedef struct m4f
 {
 #if FMATH_NO_SSE
 	r32 v[16];
-#else
+#elif !defined(_WIN32)
 	_Alignas(16) r32 v[16];
+#else
+	__declspec(align(16)) r32 v[16];
 #endif
 } m4f;
 

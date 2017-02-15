@@ -8,7 +8,11 @@
 #include <string.h>
 
 #ifndef DMATH_NO_SSE
+#ifndef _WIN32
 #include <x86intrin.h>
+#else
+#include <intrin.h>
+#endif
 #endif
 
 #ifdef DMATH_STANDALONE

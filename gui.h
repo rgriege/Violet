@@ -323,6 +323,7 @@ void               gui_style_default(gui_t *gui);
 #include <math.h>
 #define PNG_SKIP_SETJMP_CHECK
 #include <png.h>
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -436,7 +437,7 @@ b32 texture_load_png(texture_t *tex, const char *filename)
 		buf = malloc(PNG_IMAGE_SIZE(image));
 		if (buf) {
 			if (png_image_finish_read(&image, NULL, buf, 0, NULL)) {
-				vlt_texture_init(tex, image.width, image.height, GL_RGBA, buf);
+				texture_init(tex, image.width, image.height, GL_RGBA, buf);
 				ret = true;
 				free(buf);
 			} else {
