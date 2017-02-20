@@ -41,6 +41,7 @@ typedef struct array__head
 #define array_foreach(a, type, it) for (type *it = (a); it != array_end(a); ++it)
 
 #define array_reserve(a, n)        ((a)=array__reserve(a, n, array__esz(a)))
+#define array_set_sz(a, n)         (array_reserve(a, n), array_sz(a) = n)
 #define array_append_null(a)       ((a)=array__append_null(a, array__esz(a)), \
                                                            (a)+array_sz(a) - 1)
 #define array_append(a, e)         (*array_append_null(a) = e)
@@ -150,8 +151,7 @@ ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz)
 ARRDEF void array__reverse(void *a, size_t sz)
 {
 	arr_bytep scratch = malloc(sz);
-	for (array_size_t i = 0, n = array_sz(a)/2; i < n; ++i)
-	{
+	for (array_size_t i = 0, n = array_sz(a)/2; i < n; ++i) {
 		arr_bytep l = (arr_bytep)a+i*sz;
 		arr_bytep r = (arr_bytep)a+(array_sz(a)-1-i)*sz;
 		memcpy(scratch, r, sz);

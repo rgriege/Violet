@@ -81,6 +81,8 @@ FMDEF v2f  v2f_add(v2f lhs, v2f rhs);
 FMDEF void v2f_add_eq(v2f *lhs, v2f rhs);
 FMDEF v2f  v2f_sub(v2f lhs, v2f rhs);
 FMDEF void v2f_sub_eq(v2f *lhs, v2f rhs);
+FMDEF v2f  v2f_mul(v2f lhs, v2f rhs);
+FMDEF void v2f_mul_eq(v2f *lhs, v2f rhs);
 FMDEF v2f  v2f_div(v2f lhs, v2f rhs);
 FMDEF void v2f_div_eq(v2f *lhs, v2f rhs);
 FMDEF v2f  v2f_dir(v2f src, v2f dst);
@@ -322,6 +324,17 @@ FMDEF void v2f_sub_eq(v2f *lhs, v2f rhs)
 {
 	lhs->x -= rhs.x;
 	lhs->y -= rhs.y;
+}
+
+FMDEF v2f  v2f_mul(v2f lhs, v2f rhs)
+{
+	return (v2f){ .x = lhs.x * rhs.x, .y = lhs.y * rhs.y };
+}
+
+FMDEF void v2f_mul_eq(v2f *lhs, v2f rhs)
+{
+	lhs->x *= rhs.x;
+	lhs->y *= rhs.y;
 }
 
 FMDEF v2f v2f_div(v2f lhs, v2f rhs)
