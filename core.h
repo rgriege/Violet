@@ -84,16 +84,16 @@ FILE *log__get_stream(u32 idx);
 u32   log__stream_cnt();
 #define log_write(fmt, ...) \
 	do { \
-		for (u32 i = 0; i < log__stream_cnt(); ++i) { \
-			fprintf(log__get_stream(i), fmt, ##__VA_ARGS__); \
-			fputc('\n', log__get_stream(i)); \
-			fflush(log__get_stream(i)); \
+		for (u32 log_idx = 0; log_idx < log__stream_cnt(); ++log_idx) { \
+			fprintf(log__get_stream(log_idx), fmt, ##__VA_ARGS__); \
+			fputc('\n', log__get_stream(log_idx)); \
+			fflush(log__get_stream(log_idx)); \
 		} \
 	} while (0)
 #define log_newline() \
 	do { \
-		for (u32 i = 0; i < log__stream_cnt(); ++i) \
-			fputc('\n', log__get_stream(i)); \
+		for (u32 log_idx = 0; log_idx < log__stream_cnt(); ++log_idx) \
+			fputc('\n', log__get_stream(log_idx)); \
 	} while (0)
 
 #endif // VIOLET_CORE_H
