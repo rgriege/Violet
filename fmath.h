@@ -90,6 +90,7 @@ FMDEF v2f  v2f_rot(v2f v, r32 radians);
 FMDEF r32  v2f_dot(v2f lhs, v2f rhs);
 FMDEF r32  v2f_cross(v2f lhs, v2f rhs);
 FMDEF v2f  v2f_proj(v2f v, v2f axis);
+FMDEF v2f  v2f_reflect(v2f v, v2f axis);
 FMDEF v2f  v2f_lperp(v2f v);
 FMDEF v2f  v2f_rperp(v2f v);
 FMDEF v2f  v2f_inverse(v2f v);
@@ -373,6 +374,13 @@ FMDEF r32 v2f_cross(v2f lhs, v2f rhs)
 FMDEF v2f v2f_proj(v2f v, v2f axis)
 {
 	return v2f_scale(axis, v2f_dot(v, axis) / v2f_mag_sq(axis));
+}
+
+FMDEF v2f v2f_reflect(v2f v, v2f axis)
+{
+	v2f proj = v2f_proj(v, axis);
+	v2f perp = v2f_sub(v, proj);
+	return v2f_sub(proj, perp);
 }
 
 FMDEF v2f v2f_lperp(v2f v)

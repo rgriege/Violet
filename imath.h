@@ -40,7 +40,7 @@ typedef int s32;
 #define max(x, y) (((x) < (y)) ? (y) : (x))
 #define min(x, y) (((x) > (y)) ? (y) : (x))
 
-#define imath_clamp(lo, val, hi) max(lo, min(hi, val))
+#define clamp(lo, val, hi) max(lo, min(hi, val))
 
 /* 2D Vector */
 
@@ -179,8 +179,8 @@ IMDEF b32 box2i_contains_point(box2i box, v2i point)
 
 IMDEF void box2i_clamp_point(box2i b, v2i *p)
 {
-	p->x = imath_clamp(b.min.x, p->x, b.max.x);
-	p->y = imath_clamp(b.min.y, p->y, b.max.y);
+	p->x = clamp(b.min.x, p->x, b.max.x);
+	p->y = clamp(b.min.y, p->y, b.max.y);
 }
 
 IMDEF b32 box2i_eq(box2i lhs, box2i rhs)
