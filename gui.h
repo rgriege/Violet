@@ -462,7 +462,8 @@ b32 texture_load_png(texture_t *tex, const char *filename)
 	if (!(fp = fopen(filename, "rb")))
 		goto out;
 
-	fread(header, 1, 8, fp);
+	if (fread(header, 1, 8, fp) != 8)
+		goto err_png;
 	if (png_sig_cmp(header, 0, 8))
 		goto err_png;
 

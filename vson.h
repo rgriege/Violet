@@ -148,7 +148,7 @@ b32 vson_read_r64(FILE *fp, const char *label, r64 *val)
 
 b32 vson_read_str(FILE *fp, const char *label, char *val, u32 sz)
 {
-	char c, *p = val;
+	char c = 0, *p = val;
 
 	if (!vson__read_label(fp, label)) {
 		vson__skip_rest_of_line(fp);
