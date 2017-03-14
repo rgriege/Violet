@@ -73,6 +73,7 @@ u32 hashn(const char *str, u32 n);
 
 timepoint_t time_current();
 u32         time_diff_milli(timepoint_t start, timepoint_t end);
+u32         time_diff_micro(timepoint_t start, timepoint_t end);
 void        time_sleep_milli(u32 milli);
 
 /* Log */
@@ -133,7 +134,8 @@ timepoint_t time_current()
 	return t;
 }
 
-u32 time_diff_milli(timepoint_t start, timepoint_t end)
+static
+timepoint_t time__diff(timepoint_t start, timepoint_t end)
 {
 	timepoint_t mod_start, res;
 
@@ -149,7 +151,19 @@ u32 time_diff_milli(timepoint_t start, timepoint_t end)
 	assert(end.tv_sec >= mod_start.tv_sec);
 	res.tv_sec = end.tv_sec - mod_start.tv_sec;
 	res.tv_nsec = end.tv_nsec - mod_start.tv_nsec;
+	return res;
+}
+
+u32 time_diff_milli(timepoint_t start, timepoint_t end)
+{
+	timepoint_t res = time__diff(start, end);
 	return res.tv_sec * 1000 + res.tv_nsec / 1000000;
+}
+
+u32 time_diff_micro(timepoint_t start, timepoint_t end)
+{
+	timepoint_t res = time__diff(start, end);
+	return res.tv_sec * 1000000 + res.tv_nsec / 1000;
 }
 
 void time_sleep_milli(u32 milli)
@@ -172,6 +186,13 @@ u32 time_diff_milli(timepoint_t start, timepoint_t end)
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
 	return (end.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart;
+}
+
+u32 time_diff_micro(timepoint_t start, timepoint_t end)
+{
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return (end.QuadPart - start.QuadPart) * 1000000 / frequency.QuadPart;
 }
 
 void time_sleep_milli(u32 milli)
