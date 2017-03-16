@@ -23,7 +23,8 @@ typedef struct array__head
 } array__head;
 
 #define array__get_head(a)         (((array__head*)(a)) - 1)
-#define array_create()             array__create()
+#define array_create()             array__create(0, 0)
+#define array_init(a, cap)         (a)=array__create(cap, sizeof(*a))
 #define array_destroy(a)           free(array__get_head(a))
 
 #define array__esz(a)              (sizeof(*(a)))
@@ -39,6 +40,8 @@ typedef struct array__head
 #define array_end(a)               ((a)+array_sz(a))
 
 #define array_foreach(a, type, it) for (type *it = (a); it != array_end(a); ++it)
+#define array_iterate(a, it, n)    for (array_size_t it = 0, n = array_sz(a); \
+                                        it < n; ++it)
 
 #define array_reserve(a, n)        ((a)=array__reserve(a, n, array__esz(a)))
 #define array_set_sz(a, n)         (array_reserve(a, n), array_sz(a) = n)
@@ -62,7 +65,7 @@ typedef struct array__head
 #define array_upper(a, e, cmp)     array__upper(a, &(e), array__esz(a), cmp)
 
 
-ARRDEF void *array__create();
+ARRDEF void *array__create(array_size_t cap, size_t sz);
 ARRDEF void *array__reserve(void *a, array_size_t nmemb, size_t sz);
 ARRDEF void *array__copy(void *dst, const void *src, size_t sz);
 ARRDEF void *array__append_null(void *a, size_t sz);
@@ -86,10 +89,11 @@ ARRDEF void *array__upper(void *a, const void *elem, size_t sz,
 
 typedef char *arr_bytep;
 
-ARRDEF void *array__create()
+ARRDEF void *array__create(array_size_t cap, size_t sz)
 {
-	array__head *head = malloc(sizeof(array__head));
-	head->sz = head->cap = 0;
+	array__head *head = malloc(sizeof(array__head) + cap * sz);
+	head->sz = 0;
+	head->cap = cap;
 	return head + 1;
 }
 
