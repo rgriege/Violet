@@ -8,12 +8,11 @@
 
 #ifdef _WIN32
 
-#define byte _byte_win
 #define NOMB
 #define NOMINMAX
+#define NOGDI
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#undef byte
 typedef LARGE_INTEGER timepoint_t;
 
 #else
@@ -28,9 +27,7 @@ typedef struct timespec timepoint_t;
 
 typedef bool b8;
 typedef unsigned char u8;
-typedef u8 ubyte;
 typedef char s8;
-typedef s8 byte;
 typedef uint16_t u16;
 typedef int16_t s16;
 typedef uint32_t b32;
@@ -52,10 +49,10 @@ typedef union uintptr
 
 #define UNUSED(x) ((void)(x))
 
-#ifdef DEBUG
-#define ASSERT_DBG(x) assert(x)
+#ifndef NDEBUG
+#define check(x) assert(x)
 #else
-#define ASSERT_DBG(x) UNUSED(x)
+#define check(x) x
 #endif
 
 #define CONCAT_(a, b) a##b
@@ -209,7 +206,7 @@ u32 g_log_stream_cnt = 0;
 
 void log_add_stream(FILE *fp)
 {
-	ASSERT_DBG(g_log_stream_cnt < LOG_STREAM_CAP);
+	assert(g_log_stream_cnt < LOG_STREAM_CAP);
 	g_log_streams[g_log_stream_cnt++] = fp;
 }
 
@@ -222,12 +219,12 @@ void log_remove_stream(FILE *fp)
 			return;
 		}
 	}
-	ASSERT_DBG(false);
+	assert(false);
 }
 
 FILE *log__get_stream(u32 idx)
 {
-	ASSERT_DBG(idx < g_log_stream_cnt);
+	assert(idx < g_log_stream_cnt);
 	return g_log_streams[idx];
 }
 

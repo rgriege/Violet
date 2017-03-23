@@ -1,7 +1,6 @@
 #ifndef DMATH_H
 #define DMATH_H
 
-#include <assert.h>
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
@@ -113,7 +112,7 @@ DMDEF void v2d_set(v2d *v, r64 x, r64 y)
 DMDEF v2d v2d_scale(v2d v, r64 s)
 {
 #ifndef DMATH_NO_SSE
-	SSE_RETURN_V2D(_mm_mul_pd(v.v, _mm_set_pd1(s)));
+	SSE_RETURN_V2D(_mm_mul_pd(v.v, _mm_set_pd(s, s)));
 #else
 	return (v2d){ .x = v.x *s, .y = v.y *s };
 #endif
@@ -168,11 +167,7 @@ DMDEF void v2d_div_eq(v2d *lhs, v2d rhs)
 
 DMDEF b32 v2d_equal(v2d lhs, v2d rhs)
 {
-#ifndef DMATH_NO_SSE
-	return _mm_movemask_pd(_mm_cmpeq_pd(lhs.v, rhs.v)) == 0x3;
-#else
 	return lhs.x == rhs.x && lhs.y == rhs.y;
-#endif
 }
 
 #undef DMATH_IMPLEMENTATION

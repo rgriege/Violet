@@ -35,8 +35,6 @@ void uuid_to_string(const uuid *id, char *buf)
 
 #else
 
-#include <assert.h>
-
 void uuid_generate(uuid *id)
 {
 	const RPC_STATUS result = UuidCreate(id);

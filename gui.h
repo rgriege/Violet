@@ -315,7 +315,6 @@ void               gui_style_default(gui_t *gui);
 
 #ifdef GUI_IMPLEMENTATION
 
-#include <assert.h>
 #include <ctype.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -1171,7 +1170,7 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 			v2f vj1 = v[j];
 			v2f vj2 = v[(j+1)%n];
 			if (tri_left(vi0, vi1, vj1) && tri_right_on(vi0, vi1, vj0)) {
-				assert(fmath_line_intersect(vi0, vi1, vj0, vj1, &p));
+				check(fmath_line_intersect(vi0, vi1, vj0, vj1, &p));
 				if (tri_right(vi2, vi1, p)) {
 					d = v2f_dist_sq(vi1, p);
 					if (d < lower_dist) {
@@ -1182,7 +1181,7 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 				}
 			}
 			if (tri_left(vi2, vi1, vj2) && tri_right_on(vi2, vi1, vj1)) {
-				assert(fmath_line_intersect(vi2, vi1, vj1, vj2, &p));
+				check(fmath_line_intersect(vi2, vi1, vj1, vj2, &p));
 				if (tri_left(vi0, vi1, p)) {
 					d = v2f_dist_sq(vi1, p);
 					if (d < upper_dist) {
@@ -1794,7 +1793,7 @@ void rmgui_poly_draw(gui_t *gui, const rmgui_poly_t *poly, s32 x, s32 y)
 void rmgui_poly_destroy(rmgui_poly_t *poly)
 {
 	glBindVertexArray(0);
-	mesh_unbind(&poly->mesh);
+	mesh_unbind();
 	glDeleteVertexArrays(1, &poly->vao);
 	mesh_destroy(&poly->mesh);
 }

@@ -3,13 +3,6 @@
 
 #include "violet/core.h"
 
-#ifdef _WIN32
-#define byte _byte_win
-#define NOMINMAX
-#include <windows.h>
-#undef byte
-#endif
-
 /* File system */
 
 b32  file_open_dialog(char *fname, u32 n, const char *ext);
@@ -52,7 +45,6 @@ int  run(const char *command);
 
 #ifdef OS_IMPLEMENTATION
 
-#include <assert.h>
 #include <stdlib.h>
 
 #ifdef VLT_USE_TINYDIR
