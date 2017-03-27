@@ -73,15 +73,38 @@ typedef struct v2d
 DMGDECL const v2d g_v2d_zero;
 
 DMDEF void v2d_set(v2d *v, r64 x, r64 y);
+DMDEF r64  v2d_mag(v2d v);
+DMDEF r64  v2d_mag_sq(v2d v);
+DMDEF v2d  v2d_normalize(v2d v);
+DMDEF void v2d_normalize_eq(v2d *v);
 DMDEF v2d  v2d_scale(v2d v, r64 s);
 DMDEF void v2d_scale_eq(v2d *v, r64 s);
 DMDEF v2d  v2d_add(v2d lhs, v2d rhs);
 DMDEF void v2d_add_eq(v2d *lhs, v2d rhs);
 DMDEF v2d  v2d_sub(v2d lhs, v2d rhs);
 DMDEF void v2d_sub_eq(v2d *lhs, v2d rhs);
+DMDEF v2d  v2d_mul(v2d lhs, v2d rhs);
+DMDEF void v2d_mul_eq(v2d *lhs, v2d rhs);
 DMDEF v2d  v2d_div(v2d lhs, v2d rhs);
 DMDEF void v2d_div_eq(v2d *lhs, v2d rhs);
+DMDEF r64  v2d_dot(v2d lhs, v2d rhs);
+DMDEF r64  v2d_cross(v2d lhs, v2d rhs);
+DMDEF v2d  v2d_lperp(v2d v);
+DMDEF v2d  v2d_rperp(v2d v);
+DMDEF v2d  v2d_inverse(v2d v);
+DMDEF void v2d_invert(v2d *v);
 DMDEF b32  v2d_equal(v2d lhs, v2d rhs);
+
+/* 2x2 Matrix */
+
+typedef union m2d
+{
+	r64 a[4];
+	v2d v[2];
+} m2d;
+
+DMDEF void m2d_init_rot(m2d *m, r64 radians);
+DMDEF v2d  m2d_mul_v2d(m2d m, v2d v);
 
 #endif // DMATH_H
 
@@ -102,11 +125,31 @@ DMGDEF const v2d g_v2d_zero = { 0, 0 };
 DMDEF void v2d_set(v2d *v, r64 x, r64 y)
 {
 #ifndef DMATH_NO_SSE
-	v->v = _mm_set_pd(x, y);
+	v->v = _mm_setr_pd(x, y);
 #else
 	v->x = x;
 	v->y = y;
 #endif
+}
+
+DMDEF r64 v2d_mag(v2d v)
+{
+	return sqrt(v2d_mag_sq(v));
+}
+
+DMDEF r64 v2d_mag_sq(v2d v)
+{
+	return v2d_dot(v, v);
+}
+
+DMDEF v2d v2d_normalize(v2d v)
+{
+	return v2d_scale(v, 1.0 / v2d_mag(v));
+}
+
+DMDEF void v2d_normalize_eq(v2d *v)
+{
+	*v = v2d_normalize(*v);
 }
 
 DMDEF v2d v2d_scale(v2d v, r64 s)
@@ -151,6 +194,20 @@ DMDEF void v2d_sub_eq(v2d *lhs, v2d rhs)
 	*lhs = v2d_sub(*lhs, rhs);
 }
 
+DMDEF v2d v2d_mul(v2d lhs, v2d rhs)
+{
+#ifndef DMATH_NO_SSE
+	SSE_RETURN_V2D(_mm_mul_pd(lhs.v, rhs.v));
+#else
+	return (v2d){ .x = lhs.x * rhs.x, .y = lhs.y * rhs.y };
+#endif
+}
+
+DMDEF void v2d_mul_eq(v2d *lhs, v2d rhs)
+{
+	*lhs = v2d_mul(*lhs, rhs);
+}
+
 DMDEF v2d v2d_div(v2d lhs, v2d rhs)
 {
 #ifndef DMATH_NO_SSE
@@ -165,9 +222,64 @@ DMDEF void v2d_div_eq(v2d *lhs, v2d rhs)
 	*lhs = v2d_div(*lhs, rhs);
 }
 
+DMDEF r64 v2d_dot(v2d lhs, v2d rhs)
+{
+	const v2d result = v2d_mul(lhs, rhs);
+	return result.x + result.y;
+}
+
+DMDEF r64 v2d_cross(v2d lhs, v2d rhs)
+{
+#ifndef DMATH_NO_SSE
+	const v2d rhs_shuffle = {
+		.v = _mm_shuffle_pd(rhs.v, rhs.v, _MM_SHUFFLE2(0, 1))
+	};
+	const v2d result = v2d_mul(lhs, rhs_shuffle);
+	return result.x - result.y;
+#else
+	return lhs.x * rhs.y - lhs.y * rhs.x;
+#endif
+}
+
+DMDEF v2d v2d_lperp(v2d v)
+{
+	return (v2d){ .x = -v.y, .y = v.x };
+}
+
+DMDEF v2d v2d_rperp(v2d v)
+{
+	return (v2d){ .x = v.y, .y = -v.x };
+}
+
+DMDEF v2d v2d_inverse(v2d v)
+{
+	return (v2d){ .x = -v.x, .y = -v.y };
+}
+
+DMDEF void v2d_invert(v2d *v)
+{
+	v2d_set(v, -v->x, -v->y);
+}
+
 DMDEF b32 v2d_equal(v2d lhs, v2d rhs)
 {
 	return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
+/* 2x2 Matrix */
+
+DMDEF void m2d_init_rot(m2d *m, r64 radians)
+{
+	v2d_set(&m->v[0], cos(radians), -sin(radians));
+	v2d_set(&m->v[1], -m->a[1], m->a[0]);
+}
+
+DMDEF v2d m2d_mul_v2d(m2d m, v2d v)
+{
+	return (v2d) {
+		.x = v2d_dot(m.v[0], v),
+		.y = v2d_dot(m.v[1], v),
+	};
 }
 
 #undef DMATH_IMPLEMENTATION

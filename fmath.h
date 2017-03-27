@@ -263,7 +263,7 @@ FMDEF r32 v2f_mag(v2f v)
 
 FMDEF r32 v2f_mag_sq(v2f v)
 {
-	return v.x * v.x + v.y * v.y;
+	return v2f_dot(v, v);
 }
 
 FMDEF r32 v2f_dist(v2f lhs, v2f rhs)
