@@ -1107,7 +1107,7 @@ void font_bounds(font_t *f, const char *txt, s32 *x, s32 *y, font_align_t align)
 /*
  * Polygon Decomposition
  * Translated from Mark Bayazit's C++ decomposition algorithm.
- * http://mnbayazit.com/406/bayazit
+ * https://mpen.ca/406/bayazit
  */
 
 static inline
