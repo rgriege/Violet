@@ -438,11 +438,11 @@ b32 texture_load_png(texture_t *tex, const char *filename)
 			if (png_image_finish_read(&image, NULL, buf, 0, NULL)) {
 				texture_init(tex, image.width, image.height, GL_RGBA, buf);
 				ret = true;
-				free(buf);
 			} else {
 				log_write("png '%s' read: %s", filename, image.message);
 				png_image_free(&image);
 			}
+			free(buf);
 		} else {
 			log_write("png read: out of memory");
 		}
@@ -469,11 +469,13 @@ b32 texture_load_png(texture_t *tex, const char *filename)
 	if (!(png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL)))
 		goto err_png;
 
-	if (!(info_ptr = png_create_info_struct(png_ptr)))
-		goto err;
+	if (!(info_ptr = png_create_info_struct(png_ptr))) {
+		png_destroy_read_struct(&png_ptr, png_infopp_NULL, png_infopp_NULL);
+		goto err_png;
+	}
 
 	if (setjmp(png_jmpbuf(png_ptr)))
-		goto err; // no destroy info_ptr?
+		goto err;
 
 	png_init_io(png_ptr, fp);
 	png_set_sig_bytes(png_ptr, 8);
@@ -514,7 +516,7 @@ b32 texture_load_png(texture_t *tex, const char *filename)
 	free(image_data);
 
 err:
-	png_destroy_read_struct(&png_ptr, png_infopp_NULL, png_infopp_NULL);
+	png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
 err_png:
 	fclose(fp);
 out:
