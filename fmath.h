@@ -216,6 +216,7 @@ FMDEF b32 fmath_segment_intersect(v2f a0, v2f a1, v2f b0, v2f b1, v2f *isec);
 FMDEF v2f fmath_nearest_point_on_segment(v2f a, v2f b, v2f p);
 FMDEF v2f fmath_nearest_point_on_line(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_segment_dist(v2f a, v2f b, v2f p);
+FMDEF r32 fmath_point_to_segment_dist_sq(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_line_dist(v2f a, v2f b, v2f p);
 
 /* Polygon */
@@ -663,15 +664,12 @@ FMDEF b32 ivalf_contains_val(ivalf i, r32 x)
 
 FMDEF b32 ivalf_contains_ival(ivalf lhs, ivalf rhs)
 {
-	return    ivalf_contains_val(lhs, rhs.l)
-	       && ivalf_contains_val(lhs, rhs.r);
+	return rhs.l >= lhs.l && rhs.r <= lhs.r;
 }
 
 FMDEF b32 ivalf_overlaps(ivalf lhs, ivalf rhs)
 {
-	return    ivalf_contains_val(lhs, rhs.l)
-	       || ivalf_contains_val(lhs, rhs.r)
-	       || ivalf_contains_val(rhs, lhs.l);
+	return lhs.l <= rhs.r && rhs.l <= lhs.r;
 }
 
 FMDEF r32 ivalf_overlap(ivalf lhs, ivalf rhs)
@@ -924,6 +922,11 @@ FMDEF v2f fmath_nearest_point_on_line(v2f a, v2f b, v2f p)
 FMDEF r32 fmath_point_to_segment_dist(v2f a, v2f b, v2f p)
 {
 	return v2f_dist(p, fmath_nearest_point_on_segment(a, b, p));
+}
+
+FMDEF r32 fmath_point_to_segment_dist_sq(v2f a, v2f b, v2f p)
+{
+	return v2f_dist_sq(p, fmath_nearest_point_on_segment(a, b, p));
 }
 
 FMDEF r32 fmath_point_to_line_dist(v2f a, v2f b, v2f p)
