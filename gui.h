@@ -1395,7 +1395,6 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	if (SDL_GetNumVideoDisplays() < 1) {
@@ -1450,10 +1449,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_STENCIL_TEST);
-	glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glStencilMask(0x00);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glEnable(GL_SCISSOR_TEST);
 
 	if (!shader_program_load(&gui->poly_shader, "poly"))
 		goto err_glew;
@@ -1581,7 +1577,7 @@ b32 gui_begin_frame(gui_t *gui)
 	float color[4];
 	color_as_float_array(color, gui->style.bg_color);
 	glClearColor(color[0], color[1], color[2], color[3]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	return !quit;
 }
@@ -1915,22 +1911,12 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	glDepthMask(GL_FALSE);
-	glStencilMask(0xFF);
-	gui_rect(gui, x, y, w, h, g_black, g_black);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glDepthMask(GL_TRUE);
-	glStencilMask(0x00);
-	glStencilFunc(GL_EQUAL, 1, 0xFF);
+	glScissor(x, y, w, h);
 }
 
 void gui_unmask(gui_t *gui)
 {
-	glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glStencilMask(0xFF);
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glStencilMask(0x00);
+	glScissor(0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
 }
 
 
