@@ -72,7 +72,7 @@ typedef struct texture_t
 } texture_t;
 
 b32  texture_load_png(texture_t *tex, const char *filename);
-void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, void *data);
+void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
 void texture_destroy(texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
 void texture_bind(const texture_t *tex);
@@ -94,7 +94,10 @@ typedef struct shader_t
 } shader_t;
 
 
-b32  shader_init(shader_t *shader, const char *filename, shader_type_t type);
+b32  shader_init_from_string(shader_t *shader, const char *str,
+                             shader_type_t type, const char *id);
+b32  shader_init_from_file(shader_t *shader, const char *fname,
+                           shader_type_t type);
 void shader_destroy(shader_t *shader);
 
 typedef struct shader_prog_t
@@ -104,7 +107,12 @@ typedef struct shader_prog_t
 	shader_t frag_shader;
 } shader_prog_t;
 
-b32  shader_program_load(shader_prog_t *prog, const char *name);
+b32  shader_program_load_from_files(shader_prog_t *prog,
+                                    const char *vert_fname,
+                                    const char *frag_fname);
+b32  shader_program_load_from_strings(shader_prog_t *prog,
+                                      const char *vert_str,
+                                      const char *frag_str);
 b32  shader_program_create(shader_prog_t *prog, shader_t vertex_shader,
                            shader_t frag_shader);
 void shader_program_destroy(shader_prog_t *p);
@@ -118,16 +126,12 @@ s32  shader_program_uniform(const shader_prog_t *p, const char *name);
 
 typedef struct img_t
 {
-	u32 vao;
 	texture_t texture;
-	mesh_t mesh;
-	mesh_t tex_coords;
 } img_t;
 
 b32  img_load(img_t *img, const char *filename);
 void img_init(img_t *img, u32 w, u32 h, u32 fmt, void *data);
 void img_destroy(img_t *img);
-void img_render(const img_t *img, s32 x, s32 y, r32 sx, r32 sy, shader_prog_t *p);
 
 
 /* Font */
@@ -145,10 +149,7 @@ typedef enum gui_align
 typedef struct glyph_t
 {
 	char charcode;
-	u32 vao;
 	texture_t texture;
-	mesh_t mesh;
-	mesh_t tex_coords;
 	s32 offset_x, offset_y;
 	u32 advance;
 } glyph_t;
@@ -158,6 +159,7 @@ typedef struct font_t
 	const char *filename;
 	u32 sz;
 	glyph_t *glyphs;
+	u32 glyph_idcs[128];
 	u32 space_width;
 	u32 newline_dist;
 } font_t;
@@ -166,10 +168,6 @@ b32  font_install();
 b32  font_uninstall();
 b32  font_load(font_t *f, const char *filename, u32 sz);
 void font_destroy(font_t *f);
-void font_render(font_t *f, const char *txt, s32 x, s32 y,
-                 shader_prog_t *p, gui_align_t align);
-void font_render_ex(font_t *f, const char *txt, s32 *x, s32 *y,
-                    shader_prog_t *p, gui_align_t align);
 void font_bounds(font_t *f, const char *txt, s32 *x, s32 *y, gui_align_t align);
 
 
@@ -192,6 +190,8 @@ b32    gui_begin_frame(gui_t *gui);
 void   gui_end_frame(gui_t *gui);
 void   gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
                void *udata);
+
+timepoint_t gui_frame_start(gui_t *gui);
 
 
 typedef enum mouse_button_t
@@ -219,30 +219,6 @@ char key_down(const gui_t *gui);
 char key_release(const gui_t *gui);
 b32 key_down_shift(const gui_t *gui);
 
-
-/* Retained Mode API */
-
-typedef struct rmgui_poly_t
-{
-	mesh_t mesh;
-	u32 vao;
-	color_t fill_color;
-	color_t line_color;
-} rmgui_poly_t;
-
-void rmgui_poly_init(gui_t *gui, const v2f *v, u32 n, mesh_t *mesh, u32 *vao);
-void rmgui_line_init(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
-                     s32 w, color_t c, rmgui_poly_t *line);
-void rmgui_rect_init(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                     color_t fill, color_t line, rmgui_poly_t *rect);
-void rmgui_circ_init(gui_t *gui, s32 x, s32 y, s32 r, color_t fill,
-                     color_t line, rmgui_poly_t *circ);
-void rmgui_poly_destroy(rmgui_poly_t *poly);
-void rmgui_poly_draw(gui_t *gui, const rmgui_poly_t *poly, s32 x, s32 y);
-
-void rmgui_img_draw(gui_t *gui, const img_t *img, s32 x, s32 y);
-void rmgui_img_draw_scaled(gui_t *gui, const img_t *img, s32 x, s32 y,
-                           r32 sx, r32 sy);
 
 
 /* Immediate Mode API */
@@ -418,6 +394,10 @@ void         gui_style_default(gui_t *gui);
 #include "violet/array.h"
 #include "violet/fmath.h"
 #include "violet/imath.h"
+
+
+static const char *g_vertex_shader;
+static const char *g_fragment_shader;
 
 
 /* Color */
@@ -611,7 +591,7 @@ out:
 	return ret;
 }
 
-void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, void *data)
+void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 {
 	glGenTextures(1, &tex->handle);
 	tex->width = w;
@@ -660,17 +640,45 @@ void texture_unbind()
 
 /* Shader */
 
-b32 shader_init(shader_t *shader, const char *filename, shader_type_t type)
+b32 shader_init_from_string(shader_t *shader, const char *str,
+                            shader_type_t type, const char *id)
+{
+	b32 retval = false;
+	char *log_buf;
+	GLint compiled, log_len;
+
+	shader->handle = glCreateShader(  type == VERTEX_SHADER
+	                                ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
+	glShaderSource(shader->handle, 1, (const GLchar **)&str, 0);
+
+	glCompileShader(shader->handle);
+	glGetShaderiv(shader->handle, GL_COMPILE_STATUS, &compiled);
+	if (compiled == GL_FALSE) {
+		glGetShaderiv(shader->handle, GL_INFO_LOG_LENGTH, &log_len);
+		log_buf = malloc(log_len);
+		glGetShaderInfoLog(shader->handle, log_len, NULL, log_buf);
+		log_write("Compilation error in shader '%s': %s", id, log_buf);
+		free(log_buf);
+		shader->handle = 0;
+		goto err;
+	}
+
+	retval = true;
+err:
+	return retval;
+}
+
+b32 shader_init_from_file(shader_t *shader, const char *fname,
+                          shader_type_t type)
 {
 	b32 retval = false;
 	FILE *file;
-	char *file_buf, *log_buf;
+	char *file_buf;
 	size_t fsize;
-	GLint compiled, log_len;
 
-	file = fopen(filename, "r");
+	file = fopen(fname, "r");
 	if (!file) {
-		log_write("Could not open shader file '%s'", filename);
+		log_write("Could not open shader file '%s'", fname);
 		return retval;
 	}
 
@@ -679,28 +687,13 @@ b32 shader_init(shader_t *shader, const char *filename, shader_type_t type)
 	rewind(file);
 	file_buf = malloc(fsize + 1);
 	if (fread(file_buf, 1, fsize, file) != fsize) {
-		log_write("Failed to read shader file '%s'", filename);
+		log_write("Failed to read shader file '%s'", fname);
 		goto err;
 	}
 	file_buf[fsize] = 0;
 
-	shader->handle = glCreateShader(type == VERTEX_SHADER ?
-	                                GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
-	glShaderSource(shader->handle, 1, (const GLchar **)&file_buf, 0);
+	retval = shader_init_from_string(shader, file_buf, type, fname);
 
-	glCompileShader(shader->handle);
-	glGetShaderiv(shader->handle, GL_COMPILE_STATUS, &compiled);
-	if (compiled == GL_FALSE) {
-		glGetShaderiv(shader->handle, GL_INFO_LOG_LENGTH, &log_len);
-		log_buf = malloc(log_len);
-		glGetShaderInfoLog(shader->handle, log_len, NULL, log_buf);
-		log_write("Compilation error in shader file '%s': %s", filename, log_buf);
-		free(log_buf);
-		shader->handle = 0;
-		goto err;
-	}
-
-	retval = true;
 err:
 	free(file_buf);
 	fclose(file);
@@ -713,51 +706,53 @@ void shader_destroy(shader_t *shader)
 	shader->handle = 0;
 }
 
-static
-b32 shader_program__load_internal(shader_prog_t *p,
-                                  const char *vertex_shader_filename,
-                                  const char *frag_shader_filename)
+b32 shader_program_load_from_strings(shader_prog_t *prog,
+                                     const char *vert_str,
+                                     const char *frag_str)
 {
 	b32 retval = false;
-	if (!shader_init(&p->vertex_shader, vertex_shader_filename, VERTEX_SHADER))
+
+	if (!shader_init_from_string(&prog->vertex_shader, vert_str,
+	                             VERTEX_SHADER, "vertex ubershader"))
 		goto out;
 
-	if (!shader_init(&p->frag_shader, frag_shader_filename, FRAGMENT_SHADER))
+	if (!shader_init_from_string(&prog->frag_shader, frag_str,
+	                             FRAGMENT_SHADER, "fragment ubershader"))
 		goto err_frag;
 	
-	if (shader_program_create(p, p->vertex_shader, p->frag_shader)) {
+	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader)) {
 		retval = true;
 		goto out;
 	}
 
-	shader_destroy(&p->frag_shader);
+	shader_destroy(&prog->frag_shader);
 err_frag:
-	shader_destroy(&p->vertex_shader);
+	shader_destroy(&prog->vertex_shader);
 out:
 	return retval;
 }
 
-b32 shader_program_load(shader_prog_t *p, const char *name)
+b32 shader_program_load_from_files(shader_prog_t *prog,
+                                   const char *vert_fname,
+                                   const char *frag_fname)
 {
-	b32 retval;
-	u32 name_len;
-	char *vertex_shader_name, *frag_shader_name;
+	b32 retval = false;
 
-	name_len = strlen(name);
+	if (!shader_init_from_file(&prog->vertex_shader, vert_fname, VERTEX_SHADER))
+		goto out;
 
-	vertex_shader_name = malloc(name_len + 6);
-	strcpy(vertex_shader_name, name);
-	strcpy(vertex_shader_name + name_len, ".vert");
+	if (!shader_init_from_file(&prog->frag_shader, frag_fname, FRAGMENT_SHADER))
+		goto err_frag;
+	
+	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader)) {
+		retval = true;
+		goto out;
+	}
 
-	frag_shader_name = malloc(name_len + 6);
-	strcpy(frag_shader_name, name);
-	strcpy(frag_shader_name + name_len, ".frag");
-
-	retval = shader_program__load_internal(p, vertex_shader_name, frag_shader_name);
-
-	free(vertex_shader_name);
-	free(frag_shader_name);
-
+	shader_destroy(&prog->frag_shader);
+err_frag:
+	shader_destroy(&prog->vertex_shader);
+out:
 	return retval;
 }
 
@@ -822,71 +817,25 @@ s32 shader_program_uniform(const shader_prog_t *p, const char *name)
 
 /* Image */
 
-static
-void img__init_complete(img_t *img)
-{
-	box2f box;
-	v2f poly[4];
-
-	box2f_from_dims(&box, 0, img->texture.height, img->texture.width, 0);
-	polyf_from_box(poly, box);
-
-	mesh_init(&img->mesh, poly, 4);
-	glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0);
-	glEnableVertexAttribArray(0);
-
-	texture_coords_from_poly(&img->tex_coords, poly, 4);
-	glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
-	glEnableVertexAttribArray(1);
-}
-
 b32 img_load(img_t *img, const char *filename)
 {
-	glGenVertexArrays(1, &img->vao);
-	glBindVertexArray(img->vao);
-
 	if (!texture_load_png(&img->texture, filename)) {
 		log_write("img_load(%s) error", filename);
 		return false;
 	}
-
-	img__init_complete(img);
-
-	glBindVertexArray(0);
 	return true;
 }
 
 void img_init(img_t *img, u32 w, u32 h, u32 fmt, void *data)
 {
-	glGenVertexArrays(1, &img->vao);
-	glBindVertexArray(img->vao);
-
 	texture_init(&img->texture, w, h, fmt, data);
-	img__init_complete(img);
-
-	glBindVertexArray(0);
 }
 
 void img_destroy(img_t *img)
 {
-	mesh_destroy(&img->mesh);
-	mesh_destroy(&img->tex_coords);
 	texture_destroy(&img->texture);
-	glDeleteVertexArrays(1, &img->vao);
 }
 
-void img_render(const img_t *img, s32 x, s32 y, r32 sx, r32 sy, shader_prog_t *p)
-{
-	glBindVertexArray(img->vao);
-	texture_bind(&img->texture);
-
-	glUniform2f(shader_program_uniform(p, "offset"), x, y);
-	glUniform2f(shader_program_uniform(p, "scale"), sx, sy);
-	glDrawArrays(GL_TRIANGLE_FAN, 0, img->mesh.sz);
-
-	texture_unbind();
-	glBindVertexArray(0);
-}
 
 
 /* Font */
@@ -917,24 +866,9 @@ b32 font_uninstall()
 }
 
 static
-void glyph__render(glyph_t *g, shader_prog_t *p)
-{
-	glBindVertexArray(g->vao);
-	texture_bind(&g->texture);
-
-	glDrawArrays(GL_TRIANGLE_FAN, 0, g->mesh.sz);
-
-	texture_unbind();
-	glBindVertexArray(0);
-}
-
-static
 void glyph__destroy(glyph_t *g)
 {
-	mesh_destroy(&g->mesh);
-	mesh_destroy(&g->tex_coords);
 	texture_destroy(&g->texture);
-	glDeleteVertexArrays(1, &g->vao);
 }
 
 static
@@ -946,12 +880,12 @@ int glyph__sort(const void *_lhs, const void *_rhs)
 }
 
 static
-glyph_t *glyph__find(glyph_t *glyphs, char charcode)
+glyph_t *glyph__find(font_t *font, char charcode)
 {
-	glyph_t *g = glyphs, *gn = array_end(glyphs);
-	while (g->charcode < charcode && g != gn)
-		++g;
-	return g != gn && g->charcode == charcode ? g : NULL;
+	u32 glyph_idx;
+	assert(charcode >= 0);
+	glyph_idx = font->glyph_idcs[(u32)charcode];
+	return glyph_idx != UINT_MAX ? &font->glyphs[glyph_idx] : NULL;
 }
 
 b32 font_load(font_t *f, const char *filename, u32 sz)
@@ -981,6 +915,7 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	f->sz = sz;
 	f->space_width = sz; // default
 	f->newline_dist = face->size->metrics.height >> 6;
+	memset(f->glyph_idcs, ~0, 128 * sizeof(u32));
 	f->glyphs = array_create();
 	array_reserve(f->glyphs, 128);
 
@@ -1006,50 +941,32 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 
 		const FT_Bitmap bitmap = face->glyph->bitmap;
 		if (bitmap.buffer) {
+			f->glyph_idcs[charcode] = array_sz(f->glyphs);
 			glyph_t *glyph = array_append_null(f->glyphs);
 			glyph->charcode = charcode;
 			// NOTE(rgriege): having issues with textures smaller than this
 			const u32 tex_height = max(16u,pow(2,ceil(log2(bitmap.rows))));
 			const u32 tex_width = max(16u,pow(2,ceil(log2(bitmap.width))));
-			const u32 tex_sz = tex_width*tex_height;
+			const u32 tex_sz = 4*tex_width*tex_height;
 			if (tex_sz > pixel_buf_sz) {
 				free(pixels);
 				pixels = malloc(tex_sz);
 			}
 
 			for (int i = 0; i < bitmap.rows; ++i) {
-				memcpy(pixels+i*tex_width, bitmap.buffer+i*bitmap.width, bitmap.width);
-				memset(pixels+i*tex_width+bitmap.width, 0, tex_width-bitmap.width);
+				for (int j = 0; j < bitmap.width; ++j) {
+					pixels[4*(i*tex_width+j)]   = 0xFF;
+					pixels[4*(i*tex_width+j)+1] = 0xFF;
+					pixels[4*(i*tex_width+j)+2] = 0xFF;
+					pixels[4*(i*tex_width+j)+3] = bitmap.buffer[i*bitmap.width+j];
+				}
+				memset(pixels+4*(i*tex_width+bitmap.width), 0,
+				       4*(tex_width-bitmap.width));
 			}
-			memset(pixels+bitmap.rows*tex_width, 0, tex_width*(tex_height-bitmap.rows));
+			memset(pixels+4*(bitmap.rows*tex_width), 0,
+			       4*tex_width*(tex_height-bitmap.rows));
 
-			glGenVertexArrays(1, &glyph->vao);
-			glBindVertexArray(glyph->vao);
-
-			texture_init(&glyph->texture, tex_width, tex_height, GL_RED, pixels);
-
-			v2f vertices[4] = {
-				{ .x=0, .y=0 },
-				{ .x=0, .y=tex_height },
-				{ .x=tex_width, .y=tex_height },
-				{ .x=tex_width, .y=0 }
-			};
-			mesh_init(&glyph->mesh, vertices, 4);
-			glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0);
-			glEnableVertexAttribArray(0);
-
-			
-			v2f coords[4] = {
-				{ .x=0, .y=0 },
-				{ .x=0, .y=1 },
-				{ .x=1, .y=1 },
-				{ .x=1, .y=0 }
-			};
-			mesh_init(&glyph->tex_coords, coords, 4);
-			glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
-			glEnableVertexAttribArray(1);
-
-			glBindVertexArray(0);
+			texture_init(&glyph->texture, tex_width, tex_height, GL_RGBA, pixels);
 
 			glyph->offset_x = face->glyph->bitmap_left;
 			glyph->offset_y = face->glyph->bitmap_top - tex_height;
@@ -1120,7 +1037,7 @@ s32 font__line_offset_x(font_t *f, const char *txt, gui_align_t align)
 			goto out;
 		break;
 		default:
-			glyph = glyph__find(f->glyphs, *c);
+			glyph = glyph__find(f, *c);
 			if (glyph)
 				width += glyph->advance;
 			else
@@ -1158,44 +1075,6 @@ s32 font__offset_y(font_t *f, const char *txt, gui_align_t align)
 	}
 }
 
-void font_render(font_t *f, const char *txt, s32 x, s32 y,
-                 shader_prog_t *p, gui_align_t align)
-{
-	font_render_ex(f, txt, &x, &y, p, align);
-}
-
-void font_render_ex(font_t *f, const char *txt, s32 *x, s32 *y, shader_prog_t *p,
-                    gui_align_t align)
-{
-	const s32 x_orig = *x;
-	glyph_t *glyph;
-
-	*x += font__line_offset_x(f, txt, align);
-	*y += font__offset_y(f, txt, align);
-
-	for (const char *c = txt; *c != '\0'; ++c) {
-		switch (*c) {
-		case ' ':
-			*x += f->space_width;
-		break;
-		case '\r':
-			*y -= f->newline_dist;
-			*x = x_orig + font__line_offset_x(f, c + 1, align);
-		break;
-		default:
-			glyph = glyph__find(f->glyphs, *c);
-			if (glyph) {
-				// looks bad if offset not rounded
-				const GLint offset_attrib = shader_program_uniform(p, "offset");
-				glUniform2f(offset_attrib, *x + glyph->offset_x, *y + glyph->offset_y);
-				glyph__render(glyph, p);
-				*x += glyph->advance;
-			}
-		break;
-		}
-	}
-}
-
 void font_bounds(font_t *f, const char *txt, s32 *x, s32 *y, gui_align_t align)
 {
 	const s32 x_orig = *x;
@@ -1211,7 +1090,7 @@ void font_bounds(font_t *f, const char *txt, s32 *x, s32 *y, gui_align_t align)
 			*x = x_orig;
 		break;
 		default:
-			glyph = glyph__find(f->glyphs, *c);
+			glyph = glyph__find(f, *c);
 			if (glyph)
 				*x += glyph->advance;
 		break;
@@ -1480,6 +1359,32 @@ b32 gui__convert_scancode(SDL_Scancode code, b32 caps, char *c)
 	return true;
 }
 
+typedef enum gui_vbo_type
+{
+	VBO_VERT,
+	VBO_COLOR,
+	VBO_TEX,
+	VBO_COUNT
+} gui_vbo_type_t;
+
+#define GUI_MAX_VERTS 4096
+#define GUI_MAX_DRAW_CALLS 1024
+#define GUI_MAX_SCISSORS 16
+
+typedef struct draw_call
+{
+	GLint idx;
+	GLsizei cnt;
+	u32 type;
+	GLuint tex;
+} draw_call_t;
+
+typedef struct scissor
+{
+	u32 draw_call_idx, draw_call_cnt;
+	s32 x, y, w, h;
+} scissor_t;
+
 typedef struct gui_t
 {
 	timepoint_t creation_time;
@@ -1487,9 +1392,23 @@ typedef struct gui_t
 	u32 frame_time_milli;
 	SDL_Window *window;
 	SDL_GLContext gl_context;
-	shader_prog_t poly_shader;
-	shader_prog_t tex_shader;
-	shader_prog_t txt_shader;
+
+	u32 vao, vbo[VBO_COUNT];
+
+	shader_prog_t shader;
+	texture_t texture_white;
+
+	v2f verts[GUI_MAX_VERTS];
+	color_t vert_colors[GUI_MAX_VERTS];
+	v2f vert_tex_coords[GUI_MAX_VERTS];
+	u32 vert_cnt;
+
+	draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
+	u32 draw_call_cnt;
+
+	scissor_t scissors[GUI_MAX_SCISSORS];
+	u32 scissor_cnt;
+
 	v2i win_halfdim;
 	v2i mouse_pos;
 	u32 mouse_btn;
@@ -1526,7 +1445,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-	//SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	if (SDL_GetNumVideoDisplays() < 1) {
 		log_write("could not create window: no video displays found");
@@ -1565,6 +1484,9 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_ctx;
 	}
 
+	if (SDL_GL_SetSwapInterval(0) != 0)
+		log_write("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
+
 	SDL_SetEventFilter(gui__sdl_evt_filter, NULL);
 
 	glewExperimental = GL_TRUE;
@@ -1582,14 +1504,15 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_SCISSOR_TEST);
 
-	if (!shader_program_load(&gui->poly_shader, "poly"))
-		goto err_glew;
+	glGenVertexArrays(1, &gui->vao);
+	glGenBuffers(3, gui->vbo);
 
-	if (!shader_program_load(&gui->tex_shader, "texu"))
-		goto err_poly;
+	static const u32 texture_white_data[4] = { ~0, ~0, ~0, ~0 };
+	texture_init(&gui->texture_white, 1, 1, GL_RGBA, texture_white_data);
 
-	if (!shader_program_load(&gui->txt_shader, "text"))
-		goto err_texu;
+	if (!shader_program_load_from_strings(&gui->shader, g_vertex_shader,
+	                                      g_fragment_shader))
+		goto err_white;
 
 	if (!font_install())
 		goto err_text;
@@ -1620,11 +1543,11 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	goto out;
 
 err_text:
-	shader_program_destroy(&gui->txt_shader);
-err_texu:
-	shader_program_destroy(&gui->tex_shader);
-err_poly:
-	shader_program_destroy(&gui->poly_shader);
+	shader_program_destroy(&gui->shader);
+err_white:
+	texture_destroy(&gui->texture_white);
+	glDeleteBuffers(3, gui->vbo);
+	glDeleteVertexArrays(1, &gui->vao);
 err_glew:
 	SDL_GL_DeleteContext(gui->gl_context);
 err_ctx:
@@ -1645,9 +1568,10 @@ void gui_destroy(gui_t *gui)
 		font_destroy(f);
 	array_destroy(gui->fonts);
 	font_uninstall();
-	shader_program_destroy(&gui->poly_shader);
-	shader_program_destroy(&gui->tex_shader);
-	shader_program_destroy(&gui->txt_shader);
+	shader_program_destroy(&gui->shader);
+	texture_destroy(&gui->texture_white);
+	glDeleteBuffers(3, gui->vbo);
+	glDeleteVertexArrays(1, &gui->vao);
 	SDL_GL_DeleteContext(gui->gl_context);
 	SDL_DestroyWindow(gui->window);
 	SDL_Quit();
@@ -1688,13 +1612,10 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
-	const v2i prev_win_halfdim = gui->win_halfdim;
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
 	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
 	static const v2i g_v2i_2 = { .x=2, .y=2 };
 	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
-	if (!v2i_equal(prev_win_halfdim, gui->win_halfdim))
-		glViewport(0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
 
 	gui->prev_key = gui->key;
 	gui->key = 0;
@@ -1708,16 +1629,212 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->active_id_at_frame_start = gui->active_id;
 
-	float color[4];
-	color_as_float_array(color, gui->style.bg_color);
-	glClearColor(color[0], color[1], color[2], color[3]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	gui->vert_cnt = 0;
+	gui->draw_call_cnt = 0;
+	gui->scissor_cnt = 0;
+	gui_unmask(gui);
 
 	return !quit;
 }
 
+typedef enum draw_call_type
+{
+	DRAW_POINTS,
+	DRAW_LINE_STRIP,
+	DRAW_LINE_LOOP,
+	DRAW_LINES,
+	DRAW_TRIANGLE_STRIP,
+	DRAW_TRIANGLE_FAN,
+	DRAW_TRIANGLES,
+	DRAW_QUAD_STRIP,
+	DRAW_QUADS,
+	DRAW_POLYGON,
+	DRAW_COUNT
+} draw_call_type_t;
+
+static const GLenum g_draw_call_types[DRAW_COUNT] = {
+	GL_POINTS,
+	GL_LINE_STRIP,
+	GL_LINE_LOOP,
+	GL_LINES,
+	GL_TRIANGLE_STRIP,
+	GL_TRIANGLE_FAN,
+	GL_TRIANGLES,
+	GL_QUAD_STRIP,
+	GL_QUADS,
+	GL_POLYGON,
+};
+
+static
+void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
+{
+	if (!color_equal(fill, g_nocolor)) {
+		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
+		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
+
+		for (u32 i = 0; i < n; ++i) {
+			gui->verts[gui->vert_cnt+i] = v[i];
+			gui->vert_colors[gui->vert_cnt+i] = fill;
+			gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
+		}
+		gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
+		gui->draw_calls[gui->draw_call_cnt].cnt = n;
+		gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLE_FAN;
+		gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
+		++gui->draw_call_cnt;
+		gui->vert_cnt += n;
+	}
+	if (!color_equal(stroke, g_nocolor)) {
+		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
+		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
+
+		for (u32 i = 0; i < n; ++i) {
+			gui->verts[gui->vert_cnt+i] = v[i];
+			gui->vert_colors[gui->vert_cnt+i] = stroke;
+			gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
+		}
+		gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
+		gui->draw_calls[gui->draw_call_cnt].cnt = n;
+		gui->draw_calls[gui->draw_call_cnt].type = DRAW_LINE_LOOP;
+		gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
+		++gui->draw_call_cnt;
+		gui->vert_cnt += n;
+	}
+}
+
+static
+void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
+                     r32 sx, r32 sy, color_t color)
+{
+	r32 w, h;
+
+	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
+	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
+
+	w = texture->width * sx;
+	h = texture->height * sy;
+
+	v2f_set(&gui->verts[gui->vert_cnt],   x,     y);
+	v2f_set(&gui->verts[gui->vert_cnt+1], x,     y + h);
+	v2f_set(&gui->verts[gui->vert_cnt+2], x + w, y + h);
+	v2f_set(&gui->verts[gui->vert_cnt+3], x + w, y);
+
+	gui->vert_colors[gui->vert_cnt]   = color;
+	gui->vert_colors[gui->vert_cnt+1] = color;
+	gui->vert_colors[gui->vert_cnt+2] = color;
+	gui->vert_colors[gui->vert_cnt+3] = color;
+
+	v2f_set(&gui->vert_tex_coords[gui->vert_cnt],   0, 0);
+	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+1], 0, 1);
+	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+2], 1, 1);
+	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+3], 1, 0);
+
+	gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
+	gui->draw_calls[gui->draw_call_cnt].cnt = 4;
+	gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLE_FAN;
+	gui->draw_calls[gui->draw_call_cnt].tex = texture->handle;
+	++gui->draw_call_cnt;
+
+	gui->vert_cnt += 4;
+}
+
+static
+void gui__complete_scissor(gui_t *gui)
+{
+	if (gui->scissor_cnt > 0) {
+		if (gui->draw_call_cnt == gui->scissors[gui->scissor_cnt-1].draw_call_idx)
+			--gui->scissor_cnt;
+		else
+			gui->scissors[gui->scissor_cnt-1].draw_call_cnt
+				= gui->draw_call_cnt - gui->scissors[gui->scissor_cnt-1].draw_call_idx;
+	}
+}
+
 void gui_end_frame(gui_t *gui)
 {
+	float bg_color[4];
+#if 0
+	GLint draw_call_idcs[GUI_MAX_DRAW_CALLS];
+	GLsizei draw_call_cnts[GUI_MAX_DRAW_CALLS];
+	GLsizei draw_call_cnt;
+	u32 draw_call_type_cnts[DRAW_COUNT] = { 0 };
+	u32 draw_call_type_idcs[DRAW_COUNT];
+#endif
+
+	gui__complete_scissor(gui);
+
+	glViewport(0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
+
+	color_as_float_array(bg_color, gui->style.bg_color);
+	glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glBindVertexArray(gui->vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[VBO_VERT]);
+	glBufferData(GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
+	             gui->verts, GL_STREAM_DRAW);
+	glVertexAttribPointer(VBO_VERT, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(VBO_VERT);
+
+	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[VBO_COLOR]);
+	glBufferData(GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(color_t),
+	             gui->vert_colors, GL_STREAM_DRAW);
+	glVertexAttribPointer(VBO_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
+	glEnableVertexAttribArray(VBO_COLOR);
+
+	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[VBO_TEX]);
+	glBufferData(GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
+	             gui->vert_tex_coords, GL_STREAM_DRAW);
+	glVertexAttribPointer(VBO_TEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(VBO_TEX);
+
+	glUseProgram(gui->shader.handle);
+	glUniform2f(glGetUniformLocation(gui->shader.handle, "window_halfdim"),
+	            gui->win_halfdim.x, gui->win_halfdim.y);
+
+	for (scissor_t *scissor = gui->scissors,
+	               *scissor_end = scissor + gui->scissor_cnt;
+	     scissor != scissor_end; ++scissor) {
+		glScissor(scissor->x, scissor->y, scissor->w, scissor->h);
+
+		for (draw_call_t *draw_call = gui->draw_calls + scissor->draw_call_idx,
+		                 *draw_call_end = draw_call + scissor->draw_call_cnt;
+		     draw_call != draw_call_end; ++draw_call) {
+			glBindTexture(GL_TEXTURE_2D, draw_call->tex);
+			glDrawArrays(g_draw_call_types[draw_call->type],
+			             draw_call->idx, draw_call->cnt);
+		}
+			// ++draw_call_type_cnts[draw_call->type];
+
+#if 0
+		draw_call_type_idcs[0] = 0;
+		for (u32 i = 1; i < DRAW_COUNT; ++i)
+			draw_call_type_idcs[i] = draw_call_type_idcs[i-1] + draw_call_type_cnts[i-1];
+
+		for (u32 i = 0; i < DRAW_COUNT; ++i) {
+			if (draw_call_type_cnts[i] == 0)
+				continue;
+
+			for (u32 j = 0; j < scissor->draw_call_cnt; ++j) {
+				if (gui->draw_calls[scissor->draw_call_idx + j].type == i) {
+					draw_call_idcs[draw_call_cnt] = ;
+					draw_call_cnts[draw_call_cnt] = ;
+					++draw_call_cnt;
+				}
+			}
+
+			glBindTexture(GL_TEXTURE_2D, gui->texture_white.handle);
+			glMultiDrawArrays(g_draw_call_types[i], draw_call_idcs, draw_call_cnts,
+			                  draw_call_cnt);
+			/*for (u32 i = 0; i < scissor->tex_cnt; ++i) {
+				glBindTexture(GL_TEXTURE_2D, tex->handle);
+				glDrawArrays(GL_TRIANGLE_FAN, , 4);
+			}*/
+		}
+#endif
+	}
+
 	glFlush();
 	SDL_GL_SwapWindow(gui->window);
 }
@@ -1742,6 +1859,10 @@ void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
 	}
 }
 
+timepoint_t gui_frame_start(gui_t *gui)
+{
+	return gui->frame_start_time;
+}
 
 /* Input */
 
@@ -1804,87 +1925,50 @@ b32 key_down_shift(const gui_t *gui)
 	return SDL_GetModState() & KMOD_SHIFT;
 }
 
-/* Retained Mode API */
 
-static
-void gui__set_color_attrib(shader_prog_t *p, color_t c)
-{
-	const GLint color_attrib = shader_program_uniform(p, "color");
-	float color_f[4];
-	color_as_float_array(color_f, c);
-	glUniform4fv(color_attrib, 1, color_f);
-}
 
-static
-void gui__set_win_halfdim_attrib(gui_t *gui, shader_prog_t *p)
-{
-	const GLint win_attrib = shader_program_uniform(p, "window_halfdim");
-	glUniform2f(win_attrib, gui->win_halfdim.x, gui->win_halfdim.y);
-}
+/* Immediate Mode API */
 
-void rmgui_poly_init(gui_t *gui, const v2f *v, u32 n, mesh_t *mesh, u32 *vao)
-{
-	mesh_init(mesh, v, n);
-
-	glGenVertexArrays(1, vao);
-
-	glBindVertexArray(*vao);
-	mesh_bind(mesh);
-
-	const GLint pos_attrib = shader_program_attrib(&gui->poly_shader, "position");
-	glVertexAttribPointer(pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(pos_attrib);
-}
-
-void rmgui_line_init(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
-                     s32 w, color_t c, rmgui_poly_t *line)
+void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
 {
 	assert(w >= 1);
 	if (w == 1) {
-		v2f vertices[2] = {
+		v2f poly[2] = {
 			{ x0, y0 },
 			{ x1, y1 }
 		};
-		rmgui_poly_init(gui, vertices, 2, &line->mesh, &line->vao);
-		line->line_color = c;
-		line->fill_color = g_nocolor;
+		gui__poly(gui, poly, 2, g_nocolor, c);
 	} else {
-		v2f vertices[4] = {
+		v2f poly[4] = {
 			{ x0, y0 },
 			{ x0, y0 },
 			{ x1, y1 },
 			{ x1, y1 }
 		};
-		v2f dir = v2f_scale(v2f_normalize(v2f_sub(vertices[2], vertices[0])), w/2.f);
+		v2f dir = v2f_scale(v2f_dir(poly[0], poly[2]), w / 2.f);
 		v2f perp = v2f_lperp(dir);
 
-		vertices[0] = v2f_sub(v2f_sub(vertices[0], dir), perp);
-		vertices[1] = v2f_add(v2f_sub(vertices[1], dir), perp);
-		vertices[2] = v2f_add(v2f_add(vertices[2], dir), perp);
-		vertices[3] = v2f_sub(v2f_add(vertices[3], dir), perp);
+		poly[0] = v2f_sub(v2f_sub(poly[0], dir), perp);
+		poly[1] = v2f_add(v2f_sub(poly[1], dir), perp);
+		poly[2] = v2f_add(v2f_add(poly[2], dir), perp);
+		poly[3] = v2f_sub(v2f_add(poly[3], dir), perp);
 
-		rmgui_poly_init(gui, vertices, 4, &line->mesh, &line->vao);
-		line->line_color = g_nocolor;
-		line->fill_color = c;
+		gui_poly(gui, poly, 4, c, g_nocolor);
 	}
 }
 
-void rmgui_rect_init(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                     color_t fill, color_t line, rmgui_poly_t *rect)
+void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke)
 {
-	box2f box;
-	v2f poly[4];
-
-	box2f_from_dims(&box, x, y + h, x + w, y);
-	polyf_from_box(poly, box);
-
-	rmgui_poly_init(gui, poly, 4, &rect->mesh, &rect->vao);
-	rect->fill_color = fill;
-	rect->line_color = line;
+	v2f poly[4] = {
+		{ x,     y },
+		{ x + w, y },
+		{ x + w, y + h },
+		{ x,     y + h },
+	};
+	gui__poly(gui, poly, 4, fill, stroke);
 }
 
-void rmgui_circ_init(gui_t *gui, s32 x, s32 y, s32 r, color_t fill,
-                     color_t line, rmgui_poly_t *circ)
+void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
 	v2f *poly = array_create();
 
@@ -1896,107 +1980,27 @@ void rmgui_circ_init(gui_t *gui, s32 x, s32 y, s32 r, color_t fill,
 		array_append(poly, v);
 	}
 
-	rmgui_poly_init(gui, poly, array_sz(poly), &circ->mesh, &circ->vao);
-	circ->fill_color = fill;
-	circ->line_color = line;
+	gui__poly(gui, poly, n, fill, stroke);
 
 	array_destroy(poly);
 }
 
-void rmgui_poly_draw(gui_t *gui, const rmgui_poly_t *poly, s32 x, s32 y)
+void gui_poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
-	GLint offset_attrib;
-
-	glBindVertexArray(poly->vao);
-	mesh_bind(&poly->mesh);
-	shader_program_bind(&gui->poly_shader);
-
-	gui__set_win_halfdim_attrib(gui, &gui->poly_shader);
-
-	offset_attrib = shader_program_uniform(&gui->poly_shader, "offset");
-	glUniform2f(offset_attrib, x, y);
-
-	if (!color_equal(poly->fill_color, g_nocolor)) {
-		gui__set_color_attrib(&gui->poly_shader, poly->fill_color);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, poly->mesh.sz);
-	}
-
-	if (!color_equal(poly->line_color, g_nocolor)) {
-		gui__set_color_attrib(&gui->poly_shader, poly->line_color);
-		glDrawArrays(GL_LINE_LOOP, 0, poly->mesh.sz);
-	}
-}
-
-void rmgui_poly_destroy(rmgui_poly_t *poly)
-{
-	glBindVertexArray(0);
-	mesh_unbind();
-	glDeleteVertexArrays(1, &poly->vao);
-	mesh_destroy(&poly->mesh);
-}
-
-void rmgui_img_draw(gui_t *gui, const img_t *img, s32 x, s32 y)
-{
-	rmgui_img_draw_scaled(gui, img, x, y, 1.f, 1.f);
-}
-
-void rmgui_img_draw_scaled(gui_t *gui, const img_t *img, s32 x, s32 y,
-                           r32 sx, r32 sy)
-{
-	shader_program_bind(&gui->tex_shader);
-	gui__set_win_halfdim_attrib(gui, &gui->tex_shader);
-	img_render(img, x, y, sx, sy, &gui->tex_shader);
-	shader_program_unbind();
-}
-
-
-/* Immediate Mode API */
-
-void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
-{
-	rmgui_poly_t line;
-	rmgui_line_init(gui, x0, y0, x1, y1, w, c, &line);
-	rmgui_poly_draw(gui, &line, 0, 0);
-	rmgui_poly_destroy(&line);
-}
-
-void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t line)
-{
-	rmgui_poly_t rect;
-	rmgui_rect_init(gui, x, y, w, h, fill, line, &rect);
-	rmgui_poly_draw(gui, &rect, 0, 0);
-	rmgui_poly_destroy(&rect);
-}
-
-void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t line)
-{
-	rmgui_poly_t circ;
-	rmgui_circ_init(gui, x, y, r, fill, line, &circ);
-	rmgui_poly_draw(gui, &circ, 0, 0);
-	rmgui_poly_destroy(&circ);
-}
-
-void gui_poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t line)
-{
-	rmgui_poly_t poly;
 	v2f **polys;
 	if (polyf_is_convex(v, n) || fill.a == 0) {
-		poly.fill_color = fill;
-		poly.line_color = line;
-		rmgui_poly_init(gui, v, n, &poly.mesh, &poly.vao);
-		rmgui_poly_draw(gui, &poly, 0, 0);
-		rmgui_poly_destroy(&poly);
+		gui__poly(gui, v, n, fill, stroke);
 	} else {
 		polys = array_create();
 		polyf_decompose(v, n, &polys);
 		array_foreach(polys, v2f*, poly) {
-			gui_poly(gui, *poly, array_sz(*poly), fill, g_nocolor);
+			gui__poly(gui, *poly, array_sz(*poly), fill, g_nocolor);
 			array_destroy(*poly);
 		}
 		array_destroy(polys);
 
-		if (line.a != 0)
-			gui_poly(gui, v, n, g_nocolor, line);
+		if (stroke.a != 0)
+			gui__poly(gui, v, n, g_nocolor, stroke);
 	}
 }
 
@@ -2005,7 +2009,7 @@ void gui_img(gui_t *gui, s32 x, s32 y, const char *filename)
 	img_t img;
 	if (!img_load(&img, filename))
 		return;
-	rmgui_img_draw(gui, &img, x, y);
+	texture__render(gui, &img.texture, x, y, 1.f, 1.f, g_white);
 	img_destroy(&img);
 }
 
@@ -2027,19 +2031,40 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 	}
 }
 
+static
 void gui__txt(gui_t *gui, s32 *x, s32 *y, s32 sz, const char *txt,
-              color_t c, gui_align_t align)
+              color_t color, gui_align_t align)
 {
-	shader_program_bind(&gui->txt_shader);
+	font_t *font;
+	glyph_t *glyph;
+	const s32 x_orig = *x;
 
-	gui__set_color_attrib(&gui->txt_shader, c);
-	gui__set_win_halfdim_attrib(gui, &gui->txt_shader);
-
-	font_t *font = gui__get_font(gui, sz);
+	font = gui__get_font(gui, sz);
 	assert(font);
-	font_render_ex(font, txt, x, y, &gui->txt_shader, align);
 
-	shader_program_unbind();
+	*x += font__line_offset_x(font, txt, align);
+	*y += font__offset_y(font, txt, align);
+
+	for (const char *c = txt; *c != '\0'; ++c) {
+		switch (*c) {
+		case ' ':
+			*x += font->space_width;
+		break;
+		case '\r':
+			*y -= font->newline_dist;
+			*x = x_orig + font__line_offset_x(font, c + 1, align);
+		break;
+		default:
+			glyph = glyph__find(font, *c);
+			if (glyph) {
+				/* NOTE(rgriege): looks bad if offset not rounded */
+				texture__render(gui, &glyph->texture, *x + glyph->offset_x,
+				                *y + glyph->offset_y, 1.f, 1.f, color);
+				*x += glyph->advance;
+			}
+		break;
+		}
+	}
 }
 
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
@@ -2050,12 +2075,23 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
-	glScissor(x, y, w, h);
+	gui__complete_scissor(gui);
+
+	assert(gui->scissor_cnt < GUI_MAX_SCISSORS);
+
+	gui->scissors[gui->scissor_cnt].draw_call_idx = gui->draw_call_cnt;
+	gui->scissors[gui->scissor_cnt].draw_call_cnt = 0;
+	gui->scissors[gui->scissor_cnt].x = x;
+	gui->scissors[gui->scissor_cnt].y = y;
+	gui->scissors[gui->scissor_cnt].w = w;
+	gui->scissors[gui->scissor_cnt].h = h;
+
+	++gui->scissor_cnt;
 }
 
 void gui_unmask(gui_t *gui)
 {
-	glScissor(0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
+	gui_mask(gui, 0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
 }
 
 
@@ -2915,6 +2951,33 @@ void gui_style_default(gui_t *gui)
 {
 	gui_style(gui, &gui->default_style);
 }
+
+static const char *g_vertex_shader =
+	"#version 140\n"
+	"in vec2 position;\n"
+	"in vec4 color;\n"
+	"in vec2 tex_coord;\n"
+	"uniform vec2 window_halfdim;\n"
+	"out vec2 TexCoord;\n"
+	"out vec4 Color;\n"
+	"\n"
+	"void main() {\n"
+	"  vec2 p = (position - window_halfdim) / window_halfdim;\n"
+	"  gl_Position = vec4(p.xy, 0.0, 1.0);\n"
+	"  TexCoord = tex_coord;\n"
+	"  Color = color;\n"
+	"}";
+
+static const char *g_fragment_shader =
+	"#version 140\n"
+	"in vec2 TexCoord;\n"
+	"in vec4 Color;\n"
+	"uniform sampler2D tex;\n"
+	"\n"
+	"void main() {\n"
+	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
+	"  gl_FragColor = texture(tex, TexCoord_flipped) * Color;\n"
+	"}";
 
 #undef GUI_IMPLEMENTATION
 #endif // GUI_IMPLEMENTATION
