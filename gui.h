@@ -1148,7 +1148,7 @@ s32 font__offset_y(font_t *f, const char *txt, gui_align_t align)
 				height += f->newline_dist;
 		return height / 2 - f->newline_dist;
 	} else if (align & GUI_ALIGN_TOP) {
-		return -f->newline_dist;
+		return -(s32)f->newline_dist;
 	} else /* default to GUI_ALIGN_BOTTOM */ {
 		height = 0;
 		for (const char *c = txt; *c != '\0'; ++c)
