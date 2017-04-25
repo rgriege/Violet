@@ -383,13 +383,16 @@ void         gui_style_default(gui_t *gui);
 #include FT_FREETYPE_H
 #include <GL/glew.h>
 #include <math.h>
-#define PNG_SKIP_SETJMP_CHECK
-#include <png.h>
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+// #define STB_IMAGE_STATIC
+#define STB_ONLY_PNG
+#include "stb_image.h"
 
 #include "violet/array.h"
 #include "violet/fmath.h"
@@ -493,101 +496,13 @@ void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n)
 b32 texture_load_png(texture_t *tex, const char *filename)
 {
 	b32 ret = false;
-#if PNG_LIBPNG_VER_MINOR == 6 // 1.6
-	png_image image = {0};
-	png_bytep buf;
-
-	image.version = PNG_IMAGE_VERSION;
-	if (png_image_begin_read_from_file(&image, filename)) {
-		image.format = PNG_FORMAT_RGBA;
-		buf = malloc(PNG_IMAGE_SIZE(image));
-		if (buf) {
-			if (png_image_finish_read(&image, NULL, buf, 0, NULL)) {
-				texture_init(tex, image.width, image.height, GL_RGBA, buf);
-				ret = true;
-			} else {
-				log_write("png '%s' read: %s", filename, image.message);
-				png_image_free(&image);
-			}
-			free(buf);
-		} else {
-			log_write("png read: out of memory");
-		}
+	int w, h;
+	u8 *image = stbi_load(filename, &w, &h, NULL, 4);
+	if (image) {
+		texture_init(tex, w, h, GL_RGBA, image);
+		stbi_image_free(image);
+		ret = true;
 	}
-#else // fallback to 1.2
-	FILE *fp;
-	png_byte header[8];
-	png_structp png_ptr;
-	png_infop info_ptr;
-	png_uint_32 width, height;
-	int bit_depth, color_type;
-	GLint format;
-	int bytes_per_row;
-	png_bytep image_data, *row_pointers;
-
-	if (!(fp = fopen(filename, "rb")))
-		goto out;
-
-	if (fread(header, 1, 8, fp) != 8)
-		goto err_png;
-	if (png_sig_cmp(header, 0, 8))
-		goto err_png;
-
-	if (!(png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL)))
-		goto err_png;
-
-	if (!(info_ptr = png_create_info_struct(png_ptr))) {
-		png_destroy_read_struct(&png_ptr, png_infopp_NULL, png_infopp_NULL);
-		goto err_png;
-	}
-
-	if (setjmp(png_jmpbuf(png_ptr)))
-		goto err;
-
-	png_init_io(png_ptr, fp);
-	png_set_sig_bytes(png_ptr, 8);
-	png_read_info(png_ptr, info_ptr);
-	png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
-	             NULL, NULL, NULL);
-
-	if (bit_depth != 8)
-		goto err;
-
-	switch (color_type) {
-		case PNG_COLOR_TYPE_RGB:
-			format = GL_RGB;
-			break;
-		case PNG_COLOR_TYPE_RGB_ALPHA:
-			format = GL_RGBA;
-			break;
-		default:
-			goto err;
-	}
-
-	png_read_update_info(png_ptr, info_ptr);
-
-	bytes_per_row = png_get_rowbytes(png_ptr, info_ptr);
-	bytes_per_row += 3 - ((bytes_per_row - 1) % 4); // 4-byte aligned
-
-	image_data = malloc(bytes_per_row * height * sizeof(png_byte) + 15);
-	row_pointers = malloc(height * sizeof(png_bytep));
-	for (u32 i = 0; i < height; ++i)
-		row_pointers[i] = image_data + i * bytes_per_row;
-
-	png_read_image(png_ptr, row_pointers);
-
-	texture_init(tex, width, height, format, image_data);
-	ret = true;
-
-	free(row_pointers);
-	free(image_data);
-
-err:
-	png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
-err_png:
-	fclose(fp);
-out:
-#endif // PNG_LIBPNG_VER_MINOR
 	return ret;
 }
 
@@ -1385,6 +1300,12 @@ typedef struct scissor
 	s32 x, y, w, h;
 } scissor_t;
 
+typedef struct cached_img
+{
+	img_t img;
+	u32 id;
+} cached_img_t;
+
 typedef struct gui_t
 {
 	timepoint_t creation_time;
@@ -1418,6 +1339,7 @@ typedef struct gui_t
 	u32 repeat_interval;
 	u32 repeat_timer;
 	font_t *fonts;
+	cached_img_t *imgs;
 	gui_style_t default_style;
 	gui_style_t style;
 	u64 hot_id;
@@ -1522,6 +1444,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_text;
 
 	gui->fonts = array_create();
+	gui->imgs = array_create();
 
 	gui->creation_time = time_current();
 	gui->frame_start_time = gui->creation_time;
@@ -1572,6 +1495,9 @@ void gui_destroy(gui_t *gui)
 		font_destroy(f);
 	array_destroy(gui->fonts);
 	font_uninstall();
+	array_foreach(gui->imgs, cached_img_t, ci)
+		img_destroy(&ci->img);
+	array_destroy(gui->imgs);
 	shader_program_destroy(&gui->shader);
 	texture_destroy(&gui->texture_white);
 	glDeleteBuffers(3, gui->vbo);
@@ -2008,13 +1934,28 @@ void gui_poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 	}
 }
 
+static
+cached_img_t *gui__find_img(gui_t *gui, u32 id)
+{
+	array_foreach(gui->imgs, cached_img_t, ci)
+		if (ci->id == id)
+			return ci;
+	return NULL;
+}
+
 void gui_img(gui_t *gui, s32 x, s32 y, const char *filename)
 {
-	img_t img;
-	if (!img_load(&img, filename))
-		return;
-	texture__render(gui, &img.texture, x, y, 1.f, 1.f, g_white);
-	img_destroy(&img);
+	const u32 id = hash(filename);
+	cached_img_t *ci = gui__find_img(gui, id);
+	if (!ci) {
+		ci = array_append_null(gui->imgs);
+		ci->id = id;
+		if (!img_load(&ci->img, filename)) {
+			array_pop(gui->imgs);
+			return;
+		}
+	}
+	texture__render(gui, &ci->img.texture, x, y, 1.f, 1.f, g_white);
 }
 
 static inline
