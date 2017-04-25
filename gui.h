@@ -1439,13 +1439,13 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_sdl;
 	}
 
-	// Use OpenGL 3.1 core
+	// Use OpenGL 3.3 core
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	// SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	if (SDL_GetNumVideoDisplays() < 1) {
 		log_write("could not create window: no video displays found");
@@ -1513,6 +1513,10 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	if (!shader_program_load_from_strings(&gui->shader, g_vertex_shader,
 	                                      g_fragment_shader))
 		goto err_white;
+
+	glBindAttribLocation(gui->shader.handle, VBO_VERT, "position");
+	glBindAttribLocation(gui->shader.handle, VBO_COLOR, "color");
+	glBindAttribLocation(gui->shader.handle, VBO_TEX, "tex_coord");
 
 	if (!font_install())
 		goto err_text;
@@ -2953,7 +2957,7 @@ void gui_style_default(gui_t *gui)
 }
 
 static const char *g_vertex_shader =
-	"#version 140\n"
+	"#version 330\n"
 	"in vec2 position;\n"
 	"in vec4 color;\n"
 	"in vec2 tex_coord;\n"
@@ -2969,7 +2973,7 @@ static const char *g_vertex_shader =
 	"}";
 
 static const char *g_fragment_shader =
-	"#version 140\n"
+	"#version 330\n"
 	"in vec2 TexCoord;\n"
 	"in vec4 Color;\n"
 	"uniform sampler2D tex;\n"
