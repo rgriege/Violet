@@ -146,29 +146,17 @@ typedef enum gui_align
 	GUI_ALIGN_BOTTOM = 0x20,
 } gui_align_t;
 
-typedef struct glyph_t
-{
-	char charcode;
-	texture_t texture;
-	s32 offset_x, offset_y;
-	u32 advance;
-} glyph_t;
-
 typedef struct font_t
 {
 	const char *filename;
 	u32 sz;
-	glyph_t *glyphs;
-	u32 glyph_idcs[128];
-	u32 space_width;
-	u32 newline_dist;
+	s32 ascent, descent, line_gap, newline_dist;
+	void *char_info;
+	texture_t texture;
 } font_t;
 
-b32  font_install();
-b32  font_uninstall();
 b32  font_load(font_t *f, const char *filename, u32 sz);
 void font_destroy(font_t *f);
-void font_bounds(font_t *f, const char *txt, s32 *x, s32 *y, gui_align_t align);
 
 
 /* General Gui */
@@ -379,8 +367,6 @@ void         gui_style_default(gui_t *gui);
 #ifdef GUI_IMPLEMENTATION
 
 #include <ctype.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
 #include <GL/glew.h>
 #include <math.h>
 #define SDL_MAIN_HANDLED
@@ -393,6 +379,18 @@ void         gui_style_default(gui_t *gui);
 // #define STB_IMAGE_STATIC
 #define STB_ONLY_PNG
 #include "stb_image.h"
+#define STB_RECT_PACK_IMPLEMENTATION
+// #define STBRP_STATIC
+#include "stb_rect_pack.h"
+#define STB_TRUETYPE_IMPLEMENTATION
+// #define STBTT_STATIC
+#define stbtt_uint8 u8
+#define stbtt_int8 s8
+#define stbtt_uint16 u16
+#define stbtt_int16 s16
+#define stbtt_uint32 u32
+#define stbtt_int32 s32
+#include "stb_truetype.h"
 
 #include "violet/array.h"
 #include "violet/fmath.h"
@@ -755,169 +753,129 @@ void img_destroy(img_t *img)
 
 /* Font */
 
-FT_Library g_freetype_lib = {0};
+/* NOTE(rgriege): based on a cursory glance at C:\Windoge\Fonts,
+ * 1MB seems to be sufficient for most fonts */
+#define TTF_BUFFER_SZ (1 << 20)
+static unsigned char ttf_buffer[TTF_BUFFER_SZ];
 
-b32 font_install()
+static
+int rgtt_PackFontRanges(stbtt_pack_context *spc, stbtt_fontinfo *info,
+                        stbtt_pack_range *ranges, int num_ranges)
 {
-	assert(!g_freetype_lib);
-	FT_Error err = FT_Init_FreeType(&g_freetype_lib);
-	if (err != FT_Err_Ok) {
-		log_write("FT_Init_FreeType error: %d", err);
-		return false;
-	}
-	return true;
-}
+	int i, j, n, return_value = 1;
+	stbrp_rect *rects;
 
-b32 font_uninstall()
-{
-	assert(g_freetype_lib);
-	FT_Error err = FT_Done_FreeType(g_freetype_lib);
-	if (err != FT_Err_Ok) {
-		log_write("FT_Done_FreeType error: %d", err);
-		return false;
-	}
-	g_freetype_lib = NULL;
-	return true;
+	// flag all characters as NOT packed
+	for (i=0; i < num_ranges; ++i)
+		for (j=0; j < ranges[i].num_chars; ++j)
+			ranges[i].chardata_for_range[j].x0 =
+				ranges[i].chardata_for_range[j].y0 =
+				ranges[i].chardata_for_range[j].x1 =
+				ranges[i].chardata_for_range[j].y1 = 0;
+
+	n = 0;
+	for (i = 0; i < num_ranges; ++i)
+		n += ranges[i].num_chars;
+
+	rects = STBTT_malloc(sizeof(*rects) * n, spc->user_allocator_context);
+	if (!rects)
+		return 0;
+
+	n = stbtt_PackFontRangesGatherRects(spc, info, ranges, num_ranges, rects);
+
+	stbtt_PackFontRangesPackRects(spc, rects, n);
+
+	return_value = stbtt_PackFontRangesRenderIntoRects(spc, info, ranges,
+	                                                   num_ranges, rects);
+
+	STBTT_free(rects, spc->user_allocator_context);
+	return return_value;
 }
 
 static
-void glyph__destroy(glyph_t *g)
+int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
+                       float font_size, int first_unicode_codepoint_in_range,
+                       int num_chars_in_range,
+                       stbtt_packedchar *chardata_for_range)
 {
-	texture_destroy(&g->texture);
-}
-
-static
-int glyph__sort(const void *_lhs, const void *_rhs)
-{
-	const glyph_t *lhs = _lhs;
-	const glyph_t *rhs = _rhs;
-	return lhs->charcode - rhs->charcode;
-}
-
-static
-glyph_t *glyph__find(font_t *font, char charcode)
-{
-	u32 glyph_idx;
-	assert(charcode >= 0);
-	glyph_idx = font->glyph_idcs[(u32)charcode];
-	return glyph_idx != UINT_MAX ? &font->glyphs[glyph_idx] : NULL;
+	stbtt_pack_range range;
+	range.first_unicode_codepoint_in_range = first_unicode_codepoint_in_range;
+	range.array_of_unicode_codepoints = NULL;
+	range.num_chars                   = num_chars_in_range;
+	range.chardata_for_range          = chardata_for_range;
+	range.font_size                   = font_size;
+	return rgtt_PackFontRanges(spc, info, &range, 1);
 }
 
 b32 font_load(font_t *f, const char *filename, u32 sz)
 {
+#define BMP_DIM 512
 	b32 retval = false;
+	unsigned char bitmap[4*BMP_DIM*BMP_DIM], row[4*BMP_DIM];
+	FILE *fp;
+	stbtt_pack_context context;
+	stbtt_fontinfo info;
+	int ascent, descent, line_gap;
+	r32 scale;
 
-	FT_Face face;
-	FT_Error err = FT_New_Face(g_freetype_lib, filename, 0, &face);
-	if (err != FT_Err_Ok) {
-		log_write("FT_New_Face error: %d", err);
-		return retval;
+	fp = fopen(filename, "rb");
+	if (!fp)
+		goto out;
+
+	if (fread(ttf_buffer, 1, TTF_BUFFER_SZ, fp) == 0) {
+		fclose(fp);
+		goto out;
+	}
+	fclose(fp);
+
+	if (!stbtt_InitFont(&info, ttf_buffer,
+	                    stbtt_GetFontOffsetForIndex(ttf_buffer, 0)))
+		goto out;
+
+	/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
+	memset(bitmap, 0, 4*BMP_DIM*BMP_DIM);
+
+	if (!stbtt_PackBegin(&context, bitmap, BMP_DIM, BMP_DIM, 4*BMP_DIM, 1, NULL))
+		goto out;
+
+	/* TODO(rgriege): oversample with smaller fonts */
+	// stbtt_PackSetOversampling(&context, 2, 2);
+
+	f->char_info = malloc(95 * sizeof(stbtt_packedchar));
+	if (!rgtt_PackFontRange(&context, &info, sz, 32, 95, f->char_info))
+		goto pack_fail;
+
+	stbtt_PackEnd(&context);
+
+	for (int i = 0; i < BMP_DIM; ++i) {
+		memset(row, ~0, 4*BMP_DIM);
+		for (int j = 0; j < BMP_DIM; ++j)
+			row[j*4+3] = bitmap[4*i*BMP_DIM+j];
+		memcpy(&bitmap[4*i*BMP_DIM], row, 4*BMP_DIM);
 	}
 
-	err = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
-	if (err != FT_Err_Ok) {
-		log_write("FT_Select_Charmap error: %d", err);
-		goto err_face;
-	}
-
-	err = FT_Set_Char_Size(face, 0, sz * 64, 0, 0);
-	if (err != FT_Err_Ok) {
-		log_write("FT_Set_Char_Size error: %d", err);
-		goto err_face;
-	}
+	texture_init(&f->texture, BMP_DIM, BMP_DIM, GL_RGBA, bitmap);
 
 	f->filename = filename;
 	f->sz = sz;
-	f->space_width = sz; // default
-	f->newline_dist = face->size->metrics.height >> 6;
-	memset(f->glyph_idcs, ~0, 128 * sizeof(u32));
-	f->glyphs = array_create();
-	array_reserve(f->glyphs, 128);
-
-
-	FT_ULong charcode;
-	FT_UInt glyph_idx;
-	charcode = FT_Get_First_Char(face, &glyph_idx);
-	u32 pixel_buf_sz = 16*16;
-	u8 *pixels = malloc(pixel_buf_sz);
-	s32 min_y = 0;
-	while (glyph_idx != 0) {
-		if (charcode > 127) {
-			charcode = FT_Get_Next_Char(face, charcode, &glyph_idx);
-			continue;
-		}
-
-		err = FT_Load_Glyph(face, glyph_idx, FT_LOAD_RENDER);
-		if (err != FT_Err_Ok) {
-			charcode = FT_Get_Next_Char(face, charcode, &glyph_idx);
-			log_write("FT_Load_Glyph(%s, %lu) error: 0x%x", filename, charcode, err);
-			continue;
-		}
-
-		const FT_Bitmap bitmap = face->glyph->bitmap;
-		if (bitmap.buffer) {
-			f->glyph_idcs[charcode] = array_sz(f->glyphs);
-			glyph_t *glyph = array_append_null(f->glyphs);
-			glyph->charcode = charcode;
-			// NOTE(rgriege): having issues with textures smaller than this
-			const u32 tex_height = max(16u,pow(2,ceil(log2(bitmap.rows))));
-			const u32 tex_width = max(16u,pow(2,ceil(log2(bitmap.width))));
-			const u32 tex_sz = 4*tex_width*tex_height;
-			if (tex_sz > pixel_buf_sz) {
-				free(pixels);
-				pixels = malloc(tex_sz);
-			}
-
-			for (int i = 0; i < bitmap.rows; ++i) {
-				for (int j = 0; j < bitmap.width; ++j) {
-					pixels[4*(i*tex_width+j)]   = 0xFF;
-					pixels[4*(i*tex_width+j)+1] = 0xFF;
-					pixels[4*(i*tex_width+j)+2] = 0xFF;
-					pixels[4*(i*tex_width+j)+3] = bitmap.buffer[i*bitmap.width+j];
-				}
-				memset(pixels+4*(i*tex_width+bitmap.width), 0,
-				       4*(tex_width-bitmap.width));
-			}
-			memset(pixels+4*(bitmap.rows*tex_width), 0,
-			       4*tex_width*(tex_height-bitmap.rows));
-
-			texture_init(&glyph->texture, tex_width, tex_height, GL_RGBA, pixels);
-
-			glyph->offset_x = face->glyph->bitmap_left;
-			glyph->offset_y = face->glyph->bitmap_top - tex_height;
-			const s32 y = face->glyph->bitmap_top - bitmap.rows;
-			if (y < min_y)
-				min_y = y;
-			glyph->advance = face->glyph->advance.x >> 6;
-		}
-		else if (charcode == 32) {
-			f->space_width = face->glyph->advance.x >> 6;
-		} else {
-			log_write("Charcode has no bitmap: %lu", charcode);
-		}
-
-		charcode = FT_Get_Next_Char(face, charcode, &glyph_idx);
-	}
-
-	array_foreach(f->glyphs, glyph_t, g)
-		g->offset_y -= min_y;
-	array_qsort(f->glyphs, glyph__sort);
-
-	free(pixels);
+	stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
+	scale = stbtt_ScaleForPixelHeight(&info, sz);
+	f->ascent = scale * ascent;
+	f->descent = scale * descent;
+	f->line_gap = scale * line_gap;
+	f->newline_dist = scale * (ascent - descent + line_gap);
 	retval = true;
+	goto out;
 
-err_face:
-	err = FT_Done_Face(face);
-	if (err != FT_Err_Ok)
-		log_write("FT_Done_Face error: %d", err);
+pack_fail:
+	free(f->char_info);
+out:
 	return retval;
 }
 
 void font_destroy(font_t *f)
 {
-	array_foreach(f->glyphs, glyph_t, g)
-		glyph__destroy(g);
-	array_destroy(f->glyphs);
+	free(f->char_info);
 }
 
 static
@@ -940,25 +898,17 @@ void font__align_anchor(s32 *x, s32 *y, s32 w, s32 h, gui_align_t align)
 static
 s32 font__line_offset_x(font_t *f, const char *txt, gui_align_t align)
 {
-	s32 width = 0;
-	glyph_t *glyph;
+	r32 width = 0, y = 0;
+	stbtt_aligned_quad q;
 
 	for (const char *c = txt; *c != '\0'; ++c) {
-		switch (*c) {
-		case ' ':
-			width += f->space_width;
-		break;
-		case '\r':
+		if (*c >= 32 && *c < 127)
+			stbtt_GetPackedQuad(f->char_info, f->texture.width, f->texture.height,
+			                    *c - 32, &width, &y, &q, 1);
+		else if (*c == '\r')
 			goto out;
-		break;
-		default:
-			glyph = glyph__find(f, *c);
-			if (glyph)
-				width += glyph->advance;
-			else
-				log_write("unknown character: '%u'", *c);
-		break;
-		}
+		else
+			log_write("unknown character: '%u'", *c);
 	}
 out:
 	if (align & GUI_ALIGN_CENTER)
@@ -974,42 +924,22 @@ s32 font__offset_y(font_t *f, const char *txt, gui_align_t align)
 {
 	s32 height;
 	if (align & GUI_ALIGN_MIDDLE) {
-		height = f->newline_dist;
+		height = 1;
 		for (const char *c = txt; *c != '\0'; ++c)
 			if (*c == '\r')
-				height += f->newline_dist;
-		return height / 2 - f->newline_dist;
+				++height;
+		return   height % 2 == 0
+		       ? -f->descent + f->line_gap + f->newline_dist * (height / 2 - 1)
+		       :   -f->descent - (f->ascent - f->descent) / 2
+		         + f->newline_dist * (height / 2);
 	} else if (align & GUI_ALIGN_TOP) {
-		return -(s32)f->newline_dist;
+		return -f->ascent - f->line_gap / 2;
 	} else /* default to GUI_ALIGN_BOTTOM */ {
-		height = 0;
+		height = -f->descent + f->line_gap / 2;
 		for (const char *c = txt; *c != '\0'; ++c)
 			if (*c == '\r')
 				height += f->newline_dist;
 		return height;
-	}
-}
-
-void font_bounds(font_t *f, const char *txt, s32 *x, s32 *y, gui_align_t align)
-{
-	const s32 x_orig = *x;
-	glyph_t *glyph;
-
-	for (const char *c = txt; *c != '\0'; ++c) {
-		switch (*c) {
-		case ' ':
-			*x += f->space_width;
-		break;
-		case '\r':
-			*y -= f->newline_dist;
-			*x = x_orig;
-		break;
-		default:
-			glyph = glyph__find(f, *c);
-			if (glyph)
-				*x += glyph->advance;
-		break;
-		}
 	}
 }
 
@@ -1205,7 +1135,7 @@ static const gui_style_t g_default_style = {
 	.text_color = gi_white,
 	.hot_text_color = gi_white,
 	.active_text_color = gi_white,
-	.font_sz = 12,
+	.font_sz = 14,
 	.panel_padding = 10.f,
 };
 
@@ -1220,7 +1150,7 @@ static const gui_style_t g_invis_style = {
 	.text_color = gi_nocolor,
 	.hot_text_color = gi_nocolor,
 	.active_text_color = gi_nocolor,
-	.font_sz = 12,
+	.font_sz = 14,
 	.panel_padding = 10.f,
 };
 
@@ -1440,9 +1370,6 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	glBindAttribLocation(gui->shader.handle, VBO_COLOR, "color");
 	glBindAttribLocation(gui->shader.handle, VBO_TEX, "tex_coord");
 
-	if (!font_install())
-		goto err_text;
-
 	gui->fonts = array_create();
 	gui->imgs = array_create();
 
@@ -1469,8 +1396,6 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	goto out;
 
-err_text:
-	shader_program_destroy(&gui->shader);
 err_white:
 	texture_destroy(&gui->texture_white);
 	glDeleteBuffers(3, gui->vbo);
@@ -1494,7 +1419,6 @@ void gui_destroy(gui_t *gui)
 	array_foreach(gui->fonts, font_t, f)
 		font_destroy(f);
 	array_destroy(gui->fonts);
-	font_uninstall();
 	array_foreach(gui->imgs, cached_img_t, ci)
 		img_destroy(&ci->img);
 	array_destroy(gui->imgs);
@@ -1658,6 +1582,44 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+1], 0, 1);
 	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+2], 1, 1);
 	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+3], 1, 0);
+
+	gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
+	gui->draw_calls[gui->draw_call_cnt].cnt = 4;
+	gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLE_FAN;
+	gui->draw_calls[gui->draw_call_cnt].tex = texture->handle;
+	++gui->draw_call_cnt;
+
+	gui->vert_cnt += 4;
+}
+
+static
+void text__render(gui_t *gui, const texture_t *texture, r32 yb, r32 x0, r32 y0,
+                  r32 x1, r32 y1, r32 s0, r32 t0, r32 s1, r32 t1, color_t color)
+{
+	r32 dy;
+
+	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
+	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
+
+	/* TODO(rgriege): figure out why these come in upside-down */
+	dy = y1 - y0;
+	y0 = yb + (yb - y1);
+	y1 = y0 + dy;
+
+	v2f_set(&gui->verts[gui->vert_cnt],   x0, y1);
+	v2f_set(&gui->verts[gui->vert_cnt+1], x0, y0);
+	v2f_set(&gui->verts[gui->vert_cnt+2], x1, y0);
+	v2f_set(&gui->verts[gui->vert_cnt+3], x1, y1);
+
+	gui->vert_colors[gui->vert_cnt]   = color;
+	gui->vert_colors[gui->vert_cnt+1] = color;
+	gui->vert_colors[gui->vert_cnt+2] = color;
+	gui->vert_colors[gui->vert_cnt+3] = color;
+
+	v2f_set(&gui->vert_tex_coords[gui->vert_cnt],   s0, 1.f-t0);
+	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+1], s0, 1.f-t1);
+	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+2], s1, 1.f-t1);
+	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+3], s1, 1.f-t0);
 
 	gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
 	gui->draw_calls[gui->draw_call_cnt].cnt = 4;
@@ -1977,39 +1939,32 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 }
 
 static
-void gui__txt(gui_t *gui, s32 *x, s32 *y, s32 sz, const char *txt,
+void gui__txt(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
               color_t color, gui_align_t align)
 {
 	font_t *font;
-	glyph_t *glyph;
-	const s32 x_orig = *x;
+	r32 x = *ix, y = *iy;
+	stbtt_aligned_quad q;
 
 	font = gui__get_font(gui, sz);
 	assert(font);
 
-	*x += font__line_offset_x(font, txt, align);
-	*y += font__offset_y(font, txt, align);
+	x += font__line_offset_x(font, txt, align);
+	y += font__offset_y(font, txt, align);
 
 	for (const char *c = txt; *c != '\0'; ++c) {
-		switch (*c) {
-		case ' ':
-			*x += font->space_width;
-		break;
-		case '\r':
-			*y -= font->newline_dist;
-			*x = x_orig + font__line_offset_x(font, c + 1, align);
-		break;
-		default:
-			glyph = glyph__find(font, *c);
-			if (glyph) {
-				/* NOTE(rgriege): looks bad if offset not rounded */
-				texture__render(gui, &glyph->texture, *x + glyph->offset_x,
-				                *y + glyph->offset_y, 1.f, 1.f, color);
-				*x += glyph->advance;
-			}
-		break;
+		if (*c >= 32 && *c < 127) {
+			stbtt_GetPackedQuad(font->char_info, font->texture.width,
+			                    font->texture.height, *c - 32, &x, &y, &q, 1);
+			text__render(gui, &font->texture, y, q.x0, q.y0, q.x1, q.y1, q.s0, q.t0,
+			             q.s1, q.t1, color);
+		} else if (*c == '\r') {
+			y -= font->newline_dist;
+			x = *ix + font__line_offset_x(font, c + 1, align);
 		}
 	}
+	*ix = x;
+	*iy = y;
 }
 
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
