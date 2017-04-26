@@ -218,6 +218,7 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t line
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t line);
 void gui_poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t line);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
+void gui_img_scaled(gui_t *gui, s32 x, s32 y, r32 sx, r32 sy, const img_t *img);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_t align);
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
@@ -350,7 +351,14 @@ typedef struct gui_style_t
 	color_t hot_text_color;
 	color_t active_text_color;
 	u32 font_sz;
-	r32 panel_padding;
+
+	struct
+	{
+		color_t bg_color;
+		color_t border_color;
+		color_t text_color;
+		r32 padding;
+	} panel;
 } gui_style_t;
 
 static const gui_style_t g_invis_style;
@@ -1136,7 +1144,12 @@ static const gui_style_t g_default_style = {
 	.hot_text_color = gi_white,
 	.active_text_color = gi_white,
 	.font_sz = 14,
-	.panel_padding = 10.f,
+
+	.panel = {
+		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
+		.border_color = gi_white,
+		.padding = 10.f,
+	},
 };
 
 static const gui_style_t g_invis_style = {
@@ -1151,7 +1164,12 @@ static const gui_style_t g_invis_style = {
 	.hot_text_color = gi_nocolor,
 	.active_text_color = gi_nocolor,
 	.font_sz = 14,
-	.panel_padding = 10.f,
+
+	.panel = {
+		.bg_color = gi_nocolor,
+		.border_color = gi_nocolor,
+		.padding = 10.f,
+	},
 };
 
 static
@@ -1905,19 +1923,24 @@ cached_img_t *gui__find_img(gui_t *gui, u32 id)
 	return NULL;
 }
 
-void gui_img(gui_t *gui, s32 x, s32 y, const char *filename)
+void gui_img(gui_t *gui, s32 x, s32 y, const char *fname)
 {
-	const u32 id = hash(filename);
+	const u32 id = hash(fname);
 	cached_img_t *ci = gui__find_img(gui, id);
 	if (!ci) {
 		ci = array_append_null(gui->imgs);
 		ci->id = id;
-		if (!img_load(&ci->img, filename)) {
+		if (!img_load(&ci->img, fname)) {
 			array_pop(gui->imgs);
 			return;
 		}
 	}
-	texture__render(gui, &ci->img.texture, x, y, 1.f, 1.f, g_white);
+	gui_img_scaled(gui, x, y, 1.f, 1.f, &ci->img);
+}
+
+void gui_img_scaled(gui_t *gui, s32 x, s32 y, r32 sx, r32 sy, const img_t *img)
+{
+	texture__render(gui, &img->texture, x, y, sx, sy, g_white);
 }
 
 static inline
@@ -2484,12 +2507,12 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	assert(!gui->panel);
 
-	if (gui->style.panel_padding >= 1.f) {
-		padding.x = gui->style.panel_padding;
-		padding.y = gui->style.panel_padding;
+	if (gui->style.panel.padding >= 1.f) {
+		padding.x = gui->style.panel.padding;
+		padding.y = gui->style.panel.padding;
 	} else {
-	  padding.x = panel->width * gui->style.panel_padding;
-	  padding.y = panel->height * gui->style.panel_padding;
+	  padding.x = panel->width * gui->style.panel.padding;
+	  padding.y = panel->height * gui->style.panel.padding;
 	}
 
 	/* titlebar */
@@ -2605,8 +2628,8 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	gui->panel = panel;
 
-	gui_rect(gui, panel->x, panel->y, panel->width, panel->height, g_nocolor,
-	         g_white);
+	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
+	         gui->style.panel.bg_color, gui->style.panel.border_color);
 
 	gui_mask(gui, panel->x + padding.x, panel->y + padding.y,
 	         panel->width - padding.x * 2, body_height - padding.y * 2);
@@ -2639,20 +2662,20 @@ void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols)
 	assert(num_cols <= GUI_PANEL_MAX_COLS);
 
 	gui->panel->pos_x = gui->panel->x - gui->panel->scroll_x;
-	if (gui->style.panel_padding >= 1.f)
-		gui->panel->pos_x += gui->style.panel_padding;
+	if (gui->style.panel.padding >= 1.f)
+		gui->panel->pos_x += gui->style.panel.padding;
 	else
-		gui->panel->pos_x += gui->panel->width * gui->style.panel_padding;
+		gui->panel->pos_x += gui->panel->width * gui->style.panel.padding;
 	gui->panel->pos_y -= height;
 	gui->panel->row.height = height;
 
 	gui->panel->row.current_col = gui->panel->row.cols;
 	gui->panel->row.num_cols = num_cols;
 
-	if (gui->style.panel_padding >= 1.f)
-		padding = 2 * gui->style.panel_padding;
+	if (gui->style.panel.padding >= 1.f)
+		padding = 2 * gui->style.panel.padding;
 	else
-		padding = 2 * gui->style.panel_padding * gui->panel->width;
+		padding = 2 * gui->style.panel.padding * gui->panel->width;
 	row_width = padding;
 	unspecified_width_col_cnt = 0;
 	for (u32 i = 0; i < num_cols; ++i) {
@@ -2693,9 +2716,9 @@ void pgui_row_break(gui_t *gui, u32 top_y, u32 bottom_y, r32 width_ratio)
 
 	pgui_row(gui, top_y + bottom_y, 1.f);
 	pgui_spacer(gui);
-	gui_line(gui, gui->panel->x + dx, gui->panel->pos_y + top_y,
+	gui_line(gui, gui->panel->x + dx, gui->panel->pos_y + bottom_y,
 	         gui->panel->x + gui->panel->width - dx,
-	         gui->panel->pos_y + top_y, 1, g_white);
+	         gui->panel->pos_y + bottom_y, 1, g_white);
 }
 
 static
@@ -2724,7 +2747,8 @@ void pgui_txt(gui_t *gui, const char *str, gui_align_t align)
 	y = gui->panel->pos_y;
 	font__align_anchor(&x, &y, *gui->panel->row.current_col,
 	                   gui->panel->row.height, align);
-	gui_txt(gui, x, y, gui->style.font_sz, str, g_white, align);
+	gui_txt(gui, x, y, gui->style.font_sz, str, gui->style.panel.text_color,
+	        align);
 	pgui__col_advance(gui->panel);
 }
 
