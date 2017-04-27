@@ -1211,11 +1211,8 @@ static inline
 b32 gui__convert_scancode(SDL_Scancode code, b32 caps, char *c)
 {
 	const SDL_Keycode key = SDL_GetKeyFromScancode(code);
-	if (key < 128) {
-		if (caps)
-			*c = g_caps[key];
-		else
-			*c = key;
+	if (key >= 0 && key < 127) {
+		*c = caps ? g_caps[key] : key;
 	} else if (key >= SDLK_KP_DIVIDE && key <= SDLK_KP_PERIOD) {
 		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = {
 			'/', '*', '-', '+', KEY_RETURN, '1', '2', '3', '4', '5', '6',
@@ -2146,7 +2143,9 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (gui->focus_id == id) {
 		if (gui->key != 0) {
 			b32 modify = false;
-			if (gui->key != gui->prev_key) {
+			if (   gui->key != gui->prev_key
+			    && g_caps[(u8)gui->key] != gui->prev_key
+			    && g_caps[(u8)gui->prev_key] != gui->key) {
 				modify = true;
 				gui->repeat_timer = gui->repeat_delay;
 			} else if (gui__can_repeat(gui)) {
