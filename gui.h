@@ -206,6 +206,7 @@ char key_press(const gui_t *gui);
 char key_down(const gui_t *gui);
 char key_release(const gui_t *gui);
 b32 key_down_shift(const gui_t *gui);
+b32 key_down_ctrl(const gui_t *gui);
 
 
 
@@ -1868,6 +1869,11 @@ b32 key_down_shift(const gui_t *gui)
 	return SDL_GetModState() & KMOD_SHIFT;
 }
 
+b32 key_down_ctrl(const gui_t *gui)
+{
+	return SDL_GetModState() & KMOD_CTRL;
+}
+
 
 
 /* Immediate Mode API */
@@ -2152,17 +2158,29 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				modify = true;
 			}
 			if (modify) {
-				const u32 len = strlen(txt);
+				u32 len = strlen(txt);
 				if (gui->key == KEY_BACKSPACE) {
 					if (len > 0)
 						txt[len-1] = '\0';
 				} else if (gui->key == KEY_RETURN) {
 					gui->active_id = 0;
 					complete = true;
+				} else if (gui->key == 'v' && key_down_ctrl(gui)) {
+					if (SDL_HasClipboardText()) {
+						char *clipboard = SDL_GetClipboardText();
+						if (clipboard) {
+							char c, *clipboard_it = clipboard;
+							while ((c = *clipboard_it++) && len < n-1)
+								txt[len++] = c;
+							txt[len] = '\0';
+							SDL_free(clipboard);
+						}
+					}
 				} else if (   gui->key >= 32
+				           && len < n-1
 				           && ((flags & NPT_NUMERIC) == 0 || isdigit(gui->key))) {
-					char buf[2] = { gui->key, '\0' };
-					strncat(txt, buf, n-len-1);
+					txt[len++] = gui->key;
+					txt[len] = '\0';
 				}
 			}
 		} else {
