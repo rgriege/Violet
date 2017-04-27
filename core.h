@@ -44,6 +44,12 @@ typedef union uintptr
 	void *p;
 } uintptr;
 
+typedef union intptr
+{
+	intptr_t i;
+	void *p;
+} intptr;
+
 
 /* Utility */
 

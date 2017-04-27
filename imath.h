@@ -73,6 +73,7 @@ typedef struct box2i
 } box2i;
 
 IMDEF void box2i_from_dims(box2i *b, s32 left, s32 top, s32 right, s32 bottom);
+IMDEF void box2i_from_xywh(box2i *b, s32 x, s32 y, s32 w, s32 h);
 IMDEF b32  box2i_contains_point(box2i b, v2i p);
 IMDEF void box2i_clamp_point(box2i b, v2i *p);
 IMDEF b32  box2i_eq(box2i lhs, box2i rhs);
@@ -167,6 +168,14 @@ IMDEF void box2i_from_dims(box2i *box, s32 left, s32 top, s32 right, s32 bottom)
 	box->min.y = bottom;
 	box->max.x = right;
 	box->max.y = top;
+}
+
+IMDEF void box2i_from_xywh(box2i *box, s32 x, s32 y, s32 w, s32 h)
+{
+	box->min.x = x;
+	box->min.y = y;
+	box->max.x = x + w;
+	box->max.y = y + h;
 }
 
 IMDEF b32 box2i_contains_point(box2i box, v2i point)

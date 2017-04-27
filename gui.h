@@ -299,6 +299,7 @@ typedef struct gui_panel
 	const char *title;
 	gui_panel_flags_t flags;
 	u32 id;
+	intptr userdata;
 	struct
 	{
 		u32 height;
@@ -309,6 +310,7 @@ typedef struct gui_panel
 	s32 pos_x, pos_y;
 	s32 scroll_x, scroll_y;
 	u32 required_width, required_height;
+	s32 pri;
 } gui_panel_t;
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
@@ -335,6 +337,9 @@ void      pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 void      pgui_slider_x(gui_t *gui, r32 *val);
 void      pgui_slider_y(gui_t *gui, r32 *val);
+
+void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
+int  pgui_panel_sort(const void *lhs, const void *rhs);
 
 /* Style */
 
@@ -1148,6 +1153,7 @@ static const gui_style_t g_default_style = {
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
 		.border_color = gi_white,
+		.text_color = gi_white,
 		.padding = 10.f,
 	},
 };
@@ -1168,6 +1174,7 @@ static const gui_style_t g_invis_style = {
 	.panel = {
 		.bg_color = gi_nocolor,
 		.border_color = gi_nocolor,
+		.text_color = gi_nocolor,
 		.padding = 10.f,
 	},
 };
@@ -1246,6 +1253,7 @@ typedef struct scissor
 {
 	u32 draw_call_idx, draw_call_cnt;
 	s32 x, y, w, h;
+	b32 panel_body;
 } scissor_t;
 
 typedef struct cached_img
@@ -1263,18 +1271,14 @@ typedef struct gui_t
 	SDL_GLContext gl_context;
 
 	u32 vao, vbo[VBO_COUNT];
-
 	shader_prog_t shader;
 	texture_t texture_white;
-
 	v2f verts[GUI_MAX_VERTS];
 	color_t vert_colors[GUI_MAX_VERTS];
 	v2f vert_tex_coords[GUI_MAX_VERTS];
 	u32 vert_cnt;
-
 	draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
 	u32 draw_call_cnt;
-
 	scissor_t scissors[GUI_MAX_SCISSORS];
 	u32 scissor_cnt;
 
@@ -1282,21 +1286,29 @@ typedef struct gui_t
 	v2i mouse_pos;
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
+	b32 mouse_covered_by_panel;
+
 	char prev_key, key;
 	u32 repeat_delay;
 	u32 repeat_interval;
 	u32 repeat_timer;
+
 	font_t *fonts;
 	cached_img_t *imgs;
 	gui_style_t default_style;
 	gui_style_t style;
-	u64 hot_id;
-	u64 active_id;
+
+	u64 hot_id;    /* hover */
+	u64 active_id; /* mouse down */
+	u64 focus_id;  /* widgets like input boxes change state post-click */
 	u64 active_id_at_frame_start;
+
 	v2i drag_offset;
 	char *pw_buf;
+
 	gui_panel_t *panel;
 	u32 next_panel_id;
+	s32 next_panel_pri, min_panel_pri;
 } gui_t;
 
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
@@ -1402,7 +1414,9 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->default_style = g_default_style;
 	gui_style_default(gui);
 
-	gui->hot_id = gui->active_id = 0;
+	gui->hot_id = 0;
+	gui->active_id = 0;
+	gui->focus_id = 0;
 	gui->active_id_at_frame_start = 0;
 
 	gui->drag_offset = g_v2i_zero;
@@ -1411,6 +1425,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->panel = NULL;
 	gui->next_panel_id = 1;
+	gui->min_panel_pri = 0;
 
 	goto out;
 
@@ -1488,6 +1503,7 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
 	static const v2i g_v2i_2 = { .x=2, .y=2 };
 	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
+	gui->mouse_covered_by_panel = false;
 
 	gui->prev_key = gui->key;
 	gui->key = 0;
@@ -1505,6 +1521,9 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->draw_call_cnt = 0;
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
+
+	gui->next_panel_pri = 0;
+	gui->min_panel_pri = 0;
 
 	return !quit;
 }
@@ -1660,6 +1679,16 @@ void gui__complete_scissor(gui_t *gui)
 	}
 }
 
+static
+void gui__execute_draw_calls(draw_call_t *draw_call, u32 cnt)
+{
+	for (draw_call_t *draw_call_end = draw_call + cnt;
+			 draw_call != draw_call_end; ++draw_call) {
+		glBindTexture(GL_TEXTURE_2D, draw_call->tex);
+		glDrawArrays(g_draw_call_types[draw_call->type],
+								 draw_call->idx, draw_call->cnt);
+	}
+}
 void gui_end_frame(gui_t *gui)
 {
 	float bg_color[4];
@@ -1703,17 +1732,24 @@ void gui_end_frame(gui_t *gui)
 	glUniform2f(glGetUniformLocation(gui->shader.handle, "window_halfdim"),
 	            gui->win_halfdim.x, gui->win_halfdim.y);
 
-	for (scissor_t *scissor = gui->scissors,
-	               *scissor_end = scissor + gui->scissor_cnt;
-	     scissor != scissor_end; ++scissor) {
-		glScissor(scissor->x, scissor->y, scissor->w, scissor->h);
-
-		for (draw_call_t *draw_call = gui->draw_calls + scissor->draw_call_idx,
-		                 *draw_call_end = draw_call + scissor->draw_call_cnt;
-		     draw_call != draw_call_end; ++draw_call) {
-			glBindTexture(GL_TEXTURE_2D, draw_call->tex);
-			glDrawArrays(g_draw_call_types[draw_call->type],
-			             draw_call->idx, draw_call->cnt);
+	/* render back to front */
+	for (scissor_t *scissor_first = gui->scissors,
+	               *scissor = scissor_first + gui->scissor_cnt - 1;
+	     scissor >= scissor_first; --scissor) {
+		if (scissor->panel_body) {
+			/* swap order, rendering panel bg/title/scroll behind body */
+			assert(scissor > scissor_first);
+			glScissor(scissor[-1].x, scissor[-1].y, scissor[-1].w, scissor[-1].h);
+			gui__execute_draw_calls(gui->draw_calls + scissor[-1].draw_call_idx,
+			                        scissor[-1].draw_call_cnt);
+			glScissor(scissor[0].x, scissor[0].y, scissor[0].w, scissor[0].h);
+			gui__execute_draw_calls(gui->draw_calls + scissor[0].draw_call_idx,
+			                        scissor[0].draw_call_cnt);
+			--scissor;
+		} else {
+			glScissor(scissor->x, scissor->y, scissor->w, scissor->h);
+			gui__execute_draw_calls(gui->draw_calls + scissor[0].draw_call_idx,
+			                        scissor[0].draw_call_cnt);
 		}
 			// ++draw_call_type_cnts[draw_call->type];
 
@@ -1996,7 +2032,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 	gui__txt(gui, &x, &y, sz, txt, c, align);
 }
 
-void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+void gui__mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h, b32 panel_body)
 {
 	gui__complete_scissor(gui);
 
@@ -2008,8 +2044,14 @@ void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 	gui->scissors[gui->scissor_cnt].y = y;
 	gui->scissors[gui->scissor_cnt].w = w;
 	gui->scissors[gui->scissor_cnt].h = h;
+	gui->scissors[gui->scissor_cnt].panel_body = panel_body;
 
 	++gui->scissor_cnt;
+}
+
+void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	gui__mask(gui, x, y, w, h, false);
 }
 
 void gui_unmask(gui_t *gui)
@@ -2021,9 +2063,18 @@ void gui_unmask(gui_t *gui)
 /* Widgets */
 
 static
+b32 gui__allow_new_panel_interaction(const gui_t *gui)
+{
+	return    gui->active_id == 0
+	       && !gui->mouse_covered_by_panel;
+}
+
+static
 b32 gui__allow_new_interaction(const gui_t *gui)
 {
-	return !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
+	return    gui->hot_id == 0
+	       && gui__allow_new_panel_interaction(gui)
+	       && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
 }
 
 #define GUI__DEFAULT_PANEL_ID 0
@@ -2045,7 +2096,7 @@ static
 void widget__color(const gui_t *gui, u64 id,
                    color_t *fill, color_t *outline, color_t *text)
 {
-	if (gui->active_id == id) {
+	if (gui->active_id == id || gui->focus_id == id) {
 		if (fill)
 			*fill = gui->style.active_color;
 		if (outline)
@@ -2092,7 +2143,7 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	const b32 contains_mouse = box2i_contains_point(box, gui->mouse_pos);
 	b32 complete = false;
 
-	if (gui->active_id == id) {
+	if (gui->focus_id == id) {
 		if (gui->key != 0) {
 			b32 modify = false;
 			if (gui->key != gui->prev_key) {
@@ -2119,7 +2170,14 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->repeat_timer = gui->repeat_delay;
 		}
 		if (mouse_press(gui, MB_LEFT) && !contains_mouse)
+			gui->focus_id = 0;
+	} else if (gui->active_id == id) {
+		if (mouse_release(gui, MB_LEFT)) {
+			if (contains_mouse)
+				gui->focus_id = id;
 			gui->active_id = 0;
+			gui->repeat_timer = gui->repeat_delay;
+		}
 	} else if (gui->hot_id == id) {
 		if (!contains_mouse) {
 			gui->hot_id = 0;
@@ -2148,7 +2206,8 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	} else {
 		gui__txt(gui, &x, &y, gui->style.font_sz, txt, text_color, align);
 	}
-	if (gui->active_id == id) {
+	if (gui->focus_id == id) {
+		/* TODO(rgriege): should be from y to y + font->ascent */
 		const u32 milli_since_creation =
 			time_diff_milli(gui->creation_time, gui->frame_start_time);
 		if (milli_since_creation % 1000 < 500)
@@ -2275,6 +2334,7 @@ void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	assert(*val >= 0.f && *val <= 1.f);
 
 	const u64 id = gui__widget_id(x, y, panel_id);
+	color_t fill, outline;
 	box2i box;
 	if (orientation == GUI__SLIDER_Y) {
 		box.min = (v2i){ .x=x, .y=y+(h-hnd_len)**val };
@@ -2314,20 +2374,15 @@ void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 		gui->hot_id = id;
 	}
 
-	const color_t outline = gui->style.outline_color;
-	if (orientation == GUI__SLIDER_Y)
+	widget__color(gui, id, &fill, NULL, NULL);
+	outline = gui->style.outline_color;
+	if (orientation == GUI__SLIDER_Y) {
 		gui_line(gui, x+w/2, y+hnd_len/2, x+w/2, y+h-hnd_len/2, 1, outline);
-	else
+		gui_rect(gui, x, y+(h-hnd_len)**val, w, hnd_len, fill, outline);
+	} else {
 		gui_line(gui, x+hnd_len/2, y+h/2, x+w-hnd_len/2, y+h/2, 1, outline);
-	color_t c = gui->style.fill_color;
-	if (gui->active_id == id)
-		c = gui->style.active_color;
-	else if (gui->hot_id == id)
-		c = gui->style.hot_color;
-	if (orientation == GUI__SLIDER_Y)
-		gui_rect(gui, x, y+(h-hnd_len)**val, w, hnd_len, c, outline);
-	else
-		gui_rect(gui, x+(w-hnd_len)**val, y, hnd_len, h, c, outline);
+		gui_rect(gui, x+(w-hnd_len)**val, y, hnd_len, h, fill, outline);
+	}
 }
 
 void gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
@@ -2405,11 +2460,11 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 }
 
 static
-b32 gui__drag(gui_t *gui, s32 *x, s32 *y, s32 *id_x, s32 *id_y,
-              b32 contains_mouse, mouse_button_t mb, u64 *id)
+b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
+              s32 *id_x, s32 *id_y, u32 panel_id, u64 *id)
 {
 	b32 retval = false;
-	*id = gui__widget_id(*id_x, *id_y, GUI__DEFAULT_PANEL_ID);
+	*id = gui__widget_id(*id_x, *id_y, panel_id);
 	if (gui->hot_id == *id) {
 		if (!contains_mouse) {
 			gui->hot_id = 0;
@@ -2422,7 +2477,7 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, s32 *id_x, s32 *id_y,
 	} else if (gui->active_id == *id) {
 		*x = gui->mouse_pos.x + gui->drag_offset.x;
 		*y = gui->mouse_pos.y + gui->drag_offset.y;
-		*id = gui__widget_id(*id_x, *id_y, GUI__DEFAULT_PANEL_ID);
+		*id = gui__widget_id(*id_x, *id_y, panel_id);
 		retval = true;
 		if (mouse_release(gui, mb))
 			gui->active_id = 0;
@@ -2434,35 +2489,43 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, s32 *id_x, s32 *id_y,
 	return retval;
 }
 
-b32 gui__drag_xy(gui_t *gui, s32 *x, s32 *y, s32 *id_x, s32 *id_y,
-                 u32 w, u32 h, mouse_button_t mb)
+static
+void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id)
+{
+	color_t fill, outline;
+	widget__color(gui, id, &fill, &outline, NULL);
+	gui_rect(gui, x, y, w, h, fill, outline);
+}
+
+b32 gui__drag_xy(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
+                 s32 *id_x, s32 *id_y, u32 panel_id)
 {
 	box2i box;
 	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
 	const b32 contains_mouse = box2i_contains_point(box, gui->mouse_pos);
 	u64 id;
-	const b32 ret = gui__drag(gui, x, y, id_x, id_y, contains_mouse, mb, &id);
-	color_t fill, outline;
-	widget__color(gui, id, &fill, &outline, NULL);
-	gui_rect(gui, *x, *y, w, h, fill, outline);
+	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb,
+	                          id_x, id_y, panel_id, &id);
+	gui__drag_render(gui, *x, *y, w, h, id);
 	return ret;
 }
 
 b32 gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb)
 {
-	return gui__drag_xy(gui, x, y, x, y, w, h, mb);
+	return gui__drag_xy(gui, x, y, w, h, mb, x, y, GUI__DEFAULT_PANEL_ID);
 }
 
 b32 gui_drag_x(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb)
 {
+	/* nullify the y change, keeping the y used for id constant */
 	s32 y_ = y;
-	return gui__drag_xy(gui, x, &y_, x, &y, w, h, mb);
+	return gui__drag_xy(gui, x, &y_, w, h, mb, x, &y, GUI__DEFAULT_PANEL_ID);
 }
 
 b32 gui_drag_y(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb)
 {
 	s32 x_ = x;
-	return gui__drag_xy(gui, &x_, y, &x, y, w, h, mb);
+	return gui__drag_xy(gui, &x_, y, w, h, mb, &x, y, GUI__DEFAULT_PANEL_ID);
 }
 
 b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
@@ -2470,7 +2533,8 @@ b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
 	const v2i pos = { .x=*x, .y=*y };
 	const b32 contains_mouse = v2i_dist_sq(pos, gui->mouse_pos) <= r*r;
 	u64 id;
-	const b32 ret = gui__drag(gui, x, y, x, y, contains_mouse, mb, &id);
+	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb,
+	                          x, y, GUI__DEFAULT_PANEL_ID, &id);
 	color_t fill, outline;
 	widget__color(gui, id, &fill, &outline, NULL);
 	gui_circ(gui, *x, *y, r, fill, outline);
@@ -2496,6 +2560,8 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->scroll_y = 0;
 	panel->required_width = 0;
 	panel->required_height = 0;
+
+	pgui_panel_to_front(gui, panel);
 }
 
 void pgui_panel(gui_t *gui, gui_panel_t *panel)
@@ -2504,6 +2570,8 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	s32 body_height, scroll, scroll_handle_sz, resize_delta;
 	r32 slider_val;
 	gui_style_t cur_style;
+	b32 dragging;
+	box2i box;
 
 	assert(!gui->panel);
 
@@ -2515,15 +2583,61 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	  padding.y = panel->height * gui->style.panel.padding;
 	}
 
+	/* resizing */
+
+	if (panel->flags & GUI_PANEL_RESIZABLE) {
+		cur_style = *gui_get_style(gui);
+		gui_style(gui, &g_invis_style);
+
+		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
+		if (gui_drag_x(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
+		               panel->height, MB_LEFT)) {
+			resize_delta = panel->x - GUI_PANEL_RESIZE_BORDER - resize.x;
+			panel->width += resize_delta;
+			panel->x -= resize_delta;
+		}
+
+		resize.x = panel->x + panel->width;
+		if (gui_drag_x(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
+		               panel->height, MB_LEFT))
+			panel->width += resize.x - (panel->x + panel->width);
+
+		resize.y = panel->y - GUI_PANEL_RESIZE_BORDER;
+		if (gui_drag_y(gui, panel->x, &resize.y, panel->width,
+		               GUI_PANEL_RESIZE_BORDER, MB_LEFT)) {
+			resize_delta = panel->y - GUI_PANEL_RESIZE_BORDER - resize.y;
+			panel->height += resize_delta;
+			panel->y -= resize_delta;
+		}
+
+		resize.y = panel->y + panel->height;
+		if (gui_drag_y(gui, panel->x, &resize.y, panel->width,
+		               GUI_PANEL_RESIZE_BORDER, MB_LEFT))
+			panel->height += resize.y - (panel->y + panel->height);
+
+		gui_style(gui, &cur_style);
+	}
+
 	/* titlebar */
 
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
 		panel->pos_y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
 
-		if (gui_drag(gui, &panel->x, &panel->pos_y, panel->width,
-		             GUI_PANEL_TITLEBAR_HEIGHT, MB_LEFT))
+		cur_style = *gui_get_style(gui);
+		gui_style(gui, &g_invis_style);
+		dragging = gui__drag_xy(gui, &panel->x, &panel->pos_y, panel->width,
+		                        GUI_PANEL_TITLEBAR_HEIGHT, MB_LEFT,
+		                        &panel->x, &panel->pos_y, panel->id);
+		gui_style(gui, &cur_style);
+		if (dragging)
 			panel->y = panel->pos_y - panel->height + GUI_PANEL_TITLEBAR_HEIGHT;
 
+		gui_mask(gui, panel->x-1, panel->y-1, panel->width+2, panel->height+2);
+		gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
+		         gui->style.panel.bg_color, gui->style.panel.border_color);
+		gui__drag_render(gui, panel->x, panel->pos_y, panel->width,
+		                 GUI_PANEL_TITLEBAR_HEIGHT,
+		                 gui__widget_id(panel->x, panel->pos_y, panel->id));
 		gui_txt(gui, panel->x + panel->width / 2,
 		        panel->pos_y + GUI_PANEL_TITLEBAR_HEIGHT / 2, gui->style.font_sz,
 		        panel->title, g_white, GUI_ALIGN_CENTER | GUI_ALIGN_MIDDLE);
@@ -2531,9 +2645,23 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->pos_y -= padding.y;
 		body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
 	} else {
+		gui_mask(gui, panel->x-1, panel->y-1, panel->width+2, panel->height+2);
+		gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
+		         gui->style.panel.bg_color, gui->style.panel.border_color);
+
+		dragging = false;
 		panel->pos_y = panel->y + panel->height - padding.y;
 		body_height = panel->height;
 	}
+
+	box2i_from_xywh(&box, panel->x, panel->y, panel->height, panel->width);
+	if (   dragging
+	    || (   gui__allow_new_panel_interaction(gui)
+	        && mouse_press(gui, MB_LEFT)
+	        && box2i_contains_point(box, gui->mouse_pos)))
+		pgui_panel_to_front(gui, panel);
+	else
+		panel->pri = gui->next_panel_pri++;
 
 	panel->pos_x = panel->x;
 	panel->row.height = 0;
@@ -2587,57 +2715,27 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->scroll_x = 0;
 	}
 
-	/* resizing */
-
-	if (panel->flags & GUI_PANEL_RESIZABLE) {
-		cur_style = *gui_get_style(gui);
-		gui_style(gui, &g_invis_style);
-
-		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
-		if (gui_drag_x(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		               panel->height, MB_LEFT)) {
-			resize_delta = panel->x - GUI_PANEL_RESIZE_BORDER - resize.x;
-			panel->width += resize_delta;
-			panel->x -= resize_delta;
-		}
-
-		resize.x = panel->x + panel->width;
-		if (gui_drag_x(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		               panel->height, MB_LEFT))
-			panel->width += resize.x - (panel->x + panel->width);
-
-		resize.y = panel->y - GUI_PANEL_RESIZE_BORDER;
-		if (gui_drag_y(gui, panel->x, &resize.y, panel->width,
-		               GUI_PANEL_RESIZE_BORDER, MB_LEFT)) {
-			resize_delta = panel->y - GUI_PANEL_RESIZE_BORDER - resize.y;
-			panel->height += resize_delta;
-			body_height += resize_delta;
-			panel->y -= resize_delta;
-		}
-
-		resize.y = panel->y + panel->height;
-		if (gui_drag_y(gui, panel->x, &resize.y, panel->width,
-		               GUI_PANEL_RESIZE_BORDER, MB_LEFT))
-			panel->height += resize.y - (panel->y + panel->height);
-
-		gui_style(gui, &cur_style);
-	}
-
 	panel->required_width = padding.x * 2; 
 	panel->required_height = padding.y * 2;
 
 	gui->panel = panel;
 
-	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
-	         gui->style.panel.bg_color, gui->style.panel.border_color);
-
-	gui_mask(gui, panel->x + padding.x, panel->y + padding.y,
-	         panel->width - padding.x * 2, body_height - padding.y * 2);
+	gui__mask(gui, panel->x + padding.x, panel->y + padding.y,
+	          panel->width - padding.x * 2, body_height - padding.y * 2, true);
 }
 
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 {
+	box2i box;
+
 	assert(gui->panel == panel);
+
+	box2i_from_xywh(&box, panel->x, panel->y, panel->height, panel->width);
+	if (   gui->hot_id == 0
+	    && gui->active_id == 0
+	    && box2i_contains_point(box, gui->mouse_pos))
+		gui->mouse_covered_by_panel = true;
+
 	gui_unmask(gui);
 	gui->panel = NULL;
 }
@@ -2857,6 +2955,17 @@ void pgui_slider_y(gui_t *gui, r32 *val)
 	            *gui->panel->row.current_col, gui->panel->row.height, val,
 	            *gui->panel->row.current_col, GUI__SLIDER_Y, gui->panel->id);
 	pgui__col_advance(gui->panel);
+}
+
+void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
+{
+	panel->pri = --gui->min_panel_pri;
+}
+
+int pgui_panel_sort(const void *lhs_, const void *rhs_)
+{
+	const gui_panel_t *lhs = lhs_, *rhs = rhs_;
+	return lhs->pri - rhs->pri;
 }
 
 /* Style */
