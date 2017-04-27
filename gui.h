@@ -382,6 +382,7 @@ void         gui_style_default(gui_t *gui);
 
 #include <ctype.h>
 #include <GL/glew.h>
+#include <limits.h>
 #include <math.h>
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -1300,6 +1301,8 @@ typedef struct gui_t
 	u64 active_id; /* mouse down */
 	u64 focus_id;  /* widgets like input boxes change state post-click */
 	u64 active_id_at_frame_start;
+	b32 hot_id_found_this_frame;
+	b32 active_id_found_this_frame;
 
 	v2i drag_offset;
 	char *pw_buf;
@@ -1513,6 +1516,17 @@ b32 gui_begin_frame(gui_t *gui)
 		if (keys[i] && gui__convert_scancode(i, caps, &gui->key))
 			break;
 
+	/* Should really never hit either of these */
+	if (gui->hot_id != 0 && !gui->hot_id_found_this_frame) {
+		log_write("hot widget %lu was not drawn", gui->hot_id);
+		gui->hot_id = 0;
+	}
+	gui->hot_id_found_this_frame = false;
+	if (gui->active_id != 0 && !gui->active_id_found_this_frame) {
+		log_write("active widget %lu was not drawn", gui->active_id);
+		gui->active_id = 0;
+	}
+	gui->active_id_found_this_frame = false;
 	gui->active_id_at_frame_start = gui->active_id;
 
 	gui->vert_cnt = 0;
@@ -2068,19 +2082,19 @@ void gui_unmask(gui_t *gui)
 static
 b32 gui__allow_new_panel_interaction(const gui_t *gui)
 {
-	return    gui->active_id == 0
+	return    (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
+	       && gui->active_id == 0
 	       && !gui->mouse_covered_by_panel;
 }
 
 static
 b32 gui__allow_new_interaction(const gui_t *gui)
 {
-	return    gui->hot_id == 0
-	       && gui__allow_new_panel_interaction(gui)
+	return    gui__allow_new_panel_interaction(gui)
 	       && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
 }
 
-#define GUI__DEFAULT_PANEL_ID 0
+#define GUI__DEFAULT_PANEL_ID UINT_MAX
 
 static
 u64 gui__widget_id(s32 x, s32 y, u32 seed)
@@ -2194,16 +2208,22 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				gui->focus_id = id;
 			gui->active_id = 0;
 			gui->repeat_timer = gui->repeat_delay;
+		} else {
+			gui->active_id_found_this_frame = true;
 		}
 	} else if (gui->hot_id == id) {
-		if (!contains_mouse) {
+		if (!contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
 		} else if (mouse_press(gui, MB_LEFT)) {
 			gui->active_id = id;
 			gui->hot_id = 0;
+			gui->active_id_found_this_frame = true;
+		} else {
+			gui->hot_id_found_this_frame = true;
 		}
 	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
 		gui->hot_id = id;
+		gui->hot_id_found_this_frame = true;
 	}
 
 
@@ -2225,9 +2245,7 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	}
 	if (gui->focus_id == id) {
 		/* TODO(rgriege): should be from y to y + font->ascent */
-		const u32 milli_since_creation =
-			time_diff_milli(gui->creation_time, gui->frame_start_time);
-		if (milli_since_creation % 1000 < 500)
+		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500)
 			gui_line(gui, x+1, y, x+1, y+gui->style.font_sz, 1, text_color);
 	}
 	return complete;
@@ -2248,12 +2266,15 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	*contains_mouse = box2i_contains_point(box, gui->mouse_pos);
 	if (gui->hot_id == id) {
-		if (!*contains_mouse) {
+		if (!*contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
 		} else if (mouse_press(gui, MB_LEFT)) {
 			gui->hot_id = 0;
 			gui->active_id = id;
+			gui->active_id_found_this_frame = true;
 			gui->repeat_timer = gui->repeat_delay;
+		} else {
+			gui->hot_id_found_this_frame = true;
 		}
 	} else if (gui->active_id == id) {
 		if (mouse_release(gui, MB_LEFT)) {
@@ -2261,13 +2282,17 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 				retval = BTN_PRESS;
 			gui->active_id = 0;
 			gui->repeat_timer = gui->repeat_delay;
-		} else if (!*contains_mouse) {
-			gui->repeat_timer = gui->repeat_delay;
-		} else if (gui__can_repeat(gui)) {
-			retval = BTN_HOLD;
+		} else {
+			gui->active_id_found_this_frame = true;
+			if (!*contains_mouse) {
+				gui->repeat_timer = gui->repeat_delay;
+			} else if (gui__can_repeat(gui)) {
+				retval = BTN_HOLD;
+			}
 		}
 	} else if (gui__allow_new_interaction(gui) && *contains_mouse) {
 		gui->hot_id = id;
+		gui->hot_id_found_this_frame = true;
 	}
 	return retval;
 }
@@ -2363,13 +2388,16 @@ void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	const b32 contains_mouse = box2i_contains_point(box, gui->mouse_pos);
 
 	if (gui->hot_id == id) {
-		if (!contains_mouse) {
+		if (!contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
 		} else if (mouse_press(gui, MB_LEFT)) {
 			gui->hot_id = 0;
 			gui->active_id = id;
+			gui->active_id_found_this_frame = true;
 			gui->drag_offset.x = box.min.x+(box.max.x-box.min.x)/2-gui->mouse_pos.x;
 			gui->drag_offset.y = box.min.y+(box.max.y-box.min.y)/2-gui->mouse_pos.y;
+		} else {
+			gui->hot_id_found_this_frame = true;
 		}
 	} else if (gui->active_id == id) {
 		if (!mouse_release(gui, MB_LEFT)) {
@@ -2384,11 +2412,13 @@ void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 				const s32 mouse_x = gui->mouse_pos.x+gui->drag_offset.x;
 				*val = fmath_clamp(0, (mouse_x-min_x)/(max_x-min_x), 1.f);
 			}
+			gui->active_id_found_this_frame = true;
 		} else {
 			gui->active_id = 0;
 		}
 	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
 		gui->hot_id = id;
+		gui->hot_id_found_this_frame = true;
 	}
 
 	widget__color(gui, id, &fill, NULL, NULL);
@@ -2483,25 +2513,31 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 	b32 retval = false;
 	*id = gui__widget_id(*id_x, *id_y, panel_id);
 	if (gui->hot_id == *id) {
-		if (!contains_mouse) {
+		if (!contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
 		} else if (mouse_press(gui, mb)) {
 			gui->hot_id = 0;
 			gui->active_id = *id;
+			gui->active_id_found_this_frame = true;
 			gui->drag_offset.x = *x - gui->mouse_pos.x;
 			gui->drag_offset.y = *y - gui->mouse_pos.y;
+		} else {
+			gui->hot_id_found_this_frame = true;
 		}
 	} else if (gui->active_id == *id) {
 		*x = gui->mouse_pos.x + gui->drag_offset.x;
 		*y = gui->mouse_pos.y + gui->drag_offset.y;
 		*id = gui__widget_id(*id_x, *id_y, panel_id);
 		retval = true;
-		if (mouse_release(gui, mb))
+		if (mouse_release(gui, mb)) {
 			gui->active_id = 0;
-		else
+		} else {
 			gui->active_id = *id;
+			gui->active_id_found_this_frame = true;
+		}
 	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
 		gui->hot_id = *id;
+		gui->hot_id_found_this_frame = true;
 	}
 	return retval;
 }
@@ -2671,7 +2707,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		body_height = panel->height;
 	}
 
-	box2i_from_xywh(&box, panel->x, panel->y, panel->height, panel->width);
+	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
 	if (   dragging
 	    || (   gui__allow_new_panel_interaction(gui)
 	        && mouse_press(gui, MB_LEFT)
@@ -2747,10 +2783,8 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 
 	assert(gui->panel == panel);
 
-	box2i_from_xywh(&box, panel->x, panel->y, panel->height, panel->width);
-	if (   gui->hot_id == 0
-	    && gui->active_id == 0
-	    && box2i_contains_point(box, gui->mouse_pos))
+	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
+	if (box2i_contains_point(box, gui->mouse_pos))
 		gui->mouse_covered_by_panel = true;
 
 	gui_unmask(gui);
