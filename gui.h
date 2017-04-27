@@ -342,6 +342,8 @@ void      pgui_slider_y(gui_t *gui, r32 *val);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 
+void gui_panel_pen(gui_t *gui, s32 *x, s32 *y, s32 *w);
+
 /* Style */
 
 typedef struct gui_style_t
@@ -3021,6 +3023,19 @@ int pgui_panel_sort(const void *lhs_, const void *rhs_)
 {
 	const gui_panel_t *lhs = lhs_, *rhs = rhs_;
 	return lhs->pri - rhs->pri;
+}
+
+void gui_panel_pen(gui_t *gui, s32 *x, s32 *y, s32 *w)
+{
+	assert(gui->panel);
+	if (gui->style.panel.padding >= 1.f) {
+		*x = gui->panel->x + gui->style.panel.padding;
+		*w = gui->panel->width - 2 * gui->style.panel.padding;
+	} else {
+		*x = gui->panel->x + gui->panel->width * gui->style.panel.padding;
+		*w = gui->panel->width - 2 * gui->panel->width * gui->style.panel.padding;
+	}
+	*y = gui->panel->pos_y;
 }
 
 /* Style */
