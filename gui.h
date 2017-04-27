@@ -241,7 +241,7 @@ typedef enum npt_flags_t
 } npt_flags_t;
 
 b32       gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                  gui_align_t align, npt_flags_t flags);
+                  const char *hint, gui_align_t align, npt_flags_t flags);
 btn_val_t gui_btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 void      gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                   b32 *val);
@@ -332,8 +332,8 @@ void      pgui_img(gui_t *gui, const char *fname);
 btn_val_t pgui_btn(gui_t *gui, const char *lbl);
 btn_val_t pgui_btn_img(gui_t *gui, const char *fname);
 void      pgui_chk(gui_t *gui, const char *lbl, b32 *val);
-b32       pgui_npt(gui_t *gui, char *lbl, u32 n, gui_align_t align,
-                   npt_flags_t flags);
+b32       pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint,
+                   gui_align_t align, npt_flags_t flags);
 void      pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 void      pgui_slider_x(gui_t *gui, r32 *val);
@@ -2152,7 +2152,7 @@ b32 gui__can_repeat(gui_t *gui)
 
 static
 b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-            gui_align_t align, npt_flags_t flags, u32 panel_id)
+            const char *hint, gui_align_t align, npt_flags_t flags, u32 panel_id)
 {
 	const u64 id = gui__widget_id(x, y, panel_id);
 	box2i box;
@@ -2247,14 +2247,17 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		/* TODO(rgriege): should be from y to y + font->ascent */
 		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500)
 			gui_line(gui, x+1, y, x+1, y+gui->style.font_sz, 1, text_color);
+	} else if (hint && strlen(txt) == 0) {
+		gui_txt(gui, x, y, gui->style.font_sz, hint, text_color, align);
 	}
 	return complete;
 }
 
 b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-            gui_align_t align, npt_flags_t flags)
+            const char * hint, gui_align_t align, npt_flags_t flags)
 {
-	return gui__npt(gui, x, y, w, h, txt, n, align, flags, GUI__DEFAULT_PANEL_ID);
+	return gui__npt(gui, x, y, w, h, txt, n, hint, align, flags,
+	                GUI__DEFAULT_PANEL_ID);
 }
 
 static
@@ -2950,7 +2953,8 @@ void pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 	pgui__col_advance(gui->panel);
 }
 
-b32 pgui_npt(gui_t *gui, char *lbl, u32 n, gui_align_t align, npt_flags_t flags)
+b32 pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, gui_align_t align,
+             npt_flags_t flags)
 {
 	b32 result;
 
@@ -2959,7 +2963,7 @@ b32 pgui_npt(gui_t *gui, char *lbl, u32 n, gui_align_t align, npt_flags_t flags)
 
 	result = gui__npt(gui, gui->panel->pos_x, gui->panel->pos_y,
 	                  *gui->panel->row.current_col, gui->panel->row.height,
-	                  lbl, n, align, flags, gui->panel->id);
+	                  lbl, n, hint, align, flags, gui->panel->id);
 	pgui__col_advance(gui->panel);
 	return result;
 }
