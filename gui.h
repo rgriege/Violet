@@ -2,6 +2,7 @@
 #define VIOLET_GUI_H
 
 #include "violet/core.h"
+#include "violet/key.h"
 
 typedef struct v2f v2f;
 
@@ -202,11 +203,10 @@ b32  mouse_release(const gui_t *gui, u32 mask);
 b32  mouse_release_bg(const gui_t *gui, u32 mask);
 void mouse_scroll(const gui_t *gui, s32 *dir);
 
-char key_press(const gui_t *gui);
-char key_down(const gui_t *gui);
-char key_release(const gui_t *gui);
-b32 key_down_shift(const gui_t *gui);
-b32 key_down_ctrl(const gui_t *gui);
+b32 key_down(const gui_t *gui, gui_key_t key);
+b32 key_pressed(const gui_t *gui, gui_key_t key);
+b32 key_released(const gui_t *gui, gui_key_t key);
+b32 key_mod(const gui_t *gui, gui_key_mod_t mod);
 
 
 
@@ -1189,11 +1189,11 @@ int gui__sdl_evt_filter(void *userdata, SDL_Event *event)
 	return event->type == SDL_QUIT || event->type == SDL_MOUSEWHEEL;
 }
 
-typedef enum special_key_t
+typedef enum special_char_t
 {
-	KEY_RETURN = 13,
-	KEY_BACKSPACE = 8
-} special_key_t;
+	CHAR_RETURN = 13,
+	CHAR_BACKSPACE = 8
+} special_char_t;
 
 static const char g_caps[128] = {
 	  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
@@ -1219,7 +1219,7 @@ b32 gui__convert_scancode(SDL_Scancode code, b32 caps, char *c)
 		*c = caps ? g_caps[key] : key;
 	} else if (key >= SDLK_KP_DIVIDE && key <= SDLK_KP_PERIOD) {
 		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = {
-			'/', '*', '-', '+', KEY_RETURN, '1', '2', '3', '4', '5', '6',
+			'/', '*', '-', '+', CHAR_RETURN, '1', '2', '3', '4', '5', '6',
 			'7', '8', '9', '0', '.'
 		};
 		*c = keys[key - SDLK_KP_DIVIDE];
@@ -1289,7 +1289,9 @@ typedef struct gui_t
 	u32 mouse_btn_diff;
 	b32 mouse_covered_by_panel;
 
-	char prev_key, key;
+	u8 prev_keys[KB_COUNT];
+	const u8 *keys;
+	char prev_char, cur_char;
 	u32 repeat_delay;
 	u32 repeat_interval;
 	u32 repeat_timer;
@@ -1417,6 +1419,8 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->default_style = g_default_style;
 	gui_style_default(gui);
 
+	memset(gui->prev_keys, 0, KB_COUNT);
+
 	gui->hot_id = 0;
 	gui->active_id = 0;
 	gui->focus_id = 0;
@@ -1481,11 +1485,12 @@ void gui_minimize(gui_t *gui)
 
 b32 gui_begin_frame(gui_t *gui)
 {
+	s32 key_cnt;
+	b32 quit = false;
 	timepoint_t now = time_current();
 	gui->frame_time_milli = time_diff_milli(gui->frame_start_time, now);
 	gui->frame_start_time = now;
 
-	b32 quit = false;
 	SDL_Event evt;
 	const u32 last_mouse_btn = gui->mouse_btn;
 	gui->mouse_btn = 0;
@@ -1508,14 +1513,13 @@ b32 gui_begin_frame(gui_t *gui)
 	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
 	gui->mouse_covered_by_panel = false;
 
-	gui->prev_key = gui->key;
-	gui->key = 0;
-	s32 key_cnt;
-	const u8 *keys = SDL_GetKeyboardState(&key_cnt);
+	gui->cur_char = 0;
+	gui->keys = SDL_GetKeyboardState(&key_cnt);
+	assert(key_cnt > KB_COUNT);
 	const SDL_Keymod mod = SDL_GetModState();
 	const b32 caps = ((mod & KMOD_SHIFT) != 0) != ((mod & KMOD_CAPS) != 0);
 	for (s32 i = 0; i < key_cnt; ++i)
-		if (keys[i] && gui__convert_scancode(i, caps, &gui->key))
+		if (gui->keys[i] && gui__convert_scancode(i, caps, &gui->cur_char))
 			break;
 
 	/* Should really never hit either of these */
@@ -1797,6 +1801,9 @@ void gui_end_frame(gui_t *gui)
 
 	glFlush();
 	SDL_GL_SwapWindow(gui->window);
+
+	gui->prev_char = gui->cur_char;
+	memcpy(gui->prev_keys, gui->keys, KB_COUNT);
 }
 
 void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
@@ -1864,32 +1871,25 @@ void mouse_scroll(const gui_t *gui, s32 *dir)
 		*dir = 0;
 }
 
-char key_press(const gui_t *gui)
+b32 key_down(const gui_t *gui, gui_key_t key)
 {
-	return gui->key != gui->prev_key ? gui->key : 0;
+	return gui->keys[key];
 }
 
-char key_down(const gui_t *gui)
+b32 key_pressed(const gui_t *gui, gui_key_t key)
 {
-	return gui->key;
+	return gui->keys[key] && !gui->prev_keys[key];
 }
 
-char key_release(const gui_t *gui)
+b32 key_released(const gui_t *gui, gui_key_t key)
 {
-	return gui->key != gui->prev_key ? gui->prev_key : 0;
+	return !gui->keys[key] && gui->prev_keys[key];
 }
 
-/* TODO(rgriege): provide better keyboard API */
-b32 key_down_shift(const gui_t *gui)
+b32 key_mod(const gui_t *gui, gui_key_mod_t mod)
 {
-	return SDL_GetModState() & KMOD_SHIFT;
+	return key_down(gui, KB_LCTRL + mod) || key_down(gui, KB_RCTRL + mod);
 }
-
-b32 key_down_ctrl(const gui_t *gui)
-{
-	return SDL_GetModState() & KMOD_CTRL;
-}
-
 
 
 /* Immediate Mode API */
@@ -2163,11 +2163,11 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	b32 complete = false;
 
 	if (gui->focus_id == id) {
-		if (gui->key != 0) {
+		if (gui->cur_char != 0) {
 			b32 modify = false;
-			if (   gui->key != gui->prev_key
-			    && g_caps[(u8)gui->key] != gui->prev_key
-			    && g_caps[(u8)gui->prev_key] != gui->key) {
+			if (   gui->cur_char != gui->prev_char
+			    && g_caps[(u8)gui->cur_char] != gui->prev_char
+			    && g_caps[(u8)gui->prev_char] != gui->cur_char) {
 				modify = true;
 				gui->repeat_timer = gui->repeat_delay;
 			} else if (gui__can_repeat(gui)) {
@@ -2175,13 +2175,13 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			}
 			if (modify) {
 				u32 len = strlen(txt);
-				if (gui->key == KEY_BACKSPACE) {
+				if (gui->cur_char == CHAR_BACKSPACE) {
 					if (len > 0)
 						txt[len-1] = '\0';
-				} else if (gui->key == KEY_RETURN) {
+				} else if (gui->cur_char == CHAR_RETURN) {
 					gui->active_id = 0;
 					complete = true;
-				} else if (gui->key == 'v' && key_down_ctrl(gui)) {
+				} else if (   gui->cur_char == 'v' && key_mod(gui, KBM_CTRL)) {
 					if (SDL_HasClipboardText()) {
 						char *clipboard = SDL_GetClipboardText();
 						if (clipboard) {
@@ -2192,10 +2192,10 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 							SDL_free(clipboard);
 						}
 					}
-				} else if (   gui->key >= 32
+				} else if (   gui->cur_char >= 32
 				           && len < n-1
-				           && ((flags & NPT_NUMERIC) == 0 || isdigit(gui->key))) {
-					txt[len++] = gui->key;
+				           && ((flags & NPT_NUMERIC) == 0 || isdigit(gui->cur_char))) {
+					txt[len++] = gui->cur_char;
 					txt[len] = '\0';
 				}
 			}
@@ -2730,7 +2730,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	if (body_height < panel->required_height) {
 		needed.y = panel->required_height - body_height;
-		if (   !key_down_shift(gui)
+		if (   !key_mod(gui, KBM_SHIFT)
 		    && gui->mouse_pos.x > panel->x
 		    && gui->mouse_pos.x < panel->x + panel->width
 		    && gui->mouse_pos.y > panel->y
@@ -2753,7 +2753,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	if (panel->width < panel->required_width) {
 		needed.x = panel->required_width - panel->width;
-		if (   key_down_shift(gui)
+		if (   key_mod(gui, KBM_SHIFT)
 		    && gui->mouse_pos.x > panel->x
 		    && gui->mouse_pos.x < panel->x + panel->width
 		    && gui->mouse_pos.y > panel->y
