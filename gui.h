@@ -245,8 +245,8 @@ b32       gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 btn_val_t gui_btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 void      gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                   b32 *val);
-void      gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
-void      gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
+b32       gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
+b32       gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
 void      gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      const char *txt, u32 *val, u32 opt);
 void      gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -332,8 +332,8 @@ b32       pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint,
                    gui_align_t align, npt_flags_t flags);
 void      pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
-void      pgui_slider_x(gui_t *gui, r32 *val);
-void      pgui_slider_y(gui_t *gui, r32 *val);
+b32       pgui_slider_x(gui_t *gui, r32 *val);
+b32       pgui_slider_y(gui_t *gui, r32 *val);
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
@@ -354,6 +354,7 @@ typedef struct gui_style_t
 	color_t text_color;
 	color_t hot_text_color;
 	color_t active_text_color;
+	color_t slider_track_color;
 	u32 font_sz;
 
 	struct
@@ -1148,6 +1149,7 @@ static const gui_style_t g_default_style = {
 	.text_color = gi_white,
 	.hot_text_color = gi_white,
 	.active_text_color = gi_white,
+	.slider_track_color = gi_nocolor,
 	.font_sz = 14,
 
 	.panel = {
@@ -1169,6 +1171,7 @@ static const gui_style_t g_invis_style = {
 	.text_color = gi_nocolor,
 	.hot_text_color = gi_nocolor,
 	.active_text_color = gi_nocolor,
+	.slider_track_color = gi_nocolor,
 	.font_sz = 14,
 
 	.panel = {
@@ -2359,13 +2362,13 @@ typedef enum gui__slider_orientation
 	GUI__SLIDER_Y,
 } gui__slider_orientation_t;
 
-void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
-                 gui__slider_orientation_t orientation)
+b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
+                gui__slider_orientation_t orientation)
 {
 	assert(*val >= 0.f && *val <= 1.f);
 
 	const u64 id = gui__widget_id(x, y, gui->panel);
-	color_t fill, outline;
+	color_t fill, outline, track;
 	box2i box;
 	if (orientation == GUI__SLIDER_Y) {
 		box.min = (v2i){ .x=x, .y=y+(h-hnd_len)**val };
@@ -2412,23 +2415,25 @@ void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 
 	widget__color(gui, id, &fill, NULL, NULL);
 	outline = gui->style.outline_color;
+	track = gui->style.slider_track_color;
 	if (orientation == GUI__SLIDER_Y) {
-		gui_line(gui, x+w/2, y+hnd_len/2, x+w/2, y+h-hnd_len/2, 1, outline);
+		gui_line(gui, x+w/2, y+hnd_len/2, x+w/2, y+h-hnd_len/2, 1, track);
 		gui_rect(gui, x, y+(h-hnd_len)**val, w, hnd_len, fill, outline);
 	} else {
-		gui_line(gui, x+hnd_len/2, y+h/2, x+w-hnd_len/2, y+h/2, 1, outline);
+		gui_line(gui, x+hnd_len/2, y+h/2, x+w-hnd_len/2, y+h/2, 1, track);
 		gui_rect(gui, x+(w-hnd_len)**val, y, hnd_len, h, fill, outline);
 	}
+	return gui->active_id == id;
 }
 
-void gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
+b32 gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 {
-	gui__slider(gui, x, y, w, h, val, h, GUI__SLIDER_X);
+	return gui__slider(gui, x, y, w, h, val, h, GUI__SLIDER_X);
 }
 
-void gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
+b32 gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 {
-	gui__slider(gui, x, y, w, h, val, w, GUI__SLIDER_Y);
+	return gui__slider(gui, x, y, w, h, val, w, GUI__SLIDER_Y);
 }
 
 void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -2982,24 +2987,30 @@ void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
 	pgui__col_advance(gui->panel);
 }
 
-void pgui_slider_x(gui_t *gui, r32 *val)
+b32 pgui_slider_x(gui_t *gui, r32 *val)
 {
+	b32 ret;
+
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	gui_slider_x(gui, gui->panel->pos_x, gui->panel->pos_y,
-	             *gui->panel->row.current_col, gui->panel->row.height, val);
+	ret = gui_slider_x(gui, gui->panel->pos_x, gui->panel->pos_y,
+	                   *gui->panel->row.current_col, gui->panel->row.height, val);
 	pgui__col_advance(gui->panel);
+	return ret;
 }
 
-void pgui_slider_y(gui_t *gui, r32 *val)
+b32 pgui_slider_y(gui_t *gui, r32 *val)
 {
+	b32 ret;
+
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	gui_slider_y(gui, gui->panel->pos_x, gui->panel->pos_y,
-	             *gui->panel->row.current_col, gui->panel->row.height, val);
+	ret = gui_slider_y(gui, gui->panel->pos_x, gui->panel->pos_y,
+	                   *gui->panel->row.current_col, gui->panel->row.height, val);
 	pgui__col_advance(gui->panel);
+	return ret;
 }
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
