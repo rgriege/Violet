@@ -1718,6 +1718,9 @@ void gui_end_frame(gui_t *gui)
 
 	glViewport(0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
 
+	/* NOTE(rgriege): reset the scissor for glClear */
+	glScissor(0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
+
 	color_as_float_array(bg_color, gui->style.bg_color);
 	glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
