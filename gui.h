@@ -197,10 +197,10 @@ typedef enum mouse_button_t
 /* Input */
 
 void mouse_pos(const gui_t *gui, s32 *x, s32 *y);
-b32  mouse_press(const gui_t *gui, u32 mask);
+b32  mouse_pressed(const gui_t *gui, u32 mask);
 b32  mouse_down(const gui_t *gui, u32 mask);
-b32  mouse_release(const gui_t *gui, u32 mask);
-b32  mouse_release_bg(const gui_t *gui, u32 mask);
+b32  mouse_released(const gui_t *gui, u32 mask);
+b32  mouse_released_bg(const gui_t *gui, u32 mask);
 void mouse_scroll(const gui_t *gui, s32 *dir);
 
 b32 key_down(const gui_t *gui, gui_key_t key);
@@ -251,19 +251,15 @@ void      gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      const char *txt, u32 *val, u32 opt);
 void      gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                       const char *txt, u32 *val, u32 opt);
+typedef void(*gui_drag_callback_t)(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                                   s32 offset_x, s32 offset_y, void *udata);
 b32       gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb);
+b32       gui_drag_horiz(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb);
+b32       gui_drag_vert(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb);
+b32       gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
+                    gui_drag_callback_t cb, void *udata);
 b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb);
 
-
-/* TODO(rgriege): make these private after panel migration */
-typedef enum gui__slider_orientation
-{
-	GUI__SLIDER_X,
-	GUI__SLIDER_Y,
-} gui__slider_orientation_t;
-
-void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
-                 gui__slider_orientation_t orientation, u32 panel_id);
 
 /* Panels */
 
@@ -1839,7 +1835,7 @@ void mouse_pos(const gui_t *gui, s32 *x, s32 *y)
 	*y = gui->mouse_pos.y;
 }
 
-b32 mouse_press(const gui_t *gui, u32 mask)
+b32 mouse_pressed(const gui_t *gui, u32 mask)
 {
 	return (gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
 }
@@ -1849,14 +1845,14 @@ b32 mouse_down(const gui_t *gui, u32 mask)
 	return gui->mouse_btn & mask;
 }
 
-b32 mouse_release(const gui_t *gui, u32 mask)
+b32 mouse_released(const gui_t *gui, u32 mask)
 {
 	return !(gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
 }
 
-b32 mouse_release_bg(const gui_t *gui, u32 mask)
+b32 mouse_released_bg(const gui_t *gui, u32 mask)
 {
-	return    mouse_release(gui, mask)
+	return    mouse_released(gui, mask)
 	       && gui->active_id == 0
 	       && gui->active_id_at_frame_start == 0;
 }
@@ -2099,9 +2095,10 @@ b32 gui__allow_new_interaction(const gui_t *gui)
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
 
 static
-u64 gui__widget_id(s32 x, s32 y, u32 seed)
+u64 gui__widget_id(s32 x, s32 y, const gui_panel_t *panel)
 {
-	return (((u64)x) << 48) | (((u64)y) << 32) | seed;
+	u32 panel_id = panel ? panel->id : GUI__DEFAULT_PANEL_ID;
+	return (((u64)x) << 48) | (((u64)y) << 32) | panel_id;
 }
 
 typedef enum widget_style_t
@@ -2152,11 +2149,10 @@ b32 gui__can_repeat(gui_t *gui)
 	}
 }
 
-static
-b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-            const char *hint, gui_align_t align, npt_flags_t flags, u32 panel_id)
+b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+            const char *hint, gui_align_t align, npt_flags_t flags)
 {
-	const u64 id = gui__widget_id(x, y, panel_id);
+	const u64 id = gui__widget_id(x, y, gui->panel);
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b32 contains_mouse = box2i_contains_point(box, gui->mouse_pos);
@@ -2202,10 +2198,10 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		} else {
 			gui->repeat_timer = gui->repeat_delay;
 		}
-		if (mouse_press(gui, MB_LEFT) && !contains_mouse)
+		if (mouse_pressed(gui, MB_LEFT) && !contains_mouse)
 			gui->focus_id = 0;
 	} else if (gui->active_id == id) {
-		if (mouse_release(gui, MB_LEFT)) {
+		if (mouse_released(gui, MB_LEFT)) {
 			if (contains_mouse)
 				gui->focus_id = id;
 			gui->active_id = 0;
@@ -2216,7 +2212,7 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	} else if (gui->hot_id == id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
-		} else if (mouse_press(gui, MB_LEFT)) {
+		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->active_id = id;
 			gui->hot_id = 0;
 			gui->active_id_found_this_frame = true;
@@ -2255,13 +2251,6 @@ b32 gui__npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	return complete;
 }
 
-b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-            const char * hint, gui_align_t align, npt_flags_t flags)
-{
-	return gui__npt(gui, x, y, w, h, txt, n, hint, align, flags,
-	                GUI__DEFAULT_PANEL_ID);
-}
-
 static
 btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          const char *txt, u64 id, b32 *contains_mouse)
@@ -2273,7 +2262,7 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	if (gui->hot_id == id) {
 		if (!*contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
-		} else if (mouse_press(gui, MB_LEFT)) {
+		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->hot_id = 0;
 			gui->active_id = id;
 			gui->active_id_found_this_frame = true;
@@ -2282,7 +2271,7 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 			gui->hot_id_found_this_frame = true;
 		}
 	} else if (gui->active_id == id) {
-		if (mouse_release(gui, MB_LEFT)) {
+		if (mouse_released(gui, MB_LEFT)) {
 			if (*contains_mouse)
 				retval = BTN_PRESS;
 			gui->active_id = 0;
@@ -2313,11 +2302,9 @@ void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui_txt(gui, x, y, gui->style.font_sz, txt, text_color, btn_txt_align);
 }
 
-static
-btn_val_t gui__btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
-                   u32 panel_id)
+btn_val_t gui_btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
-	const u64 id = gui__widget_id(x, y, panel_id);
+	const u64 id = gui__widget_id(x, y, gui->panel);
 	b32 contains_mouse;
 	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, txt, id, &contains_mouse);
 
@@ -2339,16 +2326,9 @@ btn_val_t gui__btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 	return ret;
 }
 
-btn_val_t gui_btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
+void gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
-	return gui__btn(gui, x, y, w, h, txt, GUI__DEFAULT_PANEL_ID);
-}
-
-static
-void gui__chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val,
-              u32 panel_id)
-{
-	const u64 id = gui__widget_id(x, y, panel_id);
+	const u64 id = gui__widget_id(x, y, gui->panel);
 	b32 contains_mouse;
 	const b32 was_checked = *val;
 	if (gui__btn_logic(gui, x, y, w, h, txt, id, &contains_mouse) == BTN_PRESS)
@@ -2370,17 +2350,18 @@ void gui__chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val,
 	gui__btn_render(gui, x, y, w, h, txt, c, text_color);
 }
 
-void gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
+typedef enum gui__slider_orientation
 {
-	gui__chk(gui, x, y, w, h, txt, val, GUI__DEFAULT_PANEL_ID);
-}
+	GUI__SLIDER_X,
+	GUI__SLIDER_Y,
+} gui__slider_orientation_t;
 
 void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
-                 gui__slider_orientation_t orientation, u32 panel_id)
+                 gui__slider_orientation_t orientation)
 {
 	assert(*val >= 0.f && *val <= 1.f);
 
-	const u64 id = gui__widget_id(x, y, panel_id);
+	const u64 id = gui__widget_id(x, y, gui->panel);
 	color_t fill, outline;
 	box2i box;
 	if (orientation == GUI__SLIDER_Y) {
@@ -2395,7 +2376,7 @@ void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	if (gui->hot_id == id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
-		} else if (mouse_press(gui, MB_LEFT)) {
+		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->hot_id = 0;
 			gui->active_id = id;
 			gui->active_id_found_this_frame = true;
@@ -2405,7 +2386,7 @@ void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 			gui->hot_id_found_this_frame = true;
 		}
 	} else if (gui->active_id == id) {
-		if (!mouse_release(gui, MB_LEFT)) {
+		if (!mouse_released(gui, MB_LEFT)) {
 			if (orientation == GUI__SLIDER_Y) {
 				const r32 min_y = y+hnd_len/2;
 				const r32 max_y = y+h-hnd_len/2;
@@ -2439,19 +2420,18 @@ void gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 
 void gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 {
-	gui__slider(gui, x, y, w, h, val, h, GUI__SLIDER_X, GUI__DEFAULT_PANEL_ID);
+	gui__slider(gui, x, y, w, h, val, h, GUI__SLIDER_X);
 }
 
 void gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 {
-	gui__slider(gui, x, y, w, h, val, w, GUI__SLIDER_Y, GUI__DEFAULT_PANEL_ID);
+	gui__slider(gui, x, y, w, h, val, w, GUI__SLIDER_Y);
 }
 
-static
-void gui__select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                 const char *txt, u32 *val, u32 opt, u32 panel_id)
+void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                const char *txt, u32 *val, u32 opt)
 {
-	const u64 id = gui__widget_id(x, y, panel_id);
+	const u64 id = gui__widget_id(x, y, gui->panel);
 	const b32 selected = *val == opt;
 	b32 contains_mouse;
 	if (   gui__btn_logic(gui, x, y, w, h, txt, id,
@@ -2473,17 +2453,10 @@ void gui__select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__btn_render(gui, x, y, w, h, txt, c, text_color);
 }
 
-void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                const char *txt, u32 *val, u32 opt)
+void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                 const char *txt, u32 *val, u32 opt)
 {
-	gui__select(gui, x, y, w, h, txt, val, opt, GUI__DEFAULT_PANEL_ID);
-}
-
-static
-void gui__mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                  const char *txt, u32 *val, u32 opt, u32 panel_id)
-{
-	const u64 id = gui__widget_id(x, y, panel_id);
+	const u64 id = gui__widget_id(x, y, gui->panel);
 	b32 contains_mouse;
 	if (gui__btn_logic(gui, x, y, w, h, txt, id, &contains_mouse) == BTN_PRESS) {
 	  if (!(*val & opt))
@@ -2505,22 +2478,16 @@ void gui__mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__btn_render(gui, x, y, w, h, txt, c, text_color);
 }
 
-void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                 const char *txt, u32 *val, u32 opt)
-{
-	gui__mselect(gui, x, y, w, h, txt, val, opt, GUI__DEFAULT_PANEL_ID);
-}
-
 static
 b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
-              s32 *id_x, s32 *id_y, u32 panel_id, u64 *id)
+              u64 *id, gui_drag_callback_t cb, void *udata)
 {
 	b32 retval = false;
-	*id = gui__widget_id(*id_x, *id_y, panel_id);
+	*id = gui__widget_id(*x, *y, gui->panel);
 	if (gui->hot_id == *id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
-		} else if (mouse_press(gui, mb)) {
+		} else if (mouse_pressed(gui, mb)) {
 			gui->hot_id = 0;
 			gui->active_id = *id;
 			gui->active_id_found_this_frame = true;
@@ -2530,11 +2497,11 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 			gui->hot_id_found_this_frame = true;
 		}
 	} else if (gui->active_id == *id) {
-		*x = gui->mouse_pos.x + gui->drag_offset.x;
-		*y = gui->mouse_pos.y + gui->drag_offset.y;
-		*id = gui__widget_id(*id_x, *id_y, panel_id);
+		cb(x, y, gui->mouse_pos.x, gui->mouse_pos.y,
+		   gui->drag_offset.x, gui->drag_offset.y, udata);
+		*id = gui__widget_id(*x, *y, gui->panel);
 		retval = true;
-		if (mouse_release(gui, mb)) {
+		if (mouse_released(gui, mb)) {
 			gui->active_id = 0;
 		} else {
 			gui->active_id = *id;
@@ -2555,45 +2522,69 @@ void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id)
 	gui_rect(gui, x, y, w, h, fill, outline);
 }
 
-b32 gui__drag_xy(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
-                 s32 *id_x, s32 *id_y, u32 panel_id)
+static
+void gui__drag_default_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                                s32 offset_x, s32 offset_y, void *udata)
 {
-	box2i box;
-	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
-	const b32 contains_mouse = box2i_contains_point(box, gui->mouse_pos);
-	u64 id;
-	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb,
-	                          id_x, id_y, panel_id, &id);
-	gui__drag_render(gui, *x, *y, w, h, id);
-	return ret;
+	*x = mouse_x + offset_x;
+	*y = mouse_y + offset_y;
 }
 
 b32 gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb)
 {
-	return gui__drag_xy(gui, x, y, w, h, mb, x, y, GUI__DEFAULT_PANEL_ID);
+	return gui_dragx(gui, x, y, w, h, mb, gui__drag_default_callback, NULL);
 }
 
-b32 gui_drag_x(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb)
+b32 gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
+              gui_drag_callback_t cb, void *udata)
 {
-	/* nullify the y change, keeping the y used for id constant */
-	s32 y_ = y;
-	return gui__drag_xy(gui, x, &y_, w, h, mb, x, &y, GUI__DEFAULT_PANEL_ID);
+	box2i box;
+	u64 id;
+	b32 contains_mouse, ret;
+
+	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
+	contains_mouse = box2i_contains_point(box, gui->mouse_pos);
+	ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
+	gui__drag_render(gui, *x, *y, w, h, id);
+	return ret;
 }
 
-b32 gui_drag_y(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb)
+static
+void gui__drag_horiz_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                              s32 offset_x, s32 offset_y, void *udata)
 {
-	s32 x_ = x;
-	return gui__drag_xy(gui, &x_, y, w, h, mb, &x, y, GUI__DEFAULT_PANEL_ID);
+	*x = mouse_x + offset_x;
+}
+
+b32 gui_drag_horiz(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb)
+{
+	return gui_dragx(gui, x, &y, w, h, mb, gui__drag_horiz_callback, NULL);
+}
+
+static
+void gui__drag_vert_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                             s32 offset_x, s32 offset_y, void *udata)
+{
+	*y = mouse_y + offset_y;
+}
+
+b32 gui_drag_vert(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb)
+{
+	return gui_dragx(gui, &x, y, w, h, mb, gui__drag_vert_callback, NULL);
 }
 
 b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
 {
-	const v2i pos = { .x=*x, .y=*y };
-	const b32 contains_mouse = v2i_dist_sq(pos, gui->mouse_pos) <= r*r;
+	v2i pos;
 	u64 id;
-	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb,
-	                          x, y, GUI__DEFAULT_PANEL_ID, &id);
+	b32 contains_mouse, ret;
 	color_t fill, outline;
+
+	pos.x = *x;
+	pos.y = *y;
+	contains_mouse = v2i_dist_sq(pos, gui->mouse_pos) < r * r;
+	ret = gui__drag(gui, x, y, contains_mouse, mb, &id, gui__drag_default_callback,
+	                NULL);
 	widget__color(gui, id, &fill, &outline, NULL);
 	gui_circ(gui, *x, *y, r, fill, outline);
 	return ret;
@@ -2633,6 +2624,8 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	assert(!gui->panel);
 
+	gui->panel = panel;
+
 	if (gui->style.panel.padding >= 1.f) {
 		padding.x = gui->style.panel.padding;
 		padding.y = gui->style.panel.padding;
@@ -2648,29 +2641,29 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		gui_style(gui, &g_invis_style);
 
 		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
-		if (gui_drag_x(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		               panel->height, MB_LEFT)) {
+		if (gui_drag_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
+		                   panel->height, MB_LEFT)) {
 			resize_delta = panel->x - GUI_PANEL_RESIZE_BORDER - resize.x;
 			panel->width += resize_delta;
 			panel->x -= resize_delta;
 		}
 
 		resize.x = panel->x + panel->width;
-		if (gui_drag_x(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		               panel->height, MB_LEFT))
+		if (gui_drag_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
+		                   panel->height, MB_LEFT))
 			panel->width += resize.x - (panel->x + panel->width);
 
 		resize.y = panel->y - GUI_PANEL_RESIZE_BORDER;
-		if (gui_drag_y(gui, panel->x, &resize.y, panel->width,
-		               GUI_PANEL_RESIZE_BORDER, MB_LEFT)) {
+		if (gui_drag_vert(gui, panel->x, &resize.y, panel->width,
+		                  GUI_PANEL_RESIZE_BORDER, MB_LEFT)) {
 			resize_delta = panel->y - GUI_PANEL_RESIZE_BORDER - resize.y;
 			panel->height += resize_delta;
 			panel->y -= resize_delta;
 		}
 
 		resize.y = panel->y + panel->height;
-		if (gui_drag_y(gui, panel->x, &resize.y, panel->width,
-		               GUI_PANEL_RESIZE_BORDER, MB_LEFT))
+		if (gui_drag_vert(gui, panel->x, &resize.y, panel->width,
+		                  GUI_PANEL_RESIZE_BORDER, MB_LEFT))
 			panel->height += resize.y - (panel->y + panel->height);
 
 		gui_style(gui, &cur_style);
@@ -2683,9 +2676,8 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 		cur_style = *gui_get_style(gui);
 		gui_style(gui, &g_invis_style);
-		dragging = gui__drag_xy(gui, &panel->x, &panel->pos_y, panel->width,
-		                        GUI_PANEL_TITLEBAR_HEIGHT, MB_LEFT,
-		                        &panel->x, &panel->pos_y, panel->id);
+		dragging = gui_drag(gui, &panel->x, &panel->pos_y, panel->width,
+		                    GUI_PANEL_TITLEBAR_HEIGHT, MB_LEFT);
 		gui_style(gui, &cur_style);
 		if (dragging)
 			panel->y = panel->pos_y - panel->height + GUI_PANEL_TITLEBAR_HEIGHT;
@@ -2695,7 +2687,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		         gui->style.panel.bg_color, gui->style.panel.border_color);
 		gui__drag_render(gui, panel->x, panel->pos_y, panel->width,
 		                 GUI_PANEL_TITLEBAR_HEIGHT,
-		                 gui__widget_id(panel->x, panel->pos_y, panel->id));
+		                 gui__widget_id(panel->x, panel->pos_y, panel));
 		gui_txt(gui, panel->x + panel->width / 2,
 		        panel->pos_y + GUI_PANEL_TITLEBAR_HEIGHT / 2, gui->style.font_sz,
 		        panel->title, g_white, GUI_ALIGN_CENTER | GUI_ALIGN_MIDDLE);
@@ -2715,7 +2707,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
 	if (   dragging
 	    || (   gui__allow_new_panel_interaction(gui)
-	        && mouse_press(gui, MB_LEFT)
+	        && mouse_pressed(gui, MB_LEFT)
 	        && box2i_contains_point(box, gui->mouse_pos)))
 		pgui_panel_to_front(gui, panel);
 	else
@@ -2744,7 +2736,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		slider_val = 1.f - ((r32)panel->scroll_y / needed.y);
 		gui__slider(gui, panel->x, panel->y + padding.y / 2, padding.x / 2,
 		            body_height - padding.y / 2, &slider_val,
-		            scroll_handle_sz, GUI__SLIDER_Y, panel->id);
+		            scroll_handle_sz, GUI__SLIDER_Y);
 		panel->scroll_y = -(slider_val - 1.f) * needed.y;
 		panel->pos_y += panel->scroll_y;
 	} else {
@@ -2767,7 +2759,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		slider_val = (r32)panel->scroll_x / needed.x;
 		gui__slider(gui, panel->x + padding.x / 2, panel->y,
 		            panel->width - padding.x / 2, padding.y / 2, &slider_val,
-		            scroll_handle_sz, GUI__SLIDER_X, panel->id);
+		            scroll_handle_sz, GUI__SLIDER_X);
 		panel->scroll_x = slider_val * needed.x;
 	} else {
 		panel->scroll_x = 0;
@@ -2775,8 +2767,6 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	panel->required_width = padding.x * 2; 
 	panel->required_height = padding.y * 2;
-
-	gui->panel = panel;
 
 	gui__mask(gui, panel->x + padding.x, panel->y + padding.y,
 	          panel->width - padding.x * 2, body_height - padding.y * 2, true);
@@ -2922,9 +2912,8 @@ btn_val_t pgui_btn(gui_t *gui, const char *lbl)
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	result = gui__btn(gui, gui->panel->pos_x, gui->panel->pos_y,
-	                  *gui->panel->row.current_col, gui->panel->row.height, lbl,
-	                  gui->panel->id);
+	result = gui_btn(gui, gui->panel->pos_x, gui->panel->pos_y,
+	                 *gui->panel->row.current_col, gui->panel->row.height, lbl);
 	pgui__col_advance(gui->panel);
 	return result;
 }
@@ -2936,9 +2925,8 @@ btn_val_t pgui_btn_img(gui_t *gui, const char *fname)
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	result = gui__btn(gui, gui->panel->pos_x, gui->panel->pos_y,
-	                  *gui->panel->row.current_col, gui->panel->row.height, "",
-	                  gui->panel->id);
+	result = gui_btn(gui, gui->panel->pos_x, gui->panel->pos_y,
+	                 *gui->panel->row.current_col, gui->panel->row.height, "");
 	gui_img(gui, gui->panel->pos_x, gui->panel->pos_y, fname);
 	pgui__col_advance(gui->panel);
 	return result;
@@ -2949,9 +2937,8 @@ void pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	gui__chk(gui, gui->panel->pos_x, gui->panel->pos_y,
-	         *gui->panel->row.current_col, gui->panel->row.height, lbl, val,
-	         gui->panel->id);
+	gui_chk(gui, gui->panel->pos_x, gui->panel->pos_y,
+	        *gui->panel->row.current_col, gui->panel->row.height, lbl, val);
 	pgui__col_advance(gui->panel);
 }
 
@@ -2963,9 +2950,9 @@ b32 pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, gui_align_t align,
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	result = gui__npt(gui, gui->panel->pos_x, gui->panel->pos_y,
-	                  *gui->panel->row.current_col, gui->panel->row.height,
-	                  lbl, n, hint, align, flags, gui->panel->id);
+	result = gui_npt(gui, gui->panel->pos_x, gui->panel->pos_y,
+	                 *gui->panel->row.current_col, gui->panel->row.height,
+	                 lbl, n, hint, align, flags);
 	pgui__col_advance(gui->panel);
 	return result;
 }
@@ -2975,9 +2962,9 @@ void pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	gui__select(gui, gui->panel->pos_x, gui->panel->pos_y,
+	gui_select(gui, gui->panel->pos_x, gui->panel->pos_y,
 	            *gui->panel->row.current_col, gui->panel->row.height,
-	            lbl, val, opt, gui->panel->id);
+	            lbl, val, opt);
 	pgui__col_advance(gui->panel);
 }
 
@@ -2986,9 +2973,9 @@ void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	gui__mselect(gui, gui->panel->pos_x, gui->panel->pos_y,
+	gui_mselect(gui, gui->panel->pos_x, gui->panel->pos_y,
 	             *gui->panel->row.current_col, gui->panel->row.height,
-	             txt, val, opt, gui->panel->id);
+	             txt, val, opt);
 	pgui__col_advance(gui->panel);
 }
 
@@ -2997,9 +2984,8 @@ void pgui_slider_x(gui_t *gui, r32 *val)
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	gui__slider(gui, gui->panel->pos_x, gui->panel->pos_y,
-	            *gui->panel->row.current_col, gui->panel->row.height, val,
-	            gui->panel->row.height, GUI__SLIDER_X, gui->panel->id);
+	gui_slider_x(gui, gui->panel->pos_x, gui->panel->pos_y,
+	             *gui->panel->row.current_col, gui->panel->row.height, val);
 	pgui__col_advance(gui->panel);
 }
 
@@ -3008,9 +2994,8 @@ void pgui_slider_y(gui_t *gui, r32 *val)
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	gui__slider(gui, gui->panel->pos_x, gui->panel->pos_y,
-	            *gui->panel->row.current_col, gui->panel->row.height, val,
-	            *gui->panel->row.current_col, GUI__SLIDER_Y, gui->panel->id);
+	gui_slider_y(gui, gui->panel->pos_x, gui->panel->pos_y,
+	             *gui->panel->row.current_col, gui->panel->row.height, val);
 	pgui__col_advance(gui->panel);
 }
 
