@@ -1935,19 +1935,27 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stro
 	gui__poly(gui, poly, 4, fill, stroke);
 }
 
+#define gui__circ_poly_sz(radius) ((u32)(4 + 2 * radius))
+
+static
+void gui__circ_poly(r32 x, r32 y, r32 r, v2f *v, u32 nmax)
+{
+	const u32 n = gui__circ_poly_sz(r);
+	const r32 radians_slice = 2 * fPI / n;
+	assert(n <= nmax);
+	for (u32 i = 0; i < n; ++i) {
+		const r32 radians = i * radians_slice;
+		v[i] = (v2f){ .x=x+r*cos(radians), .y=y+r*sin(radians) };
+	}
+}
+
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
 	v2f *poly = array_create();
 
-	const u32 n = 4 + 2 * r;
-	const r32 radians_slice = 2 * fPI / n;
-	for (u32 i = 0; i < n; ++i) {
-		const r32 radians = i * radians_slice;
-		const v2f v = { .x=x+r*cos(radians), .y=y+r*sin(radians) };
-		array_append(poly, v);
-	}
-
-	gui__poly(gui, poly, n, fill, stroke);
+	array_set_sz(poly, gui__circ_poly_sz(r));
+	gui__circ_poly(x, y, r, poly, array_sz(poly));
+	gui__poly(gui, poly, gui__circ_poly_sz(r), fill, stroke);
 
 	array_destroy(poly);
 }
