@@ -2509,6 +2509,7 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 			gui->active_id_found_this_frame = true;
 			gui->drag_offset.x = *x - gui->mouse_pos.x;
 			gui->drag_offset.y = *y - gui->mouse_pos.y;
+			retval = true;
 		} else {
 			gui->hot_id_found_this_frame = true;
 		}
