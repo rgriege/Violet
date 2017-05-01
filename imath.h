@@ -50,6 +50,8 @@ typedef struct v2i
 } v2i;
 
 IMGDECL const v2i g_v2i_zero;
+IMGDECL const v2i g_v2i_x_axis;
+IMGDECL const v2i g_v2i_y_axis;
 
 IMDEF void v2i_set(v2i *v, s32 x, s32 y);
 IMDEF s32  v2i_mag_sq(v2i v);
@@ -62,6 +64,8 @@ IMDEF v2i  v2i_sub(v2i lhs, v2i rhs);
 IMDEF void v2i_sub_eq(v2i *lhs, v2i rhs);
 IMDEF v2i  v2i_div(v2i lhs, v2i rhs);
 IMDEF void v2i_div_eq(v2i *lhs, v2i rhs);
+IMDEF v2i  v2i_inverse(v2i v);
+IMDEF void v2i_inverse_eq(v2i *v);
 IMDEF b32  v2i_equal(v2i lhs, v2i rhs);
 
 /* 2D Anti-aliased bounding box */
@@ -94,7 +98,9 @@ IMDEF v2i polyi_center(const v2i *v, u32 n);
 
 /* 2D Vector */
 
-IMGDEF const v2i g_v2i_zero = { 0, 0 };
+IMGDEF const v2i g_v2i_zero   = { 0, 0 };
+IMGDEF const v2i g_v2i_x_axis = { 1, 0 };
+IMGDEF const v2i g_v2i_y_axis = { 0, 1 };
 
 IMDEF void v2i_set(v2i *v, s32 x, s32 y)
 {
@@ -154,6 +160,18 @@ IMDEF void v2i_div_eq(v2i *lhs, v2i rhs)
 	lhs->x /= rhs.x;
 	lhs->y /= rhs.y;
 }
+
+IMDEF v2i v2i_inverse(v2i v)
+{
+	return (v2i){ .x = -v.x, .y = -v.y };
+}
+
+IMDEF void v2i_inverse_eq(v2i *v)
+{
+	v->x = -v->x;
+	v->y = -v->y;
+}
+
 
 IMDEF b32 v2i_equal(v2i lhs, v2i rhs)
 {
