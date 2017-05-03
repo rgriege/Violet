@@ -17,8 +17,8 @@
 #include "violet/array.h"
 #include "violet/dmath.h"
 #include "violet/fmath.h"
-#include "violet/gui.h"
 #include "violet/imath.h"
+#include "violet/gui.h"
 #include "violet/os.h"
 #include "violet/vson.h"
 
