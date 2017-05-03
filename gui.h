@@ -139,12 +139,13 @@ void img_destroy(img_t *img);
 
 typedef enum gui_align
 {
-	GUI_ALIGN_LEFT   = 0x01,
-	GUI_ALIGN_CENTER = 0x02,
-	GUI_ALIGN_RIGHT  = 0x04,
-	GUI_ALIGN_TOP    = 0x08,
-	GUI_ALIGN_MIDDLE = 0x10,
-	GUI_ALIGN_BOTTOM = 0x20,
+	GUI_ALIGN_LEFT      = 0x01,
+	GUI_ALIGN_CENTER    = 0x02,
+	GUI_ALIGN_RIGHT     = 0x04,
+	GUI_ALIGN_TOP       = 0x08,
+	GUI_ALIGN_MIDDLE    = 0x10,
+	GUI_ALIGN_BOTTOM    = 0x20,
+	GUI_ALIGN_MIDCENTER = GUI_ALIGN_CENTER | GUI_ALIGN_MIDDLE,
 } gui_align_t;
 
 typedef struct font_t
@@ -198,9 +199,11 @@ typedef enum mouse_button_t
 
 void mouse_pos(const gui_t *gui, s32 *x, s32 *y);
 b32  mouse_pressed(const gui_t *gui, u32 mask);
+b32  mouse_pressed_bg(const gui_t *gui, u32 mask);
 b32  mouse_down(const gui_t *gui, u32 mask);
 b32  mouse_released(const gui_t *gui, u32 mask);
 b32  mouse_released_bg(const gui_t *gui, u32 mask);
+b32  mouse_over_bg(const gui_t *gui);
 void mouse_scroll(const gui_t *gui, s32 *dir);
 
 b32 key_down(const gui_t *gui, gui_key_t key);
@@ -299,10 +302,10 @@ typedef struct gui_panel
 	intptr userdata;
 	struct
 	{
-		u32 height;
-		u32 cols[GUI_PANEL_MAX_COLS];
 		u32 *current_col;
+		u32 cols[GUI_PANEL_MAX_COLS];
 		u32 num_cols;
+		u32 height;
 	} row;
 	s32 pos_x, pos_y;
 	s32 scroll_x, scroll_y;
@@ -1237,9 +1240,18 @@ typedef enum gui_vbo_type
 	VBO_COUNT
 } gui_vbo_type_t;
 
+
+#ifndef GUI_MAX_VERTS
 #define GUI_MAX_VERTS 4096
+#endif
+
+#ifndef GUI_MAX_DRAW_CALLS
 #define GUI_MAX_DRAW_CALLS 1024
+#endif
+
+#ifndef GUI_MAX_SCISSORS
 #define GUI_MAX_SCISSORS 16
+#endif
 
 typedef struct draw_call
 {
@@ -1406,6 +1418,12 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->fonts = array_create();
 	gui->imgs = array_create();
+
+	SDL_Event evt;
+	while (SDL_PollEvent(&evt) == 1); /* must be run before SDL_GetWindowSize */
+	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
+	static const v2i g_v2i_2 = { .x=2, .y=2 };
+	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
 
 	gui->creation_time = time_current();
 	gui->frame_start_time = gui->creation_time;
@@ -1846,6 +1864,13 @@ b32 mouse_pressed(const gui_t *gui, u32 mask)
 	return (gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
 }
 
+b32 mouse_press_bg(const gui_t *gui, u32 mask)
+{
+	return    mouse_press(gui, mask)
+	       && gui->active_id == 0
+	       && gui->active_id_at_frame_start == 0;
+}
+
 b32 mouse_down(const gui_t *gui, u32 mask)
 {
 	return gui->mouse_btn & mask;
@@ -1861,6 +1886,11 @@ b32 mouse_released_bg(const gui_t *gui, u32 mask)
 	return    mouse_released(gui, mask)
 	       && gui->active_id == 0
 	       && gui->active_id_at_frame_start == 0;
+}
+
+b32 mouse_over_bg(const gui_t *gui)
+{
+	return !gui->mouse_covered_by_panel;
 }
 
 void mouse_scroll(const gui_t *gui, s32 *dir)
