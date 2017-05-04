@@ -64,6 +64,8 @@ IMDEF v2i  v2i_sub(v2i lhs, v2i rhs);
 IMDEF void v2i_sub_eq(v2i *lhs, v2i rhs);
 IMDEF v2i  v2i_div(v2i lhs, v2i rhs);
 IMDEF void v2i_div_eq(v2i *lhs, v2i rhs);
+IMDEF s32  v2i_dot(v2i lhs, v2i rhs);
+IMDEF s32  v2i_cross(v2i lhs, v2i rhs);
 IMDEF v2i  v2i_inverse(v2i v);
 IMDEF void v2i_inverse_eq(v2i *v);
 IMDEF b32  v2i_equal(v2i lhs, v2i rhs);
@@ -86,7 +88,9 @@ IMDEF v2i  box2i_get_half_dim(box2i b);
 
 /* Polygon */
 
+IMDEF s32 polyi_area(const v2i *v, u32 n);
 IMDEF v2i polyi_center(const v2i *v, u32 n);
+IMDEF v2i polyi_centroid(const v2i *v, u32 n);
 
 #endif // IMATH_H
 
@@ -161,6 +165,16 @@ IMDEF void v2i_div_eq(v2i *lhs, v2i rhs)
 	lhs->y /= rhs.y;
 }
 
+IMDEF s32 v2i_dot(v2i lhs, v2i rhs)
+{
+	return lhs.x * rhs.x + lhs.y * rhs.y;
+}
+
+IMDEF s32 v2i_cross(v2i lhs, v2i rhs)
+{
+	return lhs.x * rhs.y - lhs.y * rhs.x;
+}
+
 IMDEF v2i v2i_inverse(v2i v)
 {
 	return (v2i){ .x = -v.x, .y = -v.y };
@@ -230,12 +244,43 @@ IMDEF v2i box2i_get_half_dim(box2i box)
 
 /* Polygon */
 
+/* NOTE(rgriege): Green's theorem */
+static
+s32 polyi__area(const v2i *v, u32 n)
+{
+	s32 area = 0;
+	v2i prev = v[n-1];
+	for (const v2i *vn = v+n; v != vn; ++v) {
+		area += v2i_cross(prev, *v);
+		prev = *v;
+	}
+	return area/2;
+}
+
+IMDEF s32 polyi_area(const v2i *v, u32 n)
+{
+	return fabsf(polyi__area(v, n));
+}
+
 IMDEF v2i polyi_center(const v2i *v, u32 n)
 {
 	v2i center = { .x=0, .y=0 };
 	for (const v2i *vn = v+n; v != vn; ++v)
 		v2i_add_eq(&center, *v);
 	return v2i_div(center, (v2i){n,n});
+}
+
+IMDEF v2i polyi_centroid(const v2i *v, u32 n)
+{
+	const s32 denom = 6 * polyi__area(v, n);
+	v2i centroid = { .x=0, .y=0 };
+	v2i prev = v[n-1];
+	for (const v2i *vn = v+n; v != vn; ++v) {
+		const s32 cross = v2i_cross(prev, *v);
+		v2i_add_eq(&centroid, v2i_scale(v2i_add(prev, *v), cross));
+		prev = *v;
+	}
+	return v2i_div(centroid, (v2i){ denom, denom });
 }
 
 #undef IMATH_IMPLEMENTATION

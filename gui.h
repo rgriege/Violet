@@ -4,8 +4,6 @@
 #include "violet/core.h"
 #include "violet/key.h"
 
-typedef struct v2f v2f;
-
 /* Color */
 
 typedef struct color_t
@@ -220,7 +218,8 @@ b32 key_mod(const gui_t *gui, gui_key_mod_t mod);
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t line);
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t line);
-void gui_poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t line);
+void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t line);
+void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t line);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
 void gui_img_scaled(gui_t *gui, s32 x, s32 y, r32 sx, r32 sy, const img_t *img);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
@@ -1974,7 +1973,7 @@ void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
 		poly[2] = v2f_add(v2f_add(poly[2], dir), perp);
 		poly[3] = v2f_sub(v2f_add(poly[3], dir), perp);
 
-		gui_poly(gui, poly, 4, c, g_nocolor);
+		gui__poly(gui, poly, 4, c, g_nocolor);
 	}
 }
 
@@ -2014,7 +2013,23 @@ void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 	array_destroy(poly);
 }
 
-void gui_poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
+#ifndef GUI_POLY_MAX_VERTS
+#define GUI_POLY_MAX_VERTS 32
+#endif
+
+void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
+{
+	v2f vf[GUI_POLY_MAX_VERTS];
+	assert(n <= GUI_POLY_MAX_VERTS);
+
+	for (u32 i = 0; i < n; ++i) {
+		vf[i].x = v[i].x;
+		vf[i].y = v[i].y;
+	}
+	gui_polyf(gui, vf, n, fill, stroke);
+}
+
+void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
 	v2f **polys;
 	if (polyf_is_convex(v, n) || fill.a == 0) {
