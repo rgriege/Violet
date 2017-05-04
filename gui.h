@@ -366,6 +366,7 @@ typedef struct gui_style_t
 	color_t active_text_color;
 	color_t slider_track_color;
 	u32 font_sz;
+	r32 dotted_line_len;
 
 	struct
 	{
@@ -542,7 +543,6 @@ void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	texture_unbind();
 }
 
 void texture_destroy(texture_t *tex)
@@ -1164,6 +1164,7 @@ static const gui_style_t g_default_style = {
 	.active_text_color = gi_white,
 	.slider_track_color = gi_nocolor,
 	.font_sz = 14,
+	.dotted_line_len = 0,
 
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
@@ -1189,6 +1190,7 @@ static const gui_style_t g_invis_style = {
 	.active_text_color = gi_nocolor,
 	.slider_track_color = gi_nocolor,
 	.font_sz = 14,
+	.dotted_line_len = 0,
 
 	.panel = {
 		.bg_color = gi_nocolor,
@@ -1300,6 +1302,7 @@ typedef struct gui_t
 	u32 vao, vbo[VBO_COUNT];
 	shader_prog_t shader;
 	texture_t texture_white;
+	texture_t texture_white_dotted;
 	v2f verts[GUI_MAX_VERTS];
 	color_t vert_colors[GUI_MAX_VERTS];
 	v2f vert_tex_coords[GUI_MAX_VERTS];
@@ -1420,8 +1423,15 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	glGenVertexArrays(1, &gui->vao);
 	glGenBuffers(3, gui->vbo);
 
-	static const u32 texture_white_data[4] = { ~0, ~0, ~0, ~0 };
+	static const color_t texture_white_data[1] = { g_white };
 	texture_init(&gui->texture_white, 1, 1, GL_RGBA, texture_white_data);
+
+	static const u32 texture_white_dotted_data[] = { 0x00ffffff, 0xffffffff };
+	texture_init(&gui->texture_white_dotted, 2, 1, GL_RGBA, texture_white_dotted_data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	if (!shader_program_load_from_strings(&gui->shader, g_vertex_shader,
 	                                      g_fragment_shader))
@@ -1470,6 +1480,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 err_white:
 	texture_destroy(&gui->texture_white);
+	texture_destroy(&gui->texture_white_dotted);
 	glDeleteBuffers(3, gui->vbo);
 	glDeleteVertexArrays(1, &gui->vao);
 err_glew:
@@ -1496,6 +1507,7 @@ void gui_destroy(gui_t *gui)
 	array_destroy(gui->imgs);
 	shader_program_destroy(&gui->shader);
 	texture_destroy(&gui->texture_white);
+	texture_destroy(&gui->texture_white_dotted);
 	glDeleteBuffers(3, gui->vbo);
 	glDeleteVertexArrays(1, &gui->vao);
 	SDL_GL_DeleteContext(gui->gl_context);
@@ -1609,6 +1621,8 @@ static const GLenum g_draw_call_types[DRAW_COUNT] = {
 static
 void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
+	r32 dist;
+	v2f last;
 	if (!color_equal(fill, g_nocolor)) {
 		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
@@ -1629,15 +1643,28 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
-		for (u32 i = 0; i < n; ++i) {
-			gui->verts[gui->vert_cnt+i] = v[i];
-			gui->vert_colors[gui->vert_cnt+i] = stroke;
-			gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
+		if (gui->style.dotted_line_len != 0.f) {
+			dist = 0;
+			last = v[n-1];
+			for (u32 i = 0; i < n; ++i) {
+				gui->verts[gui->vert_cnt+i] = v[i];
+				gui->vert_colors[gui->vert_cnt+i] = stroke;
+				gui->vert_tex_coords[gui->vert_cnt+i].x = dist / gui->style.dotted_line_len;
+				gui->vert_tex_coords[gui->vert_cnt+i].y = 0;
+				dist += v2f_dist(last, v[i]);
+			}
+			gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white_dotted.handle;
+		} else {
+			for (u32 i = 0; i < n; ++i) {
+				gui->verts[gui->vert_cnt+i] = v[i];
+				gui->vert_colors[gui->vert_cnt+i] = stroke;
+				gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
+			}
+			gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
 		}
 		gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
 		gui->draw_calls[gui->draw_call_cnt].cnt = n;
 		gui->draw_calls[gui->draw_call_cnt].type = DRAW_LINE_LOOP;
-		gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
 		++gui->draw_call_cnt;
 		gui->vert_cnt += n;
 	}
