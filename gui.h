@@ -1422,7 +1422,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	glGenVertexArrays(1, &gui->vao);
 	glGenBuffers(3, gui->vbo);
 
-	static const color_t texture_white_data[1] = { g_white };
+	static const color_t texture_white_data[1] = { gi_white };
 	texture_init(&gui->texture_white, 1, 1, GL_RGBA, texture_white_data);
 
 	static const u32 texture_white_dotted_data[] = { 0x00ffffff, 0xffffffff };

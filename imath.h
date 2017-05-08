@@ -259,7 +259,7 @@ s32 polyi__area(const v2i *v, u32 n)
 
 IMDEF s32 polyi_area(const v2i *v, u32 n)
 {
-	return fabsf(polyi__area(v, n));
+	return abs(polyi__area(v, n));
 }
 
 IMDEF v2i polyi_center(const v2i *v, u32 n)
