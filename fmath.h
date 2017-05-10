@@ -236,6 +236,7 @@ FMDEF b32   polyf_segment_intersect(const v2f *v, u32 n, v2f v0, v2f v1);
 FMDEF b32   polyf_intersect(const v2f *p1, u32 n1, const v2f *p2, u32 n2,
                             v2f *isec);
 FMDEF r32   polyf_pt_dist(const v2f *v, u32 n, v2f p);
+FMDEF r32   polyf_pt_dist_sq(const v2f *v, u32 n, v2f p);
 
 #endif // FMATH_H
 
@@ -1149,11 +1150,16 @@ FMDEF b32 polyf_intersect(const v2f *p1, u32 n1, const v2f *p2, u32 n2, v2f *ise
 
 FMDEF r32 polyf_pt_dist(const v2f *v, u32 n, v2f p)
 {
+	return sqrtf(polyf_pt_dist_sq(v, n , p));
+}
+
+FMDEF r32 polyf_pt_dist_sq(const v2f *v, u32 n, v2f p)
+{
 	r32 min_dist = FLT_MAX;
 	v2f prev = v[n-1];
 	for (const v2f *vn=v+n; v!=vn; ++v)
 	{
-		const r32 d = fmath_point_to_segment_dist(prev, *v, p);
+		const r32 d = fmath_point_to_segment_dist_sq(prev, *v, p);
 		min_dist = fminf(min_dist, d);
 		prev = *v;
 	}
