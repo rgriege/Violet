@@ -54,6 +54,7 @@ typedef union intptr
 /* Utility */
 
 #define UNUSED(x) ((void)(x))
+#define NOOP UNUSED(0)
 
 #ifndef NDEBUG
 #define check(x) assert(x)
