@@ -249,6 +249,10 @@ void      gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                   b32 *val);
 b32       gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
 b32       gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
+b32       gui_range_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
+                      r32 min, r32 max);
+b32       gui_range_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
+                      r32 min, r32 max);
 void      gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      const char *txt, u32 *val, u32 opt);
 void      gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -339,6 +343,8 @@ void      pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 b32       pgui_slider_x(gui_t *gui, r32 *val);
 b32       pgui_slider_y(gui_t *gui, r32 *val);
+b32       pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max);
+b32       pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max);
 
 void pgui_subpanel_init(gui_t *gui, gui_panel_t *subpanel);
 void pgui_subpanel(gui_t *gui, gui_panel_t *subpanel);
@@ -2507,6 +2513,24 @@ b32 gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
 	return gui__slider(gui, x, y, w, h, val, w, GUI__SLIDER_Y);
 }
 
+b32 gui_range_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
+                r32 min, r32 max)
+{
+	r32 slider_val = (*val - min) / (max - min);
+	b32 result = gui_slider_x(gui, x, y, w, h, &slider_val);
+	*val = (max - min) * slider_val + min;
+	return result;
+}
+
+b32 gui_range_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
+                r32 min, r32 max)
+{
+	r32 slider_val = (*val - min) / (max - min);
+	b32 result = gui_slider_y(gui, x, y, w, h, &slider_val);
+	*val = (max - min) * slider_val + min;
+	return result;
+}
+
 void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                 const char *txt, u32 *val, u32 opt)
 {
@@ -3114,6 +3138,23 @@ b32 pgui_slider_y(gui_t *gui, r32 *val)
 	pgui__col_advance(gui->panel);
 	return ret;
 }
+
+b32 pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max)
+{
+	r32 slider_val = (*val - min) / (max - min);
+	b32 result = pgui_slider_x(gui, &slider_val);
+	*val = (max - min) * slider_val + min;
+	return result;
+}
+
+b32 pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max)
+{
+	r32 slider_val = (*val - min) / (max - min);
+	b32 result = pgui_slider_y(gui, &slider_val);
+	*val = (max - min) * slider_val + min;
+	return result;
+}
+
 
 void pgui_subpanel_init(gui_t *gui, gui_panel_t *subpanel)
 {
