@@ -169,12 +169,13 @@ typedef struct ivalf
 
 FMGDECL const ivalf g_ivalf_0_to_1;
 
-FMDEF void ivalf_slide(ivalf *i, r32 d);
-FMDEF r32  ivalf_length(ivalf i);
-FMDEF b32  ivalf_contains_val(ivalf i, r32 x);
-FMDEF b32  ivalf_contains_ival(ivalf lhs, ivalf rhs);
-FMDEF b32  ivalf_overlaps(ivalf lhs, ivalf rhs);
-FMDEF r32  ivalf_overlap(ivalf lhs, ivalf rhs);
+FMDEF void  ivalf_slide(ivalf *i, r32 d);
+FMDEF r32   ivalf_length(ivalf i);
+FMDEF b32   ivalf_contains_val(ivalf i, r32 x);
+FMDEF b32   ivalf_contains_ival(ivalf lhs, ivalf rhs);
+FMDEF b32   ivalf_overlaps(ivalf lhs, ivalf rhs);
+FMDEF r32   ivalf_overlap(ivalf lhs, ivalf rhs);
+FMDEF ivalf ivalf_overlap_ival(ivalf lhs, ivalf rhs);
 
 /* 2D Anti-aliased bounding box */
 
@@ -218,6 +219,8 @@ FMDEF v2f fmath_nearest_point_on_line(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_segment_dist(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_segment_dist_sq(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_line_dist(v2f a, v2f b, v2f p);
+
+FMDEF ivalf linef_project(v2f a, v2f b, v2f axis);
 
 /* Polygon */
 
@@ -675,15 +678,15 @@ FMDEF b32 ivalf_overlaps(ivalf lhs, ivalf rhs)
 
 FMDEF r32 ivalf_overlap(ivalf lhs, ivalf rhs)
 {
-	r32 diff1 = lhs.r - rhs.l;
-	r32 diff2 = rhs.r - lhs.l;
-	r32 diff_min = fminf(diff1, diff2);
-	r32 len_l = ivalf_length(lhs);
-	r32 len_r = ivalf_length(rhs);
-	r32 len_min = fminf(len_l, len_r);
-	return (diff_min < 0) ? 0 : fminf(diff_min, len_min);
+	const ivalf overlap = ivalf_overlap_ival(lhs, rhs);
+	const r32 len = ivalf_length(overlap);
+	return fmaxf(len, 0);
 }
 
+FMDEF ivalf ivalf_overlap_ival(ivalf lhs, ivalf rhs)
+{
+	return (ivalf){ .l = fmaxf(lhs.l, rhs.l), .r = fminf(lhs.r, rhs.r) };
+}
 
 /* 2D Anti-aliased bounding box */
 
@@ -933,6 +936,22 @@ FMDEF r32 fmath_point_to_segment_dist_sq(v2f a, v2f b, v2f p)
 FMDEF r32 fmath_point_to_line_dist(v2f a, v2f b, v2f p)
 {
 	return v2f_dist(p, fmath_nearest_point_on_line(a, b, p));
+}
+
+FMDEF ivalf linef_project(v2f a, v2f b, v2f axis)
+{
+	ivalf projection;
+	r32 dp_a, dp_b;
+
+	if (!v2f_is_unit(axis))
+		v2f_normalize_eq(&axis);
+
+	dp_a = v2f_dot(a, axis);
+	dp_b = v2f_dot(b, axis);
+
+	projection.l = fminf(dp_a, dp_b);
+	projection.r = fmaxf(dp_a, dp_b);
+	return projection;
 }
 
 /* Polygon */
