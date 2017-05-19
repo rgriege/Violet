@@ -49,7 +49,7 @@ typedef struct array__head
                                                            (a)+array_sz(a) - 1)
 #define array_append(a, e)         (*array_append_null(a) = e)
 #define array_insert_null(a, i)    ((a)=array__insert_null(a, i, array__esz(a)), \
-                                                           (a)+i)
+                                                           (a)+(i))
 #define array_insert(a, i, e)      (*array_insert_null(a, i) = e)
 #define array_remove(a, i)         array__remove(a, i, array__esz(a))
 #define array_remove_fast(a, i)    array__remove_fast(a, i, array__esz(a))
