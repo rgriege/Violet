@@ -1090,6 +1090,9 @@ static r32 polyf__area(const v2f *v, u32 n)
 {
 	r32 area = 0;
 	v2f prev = v[n-1];
+
+	assert(n >= 3);
+
 	for (const v2f *vn = v+n; v != vn; ++v)
 	{
 		area += v2f_cross(prev, *v);
