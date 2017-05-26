@@ -76,7 +76,7 @@ static b32 vson__skip_rest_of_line(FILE *fp)
 static b32 vson__read_rest_of_line(FILE *fp, char *str, u32 n)
 {
 	char c, *p = str;
-	while (p - str < n && (c = fgetc(fp)) != EOF && c != '\n')
+	while ((u32)(p - str) < n && (c = fgetc(fp)) != EOF && c != '\n')
 		*(p++) = c;
 	if (c != '\n') {
 		vson__skip_rest_of_line(fp);
@@ -155,7 +155,7 @@ b32 vson_read_str(FILE *fp, const char *label, char *val, u32 sz)
 		return false;
 	}
 
-	while (p - val < sz && (c = fgetc(fp)) != EOF && c != '\n')
+	while ((u32)(p - val) < sz && (c = fgetc(fp)) != EOF && c != '\n')
 		*(p++) = c;
 	if (p == val + sz)
 		return fgetc(fp) == '\n';

@@ -2,6 +2,7 @@
 #define VIOLET_CORE_H
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -26,8 +27,8 @@ typedef struct timespec timepoint_t;
 /* Types */
 
 typedef bool b8;
-typedef unsigned char u8;
-typedef char s8;
+typedef uint8_t u8;
+typedef int8_t s8;
 typedef uint16_t u16;
 typedef int16_t s16;
 typedef uint32_t b32;

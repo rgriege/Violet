@@ -1573,12 +1573,12 @@ b32 gui_begin_frame(gui_t *gui)
 
 	/* Should really never hit either of these */
 	if (gui->hot_id != 0 && !gui->hot_id_found_this_frame) {
-		log_write("hot widget %lu was not drawn", gui->hot_id);
+		log_write("hot widget %" PRIu64 " was not drawn", gui->hot_id);
 		gui->hot_id = 0;
 	}
 	gui->hot_id_found_this_frame = false;
 	if (gui->active_id != 0 && !gui->active_id_found_this_frame) {
-		log_write("active widget %lu was not drawn", gui->active_id);
+		log_write("active widget %" PRIu64 " was not drawn", gui->active_id);
 		gui->active_id = 0;
 	}
 	gui->active_id_found_this_frame = false;
@@ -2686,7 +2686,7 @@ b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
 
 	pos.x = *x;
 	pos.y = *y;
-	contains_mouse = v2i_dist_sq(pos, gui->mouse_pos) < r * r;
+	contains_mouse = (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r;
 	ret = gui__drag(gui, x, y, contains_mouse, mb, &id, gui__drag_default_callback,
 	                NULL);
 	widget__color(gui, id, &fill, &outline, NULL);
@@ -2976,7 +2976,7 @@ void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols)
 		row_width += unspecified_width_col_cnt * unspecified_col_width;
 	}
 
-	gui->panel->required_dim.x = max(gui->panel->required_dim.x, row_width);
+	gui->panel->required_dim.x = max((u32)gui->panel->required_dim.x, row_width);
 	gui->panel->required_dim.y += height;
 }
 

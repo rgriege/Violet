@@ -48,7 +48,7 @@ typedef float r32;
 #define fmaxf(x, y) (((x) < (y)) ? (y) : (x))
 #define fminf(x, y) (((x) > (y)) ? (y) : (x))
 
-#define fPI 3.14159265359
+#define fPI 3.14159265359f
 #define fDEG2RAD fPI / 180.f
 
 #define fmath_clamp(lo, val, hi) fmaxf(lo, fminf(hi, val))
