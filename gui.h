@@ -180,6 +180,7 @@ void   gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
                void *udata);
 
 timepoint_t gui_frame_start(gui_t *gui);
+timepoint_t gui_last_input_time(gui_t *gui);
 
 
 typedef enum mouse_button_t
@@ -1208,12 +1209,6 @@ static const gui_style_t g_invis_style = {
 	},
 };
 
-static
-int gui__sdl_evt_filter(void *userdata, SDL_Event *event)
-{
-	return event->type == SDL_QUIT || event->type == SDL_MOUSEWHEEL;
-}
-
 typedef enum special_char_t
 {
 	CHAR_RETURN = 13,
@@ -1300,6 +1295,7 @@ typedef struct gui_t
 {
 	timepoint_t creation_time;
 	timepoint_t frame_start_time;
+	timepoint_t last_input_time;
 	u32 frame_time_milli;
 	SDL_Window *window;
 	SDL_GLContext gl_context;
@@ -1409,8 +1405,6 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	if (SDL_GL_SetSwapInterval(0) != 0)
 		log_write("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
 
-	SDL_SetEventFilter(gui__sdl_evt_filter, NULL);
-
 	glewExperimental = GL_TRUE;
 	GLenum glew_err = glewInit();
 	if (glew_err != GLEW_OK) {
@@ -1458,6 +1452,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->creation_time = time_current();
 	gui->frame_start_time = gui->creation_time;
+	gui->last_input_time = gui->creation_time;
 	gui->frame_time_milli = 0;
 
 	gui->repeat_delay = 500;
@@ -1553,6 +1548,15 @@ b32 gui_begin_frame(gui_t *gui)
 			break;
 		case SDL_MOUSEWHEEL:
 			gui->mouse_btn |= (evt.wheel.y > 0 ? MB_WHEELUP : MB_WHEELDOWN);
+			gui->last_input_time = now;
+			break;
+		case SDL_KEYDOWN:
+		case SDL_KEYUP:
+		case SDL_MOUSEMOTION:
+		case SDL_MOUSEBUTTONDOWN:
+		case SDL_MOUSEBUTTONUP:
+		case SDL_WINDOWEVENT:
+			gui->last_input_time = now;
 			break;
 		}
 	}
@@ -1847,6 +1851,11 @@ void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
 timepoint_t gui_frame_start(gui_t *gui)
 {
 	return gui->frame_start_time;
+}
+
+timepoint_t gui_last_input_time(gui_t *gui)
+{
+	return gui->last_input_time;
 }
 
 /* Input */
