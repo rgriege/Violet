@@ -1346,8 +1346,9 @@ typedef struct gui_t
 	char *pw_buf;
 
 	gui_panel_t *panel;
-	u32 next_panel_id;
-	s32 next_panel_pri, min_panel_pri;
+	u32 panel_cnt;
+	u32 last_panel_id;
+	s32 last_panel_pri, max_panel_pri;
 } gui_t;
 
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
@@ -1478,8 +1479,10 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->pw_buf = array_create();
 
 	gui->panel = NULL;
-	gui->next_panel_id = 1;
-	gui->min_panel_pri = 0;
+	gui->panel_cnt = 0;
+	gui->last_panel_id = 0;
+	gui->last_panel_pri = 0;
+	gui->max_panel_pri = 0;
 
 	goto out;
 
@@ -1589,8 +1592,9 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
 
-	gui->next_panel_pri = 0;
-	gui->min_panel_pri = 0;
+	gui->last_panel_pri = 0;
+	gui->max_panel_pri = (s32)gui->panel_cnt;
+	gui->panel_cnt = 0;
 
 	return !quit;
 }
@@ -1764,13 +1768,6 @@ void gui__complete_scissor(gui_t *gui)
 void gui_end_frame(gui_t *gui)
 {
 	float bg_color[4];
-#if 0
-	GLint draw_call_idcs[GUI_MAX_DRAW_CALLS];
-	GLsizei draw_call_cnts[GUI_MAX_DRAW_CALLS];
-	GLsizei draw_call_cnt;
-	u32 draw_call_type_cnts[DRAW_COUNT] = { 0 };
-	u32 draw_call_type_idcs[DRAW_COUNT];
-#endif
 
 	gui__complete_scissor(gui);
 
@@ -1807,15 +1804,9 @@ void gui_end_frame(gui_t *gui)
 	glUniform2f(glGetUniformLocation(gui->shader.handle, "window_halfdim"),
 	            gui->win_halfdim.x, gui->win_halfdim.y);
 
-	/* render back to front */
-	/* TODO(rgriege): This method of ordering creates an inconsistency
-	 * between panel and non-panel calls.  At the same depth, OpenGL draws
-	 * later geometry over previous geometry; subsequently gui primitives
-	 * work the same way.  However, currently the top-most gui panel/mask
-	 * must be called first. See note at end of pgui_panel_finish(). */
-	for (gui__scissor_t *scissor_first = gui->scissors,
-	                    *scissor = scissor_first + gui->scissor_cnt - 1;
-	     scissor >= scissor_first; --scissor) {
+	for (gui__scissor_t *scissor     = gui->scissors,
+	                    *scissor_end = scissor + gui->scissor_cnt;
+	     scissor < scissor_end; ++scissor) {
 		glScissor(scissor->x, scissor->y, scissor->w, scissor->h);
 		for (draw_call_t *draw_call = gui->draw_calls + scissor->draw_call_idx,
 		                 *draw_call_end = draw_call + scissor->draw_call_cnt;
@@ -1825,33 +1816,6 @@ void gui_end_frame(gui_t *gui)
 			             draw_call->idx, draw_call->cnt);
 		}
 	}
-		// ++draw_call_type_cnts[draw_call->type];
-#if 0
-		draw_call_type_idcs[0] = 0;
-		for (u32 i = 1; i < DRAW_COUNT; ++i)
-			draw_call_type_idcs[i] = draw_call_type_idcs[i-1] + draw_call_type_cnts[i-1];
-
-		for (u32 i = 0; i < DRAW_COUNT; ++i) {
-			if (draw_call_type_cnts[i] == 0)
-				continue;
-
-			for (u32 j = 0; j < scissor->draw_call_cnt; ++j) {
-				if (gui->draw_calls[scissor->draw_call_idx + j].type == i) {
-					draw_call_idcs[draw_call_cnt] = ;
-					draw_call_cnts[draw_call_cnt] = ;
-					++draw_call_cnt;
-				}
-			}
-
-			glBindTexture(GL_TEXTURE_2D, gui->texture_white.handle);
-			glMultiDrawArrays(g_draw_call_types[i], draw_call_idcs, draw_call_cnts,
-			                  draw_call_cnt);
-			/*for (u32 i = 0; i < scissor->tex_cnt; ++i) {
-				glBindTexture(GL_TEXTURE_2D, tex->handle);
-				glDrawArrays(GL_TRIANGLE_FAN, , 4);
-			}*/
-		}
-#endif
 
 	glFlush();
 	SDL_GL_SwapWindow(gui->window);
@@ -2707,8 +2671,8 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->y = y;
 	panel->width = w;
 	panel->height = h;
-	panel->id = ++gui->next_panel_id;
-	assert(gui->next_panel_id != GUI__DEFAULT_PANEL_ID);
+	panel->id = ++gui->last_panel_id;
+	assert(gui->last_panel_id != GUI__DEFAULT_PANEL_ID);
 
 	panel->title = title;
 	panel->flags = flags;
@@ -2720,26 +2684,29 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->parent = NULL;
 
 	pgui_panel_to_front(gui, panel);
+	++gui->panel_cnt;
 }
 
 void pgui_panel(gui_t *gui, gui_panel_t *panel)
 {
-	v2i resize;
-	s32 resize_delta;
+	v2i resize, needed;
+	s32 resize_delta, title_y, scroll, scroll_handle_sz;
+	r32 slider_val;
 	gui_style_t cur_style;
-	b32 dragging;
+	b32 dragging, contains_mouse;
 	box2i box, box2;
 
 	assert(panel->parent == gui->panel);
 
 	gui->panel = panel;
+	++gui->panel_cnt;
 
 	if (gui->style.panel.padding >= 1.f) {
 		panel->padding.x = gui->style.panel.padding;
 		panel->padding.y = gui->style.panel.padding;
 	} else {
-	  panel->padding.x = gui->panel->width * gui->style.panel.padding;
-	  panel->padding.y = gui->panel->height * gui->style.panel.padding;
+	  panel->padding.x = panel->width * gui->style.panel.padding;
+	  panel->padding.y = panel->height * gui->style.panel.padding;
 	}
 
 	cur_style = *gui_get_style(gui);
@@ -2748,7 +2715,6 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	/* resizing */
 
 	if (panel->flags & GUI_PANEL_RESIZABLE) {
-
 		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
 		if (gui_drag_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
 		                   panel->height, MB_LEFT)) {
@@ -2774,10 +2740,10 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		if (gui_drag_vert(gui, panel->x, &resize.y, panel->width,
 		                  GUI_PANEL_RESIZE_BORDER, MB_LEFT))
 			panel->height += resize.y - (panel->y + panel->height);
-
 	}
 
-	/* titlebar */
+	/* titlebar / dragging */
+	/* NOTE(rgriege): defer rendering to avoid 1 frame latency while dragging */
 
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
 		panel->pos.y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
@@ -2787,6 +2753,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		if (dragging)
 			panel->y = panel->pos.y - panel->height + GUI_PANEL_TITLEBAR_HEIGHT;
 
+		title_y = panel->pos.y;
 		panel->pos.y -= panel->padding.y;
 		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
 	} else {
@@ -2795,80 +2762,28 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->body_height = panel->height;
 	}
 
-	gui_style(gui, &cur_style);
-
 	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
+	contains_mouse = box2i_contains_point(box, gui->mouse_pos);
 	if (   dragging
 	    || (   gui__allow_new_panel_interaction(gui)
 	        && mouse_pressed(gui, MB_LEFT)
-	        && box2i_contains_point(box, gui->mouse_pos)))
+	        && contains_mouse))
 		pgui_panel_to_front(gui, panel);
 	else
-		panel->pri = gui->next_panel_pri++;
+		panel->pri = ++gui->last_panel_pri;
 
-	panel->pos.x = panel->x;
-	panel->row.height = 0;
-	panel->row.current_col = panel->row.cols;
-	panel->row.num_cols = 0;
+	/* background + titlebar display */
 
-	panel->required_dim = v2i_scale(panel->padding, 2);
-
-	panel->pos.y += panel->scroll.y;
-
-	gui->panel = panel;
-
-	assert(gui->scissor_cnt > 0);
-	box2i_from_xywh(&box, gui->scissors[gui->scissor_cnt-1].x,
-	                gui->scissors[gui->scissor_cnt-1].y,
-	                gui->scissors[gui->scissor_cnt-1].w,
-	                gui->scissors[gui->scissor_cnt-1].h);
-	box2i_from_xywh(&box2, panel->x + panel->padding.x,
-	                panel->y + panel->padding.y,
-	                panel->width - panel->padding.x * 2,
-	                panel->body_height - panel->padding.y * 2);
-	box2i_clamp_point(box, &box2.min);
-	box2i_clamp_point(box, &box2.max);
-	gui_mask(gui, box2.min.x, box2.min.y, box2.max.x - box2.min.x, box2.max.y - box2.min.y);
-}
-
-void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
-{
-	box2i box;
-	v2i needed;
-	s32 pos_y, scroll, scroll_handle_sz;
-	r32 slider_val;
-	b32 contains_mouse;
-
-	assert(gui->panel == panel);
-
-	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
-	contains_mouse = box2i_contains_point(box, gui->mouse_pos);
-
-	if (panel->parent)
-		gui_mask(gui, panel->parent->x + panel->parent->padding.x,
-		         panel->parent->y + panel->parent->padding.y,
-						 panel->parent->width - panel->parent->padding.x * 2,
-		         panel->parent->body_height - panel->parent->padding.y * 2);
-	else
-		gui_unmask(gui);
-
+	gui_style(gui, &cur_style);
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
 	         gui->style.panel.bg_color, gui->style.panel.border_color);
-
-	/* titlebar */
-
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
-		pos_y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
-		gui__drag_render(gui, panel->x, pos_y, panel->width,
+		gui__drag_render(gui, panel->x, title_y, panel->width,
 		                 GUI_PANEL_TITLEBAR_HEIGHT,
-		                 gui__widget_id(panel->x, pos_y, panel));
+		                 gui__widget_id(panel->x, title_y, panel));
 		gui_txt(gui, panel->x + panel->width / 2,
-		        pos_y + GUI_PANEL_TITLEBAR_HEIGHT / 2, gui->style.font_sz,
+		        title_y + GUI_PANEL_TITLEBAR_HEIGHT / 2, gui->style.font_sz,
 		        panel->title, g_white, GUI_ALIGN_CENTER | GUI_ALIGN_MIDDLE);
-
-		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
-	} else {
-		panel->body_height = panel->height;
 	}
 
 	/* scrolling */
@@ -2885,7 +2800,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 			panel->scroll.y = clamp(0, panel->scroll.y, needed.y);
 		}
 		scroll_handle_sz = max(panel->padding.x / 2,   panel->body_height * panel->body_height
-																					/ panel->required_dim.y);
+		                                             / panel->required_dim.y);
 		slider_val = 1.f - ((r32)panel->scroll.y / needed.y);
 		gui__slider(gui, panel->x, panel->y + panel->padding.y / 2, panel->padding.x / 2,
 		            panel->body_height - panel->padding.y / 2, &slider_val,
@@ -2907,7 +2822,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 			panel->scroll.x = clamp(0, panel->scroll.x, needed.x);
 		}
 		scroll_handle_sz = max(panel->padding.y / 2,   panel->width * panel->width
-																					/ panel->required_dim.x);
+		                                             / panel->required_dim.x);
 		slider_val = (r32)panel->scroll.x / needed.x;
 		gui__slider(gui, panel->x + panel->padding.x / 2, panel->y,
 		            panel->width - panel->padding.x / 2, panel->padding.y / 2, &slider_val,
@@ -2917,14 +2832,51 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		panel->scroll.x = 0;
 	}
 
-	if (contains_mouse)
-		gui->mouse_covered_by_panel = true;
+	panel->pos.x = panel->x;
+	panel->row.height = 0;
+	panel->row.current_col = panel->row.cols;
+	panel->row.num_cols = 0;
 
-	/* Disallow further non-panel rendering to this scissor so that following
-	 * geometry is behind it.  Geometry in front of this panel should already
-	 * have called. Result of inconsistent gui rendering order. */
-	if (!panel->parent)
+	panel->required_dim = v2i_scale(panel->padding, 2);
+
+	panel->pos.y += panel->scroll.y;
+
+	assert(gui->scissor_cnt > 0);
+	box2i_from_xywh(&box, gui->scissors[gui->scissor_cnt-1].x,
+	                gui->scissors[gui->scissor_cnt-1].y,
+	                gui->scissors[gui->scissor_cnt-1].w,
+	                gui->scissors[gui->scissor_cnt-1].h);
+	box2i_from_xywh(&box2, panel->x + panel->padding.x,
+	                panel->y + panel->padding.y,
+	                panel->width - panel->padding.x * 2,
+	                panel->body_height - panel->padding.y * 2);
+	box2i_clamp_point(box, &box2.min);
+	box2i_clamp_point(box, &box2.max);
+	gui_mask(gui, box2.min.x, box2.min.y, box2.max.x - box2.min.x, box2.max.y - box2.min.y);
+}
+
+void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
+{
+	box2i box;
+
+	assert(gui->panel == panel);
+
+	if (panel->parent)
+		gui_mask(gui, panel->parent->x + panel->parent->padding.x,
+		         panel->parent->y + panel->parent->padding.y,
+		         panel->parent->width - panel->parent->padding.x * 2,
+		         panel->parent->body_height - panel->parent->padding.y * 2);
+	else
 		gui_unmask(gui);
+
+	if (panel->flags & GUI_PANEL_TITLEBAR)
+		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
+	else
+		panel->body_height = panel->height;
+
+	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
+	if (box2i_contains_point(box, gui->mouse_pos))
+		gui->mouse_covered_by_panel = true;
 
 	gui->panel = panel->parent;
 }
@@ -3194,7 +3146,7 @@ void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel)
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
 {
-	panel->pri = --gui->min_panel_pri;
+	panel->pri = ++gui->max_panel_pri;
 }
 
 int pgui_panel_sort(const void *lhs_, const void *rhs_)
