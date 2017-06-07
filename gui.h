@@ -1808,6 +1808,11 @@ void gui_end_frame(gui_t *gui)
 	            gui->win_halfdim.x, gui->win_halfdim.y);
 
 	/* render back to front */
+	/* TODO(rgriege): This method of ordering creates an inconsistency
+	 * between panel and non-panel calls.  At the same depth, OpenGL draws
+	 * later geometry over previous geometry; subsequently gui primitives
+	 * work the same way.  However, currently the top-most gui panel/mask
+	 * must be called first. See note at end of pgui_panel_finish(). */
 	for (gui__scissor_t *scissor_first = gui->scissors,
 	                    *scissor = scissor_first + gui->scissor_cnt - 1;
 	     scissor >= scissor_first; --scissor) {
@@ -2914,6 +2919,12 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 
 	if (contains_mouse)
 		gui->mouse_covered_by_panel = true;
+
+	/* Disallow further non-panel rendering to this scissor so that following
+	 * geometry is behind it.  Geometry in front of this panel should already
+	 * have called. Result of inconsistent gui rendering order. */
+	if (!panel->parent)
+		gui_unmask(gui);
 
 	gui->panel = panel->parent;
 }
