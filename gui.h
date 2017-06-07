@@ -1211,8 +1211,9 @@ static const gui_style_t g_invis_style = {
 
 typedef enum special_char_t
 {
+	CHAR_BACKSPACE = 8,
 	CHAR_RETURN = 13,
-	CHAR_BACKSPACE = 8
+	CHAR_ESCAPE = 27,
 } special_char_t;
 
 static const char g_caps[128] = {
@@ -1231,23 +1232,30 @@ static const char g_caps[128] = {
 	 88,  89,  90, 123, 124, 125, 126, 127
 };
 
-static inline
-b32 gui__convert_scancode(SDL_Scancode code, b32 caps, char *c)
-{
-	const SDL_Keycode key = SDL_GetKeyFromScancode(code);
-	if (key >= 0 && key < 127) {
-		*c = caps ? g_caps[key] : key;
-	} else if (key >= SDLK_KP_DIVIDE && key <= SDLK_KP_PERIOD) {
-		static char keys[1 + SDLK_KP_PERIOD - SDLK_KP_DIVIDE] = {
-			'/', '*', '-', '+', CHAR_RETURN, '1', '2', '3', '4', '5', '6',
-			'7', '8', '9', '0', '.'
-		};
-		*c = keys[key - SDLK_KP_DIVIDE];
-	} else {
-		return false;
-	}
+static const char g_gui_key_chars[KB_COUNT] = {
+	0, 0, 0, 0,
+	'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+	'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+	'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+	CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, '\t', ' ',
+	'-', '=', '[', ']', '\\',
+	0,
+	';', '\'', '`', ',', '.', '/',
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* KB_CAPSLOCK - KB_F12 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* KB_PRINTSCREEN - KB_UP */
+	0,
+	'/', '*', '-', '+', CHAR_RETURN,
+	'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+	'.', '=',
+};
 
-	return true;
+static inline
+b32 gui__convert_key_to_char(const gui_t *gui, gui_key_t key, char *c)
+{
+	*c = g_gui_key_chars[key];
+	if (key_mod(gui, KBM_SHIFT) != key_down(gui, KB_CAPSLOCK))
+		*c = g_caps[(u8)*c];
+	return *c != 0;
 }
 
 typedef enum gui_vbo_type
@@ -1321,10 +1329,11 @@ typedef struct gui_t
 
 	u8 prev_keys[KB_COUNT];
 	const u8 *keys;
-	char prev_char, cur_char;
 	u32 repeat_delay;
 	u32 repeat_interval;
 	u32 repeat_timer;
+	u32 npt_prev_key_idx;
+	u32 npt_cursor_pos;
 
 	font_t *fonts;
 	cached_img_t *imgs;
@@ -1458,6 +1467,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->repeat_delay = 500;
 	gui->repeat_interval = 100;
 	gui->repeat_timer = gui->repeat_delay;
+	gui->npt_cursor_pos = 0;
 
 	gui->default_style = g_default_style;
 	gui_style_default(gui);
@@ -1569,14 +1579,8 @@ b32 gui_begin_frame(gui_t *gui)
 	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
 	gui->mouse_covered_by_panel = false;
 
-	gui->cur_char = 0;
 	gui->keys = SDL_GetKeyboardState(&key_cnt);
 	assert(key_cnt > KB_COUNT);
-	const SDL_Keymod mod = SDL_GetModState();
-	const b32 caps = ((mod & KMOD_SHIFT) != 0) != ((mod & KMOD_CAPS) != 0);
-	for (s32 i = 0; i < key_cnt; ++i)
-		if (gui->keys[i] && gui__convert_scancode(i, caps, &gui->cur_char))
-			break;
 
 	/* Should really never hit either of these */
 	if (gui->hot_id != 0 && !gui->hot_id_found_this_frame) {
@@ -1824,7 +1828,6 @@ void gui_end_frame(gui_t *gui)
 	glFlush();
 	SDL_GL_SwapWindow(gui->window);
 
-	gui->prev_char = gui->cur_char;
 	memcpy(gui->prev_keys, gui->keys, KB_COUNT);
 }
 
@@ -2080,6 +2083,38 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 }
 
 static
+void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
+                       u32 pos, gui_align_t align)
+{
+	font_t *font;
+	r32 x = *ix, y = *iy;
+	stbtt_aligned_quad q;
+
+	font = gui__get_font(gui, sz);
+	assert(font);
+
+	x += font__line_offset_x(font, txt, align);
+	y += font__offset_y(font, txt, align);
+
+	if (pos == 0)
+		goto out;
+
+	for (u32 i = 0; i < pos; ++i) {
+		if (txt[i] >= 32 && txt[i] < 127) {
+			stbtt_GetPackedQuad(font->char_info, font->texture.width,
+			                    font->texture.height, txt[i] - 32, &x, &y, &q, 1);
+		} else if (txt[i] == '\r') {
+			y -= font->newline_dist;
+			x = *ix + font__line_offset_x(font, &txt[i+1], align);
+		}
+	}
+
+out:
+	*ix = x;
+	*iy = y;
+}
+
+static
 void gui__txt(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
               color_t color, gui_align_t align)
 {
@@ -2220,44 +2255,67 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	b32 complete = false;
 
 	if (gui->focus_id == id) {
-		if (gui->cur_char != 0) {
+		u32 key_idx;
+		for (key_idx = 0; key_idx < KB_COUNT; ++key_idx)
+			if (gui->keys[key_idx])
+				break;
+		if (key_idx != KB_COUNT) {
 			b32 modify = false;
-			if (   gui->cur_char != gui->prev_char
-			    && g_caps[(u8)gui->cur_char] != gui->prev_char
-			    && g_caps[(u8)gui->prev_char] != gui->cur_char) {
-				modify = true;
+			if (key_idx != gui->npt_prev_key_idx) {
 				gui->repeat_timer = gui->repeat_delay;
+				gui->npt_prev_key_idx = key_idx;
+				modify = true;
 			} else if (gui__can_repeat(gui)) {
 				modify = true;
 			}
 			if (modify) {
 				u32 len = strlen(txt);
-				if (gui->cur_char == CHAR_BACKSPACE) {
-					if (len > 0)
-						txt[len-1] = '\0';
-				} else if (gui->cur_char == CHAR_RETURN) {
+				char key_char = 0;
+				gui__convert_key_to_char(gui, key_idx, &key_char);
+				if (key_char == CHAR_BACKSPACE) {
+					if (gui->npt_cursor_pos > 0) {
+						for (u32 i = gui->npt_cursor_pos - 1; i < len; ++i)
+							txt[i] = txt[i+1];
+						--gui->npt_cursor_pos;
+					}
+				} else if (key_char == CHAR_RETURN) {
 					gui->active_id = 0;
 					complete = true;
-				} else if (   gui->cur_char == 'v' && key_mod(gui, KBM_CTRL)) {
-					if (SDL_HasClipboardText()) {
-						char *clipboard = SDL_GetClipboardText();
-						if (clipboard) {
-							char c, *clipboard_it = clipboard;
-							while ((c = *clipboard_it++) && len < n-1)
-								txt[len++] = c;
-							txt[len] = '\0';
-							SDL_free(clipboard);
-						}
+				} else if (key_down(gui, KB_V) && key_mod(gui, KBM_CTRL)) {
+					char *clipboard;
+					u32 cnt;
+					if (   SDL_HasClipboardText()
+					    && (clipboard = SDL_GetClipboardText())
+					    && (cnt = min(n - 1 - len, strlen(clipboard))) > 0) {
+						memmove(&txt[gui->npt_cursor_pos + cnt],
+								&txt[gui->npt_cursor_pos],
+								len - gui->npt_cursor_pos + 1);
+						memcpy(&txt[gui->npt_cursor_pos], clipboard, cnt);
+						gui->npt_cursor_pos += cnt;
+						SDL_free(clipboard);
 					}
-				} else if (   gui->cur_char >= 32
-				           && len < n-1
-				           && ((flags & NPT_NUMERIC) == 0 || isdigit(gui->cur_char))) {
-					txt[len++] = gui->cur_char;
-					txt[len] = '\0';
+				} else if (   len < n-1
+				           && (  (flags & NPT_NUMERIC) == 0
+				               ? (isgraph(key_char) || key_char == ' ')
+				               : isdigit(key_char))) {
+					for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
+						txt[i] = txt[i-1];
+					txt[gui->npt_cursor_pos++] = key_char;
+				} else if (key_down(gui, KB_LEFT)) {
+					if (gui->npt_cursor_pos > 0)
+						--gui->npt_cursor_pos;
+				} else if (key_down(gui, KB_RIGHT)) {
+					if (gui->npt_cursor_pos < len)
+						++gui->npt_cursor_pos;
+				} else if (key_down(gui, KB_HOME)) {
+					gui->npt_cursor_pos = 0;
+				} else if (key_down(gui, KB_END)) {
+					gui->npt_cursor_pos = len;
 				}
 			}
 		} else {
 			gui->repeat_timer = gui->repeat_delay;
+			gui->npt_prev_key_idx = KB_COUNT;
 		}
 		if (mouse_pressed(gui, MB_LEFT) && !contains_mouse)
 			gui->focus_id = 0;
@@ -2275,6 +2333,8 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->hot_id = 0;
 		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->active_id = id;
+			gui->npt_cursor_pos = strlen(txt);
+			gui->npt_prev_key_idx = 0;
 			gui->hot_id = 0;
 			gui->active_id_found_this_frame = true;
 		} else {
@@ -2297,15 +2357,16 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		for (u32 i = 0; i < sz; ++i)
 			gui->pw_buf[i] = '*';
 		gui->pw_buf[sz] = '\0';
-		gui__txt(gui, &x, &y, gui->style.font_sz, gui->pw_buf,
-		         text_color, align);
+		gui_txt(gui, x, y, gui->style.font_sz, gui->pw_buf, text_color, align);
 	} else {
-		gui__txt(gui, &x, &y, gui->style.font_sz, txt, text_color, align);
+		gui_txt(gui, x, y, gui->style.font_sz, txt, text_color, align);
 	}
 	if (gui->focus_id == id) {
 		/* TODO(rgriege): should be from y to y + font->ascent */
-		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500)
+		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
+			gui__txt_char_pos(gui, &x, &y, gui->style.font_sz, txt, gui->npt_cursor_pos, align);
 			gui_line(gui, x+1, y, x+1, y+gui->style.font_sz, 1, text_color);
+		}
 	} else if (hint && strlen(txt) == 0) {
 		gui_txt(gui, x, y, gui->style.font_sz, hint, text_color, align);
 	}
