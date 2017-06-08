@@ -2324,6 +2324,9 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 							txt[i] = txt[i+1];
 						--gui->npt_cursor_pos;
 					}
+				} else if (key_down(gui, KB_DELETE)) {
+					for (u32 i = gui->npt_cursor_pos; i < len; ++i)
+						txt[i] = txt[i+1];
 				} else if (key_char == CHAR_RETURN) {
 					gui->active_id = 0;
 					complete = true;
