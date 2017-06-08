@@ -2143,6 +2143,49 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
 	*iy = y;
 }
 
+static
+u32 gui__txt_mouse_pos(gui_t *gui, s32 x0, s32 y0, s32 sz, const char *txt,
+                       v2i mouse, gui_align_t align)
+{
+	font_t *font;
+	r32 x = x0, y = y0;
+	stbtt_aligned_quad q;
+	u32 closest_pos;
+	s32 closest_dist, dist, ascent;
+	v2i p;
+
+	font = gui__get_font(gui, sz);
+	assert(font);
+
+	x += font__line_offset_x(font, txt, align);
+	y += font__offset_y(font, txt, align);
+	ascent = font->newline_dist / 2;
+
+	v2i_set(&p, x, y + ascent);
+	closest_pos = 0;
+	closest_dist = v2i_dist_sq(p, mouse);
+
+	for (const char *c = txt; *c != '\0'; ++c) {
+		if (*c >= 32 && *c < 127) {
+			stbtt_GetPackedQuad(font->char_info, font->texture.width,
+			                    font->texture.height, *c - 32,
+			                    &x, &y, &q, 1);
+		} else if (*c == '\r') {
+			y -= font->newline_dist;
+			x = x0 + font__line_offset_x(font, c + 1, align);
+		} else {
+			continue;
+		}
+		v2i_set(&p, roundf(x), roundf(y + ascent));
+		dist = v2i_dist_sq(p, mouse);
+		if (dist < closest_dist) {
+			closest_dist = dist;
+			closest_pos = c - txt + 1;
+		}
+	}
+	return closest_pos;
+}
+
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
              color_t c, gui_align_t align)
 {
@@ -2255,6 +2298,9 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	b32 complete = false;
 
 	if (gui->focus_id == id) {
+		if (contains_mouse && mouse_pressed(gui, MB_LEFT))
+			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, gui->style.font_sz,
+			                                         txt, gui->mouse_pos, align);
 		u32 key_idx;
 		for (key_idx = 0; key_idx < KB_COUNT; ++key_idx)
 			if (gui->keys[key_idx])
@@ -2333,7 +2379,8 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->hot_id = 0;
 		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->active_id = id;
-			gui->npt_cursor_pos = strlen(txt);
+			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, gui->style.font_sz,
+			                                         txt, gui->mouse_pos, align);
 			gui->npt_prev_key_idx = 0;
 			gui->hot_id = 0;
 			gui->active_id_found_this_frame = true;
