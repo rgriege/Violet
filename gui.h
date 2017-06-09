@@ -1878,7 +1878,8 @@ b32 mouse_pressed_bg(const gui_t *gui, u32 mask)
 {
 	return    mouse_pressed(gui, mask)
 	       && gui->active_id == 0
-	       && gui->active_id_at_frame_start == 0;
+	       && gui->active_id_at_frame_start == 0
+	       && !gui->mouse_covered_by_panel;
 }
 
 b32 mouse_down(const gui_t *gui, u32 mask)
@@ -1895,7 +1896,8 @@ b32 mouse_released_bg(const gui_t *gui, u32 mask)
 {
 	return    mouse_released(gui, mask)
 	       && gui->active_id == 0
-	       && gui->active_id_at_frame_start == 0;
+	       && gui->active_id_at_frame_start == 0
+	       && !gui->mouse_covered_by_panel;
 }
 
 b32 mouse_over_bg(const gui_t *gui)
