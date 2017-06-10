@@ -8,10 +8,10 @@
 
 b32  vson_read_header(FILE *fp, const char *label);
 b32  vson_read_b8(FILE *fp, const char *label, b8 *val);
-b32  vson_read_u8(FILE *fp, const char *label, u8 *val);
 b32  vson_read_b32(FILE *fp, const char *label, b32 *val);
 b32  vson_read_s32(FILE *fp, const char *label, s32 *val);
 b32  vson_read_u32(FILE *fp, const char *label, u32 *val);
+#define vson_read_enum(fp, label, val) vson_read_u32(fp, label, (u32*)(val))
 b32  vson_read_r32(FILE *fp, const char *label, r32 *val);
 b32  vson_read_r64(FILE *fp, const char *label, r64 *val);
 b32  vson_read_str(FILE *fp, const char *label, char *val, u32 sz);
@@ -102,14 +102,6 @@ b32 vson_read_b8(FILE *fp, const char *label, b8 *val)
 		return true;
 	}
 	return false;
-}
-
-b32 vson_read_u8(FILE *fp, const char *label, u8 *val)
-{
-	u32 lval;
-	b32 ret = vson_read_u32(fp, label, &lval);
-	*val = lval;
-	return ret;
 }
 
 b32 vson_read_b32(FILE *fp, const char *label, b32 *val)
