@@ -705,7 +705,7 @@ out:
 b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
                           shader_t frag_shader)
 {
-	GLint linked, length;
+	GLint status, length;
 	char *log_buf;
 
 	p->handle = glCreateProgram();
@@ -716,8 +716,8 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 	p->frag_shader = frag_shader;
 
 	glLinkProgram(p->handle);
-	glGetProgramiv(p->handle, GL_LINK_STATUS, &linked);
-	if (linked == GL_FALSE) {
+	glGetProgramiv(p->handle, GL_LINK_STATUS, &status);
+	if (status == GL_FALSE) {
 		glGetProgramiv(p->handle, GL_INFO_LOG_LENGTH, &length);
 		log_buf = malloc(length);
 		glGetProgramInfoLog(p->handle, length, NULL, log_buf);
@@ -726,6 +726,20 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 		free(log_buf);
 		return false;
 	}
+
+#ifdef GUI_VALIDATE_SHADER
+	glValidateProgram(p->handle);
+	glGetProgramiv(p->handle, GL_VALIDATE_STATUS, &status);
+	if (status == GL_FALSE) {
+		glGetProgramiv(p->handle, GL_INFO_LOG_LENGTH, &length);
+		log_buf = malloc(length);
+		glGetProgramInfoLog(p->handle, length, NULL, log_buf);
+		log_write("Shader validation error using '%s' & '%s': %s",
+		          vertex_shader.filename, frag_shader.filename, log_buf);
+		free(log_buf);
+		return false;
+	}
+#endif
 
 	return true;
 }
