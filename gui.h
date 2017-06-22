@@ -909,6 +909,7 @@ out:
 void font_destroy(font_t *f)
 {
 	free(f->char_info);
+	texture_destroy(&f->texture);
 }
 
 static
