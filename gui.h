@@ -3329,10 +3329,11 @@ static const char *g_fragment_shader =
 	"in vec2 TexCoord;\n"
 	"in vec4 Color;\n"
 	"uniform sampler2D tex;\n"
+	"out vec4 FragColor;\n"
 	"\n"
 	"void main() {\n"
 	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
-	"  gl_FragColor = texture(tex, TexCoord_flipped) * Color;\n"
+	"  FragColor = texture(tex, TexCoord_flipped) * Color;\n"
 	"}";
 
 #undef GUI_IMPLEMENTATION
