@@ -226,14 +226,19 @@ FMDEF ivalf linef_project(v2f a, v2f b, v2f axis);
 
 FMDEF void  polyf_from_box(v2f *v, box2f box);
 FMDEF b32   polyf_is_simple(const v2f *v, u32 n);
+FMDEF b32   polyfv_is_convex(const v2f *v, u32 n, u32 stride);
 FMDEF b32   polyf_is_convex(const v2f *v, u32 n);
 FMDEF b32   polyf_contains(const v2f *v, u32 n, v2f point);
 FMDEF void  polyf_bounding_box(const v2f *v, u32 n, box2f *box);
 FMDEF void  polyf_translate(v2f *v, u32 n, v2f delta);
+FMDEF ivalf polyfv_project(const v2f *v, u32 n, u32 stride, v2f axis);
 FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis);
 FMDEF v2f   polyf_center(const v2f *v, u32 n);
+FMDEF r32   polyfv_area(const v2f *v, u32 n, u32 stride);
 FMDEF r32   polyf_area(const v2f *v, u32 n);
+FMDEF v2f   polyfv_centroid(const v2f *v, u32 n, u32 stride);
 FMDEF v2f   polyf_centroid(const v2f *v, u32 n);
+FMDEF b32   polyfv_is_cc(const v2f *v, u32 n, u32 stride);
 FMDEF b32   polyf_is_cc(const v2f *v, u32 n);
 FMDEF b32   polyf_segment_intersect(const v2f *v, u32 n, v2f v0, v2f v1);
 FMDEF b32   polyf_intersect(const v2f *p1, u32 n1, const v2f *p2, u32 n2,
@@ -994,33 +999,37 @@ FMDEF b32 polyf_is_simple(const v2f *v, u32 n)
 	return true;
 }
 
-FMDEF b32 polyf_is_convex(const v2f *v, u32 n)
+FMDEF b32 polyfv_is_convex(const v2f *v, u32 n, u32 stride)
 {
+	b32 cc_determined = false, cc;
+	v2f ab, bc;
+	r32 cross;
+
 	assert(n >= 3);
 
-	b32 cc_determined = false, cc;
-	for (u32 i=0, last=n-1; i<=last; ++i)
-	{
-		v2f a = v[(i>0 ? i-1 : last)];
-		v2f b = v[i];
-		v2f c = v[(i<last ? i+1 : 0)];
+	for (u32 i = 0; i < n; ++i) {
+		v2f a = *(const v2f *)((const u8*)v + stride * i);
+		v2f b = *(const v2f *)((const u8*)v + stride * ((i + 1) % n));
+		v2f c = *(const v2f *)((const u8*)v + stride * ((i + 2) % n));
 
-		v2f ab, bc;
 		ab = v2f_sub(b, a);
 		bc = v2f_sub(c, b);
-		const r32 cross = v2f_cross(ab, bc);
-		if (cross != 0.f)
-		{
-			if (!cc_determined)
-			{
+		cross = v2f_cross(ab, bc);
+		if (cross != 0.f) {
+			if (!cc_determined) {
 				cc_determined = true;
 				cc = cross > 0.f;
+			} else if ((cross > 0.f) != cc) {
+				return false;
 			}
-			else if ((cross > 0.f) != cc)
-			return false;
 		}
 	}
 	return true;
+}
+
+FMDEF b32 polyf_is_convex(const v2f *v, u32 n)
+{
+	return polyfv_is_convex(v, n, sizeof(v2f));
 }
 
 FMDEF b32 polyf_contains(const v2f *v, u32 n, v2f point)
@@ -1058,7 +1067,7 @@ FMDEF void polyf_translate(v2f *v, u32 n, v2f delta)
 		v2f_add_eq(v, delta);
 }
 
-FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis)
+FMDEF ivalf polyfv_project(const v2f *v, u32 n, u32 stride, v2f axis)
 {
 	if (!v2f_is_unit(axis))
 		v2f_normalize_eq(&axis);
@@ -1066,15 +1075,20 @@ FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis)
 	const r32 v0_proj = v2f_dot(*v++, axis);
 	ivalf projection = { .l = v0_proj, .r = v0_proj };
 
-	for (const v2f *vn=v+n-1; v!=vn; ++v)
-	{
-		const r32 dp = v2f_dot(*v, axis);
+	for (u32 i = 1; i < n; ++i) {
+		v2f vi = *(const v2f *)((const u8*)v + stride * i);
+		const r32 dp = v2f_dot(vi, axis);
 		if (dp < projection.l)
 			projection.l = dp;
 		else if (dp > projection.r)
 			projection.r = dp;
 	}
 	return projection;
+}
+
+FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis)
+{
+	return polyfv_project(v, n, sizeof(v2f), axis);
 }
 
 FMDEF v2f polyf_center(const v2f *v, u32 n)
@@ -1086,19 +1100,31 @@ FMDEF v2f polyf_center(const v2f *v, u32 n)
 }
 
 // NOTE(rgriege): Green's theorem
-static r32 polyf__area(const v2f *v, u32 n)
+static
+r32 polyfv__area(const v2f *v, u32 n, u32 stride)
 {
 	r32 area = 0;
-	v2f prev = v[n-1];
+	v2f a = *(const v2f *)((const u8*)v + stride * (n - 1));
 
 	assert(n >= 3);
 
-	for (const v2f *vn = v+n; v != vn; ++v)
-	{
-		area += v2f_cross(prev, *v);
-		prev = *v;
+	for (u32 i = 0; i < n; ++i) {
+		v2f b = *(const v2f *)((const u8*)v + stride * i);
+		area += v2f_cross(a, b);
+		a = b;
 	}
-	return area/2;
+	return area / 2;
+}
+
+FMDEF r32 polyfv_area(const v2f *v, u32 n, u32 stride)
+{
+	return fabsf(polyfv__area(v, n, stride));
+}
+
+static
+r32 polyf__area(const v2f *v, u32 n)
+{
+	return polyfv_area(v, n, sizeof(v2f));
 }
 
 FMDEF r32 polyf_area(const v2f *v, u32 n)
@@ -1106,38 +1132,46 @@ FMDEF r32 polyf_area(const v2f *v, u32 n)
 	return fabsf(polyf__area(v, n));
 }
 
-FMDEF v2f polyf_centroid(const v2f *v, u32 n)
+FMDEF v2f polyfv_centroid(const v2f *v, u32 n, u32 stride)
 {
-	const r32 denom = 6 * polyf__area(v, n);
-	v2f centroid = { .x=0, .y=0 };
-	v2f prev = v[n-1];
-	for (const v2f *vn = v+n; v != vn; ++v)
-	{
-		const r32 cross = v2f_cross(prev, *v);
-		v2f_add_eq(&centroid, v2f_scale(v2f_add(prev, *v), cross));
-		prev = *v;
+	const r32 denom = 6 * polyfv__area(v, n, stride);
+	v2f centroid = {0}, a = *(const v2f *)((const u8*)v + stride * (n - 1));
+
+	assert(n >= 3);
+
+	for (u32 i = 0; i < n; ++i) {
+		v2f b = *(const v2f *)((const u8*)v + stride * i);
+		v2f_add_eq(&centroid, v2f_scale(v2f_add(a, b), v2f_cross(a, b)));
+		a = b;
 	}
 	return v2f_scale(centroid, 1.f/denom);
 }
 
-FMDEF b32 polyf_is_cc(const v2f *v, u32 n)
+FMDEF v2f polyf_centroid(const v2f *v, u32 n)
 {
-	assert(n>=3);
+	return polyfv_centroid(v, n, sizeof(v2f));
+}
 
+FMDEF b32 polyfv_is_cc(const v2f *v, u32 n, u32 stride)
+{
 	r32 sine_sum = 0;
-	for (u32 i=0, last=n-1; i<=last; ++i)
-	{
-		v2f a = v[(i>0 ? i-1 : last)];
-		v2f b = v[i];
-		v2f c = v[(i<last ? i+1 : 0)];
 
-		v2f ab, bc;
-		ab = v2f_sub(b, a);
-		bc = v2f_sub(c, b);
+	assert(n >= 3);
 
+	for (u32 i = 0; i < n; ++i) {
+		v2f a = *(const v2f *)((const u8*)v + stride * i);
+		v2f b = *(const v2f *)((const u8*)v + stride * ((i + 1) % n));
+		v2f c = *(const v2f *)((const u8*)v + stride * ((i + 2) % n));
+		v2f ab = v2f_sub(b, a);
+		v2f bc = v2f_sub(c, b);
 		sine_sum += v2f_cross(ab, bc) / v2f_mag(ab) / v2f_mag(bc);
 	}
 	return sine_sum > 0;
+}
+
+FMDEF b32 polyf_is_cc(const v2f *v, u32 n)
+{
+	return polyfv_is_cc(v, n, sizeof(v2f));
 }
 
 FMDEF b32 polyf_segment_intersect(const v2f *v, u32 n, v2f v0, v2f v1)
