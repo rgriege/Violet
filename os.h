@@ -159,8 +159,8 @@ b32 file__dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 	                                            &psz_file_path)))
 		goto err_itm;
 
-	CoTaskMemFree(psz_file_path);
 	wcstombs(filename, psz_file_path, n);
+	CoTaskMemFree(psz_file_path);
 	retval = true;
 
 err_itm:

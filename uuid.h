@@ -6,7 +6,7 @@
 #ifdef _WIN32
 #include "Rpc.h"
 typedef UUID uuid;
-#elif
+#else
 #include <uuid/uuid.h>
 typedef uuid_t uuid;
 #endif
