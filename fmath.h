@@ -1072,7 +1072,7 @@ FMDEF ivalf polyfv_project(const v2f *v, u32 n, u32 stride, v2f axis)
 	if (!v2f_is_unit(axis))
 		v2f_normalize_eq(&axis);
 
-	const r32 v0_proj = v2f_dot(*v++, axis);
+	const r32 v0_proj = v2f_dot(*v, axis);
 	ivalf projection = { .l = v0_proj, .r = v0_proj };
 
 	for (u32 i = 1; i < n; ++i) {
