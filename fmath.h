@@ -49,12 +49,12 @@ typedef float r32;
 #define fminf(x, y) (((x) > (y)) ? (y) : (x))
 
 #define fPI 3.14159265359f
-#define fDEG2RAD fPI / 180.f
+#define fDEG2RAD (fPI / 180.f)
 
 #define fmath_clamp(lo, val, hi) fmaxf(lo, fminf(hi, val))
-#define fmath_deg2rad(deg) (deg * fDEG2RAD)
-#define fmath_rad2deg(rad) (rad / fDEG2RAD)
-#define fmath_eq(a, b, err) (fabsf(a-b) <= err)
+#define fmath_deg2rad(deg) ((deg) * fDEG2RAD)
+#define fmath_rad2deg(rad) ((rad) / fDEG2RAD)
+#define fmath_eq(a, b, err) (fabs((a)-(b)) <= (err))
 
 /* 2D Vector */
 

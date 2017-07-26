@@ -48,12 +48,12 @@ typedef double r64;
 #define fmin(x, y) (((x) > (y)) ? (y) : (x))
 
 #define PI 3.14159265359
-#define DEG2RAD PI / 180
+#define DEG2RAD (PI / 180)
 
 #define dmath_clamp(lo, val, hi) fmax(lo, fmin(hi, val))
-#define dmath_deg2rad(deg) (deg * DEG2RAD)
-#define dmath_rad2deg(rad) (rad / DEG2RAD)
-#define dmath_eq(a, b, err) (fabs(a-b) <= err)
+#define dmath_deg2rad(deg) ((deg) * DEG2RAD)
+#define dmath_rad2deg(rad) ((rad) / DEG2RAD)
+#define dmath_eq(a, b, err) (fabs((a)-(b)) <= (err))
 
 /* 2D Vector */
 
