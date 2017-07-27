@@ -1513,10 +1513,6 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	                                      g_fragment_shader))
 		goto err_white;
 
-	glBindAttribLocation(gui->shader.handle, VBO_VERT, "position");
-	glBindAttribLocation(gui->shader.handle, VBO_COLOR, "color");
-	glBindAttribLocation(gui->shader.handle, VBO_TEX, "tex_coord");
-
 	gui->fonts = array_create();
 	gui->imgs = array_create();
 
@@ -3376,9 +3372,9 @@ void gui_style_default(gui_t *gui)
 
 static const char *g_vertex_shader =
 	"#version 330\n"
-	"in vec2 position;\n"
-	"in vec4 color;\n"
-	"in vec2 tex_coord;\n"
+	"layout(location = 0) in vec2 position;\n"
+	"layout(location = 1) in vec4 color;\n"
+	"layout(location = 2) in vec2 tex_coord;\n"
 	"uniform vec2 window_halfdim;\n"
 	"out vec2 TexCoord;\n"
 	"out vec4 Color;\n"
