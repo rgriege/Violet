@@ -431,6 +431,50 @@ void         gui_style_default(gui_t *gui);
 #include "violet/imath.h"
 
 
+#if defined(DEBUG) || defined(GUI_CHECK_GL)
+static
+const char *gui__get_gl_err_str(GLenum err)
+{
+	switch (err) {
+	case GL_INVALID_ENUM:
+		return "INVALID_ENUM";
+	case GL_INVALID_VALUE:
+		return "INVALID_VALUE";
+	case GL_INVALID_OPERATION:
+		return "INVALID_OPERATION";
+	case GL_INVALID_FRAMEBUFFER_OPERATION:
+		return "INVALID_FRAMEBUFFER_OPERATION";
+	case GL_OUT_OF_MEMORY:
+		return "OUT_OF_MEMORY";
+	case GL_STACK_UNDERFLOW:
+		return "STACK_UNDERFLOW";
+	case GL_STACK_OVERFLOW:
+		return "STACK_OVERFLOW";
+	default:
+		return "UNKNOWN ERROR";
+	}
+}
+
+#define GL_ERR_CHECK(label) \
+	do { \
+		GLenum err; \
+		if ((err = glGetError()) != GL_NO_ERROR) { \
+			const char *err_str = gui__get_gl_err_str(err); \
+			log_write("%s: %s(%x) @ %s:%d", label, err_str, err, \
+			          __FILE__, __LINE__); \
+		} \
+	} while (0)
+#define GL_CHECK(func, ...) \
+	do { \
+		func(__VA_ARGS__); \
+		GL_ERR_CHECK(#func); \
+	} while (0)
+#else
+#define GL_ERR_CHECK(label) NOOP
+#define GL_CHECK(func, ...) func(__VA_ARGS__)
+#endif
+
+
 static const char *g_vertex_shader;
 static const char *g_fragment_shader;
 
@@ -487,14 +531,14 @@ b32 color_equal(color_t lhs, color_t rhs)
 
 void mesh_init(mesh_t *m, const v2f *poly, u32 n)
 {
-	glGenBuffers(1, &m->vbo);
+	GL_CHECK(glGenBuffers, 1, &m->vbo);
 	mesh_set_vertices(m, poly, n);
 }
 
 void mesh_destroy(mesh_t *m)
 {
 	if (m->vbo != 0)
-		glDeleteBuffers(1, &m->vbo);
+		GL_CHECK(glDeleteBuffers, 1, &m->vbo);
 }
 
 void mesh_poly(const mesh_t *m, v2f *poly)
@@ -503,24 +547,24 @@ void mesh_poly(const mesh_t *m, v2f *poly)
 	array_reserve(poly, m->sz);
 	array_sz(poly) = m->sz;
 	mesh_bind(m);
-	glGetBufferSubData(GL_ARRAY_BUFFER, 0, m->sz * 2 * sizeof(GL_FLOAT), poly);
+	GL_CHECK(glGetBufferSubData, GL_ARRAY_BUFFER, 0, m->sz * 2 * sizeof(GL_FLOAT), poly);
 }
 
 void mesh_bind(const mesh_t *m)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
+	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, m->vbo);
 }
 
 void mesh_unbind()
 {
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, 0);
 }
 
 void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n)
 {
 	mesh_bind(m);
 	m->sz = n;
-	glBufferData(GL_ARRAY_BUFFER, m->sz * 2 * sizeof(GL_FLOAT), v, GL_STATIC_DRAW);
+	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, m->sz * 2 * sizeof(GL_FLOAT), v, GL_STATIC_DRAW);
 }
 
 /* Texture */
@@ -540,21 +584,21 @@ b32 texture_load_png(texture_t *tex, const char *filename)
 
 void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 {
-	glGenTextures(1, &tex->handle);
+	GL_CHECK(glGenTextures, 1, &tex->handle);
 	tex->width = w;
 	tex->height = h;
 	texture_bind(tex);
 	glTexImage2D(GL_TEXTURE_2D, 0, fmt, w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 void texture_destroy(texture_t *tex)
 {
 	if (tex->handle != 0)
-		glDeleteTextures(1, &tex->handle);
+		GL_CHECK(glDeleteTextures, 1, &tex->handle);
 }
 
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n)
@@ -575,12 +619,12 @@ void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n)
 
 void texture_bind(const texture_t *tex)
 {
-	glBindTexture(GL_TEXTURE_2D, tex->handle);
+	GL_CHECK(glBindTexture, GL_TEXTURE_2D, tex->handle);
 }
 
 void texture_unbind()
 {
-	glBindTexture(GL_TEXTURE_2D, 0);
+	GL_CHECK(glBindTexture, GL_TEXTURE_2D, 0);
 }
 
 
@@ -595,14 +639,15 @@ b32 shader_init_from_string(shader_t *shader, const char *str,
 
 	shader->handle = glCreateShader(  type == VERTEX_SHADER
 	                                ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
-	glShaderSource(shader->handle, 1, (const GLchar **)&str, 0);
+	GL_ERR_CHECK("glCreateShader");
+	GL_CHECK(glShaderSource, shader->handle, 1, (const GLchar **)&str, 0);
 
-	glCompileShader(shader->handle);
-	glGetShaderiv(shader->handle, GL_COMPILE_STATUS, &compiled);
+	GL_CHECK(glCompileShader, shader->handle);
+	GL_CHECK(glGetShaderiv, shader->handle, GL_COMPILE_STATUS, &compiled);
 	if (compiled == GL_FALSE) {
-		glGetShaderiv(shader->handle, GL_INFO_LOG_LENGTH, &log_len);
+		GL_CHECK(glGetShaderiv, shader->handle, GL_INFO_LOG_LENGTH, &log_len);
 		log_buf = malloc(log_len);
-		glGetShaderInfoLog(shader->handle, log_len, NULL, log_buf);
+		GL_CHECK(glGetShaderInfoLog, shader->handle, log_len, NULL, log_buf);
 		log_write("Compilation error in shader '%s': %s", id, log_buf);
 		free(log_buf);
 		shader->handle = 0;
@@ -648,7 +693,7 @@ err:
 
 void shader_destroy(shader_t *shader)
 {
-	glDeleteShader(shader->handle);
+	GL_CHECK(glDeleteShader, shader->handle);
 	shader->handle = 0;
 }
 
@@ -709,18 +754,19 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 	char *log_buf;
 
 	p->handle = glCreateProgram();
+	GL_ERR_CHECK("glCreateProgram");
 
-	glAttachShader(p->handle, vertex_shader.handle);
+	GL_CHECK(glAttachShader, p->handle, vertex_shader.handle);
 	p->vertex_shader = vertex_shader;
-	glAttachShader(p->handle, frag_shader.handle);
+	GL_CHECK(glAttachShader, p->handle, frag_shader.handle);
 	p->frag_shader = frag_shader;
 
-	glLinkProgram(p->handle);
-	glGetProgramiv(p->handle, GL_LINK_STATUS, &status);
+	GL_CHECK(glLinkProgram, p->handle);
+	GL_CHECK(glGetProgramiv, p->handle, GL_LINK_STATUS, &status);
 	if (status == GL_FALSE) {
-		glGetProgramiv(p->handle, GL_INFO_LOG_LENGTH, &length);
+		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
 		log_buf = malloc(length);
-		glGetProgramInfoLog(p->handle, length, NULL, log_buf);
+		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
 		log_write("Shader link error using '%s' & '%s': %s",
 		          vertex_shader.filename, frag_shader.filename, log_buf);
 		free(log_buf);
@@ -728,12 +774,12 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 	}
 
 #ifdef GUI_VALIDATE_SHADER
-	glValidateProgram(p->handle);
-	glGetProgramiv(p->handle, GL_VALIDATE_STATUS, &status);
+	GL_CHECK(glValidateProgram, p->handle);
+	GL_CHECK(glGetProgramiv, p->handle, GL_VALIDATE_STATUS, &status);
 	if (status == GL_FALSE) {
-		glGetProgramiv(p->handle, GL_INFO_LOG_LENGTH, &length);
+		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
 		log_buf = malloc(length);
-		glGetProgramInfoLog(p->handle, length, NULL, log_buf);
+		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
 		log_write("Shader validation error using '%s' & '%s': %s",
 		          vertex_shader.filename, frag_shader.filename, log_buf);
 		free(log_buf);
@@ -746,32 +792,36 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 
 void shader_program_bind(const shader_prog_t *p)
 {
-	glUseProgram(p->handle);
+	GL_CHECK(glUseProgram, p->handle);
 }
 
 void shader_program_unbind()
 {
-	glUseProgram(0);
+	GL_CHECK(glUseProgram, 0);
 }
 
 void shader_program_destroy(shader_prog_t *p)
 {
-	glDetachShader(p->handle, p->vertex_shader.handle);
+	GL_CHECK(glDetachShader, p->handle, p->vertex_shader.handle);
 	shader_destroy(&p->vertex_shader);
-	glDetachShader(p->handle, p->frag_shader.handle);
+	GL_CHECK(glDetachShader, p->handle, p->frag_shader.handle);
 	shader_destroy(&p->frag_shader);
-	glDeleteProgram(p->handle);
+	GL_CHECK(glDeleteProgram, p->handle);
 	p->handle = 0;
 }
 
 s32 shader_program_attrib(const shader_prog_t *p, const char *name)
 {
-	return glGetAttribLocation(p->handle, name);
+	s32 attrib = glGetAttribLocation(p->handle, name);
+	GL_ERR_CHECK("glGetAttribLocation");
+	return attrib;
 }
 
 s32 shader_program_uniform(const shader_prog_t *p, const char *name)
 {
-	return glGetUniformLocation(p->handle, name);
+	s32 uniform = glGetAttribLocation(p->handle, name);
+	GL_ERR_CHECK("glGetUniformLocation");
+	return uniform;
 }
 
 
@@ -1435,27 +1485,29 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		log_write("glewInit error: %s", glewGetErrorString(glew_err));
 		goto err_glew;
 	}
+	GL_ERR_CHECK("glewInit");
 
 	log_write("GL version: %s", glGetString(GL_VERSION));
+	GL_ERR_CHECK("glGetString");
 
-	glEnable(GL_MULTISAMPLE);
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_SCISSOR_TEST);
+	GL_CHECK(glEnable, GL_MULTISAMPLE);
+	GL_CHECK(glDisable, GL_DEPTH_TEST);
+	GL_CHECK(glEnable, GL_BLEND);
+	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	GL_CHECK(glEnable, GL_SCISSOR_TEST);
 
-	glGenVertexArrays(1, &gui->vao);
-	glGenBuffers(3, gui->vbo);
+	GL_CHECK(glGenVertexArrays, 1, &gui->vao);
+	GL_CHECK(glGenBuffers, 3, gui->vbo);
 
 	static const color_t texture_white_data[1] = { gi_white };
 	texture_init(&gui->texture_white, 1, 1, GL_RGBA, texture_white_data);
 
 	static const u32 texture_white_dotted_data[] = { 0x00ffffff, 0xffffffff };
 	texture_init(&gui->texture_white_dotted, 2, 1, GL_RGBA, texture_white_dotted_data);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	if (!shader_program_load_from_strings(&gui->shader, g_vertex_shader,
 	                                      g_fragment_shader))
@@ -1509,8 +1561,8 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 err_white:
 	texture_destroy(&gui->texture_white);
 	texture_destroy(&gui->texture_white_dotted);
-	glDeleteBuffers(3, gui->vbo);
-	glDeleteVertexArrays(1, &gui->vao);
+	GL_CHECK(glDeleteBuffers, 3, gui->vbo);
+	GL_CHECK(glDeleteVertexArrays, 1, &gui->vao);
 err_glew:
 	SDL_GL_DeleteContext(gui->gl_context);
 err_ctx:
@@ -1536,8 +1588,8 @@ void gui_destroy(gui_t *gui)
 	shader_program_destroy(&gui->shader);
 	texture_destroy(&gui->texture_white);
 	texture_destroy(&gui->texture_white_dotted);
-	glDeleteBuffers(3, gui->vbo);
-	glDeleteVertexArrays(1, &gui->vao);
+	GL_CHECK(glDeleteBuffers, 3, gui->vbo);
+	GL_CHECK(glDeleteVertexArrays, 1, &gui->vao);
 	SDL_GL_DeleteContext(gui->gl_context);
 	SDL_DestroyWindow(gui->window);
 	SDL_Quit();
@@ -1794,53 +1846,53 @@ void gui_end_frame(gui_t *gui)
 
 	gui__complete_scissor(gui);
 
-	glViewport(0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
+	GL_CHECK(glViewport, 0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
 
 	/* NOTE(rgriege): reset the scissor for glClear */
-	glScissor(0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
+	GL_CHECK(glScissor, 0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
 
 	color_as_float_array(bg_color, gui->style.bg_color);
-	glClearColor(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	GL_CHECK(glClearColor, bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glBindVertexArray(gui->vao);
+	GL_CHECK(glBindVertexArray, gui->vao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[VBO_VERT]);
-	glBufferData(GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
+	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_VERT]);
+	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
 	             gui->verts, GL_STREAM_DRAW);
-	glVertexAttribPointer(VBO_VERT, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(VBO_VERT);
+	GL_CHECK(glVertexAttribPointer, VBO_VERT, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	GL_CHECK(glEnableVertexAttribArray, VBO_VERT);
 
-	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[VBO_COLOR]);
-	glBufferData(GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(color_t),
+	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_COLOR]);
+	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(color_t),
 	             gui->vert_colors, GL_STREAM_DRAW);
-	glVertexAttribPointer(VBO_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
-	glEnableVertexAttribArray(VBO_COLOR);
+	GL_CHECK(glVertexAttribPointer, VBO_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
+	GL_CHECK(glEnableVertexAttribArray, VBO_COLOR);
 
-	glBindBuffer(GL_ARRAY_BUFFER, gui->vbo[VBO_TEX]);
-	glBufferData(GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
+	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_TEX]);
+	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
 	             gui->vert_tex_coords, GL_STREAM_DRAW);
-	glVertexAttribPointer(VBO_TEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(VBO_TEX);
+	GL_CHECK(glVertexAttribPointer, VBO_TEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	GL_CHECK(glEnableVertexAttribArray, VBO_TEX);
 
-	glUseProgram(gui->shader.handle);
-	glUniform2f(glGetUniformLocation(gui->shader.handle, "window_halfdim"),
-	            gui->win_halfdim.x, gui->win_halfdim.y);
+	GL_CHECK(glUseProgram, gui->shader.handle);
+	GL_CHECK(glUniform2f, glGetUniformLocation(gui->shader.handle, "window_halfdim"),
+	                     gui->win_halfdim.x, gui->win_halfdim.y);
 
 	for (gui__scissor_t *scissor     = gui->scissors,
 	                    *scissor_end = scissor + gui->scissor_cnt;
 	     scissor < scissor_end; ++scissor) {
-		glScissor(scissor->x, scissor->y, scissor->w, scissor->h);
+		GL_CHECK(glScissor, scissor->x, scissor->y, scissor->w, scissor->h);
 		for (draw_call_t *draw_call = gui->draw_calls + scissor->draw_call_idx,
 		                 *draw_call_end = draw_call + scissor->draw_call_cnt;
 		     draw_call != draw_call_end; ++draw_call) {
-			glBindTexture(GL_TEXTURE_2D, draw_call->tex);
-			glDrawArrays(g_draw_call_types[draw_call->type],
+			GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
+			GL_CHECK(glDrawArrays, g_draw_call_types[draw_call->type],
 			             draw_call->idx, draw_call->cnt);
 		}
 	}
 
-	glFlush();
+	GL_CHECK(glFlush);
 	SDL_GL_SwapWindow(gui->window);
 
 	memcpy(gui->prev_keys, gui->keys, KB_COUNT);
