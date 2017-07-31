@@ -204,6 +204,7 @@ b32  mouse_released(const gui_t *gui, u32 mask);
 b32  mouse_released_bg(const gui_t *gui, u32 mask);
 b32  mouse_over_bg(const gui_t *gui);
 void mouse_scroll(const gui_t *gui, s32 *dir);
+void mouse_scroll_bg(const gui_t *gui, s32 *dir);
 
 b32 key_down(const gui_t *gui, gui_key_t key);
 b32 key_pressed(const gui_t *gui, gui_key_t key);
@@ -1982,6 +1983,12 @@ void mouse_scroll(const gui_t *gui, s32 *dir)
 		*dir = -1;
 	else
 		*dir = 0;
+}
+
+void mouse_scroll_bg(const gui_t *gui, s32 *dir)
+{
+	if (mouse_over_bg(gui))
+		mouse_scroll(gui, dir);
 }
 
 b32 key_down(const gui_t *gui, gui_key_t key)
