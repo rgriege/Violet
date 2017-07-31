@@ -1085,16 +1085,36 @@ b32 tri_is_reflex(v2f a, v2f b, v2f c)
 	return tri_right(a, b, c);
 }
 
+/* NOTE(rgriege): This portion of the algorithm has been modified to allocate
+ * along a single buffer instead of one buffer per polygon. Temp signifies an
+ * intermediary polygon, which should not be used by the conumer.
+ *
+ * Buffer diagram: | head0 | v0 | v1 | ... | head1 | v0 | v1 | ... | */
+typedef struct gui__pdc_head
+{
+	u32 sz;
+	b32 temp;
+} gui__pdc_head_t;
+
 static
-void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
+u32 gui__pdc_alloc(v2f **buf, u32 sz, b32 temp)
+{
+	gui__pdc_head_t head = { .sz = sz, .temp = temp };
+	array_append(*buf, *(v2f*)&head);
+	array_reserve(*buf, array_sz(*buf) + sz);
+	return array_sz(*buf);
+}
+
+static
+void polyf__decompose(const v2f *v, u32 n, v2f **buf)
 {
 	assert(polyf_is_cc(v, n));
 
 	v2f upper_int={0}, lower_int={0}, p;
 	r32 upper_dist, lower_dist, d, closest_dist;
 	u32 upper_idx=0, lower_idx=0, closest_idx=0;
-	v2f *lower_poly = array_create();
-	v2f *upper_poly = array_create();
+	u32 lower_poly_idx, upper_poly_idx;
+	u32 lower_poly_sz, upper_poly_sz;
 
 	v2f vi0 = v[n-1];
 	for (u32 i = 0; i < n; ++i) {
@@ -1139,25 +1159,35 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 			p.y = (lower_int.y+upper_int.y)/2;
 
 			if (i < upper_idx) {
+				lower_poly_sz = upper_idx - i + 2;
+				lower_poly_idx = gui__pdc_alloc(buf, lower_poly_sz, true);
 				for (u32 j = i; j <= upper_idx; ++j)
-					array_append(lower_poly, v[j]);
-				array_append(lower_poly, p);
-				array_append(upper_poly, p);
+					array_append(*buf, v[j]);
+				array_append(*buf, p);
+
+				upper_poly_sz = lower_idx ? n - lower_idx + i + 2 : i + 2;
+				upper_poly_idx = gui__pdc_alloc(buf, upper_poly_sz, true);
+				array_append(*buf, p);
 				if (lower_idx != 0)
 					for (u32 j = lower_idx; j < n; ++j)
-						array_append(upper_poly, v[j]);
+						array_append(*buf, v[j]);
 				for (u32 j = 0; j <= i; ++j)
-					array_append(upper_poly, v[j]);
+					array_append(*buf, v[j]);
 			} else {
+				lower_poly_sz = i ? n - i + upper_idx + 2 : upper_idx + 2;
+				lower_poly_idx = gui__pdc_alloc(buf, lower_poly_sz, true);
 				if (i != 0)
 					for (u32 j = i; j < n; ++j)
-						array_append(lower_poly, v[j]);
+						array_append(*buf, v[j]);
 				for (u32 j = 0; j <= upper_idx; ++j)
-					array_append(lower_poly, v[j]);
-				array_append(lower_poly, p);
-				array_append(upper_poly, p);
+					array_append(*buf, v[j]);
+				array_append(*buf, p);
+
+				upper_poly_sz = i - lower_idx + 2;
+				upper_poly_idx = gui__pdc_alloc(buf, upper_poly_sz, true);
+				array_append(*buf, p);
 				for (u32 j = lower_idx; j <= i; ++j)
-					array_append(upper_poly, v[j]);
+					array_append(*buf, v[j]);
 			}
 		} else {
 			// case 2: connect to closest point within the triangle
@@ -1177,48 +1207,74 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 			}
 
 			if (i < closest_idx) {
+				lower_poly_sz = closest_idx - i + 1;
+				lower_poly_idx = gui__pdc_alloc(buf, lower_poly_sz, true);
 				for (u32 j = i; j <= closest_idx; ++j)
-					array_append(lower_poly, v[j]);
+					array_append(*buf, v[j]);
+
+				upper_poly_sz = closest_idx ? n - closest_idx + i + 1 : i + 1;
+				upper_poly_idx = gui__pdc_alloc(buf, upper_poly_sz, true);
 				if (closest_idx != 0)
 					for (u32 j = closest_idx; j < n; ++j)
-						array_append(upper_poly, v[j]);
+						array_append(*buf, v[j]);
 				for (u32 j = 0; j <= i; ++j)
-					array_append(upper_poly, v[j]);
+					array_append(*buf, v[j]);
 			} else {
+				lower_poly_sz = i ? n - i + closest_idx + 1 : closest_idx + 1;
+				lower_poly_idx = gui__pdc_alloc(buf, lower_poly_sz, true);
 				if (i != 0)
 					for (u32 j = i; j < n; ++j)
-						array_append(lower_poly, v[j]);
+						array_append(*buf, v[j]);
 				for (u32 j = 0; j <= closest_idx; ++j)
-					array_append(lower_poly, v[j]);
+					array_append(*buf, v[j]);
+
+				upper_poly_sz = i - closest_idx + 1;
+				upper_poly_idx = gui__pdc_alloc(buf, upper_poly_sz, true);
 				for (u32 j = closest_idx; j <= i; ++j)
-					array_append(upper_poly, v[j]);
+					array_append(*buf, v[j]);
 			}
 		}
 
 		// solve smallest poly first
-		if (array_sz(lower_poly) < array_sz(upper_poly)) {
-			polyf_decompose(A2PN(lower_poly), polys);
-			polyf_decompose(A2PN(upper_poly), polys);
+		if (lower_poly_sz < upper_poly_sz) {
+			polyf__decompose(&(*buf)[lower_poly_idx], lower_poly_sz, buf);
+			polyf__decompose(&(*buf)[upper_poly_idx], upper_poly_sz, buf);
 		} else {
-			polyf_decompose(A2PN(upper_poly), polys);
-			polyf_decompose(A2PN(lower_poly), polys);
+			polyf__decompose(&(*buf)[upper_poly_idx], upper_poly_sz, buf);
+			polyf__decompose(&(*buf)[lower_poly_idx], lower_poly_sz, buf);
 		}
-		goto out;
+		return;
 
 inxt:
 		vi0 = vi1;
 	}
 
-	v2f **poly = array_append_null(*polys);
-	*poly = array_create();
-	array_reserve(*poly, n);
-	array_sz(*poly) = n;
-	memcpy(*poly, v, n*sizeof(v2f));
-
-out:
-	array_destroy(lower_poly);
-	array_destroy(upper_poly);
+	((gui__pdc_head_t*)v)[-1].temp = false;
 }
+
+static
+void polyf_decompose(const v2f *v, u32 n, v2f **buf)
+{
+	const u32 idx = gui__pdc_alloc(buf, n, true);
+	for (u32 i = 0; i < n; ++i)
+		array_append(*buf, v[i]);
+	polyf__decompose(&(*buf)[idx], n, buf);
+}
+
+#define gui__pdc_foreach(buf, iter, poly, sz_) \
+	do { \
+		u32 iter = 0; \
+		while (iter < array_sz(buf)) { \
+			const gui__pdc_head_t *iter##head = (const gui__pdc_head_t*)&(buf)[iter]; \
+			const v2f *poly = &(buf)[iter + 1]; \
+			const array_size_t sz_ = iter##head->sz; \
+			if (!iter##head->temp)
+
+#define gui__pdc_endforeach(iter) \
+			iter += iter##head->sz + 1; \
+		} \
+	} while (0);
+
 
 
 /* General Gui */
@@ -1415,6 +1471,7 @@ typedef struct gui_t
 
 	v2i drag_offset;
 	char *pw_buf;
+	v2f *vert_buf;
 
 	gui_panel_t *panel;
 	u32 next_panel_id;
@@ -1545,6 +1602,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->drag_offset = g_v2i_zero;
 
 	gui->pw_buf = array_create();
+	gui->vert_buf = array_create();
 
 	gui->panel = NULL;
 	gui->next_panel_id = 1;
@@ -1574,6 +1632,7 @@ out:
 void gui_destroy(gui_t *gui)
 {
 	array_destroy(gui->pw_buf);
+	array_destroy(gui->vert_buf);
 	array_foreach(gui->fonts, font_t, f)
 		font_destroy(f);
 	array_destroy(gui->fonts);
@@ -2069,44 +2128,33 @@ void gui__circ_poly(r32 x, r32 y, r32 r, v2f *v, u32 nmax)
 
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
-	v2f *poly = array_create();
-
-	array_set_sz(poly, gui__circ_poly_sz(r));
-	gui__circ_poly(x, y, r, A2PN(poly));
-	gui__poly(gui, poly, gui__circ_poly_sz(r), fill, stroke);
-
-	array_destroy(poly);
+	array_set_sz(gui->vert_buf, gui__circ_poly_sz(r));
+	gui__circ_poly(x, y, r, A2PN(gui->vert_buf));
+	gui__poly(gui, gui->vert_buf, gui__circ_poly_sz(r), fill, stroke);
+	array_clear(gui->vert_buf);
 }
-
-#ifndef GUI_POLY_MAX_VERTS
-#define GUI_POLY_MAX_VERTS 32
-#endif
 
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
 {
-	v2f vf[GUI_POLY_MAX_VERTS];
-	assert(n <= GUI_POLY_MAX_VERTS);
-
+	array_set_sz(gui->vert_buf, n);
 	for (u32 i = 0; i < n; ++i) {
-		vf[i].x = v[i].x;
-		vf[i].y = v[i].y;
+		gui->vert_buf[i].x = v[i].x;
+		gui->vert_buf[i].y = v[i].y;
 	}
-	gui_polyf(gui, vf, n, fill, stroke);
+	gui_polyf(gui, gui->vert_buf, n, fill, stroke);
+	array_clear(gui->vert_buf);
 }
 
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
-	v2f **polys;
 	if (polyf_is_convex(v, n) || fill.a == 0) {
 		gui__poly(gui, v, n, fill, stroke);
 	} else {
-		polys = array_create();
-		polyf_decompose(v, n, &polys);
-		array_foreach(polys, v2f*, poly) {
-			gui__poly(gui, A2PN(*poly), fill, g_nocolor);
-			array_destroy(*poly);
-		}
-		array_destroy(polys);
+		polyf_decompose(v, n, &gui->vert_buf);
+		gui__pdc_foreach(gui->vert_buf, i, p, pn) {
+			gui_polyf(gui, p, pn, fill, g_nocolor);
+		} gui__pdc_endforeach(i);
+		array_clear(gui->vert_buf);
 
 		if (stroke.a != 0)
 			gui__poly(gui, v, n, g_nocolor, stroke);
