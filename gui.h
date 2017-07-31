@@ -2109,19 +2109,29 @@ cached_img_t *gui__find_img(gui_t *gui, u32 id)
 	return NULL;
 }
 
-void gui_img(gui_t *gui, s32 x, s32 y, const char *fname)
+static
+const img_t *gui__find_or_load_img(gui_t *gui, const char *fname)
 {
 	const u32 id = hash(fname);
-	cached_img_t *ci = gui__find_img(gui, id);
-	if (!ci) {
-		ci = array_append_null(gui->imgs);
-		ci->id = id;
-		if (!img_load(&ci->img, fname)) {
-			array_pop(gui->imgs);
-			return;
-		}
-	}
-	gui_img_scaled(gui, x, y, 1.f, 1.f, &ci->img);
+	cached_img_t *cached_img = gui__find_img(gui, id);
+	if (cached_img)
+		return &cached_img->img;
+
+	cached_img = array_append_null(gui->imgs);
+	cached_img->id = id;
+	if (img_load(&cached_img->img, fname))
+		return &cached_img->img;
+
+	array_pop(gui->imgs);
+	return NULL;
+}
+
+void gui_img(gui_t *gui, s32 x, s32 y, const char *fname)
+{
+	const img_t *img = gui__find_or_load_img(gui, fname);
+	if (!img)
+		return;
+	gui_img_scaled(gui, x, y, 1.f, 1.f, img);
 }
 
 void gui_img_scaled(gui_t *gui, s32 x, s32 y, r32 sx, r32 sy, const img_t *img)
@@ -3180,10 +3190,18 @@ void pgui_txt(gui_t *gui, const char *str, gui_align_t align)
 
 void pgui_img(gui_t *gui, const char *fname)
 {
+	const img_t *img;
+	r32 sx, sy;
+
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
-	gui_img(gui, gui->panel->pos.x, gui->panel->pos.y, fname);
+	img = gui__find_or_load_img(gui, fname);
+	if (img) {
+		sx = (r32)*gui->panel->row.current_col / img->texture.width;
+		sy = (r32)gui->panel->row.height / img->texture.height;
+		gui_img_scaled(gui, gui->panel->pos.x, gui->panel->pos.y, sx, sy, img);
+	}
 	pgui__col_advance(gui->panel);
 }
 
