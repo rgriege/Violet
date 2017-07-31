@@ -64,6 +64,8 @@ typedef struct array__head
 #define array_index(a, p, cmp)     array__index(a, p, array__esz(a), cmp)
 #define array_upper(a, e, cmp)     array__upper(a, &(e), array__esz(a), cmp)
 
+#define A2PN(a)                    (a), array_sz(a)
+
 
 ARRDEF void *array__create(array_size_t cap, size_t sz);
 ARRDEF void *array__reserve(void *a, array_size_t nmemb, size_t sz);

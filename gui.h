@@ -1197,11 +1197,11 @@ void polyf_decompose(const v2f *v, u32 n, v2f ***polys)
 
 		// solve smallest poly first
 		if (array_sz(lower_poly) < array_sz(upper_poly)) {
-			polyf_decompose(lower_poly, array_sz(lower_poly), polys);
-			polyf_decompose(upper_poly, array_sz(upper_poly), polys);
+			polyf_decompose(A2PN(lower_poly), polys);
+			polyf_decompose(A2PN(upper_poly), polys);
 		} else {
-			polyf_decompose(upper_poly, array_sz(upper_poly), polys);
-			polyf_decompose(lower_poly, array_sz(lower_poly), polys);
+			polyf_decompose(A2PN(upper_poly), polys);
+			polyf_decompose(A2PN(lower_poly), polys);
 		}
 		goto out;
 
@@ -2072,7 +2072,7 @@ void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 	v2f *poly = array_create();
 
 	array_set_sz(poly, gui__circ_poly_sz(r));
-	gui__circ_poly(x, y, r, poly, array_sz(poly));
+	gui__circ_poly(x, y, r, A2PN(poly));
 	gui__poly(gui, poly, gui__circ_poly_sz(r), fill, stroke);
 
 	array_destroy(poly);
@@ -2103,7 +2103,7 @@ void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 		polys = array_create();
 		polyf_decompose(v, n, &polys);
 		array_foreach(polys, v2f*, poly) {
-			gui__poly(gui, *poly, array_sz(*poly), fill, g_nocolor);
+			gui__poly(gui, A2PN(*poly), fill, g_nocolor);
 			array_destroy(*poly);
 		}
 		array_destroy(polys);
