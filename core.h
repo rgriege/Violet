@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -120,24 +121,16 @@ void        time_sleep_milli(u32 milli);
 
 /* Log */
 
+typedef void(*logger_t)(void *udata, const char *format, va_list ap);
+
 #define LOG_STREAM_CAP 3
-void  log_add_stream(FILE *fp);
-void  log_remove_stream(FILE *fp);
-FILE *log__get_stream(u32 idx);
-u32   log__stream_cnt();
-#define log_write(fmt, ...) \
-	do { \
-		for (u32 log_idx = 0; log_idx < log__stream_cnt(); ++log_idx) { \
-			fprintf(log__get_stream(log_idx), fmt, ##__VA_ARGS__); \
-			fputc('\n', log__get_stream(log_idx)); \
-			fflush(log__get_stream(log_idx)); \
-		} \
-	} while (0)
-#define log_newline() \
-	do { \
-		for (u32 log_idx = 0; log_idx < log__stream_cnt(); ++log_idx) \
-			fputc('\n', log__get_stream(log_idx)); \
-	} while (0)
+
+void log_add_stream(logger_t logger, void *udata);
+void log_remove_stream(logger_t logger, void *udata);
+void log_write(const char *format, ...);
+void log_newline();
+
+void file_logger(void *udata, const char *format, va_list ap);
 
 #endif // VIOLET_CORE_H
 
@@ -417,19 +410,27 @@ void time_sleep_milli(u32 milli)
 
 /* Log */
 
-FILE *g_log_streams[LOG_STREAM_CAP];
+typedef struct log_stream
+{
+	logger_t logger;
+	void *udata;
+} log_stream_t;
+
+log_stream_t g_log_streams[LOG_STREAM_CAP];
 u32 g_log_stream_cnt = 0;
 
-void log_add_stream(FILE *fp)
+void log_add_stream(logger_t logger, void *udata)
 {
 	assert(g_log_stream_cnt < LOG_STREAM_CAP);
-	g_log_streams[g_log_stream_cnt++] = fp;
+	g_log_streams[g_log_stream_cnt].logger = logger;
+	g_log_streams[g_log_stream_cnt].udata = udata;
+	++g_log_stream_cnt;
 }
 
-void log_remove_stream(FILE *fp)
+void log_remove_stream(logger_t logger, void *udata)
 {
 	for (u32 i = 0; i < g_log_stream_cnt; ++i) {
-		if (fp == g_log_streams[i]) {
+		if (logger == g_log_streams[i].logger && udata == g_log_streams[i].udata) {
 			g_log_streams[i] = g_log_streams[g_log_stream_cnt-1];
 			--g_log_stream_cnt;
 			return;
@@ -438,15 +439,27 @@ void log_remove_stream(FILE *fp)
 	assert(false);
 }
 
-FILE *log__get_stream(u32 idx)
+void log_write(const char *format, ...)
 {
-	assert(idx < g_log_stream_cnt);
-	return g_log_streams[idx];
+	for (u32 i = 0; i < g_log_stream_cnt; ++i) {
+		va_list ap;
+		va_start(ap, format);
+		g_log_streams[i].logger(g_log_streams[i].udata, format, ap);
+		va_end(ap);
+	}
 }
 
-u32 log__stream_cnt()
+void log_newline()
 {
-	return g_log_stream_cnt;
+	log_write("%s", "\n");
+}
+
+void file_logger(void *udata, const char *format, va_list ap)
+{
+	FILE *fp = udata;
+	vfprintf(fp, format, ap);
+	fputc('\n', fp);
+	fflush(fp);
 }
 
 #undef CORE_IMPLEMENTATION
