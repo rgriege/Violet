@@ -16,29 +16,31 @@ typedef struct color_t
 #define gi_grey128      { .r=0x80, .g=0x80, .b=0x80, .a=0xff }
 #define gi_white        { .r=0xff, .g=0xff, .b=0xff, .a=0xff }
 
-#define gi_red          { .r=0xff, .g=0,    .b=0,    .a=0xff }
-#define gi_orange       { .r=0xff, .g=0x92, .b=0x1e, .a=0xff }
-#define gi_green        { .r=0,    .g=0xff, .b=0,    .a=0xff }
-#define gi_lightblue    { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff }
 #define gi_blue         { .r=0,    .g=0,    .b=0xff, .a=0xff }
 #define gi_fuchsia      { .r=0xff, .g=0,    .b=0xff, .a=0xff }
+#define gi_green        { .r=0,    .g=0xff, .b=0,    .a=0xff }
+#define gi_lightblue    { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff }
+#define gi_orange       { .r=0xff, .g=0x92, .b=0x1e, .a=0xff }
+#define gi_red          { .r=0xff, .g=0,    .b=0,    .a=0xff }
+#define gi_yellow       { .r=0xff, .g=0xff, .b=0,    .a=0xff }
 
 #define gi_nocolor      { .r=0,    .g=0,    .b=0,    .a=0 }
 
 
-#define g_black (color_t)gi_black
-#define g_grey77 (color_t)gi_grey77
-#define g_grey128 (color_t)gi_grey128
-#define g_white (color_t)gi_white
+#define g_black     (color_t)gi_black
+#define g_grey77    (color_t)gi_grey77
+#define g_grey128   (color_t)gi_grey128
+#define g_white     (color_t)gi_white
 
-#define g_red (color_t)gi_red
-#define g_orange (color_t)gi_orange
-#define g_green (color_t)gi_green
+#define g_blue      (color_t)gi_blue
+#define g_fuchsia   (color_t)gi_fuchsia
+#define g_green     (color_t)gi_green
 #define g_lightblue (color_t)gi_lightblue
-#define g_blue (color_t)gi_blue
-#define g_fuchsia (color_t)gi_fuchsia
+#define g_orange    (color_t)gi_orange
+#define g_red       (color_t)gi_red
+#define g_yellow    (color_t)gi_yellow
 
-#define g_nocolor (color_t)gi_nocolor
+#define g_nocolor   (color_t)gi_nocolor
 
 void    color_as_float_array(float *f, color_t c);
 color_t color_from_hex(const char *hex);
@@ -205,6 +207,7 @@ b32  mouse_released_bg(const gui_t *gui, u32 mask);
 b32  mouse_over_bg(const gui_t *gui);
 void mouse_scroll(const gui_t *gui, s32 *dir);
 void mouse_scroll_bg(const gui_t *gui, s32 *dir);
+void mouse_press_debug(gui_t *gui, b32 enabled);
 
 b32 key_down(const gui_t *gui, gui_key_t key);
 b32 key_pressed(const gui_t *gui, gui_key_t key);
@@ -1448,6 +1451,7 @@ typedef struct gui_t
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
 	b32 mouse_covered_by_panel;
+	b32 mouse_debug;
 
 	u8 prev_keys[KB_COUNT];
 	const u8 *keys;
@@ -1592,6 +1596,8 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->default_style = g_default_style;
 	gui_style_default(gui);
 
+	gui->mouse_debug = false;
+
 	memset(gui->prev_keys, 0, KB_COUNT);
 
 	gui->hot_id = 0;
@@ -1723,6 +1729,11 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
+
+	if (gui->mouse_debug && mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT)) {
+		gui_circ(gui, gui->mouse_pos.x, gui->mouse_pos.y, 10, g_yellow, g_nocolor);
+		gui_unmask(gui); /* kinda wasteful, but ensures it's drawn on top */
+	}
 
 	return !quit;
 }
@@ -2048,6 +2059,11 @@ void mouse_scroll_bg(const gui_t *gui, s32 *dir)
 {
 	if (mouse_over_bg(gui))
 		mouse_scroll(gui, dir);
+}
+
+void mouse_press_debug(gui_t *gui, b32 enabled)
+{
+	gui->mouse_debug = enabled;
 }
 
 b32 key_down(const gui_t *gui, gui_key_t key)
