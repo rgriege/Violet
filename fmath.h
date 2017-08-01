@@ -728,9 +728,9 @@ FMDEF void box2f_from_line(box2f *box, v2f start, v2f end)
 FMDEF void box2f_from_center(box2f *box, v2f center, v2f half_dim)
 {
 	box->min.x = center.x - half_dim.x;
-	box->min.y = center.y - half_dim.x;
+	box->min.y = center.y - half_dim.y;
 	box->max.x = center.x + half_dim.x;
-	box->max.y = center.y + half_dim.x;
+	box->max.y = center.y + half_dim.y;
 }
 
 FMDEF void box2f_from_dims(box2f *box, r32 left, r32 top, r32 right, r32 bottom)
