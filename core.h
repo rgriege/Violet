@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 
@@ -69,6 +70,42 @@ typedef union intptr
 #define memswp(a, b, type) \
 	do { type tmp = a; a = b; b = tmp; } while(0)
 
+#ifndef WIN32
+#define thread_local __thread
+#else
+#define thread_local __declspec(thread)
+#endif
+
+#ifndef NDEBUG
+
+void *vmalloc(size_t sz);
+void *vcalloc(size_t nmemb, size_t sz);
+void *vrealloc(void *ptr, size_t sz);
+void  vfree(void *ptr);
+
+void  vlt_mem_generation_advance();
+#ifndef VLT_ALLOC_TRACK_CNT
+#define VLT_ALLOC_TRACK_CNT 2048
+#endif
+
+typedef void(*vlt_mem_dump_callback_t)(void *ptr, u32 gen, void *udata);
+void  vlt_mem_dump_file(void *ptr, u32 gen, void *udata);
+
+void  vlt_mem_dump();
+void  vlt_mem_dump_current(vlt_mem_dump_callback_t cb, void *udata);
+
+#define vlt__real_malloc(sz)         malloc(sz)
+#define vlt__real_calloc(nmemb, sz)  calloc(nmemb, sz)
+#define vlt__real_realloc(ptr, sz)   realloc(ptr, sz)
+#define vlt__real_free(ptr)          free(ptr)
+
+#define malloc(sz)         vmalloc(sz)
+#define calloc(nmemb, sz)  vcalloc(nmemb, sz)
+#define realloc(ptr, sz)   vrealloc(ptr, sz)
+#define free(ptr)          vfree(ptr)
+
+#endif
+
 /* Hash */
 
 u32 hash(const char *str);
@@ -108,6 +145,177 @@ u32   log__stream_cnt();
 /* Implementation */
 
 #ifdef CORE_IMPLEMENTATION
+
+#ifndef NDEBUG
+
+typedef struct vlt__alloc_node
+{
+	struct vlt__alloc_node *prev, *next;
+	size_t sz, generation;
+} vlt__alloc_node_t;
+
+thread_local struct
+{
+	vlt__alloc_node_t *head, *tail;
+	size_t sz, generation;
+	size_t current_bytes, peak_bytes, total_bytes;
+	size_t total_chunks;
+} g_vlt_allocs = {0};
+
+static
+void vlt__record_alloc(size_t sz)
+{
+	g_vlt_allocs.current_bytes += sz;
+	if (g_vlt_allocs.peak_bytes < g_vlt_allocs.current_bytes)
+		g_vlt_allocs.peak_bytes = g_vlt_allocs.current_bytes;
+	g_vlt_allocs.total_bytes += sz;
+	++g_vlt_allocs.total_chunks;
+}
+
+static
+void vlt__record_free(size_t sz)
+{
+	g_vlt_allocs.current_bytes -= sz;
+}
+
+static
+void vlt__alloc_node_append(vlt__alloc_node_t *node, size_t sz)
+{
+	node->sz = sz;
+	node->generation = g_vlt_allocs.generation;
+	vlt__record_alloc(sz);
+	node->next = NULL;
+	if (g_vlt_allocs.tail) {
+		g_vlt_allocs.tail->next = node;
+		node->prev = g_vlt_allocs.tail;
+		g_vlt_allocs.tail = node;
+	} else {
+		g_vlt_allocs.head = node;
+		g_vlt_allocs.tail = node;
+		node->prev = NULL;
+	}
+}
+
+#undef malloc
+#undef calloc
+#undef realloc
+#undef free
+#define malloc(sz)         vlt__real_malloc(sz)
+#define calloc(nmemb, sz)  vlt__real_calloc(nmemb, sz)
+#define realloc(ptr, sz)   vlt__real_realloc(ptr, sz)
+#define free(ptr)          vlt__real_free(ptr)
+
+void *vmalloc(size_t sz)
+{
+	vlt__alloc_node_t *node = malloc(sizeof(vlt__alloc_node_t) + sz);
+	vlt__alloc_node_append(node, sz);
+	return node + 1;
+}
+
+void *vcalloc(size_t nmemb, size_t sz)
+{
+	vlt__alloc_node_t *node = calloc(1, sizeof(vlt__alloc_node_t) + nmemb * sz);
+	vlt__alloc_node_append(node, nmemb * sz);
+	return node + 1;
+}
+
+void *vrealloc(void *ptr, size_t sz)
+{
+	if (ptr) {
+		vlt__alloc_node_t *old_node = (vlt__alloc_node_t*)ptr - 1;
+		vlt__record_free(old_node->sz);
+		if (sz) {
+			vlt__alloc_node_t *node = realloc(old_node, sizeof(vlt__alloc_node_t) + sz);
+			vlt__record_alloc(sz);
+			node->sz = sz;
+			node->generation = g_vlt_allocs.generation;
+			if (node != old_node) {
+				if (node->prev)
+					node->prev->next = node;
+				if (node->next)
+					node->next->prev = node;
+				if (g_vlt_allocs.head == old_node)
+					g_vlt_allocs.head = node;
+				if (g_vlt_allocs.tail == old_node)
+					g_vlt_allocs.tail = node;
+			}
+			return node + 1;
+		} else {
+			vfree(ptr);
+			return NULL;
+		}
+	} else if (sz) {
+		return vmalloc(sz);
+	} else {
+		return NULL;
+	}
+}
+
+void vfree(void *ptr)
+{
+	if (ptr) {
+		vlt__alloc_node_t *node = (vlt__alloc_node_t*)ptr - 1;
+		vlt__record_free(node->sz);
+		if (node->prev)
+			node->prev->next = node->next;
+		if (node->next)
+			node->next->prev = node->prev;
+		if (g_vlt_allocs.head == node)
+			g_vlt_allocs.head = node->next;
+		if (g_vlt_allocs.tail == node)
+			g_vlt_allocs.tail = node->prev;
+		free(node);
+	}
+}
+
+#undef malloc
+#undef calloc
+#undef realloc
+#undef free
+#define malloc(sz)         vmalloc(sz)
+#define calloc(nmemb, sz)  vcalloc(nmemb, sz)
+#define realloc(ptr, sz)   vrealloc(ptr, sz)
+#define free(ptr)          vfree(ptr)
+
+void vlt_mem_generation_advance()
+{
+	++g_vlt_allocs.generation;
+	assert(g_vlt_allocs.generation != 0);
+}
+
+void vlt_mem_dump()
+{
+	if (g_vlt_allocs.current_bytes != 0)
+		log_write("%lu bytes still allocated!", g_vlt_allocs.current_bytes);
+
+	vlt__alloc_node_t *node = g_vlt_allocs.head;
+	while (node) {
+		log_write("%p: %10lu bytes @ gen %10lu still active!", node + 1, node->sz,
+		          node->generation);
+		node = node->next;
+	}
+
+	log_write("peak:  %10lu bytes allocated", g_vlt_allocs.peak_bytes);
+	log_write("total: %10lu bytes allocated in %lu chunks",
+	          g_vlt_allocs.total_bytes, g_vlt_allocs.total_chunks);
+}
+
+void vlt_mem_dump_current(vlt_mem_dump_callback_t cb, void *udata)
+{
+	vlt__alloc_node_t *node = g_vlt_allocs.head;
+	while (node) {
+		cb(node + 1, node->generation, udata);
+		node = node->next;
+	}
+}
+
+void vlt_mem_dump_file(void *ptr, u32 gen, void *udata)
+{
+	fprintf((FILE*)udata, "%p: %u", ptr, gen);
+}
+
+
+#endif
 
 /* Hash (djb2 by dan bernstein) */
 

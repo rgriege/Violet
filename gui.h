@@ -1977,8 +1977,8 @@ void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
 	const u32 target_frame_milli = 1000/fps;
 	timepoint_t start, end;
 	b32 quit = false;
-	while(gui_begin_frame(gui) && !quit)
-	{
+	while(gui_begin_frame(gui) && !quit) {
+		vlt_mem_generation_advance();
 		start = time_current();
 		quit = ufunc(gui, udata);
 		gui_end_frame(gui);
