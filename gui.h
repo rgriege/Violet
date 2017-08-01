@@ -272,6 +272,35 @@ b32       gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
 b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb);
 
 
+/* Splits */
+
+#ifndef GUI_SPLIT_RESIZE_BORDER
+#define GUI_SPLIT_RESIZE_BORDER 4
+#endif
+
+typedef enum gui_split_flags
+{
+	GUI_SPLIT_RESIZABLE = 0x1,
+	GUI_SPLIT_FULL      = 0x1,
+} gui_split_flags_t;
+
+typedef struct gui_split
+{
+	b32 vert, leaf;
+	gui_split_flags_t flags;
+	struct gui_split *parent, *sp1, *sp2;
+	r32 sz;
+	box2i box;
+} gui_split_t;
+
+void gui_split_init(gui_t *gui, gui_split_t *split,
+                    gui_split_t *sp1, r32 sz, gui_split_t *sp2,
+                    gui_split_flags_t flags);
+void gui_vsplit_init(gui_t *gui, gui_split_t *split,
+                     gui_split_t *sp1, r32 sz, gui_split_t *sp2,
+                     gui_split_flags_t flags);
+
+
 /* Panels */
 
 #define GUI_ROW_REMAINING 0
@@ -292,13 +321,13 @@ b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb);
 #define GUI_PANEL_TITLEBAR_HEIGHT 20
 #endif
 
-
 typedef enum gui_panel_flags
 {
 	GUI_PANEL_TITLEBAR  = 0x1,
 	GUI_PANEL_MOVABLE   = 0x2,
 	GUI_PANEL_RESIZABLE = 0x4,
-	GUI_PANEL_FULL      = 0x7,
+	GUI_PANEL_DRAGGABLE = 0x8,
+	GUI_PANEL_FULL      = 0xf,
 } gui_panel_flags_t;
 
 typedef struct gui_panel
@@ -322,6 +351,7 @@ typedef struct gui_panel
 	s32 body_height;
 	s32 pri;
 	struct gui_panel *parent;
+	gui_split_t split;
 } gui_panel_t;
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
@@ -359,6 +389,7 @@ void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 
 void gui_panel_pen(gui_t *gui, s32 *x, s32 *y, s32 *w);
+
 
 /* Style */
 
@@ -434,6 +465,7 @@ void         gui_style_default(gui_t *gui);
 #include "violet/fmath.h"
 #include "violet/imath.h"
 
+static void gui__split(gui_t *gui, gui_split_t *split);
 
 #if defined(DEBUG) || defined(GUI_CHECK_GL)
 static
@@ -1477,6 +1509,8 @@ typedef struct gui_t
 	char *pw_buf;
 	v2f *vert_buf;
 
+	gui_split_t *root_split;
+
 	gui_panel_t *panel;
 	u32 next_panel_id;
 	s32 next_panel_pri, min_panel_pri;
@@ -1610,6 +1644,8 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->pw_buf = array_create();
 	gui->vert_buf = array_create();
 
+	gui->root_split = NULL;
+
 	gui->panel = NULL;
 	gui->next_panel_id = 1;
 	gui->next_panel_pri = 0;
@@ -1726,6 +1762,12 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->draw_call_cnt = 0;
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
+
+	if (gui->root_split) {
+		box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
+		gui__split(gui, gui->root_split);
+		gui_unmask(gui); /* kinda wasteful, but ensures resizers are drawn on top */
+	}
 
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
@@ -2936,6 +2978,112 @@ b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
 }
 
 
+void gui__split_init(gui_t *gui, gui_split_t *split,
+                     gui_split_t *sp1, r32 sz,
+                     gui_split_t *sp2, gui_split_flags_t flags,
+                     b32 vert)
+{
+	if (!gui->root_split) {
+		gui->root_split = split;
+		split->parent = NULL;
+	} else {
+		assert(split->parent);
+	}
+	split->flags = flags;
+	split->vert = vert;
+	split->leaf = false;
+	split->sp1 = sp1;
+	split->sp2 = sp2;
+	split->sz = sz;
+	sp1->parent = split;
+	sp2->parent = split;
+	sp1->leaf = true;
+	sp2->leaf = true;
+}
+
+void gui_split_init(gui_t *gui, gui_split_t *split,
+                    gui_split_t *sp1, r32 sz, gui_split_t *sp2,
+                    gui_split_flags_t flags)
+{
+	gui__split_init(gui, split, sp1, sz, sp2, flags, false);
+}
+
+void gui_vsplit_init(gui_t *gui, gui_split_t *split,
+                     gui_split_t *sp1, r32 sz, gui_split_t *sp2,
+                     gui_split_flags_t flags)
+{
+	gui__split_init(gui, split, sp1, sz, sp2, flags, true);
+}
+
+static
+s32 gui__split_dim(r32 sz, r32 w)
+{
+	if (sz > 1.f)
+		return sz;
+	else if (sz < -1.f)
+		return w + sz;
+	else if (sz > 0.f)
+		return w * sz;
+	else if (sz < 0.f)
+		return w * (1.f + sz);
+	else
+		return w * 0.5f;
+}
+
+static
+void gui__split(gui_t *gui, gui_split_t *split)
+{
+	s32 x, y, w, h, sz1;
+
+	assert(split);
+	assert(!split->leaf);
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+
+	if (split->flags & GUI_SPLIT_RESIZABLE) {
+		if (split->vert) {
+			const s32 orig_drag_x =   x - GUI_SPLIT_RESIZE_BORDER / 2
+			                        + gui__split_dim(split->sz, w);
+			s32 drag_x = orig_drag_x;
+			if (gui_drag_horiz(gui, &drag_x, y, GUI_SPLIT_RESIZE_BORDER, h, MB_LEFT)) {
+				// TODO(rgriege): SDL_Cursor();
+				if (fabsf(split->sz) > 1.f)
+					split->sz += drag_x - orig_drag_x;
+				else
+					split->sz = (r32)(drag_x + GUI_SPLIT_RESIZE_BORDER / 2 - x) / w;
+			}
+		} else {
+			const s32 orig_drag_y =   y + h - GUI_SPLIT_RESIZE_BORDER / 2
+			                        - gui__split_dim(split->sz, h);
+			s32 drag_y = orig_drag_y;
+			if (gui_drag_vert(gui, x, &drag_y, w, GUI_SPLIT_RESIZE_BORDER, MB_LEFT)) {
+				// TODO(rgriege): SDL_Cursor();
+				if (fabsf(split->sz) > 1.f)
+					split->sz += orig_drag_y - drag_y;
+				else
+					split->sz = (r32)(y + h - drag_y - GUI_SPLIT_RESIZE_BORDER / 2) / h;
+			}
+		}
+	}
+
+	sz1 = gui__split_dim(split->sz, split->vert ? w : h);
+	split->sp1->box = split->box;
+	split->sp2->box = split->box;
+	if (split->vert) {
+		split->sp1->box.max.x = split->box.min.x + sz1;
+		split->sp2->box.min.x = split->box.min.x + sz1;
+	} else {
+		split->sp1->box.min.y = split->box.max.y - sz1;
+		split->sp2->box.max.y = split->box.max.y - sz1;
+	}
+
+	if (!split->sp1->leaf)
+		gui__split(gui, split->sp1);
+	if (!split->sp2->leaf)
+		gui__split(gui, split->sp2);
+}
+
+
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
                      const char *title, gui_panel_flags_t flags)
 {
@@ -2954,6 +3102,7 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->required_dim = g_v2i_zero;
 
 	panel->parent = NULL;
+	panel->split.leaf = false;
 
 	pgui_panel_to_front(gui, panel);
 }
@@ -2962,13 +3111,15 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 {
 	v2i resize;
 	s32 resize_delta;
-	gui_style_t cur_style;
 	b32 dragging, contains_mouse;
 	box2i box, box2;
 
 	assert(panel->parent == gui->panel);
 
 	gui->panel = panel;
+
+	if (panel->split.leaf)
+		box2i_to_xywh(panel->split.box, &panel->x, &panel->y, &panel->width, &panel->height);
 
 	if (gui->style.panel.padding >= 1.f) {
 		panel->padding.x = gui->style.panel.padding;
@@ -2980,9 +3131,10 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	/* resizing */
 
-	cur_style = *gui_get_style(gui);
-	gui_style(gui, &g_invis_style);
-	if (panel->flags & GUI_PANEL_RESIZABLE) {
+	if (panel->flags & GUI_PANEL_RESIZABLE && !panel->split.leaf) {
+		gui_style_t cur_style = *gui_get_style(gui);
+		gui_style(gui, &g_invis_style);
+
 		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
 		if (gui_drag_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
 		                   panel->height, MB_LEFT)) {
@@ -3008,16 +3160,24 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		if (gui_drag_vert(gui, panel->x, &resize.y, panel->width,
 		                  GUI_PANEL_RESIZE_BORDER, MB_LEFT))
 			panel->height += resize.y - (panel->y + panel->height);
+
+		gui_style(gui, &cur_style);
 	}
-	gui_style(gui, &cur_style);
 
 	/* titlebar / dragging */
 
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
 		panel->pos.y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
 
-		dragging = gui_drag(gui, &panel->x, &panel->pos.y, panel->width,
-		                    GUI_PANEL_TITLEBAR_HEIGHT, MB_LEFT);
+		if (   panel->flags & GUI_PANEL_DRAGGABLE
+		    && !panel->split.leaf) {
+			dragging = gui_drag(gui, &panel->x, &panel->pos.y, panel->width,
+			                    GUI_PANEL_TITLEBAR_HEIGHT, MB_LEFT);
+		} else {
+			gui_rect(gui, panel->x, panel->pos.y, panel->width,
+			         GUI_PANEL_TITLEBAR_HEIGHT, gui->style.fill_color,
+							 gui->style.outline_color);
+		}
 		gui_txt(gui, panel->x + panel->width / 2,
 		        panel->pos.y + GUI_PANEL_TITLEBAR_HEIGHT / 2, gui->style.font_sz,
 		        panel->title, g_white, GUI_ALIGN_CENTER | GUI_ALIGN_MIDDLE);
@@ -3403,6 +3563,7 @@ void pgui_subpanel(gui_t *gui, gui_panel_t *subpanel)
 {
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
+	assert(!subpanel->split.leaf);
 
 	subpanel->x = gui->panel->pos.x;
 	subpanel->y = gui->panel->pos.y;

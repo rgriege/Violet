@@ -78,8 +78,10 @@ typedef struct box2i
 	v2i max;
 } box2i;
 
+IMDEF void box2i_from_center(box2i *b, v2i center, v2i half_dim);
 IMDEF void box2i_from_dims(box2i *b, s32 left, s32 top, s32 right, s32 bottom);
 IMDEF void box2i_from_xywh(box2i *b, s32 x, s32 y, s32 w, s32 h);
+IMDEF void box2i_to_xywh(box2i box, s32 *x, s32 *y, s32 *w, s32 *h);
 IMDEF b32  box2i_contains_point(box2i b, v2i p);
 IMDEF void box2i_clamp_point(box2i b, v2i *p);
 IMDEF b32  box2i_eq(box2i lhs, box2i rhs);
@@ -194,6 +196,14 @@ IMDEF b32 v2i_equal(v2i lhs, v2i rhs)
 
 /* 2D Anti-aliased bounding box */
 
+IMDEF void box2i_from_center(box2i *box, v2i center, v2i half_dim)
+{
+	box->min.x = center.x - half_dim.x;
+	box->min.y = center.y - half_dim.y;
+	box->max.x = center.x + half_dim.x;
+	box->max.y = center.y + half_dim.y;
+}
+
 IMDEF void box2i_from_dims(box2i *box, s32 left, s32 top, s32 right, s32 bottom)
 {
 	box->min.x = left;
@@ -208,6 +218,14 @@ IMDEF void box2i_from_xywh(box2i *box, s32 x, s32 y, s32 w, s32 h)
 	box->min.y = y;
 	box->max.x = x + w;
 	box->max.y = y + h;
+}
+
+IMDEF void box2i_to_xywh(box2i box, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	*x = box.min.x;
+	*y = box.min.y;
+	*w = box.max.x - box.min.x;
+	*h = box.max.y - box.min.y;
 }
 
 IMDEF b32 box2i_contains_point(box2i box, v2i point)
