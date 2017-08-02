@@ -1785,8 +1785,6 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
 
-	/* TODO(rgriege): use a better method for this -
-	 * doesn't work well with rapid mouse movement */
 	gui->use_default_cursor = true;
 	if (gui->root_split) {
 		box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
@@ -2985,7 +2983,11 @@ b32 gui__resize_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h)
 		SDL_SetCursor(gui->cursors[GUI__CURSOR_RESIZE_EW]);
 		gui->use_default_cursor = false;
 	}
-	return gui_drag_horiz(gui, x, y, w, h, MB_LEFT);
+	if (gui_drag_horiz(gui, x, y, w, h, MB_LEFT)) {
+		gui->use_default_cursor = false;
+		return true;
+	}
+	return false;
 }
 
 static
@@ -3009,7 +3011,11 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 		SDL_SetCursor(gui->cursors[GUI__CURSOR_RESIZE_NS]);
 		gui->use_default_cursor = false;
 	}
-	return gui_drag_vert(gui, x, y, w, h, MB_LEFT);
+	if (gui_drag_vert(gui, x, y, w, h, MB_LEFT)) {
+		gui->use_default_cursor = false;
+		return true;
+	}
+	return false;
 }
 
 b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
