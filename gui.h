@@ -1456,6 +1456,14 @@ typedef struct cached_img
 	u32 id;
 } cached_img_t;
 
+typedef enum gui_cursor
+{
+	GUI__CURSOR_DEFAULT,
+	GUI__CURSOR_RESIZE_NS,
+	GUI__CURSOR_RESIZE_EW,
+	GUI__CURSOR_COUNT
+} gui__cursor_t;
+
 typedef struct gui_t
 {
 	timepoint_t creation_time;
@@ -1493,6 +1501,8 @@ typedef struct gui_t
 	u32 npt_prev_key_idx;
 	u32 npt_cursor_pos;
 
+	SDL_Cursor *cursors[GUI__CURSOR_COUNT];
+	b32 use_default_cursor;
 	font_t *fonts;
 	cached_img_t *imgs;
 	gui_style_t default_style;
@@ -1608,6 +1618,12 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	                                      g_fragment_shader))
 		goto err_white;
 
+	gui->cursors[GUI__CURSOR_DEFAULT] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+	gui->cursors[GUI__CURSOR_RESIZE_NS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+	gui->cursors[GUI__CURSOR_RESIZE_EW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
+		if (!gui->cursors[i])
+			goto err_cursor;
 	gui->fonts = array_create();
 	gui->imgs = array_create();
 
@@ -1653,6 +1669,10 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	goto out;
 
+err_cursor:
+	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
+		if (gui->cursors[i])
+			SDL_FreeCursor(gui->cursors[i]);
 err_white:
 	texture_destroy(&gui->texture_white);
 	texture_destroy(&gui->texture_white_dotted);
@@ -1675,6 +1695,8 @@ void gui_destroy(gui_t *gui)
 {
 	array_destroy(gui->pw_buf);
 	array_destroy(gui->vert_buf);
+	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
+		SDL_FreeCursor(gui->cursors[i]);
 	array_foreach(gui->fonts, font_t, f)
 		font_destroy(f);
 	array_destroy(gui->fonts);
@@ -1763,6 +1785,9 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
 
+	/* TODO(rgriege): use a better method for this -
+	 * doesn't work well with rapid mouse movement */
+	gui->use_default_cursor = true;
 	if (gui->root_split) {
 		box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
 		gui__split(gui, gui->root_split);
@@ -2006,6 +2031,9 @@ void gui_end_frame(gui_t *gui)
 			             draw_call->idx, draw_call->cnt);
 		}
 	}
+
+	if (gui->use_default_cursor)
+		SDL_SetCursor(gui->cursors[GUI__CURSOR_DEFAULT]);
 
 	GL_CHECK(glFlush);
 	SDL_GL_SwapWindow(gui->window);
@@ -2949,6 +2977,18 @@ b32 gui_drag_horiz(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb)
 }
 
 static
+b32 gui__resize_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h)
+{
+	box2i box;
+	box2i_from_xywh(&box, *x, y, w, h);
+	if (box2i_contains_point(box, gui->mouse_pos)) {
+		SDL_SetCursor(gui->cursors[GUI__CURSOR_RESIZE_EW]);
+		gui->use_default_cursor = false;
+	}
+	return gui_drag_horiz(gui, x, y, w, h, MB_LEFT);
+}
+
+static
 void gui__drag_vert_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                              s32 offset_x, s32 offset_y, void *udata)
 {
@@ -2958,6 +2998,18 @@ void gui__drag_vert_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 b32 gui_drag_vert(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb)
 {
 	return gui_dragx(gui, &x, y, w, h, mb, gui__drag_vert_callback, NULL);
+}
+
+static
+b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
+{
+	box2i box;
+	box2i_from_xywh(&box, x, *y, w, h);
+	if (box2i_contains_point(box, gui->mouse_pos)) {
+		SDL_SetCursor(gui->cursors[GUI__CURSOR_RESIZE_NS]);
+		gui->use_default_cursor = false;
+	}
+	return gui_drag_vert(gui, x, y, w, h, MB_LEFT);
 }
 
 b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
@@ -3040,13 +3092,16 @@ void gui__split(gui_t *gui, gui_split_t *split)
 
 	box2i_to_xywh(split->box, &x, &y, &w, &h);
 
-	if (split->flags & GUI_SPLIT_RESIZABLE) {
+	/* checking use_default_cursor ensures only 1 resize happens per frame */
+	if (split->flags & GUI_SPLIT_RESIZABLE && gui->use_default_cursor) {
+		const gui_style_t cur_style = *gui_get_style(gui);
+		gui->style.hot_color = gui->style.fill_color;
+		gui->style.active_color = gui->style.fill_color;
 		if (split->vert) {
 			const s32 orig_drag_x =   x - GUI_SPLIT_RESIZE_BORDER / 2
 			                        + gui__split_dim(split->sz, w);
 			s32 drag_x = orig_drag_x;
-			if (gui_drag_horiz(gui, &drag_x, y, GUI_SPLIT_RESIZE_BORDER, h, MB_LEFT)) {
-				// TODO(rgriege): SDL_Cursor();
+			if (gui__resize_horiz(gui, &drag_x, y, GUI_SPLIT_RESIZE_BORDER, h)) {
 				if (fabsf(split->sz) > 1.f)
 					split->sz += drag_x - orig_drag_x;
 				else
@@ -3056,14 +3111,14 @@ void gui__split(gui_t *gui, gui_split_t *split)
 			const s32 orig_drag_y =   y + h - GUI_SPLIT_RESIZE_BORDER / 2
 			                        - gui__split_dim(split->sz, h);
 			s32 drag_y = orig_drag_y;
-			if (gui_drag_vert(gui, x, &drag_y, w, GUI_SPLIT_RESIZE_BORDER, MB_LEFT)) {
-				// TODO(rgriege): SDL_Cursor();
+			if (gui__resize_vert(gui, x, &drag_y, w, GUI_SPLIT_RESIZE_BORDER)) {
 				if (fabsf(split->sz) > 1.f)
 					split->sz += orig_drag_y - drag_y;
 				else
 					split->sz = (r32)(y + h - drag_y - GUI_SPLIT_RESIZE_BORDER / 2) / h;
 			}
 		}
+		gui_style(gui, &cur_style);
 	}
 
 	sz1 = gui__split_dim(split->sz, split->vert ? w : h);
@@ -3131,34 +3186,36 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	/* resizing */
 
-	if (panel->flags & GUI_PANEL_RESIZABLE && !panel->split.leaf) {
+	if (panel->flags & GUI_PANEL_RESIZABLE
+	    && !panel->split.leaf
+	    && gui->use_default_cursor) {
 		gui_style_t cur_style = *gui_get_style(gui);
 		gui_style(gui, &g_invis_style);
 
 		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
-		if (gui_drag_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		                   panel->height, MB_LEFT)) {
+		if (gui__resize_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
+		                   panel->height)) {
 			resize_delta = panel->x - GUI_PANEL_RESIZE_BORDER - resize.x;
 			panel->width += resize_delta;
 			panel->x -= resize_delta;
 		}
 
 		resize.x = panel->x + panel->width;
-		if (gui_drag_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		                   panel->height, MB_LEFT))
+		if (gui__resize_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
+		                   panel->height))
 			panel->width += resize.x - (panel->x + panel->width);
 
 		resize.y = panel->y - GUI_PANEL_RESIZE_BORDER;
-		if (gui_drag_vert(gui, panel->x, &resize.y, panel->width,
-		                  GUI_PANEL_RESIZE_BORDER, MB_LEFT)) {
+		if (gui__resize_vert(gui, panel->x, &resize.y, panel->width,
+		                  GUI_PANEL_RESIZE_BORDER)) {
 			resize_delta = panel->y - GUI_PANEL_RESIZE_BORDER - resize.y;
 			panel->height += resize_delta;
 			panel->y -= resize_delta;
 		}
 
 		resize.y = panel->y + panel->height;
-		if (gui_drag_vert(gui, panel->x, &resize.y, panel->width,
-		                  GUI_PANEL_RESIZE_BORDER, MB_LEFT))
+		if (gui__resize_vert(gui, panel->x, &resize.y, panel->width,
+		                  GUI_PANEL_RESIZE_BORDER))
 			panel->height += resize.y - (panel->y + panel->height);
 
 		gui_style(gui, &cur_style);
