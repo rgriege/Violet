@@ -1472,6 +1472,8 @@ typedef struct gui_t
 	u32 frame_time_milli;
 	SDL_Window *window;
 	SDL_GLContext gl_context;
+	SDL_Window *parent_window;
+	SDL_GLContext parent_gl_context;
 
 	u32 vao, vbo[VBO_COUNT];
 	shader_prog_t shader;
@@ -1526,14 +1528,22 @@ typedef struct gui_t
 	s32 next_panel_pri, min_panel_pri;
 } gui_t;
 
+static u32 g_gui_cnt = 0;
+
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                   gui_flags_t flags)
 {
 	gui_t *gui = calloc(1, sizeof(gui_t));
-	SDL_SetMainReady();
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		log_write("SDL_Init(VIDEO) failed: %s", SDL_GetError());
-		goto err_sdl;
+	if (g_gui_cnt == 0) {
+		SDL_SetMainReady();
+		if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+			log_write("SDL_Init(VIDEO) failed: %s", SDL_GetError());
+			goto err_sdl;
+		}
+		gui->parent_window = NULL;
+	} else {
+		gui->parent_window = SDL_GL_GetCurrentWindow();
+		gui->parent_gl_context = SDL_GL_GetCurrentContext();
 	}
 
 	// Use OpenGL 3.3 core
@@ -1667,6 +1677,8 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
 
+	++g_gui_cnt;
+
 	goto out;
 
 err_cursor:
@@ -1680,6 +1692,8 @@ err_white:
 	GL_CHECK(glDeleteVertexArrays, 1, &gui->vao);
 err_glew:
 	SDL_GL_DeleteContext(gui->gl_context);
+	if (gui->parent_window)
+		SDL_GL_MakeCurrent(gui->parent_window, gui->parent_gl_context);
 err_ctx:
 	SDL_DestroyWindow(gui->window);
 err_win:
@@ -1710,7 +1724,10 @@ void gui_destroy(gui_t *gui)
 	GL_CHECK(glDeleteVertexArrays, 1, &gui->vao);
 	SDL_GL_DeleteContext(gui->gl_context);
 	SDL_DestroyWindow(gui->window);
-	SDL_Quit();
+	if (--g_gui_cnt == 0)
+		SDL_Quit();
+	else if (gui->parent_window)
+		SDL_GL_MakeCurrent(gui->parent_window, gui->parent_gl_context);
 	free(gui);
 }
 
@@ -1732,6 +1749,8 @@ b32 gui_begin_frame(gui_t *gui)
 	timepoint_t now = time_current();
 	gui->frame_time_milli = time_diff_milli(gui->frame_start_time, now);
 	gui->frame_start_time = now;
+
+	SDL_GL_MakeCurrent(gui->window, gui->gl_context);
 
 	SDL_Event evt;
 	const u32 last_mouse_btn = gui->mouse_btn;
