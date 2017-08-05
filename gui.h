@@ -231,7 +231,8 @@ void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t line);
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t line);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t line);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
-void gui_img_scaled(gui_t *gui, s32 x, s32 y, r32 sx, r32 sy, const img_t *img);
+void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
+                r32 opacity);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_t align);
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
@@ -319,7 +320,7 @@ void gui_vsplit_init(gui_t *gui, gui_split_t *split,
 #endif
 
 #ifndef GUI_PANEL_RESIZE_BORDER
-#define GUI_PANEL_RESIZE_BORDER 5
+#define GUI_PANEL_RESIZE_BORDER 4
 #endif
 
 #ifndef GUI_PANEL_TITLEBAR_HEIGHT
@@ -371,11 +372,17 @@ void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols);
 void pgui_row_empty(gui_t *gui, u32 height);
 void pgui_row_break(gui_t *gui, u32 top_y, u32 bottom_y, r32 width_ratio);
 
+typedef enum pgui_img_scale
+{
+	IMG_SCALED,
+	IMG_CENTERED,
+} pgui_img_scale_t;
+
 void      pgui_spacer(gui_t *gui);
 void      pgui_txt(gui_t *gui, const char *str, gui_align_t align);
-void      pgui_img(gui_t *gui, const char *fname);
+void      pgui_img(gui_t *gui, const char *fname, pgui_img_scale_t scale);
 btn_val_t pgui_btn(gui_t *gui, const char *lbl);
-btn_val_t pgui_btn_img(gui_t *gui, const char *fname);
+btn_val_t pgui_btn_img(gui_t *gui, const char *fname, pgui_img_scale_t scale);
 void      pgui_chk(gui_t *gui, const char *lbl, b32 *val);
 b32       pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint,
                    gui_align_t align, npt_flags_t flags);
@@ -393,7 +400,8 @@ void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 
-void gui_panel_pen(gui_t *gui, s32 *x, s32 *y, s32 *w);
+void pgui_row_xw(gui_t *gui, s32 *x, s32 *w);
+void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 
 /* Style */
@@ -1336,7 +1344,7 @@ static const gui_style_t g_default_style = {
 
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
-		.border_color = gi_white,
+		.border_color = gi_grey128,
 		.cell_fill_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
 		.text_color = gi_white,
@@ -1840,16 +1848,16 @@ b32 gui_begin_frame(gui_t *gui)
 	if (gui->root_split) {
 		box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
 		gui__split(gui, gui->root_split);
-		gui_unmask(gui); /* kinda wasteful, but ensures resizers are drawn on top */
 	}
 
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
 
-	if (gui->mouse_debug && mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT)) {
+	if (gui->mouse_debug && mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
 		gui_circ(gui, gui->mouse_pos.x, gui->mouse_pos.y, 10, g_yellow, g_nocolor);
-		gui_unmask(gui); /* kinda wasteful, but ensures it's drawn on top */
-	}
+
+	/* kinda wasteful, but ensures split resizers & mouse debug are drawn on top */
+	gui_unmask(gui);
 
 	return !quit;
 }
@@ -2327,12 +2335,15 @@ void gui_img(gui_t *gui, s32 x, s32 y, const char *fname)
 	const img_t *img = gui__find_or_load_img(gui, fname);
 	if (!img)
 		return;
-	gui_img_scaled(gui, x, y, 1.f, 1.f, img);
+	gui_img_ex(gui, x, y, img, 1.f, 1.f, 1.f);
 }
 
-void gui_img_scaled(gui_t *gui, s32 x, s32 y, r32 sx, r32 sy, const img_t *img)
+void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
+                r32 opacity)
 {
-	texture__render(gui, &img->texture, x, y, sx, sy, g_white);
+	color_t color = g_white;
+	color.a = opacity * 255;
+	texture__render(gui, &img->texture, x, y, sx, sy, color);
 }
 
 static inline
@@ -3283,21 +3294,20 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
 		panel->pos.y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
 
-		if (   panel->flags & GUI_PANEL_DRAGGABLE
-		    && !panel->split.leaf) {
-			dragging = gui_drag(gui, &panel->x, &panel->pos.y, panel->width,
+		if (panel->flags & GUI_PANEL_DRAGGABLE && !panel->split.leaf) {
+		    dragging = gui_drag(gui, &panel->x, &panel->pos.y, panel->width,
 			                    GUI_PANEL_TITLEBAR_HEIGHT, MB_LEFT);
+			if (dragging)
+				panel->y = panel->pos.y - panel->height + GUI_PANEL_TITLEBAR_HEIGHT;
 		} else {
+			dragging = false;
 			gui_rect(gui, panel->x, panel->pos.y, panel->width,
 			         GUI_PANEL_TITLEBAR_HEIGHT, gui->style.fill_color,
-							 gui->style.outline_color);
+			         gui->style.outline_color);
 		}
 		gui_txt(gui, panel->x + panel->width / 2,
 		        panel->pos.y + GUI_PANEL_TITLEBAR_HEIGHT / 2, gui->style.font_sz,
 		        panel->title, g_white, GUI_ALIGN_CENTER | GUI_ALIGN_MIDDLE);
-
-		if (dragging)
-			panel->y = panel->pos.y - panel->height + GUI_PANEL_TITLEBAR_HEIGHT;
 
 		panel->pos.y -= panel->padding.y;
 		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
@@ -3306,6 +3316,11 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->pos.y = panel->y + panel->height - panel->padding.y;
 		panel->body_height = panel->height;
 	}
+
+	/* background outline display */
+
+	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
+	         g_nocolor, gui->style.panel.border_color);
 
 	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
 	contains_mouse = box2i_contains_point(box, gui->mouse_pos);
@@ -3407,9 +3422,11 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		gui_unmask(gui);
 
 	/* background display */
+	/* TODO(rgriege): this is incorrectly drawn at the bottom of the layer.
+	 * The simple workaround is to call gui_unmask() after all the panels. */
 
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
-	         gui->style.panel.bg_color, gui->style.panel.border_color);
+	         gui->style.panel.bg_color, g_nocolor);
 
 	if (panel->flags & GUI_PANEL_TITLEBAR)
 		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
@@ -3435,35 +3452,28 @@ void pgui_row(gui_t *gui, u32 height, r32 width_ratio)
 
 void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols)
 {
-	u32 padding, row_width, unspecified_width_col_cnt, unspecified_col_width;
+	u32 unspecified_width_col_cnt, unspecified_col_width;
+	s32 row_width, inner_width;
 
 	assert(gui->panel);
 	assert(pgui__row_complete(gui->panel));
 	assert(num_cols <= GUI_PANEL_MAX_COLS);
 
-	gui->panel->pos.x = gui->panel->x - gui->panel->scroll.x;
-	if (gui->style.panel.padding >= 1.f)
-		gui->panel->pos.x += gui->style.panel.padding;
-	else
-		gui->panel->pos.x += gui->panel->width * gui->style.panel.padding;
+	pgui_row_xw(gui, &gui->panel->pos.x, &inner_width);
 	gui->panel->pos.y -= height;
 	gui->panel->row.height = height;
 
 	gui->panel->row.current_col = gui->panel->row.cols;
 	gui->panel->row.num_cols = num_cols;
 
-	if (gui->style.panel.padding >= 1.f)
-		padding = 2 * gui->style.panel.padding;
-	else
-		padding = 2 * gui->style.panel.padding * gui->panel->width;
-	row_width = padding;
+	row_width = 0;
 	unspecified_width_col_cnt = 0;
 	for (u32 i = 0; i < num_cols; ++i) {
 		if (cols[i] > 1.f) {
 			gui->panel->row.cols[i] = cols[i];
 			row_width += cols[i];
 		} else if (cols[i] > 0.f) {
-			gui->panel->row.cols[i] = cols[i] * (gui->panel->width - padding);
+			gui->panel->row.cols[i] = cols[i] * inner_width;
 			row_width += gui->panel->row.cols[i];
 		} else {
 			assert(cols[i] == 0.f);
@@ -3472,7 +3482,7 @@ void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols)
 		}
 	}
 	if (unspecified_width_col_cnt) {
-		unspecified_col_width =   max((gui->panel->width - row_width), 0)
+		unspecified_col_width =   max((inner_width - row_width), 0)
 		                        / unspecified_width_col_cnt;
 		for (u32 i = 0; i < num_cols; ++i)
 			if (gui->panel->row.cols[i] == 0.f)
@@ -3480,7 +3490,7 @@ void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols)
 		row_width += unspecified_width_col_cnt * unspecified_col_width;
 	}
 
-	gui->panel->required_dim.x = max((u32)gui->panel->required_dim.x, row_width);
+	gui->panel->required_dim.x = max(gui->panel->required_dim.x, row_width);
 	gui->panel->required_dim.y += height;
 }
 
@@ -3534,19 +3544,31 @@ void pgui_txt(gui_t *gui, const char *str, gui_align_t align)
 	pgui__col_advance(gui->panel);
 }
 
-void pgui_img(gui_t *gui, const char *fname)
+void pgui_img(gui_t *gui, const char *fname, pgui_img_scale_t scale)
 {
 	const img_t *img;
-	r32 sx, sy;
 
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
 
 	img = gui__find_or_load_img(gui, fname);
 	if (img) {
-		sx = (r32)*gui->panel->row.current_col / img->texture.width;
-		sy = (r32)gui->panel->row.height / img->texture.height;
-		gui_img_scaled(gui, gui->panel->pos.x, gui->panel->pos.y, sx, sy, img);
+		switch (scale) {
+		case IMG_CENTERED:;
+			s32 x_off = (*gui->panel->row.current_col - img->texture.width) / 2;
+			s32 y_off = (gui->panel->row.height - img->texture.height) / 2;
+			if (x_off >= 0 && y_off >= 0) {
+				gui_img_ex(gui, gui->panel->pos.x + x_off,
+				           gui->panel->pos.y + y_off, img, 1.f, 1.f, 1.f);
+				break;
+			}
+		case IMG_SCALED:;
+			r32 sx = (r32)*gui->panel->row.current_col / img->texture.width;
+			r32 sy = (r32)gui->panel->row.height / img->texture.height;
+			gui_img_ex(gui, gui->panel->pos.x, gui->panel->pos.y, img,
+			           sx, sy, 1.f);
+		break;
+		}
 	}
 	pgui__col_advance(gui->panel);
 }
@@ -3564,7 +3586,7 @@ btn_val_t pgui_btn(gui_t *gui, const char *lbl)
 	return result;
 }
 
-btn_val_t pgui_btn_img(gui_t *gui, const char *fname)
+btn_val_t pgui_btn_img(gui_t *gui, const char *fname, pgui_img_scale_t scale)
 {
 	btn_val_t result;
 
@@ -3573,8 +3595,7 @@ btn_val_t pgui_btn_img(gui_t *gui, const char *fname)
 
 	result = gui_btn(gui, gui->panel->pos.x, gui->panel->pos.y,
 	                 *gui->panel->row.current_col, gui->panel->row.height, "");
-	gui_img(gui, gui->panel->pos.x, gui->panel->pos.y, fname);
-	pgui__col_advance(gui->panel);
+	pgui_img(gui, fname, scale);
 	return result;
 }
 
@@ -3705,17 +3726,29 @@ int pgui_panel_sort(const void *lhs_, const void *rhs_)
 	return lhs->pri - rhs->pri;
 }
 
-void gui_panel_pen(gui_t *gui, s32 *x, s32 *y, s32 *w)
+void pgui_row_xw(gui_t *gui, s32 *x, s32 *w)
 {
 	assert(gui->panel);
-	if (gui->style.panel.padding >= 1.f) {
-		*x = gui->panel->x + gui->style.panel.padding;
-		*w = gui->panel->width - 2 * gui->style.panel.padding;
-	} else {
-		*x = gui->panel->x + gui->panel->width * gui->style.panel.padding;
-		*w = gui->panel->width - 2 * gui->panel->width * gui->style.panel.padding;
-	}
-	*y = gui->panel->pos.y;
+	const s32 padding =   gui->style.panel.padding >= 1.f
+	                    ? gui->style.panel.padding
+	                    : gui->panel->width * gui->style.panel.padding;
+	if (x)
+		*x = gui->panel->x - gui->panel->scroll.x + padding;
+	if (w)
+		*w = gui->panel->width - 2 * padding;
+}
+
+void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	assert(gui->panel);
+	if (x)
+		*x = gui->panel->pos.x;
+	if (y)
+		*y = gui->panel->pos.y;
+	if (w)
+		*w = (s32)*gui->panel->row.current_col;
+	if (h)
+		*h = (s32)gui->panel->row.height;
 }
 
 /* Style */
