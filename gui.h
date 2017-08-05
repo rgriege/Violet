@@ -168,7 +168,10 @@ typedef struct gui_t gui_t;
 typedef enum gui_flags_t
 {
 	WINDOW_BORDERLESS = 1 << 0,
-	WINDOW_RESIZABLE = 1 << 1
+	WINDOW_RESIZABLE  = 1 << 1,
+	WINDOW_MAXIMIZED  = 1 << 2,
+	WINDOW_FULLSCREEN = 1 << 3,
+	WINDOW_CENTERED   = 1 << 4,
 } gui_flags_t;
 
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
@@ -176,6 +179,8 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 void   gui_destroy(gui_t *gui);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
 void   gui_minimize(gui_t *gui);
+void   gui_maximize(gui_t *gui);
+void   gui_fullscreen(gui_t *gui);
 b32    gui_begin_frame(gui_t *gui);
 void   gui_end_frame(gui_t *gui);
 void   gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
@@ -1559,27 +1564,37 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_win;
 	}
 
-	SDL_DisplayMode display_mode;
-	if (SDL_GetCurrentDisplayMode(0, &display_mode) != 0) {
-		log_write("SDL_GetCurrentDisplayMode failed: %s", SDL_GetError());
-		goto err_win;
+	SDL_Rect usable_bounds;
+	if (SDL_GetDisplayUsableBounds(0, &usable_bounds) != 0) {
+		log_write("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+		goto err_ctx;
 	}
 
+
 	u32 sdl_flags = SDL_WINDOW_OPENGL;
-	s32 min_h = display_mode.h - 60;
-	if (flags & WINDOW_BORDERLESS) {
+	if (flags & WINDOW_BORDERLESS)
 		sdl_flags |= SDL_WINDOW_BORDERLESS;
-		min_h += 30;
-	}
 	if (flags & WINDOW_RESIZABLE)
 		sdl_flags |= SDL_WINDOW_RESIZABLE;
-#ifdef _WIN32
-	gui->window = SDL_CreateWindow(title, x, y, min(w, display_mode.w),
-	                               min(h, min_h), sdl_flags);
-#else
-	gui->window = SDL_CreateWindow(title, x, max(y, 30), min(w, display_mode.w),
-	                               min(h, min_h), sdl_flags);
-#endif
+	if (flags & WINDOW_MAXIMIZED) {
+		x = usable_bounds.x;
+		y = usable_bounds.y;
+		w = usable_bounds.w;
+		h = usable_bounds.h;
+	} else if (flags & WINDOW_CENTERED) {
+		w = min(w, usable_bounds.w);
+		h = min(h, usable_bounds.h);
+		x = (usable_bounds.w - w) / 2 + usable_bounds.x;
+		y = (usable_bounds.h - h) / 2 + usable_bounds.y;
+	} else {
+		x = max(x, usable_bounds.x);
+		y = max(y, usable_bounds.y);
+		w = min(w, usable_bounds.w - x);
+		h = min(h, usable_bounds.h - y);
+	}
+	if (flags & WINDOW_FULLSCREEN)
+		sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	gui->window = SDL_CreateWindow(title, x, y, w, h, sdl_flags);
 	if (gui->window == NULL) {
 		log_write("SDL_CreateWindow failed: %s", SDL_GetError());
 		goto err_win;
@@ -1740,6 +1755,23 @@ void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 void gui_minimize(gui_t *gui)
 {
 	SDL_MinimizeWindow(gui->window);
+}
+
+void gui_maximize(gui_t *gui)
+{
+	SDL_Rect usable_bounds;
+	if (SDL_GetDisplayUsableBounds(0, &usable_bounds) != 0) {
+		log_write("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+		return;
+	}
+
+	SDL_SetWindowPosition(gui->window, usable_bounds.x, usable_bounds.y);
+	SDL_SetWindowSize(gui->window, usable_bounds.w, usable_bounds.h);
+}
+
+void gui_fullscreen(gui_t *gui)
+{
+	SDL_MaximizeWindow(gui->window);
 }
 
 b32 gui_begin_frame(gui_t *gui)
