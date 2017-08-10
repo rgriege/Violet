@@ -26,6 +26,32 @@ typedef struct timespec timepoint_t;
 #endif // _WIN32
 
 
+/* Utility macros */
+
+#define UNUSED(x) ((void)(x))
+#define NOOP UNUSED(0)
+
+#define CONCAT_(a, b) a##b
+#define CONCAT(a, b) CONCAT_(a, b)
+
+#define static_assert(cnd, msg) int msg[(cnd) ? 1 : -1]
+
+#ifndef NDEBUG
+#define check(x) assert(x)
+#else
+#define check(x) x
+#endif
+
+#define memswp(a, b, type) \
+	do { type tmp = a; a = b; b = tmp; } while(0)
+
+#ifndef WIN32
+#define thread_local __thread
+#else
+#define thread_local __declspec(thread)
+#endif
+
+
 /* Types */
 
 typedef bool b8;
@@ -53,31 +79,12 @@ typedef union intptr
 	void *p;
 } intptr;
 
+static_assert(sizeof(r32) == 4, invalid_floating_point_size);
+static_assert(sizeof(r64) == 8, invalid_double_size);
 
-/* Utility */
+/* Memory */
 
-#define UNUSED(x) ((void)(x))
-#define NOOP UNUSED(0)
-
-#ifndef NDEBUG
-#define check(x) assert(x)
-#else
-#define check(x) x
-#endif
-
-#define CONCAT_(a, b) a##b
-#define CONCAT(a, b) CONCAT_(a, b)
-
-#define memswp(a, b, type) \
-	do { type tmp = a; a = b; b = tmp; } while(0)
-
-#ifndef WIN32
-#define thread_local __thread
-#else
-#define thread_local __declspec(thread)
-#endif
-
-#ifndef NDEBUG
+#ifdef VLT_TRACK_MEMORY
 
 void *vmalloc(size_t sz);
 void *vcalloc(size_t nmemb, size_t sz);
@@ -105,7 +112,9 @@ void  vlt_mem_dump_current(vlt_mem_dump_callback_t cb, void *udata);
 #define realloc(ptr, sz)   vrealloc(ptr, sz)
 #define free(ptr)          vfree(ptr)
 
-#endif
+#else
+#define vlt_mem_generation_advance() NOOP
+#endif // VLT_TRACK_MEMORY
 
 /* Hash */
 
@@ -139,7 +148,7 @@ void file_logger(void *udata, const char *format, va_list ap);
 
 #ifdef CORE_IMPLEMENTATION
 
-#ifndef NDEBUG
+#ifdef VLT_TRACK_MEMORY
 
 typedef struct vlt__alloc_node
 {
