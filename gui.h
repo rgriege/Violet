@@ -646,8 +646,10 @@ void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 
 void texture_destroy(texture_t *tex)
 {
-	if (tex->handle != 0)
+	if (tex->handle != 0) {
 		GL_CHECK(glDeleteTextures, 1, &tex->handle);
+		tex->handle = 0;
+	}
 }
 
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n)
