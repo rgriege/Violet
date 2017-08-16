@@ -95,6 +95,8 @@ FMDEF v2f  v2f_lperp(v2f v);
 FMDEF v2f  v2f_rperp(v2f v);
 FMDEF v2f  v2f_inverse(v2f v);
 FMDEF void v2f_inverse_eq(v2f *v);
+FMDEF v2f  v2f_round(v2f v, r32 unit);
+FMDEF void v2f_round_eq(v2f *v, r32 unit);
 FMDEF b32  v2f_is_zero(v2f v);
 FMDEF b32  v2f_equal(v2f lhs, v2f rhs);
 FMDEF b32  v2f_share_quadrant(v2f lhs, v2f rhs);
@@ -407,6 +409,19 @@ FMDEF void v2f_inverse_eq(v2f *v)
 {
 	v->x = -v->x;
 	v->y = -v->y;
+}
+
+FMDEF v2f v2f_round(v2f v, r32 unit)
+{
+	v2f_round_eq(&v, unit);
+	return v;
+}
+
+FMDEF void v2f_round_eq(v2f *v, r32 unit)
+{
+	const r32 inv_unit = 1.f / unit;
+	v->x = roundf(v->x * inv_unit) / inv_unit;
+	v->y = roundf(v->y * inv_unit) / inv_unit;
 }
 
 FMDEF b32 v2f_is_zero(v2f v)

@@ -1105,34 +1105,66 @@ r32 tri_area(v2f a, v2f b, v2f c)
 	return (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
 }
 
+/* NOTE(rgriege): assuming 1:1 scaling to pixels, using this error value
+ * instead of 0 means that in order for a vertex sequence to be non-collinear,
+ * the middle vertex must be displaced by at least half a pixel (A = bh/2). */
+#define GUI__DCMP_AREA_EPSILON (v2f_dist(a, c) / 4.f)
+
 static inline
 b32 tri_left(v2f a, v2f b, v2f c)
 {
-	return tri_area(a, b, c) > 0;
+	return tri_area(a, b, c) > GUI__DCMP_AREA_EPSILON;
 }
 
 static inline
 b32 tri_left_on(v2f a, v2f b, v2f c)
 {
-	return tri_area(a, b, c) >= 0;
+	return tri_area(a, b, c) >= GUI__DCMP_AREA_EPSILON;
 }
 
 static inline
 b32 tri_right(v2f a, v2f b, v2f c)
 {
-	return tri_area(a, b, c) < 0;
+	return tri_area(a, b, c) < -GUI__DCMP_AREA_EPSILON;
 }
 
 static inline
 b32 tri_right_on(v2f a, v2f b, v2f c)
 {
-	return tri_area(a, b, c) <= 0;
+	return tri_area(a, b, c) <= -GUI__DCMP_AREA_EPSILON;
 }
 
 static inline
 b32 tri_is_reflex(v2f a, v2f b, v2f c)
 {
 	return tri_right(a, b, c);
+}
+
+static
+b32 gui__polyf_is_convex(const v2f *v, u32 n)
+{
+	assert(n >= 3);
+
+	b32 cc_determined = false, cc;
+	for (u32 i = 0, last = n - 1; i <= last; ++i) {
+		v2f a = v[(i > 0 ? i - 1 : last)];
+		v2f b = v[i];
+		v2f c = v[(i < last ? i + 1 : 0)];
+
+		v2f ab, bc;
+		ab = v2f_sub(b, a);
+		bc = v2f_sub(c, b);
+		const r32 cross = v2f_cross(ab, bc);
+		if (fabsf(cross) >= GUI__DCMP_AREA_EPSILON) {
+			if (!cc_determined) {
+				cc_determined = true;
+				cc = cross > 0.f;
+			} else if ((cross > 0.f) != cc) {
+				return false;
+			}
+		}
+	}
+	return true;
 }
 
 /* NOTE(rgriege): This portion of the algorithm has been modified to allocate
@@ -1246,7 +1278,7 @@ void polyf__decompose(const v2f *v, u32 n, v2f **buf)
 			closest_dist = FLT_MAX;
 
 			for (u32 j = lower_idx; j <= upper_idx; ++j) {
-				v2f vj = j < 0 ? v[j%n+n] : v[j%n];
+				const v2f vj = v[j%n];
 				if (tri_left_on(vi0, vi1, vj) && tri_right_on(vi2, vi1, vj)) {
 					d = v2f_dist_sq(vi1, vj);
 					if (d < closest_dist) {
@@ -2292,7 +2324,8 @@ void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
 
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
-	if (polyf_is_convex(v, n) || fill.a == 0) {
+	/* TODO(rgriege): allow polyf_is_convex usage here by providing error margin */
+	if (gui__polyf_is_convex(v, n) || fill.a == 0) {
 		gui__poly(gui, v, n, fill, stroke);
 	} else {
 		polyf_decompose(v, n, &gui->vert_buf);
