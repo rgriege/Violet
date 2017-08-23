@@ -1093,269 +1093,77 @@ s32 font__offset_y(font_t *f, const char *txt, gui_align_t align)
 }
 
 
-/*
- * Polygon Decomposition
- * Translated from Mark Bayazit's C++ decomposition algorithm.
- * https://mpen.ca/406/bayazit
- */
-
-static inline
-r32 tri_area(v2f a, v2f b, v2f c)
+/* Polygon triangulation algorithm
+ * Modified from John W. Ratcliff
+ * www.flipcode.com/archives/Efficient_Polygon_Triangulation.shtml */
+static
+b32 gui__triangle_contains(v2f a, v2f b, v2f c, v2f p)
 {
-	return (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
-}
-
-/* NOTE(rgriege): assuming 1:1 scaling to pixels, using this error value
- * instead of 0 means that in order for a vertex sequence to be non-collinear,
- * the middle vertex must be displaced by at least half a pixel (A = bh/2). */
-#define GUI__DCMP_AREA_EPSILON (v2f_dist(a, c) / 4.f)
-
-static inline
-b32 tri_left(v2f a, v2f b, v2f c)
-{
-	return tri_area(a, b, c) > GUI__DCMP_AREA_EPSILON;
-}
-
-static inline
-b32 tri_left_on(v2f a, v2f b, v2f c)
-{
-	return tri_area(a, b, c) >= GUI__DCMP_AREA_EPSILON;
-}
-
-static inline
-b32 tri_right(v2f a, v2f b, v2f c)
-{
-	return tri_area(a, b, c) < -GUI__DCMP_AREA_EPSILON;
-}
-
-static inline
-b32 tri_right_on(v2f a, v2f b, v2f c)
-{
-	return tri_area(a, b, c) <= -GUI__DCMP_AREA_EPSILON;
-}
-
-static inline
-b32 tri_is_reflex(v2f a, v2f b, v2f c)
-{
-	return tri_right(a, b, c);
+	const r32 ab_cross_ap = v2f_cross(v2f_sub(b, a), v2f_sub(p, a));
+	const r32 bc_cross_bp = v2f_cross(v2f_sub(c, b), v2f_sub(p, b));
+	const r32 ca_cross_cp = v2f_cross(v2f_sub(a, c), v2f_sub(p, c));
+	return ab_cross_ap >= 0.f && bc_cross_bp >= 0.f && ca_cross_cp >= 0.f;
 }
 
 static
-b32 gui__polyf_is_convex(const v2f *v, u32 n)
+b32 gui__triangulate_snip(const v2f *poly, u32 u, u32 v, u32 w, u32 n)
 {
-	assert(n >= 3);
+	const v2f a = poly[u];
+	const v2f b = poly[v];
+	const v2f c = poly[w];
+	static const float EPSILON = 0.0000000001f;
 
-	b32 cc_determined = false, cc;
-	for (u32 i = 0, last = n - 1; i <= last; ++i) {
-		v2f a = v[(i > 0 ? i - 1 : last)];
-		v2f b = v[i];
-		v2f c = v[(i < last ? i + 1 : 0)];
+	/* cannot snip if b is a concave vertex */
+	if ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) < EPSILON)
+		return false;
 
-		v2f ab, bc;
-		ab = v2f_sub(b, a);
-		bc = v2f_sub(c, b);
-		const r32 cross = v2f_cross(ab, bc);
-		if (fabsf(cross) >= GUI__DCMP_AREA_EPSILON) {
-			if (!cc_determined) {
-				cc_determined = true;
-				cc = cross > 0.f;
-			} else if ((cross > 0.f) != cc) {
-				return false;
-			}
-		}
-	}
+	/* cannot snip if triangle abc contains another (concave) vtx in poly */
+	for (u32 i = 0; i < n; ++i)
+		if (   i != u && i != v && i != w
+		    && gui__triangle_contains(a, b, c, poly[i]))
+			return false;
 	return true;
 }
 
-/* NOTE(rgriege): This portion of the algorithm has been modified to allocate
- * along a single buffer instead of one buffer per polygon. Temp signifies an
- * intermediary polygon, which should not be used by the conumer.
- *
- * Buffer diagram: | head0 | v0 | v1 | ... | head1 | v0 | v1 | ... | */
-typedef struct gui__pdc_head
-{
-	u32 sz;
-	b32 temp;
-} gui__pdc_head_t;
-
 static
-u32 gui__pdc_alloc(v2f **buf, u32 sz, b32 temp)
+b32 gui__triangulate(const v2f *v_, u32 n_, v2f **triangles)
 {
-	gui__pdc_head_t head = { .sz = sz, .temp = temp };
-	array_append(*buf, *(v2f*)&head);
-	array_reserve(*buf, array_sz(*buf) + sz);
-	return array_sz(*buf);
-}
+	const u32 out_vtx_cnt = 3 * (n_ - 2);
+	v2f *v;
+	u32 n;
 
-static
-void polyf__decompose(const v2f *v, u32 n, v2f **buf)
-{
-	assert(polyf_is_cc(v, n));
+	array_reserve(*triangles, out_vtx_cnt + n_);
 
-	v2f upper_int={0}, lower_int={0}, p;
-	r32 upper_dist, lower_dist, d, closest_dist;
-	u32 upper_idx=0, lower_idx=0, closest_idx=0;
-	u32 lower_poly_idx, upper_poly_idx;
-	u32 lower_poly_sz, upper_poly_sz;
+	/* Copy the original poly into the last verts of triangle buffer
+	 * so we can remove the vertices later. */
+	v = &(*triangles)[out_vtx_cnt];
+	memcpy(v, v_, n_ * sizeof(*v_));
+	n = n_;
 
-	v2f vi0 = v[n-1];
-	for (u32 i = 0; i < n; ++i) {
-		v2f vi1 = v[i];
-		v2f vi2 = v[(i+1)%n];
-		if (!tri_is_reflex(vi0, vi1, vi2))
-			goto inxt;
-
-		upper_dist = lower_dist =  FLT_MAX;
-		v2f vj0 = v[n-1];
-		for (u32 j = 0; j < n; ++j) {
-			v2f vj1 = v[j];
-			v2f vj2 = v[(j+1)%n];
-			if (tri_left(vi0, vi1, vj1) && tri_right_on(vi0, vi1, vj0)) {
-				check(fmath_line_intersect(vi0, vi1, vj0, vj1, &p));
-				if (tri_right(vi2, vi1, p)) {
-					d = v2f_dist_sq(vi1, p);
-					if (d < lower_dist) {
-						lower_dist = d;
-						lower_int = p;
-						lower_idx = j;
-					}
-				}
-			}
-			if (tri_left(vi2, vi1, vj2) && tri_right_on(vi2, vi1, vj1)) {
-				check(fmath_line_intersect(vi2, vi1, vj1, vj2, &p));
-				if (tri_left(vi0, vi1, p)) {
-					d = v2f_dist_sq(vi1, p);
-					if (d < upper_dist) {
-						upper_dist = d;
-						upper_int = p;
-						upper_idx = j;
-					}
-				}
-			}
-			vj0 = vj1;
-		}
-
-		if (lower_idx == (upper_idx+1)%n) {
-			// case 1: no vertices to connect to, choose a point in the middle
-			p.x = (lower_int.x+upper_int.x)/2;
-			p.y = (lower_int.y+upper_int.y)/2;
-
-			if (i < upper_idx) {
-				lower_poly_sz = upper_idx - i + 2;
-				lower_poly_idx = gui__pdc_alloc(buf, lower_poly_sz, true);
-				for (u32 j = i; j <= upper_idx; ++j)
-					array_append(*buf, v[j]);
-				array_append(*buf, p);
-
-				upper_poly_sz = lower_idx ? n - lower_idx + i + 2 : i + 2;
-				upper_poly_idx = gui__pdc_alloc(buf, upper_poly_sz, true);
-				array_append(*buf, p);
-				if (lower_idx != 0)
-					for (u32 j = lower_idx; j < n; ++j)
-						array_append(*buf, v[j]);
-				for (u32 j = 0; j <= i; ++j)
-					array_append(*buf, v[j]);
-			} else {
-				lower_poly_sz = i ? n - i + upper_idx + 2 : upper_idx + 2;
-				lower_poly_idx = gui__pdc_alloc(buf, lower_poly_sz, true);
-				if (i != 0)
-					for (u32 j = i; j < n; ++j)
-						array_append(*buf, v[j]);
-				for (u32 j = 0; j <= upper_idx; ++j)
-					array_append(*buf, v[j]);
-				array_append(*buf, p);
-
-				upper_poly_sz = i - lower_idx + 2;
-				upper_poly_idx = gui__pdc_alloc(buf, upper_poly_sz, true);
-				array_append(*buf, p);
-				for (u32 j = lower_idx; j <= i; ++j)
-					array_append(*buf, v[j]);
-			}
-		} else {
-			// case 2: connect to closest point within the triangle
-			if (lower_idx > upper_idx)
-				upper_idx += n;
-			closest_dist = FLT_MAX;
-
-			for (u32 j = lower_idx; j <= upper_idx; ++j) {
-				const v2f vj = v[j%n];
-				if (tri_left_on(vi0, vi1, vj) && tri_right_on(vi2, vi1, vj)) {
-					d = v2f_dist_sq(vi1, vj);
-					if (d < closest_dist) {
-						closest_dist = d;
-						closest_idx = j % n;
-					}
-				}
-			}
-
-			if (i < closest_idx) {
-				lower_poly_sz = closest_idx - i + 1;
-				lower_poly_idx = gui__pdc_alloc(buf, lower_poly_sz, true);
-				for (u32 j = i; j <= closest_idx; ++j)
-					array_append(*buf, v[j]);
-
-				upper_poly_sz = closest_idx ? n - closest_idx + i + 1 : i + 1;
-				upper_poly_idx = gui__pdc_alloc(buf, upper_poly_sz, true);
-				if (closest_idx != 0)
-					for (u32 j = closest_idx; j < n; ++j)
-						array_append(*buf, v[j]);
-				for (u32 j = 0; j <= i; ++j)
-					array_append(*buf, v[j]);
-			} else {
-				lower_poly_sz = i ? n - i + closest_idx + 1 : closest_idx + 1;
-				lower_poly_idx = gui__pdc_alloc(buf, lower_poly_sz, true);
-				if (i != 0)
-					for (u32 j = i; j < n; ++j)
-						array_append(*buf, v[j]);
-				for (u32 j = 0; j <= closest_idx; ++j)
-					array_append(*buf, v[j]);
-
-				upper_poly_sz = i - closest_idx + 1;
-				upper_poly_idx = gui__pdc_alloc(buf, upper_poly_sz, true);
-				for (u32 j = closest_idx; j <= i; ++j)
-					array_append(*buf, v[j]);
+	while (n > 2) {
+		const u32 old_n = n;
+		for (u32 i = 0; i < n; ++i) {
+			/* iterate in reverse order to likely reduce cost of vtx removal */
+			const u32 a = (2 * n - i - 2) % n, b = n - i - 1, c = (n - i) % n;
+			if (gui__triangulate_snip(v, a, b, c, n)) {
+				array_append(*triangles, v[a]);
+				array_append(*triangles, v[b]);
+				array_append(*triangles, v[c]);
+				/* remove b from remaining polygon */
+				for (u32 j = b + 1; j < n; ++j)
+					(*triangles)[out_vtx_cnt + j - 1] = (*triangles)[out_vtx_cnt + j];
+				--n;
+				break;
 			}
 		}
-
-		// solve smallest poly first
-		if (lower_poly_sz < upper_poly_sz) {
-			polyf__decompose(&(*buf)[lower_poly_idx], lower_poly_sz, buf);
-			polyf__decompose(&(*buf)[upper_poly_idx], upper_poly_sz, buf);
-		} else {
-			polyf__decompose(&(*buf)[upper_poly_idx], upper_poly_sz, buf);
-			polyf__decompose(&(*buf)[lower_poly_idx], lower_poly_sz, buf);
+		if (old_n == n) {
+			array_clear(*triangles);
+			return false;
 		}
-		return;
-
-inxt:
-		vi0 = vi1;
 	}
 
-	((gui__pdc_head_t*)v)[-1].temp = false;
+	return true;
 }
-
-static
-void polyf_decompose(const v2f *v, u32 n, v2f **buf)
-{
-	const u32 idx = gui__pdc_alloc(buf, n, true);
-	for (u32 i = 0; i < n; ++i)
-		array_append(*buf, v[i]);
-	polyf__decompose(&(*buf)[idx], n, buf);
-}
-
-#define gui__pdc_foreach(buf, iter, poly, sz_) \
-	do { \
-		u32 iter = 0; \
-		while (iter < array_sz(buf)) { \
-			const gui__pdc_head_t *iter##head = (const gui__pdc_head_t*)&(buf)[iter]; \
-			const v2f *poly = &(buf)[iter + 1]; \
-			const array_size_t sz_ = iter##head->sz; \
-			if (!iter##head->temp)
-
-#define gui__pdc_endforeach(iter) \
-			iter += iter##head->sz + 1; \
-		} \
-	} while (0);
 
 
 
@@ -1925,6 +1733,27 @@ static const GLenum g_draw_call_types[DRAW_COUNT] = {
 };
 
 static
+void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
+{
+	if (color_equal(fill, g_nocolor))
+		return;
+
+	assert(n % 3 == 0);
+
+	for (u32 i = 0; i < n; ++i) {
+		gui->verts[gui->vert_cnt+i] = v[i];
+		gui->vert_colors[gui->vert_cnt+i] = fill;
+		gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
+	}
+	gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
+	gui->draw_calls[gui->draw_call_cnt].cnt = n;
+	gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLES;
+	gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
+	++gui->draw_call_cnt;
+	gui->vert_cnt += n;
+}
+
+static
 void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
 	r32 dist;
@@ -2324,16 +2153,13 @@ void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
 
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
-	/* TODO(rgriege): allow polyf_is_convex usage here by providing error margin */
-	if (gui__polyf_is_convex(v, n) || fill.a == 0) {
+	if (n == 3 || fill.a == 0 || polyf_is_convex(v, n)) {
 		gui__poly(gui, v, n, fill, stroke);
 	} else {
-		polyf_decompose(v, n, &gui->vert_buf);
-		gui__pdc_foreach(gui->vert_buf, i, p, pn) {
-			gui_polyf(gui, p, pn, fill, g_nocolor);
-		} gui__pdc_endforeach(i);
-		array_clear(gui->vert_buf);
-
+		if (gui__triangulate(v, n, &gui->vert_buf)) {
+			gui__triangles(gui, A2PN(gui->vert_buf), fill);
+			array_clear(gui->vert_buf);
+		}
 		if (stroke.a != 0)
 			gui__poly(gui, v, n, g_nocolor, stroke);
 	}
