@@ -22,6 +22,8 @@ typedef struct array__head
 	array_size_t sz, cap;
 } array__head;
 
+#define array(type) type*
+
 #define array__get_head(a)         (((array__head*)(a)) - 1)
 #define array_create()             array__create(0, 0)
 #define array_init(a, cap)         (a)=array__create(cap, sizeof(*a))
