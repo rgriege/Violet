@@ -460,7 +460,7 @@ b32 rmdir_f(const char *path)
 	b32 success = false;
 	tinydir_dir dir;
 	if (tinydir_open(&dir, path) == -1) {
-		log_write("rmdir: error reading directory '%s'", path);
+		log_error("rmdir: error reading directory '%s'", path);
 		goto out;
 	}
 	while (dir.has_next) {
@@ -471,21 +471,21 @@ b32 rmdir_f(const char *path)
 				if (file.is_dir) {
 					rmdir_f(file.path);
 				} else if (remove(file.path)) {
-					log_write("rmdir: error removing '%s'", file.path);
+					log_error("rmdir: error removing '%s'", file.path);
 					goto out;
 				}
 			}
 		} else {
-			log_write("rmdir: error examining file");
+			log_error("rmdir: error examining file");
 			goto out;
 		}
 		if (tinydir_next(&dir) == -1) {
-			log_write("rmdir: error iterating directory");
+			log_error("rmdir: error iterating directory");
 			goto out;
 		}
 	}
 	if (rmdir(path))
-		log_write("error removing '%s'", path);
+		log_error("error removing '%s'", path);
 	else
 		success = true;
 out:
@@ -511,7 +511,7 @@ int run(const char *command)
 	FILE *fp = popen(command, "r");
 #endif
 	if (!fp) {
-		log_write("failed to execute %s", command);
+		log_error("failed to execute %s", command);
 		return -1;
 	}
 	char *log_buf = NULL;
@@ -520,7 +520,7 @@ int run(const char *command)
 		assert(log_buf_sz != 0);
 		if (log_buf[log_buf_sz - 1] == '\n')
 			log_buf[log_buf_sz - 1] = '\0';
-		log_write("%s", log_buf);
+		log_info("%s", log_buf);
 	}
 	free(log_buf);
 	int status = pclose(fp);

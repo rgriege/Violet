@@ -509,7 +509,7 @@ const char *gui__get_gl_err_str(GLenum err)
 		GLenum err; \
 		if ((err = glGetError()) != GL_NO_ERROR) { \
 			const char *err_str = gui__get_gl_err_str(err); \
-			log_write("%s: %s(%x) @ %s:%d", label, err_str, err, \
+			log_error("%s: %s(%x) @ %s:%d", label, err_str, err, \
 			          __FILE__, __LINE__); \
 		} \
 	} while (0)
@@ -563,7 +563,7 @@ color_t color_from_hex(const char *hex)
 		c.a = val & 0xff;
 		break;
 	default:
-		log_write("invalid color string '%s'", hex);
+		log_error("invalid color string '%s'", hex);
 		break;
 	}
 
@@ -699,7 +699,7 @@ b32 shader_init_from_string(shader_t *shader, const char *str,
 		GL_CHECK(glGetShaderiv, shader->handle, GL_INFO_LOG_LENGTH, &log_len);
 		log_buf = malloc(log_len);
 		GL_CHECK(glGetShaderInfoLog, shader->handle, log_len, NULL, log_buf);
-		log_write("Compilation error in shader '%s': %s", id, log_buf);
+		log_error("Compilation error in shader '%s': %s", id, log_buf);
 		free(log_buf);
 		shader->handle = 0;
 		goto err;
@@ -720,7 +720,7 @@ b32 shader_init_from_file(shader_t *shader, const char *fname,
 
 	file = fopen(fname, "r");
 	if (!file) {
-		log_write("Could not open shader file '%s'", fname);
+		log_error("Could not open shader file '%s'", fname);
 		return retval;
 	}
 
@@ -729,7 +729,7 @@ b32 shader_init_from_file(shader_t *shader, const char *fname,
 	rewind(file);
 	file_buf = malloc(fsize + 1);
 	if (fread(file_buf, 1, fsize, file) != fsize) {
-		log_write("Failed to read shader file '%s'", fname);
+		log_error("Failed to read shader file '%s'", fname);
 		goto err;
 	}
 	file_buf[fsize] = 0;
@@ -818,7 +818,7 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
 		log_buf = malloc(length);
 		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
-		log_write("Shader link error using '%s' & '%s': %s",
+		log_error("Shader link error using '%s' & '%s': %s",
 		          vertex_shader.filename, frag_shader.filename, log_buf);
 		free(log_buf);
 		return false;
@@ -831,7 +831,7 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
 		log_buf = malloc(length);
 		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
-		log_write("Shader validation error using '%s' & '%s': %s",
+		log_error("Shader validation error using '%s' & '%s': %s",
 		          vertex_shader.filename, frag_shader.filename, log_buf);
 		free(log_buf);
 		return false;
@@ -881,7 +881,7 @@ s32 shader_program_uniform(const shader_prog_t *p, const char *name)
 b32 img_load(img_t *img, const char *filename)
 {
 	if (!texture_load_png(&img->texture, filename)) {
-		log_write("img_load(%s) error", filename);
+		log_error("img_load(%s) error", filename);
 		return false;
 	}
 	return true;
@@ -1057,7 +1057,7 @@ s32 font__line_offset_x(font_t *f, const char *txt, gui_align_t align)
 		else if (*c == '\r')
 			goto out;
 		else
-			log_write("unknown character: '%u'", *c);
+			log_warn("unknown character: '%u'", *c);
 	}
 out:
 	if (align & GUI_ALIGN_CENTER)
@@ -1392,7 +1392,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	if (g_gui_cnt == 0) {
 		SDL_SetMainReady();
 		if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-			log_write("SDL_Init(VIDEO) failed: %s", SDL_GetError());
+			log_error("SDL_Init(VIDEO) failed: %s", SDL_GetError());
 			goto err_sdl;
 		}
 		gui->parent_window = NULL;
@@ -1410,13 +1410,13 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	// SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	if (SDL_GetNumVideoDisplays() < 1) {
-		log_write("could not create window: no video displays found");
+		log_error("could not create window: no video displays found");
 		goto err_win;
 	}
 
 	SDL_Rect usable_bounds;
 	if (SDL_GetDisplayUsableBounds(0, &usable_bounds) != 0) {
-		log_write("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
 		goto err_ctx;
 	}
 
@@ -1446,28 +1446,28 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	gui->window = SDL_CreateWindow(title, x, y, w, h, sdl_flags);
 	if (gui->window == NULL) {
-		log_write("SDL_CreateWindow failed: %s", SDL_GetError());
+		log_error("SDL_CreateWindow failed: %s", SDL_GetError());
 		goto err_win;
 	}
 
 	gui->gl_context = SDL_GL_CreateContext(gui->window);
 	if (gui->gl_context == NULL) {
-		log_write("SDL_CreateContext failed: %s", SDL_GetError());
+		log_error("SDL_CreateContext failed: %s", SDL_GetError());
 		goto err_ctx;
 	}
 
 	if (SDL_GL_SetSwapInterval(0) != 0)
-		log_write("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
+		log_warn("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
 
 	glewExperimental = GL_TRUE;
 	GLenum glew_err = glewInit();
 	if (glew_err != GLEW_OK) {
-		log_write("glewInit error: %s", glewGetErrorString(glew_err));
+		log_error("glewInit error: %s", glewGetErrorString(glew_err));
 		goto err_glew;
 	}
 	GL_ERR_CHECK("glewInit");
 
-	log_write("GL version: %s", glGetString(GL_VERSION));
+	log_info("GL version: %s", glGetString(GL_VERSION));
 	GL_ERR_CHECK("glGetString");
 
 	GL_CHECK(glEnable, GL_MULTISAMPLE);
@@ -1611,7 +1611,7 @@ void gui_maximize(gui_t *gui)
 {
 	SDL_Rect usable_bounds;
 	if (SDL_GetDisplayUsableBounds(0, &usable_bounds) != 0) {
-		log_write("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
 		return;
 	}
 
@@ -1670,12 +1670,12 @@ b32 gui_begin_frame(gui_t *gui)
 
 	/* Should really never hit either of these */
 	if (gui->hot_id != 0 && !gui->hot_id_found_this_frame) {
-		log_write("hot widget %" PRIu64 " was not drawn", gui->hot_id);
+		log_warn("hot widget %" PRIu64 " was not drawn", gui->hot_id);
 		gui->hot_id = 0;
 	}
 	gui->hot_id_found_this_frame = false;
 	if (gui->active_id != 0 && !gui->active_id_found_this_frame) {
-		log_write("active widget %" PRIu64 " was not drawn", gui->active_id);
+		log_warn("active widget %" PRIu64 " was not drawn", gui->active_id);
 		gui->active_id = 0;
 	}
 	gui->active_id_found_this_frame = false;
@@ -1977,7 +1977,7 @@ void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
 		if (frame_milli < target_frame_milli)
 			time_sleep_milli(target_frame_milli - frame_milli);
 		else
-			log_write("long frame: %ums", frame_milli);
+			log_warn("long frame: %ums", frame_milli);
 	}
 }
 

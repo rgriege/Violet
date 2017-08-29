@@ -42,7 +42,7 @@ static b32 vson__read_label(FILE *fp, const char *label)
 	while ((c = fgetc(fp)) != EOF && isspace((u8)c))
 		;
 	if (isspace((u8)c)) {
-		log_write("vson: failed reading label %s", label);
+		log_error("vson: failed reading label %s", label);
 		goto out;
 	}
 
@@ -51,13 +51,13 @@ static b32 vson__read_label(FILE *fp, const char *label)
 	while (bufp - label_buf < VSON_LABEL_SZ && (c = fgetc(fp)) != EOF && c != ':')
 		*(bufp++) = c;
 	if (c != ':') {
-		log_write("vson: missing colon after label %s", label);
+		log_error("vson: missing colon after label %s", label);
 		goto out;
 	}
 
 	*bufp = '\0';
 	if (strcmp(label_buf, label) != 0) {
-		log_write("vson: expected %s, got %s", label, label_buf);
+		log_error("vson: expected %s, got %s", label, label_buf);
 		goto out;
 	}
 

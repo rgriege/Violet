@@ -130,14 +130,40 @@ void        time_sleep_milli(u32 milli);
 
 /* Log */
 
+typedef enum log_level
+{
+	LOG_DEBUG   = 0x1,
+	LOG_INFO    = 0x2,
+	LOG_WARNING = 0x4,
+	LOG_ERROR   = 0x8,
+	LOG_FATAL   = 0x10,
+	LOG_ALL     = (LOG_DEBUG | LOG_INFO | LOG_WARNING | LOG_ERROR | LOG_FATAL),
+	LOG_STDERR  = (LOG_WARNING | LOG_ERROR | LOG_FATAL),
+} log_level_t;
+
 typedef void(*logger_t)(void *udata, const char *format, va_list ap);
 
 #define LOG_STREAM_CAP 3
 
-void log_add_stream(logger_t logger, void *udata);
+void log_add_stream(log_level_t level, logger_t logger, void *udata);
 void log_remove_stream(logger_t logger, void *udata);
-void log_write(const char *format, ...);
-void log_newline();
+#define log_add_file(level, fp) log_add_stream(level, file_logger, fp)
+#define log_remove_file(fp) log_remove_stream(file_logger, fp)
+#define log_add_std(stdout_level) do { \
+		log_add_file(stdout_level, stdout); \
+		log_add_file(LOG_STDERR, stderr); \
+	} while (0);
+#define log_remove_std() do { \
+		log_remove_file(stdout); \
+		log_remove_file(stderr); \
+	} while (0);
+void log_level_write(log_level_t level, const char *format, ...);
+#define log_debug(fmt, ...) log_level_write(LOG_DEBUG,   fmt, ##__VA_ARGS__)
+#define log_info(fmt, ...)  log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
+#define log_warn(fmt, ...)  log_level_write(LOG_WARNING, fmt, ##__VA_ARGS__)
+#define log_error(fmt, ...) log_level_write(LOG_ERROR,   fmt, ##__VA_ARGS__)
+#define log_fatal(fmt, ...) log_level_write(LOG_FATAL,   fmt, ##__VA_ARGS__)
+#define log_write(fmt, ...) log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
 
 void file_logger(void *udata, const char *format, va_list ap);
 
@@ -288,18 +314,18 @@ void vlt_mem_generation_advance()
 void vlt_mem_dump()
 {
 	if (g_vlt_allocs.current_bytes != 0)
-		log_write("%lu bytes still allocated!", g_vlt_allocs.current_bytes);
+		log_warn("%lu bytes still allocated!", g_vlt_allocs.current_bytes);
 
 	vlt__alloc_node_t *node = g_vlt_allocs.head;
 	while (node) {
-		log_write("%p: %10lu bytes @ gen %10lu still active!", node + 1, node->sz,
-		          node->generation);
+		log_warn("%p: %10lu bytes @ gen %10lu still active!", node + 1, node->sz,
+		         node->generation);
 		node = node->next;
 	}
 
-	log_write("peak:  %10lu bytes allocated", g_vlt_allocs.peak_bytes);
-	log_write("total: %10lu bytes allocated in %lu chunks",
-	          g_vlt_allocs.total_bytes, g_vlt_allocs.total_chunks);
+	log_info("peak:  %10lu bytes allocated", g_vlt_allocs.peak_bytes);
+	log_info("total: %10lu bytes allocated in %lu chunks",
+	         g_vlt_allocs.total_bytes, g_vlt_allocs.total_chunks);
 }
 
 void vlt_mem_dump_current(vlt_mem_dump_callback_t cb, void *udata)
@@ -422,16 +448,18 @@ void time_sleep_milli(u32 milli)
 typedef struct log_stream
 {
 	logger_t logger;
+	log_level_t level;
 	void *udata;
 } log_stream_t;
 
 log_stream_t g_log_streams[LOG_STREAM_CAP];
 u32 g_log_stream_cnt = 0;
 
-void log_add_stream(logger_t logger, void *udata)
+void log_add_stream(log_level_t level, logger_t logger, void *udata)
 {
 	assert(g_log_stream_cnt < LOG_STREAM_CAP);
 	g_log_streams[g_log_stream_cnt].logger = logger;
+	g_log_streams[g_log_stream_cnt].level = level;
 	g_log_streams[g_log_stream_cnt].udata = udata;
 	++g_log_stream_cnt;
 }
@@ -448,19 +476,16 @@ void log_remove_stream(logger_t logger, void *udata)
 	assert(false);
 }
 
-void log_write(const char *format, ...)
+void log_level_write(log_level_t level, const char *format, ...)
 {
 	for (u32 i = 0; i < g_log_stream_cnt; ++i) {
-		va_list ap;
-		va_start(ap, format);
-		g_log_streams[i].logger(g_log_streams[i].udata, format, ap);
-		va_end(ap);
+		if (level & g_log_streams[i].level) {
+			va_list ap;
+			va_start(ap, format);
+			g_log_streams[i].logger(g_log_streams[i].udata, format, ap);
+			va_end(ap);
+		}
 	}
-}
-
-void log_newline()
-{
-	log_write("%s", "\n");
 }
 
 void file_logger(void *udata, const char *format, va_list ap)
