@@ -171,11 +171,14 @@ typedef struct ivalf
 
 FMGDECL const ivalf g_ivalf_0_to_1;
 
+FMDEF ivalf ivalf_range(r32 center, r32 radius);
+FMDEF r32   ivalf_center(ivalf i);
 FMDEF void  ivalf_slide(ivalf *i, r32 d);
 FMDEF r32   ivalf_length(ivalf i);
 FMDEF b32   ivalf_contains_val(ivalf i, r32 x);
 FMDEF b32   ivalf_contains_ival(ivalf lhs, ivalf rhs);
 FMDEF b32   ivalf_overlaps(ivalf lhs, ivalf rhs);
+FMDEF b32   ivalf_overlaps_within(ivalf lhs, ivalf rhs, r32 error);
 FMDEF r32   ivalf_overlap(ivalf lhs, ivalf rhs);
 FMDEF ivalf ivalf_overlap_ival(ivalf lhs, ivalf rhs);
 
@@ -671,6 +674,19 @@ FMDEF void ivalf_slide(ivalf *i, r32 d)
 	i->r += d;
 }
 
+FMDEF ivalf ivalf_range(r32 center, r32 radius)
+{
+	return (ivalf){
+		.l = center - radius,
+		.r = center + radius,
+	};
+}
+
+FMDEF r32 ivalf_center(ivalf i)
+{
+	return (i.l + i.r) / 2.f;
+}
+
 FMDEF r32 ivalf_length(ivalf i)
 {
 	return i.r - i.l;
@@ -689,6 +705,12 @@ FMDEF b32 ivalf_contains_ival(ivalf lhs, ivalf rhs)
 FMDEF b32 ivalf_overlaps(ivalf lhs, ivalf rhs)
 {
 	return lhs.l <= rhs.r && rhs.l <= lhs.r;
+}
+
+FMDEF b32 ivalf_overlaps_within(ivalf lhs, ivalf rhs, r32 error)
+{
+	assert(error > 0.f);
+	return rhs.r - lhs.l > -error && lhs.r - rhs.l > -error;
 }
 
 FMDEF r32 ivalf_overlap(ivalf lhs, ivalf rhs)
