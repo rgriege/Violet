@@ -90,9 +90,10 @@ IMDEF v2i  box2i_get_half_dim(box2i b);
 
 /* Polygon */
 
-IMDEF s32 polyi_area(const v2i *v, u32 n);
-IMDEF v2i polyi_center(const v2i *v, u32 n);
-IMDEF v2i polyi_centroid(const v2i *v, u32 n);
+IMDEF void polyi_from_box(v2i *v, box2i box);
+IMDEF s32  polyi_area(const v2i *v, u32 n);
+IMDEF v2i  polyi_center(const v2i *v, u32 n);
+IMDEF v2i  polyi_centroid(const v2i *v, u32 n);
 
 #endif // IMATH_H
 
@@ -261,6 +262,17 @@ IMDEF v2i box2i_get_half_dim(box2i box)
 }
 
 /* Polygon */
+
+IMDEF void polyi_from_box(v2i *v, box2i box)
+{
+	const v2i top_left = { box.min.x, box.max.y };
+	const v2i bottom_right = { box.max.x, box.min.y };
+
+	v[0] = bottom_right;
+	v[1] = box.max;
+	v[2] = top_left;
+	v[3] = box.min;
+}
 
 /* NOTE(rgriege): Green's theorem */
 static
