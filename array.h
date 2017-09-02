@@ -48,11 +48,13 @@ typedef struct array__head
 #define array_reserve(a, n)        ((a)=array__reserve(a, n, array__esz(a)))
 #define array_set_sz(a, n)         (array_reserve(a, n), array_sz(a) = n)
 #define array_append_null(a)       ((a)=array__append_null(a, array__esz(a)), \
-                                                           (a)+array_sz(a) - 1)
+                                    (a)+array_sz(a) - 1)
 #define array_append(a, e)         (*array_append_null(a) = e)
 #define array_insert_null(a, i)    ((a)=array__insert_null(a, i, array__esz(a)), \
                                                            (a)+(i))
 #define array_insert(a, i, e)      (*array_insert_null(a, i) = e)
+#define array_insert_fast(a, i, e) ((a)=array__append_null(a, array__esz(a)), \
+                                    array_last(a) = (a)[i], (a)[i] = e)
 #define array_remove(a, i)         array__remove(a, i, array__esz(a))
 #define array_remove_fast(a, i)    array__remove_fast(a, i, array__esz(a))
 #define array_pop(a)               (--array_sz(a))
