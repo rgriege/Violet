@@ -55,7 +55,8 @@ typedef struct array__head
 #define array_insert(a, i, e)      (*array_insert_null(a, i) = e)
 #define array_insert_fast(a, i, e) ((a)=array__append_null(a, array__esz(a)), \
                                     array_last(a) = (a)[i], (a)[i] = e)
-#define array_remove(a, i)         array__remove(a, i, array__esz(a))
+#define array_remove(a, i)         array_remove_n(a, i, 1)
+#define array_remove_n(a, i, n)    array__remove(a, i, n, array__esz(a))
 #define array_remove_fast(a, i)    array__remove_fast(a, i, array__esz(a))
 #define array_pop(a)               (--array_sz(a))
 #define array_clear(a)             (array_sz(a) = 0)
@@ -76,7 +77,7 @@ ARRDEF void *array__reserve(void *a, array_size_t nmemb, size_t sz);
 ARRDEF void *array__copy(void *dst, const void *src, size_t sz);
 ARRDEF void *array__append_null(void *a, size_t sz);
 ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz);
-ARRDEF void array__remove(void *a, array_size_t idx, size_t sz);
+ARRDEF void array__remove(void *a, array_size_t idx, array_size_t n, size_t sz);
 ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz);
 ARRDEF void array__reverse(void *a, size_t sz);
 ARRDEF void *array__find(void *a, const void *userp, size_t sz,
@@ -141,13 +142,15 @@ ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz)
 	return a;
 }
 
-ARRDEF void array__remove(void *a, array_size_t idx, size_t sz)
+ARRDEF void array__remove(void *a, array_size_t idx, array_size_t n, size_t sz)
 {
-	assert(idx < array_sz(a));
-	for (arr_bytep p = (arr_bytep)a+(idx+1)*sz, end = (arr_bytep)a+array_sz(a)*sz;
+	assert(n > 0);
+	assert(idx + n - 1 < array_sz(a));
+	for (arr_bytep p = (arr_bytep)a + (idx + n) * sz,
+	               end = (arr_bytep)a + array_sz(a) * sz;
 	     p != end; p += sz)
-		memcpy(p - sz, p, sz);
-	--array_sz(a);
+		memcpy(p - n * sz, p, sz);
+	array_sz(a) -= n;
 }
 
 ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz)
