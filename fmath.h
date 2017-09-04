@@ -709,7 +709,6 @@ FMDEF b32 ivalf_overlaps(ivalf lhs, ivalf rhs)
 
 FMDEF b32 ivalf_overlaps_within(ivalf lhs, ivalf rhs, r32 error)
 {
-	assert(error > 0.f);
 	return rhs.r - lhs.l > -error && lhs.r - rhs.l > -error;
 }
 
