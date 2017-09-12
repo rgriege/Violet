@@ -40,4 +40,16 @@ v2i v2f_to_v2i(v2f v)
 	return (v2i){ .x = v.x, .y = v.y };
 }
 
+static inline
+v2f v2d_to_v2f(v2d v)
+{
+	return (v2f){ .x = v.x, .y = v.y };
+}
+
+static inline
+v2d v2f_to_v2d(v2f v)
+{
+	return (v2d){ .x = v.x, .y = v.y };
+}
+
 #endif // VIOLET_ALL_H
