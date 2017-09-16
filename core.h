@@ -34,6 +34,8 @@ typedef struct timespec timepoint_t;
 #define CONCAT_(a, b) a##b
 #define CONCAT(a, b) CONCAT_(a, b)
 
+#define countof(x) (sizeof(x) / sizeof((x)[0]))
+
 #define static_assert(cnd, msg) int msg[(cnd) ? 1 : -1]
 
 #ifndef NDEBUG
