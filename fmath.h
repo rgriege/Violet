@@ -1108,8 +1108,7 @@ FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis)
 	const r32 v0_proj = v2f_dot(*v, axis);
 	ivalf projection = { .l = v0_proj, .r = v0_proj };
 
-	for (const v2f *vn=v+n-1; v!=vn; ++v)
-	{
+	for (const v2f *vn=v+n; v!=vn; ++v) {
 		const r32 dp = v2f_dot(*v, axis);
 		if (dp < projection.l)
 			projection.l = dp;
