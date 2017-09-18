@@ -23,7 +23,9 @@
 #include "violet/fmath.h"
 #include "violet/imath.h"
 #include "violet/list.h"
+#ifndef VIOLET_NO_GUI
 #include "violet/gui.h"
+#endif
 #include "violet/os.h"
 #include "violet/vson.h"
 
