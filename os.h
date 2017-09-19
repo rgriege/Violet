@@ -66,46 +66,6 @@ int  run(const char *command);
 #define WEXITSTATUS(x) (x)
 
 static
-SSIZE_T getdelim(char **lineptr, size_t *n, int delim, FILE *stream)
-{
-	if (!lineptr || !n || !stream) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (!*lineptr) {
-		*n = 32;
-		*lineptr = malloc(*n);
-	} else if (*n == 0) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	int i = 0, c;
-	while ((c = fgetc(stream)) != EOF) {
-		if (i == *n-1) {
-			*n *= 2;
-			*lineptr = realloc(*lineptr, *n);
-		}
-		(*lineptr)[i++] = c;
-		if (c == delim)
-			break;
-	}
-
-	if (ferror(stream) || feof(stream))
-		return -1;
-
-	(*lineptr)[i] = '\0';
-	return i;
-}
-
-static
-SSIZE_T getline(char **lineptr, size_t *n, FILE *stream)
-{
-	return getdelim(lineptr, n, '\n', stream);
-}
-
-static
 int rmdir(const char *path)
 {
 	return !RemoveDirectory(path);
@@ -129,12 +89,12 @@ b32 file__dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 	IFileDialog *dialog = vp;
 
 	if (n_ext) {
-		ext_buf = malloc(8*(n_ext+1)*sizeof(wchar_t));
+		ext_buf = amalloc(8*(n_ext+1)*sizeof(wchar_t), g_temp_allocator);
 		mbstowcs(ext_buf, ext[0], 8);
 		if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, ext_buf)))
 			goto err_ext;
 
-		filters = malloc(n_ext*sizeof(COMDLG_FILTERSPEC));
+		filters = amalloc(n_ext*sizeof(COMDLG_FILTERSPEC), g_temp_allocator);
 		for (u32 i = 0; i < n_ext; ++i) {
 			filters[i].pszName = L"";
 			PWSTR spec = ext_buf+(i+1)*8;
@@ -168,8 +128,8 @@ err_itm:
 err_dlg:
 	dialog->lpVtbl->Release(dialog);
 err_ext:
-	free(filters);
-	free(ext_buf);
+	afree(filters, g_temp_allocator);
+	afree(ext_buf, g_temp_allocator);
 err_init:
 	CoUninitialize();
 out:
@@ -262,11 +222,11 @@ b32 app_data_dir(char *path, u32 n)
 lib_handle lib_load(const char *_filename)
 {
 	const u32 sz = strlen(_filename);
-	char *filename = malloc(sz+4);
+	char *filename = amalloc(sz + 4, g_temp_allocator);
 	strcpy(filename, _filename);
 	strcat(filename, ".dll");
 	lib_handle hnd = LoadLibrary(filename);
-	free(filename);
+	afree(filename);
 	return hnd;
 }
 
@@ -386,11 +346,11 @@ b32 app_data_dir(char *path, u32 n)
 lib_handle lib_load(const char *_filename)
 {
 	const u32 sz = strlen(_filename);
-	char *filename = malloc(sz+4);
+	char *filename = amalloc(sz + 4, g_temp_allocator);
 	strcpy(filename, _filename);
 	strcat(filename, ".so");
 	lib_handle hnd = dlopen(filename, RTLD_NOW | RTLD_LOCAL);
-	free(filename);
+	afree(filename, g_temp_allocator);
 	return hnd;
 }
 
@@ -496,6 +456,47 @@ out:
 
 /* Other applications */
 
+static
+size_t vgetdelim(char **lineptr, size_t *n, int delim, FILE *stream, allocator_t *a)
+{
+	if (!lineptr || !n || !stream) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (!*lineptr) {
+		*n = 32;
+		*lineptr = amalloc(*n, a);
+	} else if (*n == 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	int i = 0, c;
+	while ((c = fgetc(stream)) != EOF) {
+		if (i == *n-1) {
+			*n *= 2;
+			*lineptr = arealloc(*lineptr, *n, a);
+		}
+		(*lineptr)[i++] = c;
+		if (c == delim)
+			break;
+	}
+
+	if (ferror(stream) || feof(stream))
+		return -1;
+
+	(*lineptr)[i] = '\0';
+	return i;
+}
+
+static
+size_t vgetline(char **lineptr, size_t *n, FILE *stream, allocator_t *a)
+{
+	return vgetdelim(lineptr, n, '\n', stream, a);
+}
+
+
 void exec(char *const argv[])
 {
 	execv(argv[0], argv);
@@ -516,13 +517,14 @@ int run(const char *command)
 	}
 	char *log_buf = NULL;
 	size_t log_buf_sz;
-	while ((log_buf_sz = getline(&log_buf, &log_buf_sz, fp)) != -1) {
-		assert(log_buf_sz != 0);
+	log_buf_sz = vgetline(&log_buf, &log_buf_sz, fp, g_temp_allocator);
+	while (log_buf_sz != 0 && log_buf_sz != -1) {
 		if (log_buf[log_buf_sz - 1] == '\n')
 			log_buf[log_buf_sz - 1] = '\0';
 		log_info("%s", log_buf);
+		log_buf_sz = vgetline(&log_buf, &log_buf_sz, fp, g_temp_allocator);
 	}
-	free(log_buf);
+	afree(log_buf, g_temp_allocator);
 	int status = pclose(fp);
 	return status != -1 && WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }

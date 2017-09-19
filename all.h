@@ -14,21 +14,25 @@
 #undef VIOLET_IMPLEMENTATION
 #endif
 
-#define array_size_t u32
-#define list_size_t u32
-
+/* Core */
 #include "violet/core.h"
+/* Data structures */
 #include "violet/array.h"
+#include "violet/list.h"
+/* Math */
 #include "violet/dmath.h"
 #include "violet/fmath.h"
 #include "violet/imath.h"
-#include "violet/list.h"
+/* Gui */
 #ifndef VIOLET_NO_GUI
 #include "violet/gui.h"
 #endif
+/* OS */
 #include "violet/os.h"
+/* Serialization */
 #include "violet/vson.h"
 
+/* Additional utilities useful when using the entire library */
 
 static inline
 v2f v2i_to_v2f(v2i v)

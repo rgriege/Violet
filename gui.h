@@ -656,14 +656,14 @@ void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n)
 {
 	box2f extent;
 	v2f dimension;
-	v2f *coords = array_create();
+	v2f *coords;
 
 	polyf_bounding_box(v, n, &extent);
 	dimension = v2f_sub(extent.max, extent.min);
 
-	array_reserve(coords, n);
-	for (const v2f *vn=v+n; v!=vn; ++v)
-		array_append(coords, v2f_div(v2f_sub(*v, extent.min), dimension));
+	array_init_ex(coords, n, g_temp_allocator);
+	for (const v2f *vi = v, *vn = v + n; vi != vn; ++vi)
+		array_append(coords, v2f_div(v2f_sub(*vi, extent.min), dimension));
 	mesh_init(tex_coords, coords, n);
 	array_destroy(coords);
 }
@@ -1968,7 +1968,7 @@ void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
 	timepoint_t start, end;
 	b32 quit = false;
 	while(gui_begin_frame(gui) && !quit) {
-		vlt_mem_generation_advance();
+		vlt_mem_advance_gen();
 		start = time_current();
 		quit = ufunc(gui, udata);
 		gui_end_frame(gui);
