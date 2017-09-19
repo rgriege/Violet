@@ -279,7 +279,8 @@ typedef enum log_level
 	LOG_STDERR  = (LOG_WARNING | LOG_ERROR | LOG_FATAL),
 } log_level_t;
 
-typedef void(*logger_t)(void *udata, const char *format, va_list ap);
+typedef void(*logger_t)(void *udata, log_level_t level,
+                        const char *format, va_list ap);
 
 #define LOG_STREAM_CAP 3
 
@@ -303,7 +304,7 @@ void log_level_write(log_level_t level, const char *format, ...);
 #define log_fatal(fmt, ...) log_level_write(LOG_FATAL,   fmt, ##__VA_ARGS__)
 #define log_write(fmt, ...) log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
 
-void file_logger(void *udata, const char *format, va_list ap);
+void file_logger(void *udata, log_level_t level, const char *format, va_list ap);
 
 #endif // VIOLET_CORE_H
 
@@ -884,15 +885,35 @@ void log_level_write(log_level_t level, const char *format, ...)
 		if (level & g_log_streams[i].level) {
 			va_list ap;
 			va_start(ap, format);
-			g_log_streams[i].logger(g_log_streams[i].udata, format, ap);
+			g_log_streams[i].logger(g_log_streams[i].udata, level, format, ap);
 			va_end(ap);
 		}
 	}
 }
 
-void file_logger(void *udata, const char *format, va_list ap)
+void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 {
 	FILE *fp = udata;
+	switch (level) {
+	case LOG_DEBUG:
+		fputs("[DEBUG] ", fp);
+	break;
+	case LOG_INFO:
+		fputs("[INFO ] ", fp);
+	break;
+	case LOG_WARNING:
+		fputs("[WARN ] ", fp);
+	break;
+	case LOG_ERROR:
+		fputs("[ERROR] ", fp);
+	break;
+	case LOG_FATAL:
+		fputs("[FATAL] ", fp);
+	break;
+	default:
+		fputs("[XXXXX] ", fp);
+	break;
+	}
 	vfprintf(fp, format, ap);
 	fputc('\n', fp);
 	fflush(fp);
