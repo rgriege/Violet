@@ -107,8 +107,12 @@ extern thread_local const struct error_handler *g_error_handler;
 #endif
 void error_handler_push(error_f func, void *udata);
 void error_handler_pop(error_f func, void *udata);
+#ifndef DEBUG
+#define error(msg)          g_error_handler->func(msg, g_error_handler->udata);
+#else
 #define error(msg)          g_error_handler->func(LOCATION ": " msg, \
                                                   g_error_handler->udata);
+#endif
 #define error_if(cnd, msg)  do { if (cnd) error(msg); } while (0);
 
 void error_catch(const char *msg, void *udata);
