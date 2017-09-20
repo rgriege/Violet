@@ -15,7 +15,7 @@ b32  dir_exists(const char *path);
 void path_append(char *lhs, const char *rhs);
 void path_appendn(char *lhs, const char *rhs, u32 sz);
 b32  mkpath(const char *path);
-b32  app_data_dir(char *path, u32 n);
+char *app_data_dir(const char *app_name, allocator_t *a);
 #ifdef VLT_USE_TINYDIR
 b32  rmdir_f(const char *path);
 #endif
@@ -196,24 +196,30 @@ b32 _mkdir(const char *path)
 	return CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
 }
 
-b32 app_data_dir(char *path, u32 n)
+char *app_data_dir(const char *app_name, allocator_t *a)
 {
+	u32 n;
+	char *path;
 	FILE *fp = fopen(".access_check", "w");
 	if (!fp) {
 		PWSTR psz_file_path;
 		if (   SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path)
 		    != S_OK)
-			return false;
+			return NULL;
 
+		n = wcslen(psz_file_path) * sizeof(wchar_t);
+		path = amalloc(n + 4 + strlen(app_name), a);
 		wcstombs(path, psz_file_path, n);
 		CoTaskMemFree(psz_file_path);
-		return true;
+		path_append(path, app_name);
+		return path;
 	} else {
 		fclose(fp);
 		remove(".access_check");
+		path = amalloc(2, a);
 		path[0] = '.';
 		path[1] = '\0';
-		return true;
+		return path;
 	}
 }
 
@@ -328,17 +334,19 @@ b32 _mkdir(const char *path)
 	return mkdir(path, S_IRWXU) == 0;
 }
 
-b32 app_data_dir(char *path, u32 n)
+char *app_data_dir(const char *app_name, allocator_t *a)
 {
+	char *path;
 	FILE *fp = fopen(".access_check", "w");
 	if (fp) {
 		fclose(fp);
 		remove(".access_check");
+		path = amalloc(2, a);
 		path[0] = '.';
 		path[1] = '\0';
-		return true;
+		return path;
 	}
-	return false;
+	return NULL;
 }
 
 /* Dynamic library */
