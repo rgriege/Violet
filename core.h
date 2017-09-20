@@ -408,7 +408,7 @@ void *default_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS)
 
 void default_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
 {
-	return std_free(ptr);
+	std_free(ptr);
 }
 
 /* Paged bump memory allocator
@@ -829,14 +829,14 @@ u32 time_diff_milli(timepoint_t start, timepoint_t end)
 {
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
-	return (end.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart;
+	return (u32)((end.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart);
 }
 
 u32 time_diff_micro(timepoint_t start, timepoint_t end)
 {
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
-	return (end.QuadPart - start.QuadPart) * 1000000 / frequency.QuadPart;
+	return (u32)((end.QuadPart - start.QuadPart) * 1000000 / frequency.QuadPart);
 }
 
 void time_sleep_milli(u32 milli)

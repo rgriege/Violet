@@ -226,7 +226,7 @@ lib_handle lib_load(const char *_filename)
 	strcpy(filename, _filename);
 	strcat(filename, ".dll");
 	lib_handle hnd = LoadLibrary(filename);
-	afree(filename);
+	afree(filename, g_temp_allocator);
 	return hnd;
 }
 
