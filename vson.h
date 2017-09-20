@@ -83,7 +83,10 @@ static b32 vson__read_rest_of_line(FILE *fp, char *str, u32 n)
 		vson__skip_rest_of_line(fp);
 		return false;
 	}
-	*p = '\0';
+	if (p > str && p[-1] == '\r')
+		p[-1] = '\0';
+	else
+		*p = '\0';
 	return true;
 }
 
@@ -158,10 +161,13 @@ b32 vson_read_str(FILE *fp, const char *label, char *val, u32 sz)
 
 	while ((u32)(p - val) < sz && (c = fgetc(fp)) != EOF && c != '\n')
 		*(p++) = c;
+	if (p > val && p[-1] == '\r')
+		*(--p) = '\0';
 	if (p == val + sz)
-		return fgetc(fp) == '\n';
-	*p = '\0';
-	return c == '\n';
+		c = fgetc(fp);
+	else
+		*p = '\0';
+	return c == '\r' || c == '\n';
 }
 
 
