@@ -406,39 +406,108 @@ void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 /* Style */
 
-typedef struct gui_style_t
+typedef struct gui_line_style
+{
+	r32 thickness;
+	r32 dash_len;
+	color_t color;
+} gui_line_style_t;
+
+typedef struct gui_txt_style
+{
+	u32 font_sz;
+	color_t color;
+	gui_align_t align;
+} gui_txt_style_t;
+
+typedef struct gui_widget_style
+{
+	u32 font_sz;
+	gui_align_t text_align;
+	color_t text_color;
+	color_t text_hot_color;
+	color_t text_active_color;
+	color_t fill_color;
+	color_t fill_hot_color;
+	color_t fill_active_color;
+	color_t stroke_color;
+	color_t stroke_hot_color;
+	color_t stroke_active_color;
+} gui_widget_style_t;
+
+typedef struct gui_slider_style
+{
+	color_t fill_color;
+	color_t fill_hot_color;
+	color_t fill_active_color;
+	color_t stroke_color;
+	color_t stroke_hot_color;
+	color_t stroke_active_color;
+	color_t track_color;
+	color_t track_hot_color;
+	color_t track_active_color;
+	b32 track_thin;
+} gui_slider_style_t;
+
+typedef struct gui_panel_style
 {
 	color_t bg_color;
-	color_t fill_color;
-	color_t hot_color;
-	color_t active_color;
-	color_t outline_color;
-	color_t hot_line_color;
-	color_t active_line_color;
-	color_t text_color;
-	color_t hot_text_color;
-	color_t active_text_color;
-	color_t slider_track_color;
-	u32 font_sz;
-	r32 dotted_line_len;
+	color_t border_color;
+	gui_widget_style_t drag;
+	gui_widget_style_t titlebar;
+	gui_widget_style_t close; // MARK
+	color_t cell_bg_color;
+	color_t cell_border_color;
+	color_t break_color;
+	r32 padding;
+} gui_panel_style_t;
 
-	struct
-	{
-		color_t bg_color;
-		color_t border_color;
-		color_t cell_fill_color;
-		color_t cell_border_color;
-		color_t text_color;
-		color_t break_color;
-		r32 padding;
-	} panel;
+typedef struct gui_style
+{
+	color_t bg_color;
+	gui_line_style_t   line;
+	gui_txt_style_t    txt;
+	gui_widget_style_t npt;
+	gui_widget_style_t btn;
+	gui_widget_style_t chk;
+	gui_slider_style_t slider;
+	gui_widget_style_t select;
+	gui_widget_style_t drag;
+	gui_panel_style_t  panel;
 } gui_style_t;
 
-static const gui_style_t g_invis_style;
+static const gui_style_t g_gui_style_default;
+static const gui_style_t g_gui_style_invis;
 
-gui_style_t *gui_get_style(gui_t *gui);
-void         gui_style(gui_t *gui, const gui_style_t *style);
-void         gui_style_default(gui_t *gui);
+gui_style_t *gui_style(gui_t *gui);
+void         gui_style_set(gui_t *gui, const gui_style_t *style);
+
+void gui_style_push_color_(gui_t *gui, size_t loc, color_t val);
+void gui_style_push_u32_(gui_t *gui, size_t loc, u32 val);
+void gui_style_push_r32_(gui_t *gui, size_t loc, r32 val);
+void gui_style_push_txt_(gui_t *gui, size_t loc, const gui_txt_style_t *val);
+void gui_style_push_slider_(gui_t *gui, size_t loc, const gui_slider_style_t *val);
+void gui_style_push_widget_(gui_t *gui, size_t loc, const gui_widget_style_t *val);
+void gui_style_pop(gui_t *gui);
+
+#define gui_style_push_color(gui, loc, val) \
+	gui_style_push_color_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_u32(gui, loc, val) \
+	gui_style_push_u32_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_r32(gui, loc, val) \
+	gui_style_push_r32_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_txt(gui, loc, val) \
+	gui_style_push_txt_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_slider(gui, loc, val) \
+	gui_style_push_slider_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_widget(gui, loc, val) \
+	gui_style_push_widget_(gui, offsetof(gui_style_t, loc), val)
+
+
+#ifndef GUI_STYLE_STACK_LIMIT
+#define GUI_STYLE_STACK_LIMIT 2048
+#endif
+
 
 #endif // VIOLET_GUI_H
 
@@ -1169,53 +1238,223 @@ b32 gui__triangulate(const v2f *v_, u32 n_, v2f **triangles)
 
 /* General Gui */
 
-static const gui_style_t g_default_style = {
+static const gui_style_t g_gui_style_default = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
-	.fill_color = gi_grey77,
-	.hot_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
-	.active_color = gi_orange,
-	.outline_color = gi_nocolor,
-	.hot_line_color = gi_nocolor,
-	.active_line_color = gi_nocolor,
-	.text_color = gi_white,
-	.hot_text_color = gi_white,
-	.active_text_color = gi_white,
-	.slider_track_color = gi_nocolor,
-	.font_sz = 14,
-	.dotted_line_len = 0,
-
+	.line = {
+		.thickness = 1.f,
+		.dash_len = 0.f,
+		.color = gi_white,
+	},
+	.txt = {
+		.font_sz = 14,
+		.color = gi_white,
+	},
+	.npt = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_white,
+		.text_hot_color = gi_white,
+		.text_active_color = gi_white,
+		.fill_color = gi_grey77,
+		.fill_hot_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+		.fill_active_color = gi_orange,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
+	.btn = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_white,
+		.text_hot_color = gi_white,
+		.text_active_color = gi_white,
+		.fill_color = gi_grey77,
+		.fill_hot_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+		.fill_active_color = gi_orange,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
+	.chk = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_white,
+		.text_hot_color = gi_white,
+		.text_active_color = gi_white,
+		.fill_color = gi_lightblue,
+		.fill_hot_color = { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff },
+		.fill_active_color = gi_orange,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
+	.slider = {
+		.fill_color = gi_lightblue,
+		.fill_hot_color = { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff },
+		.fill_active_color = gi_orange,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+		.track_color = gi_grey77,
+		.track_hot_color = gi_grey77,
+		.track_active_color = gi_grey77,
+		.track_thin = false,
+	},
+	.select = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_white,
+		.text_hot_color = gi_white,
+		.text_active_color = gi_white,
+		.fill_color = gi_grey77,
+		.fill_hot_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+		.fill_active_color = gi_orange,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
+	.drag = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_nocolor,
+		.text_hot_color = gi_nocolor,
+		.text_active_color = gi_nocolor,
+		.fill_color = gi_nocolor,
+		.fill_hot_color = gi_nocolor,
+		.fill_active_color = gi_nocolor,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
 		.border_color = gi_grey128,
-		.cell_fill_color = gi_nocolor,
+		.drag = {
+			.font_sz = 14,
+			.text_align = GUI_ALIGN_MIDCENTER,
+			.text_color = gi_black,
+			.text_hot_color = gi_black,
+			.text_active_color = gi_black,
+			.fill_color = gi_white,
+			.fill_hot_color = { .r=0xe8, .g=0xe8, .b=0xe8, .a=0xff },
+			.fill_active_color = { .r=0xe8, .g=0xe8, .b=0xe8, .a=0xff },
+			.stroke_color = gi_nocolor,
+			.stroke_hot_color = gi_nocolor,
+			.stroke_active_color = gi_nocolor,
+		},
+		.titlebar = {
+			.font_sz = 14,
+			.text_align = GUI_ALIGN_LEFT | GUI_ALIGN_MIDDLE,
+			.text_color = gi_white,
+			.text_hot_color = gi_white,
+			.text_active_color = gi_white,
+			.fill_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+			.fill_hot_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+			.fill_active_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+			.stroke_color = gi_nocolor,
+			.stroke_hot_color = gi_nocolor,
+			.stroke_active_color = gi_nocolor,
+		},
+		.cell_bg_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
-		.text_color = gi_white,
 		.break_color =  { .r=0x33, .g=0x33, .b=0x33, .a=0xff },
 		.padding = 10.f,
 	},
 };
 
-static const gui_style_t g_invis_style = {
+static const gui_style_t g_gui_style_invis = {
 	.bg_color = gi_nocolor,
-	.fill_color = gi_nocolor,
-	.hot_color = gi_nocolor,
-	.active_color = gi_nocolor,
-	.outline_color = gi_nocolor,
-	.hot_line_color = gi_nocolor,
-	.active_line_color = gi_nocolor,
-	.text_color = gi_nocolor,
-	.hot_text_color = gi_nocolor,
-	.active_text_color = gi_nocolor,
-	.slider_track_color = gi_nocolor,
-	.font_sz = 14,
-	.dotted_line_len = 0,
-
+	.line = {
+		.thickness = 1.f,
+		.dash_len = 0.f,
+		.color = gi_nocolor,
+	},
+	.txt = {
+		.font_sz = 14,
+		.color = gi_nocolor,
+	},
+	.npt = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_nocolor,
+		.text_hot_color = gi_nocolor,
+		.text_active_color = gi_nocolor,
+		.fill_color = gi_nocolor,
+		.fill_hot_color = gi_nocolor,
+		.fill_active_color = gi_nocolor,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
+	.btn = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_nocolor,
+		.text_hot_color = gi_nocolor,
+		.text_active_color = gi_nocolor,
+		.fill_color = gi_nocolor,
+		.fill_hot_color = gi_nocolor,
+		.fill_active_color = gi_nocolor,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
+	.chk = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_nocolor,
+		.text_hot_color = gi_nocolor,
+		.text_active_color = gi_nocolor,
+		.fill_color = gi_nocolor,
+		.fill_hot_color = gi_nocolor,
+		.fill_active_color = gi_nocolor,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
+	.slider = {
+		.fill_color = gi_nocolor,
+		.fill_hot_color = gi_nocolor,
+		.fill_active_color = gi_nocolor,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+		.track_color = gi_nocolor,
+		.track_hot_color = gi_nocolor,
+		.track_active_color = gi_nocolor,
+		.track_thin = false,
+	},
+	.select = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_nocolor,
+		.text_hot_color = gi_nocolor,
+		.text_active_color = gi_nocolor,
+		.fill_color = gi_nocolor,
+		.fill_hot_color = gi_nocolor,
+		.fill_active_color = gi_nocolor,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
+	.drag = {
+		.font_sz = 14,
+		.text_align = GUI_ALIGN_MIDCENTER,
+		.text_color = gi_nocolor,
+		.text_hot_color = gi_nocolor,
+		.text_active_color = gi_nocolor,
+		.fill_color = gi_nocolor,
+		.fill_hot_color = gi_nocolor,
+		.fill_active_color = gi_nocolor,
+		.stroke_color = gi_nocolor,
+		.stroke_hot_color = gi_nocolor,
+		.stroke_active_color = gi_nocolor,
+	},
 	.panel = {
 		.bg_color = gi_nocolor,
 		.border_color = gi_nocolor,
-		.cell_fill_color = gi_nocolor,
+		.cell_bg_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
-		.text_color = gi_nocolor,
 		.break_color = gi_nocolor,
 		.padding = 10.f,
 	},
@@ -1362,8 +1601,9 @@ typedef struct gui_t
 	b32 use_default_cursor;
 	font_t *fonts;
 	cached_img_t *imgs;
-	gui_style_t default_style;
 	gui_style_t style;
+	u8 style_stack[GUI_STYLE_STACK_LIMIT];
+	u32 style_stack_sz;
 
 	u64 hot_id;    /* hover */
 	u64 active_id; /* mouse down */
@@ -1518,8 +1758,9 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->repeat_timer = gui->repeat_delay;
 	gui->npt_cursor_pos = 0;
 
-	gui->default_style = g_default_style;
-	gui_style_default(gui);
+	gui_style_set(gui, &g_gui_style_default);
+
+	gui->style_stack_sz = 0;
 
 	gui->mouse_debug = false;
 
@@ -1778,13 +2019,13 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
-		if (gui->style.dotted_line_len != 0.f) {
+		if (gui->style.line.dash_len != 0.f) {
 			dist = 0;
 			last = v[n-1];
 			for (u32 i = 0; i < n; ++i) {
 				gui->verts[gui->vert_cnt+i] = v[i];
 				gui->vert_colors[gui->vert_cnt+i] = stroke;
-				gui->vert_tex_coords[gui->vert_cnt+i].x = dist / gui->style.dotted_line_len;
+				gui->vert_tex_coords[gui->vert_cnt+i].x = dist / gui->style.line.dash_len;
 				gui->vert_tex_coords[gui->vert_cnt+i].y = 0;
 				dist += v2f_dist(last, v[i]);
 			}
@@ -2383,38 +2624,99 @@ u64 gui__widget_id(s32 x, s32 y, const gui_panel_t *panel)
 	return (((u64)x) << 48) | (((u64)y) << 32) | panel_id;
 }
 
-typedef enum widget_style_t
-{
-	INACTIVE,
-	HOT,
-	ACTIVE
-} widget_style_t;
-
 static
-void widget__color(const gui_t *gui, u64 id,
-                   color_t *fill, color_t *outline, color_t *text)
+void gui__widget_color(const gui_t *gui, u64 id, const gui_widget_style_t *style,
+                       color_t *fill, color_t *stroke, color_t *text)
 {
 	if (gui->active_id == id || gui->focus_id == id) {
 		if (fill)
-			*fill = gui->style.active_color;
-		if (outline)
-			*outline = gui->style.active_line_color;
+			*fill = style->fill_active_color;
+		if (stroke)
+			*stroke = style->stroke_active_color;
 		if (text)
-			*text = gui->style.active_text_color;
+			*text = style->text_active_color;
 	} else if (gui->hot_id == id) {
 		if (fill)
-			*fill = gui->style.hot_color;
-		if (outline)
-			*outline = gui->style.hot_line_color;
+			*fill = style->fill_hot_color;
+		if (stroke)
+			*stroke = style->stroke_hot_color;
 		if (text)
-			*text = gui->style.hot_text_color;
+			*text = style->text_hot_color;
 	} else {
 		if (fill)
-			*fill = gui->style.fill_color;
-		if (outline)
-			*outline = gui->style.outline_color;
+			*fill = style->fill_color;
+		if (stroke)
+			*stroke = style->stroke_color;
 		if (text)
-			*text = gui->style.text_color;
+			*text = style->text_color;
+	}
+}
+
+typedef enum gui__widget_status
+{
+	GUI__WIDGET_INACTIVE,
+	GUI__WIDGET_HOT,
+	GUI__WIDGET_ACTIVE,
+} gui__widget_status_t;
+
+static
+void gui__btn_color(const gui_t *gui, gui__widget_status_t status,
+                    const gui_widget_style_t *style,
+                    color_t *fill, color_t *stroke, color_t *text)
+{
+	switch (status) {
+	case GUI__WIDGET_ACTIVE:
+		if (fill)
+			*fill = style->fill_active_color;
+		if (stroke)
+			*stroke = style->stroke_active_color;
+		if (text)
+			*text = style->text_active_color;
+	break;
+	case GUI__WIDGET_HOT:
+		if (fill)
+			*fill = style->fill_hot_color;
+		if (stroke)
+			*stroke = style->stroke_hot_color;
+		if (text)
+			*text = style->text_hot_color;
+	break;
+	case GUI__WIDGET_INACTIVE:
+		if (fill)
+			*fill = style->fill_color;
+		if (stroke)
+			*stroke = style->stroke_color;
+		if (text)
+			*text = style->text_color;
+	break;
+	}
+}
+
+static
+void gui__slider_color(const gui_t *gui, u64 id,
+                       color_t *fill, color_t *stroke, color_t *track)
+{
+	if (gui->active_id == id || gui->focus_id == id) {
+		if (fill)
+			*fill = gui->style.slider.fill_active_color;
+		if (stroke)
+			*stroke = gui->style.slider.stroke_active_color;
+		if (track)
+			*track = gui->style.slider.track_active_color;
+	} else if (gui->hot_id == id) {
+		if (fill)
+			*fill = gui->style.slider.fill_hot_color;
+		if (stroke)
+			*stroke = gui->style.slider.stroke_hot_color;
+		if (track)
+			*track = gui->style.slider.track_hot_color;
+	} else {
+		if (fill)
+			*fill = gui->style.slider.fill_color;
+		if (stroke)
+			*stroke = gui->style.slider.stroke_color;
+		if (track)
+			*track = gui->style.slider.track_color;
 	}
 }
 
@@ -2439,11 +2741,13 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b32 contains_mouse = box2i_contains_point(box, gui->mouse_pos);
 	b32 complete = false;
+	const char *displayed_txt;
 
 	if (gui->focus_id == id) {
 		if (contains_mouse && mouse_pressed(gui, MB_LEFT))
-			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, gui->style.font_sz,
-			                                         txt, gui->mouse_pos, align);
+			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y,
+			                                         gui->style.npt.font_sz, txt,
+			                                         gui->mouse_pos, align);
 		u32 key_idx;
 		for (key_idx = 0; key_idx < KB_COUNT; ++key_idx)
 			if (gui->keys[key_idx])
@@ -2525,8 +2829,9 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->hot_id = 0;
 		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->active_id = id;
-			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, gui->style.font_sz,
-			                                         txt, gui->mouse_pos, align);
+			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y,
+			                                         gui->style.npt.font_sz, txt,
+			                                         gui->mouse_pos, align);
 			gui->npt_prev_key_idx = 0;
 			gui->hot_id = 0;
 			gui->active_id_found_this_frame = true;
@@ -2539,9 +2844,9 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	}
 
 
-	color_t fill, line, text_color;
-	widget__color(gui, id, &fill, &line, &text_color);
-	gui_rect(gui, x, y, w, h, fill, line);
+	color_t fill, stroke, text_color;
+	gui__widget_color(gui, id, &gui->style.npt, &fill, &stroke, &text_color);
+	gui_rect(gui, x, y, w, h, fill, stroke);
 	font__align_anchor(&x, &y, w, h, align);
 
 	if (flags & NPT_PASSWORD) {
@@ -2550,18 +2855,21 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		for (u32 i = 0; i < sz; ++i)
 			gui->pw_buf[i] = '*';
 		gui->pw_buf[sz] = '\0';
-		gui_txt(gui, x, y, gui->style.font_sz, gui->pw_buf, text_color, align);
+		gui_txt(gui, x, y, gui->style.npt.font_sz, gui->pw_buf, text_color, align);
+		displayed_txt = gui->pw_buf;
 	} else {
-		gui_txt(gui, x, y, gui->style.font_sz, txt, text_color, align);
+		gui_txt(gui, x, y, gui->style.npt.font_sz, txt, text_color, align);
+		displayed_txt = txt;
 	}
 	if (gui->focus_id == id) {
 		/* TODO(rgriege): should be from y to y + font->ascent */
 		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
-			gui__txt_char_pos(gui, &x, &y, gui->style.font_sz, txt, gui->npt_cursor_pos, align);
-			gui_line(gui, x+1, y, x+1, y+gui->style.font_sz, 1, text_color);
+			gui__txt_char_pos(gui, &x, &y, gui->style.npt.font_sz, displayed_txt,
+			                  gui->npt_cursor_pos, align);
+			gui_line(gui, x+1, y, x+1, y+gui->style.npt.font_sz, 1, text_color);
 		}
 	} else if (hint && strlen(txt) == 0) {
-		gui_txt(gui, x, y, gui->style.font_sz, hint, text_color, align);
+		gui_txt(gui, x, y, gui->style.npt.font_sz, hint, text_color, align);
 	}
 	return complete;
 }
@@ -2608,13 +2916,14 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 static
 void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                         const char *txt, color_t fill,
-                         color_t text_color)
+                     const char *txt, gui__widget_status_t status,
+                     const gui_widget_style_t *style)
 {
-	static const gui_align_t btn_txt_align = GUI_ALIGN_CENTER | GUI_ALIGN_MIDDLE;
-	gui_rect(gui, x, y, w, h, fill, gui->style.outline_color);
-	font__align_anchor(&x, &y, w, h, btn_txt_align);
-	gui_txt(gui, x, y, gui->style.font_sz, txt, text_color, btn_txt_align);
+	color_t fill, stroke, text_color;
+	gui__btn_color(gui, status, style, &fill, &stroke, &text_color);
+	gui_rect(gui, x, y, w, h, fill, stroke);
+	font__align_anchor(&x, &y, w, h, style->text_align);
+	gui_txt(gui, x, y, style->font_sz, txt, text_color, style->text_align);
 }
 
 btn_val_t gui_btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
@@ -2622,47 +2931,32 @@ btn_val_t gui_btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 	const u64 id = gui__widget_id(x, y, gui->panel);
 	b32 contains_mouse;
 	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, txt, id, &contains_mouse);
+	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 
-	color_t c = gui->style.fill_color;
-	color_t text_color = gui->style.text_color;
-	if (gui->active_id == id) {
-		if (contains_mouse) {
-			c = gui->style.active_color;
-			text_color = gui->style.active_text_color;
-		} else {
-			c = gui->style.hot_color;
-			text_color = gui->style.hot_text_color;
-		}
-	} else if (gui->hot_id == id) {
-		c = gui->style.hot_color;
-		text_color = gui->style.hot_text_color;
-	}
-	gui__btn_render(gui, x, y, w, h, txt, c, text_color);
+	if (gui->active_id == id)
+		status = contains_mouse ? GUI__WIDGET_ACTIVE : GUI__WIDGET_HOT;
+	else if (gui->hot_id == id)
+		status = GUI__WIDGET_HOT;
+	gui__btn_render(gui, x, y, w, h, txt, status, &gui->style.btn);
 	return ret;
 }
 
 void gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
 	const u64 id = gui__widget_id(x, y, gui->panel);
-	b32 contains_mouse;
 	const b32 was_checked = *val;
+	b32 contains_mouse;
+	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 	if (gui__btn_logic(gui, x, y, w, h, txt, id, &contains_mouse) == BTN_PRESS)
 		*val = !*val;
 
-	color_t c = gui->style.fill_color;
-	color_t text_color = gui->style.text_color;
-	if (gui->active_id == id || (*val && !was_checked)) {
-		c = gui->style.active_color;
-		text_color = gui->style.active_text_color;
-	}
-	if (gui->hot_id == id && contains_mouse) {
-		c = gui->style.hot_color;
-		text_color = gui->style.hot_text_color;
-	} else if (*val) {
-		c = gui->style.active_color;
-		text_color = gui->style.active_text_color;
-	}
-	gui__btn_render(gui, x, y, w, h, txt, c, text_color);
+	if (gui->active_id == id)
+		status = contains_mouse ? GUI__WIDGET_ACTIVE : GUI__WIDGET_HOT;
+	else if (gui->hot_id == id)
+		status = GUI__WIDGET_HOT;
+	else if (*val)
+		status = GUI__WIDGET_ACTIVE;
+	gui__btn_render(gui, x, y, w, h, txt, status, &gui->style.chk);
 }
 
 typedef enum gui__slider_orientation
@@ -2677,7 +2971,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	assert(*val >= 0.f && *val <= 1.f);
 
 	const u64 id = gui__widget_id(x, y, gui->panel);
-	color_t fill, outline, track;
+	color_t fill, stroke, track;
 	box2i box;
 	if (orientation == GUI__SLIDER_Y) {
 		box.min = (v2i){ .x=x, .y=y+(h-hnd_len)**val };
@@ -2722,15 +3016,19 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 		gui->hot_id_found_this_frame = true;
 	}
 
-	widget__color(gui, id, &fill, NULL, NULL);
-	outline = gui->style.outline_color;
-	track = gui->style.slider_track_color;
+	gui__slider_color(gui, id, &fill, &stroke, &track);
 	if (orientation == GUI__SLIDER_Y) {
-		gui_line(gui, x+w/2, y+hnd_len/2, x+w/2, y+h-hnd_len/2, 1, track);
-		gui_rect(gui, x, y+(h-hnd_len)**val, w, hnd_len, fill, outline);
+		if (gui->style.slider.track_thin)
+			gui_line(gui, x+w/2, y+hnd_len/2, x+w/2, y+h-hnd_len/2, 1, track);
+		else
+			gui_rect(gui, x, y, w, h, track, g_nocolor);
+		gui_rect(gui, x, y+(h-hnd_len)**val, w, hnd_len, fill, stroke);
 	} else {
-		gui_line(gui, x+hnd_len/2, y+h/2, x+w-hnd_len/2, y+h/2, 1, track);
-		gui_rect(gui, x+(w-hnd_len)**val, y, hnd_len, h, fill, outline);
+		if (gui->style.slider.track_thin)
+			gui_line(gui, x+hnd_len/2, y+h/2, x+w-hnd_len/2, y+h/2, 1, track);
+		else
+			gui_rect(gui, x, y, w, h, track, g_nocolor);
+		gui_rect(gui, x+(w-hnd_len)**val, y, hnd_len, h, fill, stroke);
 	}
 	return gui->active_id == id;
 }
@@ -2768,6 +3066,7 @@ void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	const u64 id = gui__widget_id(x, y, gui->panel);
 	const b32 selected = *val == opt;
+	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 	b32 contains_mouse;
 	if (   gui__btn_logic(gui, x, y, w, h, txt, id,
 	                      &contains_mouse) == BTN_PRESS
@@ -2775,17 +3074,13 @@ void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		*val = opt;
 	}
 
-	color_t c = gui->style.fill_color;
-	color_t text_color = gui->style.text_color;
-	if (gui->active_id == id || *val == opt) {
-		c = gui->style.active_color;
-		text_color = gui->style.active_text_color;
-	}
-	if (gui->hot_id == id && contains_mouse) {
-		c = gui->style.hot_color;
-		text_color = gui->style.hot_text_color;
-	}
-	gui__btn_render(gui, x, y, w, h, txt, c, text_color);
+	if (gui->active_id == id)
+		status = contains_mouse ? GUI__WIDGET_ACTIVE : GUI__WIDGET_HOT;
+	else if (gui->hot_id == id)
+		status = GUI__WIDGET_HOT;
+	else if (*val == opt)
+		status = GUI__WIDGET_ACTIVE;
+	gui__btn_render(gui, x, y, w, h, txt, status, &gui->style.select);
 }
 
 void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -2793,6 +3088,7 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	const u64 id = gui__widget_id(x, y, gui->panel);
 	b32 contains_mouse;
+	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 	if (gui__btn_logic(gui, x, y, w, h, txt, id, &contains_mouse) == BTN_PRESS) {
 	  if (!(*val & opt))
 			*val |= opt;
@@ -2800,17 +3096,13 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 			*val &= ~opt;
 	}
 
-	color_t c = gui->style.fill_color;
-	color_t text_color = gui->style.text_color;
-	if (gui->active_id == id || (*val & opt)) {
-		c = gui->style.active_color;
-		text_color = gui->style.active_text_color;
-	}
-	if (gui->hot_id == id && contains_mouse) {
-		c = gui->style.hot_color;
-		text_color = gui->style.hot_text_color;
-	}
-	gui__btn_render(gui, x, y, w, h, txt, c, text_color);
+	if (gui->active_id == id)
+		status = contains_mouse ? GUI__WIDGET_ACTIVE : GUI__WIDGET_HOT;
+	else if (gui->hot_id == id)
+		status = GUI__WIDGET_HOT;
+	else if (*val & opt)
+		status = GUI__WIDGET_ACTIVE;
+	gui__btn_render(gui, x, y, w, h, txt, status, &gui->style.select);
 }
 
 static
@@ -2851,11 +3143,12 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 }
 
 static
-void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id)
+void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id,
+                      const gui_widget_style_t *style)
 {
-	color_t fill, outline;
-	widget__color(gui, id, &fill, &outline, NULL);
-	gui_rect(gui, x, y, w, h, fill, outline);
+	color_t fill, stroke;
+	gui__widget_color(gui, id, style, &fill, &stroke, NULL);
+	gui_rect(gui, x, y, w, h, fill, stroke);
 }
 
 static
@@ -2871,17 +3164,23 @@ b32 gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb)
 	return gui_dragx(gui, x, y, w, h, mb, gui__drag_default_callback, NULL);
 }
 
-b32 gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
-              gui_drag_callback_t cb, void *udata)
+b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, u32 w, u32 h,
+                    mouse_button_t mb, gui_drag_callback_t cb, void *udata)
 {
 	box2i box;
-	u64 id;
-	b32 contains_mouse, ret;
+	b32 contains_mouse;
 
 	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
 	contains_mouse = box2i_contains_point(box, gui->mouse_pos);
-	ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
-	gui__drag_render(gui, *x, *y, w, h, id);
+	return gui__drag(gui, x, y, contains_mouse, mb, id, cb, udata);
+}
+
+b32 gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
+              gui_drag_callback_t cb, void *udata)
+{
+	u64 id;
+	const b32 ret = gui__drag_logic(gui, &id, x, y, w, h, mb, cb, udata);
+	gui__drag_render(gui, *x, *y, w, h, id, &gui->style.drag);
 	return ret;
 }
 
@@ -2946,15 +3245,15 @@ b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
 	v2i pos;
 	u64 id;
 	b32 contains_mouse, ret;
-	color_t fill, outline;
+	color_t fill, stroke;
 
 	pos.x = *x;
 	pos.y = *y;
 	contains_mouse = (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r;
 	ret = gui__drag(gui, x, y, contains_mouse, mb, &id, gui__drag_default_callback,
 	                NULL);
-	widget__color(gui, id, &fill, &outline, NULL);
-	gui_circ(gui, *x, *y, r, fill, outline);
+	gui__widget_color(gui, id, &gui->style.drag, &fill, &stroke, NULL);
+	gui_circ(gui, *x, *y, r, fill, stroke);
 	return ret;
 }
 
@@ -3023,9 +3322,8 @@ void gui__split(gui_t *gui, gui_split_t *split)
 
 	/* checking use_default_cursor ensures only 1 resize happens per frame */
 	if (split->flags & GUI_SPLIT_RESIZABLE && gui->use_default_cursor) {
-		const gui_style_t cur_style = *gui_get_style(gui);
-		gui->style.hot_color = gui->style.fill_color;
-		gui->style.active_color = gui->style.fill_color;
+		gui_style_push_color(gui, drag.fill_hot_color, gui->style.drag.fill_color);
+		gui_style_push_color(gui, drag.fill_active_color, gui->style.drag.fill_color);
 		if (split->vert) {
 			const s32 orig_drag_x =   x - GUI_SPLIT_RESIZE_BORDER / 2
 			                        + gui__split_dim(split->sz, w);
@@ -3047,7 +3345,8 @@ void gui__split(gui_t *gui, gui_split_t *split)
 					split->sz = (r32)(y + h - drag_y - GUI_SPLIT_RESIZE_BORDER / 2) / h;
 			}
 		}
-		gui_style(gui, &cur_style);
+		gui_style_pop(gui);
+		gui_style_pop(gui);
 	}
 
 	sz1 = gui__split_dim(split->sz, split->vert ? w : h);
@@ -3118,8 +3417,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	if (panel->flags & GUI_PANEL_RESIZABLE
 	    && !panel->split.leaf
 	    && gui->use_default_cursor) {
-		gui_style_t cur_style = *gui_get_style(gui);
-		gui_style(gui, &g_invis_style);
+		gui_style_push_widget(gui, drag, &g_gui_style_invis.drag);
 
 		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
 		if (gui__resize_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
@@ -3147,31 +3445,45 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 		                  GUI_PANEL_RESIZE_BORDER))
 			panel->height += resize.y - (panel->y + panel->height);
 
-		gui_style(gui, &cur_style);
+		gui_style_pop(gui);
 	}
 
 	/* titlebar / dragging */
 
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
-		panel->pos.y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
+		const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
+		v2i txt_pos;
+		panel->pos.y = panel->y + panel->height - dim;
+		u64 drag_id = ~0;
 
 		if (panel->flags & GUI_PANEL_DRAGGABLE && !panel->split.leaf) {
-		    dragging = gui_drag(gui, &panel->x, &panel->pos.y, panel->width,
-			                    GUI_PANEL_TITLEBAR_HEIGHT, MB_LEFT);
+			dragging = gui__drag_logic(gui, &drag_id, &panel->x, &panel->pos.y,
+			                           dim, dim, MB_LEFT,
+			                           gui__drag_default_callback, NULL);
 			if (dragging)
-				panel->y = panel->pos.y - panel->height + GUI_PANEL_TITLEBAR_HEIGHT;
+				panel->y = panel->pos.y - panel->height + dim;
 		} else {
 			dragging = false;
-			gui_rect(gui, panel->x, panel->pos.y, panel->width,
-			         GUI_PANEL_TITLEBAR_HEIGHT, gui->style.fill_color,
-			         gui->style.outline_color);
 		}
-		gui_txt(gui, panel->x + panel->width / 2,
-		        panel->pos.y + GUI_PANEL_TITLEBAR_HEIGHT / 2, gui->style.font_sz,
-		        panel->title, g_white, GUI_ALIGN_CENTER | GUI_ALIGN_MIDDLE);
+
+		// MARK active_color if at front
+		gui_rect(gui, panel->x, panel->pos.y, panel->width,
+		         dim, gui->style.panel.titlebar.fill_color,
+		         gui->style.panel.titlebar.stroke_color);
+
+		gui__drag_render(gui, panel->x, panel->pos.y, dim, dim, drag_id,
+		                 &gui->style.panel.drag);
+
+		txt_pos.y = panel->pos.y;
+		txt_pos.x = panel->x + dim;
+		font__align_anchor(&txt_pos.x, &txt_pos.y, panel->width, dim,
+		                   gui->style.panel.titlebar.text_align);
+		gui_txt(gui, txt_pos.x, txt_pos.y, gui->style.panel.titlebar.font_sz,
+		        panel->title, gui->style.panel.titlebar.text_color,
+		        gui->style.panel.titlebar.text_align);
 
 		panel->pos.y -= panel->padding.y;
-		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
+		panel->body_height = panel->height - dim;
 	} else {
 		dragging = false;
 		panel->pos.y = panel->y + panel->height - panel->padding.y;
@@ -3355,23 +3667,6 @@ void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols)
 	gui->panel->required_dim.y += height;
 }
 
-void pgui_row_empty(gui_t *gui, u32 height)
-{
-	pgui_row(gui, height, 1.f);
-	pgui_spacer(gui);
-}
-
-void pgui_row_break(gui_t *gui, u32 top_y, u32 bottom_y, r32 width_ratio)
-{
-	const s32 dx = gui->panel->width * (1.f - width_ratio) * 0.5f;
-
-	pgui_row(gui, top_y + bottom_y, 1.f);
-	pgui_spacer(gui);
-	gui_line(gui, gui->panel->x + dx, gui->panel->pos.y + bottom_y,
-	         gui->panel->x + gui->panel->width - dx,
-	         gui->panel->pos.y + bottom_y, 1, gui->style.panel.break_color);
-}
-
 static
 void pgui__col_advance(gui_panel_t *panel)
 {
@@ -3379,10 +3674,31 @@ void pgui__col_advance(gui_panel_t *panel)
 	++panel->row.current_col;
 }
 
+void pgui_row_empty(gui_t *gui, u32 height)
+{
+	pgui_row(gui, height, 1.f);
+	pgui__col_advance(gui->panel);
+}
+
+void pgui_row_break(gui_t *gui, u32 top_y, u32 bottom_y, r32 width_ratio)
+{
+	const s32 dx = gui->panel->width * (1.f - width_ratio) * 0.5f;
+
+	pgui_row_empty(gui, top_y + bottom_y);
+
+	gui_line(gui, gui->panel->x + dx, gui->panel->pos.y + bottom_y,
+	         gui->panel->x + gui->panel->width - dx,
+	         gui->panel->pos.y + bottom_y, 1, gui->style.panel.break_color);
+}
+
 void pgui_spacer(gui_t *gui)
 {
 	assert(gui->panel);
 	assert(!pgui__row_complete(gui->panel));
+
+	gui_rect(gui, gui->panel->pos.x, gui->panel->pos.y,
+	         *gui->panel->row.current_col, gui->panel->row.height,
+	         gui->style.panel.cell_bg_color, gui->style.panel.cell_border_color);
 
 	pgui__col_advance(gui->panel);
 }
@@ -3397,10 +3713,10 @@ void pgui_txt(gui_t *gui, const char *str, gui_align_t align)
 	x = gui->panel->pos.x;
 	y = gui->panel->pos.y;
 	gui_rect(gui, x, y, *gui->panel->row.current_col, gui->panel->row.height,
-	         gui->style.panel.cell_fill_color, gui->style.panel.cell_border_color);
+	         gui->style.panel.cell_bg_color, gui->style.panel.cell_border_color);
 	font__align_anchor(&x, &y, *gui->panel->row.current_col,
 	                   gui->panel->row.height, align);
-	gui_txt(gui, x, y, gui->style.font_sz, str, gui->style.panel.text_color,
+	gui_txt(gui, x, y, gui->style.txt.font_sz, str, gui->style.txt.color,
 	        align);
 	pgui__col_advance(gui->panel);
 }
@@ -3614,20 +3930,69 @@ void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 
 /* Style */
 
-gui_style_t *gui_get_style(gui_t *gui)
+gui_style_t *gui_style(gui_t *gui)
 {
 	return &gui->style;
 }
 
-void gui_style(gui_t *gui, const gui_style_t *style)
+void gui_style_set(gui_t *gui, const gui_style_t *style)
 {
 	gui->style = *style;
 }
 
-void gui_style_default(gui_t *gui)
+void gui_style_push(gui_t *gui, const void *value, size_t offset, size_t size)
 {
-	gui_style(gui, &gui->default_style);
+	if (gui->style_stack_sz + 2 * sizeof(size_t) + size < GUI_STYLE_STACK_LIMIT) {
+		const void *loc = ((u8*)&gui->style) + offset;
+		memcpy(&gui->style_stack[gui->style_stack_sz], loc, size);
+		gui->style_stack_sz += size;
+		memcpy(&gui->style_stack[gui->style_stack_sz], &size, sizeof(size_t));
+		gui->style_stack_sz += sizeof(size_t);
+		memcpy(&gui->style_stack[gui->style_stack_sz], &offset, sizeof(size_t));
+		gui->style_stack_sz += sizeof(size_t);
+		memcpy(((u8*)&gui->style) + offset, value, size);
+	} else {
+		error("style stack limit exceeded");
+	}
 }
+
+void gui_style_pop(gui_t *gui)
+{
+	if (gui->style_stack_sz > sizeof(size_t) + sizeof(size_t)) {
+		size_t offset, size;
+		gui->style_stack_sz -= sizeof(size_t);
+		memcpy(&offset, &gui->style_stack[gui->style_stack_sz], sizeof(size_t));
+		gui->style_stack_sz -= sizeof(size_t);
+		memcpy(&size, &gui->style_stack[gui->style_stack_sz], sizeof(size_t));
+		gui->style_stack_sz -= size;
+		memcpy(((u8*)&gui->style) + offset,
+		       &gui->style_stack[gui->style_stack_sz], size);
+	} else {
+		error("style stack empty");
+	}
+}
+
+#define GUI_STYLE_STACK_PUSH(name, type) \
+void gui_style_push_##name##_(gui_t *gui, size_t offset, type val) \
+{ \
+	gui_style_push(gui, &val, offset, sizeof(val)); \
+}
+
+#define GUI_STYLE_STACK_PUSHP(name, type) \
+void gui_style_push_##name##_(gui_t *gui, size_t offset, const type *val) \
+{ \
+	gui_style_push(gui, val, offset, sizeof(*val)); \
+}
+
+GUI_STYLE_STACK_PUSH(color, color_t);
+GUI_STYLE_STACK_PUSH(u32, u32);
+GUI_STYLE_STACK_PUSH(r32, r32);
+GUI_STYLE_STACK_PUSHP(txt, gui_txt_style_t);
+GUI_STYLE_STACK_PUSHP(slider, gui_slider_style_t);
+GUI_STYLE_STACK_PUSHP(widget, gui_widget_style_t);
+
+
+/* Shaders */
 
 static const char *g_vertex_shader =
 	"#version 330\n"
