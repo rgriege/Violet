@@ -316,7 +316,7 @@ void gui_vsplit_init(gui_t *gui, gui_split_t *split,
 #endif
 
 #ifndef GUI_SCROLL_RATE
-#define GUI_SCROLL_RATE 2
+#define GUI_SCROLL_RATE 20
 #endif
 
 #ifndef GUI_PANEL_RESIZE_BORDER
