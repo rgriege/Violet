@@ -72,7 +72,7 @@ typedef struct texture_t
 	u32 height;
 } texture_t;
 
-b32  texture_load_png(texture_t *tex, const char *filename);
+b32  texture_load(texture_t *tex, const char *filename);
 void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
 void texture_destroy(texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
@@ -459,7 +459,11 @@ void         gui_style_default(gui_t *gui);
 
 #define STB_IMAGE_IMPLEMENTATION
 // #define STB_IMAGE_STATIC
-#define STB_ONLY_PNG
+#define STBI_NO_PSD
+#define STBI_NO_TGA
+#define STBI_NO_HDR
+#define STBI_NO_PIC
+#define STBI_NO_PNM
 #include "stb_image.h"
 #define STB_RECT_PACK_IMPLEMENTATION
 // #define STBRP_STATIC
@@ -618,7 +622,7 @@ void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n)
 
 /* Texture */
 
-b32 texture_load_png(texture_t *tex, const char *filename)
+b32 texture_load(texture_t *tex, const char *filename)
 {
 	b32 ret = false;
 	int w, h;
@@ -880,7 +884,7 @@ s32 shader_program_uniform(const shader_prog_t *p, const char *name)
 
 b32 img_load(img_t *img, const char *filename)
 {
-	if (!texture_load_png(&img->texture, filename)) {
+	if (!texture_load(&img->texture, filename)) {
 		log_error("img_load(%s) error", filename);
 		return false;
 	}
