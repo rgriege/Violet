@@ -2488,19 +2488,21 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			if (modify) {
 				u32 len = strlen(txt);
 				char key_char = 0;
-				if (key_down(gui, KB_BACKSPACE)) {
+				if (key_idx == KB_BACKSPACE) {
 					if (gui->npt_cursor_pos > 0) {
 						for (u32 i = gui->npt_cursor_pos - 1; i < len; ++i)
 							txt[i] = txt[i+1];
 						--gui->npt_cursor_pos;
 					}
-				} else if (key_down(gui, KB_DELETE)) {
+				} else if (key_idx == KB_DELETE) {
 					for (u32 i = gui->npt_cursor_pos; i < len; ++i)
 						txt[i] = txt[i+1];
-				} else if (key_down(gui, KB_RETURN)) {
-					gui->active_id = 0;
+				} else if (key_idx == KB_RETURN) {
+					gui->focus_id = 0;
 					complete = true;
-				} else if (key_down(gui, KB_V) && key_mod(gui, KBM_CTRL)) {
+				} else if (key_idx == KB_ESCAPE) {
+					gui->focus_id = 0;
+				} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
 					char *clipboard;
 					u32 cnt;
 					if (   SDL_HasClipboardText()
@@ -2513,15 +2515,15 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 						gui->npt_cursor_pos += cnt;
 						SDL_free(clipboard);
 					}
-				} else if (key_down(gui, KB_LEFT)) {
+				} else if (key_idx == KB_LEFT) {
 					if (gui->npt_cursor_pos > 0)
 						--gui->npt_cursor_pos;
-				} else if (key_down(gui, KB_RIGHT)) {
+				} else if (key_idx == KB_RIGHT) {
 					if (gui->npt_cursor_pos < len)
 						++gui->npt_cursor_pos;
-				} else if (key_down(gui, KB_HOME)) {
+				} else if (key_idx == KB_HOME) {
 					gui->npt_cursor_pos = 0;
-				} else if (key_down(gui, KB_END)) {
+				} else if (key_idx == KB_END) {
 					gui->npt_cursor_pos = len;
 				} else if (   gui__convert_key_to_char(gui, key_idx, &key_char)
 				           && len < n-1
