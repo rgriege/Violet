@@ -88,6 +88,8 @@ typedef enum gui_key
     KB_DOWN = 81,
     KB_UP = 82,
 
+		KB_NUMLOCK_OR_CLEAR = 83,
+
     KB_KP_DIVIDE = 84,
     KB_KP_MULTIPLY = 85,
     KB_KP_MINUS = 86,
@@ -135,3 +137,11 @@ typedef enum gui_key_mod
 	KBM_SHIFT,
 	KBM_ALT
 } gui_key_mod_t;
+
+typedef enum gui_key_toggle
+{
+	KBT_CAPS,
+	KBT_SCROLL,
+	KBT_NUM,
+	KBT_COUNT,
+} gui_key_toggle_t;

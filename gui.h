@@ -72,7 +72,7 @@ typedef struct texture_t
 	u32 height;
 } texture_t;
 
-b32  texture_load_png(texture_t *tex, const char *filename);
+b32  texture_load(texture_t *tex, const char *filename);
 void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
 void texture_destroy(texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
@@ -218,6 +218,7 @@ b32 key_down(const gui_t *gui, gui_key_t key);
 b32 key_pressed(const gui_t *gui, gui_key_t key);
 b32 key_released(const gui_t *gui, gui_key_t key);
 b32 key_mod(const gui_t *gui, gui_key_mod_t mod);
+b32 key_toggled(const gui_t *gui, gui_key_toggle_t toggle);
 
 
 
@@ -528,7 +529,11 @@ void gui_style_pop(gui_t *gui);
 
 #define STB_IMAGE_IMPLEMENTATION
 // #define STB_IMAGE_STATIC
-#define STB_ONLY_PNG
+#define STBI_NO_PSD
+#define STBI_NO_TGA
+#define STBI_NO_HDR
+#define STBI_NO_PIC
+#define STBI_NO_PNM
 #include "stb_image.h"
 #define STB_RECT_PACK_IMPLEMENTATION
 // #define STBRP_STATIC
@@ -687,7 +692,7 @@ void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n)
 
 /* Texture */
 
-b32 texture_load_png(texture_t *tex, const char *filename)
+b32 texture_load(texture_t *tex, const char *filename)
 {
 	b32 ret = false;
 	int w, h;
@@ -949,7 +954,7 @@ s32 shader_program_uniform(const shader_prog_t *p, const char *name)
 
 b32 img_load(img_t *img, const char *filename)
 {
-	if (!texture_load_png(&img->texture, filename)) {
+	if (!texture_load(&img->texture, filename)) {
 		log_error("img_load(%s) error", filename);
 		return false;
 	}
@@ -1189,6 +1194,9 @@ b32 gui__triangulate_snip(const v2f *poly, u32 u, u32 v, u32 w, u32 n)
 	/* cannot snip if triangle abc contains another (concave) vtx in poly */
 	for (u32 i = 0; i < n; ++i)
 		if (   i != u && i != v && i != w
+		    && !v2f_equal(poly[i], a)
+		    && !v2f_equal(poly[i], b)
+		    && !v2f_equal(poly[i], c)
 		    && gui__triangle_contains(a, b, c, poly[i]))
 			return false;
 	return true;
@@ -1460,55 +1468,6 @@ static const gui_style_t g_gui_style_invis = {
 	},
 };
 
-typedef enum special_char_t
-{
-	CHAR_BACKSPACE = 8,
-	CHAR_RETURN = 13,
-	CHAR_ESCAPE = 27,
-} special_char_t;
-
-static const char g_caps[128] = {
-	  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
-	 10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
-	 20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
-	 30,  31,  32,  33,  34,  35,  36,  37,  38,  34,
-	 40,  41,  42,  43,  60,  95,  62,  63,  41,  33,
-	 64,  35,  36,  37,  94,  38,  42,  40,  58,  58,
-	 60,  43,  62,  63,  64,  65,  66,  67,  68,  69,
-	 70,  71,  72,  73,  74,  75,  76,  77,  78,  79,
-	 80,  81,  82,  83,  84,  85,  86,  87,  88,  89,
-	 90, 123, 124, 125,  94,  95, 126,  65,  66,  67,
-	 68,  69,  70,  71,  72,  73,  74,  75,  76,  77,
-	 78,  79,  80,  81,  82,  83,  84,  85,  86,  87,
-	 88,  89,  90, 123, 124, 125, 126, 127
-};
-
-static const char g_gui_key_chars[KB_COUNT] = {
-	0, 0, 0, 0,
-	'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-	'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-	'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-	CHAR_RETURN, CHAR_ESCAPE, CHAR_BACKSPACE, '\t', ' ',
-	'-', '=', '[', ']', '\\',
-	0,
-	';', '\'', '`', ',', '.', '/',
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* KB_CAPSLOCK - KB_F12 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* KB_PRINTSCREEN - KB_UP */
-	0,
-	'/', '*', '-', '+', CHAR_RETURN,
-	'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-	'.', '=',
-};
-
-static inline
-b32 gui__convert_key_to_char(const gui_t *gui, gui_key_t key, char *c)
-{
-	*c = g_gui_key_chars[key];
-	if (key_mod(gui, KBM_SHIFT) != key_down(gui, KB_CAPSLOCK))
-		*c = g_caps[(u8)*c];
-	return *c != 0;
-}
-
 typedef enum gui_vbo_type
 {
 	VBO_VERT,
@@ -1558,6 +1517,13 @@ typedef enum gui_cursor
 	GUI__CURSOR_COUNT
 } gui__cursor_t;
 
+typedef enum gui__key_toggle_state
+{
+	GUI__KBT_OFF,
+	GUI__KBT_PRESSED_ON,
+	GUI__KBT_RELEASED_ON,
+} gui__key_toggle_state_t;
+
 typedef struct gui_t
 {
 	timepoint_t creation_time;
@@ -1591,6 +1557,7 @@ typedef struct gui_t
 
 	u8 prev_keys[KB_COUNT];
 	const u8 *keys;
+	gui__key_toggle_state_t key_toggles[KBT_COUNT];
 	u32 repeat_delay;
 	u32 repeat_interval;
 	u32 repeat_timer;
@@ -1765,6 +1732,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->mouse_debug = false;
 
 	memset(gui->prev_keys, 0, KB_COUNT);
+	memset(gui->key_toggles, 0, KBT_COUNT * sizeof(gui__key_toggle_state_t));
 
 	gui->hot_id = 0;
 	gui->active_id = 0;
@@ -1865,6 +1833,19 @@ void gui_fullscreen(gui_t *gui)
 	SDL_MaximizeWindow(gui->window);
 }
 
+static
+void gui__toggle_key(gui_t *gui, gui_key_toggle_t toggle, gui_key_t key)
+{
+	if (gui->key_toggles[toggle] == GUI__KBT_OFF && key_pressed(gui, key)) {
+		gui->key_toggles[toggle] = GUI__KBT_PRESSED_ON;
+	} else if (key_released(gui, key)) {
+		if (gui->key_toggles[toggle] == GUI__KBT_PRESSED_ON)
+			gui->key_toggles[toggle] = GUI__KBT_RELEASED_ON;
+		else
+			gui->key_toggles[toggle] = GUI__KBT_OFF;
+	}
+}
+
 b32 gui_begin_frame(gui_t *gui)
 {
 	s32 key_cnt;
@@ -1908,6 +1889,9 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->keys = SDL_GetKeyboardState(&key_cnt);
 	assert(key_cnt > KB_COUNT);
+	gui__toggle_key(gui, KBT_CAPS, KB_CAPSLOCK);
+	gui__toggle_key(gui, KBT_SCROLL, KB_SCROLLLOCK);
+	gui__toggle_key(gui, KBT_NUM, KB_NUMLOCK_OR_CLEAR);
 
 	/* Should really never hit either of these */
 	if (gui->hot_id != 0 && !gui->hot_id_found_this_frame) {
@@ -2315,6 +2299,11 @@ b32 key_released(const gui_t *gui, gui_key_t key)
 b32 key_mod(const gui_t *gui, gui_key_mod_t mod)
 {
 	return key_down(gui, KB_LCTRL + mod) || key_down(gui, KB_RCTRL + mod);
+}
+
+b32 key_toggled(const gui_t *gui, gui_key_toggle_t toggle)
+{
+	return gui->key_toggles[toggle] != GUI__KBT_OFF;
 }
 
 
@@ -2733,6 +2722,48 @@ b32 gui__can_repeat(gui_t *gui)
 	}
 }
 
+static inline
+b32 gui__convert_key_to_char(const gui_t *gui, gui_key_t key, char *c)
+{
+	static const char gui_key_chars[KB_COUNT] = {
+		0, 0, 0, 0,
+		'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+		'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+		'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+		0, 0, 0, '\t', ' ',
+		'-', '=', '[', ']', '\\',
+		0,
+		';', '\'', '`', ',', '.', '/',
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* KB_CAPSLOCK - KB_F12 */
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* KB_PRINTSCREEN - KB_UP */
+		0,
+		'/', '*', '-', '+', 0,
+		'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+		'.', '=',
+	};
+
+	static const char caps[128] = {
+			0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
+		 10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
+		 20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
+		 30,  31,  32,  33,  34,  35,  36,  37,  38,  34,
+		 40,  41,  42,  43,  60,  95,  62,  63,  41,  33,
+		 64,  35,  36,  37,  94,  38,  42,  40,  58,  58,
+		 60,  43,  62,  63,  64,  65,  66,  67,  68,  69,
+		 70,  71,  72,  73,  74,  75,  76,  77,  78,  79,
+		 80,  81,  82,  83,  84,  85,  86,  87,  88,  89,
+		 90, 123, 124, 125,  94,  95, 126,  65,  66,  67,
+		 68,  69,  70,  71,  72,  73,  74,  75,  76,  77,
+		 78,  79,  80,  81,  82,  83,  84,  85,  86,  87,
+		 88,  89,  90, 123, 124, 125, 126, 127
+	};
+
+	*c = gui_key_chars[key];
+	if (key_mod(gui, KBM_SHIFT) != key_toggled(gui, KBT_CAPS))
+		*c = caps[(u8)*c];
+	return *c != 0;
+}
+
 b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
             const char *hint, gui_align_t align, npt_flags_t flags)
 {
@@ -2764,20 +2795,21 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			if (modify) {
 				u32 len = strlen(txt);
 				char key_char = 0;
-				gui__convert_key_to_char(gui, key_idx, &key_char);
-				if (key_char == CHAR_BACKSPACE) {
+				if (key_idx == KB_BACKSPACE) {
 					if (gui->npt_cursor_pos > 0) {
 						for (u32 i = gui->npt_cursor_pos - 1; i < len; ++i)
 							txt[i] = txt[i+1];
 						--gui->npt_cursor_pos;
 					}
-				} else if (key_down(gui, KB_DELETE)) {
+				} else if (key_idx == KB_DELETE) {
 					for (u32 i = gui->npt_cursor_pos; i < len; ++i)
 						txt[i] = txt[i+1];
-				} else if (key_char == CHAR_RETURN) {
-					gui->active_id = 0;
+				} else if (key_idx == KB_RETURN) {
+					gui->focus_id = 0;
 					complete = true;
-				} else if (key_down(gui, KB_V) && key_mod(gui, KBM_CTRL)) {
+				} else if (key_idx == KB_ESCAPE) {
+					gui->focus_id = 0;
+				} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
 					char *clipboard;
 					u32 cnt;
 					if (   SDL_HasClipboardText()
@@ -2790,23 +2822,24 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 						gui->npt_cursor_pos += cnt;
 						SDL_free(clipboard);
 					}
-				} else if (   len < n-1
+				} else if (key_idx == KB_LEFT) {
+					if (gui->npt_cursor_pos > 0)
+						--gui->npt_cursor_pos;
+				} else if (key_idx == KB_RIGHT) {
+					if (gui->npt_cursor_pos < len)
+						++gui->npt_cursor_pos;
+				} else if (key_idx == KB_HOME) {
+					gui->npt_cursor_pos = 0;
+				} else if (key_idx == KB_END) {
+					gui->npt_cursor_pos = len;
+				} else if (   gui__convert_key_to_char(gui, key_idx, &key_char)
+				           && len < n-1
 				           && (  (flags & NPT_NUMERIC) == 0
 				               ? (isgraph(key_char) || key_char == ' ')
 				               : isdigit(key_char))) {
 					for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
 						txt[i] = txt[i-1];
 					txt[gui->npt_cursor_pos++] = key_char;
-				} else if (key_down(gui, KB_LEFT)) {
-					if (gui->npt_cursor_pos > 0)
-						--gui->npt_cursor_pos;
-				} else if (key_down(gui, KB_RIGHT)) {
-					if (gui->npt_cursor_pos < len)
-						++gui->npt_cursor_pos;
-				} else if (key_down(gui, KB_HOME)) {
-					gui->npt_cursor_pos = 0;
-				} else if (key_down(gui, KB_END)) {
-					gui->npt_cursor_pos = len;
 				}
 			}
 		} else {
@@ -3612,11 +3645,13 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	gui->panel = panel->parent;
 }
 
+#ifdef DEBUG
 static
 b32 pgui__row_complete(const gui_panel_t *panel)
 {
 	return panel->row.current_col == panel->row.cols + panel->row.num_cols;
 }
+#endif
 
 void pgui_row(gui_t *gui, u32 height, r32 width_ratio)
 {
