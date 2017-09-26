@@ -3333,11 +3333,13 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	gui->panel = panel->parent;
 }
 
+#ifdef DEBUG
 static
 b32 pgui__row_complete(const gui_panel_t *panel)
 {
 	return panel->row.current_col == panel->row.cols + panel->row.num_cols;
 }
+#endif
 
 void pgui_row(gui_t *gui, u32 height, r32 width_ratio)
 {
