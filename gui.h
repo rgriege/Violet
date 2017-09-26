@@ -2977,7 +2977,6 @@ btn_val_t gui_btn(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 void gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
 	const u64 id = gui__widget_id(x, y, gui->panel);
-	const b32 was_checked = *val;
 	b32 contains_mouse;
 	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 	if (gui__btn_logic(gui, x, y, w, h, txt, id, &contains_mouse) == BTN_PRESS)
