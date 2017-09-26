@@ -1125,6 +1125,9 @@ b32 gui__triangulate_snip(const v2f *poly, u32 u, u32 v, u32 w, u32 n)
 	/* cannot snip if triangle abc contains another (concave) vtx in poly */
 	for (u32 i = 0; i < n; ++i)
 		if (   i != u && i != v && i != w
+		    && !v2f_equal(poly[i], a)
+		    && !v2f_equal(poly[i], b)
+		    && !v2f_equal(poly[i], c)
 		    && gui__triangle_contains(a, b, c, poly[i]))
 			return false;
 	return true;
