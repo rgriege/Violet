@@ -306,6 +306,8 @@ b32       gui_drag_vert(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t 
 b32       gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
                     gui_drag_callback_t cb, void *udata);
 b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb);
+b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
+                     gui_drag_callback_t cb, void *udata);
 
 
 /* Splits */
@@ -3296,11 +3298,16 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 
 b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
 {
+	return gui_cdragx(gui, x, y, r, mb, gui__drag_default_callback, NULL);
+}
+
+b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
+              gui_drag_callback_t cb, void *udata)
+{
 	const v2i pos = { *x, *y };
 	u64 id;
 	const b32 contains_mouse = (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r;
-	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id,
-	                          gui__drag_default_callback, NULL);
+	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
 	gui_style_push_pen(gui, drag.pen, gui_pen_circ);
 	gui__drag_render(gui, *x - r, *y - r, 2 * r, 2 * r, id, &gui->style.drag);
 	gui_style_pop(gui);
