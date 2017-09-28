@@ -78,15 +78,16 @@ typedef struct box2i
 	v2i max;
 } box2i;
 
-IMDEF void box2i_from_center(box2i *b, v2i center, v2i half_dim);
-IMDEF void box2i_from_dims(box2i *b, s32 left, s32 top, s32 right, s32 bottom);
-IMDEF void box2i_from_xywh(box2i *b, s32 x, s32 y, s32 w, s32 h);
-IMDEF void box2i_to_xywh(box2i box, s32 *x, s32 *y, s32 *w, s32 *h);
-IMDEF b32  box2i_contains_point(box2i b, v2i p);
-IMDEF void box2i_clamp_point(box2i b, v2i *p);
-IMDEF b32  box2i_eq(box2i lhs, box2i rhs);
-IMDEF v2i  box2i_get_center(box2i b);
-IMDEF v2i  box2i_get_half_dim(box2i b);
+IMDEF void  box2i_from_center(box2i *b, v2i center, v2i half_dim);
+IMDEF void  box2i_from_dims(box2i *b, s32 left, s32 top, s32 right, s32 bottom);
+IMDEF void  box2i_from_xywh(box2i *b, s32 x, s32 y, s32 w, s32 h);
+IMDEF void  box2i_to_xywh(box2i box, s32 *x, s32 *y, s32 *w, s32 *h);
+IMDEF box2i box2i_intersection(box2i lhs, box2i rhs);
+IMDEF b32   box2i_contains_point(box2i b, v2i p);
+IMDEF void  box2i_clamp_point(box2i b, v2i *p);
+IMDEF b32   box2i_eq(box2i lhs, box2i rhs);
+IMDEF v2i   box2i_get_center(box2i b);
+IMDEF v2i   box2i_get_half_dim(box2i b);
 
 /* Polygon */
 
@@ -227,6 +228,20 @@ IMDEF void box2i_to_xywh(box2i box, s32 *x, s32 *y, s32 *w, s32 *h)
 	*y = box.min.y;
 	*w = box.max.x - box.min.x;
 	*h = box.max.y - box.min.y;
+}
+
+IMDEF box2i box2i_intersection(box2i lhs, box2i rhs)
+{
+	return (box2i) {
+		.min = {
+			.x = clamp(lhs.min.x, rhs.min.x, lhs.max.x),
+			.y = clamp(lhs.min.y, rhs.min.y, lhs.max.y),
+		},
+		.max = {
+			.x = clamp(lhs.min.x, rhs.max.x, lhs.max.x),
+			.y = clamp(lhs.min.y, rhs.max.y, lhs.max.y),
+		},
+	};
 }
 
 IMDEF b32 box2i_contains_point(box2i box, v2i point)

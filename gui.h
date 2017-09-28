@@ -2688,6 +2688,25 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 }
 
 static
+void gui__current_mask(const gui_t *gui, box2i *box)
+{
+	box2i_from_xywh(box, gui->scissors[gui->scissor_cnt-1].x,
+	                gui->scissors[gui->scissor_cnt-1].y,
+	                gui->scissors[gui->scissor_cnt-1].w,
+	                gui->scissors[gui->scissor_cnt-1].h);
+}
+
+static
+b32 gui__box_visible(const gui_t *gui, box2i box)
+{
+	box2i mask, clipped;
+	gui__current_mask(gui, &mask);
+	clipped = box2i_intersection(mask, box);
+	return    clipped.max.x - clipped.min.x >= (box.max.x - box.min.x) / 2
+	       && clipped.max.y - clipped.min.y >= (box.max.y - box.min.y) / 2;
+}
+
+static
 b32 gui__can_repeat(gui_t *gui)
 {
 	if (gui->repeat_timer <= gui->frame_time_milli) {
@@ -2748,7 +2767,8 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	const u64 id = gui__widget_id(x, y, gui->panel);
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
-	const b32 contains_mouse = box2i_contains_point(box, gui->mouse_pos);
+	const b32 contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                           && gui__box_visible(gui, box);
 	b32 complete = false;
 	const char *displayed_txt;
 
@@ -2903,7 +2923,8 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	btn_val_t retval = BTN_NONE;
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
-	*contains_mouse = box2i_contains_point(box, gui->mouse_pos);
+	*contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                  && gui__box_visible(gui, box);
 	if (gui->hot_id == id) {
 		if (!*contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
@@ -3029,7 +3050,8 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 		box.min = (v2i){ .x=x+(w-hnd_len)**val, .y=y };
 		box.max = (v2i){ .x=x+hnd_len+(w-hnd_len)**val, .y=y+h };
 	}
-	const b32 contains_mouse = box2i_contains_point(box, gui->mouse_pos);
+	const b32 contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                           && gui__box_visible(gui, box);
 
 	if (gui->hot_id == id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
@@ -3227,7 +3249,8 @@ b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, u32 w, u32 h,
 	b32 contains_mouse;
 
 	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
-	contains_mouse = box2i_contains_point(box, gui->mouse_pos);
+	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                 && gui__box_visible(gui, box);
 	return gui__drag(gui, x, y, contains_mouse, mb, id, cb, udata);
 }
 
@@ -3306,7 +3329,10 @@ b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
 {
 	const v2i pos = { *x, *y };
 	u64 id;
-	const b32 contains_mouse = (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r;
+	box2i box;
+	box2i_from_center(&box, pos, (v2i){r, r});
+	const b32 contains_mouse =    (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r
+	                           && gui__box_visible(gui, box);
 	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
 	gui_style_push_pen(gui, drag.pen, gui_pen_circ);
 	gui__drag_render(gui, *x - r, *y - r, 2 * r, 2 * r, id, &gui->style.drag);
@@ -3546,7 +3572,8 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	         g_nocolor, gui->style.panel.border_color);
 
 	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
-	contains_mouse = box2i_contains_point(box, gui->mouse_pos);
+	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                 && gui__box_visible(gui, box);
 	if (   dragging
 	    || (   gui__allow_new_panel_interaction(gui)
 	        && mouse_pressed(gui, MB_LEFT)
@@ -3565,10 +3592,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	panel->pos.y += panel->scroll.y;
 
 	assert(gui->scissor_cnt > 0);
-	box2i_from_xywh(&box, gui->scissors[gui->scissor_cnt-1].x,
-	                gui->scissors[gui->scissor_cnt-1].y,
-	                gui->scissors[gui->scissor_cnt-1].w,
-	                gui->scissors[gui->scissor_cnt-1].h);
+	gui__current_mask(gui, &box);
 	box2i_from_xywh(&box2, panel->x + panel->padding.x,
 	                panel->y + panel->padding.y,
 	                panel->width - panel->padding.x * 2,
@@ -3591,7 +3615,8 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	/* scrolling */
 
 	box2i_from_xywh(&box, panel->x, panel->y, panel->width, panel->height);
-	contains_mouse = box2i_contains_point(box, gui->mouse_pos);
+	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                 && gui__box_visible(gui, box);
 	if (panel->body_height < panel->required_dim.y) {
 		needed.y = panel->required_dim.y - panel->body_height;
 		if (   !key_mod(gui, KBM_SHIFT)
