@@ -2681,7 +2681,7 @@ void gui_pen_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                   const gui_element_style_t *style)
 {
-	gui_circ(gui, x + w / 2, y + h / 2, min(w, h), style->bg_color,
+	gui_circ(gui, x + w / 2, y + h / 2, min(w / 2, h / 2), style->bg_color,
 	         style->outline_color);
 }
 
@@ -3302,11 +3302,10 @@ b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
 	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id,
 	                          gui__drag_default_callback, NULL);
 	gui_style_push_pen(gui, drag.pen, gui_pen_circ);
-	gui__drag_render(gui, *x - r, *y - r, r, r, id, &gui->style.drag);
+	gui__drag_render(gui, *x - r, *y - r, 2 * r, 2 * r, id, &gui->style.drag);
 	gui_style_pop(gui);
 	return ret;
 }
-
 
 void gui__split_init(gui_t *gui, gui_split_t *split,
                      gui_split_t *sp1, r32 sz,
