@@ -365,7 +365,8 @@ typedef enum gui_panel_flags
 	GUI_PANEL_MOVABLE   = 0x2,
 	GUI_PANEL_RESIZABLE = 0x4,
 	GUI_PANEL_DRAGGABLE = 0x8,
-	GUI_PANEL_FULL      = 0xf,
+	GUI_PANEL_CLOSABLE  = 0x10,
+	GUI_PANEL_FULL      = 0x1f,
 } gui_panel_flags_t;
 
 typedef struct gui_panel
@@ -390,6 +391,7 @@ typedef struct gui_panel
 	s32 pri;
 	struct gui_panel *parent;
 	gui_split_t split;
+	b32 hidden;
 } gui_panel_t;
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
@@ -478,6 +480,7 @@ typedef struct gui_panel_style
 	color_t border_color;
 	gui_widget_style_t drag;
 	gui_element_style_t titlebar;
+	gui_widget_style_t close;
 	color_t cell_bg_color;
 	color_t cell_border_color;
 	color_t break_color;
@@ -1397,6 +1400,35 @@ const gui_style_t g_gui_style_default = {
 			.bg_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
 			.outline_color = gi_nocolor,
 		},
+		.close = {
+			.pen = gui_pen_rect,
+			.inactive = {
+				.line = {
+					.thickness = 1.f,
+					.dash_len = 0.f,
+					.color = { .r=0xb0, .g=0xb0, .b=0xb0, .a=0xff },
+				},
+				.text = gi__gui_text_style_default,
+				.bg_color = gi_nocolor,
+				.outline_color = gi_nocolor,
+			},
+			.hot = {
+				.line = gi__gui_line_style_default,
+				.text = gi__gui_text_style_dark,
+				.bg_color = gi_nocolor,
+				.outline_color = gi_nocolor,
+			},
+			.active = {
+				.line = {
+					.thickness = 1.f,
+					.dash_len = 0.f,
+					.color = gi_orange,
+				},
+				.text = gi__gui_text_style_default,
+				.bg_color = gi_nocolor,
+				.outline_color = gi_nocolor,
+			},
+		},
 		.cell_bg_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
 		.break_color =  { .r=0x33, .g=0x33, .b=0x33, .a=0xff },
@@ -1449,6 +1481,7 @@ const gui_style_t g_gui_style_invis = {
 		.border_color = gi_nocolor,
 		.drag = gi__gui_widget_style_invis,
 		.titlebar = gi__gui_element_style_invis,
+		.close = gi__gui_widget_style_invis,
 		.cell_bg_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
 		.break_color = gi_nocolor,
@@ -3469,6 +3502,8 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->parent = NULL;
 	panel->split.leaf = false;
 
+	panel->hidden = false;
+
 	pgui_panel_to_front(gui, panel);
 }
 
@@ -3482,6 +3517,8 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	assert(panel->parent == gui->panel);
 
 	gui->panel = panel;
+
+	panel->hidden = false;
 
 	if (panel->split.leaf)
 		box2i_to_xywh(panel->split.box, &panel->x, &panel->y, &panel->width, &panel->height);
@@ -3557,6 +3594,19 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 		gui_txt_styled(gui, panel->x + dim, panel->pos.y, panel->width, dim,
 		               panel->title, &gui->style.panel.titlebar.text);
+
+		if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf) {
+			const s32 outer_dim = GUI_PANEL_TITLEBAR_HEIGHT;
+			const s32 inner_dim = outer_dim;
+			const s32 x = panel->x + panel->width - outer_dim;
+			const s32 y = panel->pos.y;
+			const s32 w = inner_dim;
+			const s32 h = inner_dim;
+			gui_style_push(gui, btn, gui->style.panel.close);
+			if (gui_btn_pen(gui, x, y, w, h, gui_pen_panel_close) == BTN_PRESS)
+				panel->hidden = true;
+			gui_style_pop(gui);
+		}
 
 		panel->pos.y -= panel->padding.y;
 		panel->body_height = panel->height - dim;
