@@ -100,6 +100,7 @@ FMDEF void v2f_round_eq(v2f *v, r32 unit);
 FMDEF b32  v2f_is_zero(v2f v);
 FMDEF b32  v2f_equal(v2f lhs, v2f rhs);
 FMDEF b32  v2f_share_quadrant(v2f lhs, v2f rhs);
+FMDEF v2f  v2f_midpoint(v2f v0, v2f v1);
 
 /* 3D Vector */
 
@@ -443,6 +444,10 @@ FMDEF b32 v2f_share_quadrant(v2f lhs, v2f rhs)
 	return v2f_dot(lhs, rhs) >= 0;
 }
 
+FMDEF v2f v2f_midpoint(v2f v0, v2f v1)
+{
+	return v2f_scale(v2f_add(v0, v1), 0.5f);
+}
 
 /* 3D Vector */
 
