@@ -255,6 +255,17 @@ void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
 void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, const gui_text_style_t *style);
 
+typedef void(*gui_pen_t)(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         const gui_element_style_t *style);
+
+void gui_pen_null(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                  const gui_element_style_t *style);
+void gui_pen_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                  const gui_element_style_t *style);
+void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                  const gui_element_style_t *style);
+
+
 /* Widgets */
 
 typedef enum npt_flags_t
@@ -269,16 +280,6 @@ typedef enum btn_val_t
 	BTN_PRESS,
 	BTN_HOLD,
 } btn_val_t;
-
-typedef void(*gui_pen_t)(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                         const gui_element_style_t *style);
-
-void gui_pen_null(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                  const gui_element_style_t *style);
-void gui_pen_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                  const gui_element_style_t *style);
-void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                  const gui_element_style_t *style);
 
 b32       gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                   const char *hint, npt_flags_t flags);
@@ -309,6 +310,8 @@ b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb);
 b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
                      gui_drag_callback_t cb, void *udata);
 
+u64       gui_widget_id(const gui_t *gui, s32 x, s32 y);
+void      gui_widget_focus(gui_t *gui, u64 id); /* careful! */
 
 /* Splits */
 
@@ -431,6 +434,8 @@ int  pgui_panel_sort(const void *lhs, const void *rhs);
 
 void pgui_row_xw(gui_t *gui, s32 *x, s32 *w);
 void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
+
+u64  pgui_next_widget_id(const gui_t *gui);
 
 void gui_pen_panel_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                         const gui_element_style_t *style);
@@ -1600,6 +1605,7 @@ typedef struct gui_t
 	u64 active_id_at_frame_start;
 	b32 hot_id_found_this_frame;
 	b32 active_id_found_this_frame;
+	b32 focus_id_found_this_frame;
 
 	v2i drag_offset;
 	char *pw_buf;
@@ -1915,7 +1921,7 @@ b32 gui_begin_frame(gui_t *gui)
 	gui__toggle_key(gui, KBT_SCROLL, KB_SCROLLLOCK);
 	gui__toggle_key(gui, KBT_NUM, KB_NUMLOCK_OR_CLEAR);
 
-	/* Should really never hit either of these */
+	/* Should rarely hit these */
 	if (gui->hot_id != 0 && !gui->hot_id_found_this_frame) {
 		log_warn("hot widget %" PRIu64 " was not drawn", gui->hot_id);
 		gui->hot_id = 0;
@@ -1926,6 +1932,12 @@ b32 gui_begin_frame(gui_t *gui)
 		gui->active_id = 0;
 	}
 	gui->active_id_found_this_frame = false;
+	if (gui->focus_id != 0 && !gui->focus_id_found_this_frame) {
+		log_warn("focus widget %" PRIu64 " was not drawn", gui->focus_id);
+		gui->focus_id = 0;
+	}
+	gui->focus_id_found_this_frame = false;
+
 	gui->active_id_at_frame_start = gui->active_id;
 
 	gui->vert_cnt = 0;
@@ -2659,15 +2671,6 @@ b32 gui__allow_new_interaction(const gui_t *gui)
 	       && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
 }
 
-#define GUI__DEFAULT_PANEL_ID UINT_MAX
-
-static
-u64 gui__widget_id(s32 x, s32 y, const gui_panel_t *panel)
-{
-	u32 panel_id = panel ? panel->id : GUI__DEFAULT_PANEL_ID;
-	return (((u64)x) << 48) | (((u64)y) << 32) | panel_id;
-}
-
 typedef enum gui__widget_status
 {
 	GUI__WIDGET_INACTIVE,
@@ -2797,7 +2800,7 @@ b32 gui__convert_key_to_char(const gui_t *gui, gui_key_t key, char *c)
 b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
             const char *hint, npt_flags_t flags)
 {
-	const u64 id = gui__widget_id(x, y, gui->panel);
+	const u64 id = gui_widget_id(gui, x, y);
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b32 contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
@@ -2933,6 +2936,7 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		displayed_txt = txt;
 	}
 	if (gui->focus_id == id) {
+		gui->focus_id_found_this_frame = true;
 		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
 			const u32 size = gui->style.npt.active.text.size;
 			const gui_align_t align = gui->style.npt.active.text.align;
@@ -3013,7 +3017,7 @@ void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 btn_val_t gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
-	const u64 id = gui__widget_id(x, y, gui->panel);
+	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
 	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, id, &contains_mouse);
 	const gui__widget_status_t status = gui__btn_status(gui, id, contains_mouse);
@@ -3024,7 +3028,7 @@ btn_val_t gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 btn_val_t gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                       img_scale_t scale)
 {
-	const u64 id = gui__widget_id(x, y, gui->panel);
+	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
 	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, id, &contains_mouse);
 	const gui__widget_status_t status = gui__btn_status(gui, id, contains_mouse);
@@ -3036,7 +3040,7 @@ btn_val_t gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 
 btn_val_t gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 {
-	const u64 id = gui__widget_id(x, y, gui->panel);
+	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
 	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, id, &contains_mouse);
 	const gui__widget_status_t status = gui__btn_status(gui, id, contains_mouse);
@@ -3048,7 +3052,7 @@ btn_val_t gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 
 void gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
-	const u64 id = gui__widget_id(x, y, gui->panel);
+	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
 	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS)
@@ -3074,7 +3078,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 {
 	assert(*val >= 0.f && *val <= 1.f);
 
-	const u64 id = gui__widget_id(x, y, gui->panel);
+	const u64 id = gui_widget_id(gui, x, y);
 	box2i box;
 	if (orientation == GUI__SLIDER_Y) {
 		box.min = (v2i){ .x=x, .y=y+(h-hnd_len)**val };
@@ -3176,7 +3180,7 @@ b32 gui_range_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
 void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                 const char *txt, u32 *val, u32 opt)
 {
-	const u64 id = gui__widget_id(x, y, gui->panel);
+	const u64 id = gui_widget_id(gui, x, y);
 	const b32 selected = *val == opt;
 	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 	b32 contains_mouse;
@@ -3197,7 +3201,7 @@ void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                  const char *txt, u32 *val, u32 opt)
 {
-	const u64 id = gui__widget_id(x, y, gui->panel);
+	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
 	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS) {
@@ -3221,7 +3225,7 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
               u64 *id, gui_drag_callback_t cb, void *udata)
 {
 	b32 retval = false;
-	*id = gui__widget_id(*x, *y, gui->panel);
+	*id = gui_widget_id(gui, *x, *y);
 	if (gui->hot_id == *id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
@@ -3238,7 +3242,7 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 	} else if (gui->active_id == *id) {
 		cb(x, y, gui->mouse_pos.x, gui->mouse_pos.y,
 		   gui->drag_offset.x, gui->drag_offset.y, udata);
-		*id = gui__widget_id(*x, *y, gui->panel);
+		*id = gui_widget_id(gui, *x, *y);
 		retval = true;
 		if (mouse_released(gui, mb)) {
 			gui->active_id = 0;
@@ -3372,6 +3376,20 @@ b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
 	gui_style_pop(gui);
 	return ret;
 }
+
+#define GUI__DEFAULT_PANEL_ID UINT_MAX
+
+u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
+{
+	u32 panel_id = gui->panel ? gui->panel->id : GUI__DEFAULT_PANEL_ID;
+	return (((u64)x) << 48) | (((u64)y) << 32) | panel_id;
+}
+
+void gui_widget_focus(gui_t *gui, u64 id)
+{
+	gui->focus_id = id;
+}
+
 
 void gui__split_init(gui_t *gui, gui_split_t *split,
                      gui_split_t *sp1, r32 sz,
@@ -4046,6 +4064,13 @@ void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 		*w = (s32)*gui->panel->row.current_col;
 	if (h)
 		*h = (s32)gui->panel->row.height;
+}
+
+u64 pgui_next_widget_id(const gui_t *gui)
+{
+	assert(gui->panel);
+	assert(!pgui__row_complete(gui->panel));
+	return gui_widget_id(gui, gui->panel->pos.x, gui->panel->pos.y);
 }
 
 void gui_pen_panel_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
