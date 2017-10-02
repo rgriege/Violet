@@ -242,6 +242,7 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                    img_scale_t scale);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_t align);
+s32  gui_txt_width(gui_t *gui, const char *txt, u32 sz);
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_unmask(gui_t *gui);
 
@@ -1153,7 +1154,7 @@ void font__align_anchor(s32 *x, s32 *y, s32 w, s32 h, gui_align_t align)
 }
 
 static
-s32 font__line_offset_x(font_t *f, const char *txt, gui_align_t align)
+s32 font__line_width(font_t *f, const char *txt)
 {
 	r32 width = 0, y = 0;
 	stbtt_aligned_quad q;
@@ -1168,6 +1169,13 @@ s32 font__line_offset_x(font_t *f, const char *txt, gui_align_t align)
 			log_warn("unknown character: '%u'", *c);
 	}
 out:
+	return width;
+}
+
+static
+s32 font__line_offset_x(font_t *f, const char *txt, gui_align_t align)
+{
+	const s32 width = font__line_width(f, txt);
 	if (align & GUI_ALIGN_CENTER)
 		return -width / 2;
 	else if (align & GUI_ALIGN_RIGHT)
@@ -2618,6 +2626,21 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
              color_t c, gui_align_t align)
 {
 	gui__txt(gui, &x, &y, sz, txt, c, align);
+}
+
+s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
+{
+	s32 width = 0;
+	const char *line = txt;
+	font_t *font = gui__get_font(gui, sz);
+	assert(font);
+	while (*line != '\0') {
+		const s32 line_width = font__line_width(font, txt);
+		width = max(width, line_width);
+		while (*line != '\0' && *line != '\r')
+			++line;
+	}
+	return width;
 }
 
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
