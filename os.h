@@ -513,9 +513,12 @@ void exec(char *const argv[])
 int run(const char *command)
 {
 #ifndef _WIN32
-	char _command[256] = "./";
-	strcpy(_command+2, command);
-	FILE *fp = popen(_command, "r");
+	FILE *fp = popen(command, "r");
+	if (!fp) {
+		char local_command[256] = "./";
+		strcpy(local_command+2, command);
+		fp = popen(local_command, "r");
+	}
 #else
 	FILE *fp = popen(command, "r");
 #endif
