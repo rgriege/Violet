@@ -20,6 +20,7 @@ typedef struct color_t
 #define gi_fuchsia      { .r=0xff, .g=0,    .b=0xff, .a=0xff }
 #define gi_green        { .r=0,    .g=0xff, .b=0,    .a=0xff }
 #define gi_lightblue    { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff }
+#define gi_medblue      { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff }
 #define gi_orange       { .r=0xff, .g=0x92, .b=0x1e, .a=0xff }
 #define gi_red          { .r=0xff, .g=0,    .b=0,    .a=0xff }
 #define gi_yellow       { .r=0xff, .g=0xff, .b=0,    .a=0xff }
@@ -36,6 +37,7 @@ typedef struct color_t
 #define g_fuchsia   (color_t)gi_fuchsia
 #define g_green     (color_t)gi_green
 #define g_lightblue (color_t)gi_lightblue
+#define g_medblue   (color_t)gi_medblue
 #define g_orange    (color_t)gi_orange
 #define g_red       (color_t)gi_red
 #define g_yellow    (color_t)gi_yellow
@@ -1359,7 +1361,7 @@ b32 gui__triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	.hot = { \
 		.line = gi__gui_line_style_default, \
 		.text = gi__gui_btn_text_style_default, \
-		.bg_color = { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff }, \
+		.bg_color = gi_medblue, \
 		.outline_color = gi_nocolor, \
 	}, \
 	.active = { \
