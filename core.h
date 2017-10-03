@@ -630,15 +630,15 @@ void alloc_tracker_log_usage(alloc_tracker_t *tracker)
 
 	log_info("memory diagnostic:");
 
-	if (tracker->current_bytes != 0)
-		log_warn("exit:  %10lu bytes still allocated!", tracker->current_bytes);
-
 	node = tracker->head;
  	while (node) {
  		log_warn("%p: %6lu bytes still active from %s @ gen %lu!",
 		          node + 1, node->sz, node->location, node->generation);
  		node = node->next;
  	}
+
+	if (tracker->current_bytes != 0)
+		log_warn("exit:  %10lu bytes still allocated!", tracker->current_bytes);
 
 	log_info("peak:  %10lu bytes", tracker->peak_bytes);
  	log_info("total: %10lu bytes in %lu chunks",
