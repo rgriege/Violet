@@ -1064,6 +1064,10 @@ int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
 	return rgtt_PackFontRanges(spc, info, &range, 1);
 }
 
+#define GUI__FONT_MIN_CHAR 32
+#define GUI__FONT_MAX_CHAR 254
+#define GUI__FONT_NUM_CHAR (GUI__FONT_MAX_CHAR - GUI__FONT_MIN_CHAR + 1)
+
 b32 font_load(font_t *f, const char *filename, u32 sz)
 {
 #define BMP_DIM 512
@@ -1098,8 +1102,9 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	/* TODO(rgriege): oversample with smaller fonts */
 	// stbtt_PackSetOversampling(&context, 2, 2);
 
-	f->char_info = malloc(95 * sizeof(stbtt_packedchar));
-	if (!rgtt_PackFontRange(&context, &info, sz, 32, 95, f->char_info))
+	f->char_info = malloc(GUI__FONT_NUM_CHAR * sizeof(stbtt_packedchar));
+	if (!rgtt_PackFontRange(&context, &info, sz, GUI__FONT_MIN_CHAR,
+	                        GUI__FONT_NUM_CHAR, f->char_info))
 		goto pack_fail;
 
 	stbtt_PackEnd(&context);
@@ -1160,9 +1165,10 @@ s32 font__line_width(font_t *f, const char *txt)
 	stbtt_aligned_quad q;
 
 	for (const char *c = txt; *c != '\0'; ++c) {
-		if (*c >= 32 && *c < 127)
+		const int ch = *(const u8*)c;
+		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR)
 			stbtt_GetPackedQuad(f->char_info, f->texture.width, f->texture.height,
-			                    *c - 32, &width, &y, &q, 1);
+			                    ch - GUI__FONT_MIN_CHAR, &width, &y, &q, 1);
 		else if (*c == '\r')
 			goto out;
 		else
@@ -2536,9 +2542,11 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
 		goto out;
 
 	for (u32 i = 0; i < pos; ++i) {
-		if (txt[i] >= 32 && txt[i] < 127) {
+		const int ch = *(const u8*)&txt[i];
+		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR) {
 			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, txt[i] - 32, &x, &y, &q, 1);
+			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
+			                    &x, &y, &q, 1);
 		} else if (txt[i] == '\r') {
 			y -= font->newline_dist;
 			x = *ix + font__line_offset_x(font, &txt[i+1], align);
@@ -2565,9 +2573,11 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
 	y += font__offset_y(font, txt, align);
 
 	for (const char *c = txt; *c != '\0'; ++c) {
-		if (*c >= 32 && *c < 127) {
+		const int ch = *(const u8*)c;
+		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR) {
 			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, *c - 32, &x, &y, &q, 1);
+			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
+			                    &x, &y, &q, 1);
 			text__render(gui, &font->texture, y, q.x0, q.y0, q.x1, q.y1, q.s0, q.t0,
 			             q.s1, q.t1, color);
 		} else if (*c == '\r') {
@@ -2602,9 +2612,10 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 x0, s32 y0, s32 sz, const char *txt,
 	closest_dist = v2i_dist_sq(p, mouse);
 
 	for (const char *c = txt; *c != '\0'; ++c) {
-		if (*c >= 32 && *c < 127) {
+		const int ch = *(const u8*)c;
+		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR) {
 			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, *c - 32,
+			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
 			                    &x, &y, &q, 1);
 		} else if (*c == '\r') {
 			y -= font->newline_dist;
