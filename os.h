@@ -37,6 +37,7 @@ const char *lib_err();
 
 void exec(char *const argv[]);
 int  run(const char *command);
+b32  open_file_external(const char *filename);
 
 #endif
 
@@ -57,6 +58,7 @@ int  run(const char *command);
 #include <process.h>
 #include <ShlObj.h>
 #include <shobjidl.h>
+#include <Shellapi.h>
 #include <stdio.h>
 
 #define execv _execv
@@ -254,6 +256,18 @@ const char *lib_err()
 	return buf;
 }
 
+b32 open_file_external(const char *filename)
+{
+	const int ret = (int)ShellExecute(NULL, "open", filename, NULL, NULL,
+	                                  SW_SHOWNORMAL);
+	if (ret <= 32) {
+		log_error("failed to open %s in an external program with error %d",
+		          filename, ret);
+		return false;
+	}
+	return true;
+}
+
 #else
 
 #include <dlfcn.h>
@@ -375,6 +389,13 @@ b32 lib_close(lib_handle hnd)
 const char *lib_err()
 {
 	return dlerror();
+}
+
+b32 open_file_external(const char *filename)
+{
+	char command[256] = "xdg-open ";
+	strncpy(command, filename, 256 - strlen(command) - 1);
+	return run(command) == 0;
 }
 
 #endif
