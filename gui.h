@@ -2029,10 +2029,37 @@ void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
 }
 
 static
+void gui__current_mask(const gui_t *gui, box2i *box)
+{
+	box2i_from_xywh(box, gui->scissors[gui->scissor_cnt-1].x,
+	                gui->scissors[gui->scissor_cnt-1].y,
+	                gui->scissors[gui->scissor_cnt-1].w,
+	                gui->scissors[gui->scissor_cnt-1].h);
+}
+
+static
+void gui__current_maskf(const gui_t *gui, box2f *box)
+{
+	box2i mask;
+	gui__current_mask(gui, &mask);
+	box->min.x = mask.min.x;
+	box->min.y = mask.min.y;
+	box->max.x = mask.max.x;
+	box->max.y = mask.max.y;
+}
+
+static
 void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
 	r32 dist;
 	v2f last;
+	box2f mask, bbox;
+
+	gui__current_maskf(gui, &mask);
+	polyf_bounding_box(v, n, &bbox);
+	if (!box2f_overlaps(mask, bbox))
+		return;
+
 	if (!color_equal(fill, g_nocolor)) {
 		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
@@ -2085,12 +2112,18 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
                      r32 sx, r32 sy, color_t color)
 {
 	r32 w, h;
+	box2f mask, bbox;
 
 	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
 	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
 	w = texture->width * sx;
 	h = texture->height * sy;
+
+	gui__current_maskf(gui, &mask);
+	box2f_from_xywh(&bbox, x, y, w, h);
+	if (!box2f_overlaps(mask, bbox))
+		return;
 
 	v2f_set(&gui->verts[gui->vert_cnt],   x,     y);
 	v2f_set(&gui->verts[gui->vert_cnt+1], x,     y + h);
@@ -2121,6 +2154,7 @@ void text__render(gui_t *gui, const texture_t *texture, r32 yb, r32 x0, r32 y0,
                   r32 x1, r32 y1, r32 s0, r32 t0, r32 s1, r32 t1, color_t color)
 {
 	r32 dy;
+	box2f mask, bbox;
 
 	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
 	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
@@ -2129,6 +2163,11 @@ void text__render(gui_t *gui, const texture_t *texture, r32 yb, r32 x0, r32 y0,
 	dy = y1 - y0;
 	y0 = yb + (yb - y1);
 	y1 = y0 + dy;
+
+	gui__current_maskf(gui, &mask);
+	box2f_from_dims(&bbox, x0, y1, x1, y0);
+	if (!box2f_overlaps(mask, bbox))
+		return;
 
 	v2f_set(&gui->verts[gui->vert_cnt],   x0, y1);
 	v2f_set(&gui->verts[gui->vert_cnt+1], x0, y0);
@@ -2757,15 +2796,6 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	gui_circ(gui, x + w / 2, y + h / 2, min(w / 2, h / 2), style->bg_color,
 	         style->outline_color);
-}
-
-static
-void gui__current_mask(const gui_t *gui, box2i *box)
-{
-	box2i_from_xywh(box, gui->scissors[gui->scissor_cnt-1].x,
-	                gui->scissors[gui->scissor_cnt-1].y,
-	                gui->scissors[gui->scissor_cnt-1].w,
-	                gui->scissors[gui->scissor_cnt-1].h);
 }
 
 static
