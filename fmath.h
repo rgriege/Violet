@@ -195,6 +195,7 @@ FMDEF void box2f_from_point(box2f *b, v2f p);
 FMDEF void box2f_from_line(box2f *b, v2f start, v2f end);
 FMDEF void box2f_from_center(box2f *b, v2f center, v2f half_dim);
 FMDEF void box2f_from_dims(box2f *b, r32 left, r32 top, r32 right, r32 bottom);
+FMDEF void box2f_from_xywh(box2f *b, r32 x, r32 y, r32 w, r32 h);
 FMDEF b32  box2f_empty(box2f b);
 FMDEF b32  box2f_contains_point(box2f b, v2f p);
 FMDEF b32  box2f_contains_box(box2f lhs, box2f rhs);
@@ -781,6 +782,14 @@ FMDEF void box2f_from_dims(box2f *box, r32 left, r32 top, r32 right, r32 bottom)
 	box->min.y = bottom;
 	box->max.x = right;
 	box->max.y = top;
+}
+
+FMDEF void box2f_from_xywh(box2f *box, r32 x, r32 y, r32 w, r32 h)
+{
+	box->min.x = x;
+	box->min.y = y;
+	box->max.x = x + w;
+	box->max.y = y + h;
 }
 
 FMDEF b32 box2f_empty(box2f box)

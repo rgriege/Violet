@@ -106,6 +106,19 @@ typedef union m2d
 DMDEF void m2d_init_rot(m2d *m, r64 radians);
 DMDEF v2d  m2d_mul_v2d(m2d m, v2d v);
 
+/* 2D Anti-aliased bounding box */
+
+typedef struct box2d
+{
+	v2d min;
+	v2d max;
+} box2d;
+
+DMDEF void box2d_from_xywh(box2d *b, r64 x, r64 y, r64 w, r64 h);
+DMDEF void box2d_from_point(box2d *b, v2d p);
+DMDEF void box2d_from_dims(box2d *box, r64 left, r64 top, r64 right, r64 bottom);
+DMDEF void box2d_extend_point(box2d *b, v2d p);
+
 #endif // DMATH_H
 
 
@@ -280,6 +293,36 @@ DMDEF v2d m2d_mul_v2d(m2d m, v2d v)
 		.x = v2d_dot(m.v[0], v),
 		.y = v2d_dot(m.v[1], v),
 	};
+}
+
+/* 2D Anti-aliased bounding box */
+
+DMDEF void box2d_from_xywh(box2d *box, r64 x, r64 y, r64 w, r64 h)
+{
+	box->min.x = x;
+	box->min.y = y;
+	box->max.x = x + w;
+	box->max.y = y + h;
+}
+
+DMDEF void box2d_from_point(box2d *b, v2d p)
+{
+	b->min = p;
+	b->max = p;
+}
+
+DMDEF void box2d_from_dims(box2d *box, r64 left, r64 top, r64 right, r64 bottom)
+{
+	box->min.x = left;
+	box->min.y = bottom;
+	box->max.x = right;
+	box->max.y = top;
+}
+
+DMDEF void box2d_extend_point(box2d *box, v2d p)
+{
+	box2d_from_dims(box, fmin(box->min.x, p.x), fmax(box->max.y, p.y),
+	                     fmax(box->max.x, p.x), fmin(box->min.y, p.y));
 }
 
 #undef DMATH_IMPLEMENTATION
