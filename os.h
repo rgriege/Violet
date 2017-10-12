@@ -394,7 +394,8 @@ const char *lib_err()
 b32 open_file_external(const char *filename)
 {
 	char command[256] = "xdg-open ";
-	strncpy(command, filename, 256 - strlen(command) - 1);
+	const size_t sz = strlen(command);
+	strncpy(command + sz, filename, 256 - sz - 1);
 	return run(command) == 0;
 }
 
