@@ -94,6 +94,7 @@ DMDEF v2d  v2d_rperp(v2d v);
 DMDEF v2d  v2d_inverse(v2d v);
 DMDEF void v2d_invert(v2d *v);
 DMDEF b32  v2d_equal(v2d lhs, v2d rhs);
+DMDEF v2d  v2d_midpoint(v2d v0, v2d v1);
 
 /* 2x2 Matrix */
 
@@ -277,6 +278,11 @@ DMDEF void v2d_invert(v2d *v)
 DMDEF b32 v2d_equal(v2d lhs, v2d rhs)
 {
 	return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
+DMDEF v2d v2d_midpoint(v2d v0, v2d v1)
+{
+	return v2d_scale(v2d_add(v0, v1), 0.5);
 }
 
 /* 2x2 Matrix */
