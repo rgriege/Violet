@@ -469,7 +469,7 @@ FMDEF r32 v3f_mag_sq(v3f v)
 
 FMDEF v3f v3f_normalize(v3f v)
 {
-	return v3f_scale(v, 1.f / v3f_mag_sq(v));
+	return v3f_scale(v, 1.f / v3f_mag(v));
 }
 
 FMDEF b32 v3f_is_unit(v3f v)
