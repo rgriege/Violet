@@ -156,11 +156,21 @@ typedef struct m4f
 FMGDECL const m4f g_m4f_identity;
 FMGDECL const m4f g_m4f_zero;
 
-FMDEF void m4f_mul_m4(const m4f lhs, const m4f rhs, m4f res);
-FMDEF v3f  m4f_mul_v3(const m4f lhs, v3f rhs);
-FMDEF b32  m4f_equal(const m4f lhs, const m4f rhs);
-FMDEF void m4f_from_m3(m4f dst, const m3f src);
-FMDEF void m4f_to_m3(const m4f src, m3f dst);
+FMDEF m4f  m4f_init_scale(v3f scale);
+FMDEF m4f  m4f_init_translation(v3f disp);
+FMDEF m4f  m4f_init_rotation(v3f axis, r32 radians);
+FMDEF m4f  m4f_init_rotation_y(r32 radians);
+FMDEF m4f  m4f_perspective(r32 fovy, r32 aspect, r32 near, r32 far);
+FMDEF m4f  m4f_look_at(v3f eye, v3f center, v3f up);
+FMDEF m4f  m4f_mul_m4(m4f lhs, m4f rhs);
+FMDEF v3f  m4f_mul_v3(m4f lhs, v3f rhs);
+FMDEF m4f  m4f_scale(m4f m, v3f scale);
+FMDEF m4f  m4f_translate(m4f m, v3f diff);
+FMDEF m4f  m4f_rotate(m4f m, v3f axis, r32 radians);
+FMDEF m4f  m4f_transpose(m4f m);
+FMDEF b32  m4f_equal(m4f lhs, m4f rhs);
+FMDEF m4f  m4f_from_m3(m3f src);
+FMDEF void m4f_to_m3(m4f src, m3f dst);
 
 
 /* Interval */
@@ -208,6 +218,19 @@ FMDEF void box2f_translate(box2f *b, v2f v);
 FMDEF void box2f_transform(box2f *b, const m3f mat);
 FMDEF v2f  box2f_get_center(box2f b);
 FMDEF v2f  box2f_get_half_dim(box2f b);
+
+/* 3D Anti-aliased bounding box */
+
+typedef struct box3f
+{
+	v3f min;
+	v3f max;
+} box3f;
+
+FMDEF void box3f_from_point(box3f *b, v3f p);
+FMDEF void box3f_extend_point(box3f *b, v3f p);
+FMDEF v3f  box3f_get_center(box3f b);
+FMDEF v3f  box3f_get_half_dim(box3f b);
 
 /* Line/Segment utilities */
 
@@ -469,7 +492,7 @@ FMDEF r32 v3f_mag_sq(v3f v)
 
 FMDEF v3f v3f_normalize(v3f v)
 {
-	return v3f_scale(v, 1.f / v3f_mag_sq(v));
+	return v3f_scale(v, 1.f / v3f_mag(v));
 }
 
 FMDEF b32 v3f_is_unit(v3f v)
@@ -604,11 +627,83 @@ FMGDEF const m4f g_m4f_zero = {
 	0, 0, 0, 0
 };
 
-FMDEF void m4f_mul_m4(const m4f lhs, const m4f rhs, m4f res)
+FMDEF m4f m4f_init_scale(v3f scale)
+{
+	return (m4f) {
+		scale.x, 0,       0,       0,
+		0,       scale.y, 0,       0,
+		0,       0,       scale.z, 0,
+		0,       0,       0,       1,
+	};
+}
+
+FMDEF m4f m4f_init_translation(v3f disp)
+{
+	return (m4f) {
+		1, 0, 0, disp.x,
+		0, 1, 0, disp.y,
+		0, 0, 1, disp.z,
+		0, 0, 0, 1,
+	};
+}
+
+FMDEF m4f m4f_init_rotation(v3f axis, r32 radians)
+{
+	const v3f a = axis;
+	const r32 c = cos(radians);
+	const r32 nc = 1.f - c;
+	const r32 s = sin(radians);
+	return (m4f) {
+		c + a.x * a.x * nc,       a.x * a.y * nc - a.z * s, a.x * a.z * nc + a.y * s, 0,
+		a.y * a.x * nc + a.z * s, c + a.y * a.y * nc,       a.y * a.z * nc - a.x * s, 0,
+		a.z * a.x * nc - a.y * s, a.z * a.y * nc + a.x * s, c + a.z * a.z * nc,       0,
+		0,                        0,                        0,                        1,
+	};
+}
+
+FMDEF m4f m4f_init_rotation_y(r32 radians)
+{
+	const r32 c = cosf(radians);
+	const r32 s = sinf(radians);
+	return (m4f) {
+		 c, 0, s, 0,
+		 0, 1, 0, 0,
+		-s, 0, c, 0,
+		 0, 0, 0, 1,
+	};
+}
+
+FMDEF m4f m4f_perspective(r32 fovy, r32 aspect, r32 near, r32 far)
+{
+	const r32 f = 1.f / tanf(fmath_deg2rad(fovy / 2.f));
+	const r32 denom = near == far ? 1.f : near - far;
+	return (m4f) {
+		f / aspect, 0, 0,                    0,
+		0,          f, 0,                    0,
+		0,          0, (far + near) / denom, 2.f * far * near / denom,
+		0,          0, -1,                   0
+	};
+}
+
+FMDEF m4f m4f_look_at(v3f eye, v3f center, v3f up_)
+{
+	const v3f f  = v3f_normalize(v3f_sub(center, eye));
+	const v3f up = v3f_normalize(up_);
+	const v3f s  = v3f_cross(f, up);
+	const v3f u  = v3f_cross(s, f);
+	return (m4f) {
+		 s.x,  s.y,  s.z, -v3f_dot(s, eye),
+		 u.x,  u.y,  u.z, -v3f_dot(u, eye),
+		-f.x, -f.y, -f.z,  v3f_dot(f, eye),
+		   0,    0,    0, 1,
+	};
+}
+
+FMDEF m4f m4f_mul_m4(m4f lhs, m4f rhs)
 {
 	const r32 *lhs_i, *rhs_k;
 	r32 *res_i, lhs_ik;
-	memset(res.v, 0, 16 * sizeof(r32));
+	m4f res = g_m4f_zero;
 	for (int i = 0; i < 4; ++i) {
 		lhs_i = lhs.v + 4 * i;
 		res_i = res.v + 4 * i;
@@ -628,47 +723,73 @@ FMDEF void m4f_mul_m4(const m4f lhs, const m4f rhs, m4f res)
 #endif
 		}
 	}
+	return res;
 }
 
-FMDEF v3f m4f_mul_v3(const m4f lhs, v3f rhs)
+FMDEF v3f m4f_mul_v3(m4f lhs, v3f rhs)
 {
 	v3f result;
+	r32 w;
 	result.x = lhs.v[0] * rhs.x + lhs.v[1] * rhs.y + lhs.v[2] * rhs.z + lhs.v[3];
 	result.y = lhs.v[4] * rhs.x + lhs.v[5] * rhs.y + lhs.v[6] * rhs.z + lhs.v[7];
 	result.z = lhs.v[8] * rhs.x + lhs.v[9] * rhs.y + lhs.v[10] * rhs.z + lhs.v[11];
-	return result;
+	w = lhs.v[12] * rhs.x + lhs.v[13] * rhs.y + lhs.v[14] * rhs.z + lhs.v[15];
+	return v3f_scale(result, 1 / w);
 }
 
-FMDEF b32 m4f_equal(const m4f lhs, const m4f rhs)
+FMDEF m4f m4f_scale(m4f m, v3f scale)
+{
+	return m4f_mul_m4(m4f_init_scale(scale), m);
+}
+
+FMDEF m4f m4f_translate(m4f m, v3f diff)
+{
+	return m4f_mul_m4(m4f_init_translation(diff), m);
+}
+
+FMDEF m4f m4f_rotate(m4f m, v3f axis, r32 radians)
+{
+	return m4f_mul_m4(m4f_init_rotation(axis, radians), m);
+}
+
+m4f m4f_transpose(m4f m)
+{
+	return (m4f) {
+		m.v[0], m.v[4], m.v[8],  m.v[12],
+		m.v[1], m.v[5], m.v[9],  m.v[13],
+		m.v[2], m.v[6], m.v[10], m.v[14],
+		m.v[3], m.v[7], m.v[11], m.v[15],
+	};
+}
+
+FMDEF b32 m4f_equal(m4f lhs, m4f rhs)
 {
 	return memcmp(lhs.v, rhs.v, 16 * sizeof(r32)) == 0;
 }
 
-FMDEF void m4f_from_m3(m4f dst, const m3f src)
+FMDEF m4f m4f_from_m3(m3f src)
 {
-	dst.v[0] = src[0];
-	dst.v[1] = src[1];
-	dst.v[2] = 0;
-	dst.v[3] = src[2];
-	dst.v[4] = src[3];
-	dst.v[5] = src[4];
-	dst.v[6] = 0;
-	dst.v[7] = src[5];
-	dst.v[8] = 0;
-	dst.v[9] = 0;
-	dst.v[10] = 1;
-	dst.v[11] = 0;
-	dst.v[12] = src[6];
-	dst.v[13] = src[7];
-	dst.v[14] = 0;
-	dst.v[15] = src[8];
+	return (m4f) {
+		src[0], src[1], 0, src[2],
+		src[3], src[4], 0, src[5],
+		0,      0,      1, 0,
+		src[6], src[7], 0, src[8],
+	};
 }
 
-FMDEF void m4f_to_m3(const m4f src, m3f dst)
+FMDEF void m4f_to_m3(m4f src, m3f dst)
 {
-	memcpy(dst, src.v, 3 * sizeof(r32));
-	memcpy(&dst[3], &src.v[4], 3 * sizeof(r32));
-	memcpy(&dst[6], &src.v[8], 3 * sizeof(r32));
+	dst[0] = src.v[0];
+	dst[1] = src.v[1];
+	dst[2] = src.v[3];
+
+	dst[3] = src.v[4];
+	dst[4] = src.v[5];
+	dst[5] = src.v[7];
+
+	dst[6] = src.v[12];
+	dst[7] = src.v[13];
+	dst[8] = src.v[15];
 }
 
 /* Interval */
@@ -882,6 +1003,32 @@ FMDEF v2f box2f_get_half_dim(box2f box)
 }
 
 /* Line/Segment utilities */
+
+FMDEF void box3f_from_point(box3f *b, v3f p)
+{
+	b->min = p;
+	b->max = p;
+}
+
+FMDEF void box3f_extend_point(box3f *b, v3f p)
+{
+	b->min.x = fminf(b->min.x, p.x);
+	b->min.y = fminf(b->min.y, p.y);
+	b->min.z = fminf(b->min.z, p.z);
+	b->max.x = fmaxf(b->max.x, p.x);
+	b->max.y = fmaxf(b->max.y, p.y);
+	b->max.z = fmaxf(b->max.z, p.z);
+}
+
+FMDEF v3f box3f_get_center(box3f b)
+{
+	return v3f_add(b.min, box3f_get_half_dim(b));
+}
+
+FMDEF v3f box3f_get_half_dim(box3f b)
+{
+	return v3f_scale(v3f_sub(b.max, b.min), 0.5f);
+}
 
 FMDEF v2f fmath_line_extrapolate(v2f a, v2f b, r32 t)
 {
