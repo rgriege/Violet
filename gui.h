@@ -3668,7 +3668,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 			dragging = false;
 		}
 
-		// MARK active_color if at front
+		// TODO(rgriege): active_color if at front?
 		gui_rect(gui, panel->x, panel->pos.y, panel->width,
 		         dim, gui->style.panel.titlebar.bg_color,
 		         gui->style.panel.titlebar.outline_color);
@@ -3701,7 +3701,6 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	}
 
 	/* background outline display */
-
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
 	         g_nocolor, gui->style.panel.border_color);
 
@@ -3804,11 +3803,10 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		gui_unmask(gui);
 
 	/* background display */
-	/* TODO(rgriege): this is incorrectly drawn at the bottom of the layer.
-	 * The simple workaround is to call gui_unmask() after all the panels. */
-
+	/* NOTE(rgriege): would be great to avoid the additional mask here */
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
 	         gui->style.panel.bg_color, g_nocolor);
+	gui_unmask(gui);
 
 	if (panel->flags & GUI_PANEL_TITLEBAR)
 		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
