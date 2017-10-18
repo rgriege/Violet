@@ -185,8 +185,7 @@ void   gui_maximize(gui_t *gui);
 void   gui_fullscreen(gui_t *gui);
 b32    gui_begin_frame(gui_t *gui);
 void   gui_end_frame(gui_t *gui);
-void   gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
-               void *udata);
+void   gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t*, void*), void *udata);
 
 timepoint_t gui_frame_start(gui_t *gui);
 timepoint_t gui_last_input_time(gui_t *gui);
@@ -1722,7 +1721,6 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	GL_ERR_CHECK("glGetString");
 
 	GL_CHECK(glEnable, GL_MULTISAMPLE);
-	GL_CHECK(glDisable, GL_DEPTH_TEST);
 	GL_CHECK(glEnable, GL_BLEND);
 	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	GL_CHECK(glEnable, GL_SCISSOR_TEST);
@@ -1894,6 +1892,7 @@ b32 gui_begin_frame(gui_t *gui)
 {
 	s32 key_cnt;
 	b32 quit = false;
+	float bg_color[4];
 	timepoint_t now = time_current();
 	gui->frame_time_milli = time_diff_milli(gui->frame_start_time, now);
 	gui->frame_start_time = now;
@@ -1960,6 +1959,15 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->draw_call_cnt = 0;
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
+
+	GL_CHECK(glViewport, 0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
+
+	/* NOTE(rgriege): reset the scissor for glClear */
+	GL_CHECK(glScissor, 0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
+
+	color_as_float_array(bg_color, gui->style.bg_color);
+	GL_CHECK(glClearColor, bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	gui->use_default_cursor = true;
 	if (gui->root_split) {
@@ -2207,19 +2215,9 @@ void gui__complete_scissor(gui_t *gui)
 
 void gui_end_frame(gui_t *gui)
 {
-	float bg_color[4];
-
 	gui__complete_scissor(gui);
 
-	GL_CHECK(glViewport, 0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
-
-	/* NOTE(rgriege): reset the scissor for glClear */
-	GL_CHECK(glScissor, 0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
-
-	color_as_float_array(bg_color, gui->style.bg_color);
-	GL_CHECK(glClearColor, bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
-	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	GL_CHECK(glDisable, GL_DEPTH_TEST);
 	GL_CHECK(glBindVertexArray, gui->vao);
 
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_VERT]);
