@@ -230,6 +230,7 @@ typedef struct box3f
 FMDEF void box3f_from_point(box3f *b, v3f p);
 FMDEF void box3f_extend_point(box3f *b, v3f p);
 FMDEF v3f  box3f_get_center(box3f b);
+FMDEF v3f  box3f_get_extent(box3f b);
 FMDEF v3f  box3f_get_half_dim(box3f b);
 
 /* Line/Segment utilities */
@@ -1023,6 +1024,11 @@ FMDEF void box3f_extend_point(box3f *b, v3f p)
 FMDEF v3f box3f_get_center(box3f b)
 {
 	return v3f_add(b.min, box3f_get_half_dim(b));
+}
+
+FMDEF v3f box3f_get_extent(box3f b)
+{
+	return v3f_sub(b.max, b.min);
 }
 
 FMDEF v3f box3f_get_half_dim(box3f b)
