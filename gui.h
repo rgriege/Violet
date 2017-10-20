@@ -560,7 +560,6 @@ void gui_style_pop(gui_t *gui);
 #ifdef GUI_IMPLEMENTATION
 
 #include <ctype.h>
-#include <GL/glew.h>
 #include <limits.h>
 #include <math.h>
 #define SDL_MAIN_HANDLED
@@ -592,52 +591,10 @@ void gui_style_pop(gui_t *gui);
 
 #include "violet/array.h"
 #include "violet/fmath.h"
+#include "violet/graphics.h"
 #include "violet/imath.h"
 
 static void gui__split(gui_t *gui, gui_split_t *split);
-
-#if defined(DEBUG) || defined(GUI_CHECK_GL)
-static
-const char *gui__get_gl_err_str(GLenum err)
-{
-	switch (err) {
-	case GL_INVALID_ENUM:
-		return "INVALID_ENUM";
-	case GL_INVALID_VALUE:
-		return "INVALID_VALUE";
-	case GL_INVALID_OPERATION:
-		return "INVALID_OPERATION";
-	case GL_INVALID_FRAMEBUFFER_OPERATION:
-		return "INVALID_FRAMEBUFFER_OPERATION";
-	case GL_OUT_OF_MEMORY:
-		return "OUT_OF_MEMORY";
-	case GL_STACK_UNDERFLOW:
-		return "STACK_UNDERFLOW";
-	case GL_STACK_OVERFLOW:
-		return "STACK_OVERFLOW";
-	default:
-		return "UNKNOWN ERROR";
-	}
-}
-
-#define GL_ERR_CHECK(label) \
-	do { \
-		GLenum err; \
-		if ((err = glGetError()) != GL_NO_ERROR) { \
-			const char *err_str = gui__get_gl_err_str(err); \
-			log_error("%s: %s(%x) @ %s:%d", label, err_str, err, \
-			          __FILE__, __LINE__); \
-		} \
-	} while (0)
-#define GL_CHECK(func, ...) \
-	do { \
-		func(__VA_ARGS__); \
-		GL_ERR_CHECK(#func); \
-	} while (0)
-#else
-#define GL_ERR_CHECK(label) NOOP
-#define GL_CHECK(func, ...) func(__VA_ARGS__)
-#endif
 
 
 static const char *g_vertex_shader;

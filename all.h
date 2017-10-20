@@ -6,6 +6,7 @@
 #define CORE_IMPLEMENTATION
 #define DMATH_IMPLEMENTATION
 #define FMATH_IMPLEMENTATION
+#define GRAPHICS_IMPLEMENTATION
 #define GUI_IMPLEMENTATION
 #define IMATH_IMPLEMENTATION
 #define LIST_IMPLEMENTATION
@@ -25,6 +26,7 @@
 #include "violet/imath.h"
 /* Gui */
 #ifndef VIOLET_NO_GUI
+#include "violet/graphics.h"
 #include "violet/gui.h"
 #endif
 /* OS */
