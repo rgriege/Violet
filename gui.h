@@ -163,6 +163,12 @@ b32  font_load(font_t *f, const char *filename, u32 sz);
 void font_destroy(font_t *f);
 
 
+/* Utility */
+
+u32 gui_triangulate_out_sz(u32 n);
+b32 gui_triangulate(const v2f *v, u32 n, v2f **triangles);
+
+
 /* General Gui */
 
 typedef struct gui_t gui_t;
@@ -1251,10 +1257,14 @@ b32 gui__triangulate_snip(const v2f *poly, u32 u, u32 v, u32 w, u32 n)
 	return true;
 }
 
-static
-b32 gui__triangulate(const v2f *v_, u32 n_, v2f **triangles)
+u32 gui_triangulate_out_sz(u32 n)
 {
-	const u32 out_vtx_cnt = 3 * (n_ - 2);
+	return 3 * (n - 2);
+}
+
+b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
+{
+	const u32 out_vtx_cnt = gui_triangulate_out_sz(n_);
 	v2f *v;
 	u32 n;
 
@@ -2473,7 +2483,7 @@ void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 	if (n == 3 || fill.a == 0 || polyf_is_convex(v, n)) {
 		gui__poly(gui, v, n, fill, stroke);
 	} else {
-		if (gui__triangulate(v, n, &gui->vert_buf)) {
+		if (gui_triangulate(v, n, &gui->vert_buf)) {
 			gui__triangles(gui, A2PN(gui->vert_buf), fill);
 			array_clear(gui->vert_buf);
 		}
