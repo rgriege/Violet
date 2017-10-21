@@ -58,6 +58,8 @@ IMDEF s32  v2i_mag_sq(v2i v);
 IMDEF s32  v2i_dist_sq(v2i lhs, v2i rhs);
 IMDEF v2i  v2i_scale(v2i v, s32 s);
 IMDEF void v2i_scale_eq(v2i *v, s32 s);
+IMDEF v2i  v2i_scale_inv(v2i v, s32 s);
+IMDEF void v2i_scale_inv_eq(v2i *v, s32 s);
 IMDEF v2i  v2i_add(v2i lhs, v2i rhs);
 IMDEF void v2i_add_eq(v2i *lhs, v2i rhs);
 IMDEF v2i  v2i_sub(v2i lhs, v2i rhs);
@@ -136,6 +138,16 @@ IMDEF v2i v2i_scale(v2i v, s32 s)
 IMDEF void v2i_scale_eq(v2i *v, s32 s)
 {
 	*v = v2i_scale(*v, s);
+}
+
+IMDEF v2i v2i_scale_inv(v2i v, s32 s)
+{
+	return (v2i){ v.x / s, v.y / s };
+}
+
+IMDEF void v2i_scale_inv_eq(v2i *v, s32 s)
+{
+	*v = v2i_scale_inv(*v, s);
 }
 
 IMDEF v2i v2i_add(v2i lhs, v2i rhs)
