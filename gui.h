@@ -298,6 +298,8 @@ btn_val_t gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 btn_val_t gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen);
 void      gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                   b32 *val);
+void      gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen,
+                      b32 *val);
 b32       gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
 b32       gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
 b32       gui_range_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
@@ -3107,6 +3109,27 @@ void gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	else if (*val)
 		status = GUI__WIDGET_ACTIVE;
 	gui__btn_render(gui, x, y, w, h, txt, status, &gui->style.chk);
+}
+
+void gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	b32 contains_mouse;
+	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
+	const gui_element_style_t *style;
+
+	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS)
+		*val = !*val;
+
+	if (gui->active_id == id)
+		status = contains_mouse ? GUI__WIDGET_ACTIVE : GUI__WIDGET_HOT;
+	else if (gui->hot_id == id)
+		status = GUI__WIDGET_HOT;
+	else if (*val)
+		status = GUI__WIDGET_ACTIVE;
+	style = gui__element_style(status, &gui->style.chk);
+	gui->style.chk.pen(gui, x, y, w, h, style);
+	pen(gui, x, y, w, h, style);
 }
 
 typedef enum gui__slider_orientation
