@@ -1281,7 +1281,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 
 #define gi__gui_line_style_dark { \
 	.thickness = 1.f, \
-	.dash_len = 1.f, \
+	.dash_len = 0.f, \
 	.color = gi_black, \
 }
 
@@ -1436,7 +1436,7 @@ const gui_style_t g_gui_style_default = {
 
 #define gi__gui_line_style_invis { \
 	.thickness = 1.f, \
-	.dash_len = 1.f, \
+	.dash_len = 0.f, \
 	.color = gi_nocolor, \
 }
 
