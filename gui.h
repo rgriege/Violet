@@ -44,7 +44,8 @@ typedef struct color_t
 
 #define g_nocolor   (color_t)gi_nocolor
 
-void    color_as_float_array(float *f, color_t c);
+void    color_as_float_array(r32 *f, color_t c);
+color_t color_from_float(const r32 *f);
 color_t color_from_hex(const char *hex);
 b32     color_equal(color_t lhs, color_t rhs);
 
@@ -603,12 +604,22 @@ static const char *g_fragment_shader;
 
 /* Color */
 
-void color_as_float_array(float *f, color_t c)
+void color_as_float_array(r32 *f, color_t c)
 {
 	f[0] = c.r / 255.f;
 	f[1] = c.g / 255.f;
 	f[2] = c.b / 255.f;
 	f[3] = c.a / 255.f;
+}
+
+color_t color_from_float(const r32 *f)
+{
+	return (color_t) {
+		.r = f[0] * 255.f,
+		.g = f[1] * 255.f,
+		.b = f[2] * 255.f,
+		.a = f[3] * 255.f,
+	};
 }
 
 color_t color_from_hex(const char *hex)
