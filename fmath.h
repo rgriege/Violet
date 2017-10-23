@@ -217,6 +217,7 @@ FMDEF void box2f_extend_box(box2f *b, box2f other);
 FMDEF void box2f_translate(box2f *b, v2f v);
 FMDEF void box2f_transform(box2f *b, const m3f mat);
 FMDEF v2f  box2f_get_center(box2f b);
+FMDEF v2f  box2f_get_extent(box2f b);
 FMDEF v2f  box2f_get_half_dim(box2f b);
 
 /* 3D Anti-aliased bounding box */
@@ -996,6 +997,11 @@ FMDEF void box2f_transform(box2f *box, const m3f mat)
 FMDEF v2f box2f_get_center(box2f box)
 {
 	return v2f_add(box.min, box2f_get_half_dim(box));
+}
+
+FMDEF v2f box2f_get_extent(box2f b)
+{
+	return v2f_sub(b.max, b.min);
 }
 
 FMDEF v2f box2f_get_half_dim(box2f box)
