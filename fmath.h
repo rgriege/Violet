@@ -160,7 +160,7 @@ FMDEF m4f  m4f_init_scale(v3f scale);
 FMDEF m4f  m4f_init_translation(v3f disp);
 FMDEF m4f  m4f_init_rotation(v3f axis, r32 radians);
 FMDEF m4f  m4f_init_rotation_y(r32 radians);
-FMDEF m4f  m4f_perspective(r32 fovy, r32 aspect, r32 near, r32 far);
+FMDEF m4f  m4f_perspective(r32 fovy, r32 aspect, r32 near_z, r32 far_z);
 FMDEF m4f  m4f_look_at(v3f eye, v3f center, v3f up);
 FMDEF m4f  m4f_mul_m4(m4f lhs, m4f rhs);
 FMDEF v3f  m4f_mul_v3(m4f lhs, v3f rhs);
@@ -675,15 +675,15 @@ FMDEF m4f m4f_init_rotation_y(r32 radians)
 	};
 }
 
-FMDEF m4f m4f_perspective(r32 fovy, r32 aspect, r32 near, r32 far)
+FMDEF m4f m4f_perspective(r32 fovy, r32 aspect, r32 near_z, r32 far_z)
 {
 	const r32 f = 1.f / tanf(fmath_deg2rad(fovy / 2.f));
-	const r32 denom = near == far ? 1.f : near - far;
+	const r32 denom = near_z == far_z ? 1.f : near_z - far_z;
 	return (m4f) {
-		f / aspect, 0, 0,                    0,
-		0,          f, 0,                    0,
-		0,          0, (far + near) / denom, 2.f * far * near / denom,
-		0,          0, -1,                   0
+		f / aspect, 0, 0,                        0,
+		0,          f, 0,                        0,
+		0,          0, (far_z + near_z) / denom, 2.f * far_z * near_z / denom,
+		0,          0, -1,                       0
 	};
 }
 
