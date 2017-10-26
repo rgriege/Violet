@@ -323,6 +323,9 @@ b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
 
 u64       gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void      gui_widget_focus(gui_t *gui, u64 id); /* careful! */
+b32       gui_widget_active(const gui_t *gui, u64 id);
+b32       gui_widget_focused(const gui_t *gui, u64 id);
+b32       gui_any_widget_has_focus(const gui_t *gui);
 
 /* Splits */
 
@@ -3455,6 +3458,20 @@ void gui_widget_focus(gui_t *gui, u64 id)
 	gui->focus_id = id;
 }
 
+b32 gui_widget_active(const gui_t *gui, u64 id)
+{
+	return gui->active_id == id;
+}
+
+b32 gui_widget_focused(const gui_t *gui, u64 id)
+{
+	return gui->focus_id == id;
+}
+
+b32 gui_any_widget_has_focus(const gui_t *gui)
+{
+	return gui->focus_id != 0;
+}
 
 void gui__split_init(gui_t *gui, gui_split_t *split,
                      gui_split_t *sp1, r32 sz,
