@@ -62,9 +62,9 @@ typedef struct array__head
                                                            MEMCALL_LOCATION), \
                                     (a)+(i))
 #define array_insert(a, i, e)      (*array_insert_null(a, i) = e)
-#define array_insert_fast(a, i, e) ((a)=array__grow(a, array__esz(a) \
-                                                    MEMCALL_LOCATION), \
-                                    array_last(a) = (a)[i], (a)[i] = (e))
+#define array_insert_fast(a, i, e) ((a)=array__append_null(a, array__esz(a) \
+                                                           MEMCALL_LOCATION), \
+                                    array_last(a) = (a)[(i)], (a)[(i)] = (e))
 #define array_remove(a, i)         array_remove_n(a, i, 1)
 #define array_remove_n(a, i, n)    array__remove(a, i, n, array__esz(a))
 #define array_remove_fast(a, i)    array__remove_fast(a, i, array__esz(a))
