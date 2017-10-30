@@ -376,6 +376,10 @@ void gui_vsplit_init(gui_t *gui, gui_split_t *split,
 #define GUI_PANEL_TITLEBAR_HEIGHT 20
 #endif
 
+#ifndef GUI_PANEL_MIN_DIM
+#define GUI_PANEL_MIN_DIM 80
+#endif
+
 typedef enum gui_panel_flags
 {
 	GUI_PANEL_TITLEBAR  = 0x1,
@@ -3640,29 +3644,55 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
 		if (gui__resize_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		                   panel->height)) {
+		                      panel->height)) {
 			resize_delta = panel->x - GUI_PANEL_RESIZE_BORDER - resize.x;
-			panel->width += resize_delta;
-			panel->x -= resize_delta;
+			if (panel->width + resize_delta < GUI_PANEL_MIN_DIM) {
+				const r32 dx = panel->width - GUI_PANEL_MIN_DIM;
+				panel->width = GUI_PANEL_MIN_DIM;
+				panel->x += dx;
+				gui->active_id = gui_widget_id(gui, panel->x - GUI_PANEL_RESIZE_BORDER,
+				                               panel->y);
+			} else {
+				panel->width += resize_delta;
+				panel->x -= resize_delta;
+			}
 		}
 
 		resize.x = panel->x + panel->width;
 		if (gui__resize_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		                   panel->height))
+		                      panel->height)) {
 			panel->width += resize.x - (panel->x + panel->width);
+			if (panel->width < GUI_PANEL_MIN_DIM) {
+				panel->width = GUI_PANEL_MIN_DIM;
+				gui->active_id = gui_widget_id(gui, panel->x + panel->width, panel->y);
+			}
+		}
 
 		resize.y = panel->y - GUI_PANEL_RESIZE_BORDER;
 		if (gui__resize_vert(gui, panel->x, &resize.y, panel->width,
-		                  GUI_PANEL_RESIZE_BORDER)) {
+		                     GUI_PANEL_RESIZE_BORDER)) {
 			resize_delta = panel->y - GUI_PANEL_RESIZE_BORDER - resize.y;
-			panel->height += resize_delta;
-			panel->y -= resize_delta;
+			if (panel->height + resize_delta < GUI_PANEL_MIN_DIM) {
+				const r32 dy = panel->height - GUI_PANEL_MIN_DIM;
+				panel->height = GUI_PANEL_MIN_DIM;
+				panel->y += dy;
+				gui->active_id = gui_widget_id(gui, panel->x,
+				                               panel->y - GUI_PANEL_RESIZE_BORDER);
+			} else {
+				panel->height += resize_delta;
+				panel->y -= resize_delta;
+			}
 		}
 
 		resize.y = panel->y + panel->height;
 		if (gui__resize_vert(gui, panel->x, &resize.y, panel->width,
-		                  GUI_PANEL_RESIZE_BORDER))
+		                     GUI_PANEL_RESIZE_BORDER)) {
 			panel->height += resize.y - (panel->y + panel->height);
+			if (panel->height < GUI_PANEL_MIN_DIM) {
+				panel->height = GUI_PANEL_MIN_DIM;
+				gui->active_id = gui_widget_id(gui, panel->x, panel->y + panel->height);
+			}
+		}
 
 		gui_style_pop(gui);
 	}
