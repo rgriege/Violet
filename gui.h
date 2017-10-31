@@ -1847,8 +1847,16 @@ void gui_minimize(gui_t *gui)
 
 void gui_maximize(gui_t *gui)
 {
+	int display_idx;
 	SDL_Rect usable_bounds;
-	if (SDL_GetDisplayUsableBounds(0, &usable_bounds) != 0) {
+
+	display_idx = SDL_GetWindowDisplayIndex(gui->window);
+	if (display_idx < 0) {
+		log_error("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
+		return;
+	}
+
+	if (SDL_GetDisplayUsableBounds(display_idx, &usable_bounds) != 0) {
 		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
 		return;
 	}
