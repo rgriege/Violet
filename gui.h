@@ -186,6 +186,7 @@ typedef enum gui_flags_t
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                   gui_flags_t flags);
 void   gui_destroy(gui_t *gui);
+void   gui_move(const gui_t *gui, s32 dx, s32 dy);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
 void   gui_minimize(gui_t *gui);
 void   gui_maximize(gui_t *gui);
@@ -212,6 +213,7 @@ typedef enum mouse_button_t
 /* Input */
 
 void mouse_pos(const gui_t *gui, s32 *x, s32 *y);
+void mouse_pos_global(const gui_t *gui, s32 *x, s32 *y);
 b32  mouse_pressed(const gui_t *gui, u32 mask);
 b32  mouse_pressed_bg(const gui_t *gui, u32 mask);
 b32  mouse_down(const gui_t *gui, u32 mask);
@@ -325,6 +327,7 @@ u64       gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void      gui_widget_focus(gui_t *gui, u64 id); /* careful! */
 b32       gui_widget_active(const gui_t *gui, u64 id);
 b32       gui_widget_focused(const gui_t *gui, u64 id);
+b32       gui_any_widget_active(const gui_t *gui);
 b32       gui_any_widget_has_focus(const gui_t *gui);
 
 /* Splits */
@@ -1834,6 +1837,15 @@ void gui_destroy(gui_t *gui)
 	free(gui);
 }
 
+void gui_move(const gui_t *gui, s32 dx, s32 dy)
+{
+	const v2i dp = { .x = dx, .y = dy };
+	v2i pos;
+	SDL_GetWindowPosition(gui->window, &pos.x, &pos.y);
+	v2i_add_eq(&pos, dp);
+	SDL_SetWindowPosition(gui->window, pos.x, pos.y);
+}
+
 void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 {
 	*x = gui->win_halfdim.x * 2;
@@ -2304,6 +2316,11 @@ void mouse_pos(const gui_t *gui, s32 *x, s32 *y)
 {
 	*x = gui->mouse_pos.x;
 	*y = gui->mouse_pos.y;
+}
+
+void mouse_pos_global(const gui_t *gui, s32 *x, s32 *y)
+{
+	SDL_GetGlobalMouseState(x, y);
 }
 
 b32 mouse_pressed(const gui_t *gui, u32 mask)
@@ -3478,6 +3495,11 @@ b32 gui_widget_active(const gui_t *gui, u64 id)
 b32 gui_widget_focused(const gui_t *gui, u64 id)
 {
 	return gui->focus_id == id;
+}
+
+b32 gui_any_widget_active(const gui_t *gui)
+{
+	return gui->active_id != 0;
 }
 
 b32 gui_any_widget_has_focus(const gui_t *gui)
