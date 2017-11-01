@@ -32,6 +32,9 @@ typedef struct timespec timepoint_t;
 /* Utility macros */
 
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
+#ifndef offsetof
+#define offsetof(s, m) (&(((s*)(NULL))->m))
+#endif
 
 #define static_assert(cnd, msg) typedef int msg[(cnd) ? 1 : -1]
 
@@ -193,21 +196,11 @@ void *default_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS);
 void  default_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
 
 /* Paged bump memory allocator */
-void *pgb_malloc(size_t size, allocator_t *a  MEMCALL_ARGS);
-void *pgb_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS);
-void *pgb_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS);
-void  pgb_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
+#include "violet/pgb.h"
 
-typedef struct pg_watermark
-{
-	u8 **page;
-	u8 *ptr;
-} pgb_watermark_t;
-
-pgb_watermark_t pgb_save(const allocator_t *a);
-void            pgb_restore(allocator_t *a, pgb_watermark_t watermark);
-#define temp_memory_save()     const pgb_watermark_t memmark = pgb_save(g_temp_allocator)
-#define temp_memory_restore()  pgb_restore(g_temp_allocator, memmark)
+#define temp_memory_save()     const pgb_watermark_t memmark = \
+                                   pgb_save(g_temp_allocator->udata)
+#define temp_memory_restore()  pgb_restore(g_temp_allocator->udata, memmark)
 
 /* Tracking allocator */
 typedef struct alloc_node
@@ -319,8 +312,6 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 
 #ifdef CORE_IMPLEMENTATION
 
-#include "list.h"
-
 /* Error handling */
 
 static
@@ -383,16 +374,10 @@ void log_alloc(const char *prefix, size_t sz  MEMCALL_ARGS)
 #endif
 }
 
+#define PGB_IMPLEMENTATION
+#include "violet/pgb.h"
 
-/* TODO(rgrieg): make this public so consumer can create pgb allocators */
-typedef struct pgb_data
-{
-	list(u8*) pages;
-	u8 **current_page;
-	u8 *current_ptr;
-} pgb_data_t;
-
-thread_local allocator_t *g_temp_allocator = &allocator_create(pgb, &(pgb_data_t){0});
+thread_local allocator_t *g_temp_allocator = &allocator_create(pgb, &(pgb_t){0});
 
 
 /* Default allocator */
@@ -415,166 +400,6 @@ void *default_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS)
 void default_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
 {
 	std_free(ptr);
-}
-
-/* Paged bump memory allocator
- *
- * For 4096 byte pages, allocating on 16 byte boundaries allows 256 possible
- * pointer locations.  We can store the size of an allocation using 1 byte since
- * the lower 4 bits of the address should be 0 due to alignment. This provides
- * an 88% efficient use of memory to track the pointer sizes, which is required
- * for a correct realloc implementation, optimizing subsequent realloc calls,
- * and allowing a scope that only allocates a single array to replace saving
- * and restoring a watermark with a simple array_destroy(). */
-
-#define PGB_PAGE_SIZE 4096
-#define PGB_ALIGNMENT 16
-#define PGB_PAGE_HEADER_SIZE (PGB_PAGE_SIZE / PGB_ALIGNMENT)
-#define PGB_PAGE_USABLE_SIZE (PGB_PAGE_SIZE - PGB_PAGE_HEADER_SIZE)
-
-typedef union max_align
-{
-	long l;
-	unsigned long ul;
-	double d;
-	long double ld;
-	void *p;
-	void (*f)(void);
-} max_align_t;
-
-static_assert(sizeof(max_align_t) <= PGB_ALIGNMENT,
-              invalid_word_size_for_pgb_allocator);
-
-static inline
-u8 *pgb__alloc_sz_loc(const u8 *ptr, u8 *page)
-{
-	return &page[(ptr - page) / PGB_ALIGNMENT];
-}
-static inline
-u32 pgb__alloc_get_sz(const u8* ptr, u8* page)
-{
-	return *pgb__alloc_sz_loc(ptr, page) * PGB_ALIGNMENT;
-}
-static inline
-void pgb__alloc_set_sz(const u8 *ptr, u8 *page, size_t sz)
-{
-	*pgb__alloc_sz_loc(ptr, page) = (u8)(sz / PGB_ALIGNMENT);
-}
-
-static
-b32 pgb__ptr_is_last_alloc(const u8 *ptr, const pgb_data_t *data)
-{
-	return   ptr > *data->current_page
-	      && ptr < *data->current_page + PGB_PAGE_SIZE
-	      && ptr + pgb__alloc_get_sz(ptr, *data->current_page) == data->current_ptr;
-}
-
-static
-void pgb_data__add_page(pgb_data_t *data)
-{
-	u8 *first_page = malloc(PGB_PAGE_SIZE);
-	memset(first_page, 0, PGB_PAGE_HEADER_SIZE);
-	data->current_page = list_append(data->pages, first_page);
-	data->current_ptr = *data->current_page + PGB_PAGE_HEADER_SIZE;
-}
-
-static
-void pgb_data__init(pgb_data_t *data)
-{
-	data->pages = list_create();
-	pgb_data__add_page(data);
-}
-
-static
-void pgb_data__destroy(pgb_data_t *data)
-{
-	list_foreach(data->pages, u8*, page)
-		free(*page);
-	list_destroy(data->pages);
-}
-
-void *pgb_malloc(size_t size, allocator_t *a  MEMCALL_ARGS)
-{
-	pgb_data_t *data = a->udata;
-	u8 *ptr;
-	size += (PGB_ALIGNMENT - (size % PGB_ALIGNMENT)) % PGB_ALIGNMENT;
-	error_if(size > PGB_PAGE_USABLE_SIZE, "size too large for pgb allocator");
-	if (data->current_ptr + size > *data->current_page + PGB_PAGE_SIZE) {
-		data->current_page = list_next(data->current_page);
-		if (!data->current_page)
-			pgb_data__add_page(data);
-		else
-			data->current_ptr = *data->current_page + PGB_PAGE_HEADER_SIZE;
-	}
-	ptr = data->current_ptr;
-	pgb__alloc_set_sz(ptr, *data->current_page, size);
-	data->current_ptr += size;
-	log_alloc("pgb", size  MEMCALL_VARS);
-	return ptr;
-}
-
-void *pgb_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS)
-{
-	u8 *ptr = pgb_malloc(nmemb * size, a  MEMCALL_VARS);
-	memset(ptr, 0, nmemb * size);
-	return ptr;
-}
-
-void *pgb_realloc(void *ptr_, size_t size, allocator_t *a  MEMCALL_ARGS)
-{
-	u8 *ptr = ptr_;
-	pgb_data_t *data = a->udata;
-	if (ptr) {
-		if (size) {
-			if (   pgb__ptr_is_last_alloc(ptr, data)
-			    && ptr + size <= *data->current_page + PGB_PAGE_SIZE) {
-				pgb_free(ptr, a  MEMCALL_VARS);
-				return pgb_malloc(size, a  MEMCALL_VARS);
-			} else {
-				u8 **page = data->current_page, *new_ptr;
-				while (page && !(ptr > *page && ptr < *page + PGB_PAGE_SIZE))
-					page = list_prev(page);
-				error_if(!page, "could not find page for allocation");
-				new_ptr = pgb_malloc(size, a  MEMCALL_VARS);
-				memcpy(new_ptr, ptr, pgb__alloc_get_sz(ptr, *page));
-				return new_ptr;
-			}
-		} else {
-			pgb_free(ptr, a  MEMCALL_VARS);
-			return NULL;
-		}
-	} else if (size) {
-		return pgb_malloc(size, a  MEMCALL_VARS);
-	} else {
-		return NULL;
-	}
-}
-
-void pgb_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
-{
-	pgb_data_t *data = a->udata;
-	if (pgb__ptr_is_last_alloc(ptr, data))
-		data->current_ptr = ptr;
-#ifdef VLT_ANALYZE_TEMP_MEMORY
-	else
-		log_warn("pgb_free: cannot recapture memory @ %s", loc);
-#endif
-}
-
-pgb_watermark_t pgb_save(const allocator_t *a)
-{
-	pgb_data_t *data = a->udata;
-	return (pgb_watermark_t) {
-		.page = data->current_page,
-		.ptr  = data->current_ptr,
-	};
-}
-
-void pgb_restore(allocator_t *a, pgb_watermark_t watermark)
-{
-	pgb_data_t *data = a->udata;
-	data->current_page   = watermark.page;
-	data->current_ptr    = watermark.ptr;
 }
 
 /* Tracking allocator */
@@ -738,19 +563,20 @@ void vlt_mem_advance_gen(void)
 }
 
 static
-void vlt_mem_log_usage_(u32 temp_page_cnt)
+void vlt_mem_log_usage_(u32 temp_bytes, u32 temp_page_cnt)
 {
 #ifdef VLT_TRACK_MEMORY
 	alloc_tracker_log_usage(g_allocator->udata);
 #endif
-	log_info("temp:  %10lu bytes in %u pages", temp_page_cnt * PGB_PAGE_SIZE,
-	         temp_page_cnt);
+	log_info("temp:  %10lu bytes in %u pages", temp_bytes, temp_page_cnt);
 }
 
 void vlt_mem_log_usage(void)
 {
-	const pgb_data_t *data = g_temp_allocator->udata;
-	vlt_mem_log_usage_(list_sz(data->pages));
+	const pgb_t *pgb = g_temp_allocator->udata;
+	u32 temp_bytes, temp_page_cnt;
+	pgb_stats(pgb, &temp_bytes, &temp_page_cnt);
+	vlt_mem_log_usage_(temp_bytes, temp_page_cnt);
 }
 
 
@@ -930,16 +756,17 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 static
 void vlt_init(void)
 {
-	pgb_data__init(g_temp_allocator->udata);
+	pgb_init(g_temp_allocator->udata);
 }
 
 static
 void vlt_destroy(void)
 {
-	pgb_data_t *data = g_temp_allocator->udata;
-	const u32 temp_page_cnt = list_sz(data->pages);
-	pgb_data__destroy(data);
-	vlt_mem_log_usage_(temp_page_cnt);
+	pgb_t *pgb = g_temp_allocator->udata;
+	u32 temp_bytes, temp_page_cnt;
+	pgb_stats(pgb, &temp_bytes, &temp_page_cnt);
+	pgb_destroy(pgb);
+	vlt_mem_log_usage_(temp_bytes, temp_page_cnt);
 }
 
 int app_entry(int argc, char *const argv[]);
