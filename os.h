@@ -33,6 +33,11 @@ void       *lib_func(lib_handle hnd, const char *name);
 b32         lib_close(lib_handle hnd);
 const char *lib_err();
 
+/* IO */
+
+size_t vgetdelim(char **lineptr, size_t *n, int delim, FILE *stream, allocator_t *a);
+size_t vgetline(char **lineptr, size_t *n, FILE *stream, allocator_t *a);
+
 /* Other applications */
 
 void exec(char *const argv[]);
@@ -484,9 +489,8 @@ out:
 }
 #endif // VLT_USE_TINYDIR
 
-/* Other applications */
+/* IO */
 
-static
 size_t vgetdelim(char **lineptr, size_t *n, int delim, FILE *stream, allocator_t *a)
 {
 	if (!lineptr || !n || !stream) {
@@ -520,12 +524,12 @@ size_t vgetdelim(char **lineptr, size_t *n, int delim, FILE *stream, allocator_t
 	return i;
 }
 
-static
 size_t vgetline(char **lineptr, size_t *n, FILE *stream, allocator_t *a)
 {
 	return vgetdelim(lineptr, n, '\n', stream, a);
 }
 
+/* Other applications */
 
 void exec(char *const argv[])
 {
