@@ -2871,8 +2871,12 @@ b32 gui__convert_key_to_char(const gui_t *gui, gui_key_t key, char *c)
 	};
 
 	*c = gui_key_chars[key];
-	if (key_mod(gui, KBM_SHIFT) != key_toggled(gui, KBT_CAPS))
+	if (isalpha(*c)) {
+		if (key_mod(gui, KBM_SHIFT) != key_toggled(gui, KBT_CAPS))
+			*c = caps[(u8)*c];
+	} else if (key_mod(gui, KBM_SHIFT)) {
 		*c = caps[(u8)*c];
+	}
 	return *c != 0;
 }
 
