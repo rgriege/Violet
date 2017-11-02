@@ -188,12 +188,24 @@ void pgb_destroy(pgb_t *pgb)
 	} while (tail);
 }
 
-// #include <intrin.h>
+static_assert(sizeof(pgb_size_t) == 4, pgb__round_up_power_of_two__invalid_size);
+
+static
+pgb_size_t pgb__round_up_power_of_two(pgb_size_t x_)
+{
+	pgb_size_t x = x_ - 1;
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return x + 1;
+}
 
 static
 void pgb__find_page_for_alloc(pgb_t *pgb, pgb_size_t alloc_size)
 {
-	const pgb_size_t aligned_size = 1 << (32 - __builtin_clz(alloc_size));
+	const pgb_size_t aligned_size = pgb__round_up_power_of_two(alloc_size);
 	pgb_size_t page_size =   PGB_MIN_PAGE_SIZE > aligned_size
 	                       ? PGB_MIN_PAGE_SIZE : aligned_size;
 	if (alloc_size > page_size - pgb_header_size(page_size))
