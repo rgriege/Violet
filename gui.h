@@ -2576,18 +2576,20 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 }
 
 static
-void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
-                       u32 pos, gui_align_t align)
+void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h, s32 sz,
+                       const char *txt, u32 pos, gui_align_t align)
 {
 	font_t *font;
-	r32 x = *ix, y = *iy;
+	s32 ix_ = *ix, iy_ = *iy;
+	r32 x, y;
 	stbtt_aligned_quad q;
 
 	font = gui__get_font(gui, sz);
 	assert(font);
 
-	x += font__line_offset_x(font, txt, align);
-	y += font__offset_y(font, txt, align);
+	font__align_anchor(&ix_, &iy_, w, h, align);
+	x = ix_ + font__line_offset_x(font, txt, align);
+	y = iy_ + font__offset_y(font, txt, align);
 
 	if (pos == 0)
 		goto out;
@@ -2600,7 +2602,7 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
 			                    &x, &y, &q, 1);
 		} else if (txt[i] == '\r') {
 			y -= font->newline_dist;
-			x = *ix + font__line_offset_x(font, &txt[i+1], align);
+			x = ix_ + font__line_offset_x(font, &txt[i+1], align);
 		}
 	}
 
@@ -2641,24 +2643,25 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, s32 sz, const char *txt,
 }
 
 static
-u32 gui__txt_mouse_pos(gui_t *gui, s32 x0, s32 y0, s32 sz, const char *txt,
-                       v2i mouse, gui_align_t align)
+u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h, s32 sz,
+                       const char *txt, v2i mouse, gui_align_t align)
 {
 	font_t *font;
-	r32 x = x0, y = y0;
+	s32 xi = xi_, yi = yi_;
+	r32 x, y;
 	stbtt_aligned_quad q;
 	u32 closest_pos;
-	s32 closest_dist, dist, ascent;
+	s32 closest_dist, dist;
 	v2i p;
 
 	font = gui__get_font(gui, sz);
 	assert(font);
 
-	x += font__line_offset_x(font, txt, align);
-	y += font__offset_y(font, txt, align);
-	ascent = font->newline_dist / 2;
+	font__align_anchor(&xi, &yi, w, h, align);
+	x = xi + font__line_offset_x(font, txt, align);
+	y = yi + font__offset_y(font, txt, align);
 
-	v2i_set(&p, x, y + ascent);
+	v2i_set(&p, x, y + font->ascent / 2);
 	closest_pos = 0;
 	closest_dist = v2i_dist_sq(p, mouse);
 
@@ -2670,11 +2673,11 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 x0, s32 y0, s32 sz, const char *txt,
 			                    &x, &y, &q, 1);
 		} else if (*c == '\r') {
 			y -= font->newline_dist;
-			x = x0 + font__line_offset_x(font, c + 1, align);
+			x = xi + font__line_offset_x(font, c + 1, align);
 		} else {
 			continue;
 		}
-		v2i_set(&p, roundf(x), roundf(y + ascent));
+		v2i_set(&p, roundf(x), roundf(y + font->ascent / 2));
 		dist = v2i_dist_sq(p, mouse);
 		if (dist < closest_dist) {
 			closest_dist = dist;
@@ -2888,7 +2891,7 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		if (contains_mouse && mouse_pressed(gui, MB_LEFT)) {
 			const u32 size = gui->style.npt.active.text.size;
 			const gui_align_t align = gui->style.npt.active.text.align;
-			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, size, txt,
+			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, size, txt,
 			                                         gui->mouse_pos, align);
 		}
 		u32 key_idx;
@@ -2976,7 +2979,7 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			const u32 size = gui->style.npt.active.text.size;
 			const gui_align_t align = gui->style.npt.active.text.align;
 			gui->active_id = id;
-			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, size, txt,
+			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, size, txt,
 			                                         gui->mouse_pos, align);
 			gui->npt_prev_key_idx = 0;
 			gui->hot_id = 0;
@@ -3018,10 +3021,9 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			const gui_align_t align = gui->style.npt.active.text.align;
 			const color_t color = gui->style.npt.active.text.color;
 			const font_t *font = gui__get_font(gui, size);
-			font__align_anchor(&x, &y, w, h, align);
-			gui__txt_char_pos(gui, &x, &y, size, displayed_txt,
+			gui__txt_char_pos(gui, &x, &y, w, h, size, displayed_txt,
 			                  gui->npt_cursor_pos, align);
-			gui_line(gui, x + 2, y + font->descent, x + 2, y + font->ascent, 1, color);
+			gui_line(gui, x + 1, y + font->descent, x + 1, y + font->ascent, 1, color);
 		}
 	} else if (hint && strlen(txt) == 0) {
 		gui_txt_styled(gui, x, y, w, h, hint, &style->text);
