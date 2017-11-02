@@ -103,12 +103,12 @@ b32 file__dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 
 		filters = amalloc(n_ext*sizeof(COMDLG_FILTERSPEC), g_temp_allocator);
 		for (u32 i = 0; i < n_ext; ++i) {
-			filters[i].pszName = L"";
 			PWSTR spec = ext_buf+(i+1)*8;
 			spec[0] = L'*';
 			spec[1] = L'.';
-			mbstowcs(spec+2, ext[i], 6);
+			mbstowcs(spec + 2, ext[i], 6);
 			filters[i].pszSpec = spec;
+			filters[i].pszName = spec + 2;
 		}
 		if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, n_ext, filters)))
 			goto err_ext;
