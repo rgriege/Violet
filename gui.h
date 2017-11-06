@@ -395,12 +395,13 @@ void gui_vsplit_init(gui_t *gui, gui_split_t *split,
 
 typedef enum gui_panel_flags
 {
-	GUI_PANEL_TITLEBAR  = 0x1,
-	GUI_PANEL_MOVABLE   = 0x2,
-	GUI_PANEL_RESIZABLE = 0x4,
-	GUI_PANEL_DRAGGABLE = 0x8,
-	GUI_PANEL_CLOSABLE  = 0x10,
-	GUI_PANEL_FULL      = 0x1f,
+	GUI_PANEL_TITLEBAR    = 0x01,
+	GUI_PANEL_MOVABLE     = 0x02,
+	GUI_PANEL_RESIZABLE   = 0x04,
+	GUI_PANEL_DRAGGABLE   = 0x08,
+	GUI_PANEL_CLOSABLE    = 0x10,
+	GUI_PANEL_SCROLLBARS  = 0x20,
+	GUI_PANEL_FULL        = 0x2f,
 } gui_panel_flags_t;
 
 typedef struct gui_panel_grid_strip
@@ -523,16 +524,23 @@ typedef struct gui_widget_style
 	gui_element_style_t active;
 } gui_widget_style_t;
 
+typedef struct gui_slider_style
+{
+	gui_widget_style_t handle;
+	gui_widget_style_t track;
+	b32 track_narrow;
+} gui_slider_style_t;
+
 typedef struct gui_panel_style
 {
 	color_t bg_color;
 	color_t border_color;
-	gui_widget_style_t drag;
 	gui_element_style_t titlebar;
-	gui_widget_style_t close;
+	gui_widget_style_t  drag;
+	gui_widget_style_t  close;
+	gui_slider_style_t  scrollbar;
 	color_t cell_bg_color;
 	color_t cell_border_color;
-	color_t break_color;
 	r32 padding;
 } gui_panel_style_t;
 
@@ -544,12 +552,7 @@ typedef struct gui_style
 	gui_widget_style_t npt;
 	gui_widget_style_t btn;
 	gui_widget_style_t chk;
-	struct
-	{
-		gui_widget_style_t handle;
-		gui_widget_style_t track;
-		b32 track_narrow;
-	} slider;
+	gui_slider_style_t slider;
 	gui_widget_style_t select;
 	gui_widget_style_t drag;
 	gui_panel_style_t  panel;
@@ -1386,6 +1389,17 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	}, \
 }
 
+#define gi__gui_slider_style_default { \
+	.handle = gi__gui_chk_style_default, \
+	.track = { \
+		.pen = gui_pen_rect, \
+		.inactive = gi__gui_btn_inactive_style_default, \
+		.hot = gi__gui_btn_inactive_style_default, \
+		.active = gi__gui_btn_inactive_style_default, \
+	}, \
+	.track_narrow = false, \
+}
+
 const gui_style_t g_gui_style_default = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
 	.line = gi__gui_line_style_default,
@@ -1393,16 +1407,7 @@ const gui_style_t g_gui_style_default = {
 	.npt = gi__gui_btn_style_default,
 	.btn = gi__gui_btn_style_default,
 	.chk = gi__gui_chk_style_default,
-	.slider = {
-		.handle = gi__gui_chk_style_default,
-		.track = {
-			.pen = gui_pen_rect,
-			.inactive = gi__gui_btn_inactive_style_default,
-			.hot = gi__gui_btn_inactive_style_default,
-			.active = gi__gui_btn_inactive_style_default,
-		},
-		.track_narrow = false,
-	},
+	.slider = gi__gui_slider_style_default,
 	.select = gi__gui_btn_style_default,
 	.drag = gi__gui_chk_style_default,
 	.panel = {
@@ -1464,9 +1469,9 @@ const gui_style_t g_gui_style_default = {
 				.outline_color = gi_nocolor,
 			},
 		},
+		.scrollbar = gi__gui_slider_style_default,
 		.cell_bg_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
-		.break_color =  { .r=0x33, .g=0x33, .b=0x33, .a=0xff },
 		.padding = 10.f,
 	},
 };
@@ -1498,6 +1503,12 @@ const gui_style_t g_gui_style_default = {
 	.active = gi__gui_element_style_invis, \
 }
 
+#define gi__gui_slider_style_invis { \
+	.handle = gi__gui_widget_style_invis, \
+	.track = gi__gui_widget_style_invis, \
+	.track_narrow = false, \
+}
+
 const gui_style_t g_gui_style_invis = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
 	.line = gi__gui_line_style_invis,
@@ -1505,11 +1516,7 @@ const gui_style_t g_gui_style_invis = {
 	.npt = gi__gui_widget_style_invis,
 	.btn = gi__gui_widget_style_invis,
 	.chk = gi__gui_widget_style_invis,
-	.slider = {
-		.handle = gi__gui_widget_style_invis,
-		.track = gi__gui_widget_style_invis,
-		.track_narrow = false,
-	},
+	.slider = gi__gui_slider_style_invis,
 	.select = gi__gui_widget_style_invis,
 	.drag = gi__gui_widget_style_invis,
 	.panel = {
@@ -1518,9 +1525,9 @@ const gui_style_t g_gui_style_invis = {
 		.drag = gi__gui_widget_style_invis,
 		.titlebar = gi__gui_element_style_invis,
 		.close = gi__gui_widget_style_invis,
+		.scrollbar = gi__gui_slider_style_invis,
 		.cell_bg_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
-		.break_color = gi_nocolor,
 		.padding = 10.f,
 	},
 };
@@ -3703,7 +3710,7 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	/* resizing */
 
-	if (panel->flags & GUI_PANEL_RESIZABLE
+	if (   panel->flags & GUI_PANEL_RESIZABLE
 	    && !panel->split.leaf
 	    && gui->use_default_cursor) {
 		gui_style_push(gui, drag, g_gui_style_invis.drag);
@@ -3846,12 +3853,22 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 {
 	box2i box;
-	v2i needed;
-	s32 scroll, scroll_handle_sz;
-	r32 slider_val;
 	b32 contains_mouse;
 
 	assert(gui->panel == panel);
+
+	/* NOTE(rgriege): would be great to avoid the additional mask here */
+	if (panel->parent)
+		gui_mask(gui, panel->parent->x + panel->parent->padding.x,
+		         panel->parent->y + panel->parent->padding.y,
+		         panel->parent->width - panel->parent->padding.x * 2,
+		         panel->parent->body_height - panel->parent->padding.y * 2);
+	else
+		gui_unmask(gui);
+
+	/* background display */
+	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
+	         gui->style.panel.bg_color, g_nocolor);
 
 	/* scrolling */
 
@@ -3859,45 +3876,57 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
 	                 && gui__box_visible(gui, box);
 	if (panel->body_height < panel->required_dim.y) {
-		needed.y = panel->required_dim.y - panel->body_height;
+		const s32 needed = panel->required_dim.y - panel->body_height;
 		if (   !key_mod(gui, KBM_SHIFT)
 		    && !gui->mouse_covered_by_panel
 		    && contains_mouse) {
+			s32 scroll;
 			mouse_scroll(gui, &scroll);
 			scroll *= -GUI_SCROLL_RATE;
-			panel->scroll.y = clamp(0, panel->scroll.y + scroll, needed.y);
+			panel->scroll.y = clamp(0, panel->scroll.y + scroll, needed);
 		} else {
-			panel->scroll.y = clamp(0, panel->scroll.y, needed.y);
+			panel->scroll.y = clamp(0, panel->scroll.y, needed);
 		}
-		scroll_handle_sz = max(panel->padding.x / 2,   panel->body_height * panel->body_height
-		                                             / panel->required_dim.y);
-		slider_val = 1.f - ((r32)panel->scroll.y / needed.y);
-		gui__slider(gui, panel->x, panel->y + panel->padding.y / 2, panel->padding.x / 2,
-		            panel->body_height - panel->padding.y / 2, &slider_val,
-		            scroll_handle_sz, GUI__SLIDER_Y);
-		panel->scroll.y = -(slider_val - 1.f) * needed.y;
+		if (panel->flags & GUI_PANEL_SCROLLBARS) {
+			const s32 scroll_handle_sz
+				= max(panel->padding.x / 2,   panel->body_height * panel->body_height
+				                            / panel->required_dim.y);
+			r32 slider_val = 1.f - ((r32)panel->scroll.y / needed);
+			gui_style_push(gui, slider, gui->style.panel.scrollbar);
+			gui__slider(gui, panel->x, panel->y + panel->padding.y / 2, panel->padding.x / 2,
+			            panel->body_height - panel->padding.y / 2, &slider_val,
+			            scroll_handle_sz, GUI__SLIDER_Y);
+			gui_style_pop(gui);
+			panel->scroll.y = -(slider_val - 1.f) * needed;
+		}
 	} else {
 		panel->scroll.y = 0;
 	}
 
 	if (panel->width < panel->required_dim.x) {
-		needed.x = panel->required_dim.x - panel->width;
+		const s32 needed = panel->required_dim.x - panel->width;
 		if (   key_mod(gui, KBM_SHIFT)
 		    && !gui->mouse_covered_by_panel
 		    && contains_mouse) {
+			s32 scroll;
 			mouse_scroll(gui, &scroll);
-			scroll *= GUI_SCROLL_RATE;
-			panel->scroll.x = clamp(0, panel->scroll.x + scroll, needed.x);
+			scroll *= -GUI_SCROLL_RATE;
+			panel->scroll.x = -clamp(0, -panel->scroll.x + scroll, needed);
 		} else {
-			panel->scroll.x = clamp(0, panel->scroll.x, needed.x);
+			panel->scroll.x = -clamp(0, -panel->scroll.x, needed);
 		}
-		scroll_handle_sz = max(panel->padding.y / 2,   panel->width * panel->width
-		                                             / panel->required_dim.x);
-		slider_val = (r32)panel->scroll.x / needed.x;
-		gui__slider(gui, panel->x + panel->padding.x / 2, panel->y,
-		            panel->width - panel->padding.x / 2, panel->padding.y / 2, &slider_val,
-		            scroll_handle_sz, GUI__SLIDER_X);
-		panel->scroll.x = slider_val * needed.x;
+		if (panel->flags & GUI_PANEL_SCROLLBARS) {
+			const s32 scroll_handle_sz
+				= max(panel->padding.y / 2,   panel->width * panel->width
+				                            / panel->required_dim.x);
+			r32 slider_val = -(r32)panel->scroll.x / needed;
+			gui_style_push(gui, slider, gui->style.panel.scrollbar);
+			gui__slider(gui, panel->x + panel->padding.x / 2, panel->y,
+									panel->width - panel->padding.x / 2, panel->padding.y / 2, &slider_val,
+									scroll_handle_sz, GUI__SLIDER_X);
+			gui_style_pop(gui);
+			panel->scroll.x = -slider_val * needed;
+		}
 	} else {
 		panel->scroll.x = 0;
 	}
@@ -3909,12 +3938,6 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		         panel->parent->body_height - panel->parent->padding.y * 2);
 	else
 		gui_unmask(gui);
-
-	/* background display */
-	/* NOTE(rgriege): would be great to avoid the additional mask here */
-	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
-	         gui->style.panel.bg_color, g_nocolor);
-	gui_unmask(gui);
 
 	if (panel->flags & GUI_PANEL_TITLEBAR)
 		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
