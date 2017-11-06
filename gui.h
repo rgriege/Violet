@@ -1180,10 +1180,8 @@ s32 font__line_width(font_t *f, const char *txt)
 		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR)
 			stbtt_GetPackedQuad(f->char_info, f->texture.width, f->texture.height,
 			                    ch - GUI__FONT_MIN_CHAR, &width, &y, &q, 1);
-		else if (*c == '\r')
+		else if (*c == '\n')
 			goto out;
-		else
-			log_warn("unknown character: '%u'", *c);
 	}
 out:
 	return width;
@@ -1209,7 +1207,7 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 	if (style->align & GUI_ALIGN_MIDDLE) {
 		height = 1;
 		for (const char *c = txt; *c != '\0'; ++c)
-			if (*c == '\r')
+			if (*c == '\n')
 				++height;
 		return   height % 2 == 0
 		       ? -f->descent + f->line_gap + f->newline_dist * (height / 2 - 1)
@@ -1220,7 +1218,7 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 	} else /* default to GUI_ALIGN_BOTTOM */ {
 		height = -f->descent + f->line_gap / 2 + style->padding;
 		for (const char *c = txt; *c != '\0'; ++c)
-			if (*c == '\r')
+			if (*c == '\n')
 				height += f->newline_dist;
 		return height;
 	}
@@ -2633,7 +2631,7 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 			stbtt_GetPackedQuad(font->char_info, font->texture.width,
 			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
 			                    &x, &y, &q, 1);
-		} else if (txt[i] == '\r') {
+		} else if (txt[i] == '\n') {
 			y -= font->newline_dist;
 			x = ix_ + font__line_offset_x(font, &txt[i+1], style);
 		}
@@ -2666,7 +2664,7 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
 			                    &x, &y, &q, 1);
 			text__render(gui, &font->texture, y, q.x0, q.y0, q.x1, q.y1, q.s0, q.t0,
 			             q.s1, q.t1, style->color);
-		} else if (*c == '\r') {
+		} else if (*c == '\n') {
 			y -= font->newline_dist;
 			x = *ix + font__line_offset_x(font, c + 1, style);
 		}
@@ -2704,7 +2702,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 			stbtt_GetPackedQuad(font->char_info, font->texture.width,
 			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
 			                    &x, &y, &q, 1);
-		} else if (*c == '\r') {
+		} else if (*c == '\n') {
 			y -= font->newline_dist;
 			x = xi + font__line_offset_x(font, c + 1, style);
 		} else {
@@ -2741,7 +2739,7 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 	while (*line != '\0') {
 		const s32 line_width = font__line_width(font, txt);
 		width = max(width, line_width);
-		while (*line != '\0' && *line != '\r')
+		while (*line != '\0' && *line != '\n')
 			++line;
 	}
 	return width;
