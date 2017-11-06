@@ -455,6 +455,7 @@ void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells);
 void pgui_col_empty(gui_t *gui, r32 width);
 
 void      pgui_spacer(gui_t *gui);
+void      pgui_spacer_blank(gui_t *gui);
 void      pgui_txt(gui_t *gui, const char *str);
 void      pgui_img(gui_t *gui, const char *fname, img_scale_t scale);
 btn_val_t pgui_btn_txt(gui_t *gui, const char *lbl);
@@ -2205,7 +2206,7 @@ void text__render(gui_t *gui, const texture_t *texture, r32 yb, r32 x0, r32 y0,
 	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
 	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
-	/* TODO(rgriege): figure out why these come in upside-down */
+	/* NOTE(rgriege): stbtt assumes y=0 at top, but for violet y=0 is at bottom */
 	dy = y1 - y0;
 	y0 = yb + (yb - y1);
 	y1 = y0 + dy;
