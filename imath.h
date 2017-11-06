@@ -46,7 +46,11 @@ typedef int s32;
 
 typedef struct v2i
 {
-	s32 x, y;
+	union
+	{
+		struct { s32 x, y; };
+		struct { s32 d[2]; };
+	};
 } v2i;
 
 IMGDECL const v2i g_v2i_zero;

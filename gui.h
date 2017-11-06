@@ -364,10 +364,17 @@ void gui_vsplit_init(gui_t *gui, gui_split_t *split,
 
 /* Panels */
 
-#define GUI_ROW_REMAINING 0
+#define GUI_GRID_REMAINING 0
+#define GUI_GRID_MINOR_DIM_INHERITED 0
+#define GUI_COL_WIDTH_INHERITED GUI_GRID_MINOR_DIM_INHERITED
+#define GUI_ROW_HEIGHT_INHERITED GUI_GRID_MINOR_DIM_INHERITED
 
-#ifndef GUI_PANEL_MAX_COLS
-#define GUI_PANEL_MAX_COLS 16
+#ifndef GUI_PANEL_MAX_GRID_DEPTH
+#define GUI_PANEL_MAX_GRID_DEPTH 8
+#endif
+
+#ifndef GUI_PANEL_MAX_GRID_CELLS
+#define GUI_PANEL_MAX_GRID_CELLS 64
 #endif
 
 #ifndef GUI_SCROLL_RATE
@@ -396,6 +403,15 @@ typedef enum gui_panel_flags
 	GUI_PANEL_FULL      = 0x1f,
 } gui_panel_flags_t;
 
+typedef struct gui_panel_grid_strip
+{
+	b32 vertical;
+	u32 *current_cell;
+	u32 *max_cell;
+	u32 num_cells;
+	v2i dim;
+} gui_panel_grid_strip_t;
+
 typedef struct gui_panel
 {
 	s32 x, y, width, height;
@@ -405,12 +421,11 @@ typedef struct gui_panel
 	intptr userdata;
 	struct
 	{
-		u32 *current_col;
-		u32 cols[GUI_PANEL_MAX_COLS];
-		u32 num_cols;
-		u32 height;
-	} row;
-	v2i pos;
+		u32 cells[GUI_PANEL_MAX_GRID_CELLS];
+		gui_panel_grid_strip_t strips[GUI_PANEL_MAX_GRID_DEPTH];
+		u32 depth;
+		v2i start, pos;
+	} grid;
 	v2i scroll;
 	v2i padding;
 	v2i required_dim;
@@ -426,12 +441,17 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 void pgui_panel(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 
-void pgui_row(gui_t *gui, u32 height, r32 width_ratio);
-void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols);
-#define pgui_row_colsv(gui, height, cols) \
-	pgui_row_cols(gui, height, cols, sizeof(cols) / sizeof(cols[0]))
-void pgui_row_empty(gui_t *gui, u32 height);
-void pgui_row_break(gui_t *gui, u32 top_y, u32 bottom_y, r32 width_ratio);
+void pgui_row(gui_t *gui, r32 height, r32 width_ratio);
+void pgui_row_cells(gui_t *gui, r32 height, const r32 *cells, u32 num_cells);
+#define pgui_row_cellsv(gui, height, cells) \
+	pgui_row_cells(gui, height, cells, countof(cells))
+void pgui_row_empty(gui_t *gui, r32 height);
+
+void pgui_col(gui_t *gui, r32 width, r32 height_ratio);
+void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells);
+#define pgui_col_cellsv(gui, width, cells) \
+	pgui_col_cells(gui, width, cells, countof(cells))
+void pgui_col_empty(gui_t *gui, r32 width);
 
 void      pgui_spacer(gui_t *gui);
 void      pgui_txt(gui_t *gui, const char *str);
@@ -456,7 +476,6 @@ void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 
-void pgui_row_xw(gui_t *gui, s32 *x, s32 *w);
 void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 u64  pgui_next_widget_id(const gui_t *gui);
@@ -3645,6 +3664,8 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->flags = flags;
 	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
 
+	panel->grid.depth = 0;
+
 	panel->scroll = g_v2i_zero;
 	panel->required_dim = g_v2i_zero;
 
@@ -3746,35 +3767,34 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
 		const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
-		panel->pos.y = panel->y + panel->height - dim;
+		panel->grid.pos.y = panel->y + panel->height - dim;
 		u64 drag_id = ~0;
 
 		if (panel->flags & GUI_PANEL_DRAGGABLE && !panel->split.leaf) {
-			dragging = gui__drag_logic(gui, &drag_id, &panel->x, &panel->pos.y,
+			dragging = gui__drag_logic(gui, &drag_id, &panel->x, &panel->grid.pos.y,
 			                           dim, dim, MB_LEFT,
 			                           gui__drag_default_callback, NULL);
 			if (dragging)
-				panel->y = panel->pos.y - panel->height + dim;
+				panel->y = panel->grid.pos.y - panel->height + dim;
 		} else {
 			dragging = false;
 		}
 
-		// TODO(rgriege): active_color if at front?
-		gui_rect(gui, panel->x, panel->pos.y, panel->width,
+		gui_rect(gui, panel->x, panel->grid.pos.y, panel->width,
 		         dim, gui->style.panel.titlebar.bg_color,
 		         gui->style.panel.titlebar.outline_color);
 
-		gui__drag_render(gui, panel->x, panel->pos.y, dim, dim, drag_id,
+		gui__drag_render(gui, panel->x, panel->grid.pos.y, dim, dim, drag_id,
 		                 &gui->style.panel.drag);
 
-		gui_txt_styled(gui, panel->x + dim, panel->pos.y, panel->width, dim,
+		gui_txt_styled(gui, panel->x + dim, panel->grid.pos.y, panel->width, dim,
 		               panel->title, &gui->style.panel.titlebar.text);
 
 		if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf) {
 			const s32 outer_dim = GUI_PANEL_TITLEBAR_HEIGHT;
 			const s32 inner_dim = outer_dim;
 			const s32 x = panel->x + panel->width - outer_dim;
-			const s32 y = panel->pos.y;
+			const s32 y = panel->grid.pos.y;
 			const s32 w = inner_dim;
 			const s32 h = inner_dim;
 			gui_style_push(gui, btn, gui->style.panel.close);
@@ -3783,11 +3803,11 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 			gui_style_pop(gui);
 		}
 
-		panel->pos.y -= panel->padding.y;
+		panel->grid.pos.y -= panel->padding.y;
 		panel->body_height = panel->height - dim;
 	} else {
 		dragging = false;
-		panel->pos.y = panel->y + panel->height - panel->padding.y;
+		panel->grid.pos.y = panel->y + panel->height - panel->padding.y;
 		panel->body_height = panel->height;
 	}
 
@@ -3806,14 +3826,11 @@ void pgui_panel(gui_t *gui, gui_panel_t *panel)
 	else
 		panel->pri = ++gui->next_panel_pri;
 
-	panel->pos.x = panel->x;
-	panel->row.height = 0;
-	panel->row.current_col = panel->row.cols;
-	panel->row.num_cols = 0;
+	panel->grid.pos.x = panel->x + panel->padding.x;
+	panel->grid.start = panel->grid.pos;
+	panel->grid.depth = 0;
 
 	panel->required_dim = v2i_scale(panel->padding, 2);
-
-	panel->pos.y += panel->scroll.y;
 
 	assert(gui->scissor_cnt > 0);
 	gui__current_mask(gui, &box);
@@ -3912,233 +3929,285 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 
 #ifdef DEBUG
 static
-b32 pgui__row_complete(const gui_panel_t *panel)
+b32 pgui__grid_active(const gui_panel_t *panel)
 {
-	return panel->row.current_col == panel->row.cols + panel->row.num_cols;
+	return panel->grid.depth > 0;
 }
 #endif
 
-void pgui_row(gui_t *gui, u32 height, r32 width_ratio)
+void pgui_row(gui_t *gui, r32 height, r32 width_ratio)
 {
-	pgui_row_cols(gui, height, &width_ratio, 1);
-}
-
-void pgui_row_cols(gui_t *gui, u32 height, const r32 *cols, u32 num_cols)
-{
-	u32 unspecified_width_col_cnt, unspecified_col_width;
-	s32 row_width, inner_width;
-
-	assert(gui->panel);
-	assert(pgui__row_complete(gui->panel));
-	assert(num_cols <= GUI_PANEL_MAX_COLS);
-
-	pgui_row_xw(gui, &gui->panel->pos.x, &inner_width);
-	gui->panel->pos.y -= height;
-	gui->panel->row.height = height;
-
-	gui->panel->row.current_col = gui->panel->row.cols;
-	gui->panel->row.num_cols = num_cols;
-
-	row_width = 0;
-	unspecified_width_col_cnt = 0;
-	for (u32 i = 0; i < num_cols; ++i) {
-		if (cols[i] > 1.f) {
-			gui->panel->row.cols[i] = cols[i];
-			row_width += cols[i];
-		} else if (cols[i] > 0.f) {
-			gui->panel->row.cols[i] = cols[i] * inner_width;
-			row_width += gui->panel->row.cols[i];
-		} else {
-			assert(cols[i] == 0.f);
-			gui->panel->row.cols[i] = 0.f;
-			++unspecified_width_col_cnt;
-		}
-	}
-	if (unspecified_width_col_cnt) {
-		unspecified_col_width =   max((inner_width - row_width), 0)
-		                        / unspecified_width_col_cnt;
-		for (u32 i = 0; i < num_cols; ++i)
-			if (gui->panel->row.cols[i] == 0.f)
-				gui->panel->row.cols[i] = unspecified_col_width;
-		row_width += unspecified_width_col_cnt * unspecified_col_width;
-	}
-
-	gui->panel->required_dim.x = max(gui->panel->required_dim.x, row_width);
-	gui->panel->required_dim.y += height;
+	pgui_row_cells(gui, height, &width_ratio, 1);
 }
 
 static
-void pgui__col_advance(gui_panel_t *panel)
+void pgui__strip(gui_t *gui, b32 vertical, r32 minor_dim_,
+                 const r32 *cells, u32 num_cells)
 {
-	panel->pos.x += *panel->row.current_col;
-	++panel->row.current_col;
+	gui_panel_t *panel = gui->panel;
+	b32 major_dim_inherited;
+	u32 unspecified_cell_cnt;
+	s32 cell_total_major_dim;
+	gui_panel_grid_strip_t *strip;
+
+	assert(panel);
+	assert(panel->grid.depth < GUI_PANEL_MAX_GRID_DEPTH);
+	assert((minor_dim_ == GUI_GRID_MINOR_DIM_INHERITED) == (panel->grid.depth > 0));
+	assert(   panel->grid.depth == 0
+	       || panel->grid.strips[panel->grid.depth-1].vertical != vertical);
+
+	strip = &panel->grid.strips[panel->grid.depth];
+
+	if (minor_dim_ == GUI_GRID_MINOR_DIM_INHERITED) {
+		pgui_cell(gui, NULL, NULL, &strip->dim.x, &strip->dim.y);
+		major_dim_inherited = true;
+	} else {
+		r32 major_dim = 0.f;
+		strip->dim.d[!vertical] = minor_dim_;
+		major_dim_inherited = false;
+		for (u32 i = 0; i < num_cells; ++i) {
+			if (cells[i] > 1.f)
+				major_dim += cells[i];
+			else
+				major_dim_inherited = true;
+		}
+		if (major_dim_inherited) {
+			if (vertical)
+				strip->dim.y = panel->grid.pos.y - panel->y - panel->padding.y;
+			else
+				strip->dim.x = panel->x + panel->width - panel->padding.x - panel->grid.pos.x;
+		} else {
+			strip->dim.d[vertical] = major_dim;
+		}
+	}
+
+	strip->vertical = vertical;
+	strip->num_cells = num_cells;
+	strip->current_cell =   panel->grid.depth > 0
+	                      ? panel->grid.strips[panel->grid.depth-1].max_cell
+	                      : panel->grid.cells;
+	strip->max_cell = strip->current_cell + num_cells;
+
+	assert(strip->max_cell < panel->grid.cells + GUI_PANEL_MAX_GRID_CELLS);
+
+	cell_total_major_dim = 0;
+	unspecified_cell_cnt = 0;
+	for (u32 i = 0; i < num_cells; ++i) {
+		if (cells[i] > 1.f) {
+			strip->current_cell[i] = cells[i];
+			cell_total_major_dim += cells[i];
+		} else if (cells[i] > 0.f) {
+			const u32 dim = cells[i] * strip->dim.d[vertical];
+			strip->current_cell[i] = dim;
+			cell_total_major_dim += dim;
+		} else {
+			assert(cells[i] == 0.f);
+			strip->current_cell[i] = 0.f;
+			++unspecified_cell_cnt;
+		}
+	}
+	if (unspecified_cell_cnt) {
+		const u32 total = max((strip->dim.d[vertical] - cell_total_major_dim), 0);
+		const u32 dim = total / unspecified_cell_cnt;
+		const u32 leftover = total % unspecified_cell_cnt;
+		u32 leftover_aggregate = 0, leftover_distributions = 1;
+		for (u32 i = 0; i < num_cells; ++i) {
+			if (strip->current_cell[i] != 0.f)
+				continue;
+			strip->current_cell[i] = dim;
+			leftover_aggregate += leftover;
+			if (leftover_aggregate >= leftover_distributions * unspecified_cell_cnt) {
+				++strip->current_cell[i];
+				++leftover_distributions;
+			}
+		}
+		cell_total_major_dim += total;
+	}
+
+	if (panel->grid.depth == 0) {
+		const v2i dim = {
+			.x =   panel->grid.pos.x + strip->dim.x + panel->padding.x
+			     - (panel->grid.start.x - panel->padding.x),
+			.y =   panel->grid.start.y + panel->padding.y
+			     - (panel->grid.pos.y - strip->dim.y - panel->padding.y),
+		};
+		panel->required_dim.x = max(panel->required_dim.x, dim.x);
+		panel->required_dim.y = max(panel->required_dim.y, dim.y);
+	}
+	++panel->grid.depth;
 }
 
-void pgui_row_empty(gui_t *gui, u32 height)
+void pgui_row_cells(gui_t *gui, r32 height, const r32 *cells, u32 num_cells)
+{
+	pgui__strip(gui, false, height, cells, num_cells);
+}
+
+static
+void pgui__cell_advance(gui_panel_t *panel)
+{
+	gui_panel_grid_strip_t *strip;
+
+	assert(panel->grid.depth > 0);
+
+	do {
+		strip = &panel->grid.strips[panel->grid.depth - 1];
+		if (strip->vertical)
+			panel->grid.pos.y -= *strip->current_cell;
+		else
+			panel->grid.pos.x += *strip->current_cell;
+		++strip->current_cell;
+		if (strip->current_cell == strip->max_cell) {
+			--panel->grid.depth;
+			if (strip->vertical)
+				panel->grid.pos.y += strip->dim.y;
+			else
+				panel->grid.pos.x -= strip->dim.x;
+		} else {
+			break;
+		}
+	} while (panel->grid.depth > 0);
+
+	if (panel->grid.depth == 0) {
+		strip = &panel->grid.strips[0];
+		if (strip->vertical)
+			panel->grid.pos.x += strip->dim.x;
+		else
+			panel->grid.pos.y -= strip->dim.y;
+	}
+}
+
+static
+void pgui__cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	pgui_cell(gui, x, y, w, h);
+	pgui__cell_advance(gui->panel);
+}
+
+void pgui_row_empty(gui_t *gui, r32 height)
 {
 	pgui_row(gui, height, 1.f);
-	pgui__col_advance(gui->panel);
+	pgui__cell_advance(gui->panel);
 }
 
-void pgui_row_break(gui_t *gui, u32 top_y, u32 bottom_y, r32 width_ratio)
+void pgui_col(gui_t *gui, r32 height, r32 width_ratio)
 {
-	const s32 dx = gui->panel->width * (1.f - width_ratio) * 0.5f;
+	pgui_col_cells(gui, height, &width_ratio, 1);
+}
 
-	pgui_row_empty(gui, top_y + bottom_y);
+void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells)
+{
+	pgui__strip(gui, true, width, cells, num_cells);
+}
 
-	gui_line(gui, gui->panel->x + dx, gui->panel->pos.y + bottom_y,
-	         gui->panel->x + gui->panel->width - dx,
-	         gui->panel->pos.y + bottom_y, 1, gui->style.panel.break_color);
+void pgui_col_empty(gui_t *gui, r32 width)
+{
+	pgui_col(gui, width, 1.f);
+	pgui__cell_advance(gui->panel);
 }
 
 void pgui_spacer(gui_t *gui)
 {
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
+	const gui_panel_style_t *style = &gui->style.panel;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
+}
 
-	gui_rect(gui, gui->panel->pos.x, gui->panel->pos.y,
-	         *gui->panel->row.current_col, gui->panel->row.height,
-	         gui->style.panel.cell_bg_color, gui->style.panel.cell_border_color);
-
-	pgui__col_advance(gui->panel);
+void pgui_spacer_blank(gui_t *gui)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_rect(gui, x, y, w, h, g_nocolor, g_nocolor);
 }
 
 void pgui_txt(gui_t *gui, const char *str)
 {
-	const s32 x = gui->panel->pos.x;
-	const s32 y = gui->panel->pos.y;
-	const s32 w = *gui->panel->row.current_col;
-	const s32 h = gui->panel->row.height;
 	const gui_panel_style_t *style = &gui->style.panel;
-
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
 	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
 	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
-	pgui__col_advance(gui->panel);
 }
 
 void pgui_img(gui_t *gui, const char *fname, img_scale_t scale)
 {
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	gui_img_boxed(gui, gui->panel->pos.x, gui->panel->pos.y,
-	              *gui->panel->row.current_col, gui->panel->row.height,
-	              fname, scale);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_img_boxed(gui, x, y, w, h, fname, scale);
 }
 
 btn_val_t pgui_btn_txt(gui_t *gui, const char *lbl)
 {
 	btn_val_t result;
-
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	result = gui_btn_txt(gui, gui->panel->pos.x, gui->panel->pos.y,
-	                     *gui->panel->row.current_col, gui->panel->row.height, lbl);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	result = gui_btn_txt(gui, x, y, w, h, lbl);
 	return result;
 }
 
 btn_val_t pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale)
 {
 	btn_val_t result;
-
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	result = gui_btn_img(gui, gui->panel->pos.x, gui->panel->pos.y,
-	                     *gui->panel->row.current_col, gui->panel->row.height,
-	                     fname, scale);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	result = gui_btn_img(gui, x, y, w, h, fname, scale);
 	return result;
 }
 
 btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen)
 {
 	btn_val_t result;
-
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	result = gui_btn_pen(gui, gui->panel->pos.x, gui->panel->pos.y,
-	                     *gui->panel->row.current_col, gui->panel->row.height, pen);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	result = gui_btn_pen(gui, x, y, w, h, pen);
 	return result;
 }
 
 void pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 {
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	gui_chk(gui, gui->panel->pos.x, gui->panel->pos.y,
-	        *gui->panel->row.current_col, gui->panel->row.height, lbl, val);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_chk(gui, x, y, w, h, lbl, val);
 }
 
 b32 pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, npt_flags_t flags)
 {
 	b32 result;
-
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	result = gui_npt(gui, gui->panel->pos.x, gui->panel->pos.y,
-	                 *gui->panel->row.current_col, gui->panel->row.height,
-	                 lbl, n, hint, flags);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	result = gui_npt(gui, x, y, w, h, lbl, n, hint, flags);
 	return result;
 }
 
 void pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
 {
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	gui_select(gui, gui->panel->pos.x, gui->panel->pos.y,
-	            *gui->panel->row.current_col, gui->panel->row.height,
-	            lbl, val, opt);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_select(gui, x, y, w, h, lbl, val, opt);
 }
 
 void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
 {
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	gui_mselect(gui, gui->panel->pos.x, gui->panel->pos.y,
-	             *gui->panel->row.current_col, gui->panel->row.height,
-	             txt, val, opt);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_mselect(gui, x, y, w, h, txt, val, opt);
 }
 
 b32 pgui_slider_x(gui_t *gui, r32 *val)
 {
 	b32 ret;
-
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	ret = gui_slider_x(gui, gui->panel->pos.x, gui->panel->pos.y,
-	                   *gui->panel->row.current_col, gui->panel->row.height, val);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	ret = gui_slider_x(gui, x, y, w, h, val);
 	return ret;
 }
 
 b32 pgui_slider_y(gui_t *gui, r32 *val)
 {
 	b32 ret;
-
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-
-	ret = gui_slider_y(gui, gui->panel->pos.x, gui->panel->pos.y,
-	                   *gui->panel->row.current_col, gui->panel->row.height, val);
-	pgui__col_advance(gui->panel);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	ret = gui_slider_y(gui, x, y, w, h, val);
 	return ret;
 }
 
@@ -4166,23 +4235,16 @@ void pgui_subpanel_init(gui_t *gui, gui_panel_t *subpanel)
 
 void pgui_subpanel(gui_t *gui, gui_panel_t *subpanel)
 {
-	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
 	assert(!subpanel->split.leaf);
-
-	subpanel->x = gui->panel->pos.x;
-	subpanel->y = gui->panel->pos.y;
-	subpanel->width = *gui->panel->row.current_col;
-	subpanel->height = gui->panel->row.height;
+	pgui__cell_consume(gui, &subpanel->x, &subpanel->y,
+	                   &subpanel->width, &subpanel->height);
 	subpanel->parent = gui->panel;
-
 	pgui_panel(gui, subpanel);
 }
 
 void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel)
 {
 	pgui_panel_finish(gui, subpanel);
-	pgui__col_advance(gui->panel);
 }
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
@@ -4196,36 +4258,43 @@ int pgui_panel_sort(const void *lhs_, const void *rhs_)
 	return lhs->pri - rhs->pri;
 }
 
-void pgui_row_xw(gui_t *gui, s32 *x, s32 *w)
-{
-	assert(gui->panel);
-	const s32 padding =   gui->style.panel.padding >= 1.f
-	                    ? gui->style.panel.padding
-	                    : gui->panel->width * gui->style.panel.padding;
-	if (x)
-		*x = gui->panel->x - gui->panel->scroll.x + padding;
-	if (w)
-		*w = gui->panel->width - 2 * padding;
-}
-
 void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 {
+	v2i pos, dim;
+	gui_panel_grid_strip_t *strip;
+
 	assert(gui->panel);
+	assert(pgui__grid_active(gui->panel));
+
+	strip = &gui->panel->grid.strips[gui->panel->grid.depth - 1];
+
+	pos = v2i_add(gui->panel->grid.pos, gui->panel->scroll);
+	if (strip->vertical) {
+		dim.x = strip->dim.x;
+		dim.y = (s32)*strip->current_cell;
+	} else {
+		dim.x = (s32)*strip->current_cell;
+		dim.y = strip->dim.y;
+	}
+	pos.y -= dim.y;
+
 	if (x)
-		*x = gui->panel->pos.x;
+		*x = pos.x;
 	if (y)
-		*y = gui->panel->pos.y;
+		*y = pos.y;
 	if (w)
-		*w = (s32)*gui->panel->row.current_col;
+		*w = dim.x;
 	if (h)
-		*h = (s32)gui->panel->row.height;
+		*h = dim.y;
 }
 
 u64 pgui_next_widget_id(const gui_t *gui)
 {
+	v2i pos;
 	assert(gui->panel);
-	assert(!pgui__row_complete(gui->panel));
-	return gui_widget_id(gui, gui->panel->pos.x, gui->panel->pos.y);
+	assert(pgui__grid_active(gui->panel));
+	pos = v2i_add(gui->panel->grid.pos, gui->panel->scroll);
+	return gui_widget_id(gui, pos.x, pos.y);
 }
 
 void gui_pen_panel_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
