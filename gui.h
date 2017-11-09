@@ -478,7 +478,7 @@ void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 
-void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
+void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 u64  pgui_next_widget_id(const gui_t *gui);
 
@@ -4280,7 +4280,7 @@ int pgui_panel_sort(const void *lhs_, const void *rhs_)
 	return lhs->pri - rhs->pri;
 }
 
-void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 {
 	v2i pos, dim;
 	gui_panel_grid_strip_t *strip;
@@ -4312,11 +4312,13 @@ void pgui_cell(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 
 u64 pgui_next_widget_id(const gui_t *gui)
 {
-	v2i pos;
+	/* TODO(rgriege): base panel widget id off relative position to panel
+	 * without scroll, so scrolling doesn't reset focus id */
+	s32 x, y;
 	assert(gui->panel);
 	assert(pgui__grid_active(gui->panel));
-	pos = v2i_add(gui->panel->grid.pos, gui->panel->scroll);
-	return gui_widget_id(gui, pos.x, pos.y);
+	pgui_cell(gui, &x, &y, NULL, NULL);
+	return gui_widget_id(gui, x, y);
 }
 
 void gui_pen_panel_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
