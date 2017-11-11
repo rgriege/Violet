@@ -269,6 +269,10 @@ FMDEF r32   polyf_area(const v2f *v, u32 n);
 FMDEF v2f   polyf_centroid(const v2f *v, u32 n);
 FMDEF b32   polyf_is_cc(const v2f *v, u32 n);
 FMDEF b32   polyf_segment_intersect(const v2f *v, u32 n, v2f v0, v2f v1);
+FMDEF b32   polyf_segment_intersection(const v2f *v, u32 n, v2f v0, v2f v1,
+                                       v2f *isec);
+FMDEF u32   polyf_segment_intersection_ex(const v2f *v, u32 n, v2f v0, v2f v1,
+                                          v2f *isec_first, v2f *isec_last);
 FMDEF b32   polyf_intersect(const v2f *p1, u32 n1, const v2f *p2, u32 n2,
                             v2f *isec);
 FMDEF r32   polyf_pt_dist(const v2f *v, u32 n, v2f p);
@@ -1241,18 +1245,20 @@ FMDEF b32 polyf_is_convex(const v2f *v, u32 n)
 FMDEF b32 polyf_contains(const v2f *v, u32 n, v2f point)
 {
 	box2f box;
+	v2f out_p;
+	u32 intersections;
+	r32 t, u;
+
 	polyf_bounding_box(v, n, &box);
 	if (!box2f_contains_point(box, point))
 		return false;
 
-	v2f out_p = v2f_add(v2f_sub(box.max, box.min), box.max);
+	out_p = v2f_add(v2f_sub(box.max, box.min), box.max);
 
-	u32 intersections = 0;
-	r32 t, u;
-	for (u32 i = 0; i < n; ++i)
-	{
+	intersections = 0;
+	for (u32 i = 0; i < n; ++i) {
 		v2f a = v[i];
-		v2f b = v[(i < n-1 ? i+1 : 0)];
+		v2f b = v[(i+1)%n];
 		if (   fmath_line_intersect_coords(a, b, out_p, point, &t, &u)
 		    && 0 < t && t <= 1 && 0 < u && u < 1)
 			++intersections;
@@ -1356,14 +1362,43 @@ FMDEF b32 polyf_is_cc(const v2f *v, u32 n)
 
 FMDEF b32 polyf_segment_intersect(const v2f *v, u32 n, v2f v0, v2f v1)
 {
-	v2f isec, prev = v[n-1];
-	for (const v2f *vn=v+n; v!=vn; ++v)
-	{
-		if (fmath_segment_intersect(prev, *v, v0, v1, &isec))
+	v2f isec;
+	return polyf_segment_intersection(v, n, v0, v1, &isec);
+}
+
+FMDEF b32 polyf_segment_intersection(const v2f *v, u32 n, v2f v0, v2f v1,
+                                     v2f *isec)
+{
+	v2f prev = v[n-1];
+	for (const v2f *vn=v+n; v!=vn; ++v) {
+		if (fmath_segment_intersect(prev, *v, v0, v1, isec))
 			return true;
 		prev = *v;
 	}
 	return false;
+}
+
+FMDEF u32 polyf_segment_intersection_ex(const v2f *v, u32 n, v2f v0, v2f v1,
+                                        v2f *isec_first, v2f *isec_last)
+{
+	u32 cnt = 0;
+	v2f prev = v[n-1];
+	r32 t, u, min_u = 1.0001f, max_u = -0.0001f;
+	for (const v2f *vn=v+n; v!=vn; ++v) {
+		if (fmath_segment_intersect_coords(prev, *v, v0, v1, &t, &u)) {
+			if (u < min_u) {
+				min_u = u;
+				*isec_first = fmath_line_extrapolate(v0, v1, u);
+			}
+			if (u > max_u) {
+				max_u = u;
+				*isec_last = fmath_line_extrapolate(v0, v1, u);
+			}
+			++cnt;
+		}
+		prev = *v;
+	}
+	return cnt;
 }
 
 FMDEF b32 polyf_intersect(const v2f *p1, u32 n1, const v2f *p2, u32 n2, v2f *isec)
