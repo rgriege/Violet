@@ -46,6 +46,7 @@ typedef struct color_t
 
 void    color_as_float_array(r32 *f, color_t c);
 color_t color_from_float(const r32 *f);
+void    color_to_hex(color_t c, char *hex, u32 n);
 color_t color_from_hex(const char *hex);
 b32     color_equal(color_t lhs, color_t rhs);
 
@@ -659,6 +660,11 @@ color_t color_from_float(const r32 *f)
 		.b = f[2] * 255.f,
 		.a = f[3] * 255.f,
 	};
+}
+
+void color_to_hex(color_t c, char *hex, u32 n)
+{
+	snprintf(hex, n, "#%.2x%.2x%.2x%.2x", c.r, c.g, c.b, c.a);
 }
 
 color_t color_from_hex(const char *hex)
