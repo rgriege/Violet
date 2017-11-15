@@ -120,6 +120,10 @@ DMDEF void box2d_from_point(box2d *b, v2d p);
 DMDEF void box2d_from_dims(box2d *box, r64 left, r64 top, r64 right, r64 bottom);
 DMDEF void box2d_extend_point(box2d *b, v2d p);
 
+/* Polygon */
+
+DMDEF b32 polyd_is_cc(const v2d *v, u32 n);
+
 #endif // DMATH_H
 
 
@@ -329,6 +333,29 @@ DMDEF void box2d_extend_point(box2d *box, v2d p)
 {
 	box2d_from_dims(box, fmin(box->min.x, p.x), fmax(box->max.y, p.y),
 	                     fmax(box->max.x, p.x), fmin(box->min.y, p.y));
+}
+
+/* Polygon */
+
+DMDEF b32 polyd_is_cc(const v2d *v, u32 n)
+{
+	const v2d *a, *b, *c;
+	v2d ab, bc;
+	r64 sine_sum = 0;
+
+	assert(n>=3);
+
+	a = &v[n-1];
+	for (u32 i = 0; i < n; ++i) {
+		b = &v[i];
+		c = &v[(i+1)%n];
+
+		ab = v2d_sub(*b, *a);
+		bc = v2d_sub(*c, *b);
+
+		sine_sum += v2d_cross(ab, bc) / v2d_mag(ab) / v2d_mag(bc);
+	}
+	return sine_sum > 0;
 }
 
 #undef DMATH_IMPLEMENTATION

@@ -55,9 +55,6 @@ typedef struct timespec timepoint_t;
 #define check(x) x
 #endif
 
-#define memswp(a, b, type) \
-	do { type tmp = a; a = b; b = tmp; } while(0)
-
 #ifndef WIN32
 #define thread_local __thread
 #else
@@ -256,6 +253,16 @@ static inline void  std_free(void *ptr) { return free(ptr); }
 
 u32 hash(const char *str);
 u32 hashn(const char *str, u32 n);
+
+/* Utility */
+
+#define memswp(a, b, type) \
+	do { type tmp = a; a = b; b = tmp; } while(0)
+
+#ifndef REVERSE_MAX_SIZE
+#define REVERSE_MAX_SIZE 128
+#endif
+void reverse(void *data, size_t size, size_t count);
 
 /* Time */
 
@@ -597,6 +604,19 @@ u32 hashn(const char *str, u32 n)
 	for (u32 i = 0; i < n; ++i)
 		hash = ((hash << 5) + hash) + (int)str[i];
 	return hash;
+}
+
+void reverse(void *data, size_t size, size_t count)
+{
+	char scratch[REVERSE_MAX_SIZE];
+	assert(size <= REVERSE_MAX_SIZE);
+	for (size_t i = 0, n = count/2; i < n; ++i) {
+		char *l = (char*)data + i * size;
+		char *r = (char*)data + (count - 1 - i) * size;
+		memcpy(scratch, r, size);
+		memcpy(r, l, size);
+		memcpy(l, scratch, size);
+	}
 }
 
 /* Time */
