@@ -121,15 +121,15 @@ void error_catch(const char *msg, void *udata);
 
 #define try \
 	do { \
-		jmp_buf jmpbuf; \
-		temp_memory_save(); \
-		error_handler_push(error_catch, &jmpbuf); \
-		if (setjmp(jmpbuf) == 0)
+		jmp_buf jmpbuf_try; \
+		temp_memory_mark_t tmem_mark_try = temp_memory_save(g_temp_allocator); \
+		error_handler_push(error_catch, &jmpbuf_try); \
+		if (setjmp(jmpbuf_try) == 0)
 #define catch \
 		else
 #define finally \
-		error_handler_pop(error_catch, &jmpbuf); \
-		temp_memory_restore(); \
+		error_handler_pop(error_catch, &jmpbuf_try); \
+		temp_memory_restore(tmem_mark_try); \
 	} while (0)
 
 
@@ -195,9 +195,12 @@ void  default_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
 /* Paged bump memory allocator */
 #include "violet/pgb.h"
 
-#define temp_memory_save()     const pgb_watermark_t memmark = \
-                                   pgb_save(g_temp_allocator->udata)
-#define temp_memory_restore()  pgb_restore(g_temp_allocator->udata, memmark)
+typedef pgb_watermark_t temp_memory_mark_t;
+#define     temp_memory_save(alloc)    pgb_save((alloc)->udata)
+#define     temp_memory_restore(mark)  pgb_restore(mark)
+allocator_t temp_memory_fork_(pgb_t *pgb);
+#define     temp_memory_fork()         temp_memory_fork_(&(pgb_t){0})
+void        temp_memory_merge(allocator_t *fork);
 
 /* Tracking allocator */
 typedef struct alloc_node
@@ -386,6 +389,21 @@ void log_alloc(const char *prefix, size_t sz  MEMCALL_ARGS)
 
 thread_local allocator_t *g_temp_allocator = &allocator_create(pgb, &(pgb_t){0});
 
+thread_local pgb_heap_t g_temp_memory_heap = { .first_page = NULL };
+
+allocator_t temp_memory_fork_(pgb_t *pgb)
+{
+	allocator_t allocator = allocator_create(pgb, pgb);
+	pgb_init(allocator.udata, &g_temp_memory_heap);
+	return allocator;
+}
+
+void temp_memory_merge(allocator_t *fork)
+{
+	assert(fork != g_temp_allocator);
+	pgb_destroy(fork->udata);
+}
+
 
 /* Default allocator */
 
@@ -570,18 +588,18 @@ void vlt_mem_advance_gen(void)
 }
 
 static
-void vlt_mem_log_usage_(u32 temp_bytes, u32 temp_page_cnt)
+void vlt_mem_log_usage_(size_t temp_bytes, size_t temp_page_cnt)
 {
 #ifdef VLT_TRACK_MEMORY
 	alloc_tracker_log_usage(g_allocator->udata);
 #endif
-	log_info("temp:  %10lu bytes in %u pages", temp_bytes, temp_page_cnt);
+	log_info("temp:  %10lu bytes in %lu pages", temp_bytes, temp_page_cnt);
 }
 
 void vlt_mem_log_usage(void)
 {
 	const pgb_t *pgb = g_temp_allocator->udata;
-	u32 temp_bytes, temp_page_cnt;
+	size_t temp_bytes, temp_page_cnt;
 	pgb_stats(pgb, &temp_bytes, &temp_page_cnt);
 	vlt_mem_log_usage_(temp_bytes, temp_page_cnt);
 }
@@ -776,14 +794,14 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 static
 void vlt_init(void)
 {
-	pgb_init(g_temp_allocator->udata);
+	pgb_init(g_temp_allocator->udata, &g_temp_memory_heap);
 }
 
 static
 void vlt_destroy(void)
 {
 	pgb_t *pgb = g_temp_allocator->udata;
-	u32 temp_bytes, temp_page_cnt;
+	size_t temp_bytes, temp_page_cnt;
 	pgb_stats(pgb, &temp_bytes, &temp_page_cnt);
 	pgb_destroy(pgb);
 	vlt_mem_log_usage_(temp_bytes, temp_page_cnt);
