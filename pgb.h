@@ -434,7 +434,8 @@ void pgb_restore(pgb_watermark_t watermark)
 	}
 	pgb->current_page = watermark.page;
 	pgb->current_ptr  = watermark.ptr;
-	pgb->current_page->next = NULL;
+	if (pgb->current_page)
+		pgb->current_page->next = NULL;
 }
 
 void pgb_stats(const pgb_t *pgb, size_t *byte_cnt_, size_t *page_cnt_)
