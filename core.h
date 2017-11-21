@@ -266,6 +266,7 @@ u32 hashn(const char *str, u32 n);
 #define REVERSE_MAX_SIZE 128
 #endif
 void reverse(void *data, size_t size, size_t count);
+#define reverse_buf(buf) reverse(buf, sizeof((buf)[0]), countof(buf))
 
 /* Time */
 
