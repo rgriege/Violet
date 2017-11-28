@@ -281,6 +281,9 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                   const gui_element_style_t *style);
 
 
+b32  gui_point_visible(const gui_t *gui, s32 x, s32 y);
+
+
 /* Widgets */
 
 typedef enum npt_flags_t
@@ -2112,6 +2115,24 @@ void gui__mask_box(const gui_t *gui, box2i *box)
 	box2i_clamp_point(mask, &box->max);
 }
 
+b32 gui_point_visible(const gui_t *gui, s32 x, s32 y)
+{
+	const v2i pt = { .x = x, .y = y };
+	box2i mask;
+	gui__current_mask(gui, &mask);
+	return box2i_contains_point(mask, pt);
+}
+
+static
+b32 gui__box_half_visible(const gui_t *gui, box2i box)
+{
+	box2i mask, clipped;
+	gui__current_mask(gui, &mask);
+	clipped = box2i_intersection(mask, box);
+	return    clipped.max.x - clipped.min.x >= (box.max.x - box.min.x) / 2
+	       && clipped.max.y - clipped.min.y >= (box.max.y - box.min.y) / 2;
+}
+
 static
 void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
@@ -2864,16 +2885,6 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	gui_circ(gui, x + w / 2, y + h / 2, min(w / 2, h / 2), style->bg_color,
 	         style->outline_color);
-}
-
-static
-b32 gui__box_half_visible(const gui_t *gui, box2i box)
-{
-	box2i mask, clipped;
-	gui__current_mask(gui, &mask);
-	clipped = box2i_intersection(mask, box);
-	return    clipped.max.x - clipped.min.x >= (box.max.x - box.min.x) / 2
-	       && clipped.max.y - clipped.min.y >= (box.max.y - box.min.y) / 2;
 }
 
 static
