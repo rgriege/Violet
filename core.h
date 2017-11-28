@@ -792,10 +792,17 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 
 /* Runtime */
 
+#if defined(_WIN32) && defined(DEBUG_HEAP)
+#include <crtdbg.h>
+#endif
+
 static
 void vlt_init(void)
 {
 	pgb_init(g_temp_allocator->udata, &g_temp_memory_heap);
+#if defined(_WIN32) && defined(DEBUG_HEAP)
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF);
+#endif
 }
 
 static

@@ -187,7 +187,7 @@ size_t pgb__page_min_size_for_alloc(size_t alloc_size)
 	const size_t page_size = pgb__round_up_power_of_two(alloc_size);
 	if (page_size < PGB_MIN_PAGE_SIZE)
 		return PGB_MIN_PAGE_SIZE;
-	else if (page_size - pgb__header_size(page_size) < alloc_size)
+	else if (page_size - PGB__PAGE_SLOTS - pgb__header_size(page_size) < alloc_size)
 		return page_size << 1;
 	else
 		return page_size;
