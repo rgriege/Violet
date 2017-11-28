@@ -164,8 +164,6 @@ b32 pgb__ptr_is_last_alloc(const pgb_byte *ptr, const pgb_t *pgb)
 	      && ptr + pgb__alloc_get_sz(ptr, pgb->current_page) == pgb->current_ptr;
 }
 
-static_assert(sizeof(size_t) == 8, pgb__round_up_power_of_two__invalid_size);
-
 static
 size_t pgb__round_up_power_of_two(size_t x_)
 {
@@ -175,7 +173,11 @@ size_t pgb__round_up_power_of_two(size_t x_)
 	x |= x >> 4;
 	x |= x >> 8;
 	x |= x >> 16;
+#if INTPTR_MAX == INT64_MAX
 	x |= x >> 32;
+#elif INTPTR_MAX != INT32_MAX
+#error Unhandled size_t size
+#endif
 	return x + 1;
 }
 
