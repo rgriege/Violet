@@ -3976,7 +3976,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	else
 		panel->body_height = panel->height;
 
-	if (contains_mouse)
+	if (contains_mouse && !panel->parent)
 		gui->mouse_covered_by_panel = true;
 
 	gui->panel = panel->parent;
