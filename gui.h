@@ -429,6 +429,7 @@ typedef struct gui_panel
 		v2i start, pos;
 	} grid;
 	v2i scroll;
+	v2i scroll_rate;
 	v2i padding;
 	v2i required_dim;
 	s32 body_height;
@@ -3689,6 +3690,8 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->grid.depth = 0;
 
 	panel->scroll = g_v2i_zero;
+	panel->scroll_rate.x = GUI_SCROLL_RATE;
+	panel->scroll_rate.y = GUI_SCROLL_RATE;
 	panel->required_dim = g_v2i_zero;
 
 	panel->parent = NULL;
@@ -3899,7 +3902,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		    && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
-			scroll *= -GUI_SCROLL_RATE;
+			scroll *= -panel->scroll_rate.y;
 			panel->scroll.y = clamp(0, panel->scroll.y + scroll, needed);
 		} else {
 			panel->scroll.y = clamp(0, panel->scroll.y, needed);
@@ -3927,7 +3930,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		    && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
-			scroll *= -GUI_SCROLL_RATE;
+			scroll *= -panel->scroll_rate.x;
 			panel->scroll.x = -clamp(0, -panel->scroll.x + scroll, needed);
 		} else {
 			panel->scroll.x = -clamp(0, -panel->scroll.x, needed);
