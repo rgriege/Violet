@@ -205,13 +205,14 @@ timepoint_t gui_last_input_time(gui_t *gui);
 
 typedef enum mouse_button_t
 {
-	MB_LEFT = 1 << 0,
-	MB_MIDDLE = 1 << 1,
-	MB_RIGHT = 1 << 2,
-	MB_X1 = 1 << 3,
-	MB_X2 = 1 << 4,
-	MB_WHEELUP = 1 << 5,
-	MB_WHEELDOWN = 1 << 6
+	MB_LEFT      = 1 << 0,
+	MB_MIDDLE    = 1 << 1,
+	MB_RIGHT     = 1 << 2,
+	MB_X1        = 1 << 3,
+	MB_X2        = 1 << 4,
+	MB_WHEELUP   = 1 << 5,
+	MB_WHEELDOWN = 1 << 6,
+	MB_WHEEL     = MB_WHEELUP | MB_WHEELDOWN,
 } mouse_button_t;
 
 /* Input */
