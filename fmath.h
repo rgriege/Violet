@@ -1381,11 +1381,13 @@ FMDEF b32 polyf_segment_intersection(const v2f *v, u32 n, v2f v0, v2f v1,
 FMDEF u32 polyf_segment_intersection_ex(const v2f *v, u32 n, v2f v0, v2f v1,
                                         v2f *isec_first, v2f *isec_last)
 {
+	const v2f dir = v2f_dir(v0, v1);
 	u32 cnt = 0;
 	v2f prev = v[n-1];
 	r32 t, u, min_u = 1.0001f, max_u = -0.0001f;
 	for (const v2f *vn=v+n; v!=vn; ++v) {
-		if (fmath_segment_intersect_coords(prev, *v, v0, v1, &t, &u)) {
+		if (   fabsf(v2f_dot(dir, v2f_dir(prev, *v))) < 0.999f
+		    && fmath_segment_intersect_coords(prev, *v, v0, v1, &t, &u)) {
 			if (u < min_u) {
 				min_u = u;
 				*isec_first = fmath_line_extrapolate(v0, v1, u);
