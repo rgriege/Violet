@@ -68,10 +68,14 @@ IMDEF v2i  v2i_add(v2i lhs, v2i rhs);
 IMDEF void v2i_add_eq(v2i *lhs, v2i rhs);
 IMDEF v2i  v2i_sub(v2i lhs, v2i rhs);
 IMDEF void v2i_sub_eq(v2i *lhs, v2i rhs);
+IMDEF v2i  v2i_mul(v2i lhs, v2i rhs);
+IMDEF void v2i_mul_eq(v2i *lhs, v2i rhs);
 IMDEF v2i  v2i_div(v2i lhs, v2i rhs);
 IMDEF void v2i_div_eq(v2i *lhs, v2i rhs);
 IMDEF s32  v2i_dot(v2i lhs, v2i rhs);
 IMDEF s32  v2i_cross(v2i lhs, v2i rhs);
+IMDEF v2i  v2i_lperp(v2i v);
+IMDEF v2i  v2i_rperp(v2i v);
 IMDEF v2i  v2i_inverse(v2i v);
 IMDEF void v2i_inverse_eq(v2i *v);
 IMDEF b32  v2i_equal(v2i lhs, v2i rhs);
@@ -174,6 +178,16 @@ IMDEF void v2i_sub_eq(v2i *lhs, v2i rhs)
 	*lhs = v2i_sub(*lhs, rhs);
 }
 
+IMDEF v2i v2i_mul(v2i lhs, v2i rhs)
+{
+	return (v2i){ .x = lhs.x * rhs.x, .y = lhs.y * rhs.y };
+}
+
+IMDEF void v2i_mul_eq(v2i *lhs, v2i rhs)
+{
+	*lhs = v2i_mul(*lhs, rhs);
+}
+
 IMDEF v2i v2i_div(v2i lhs, v2i rhs)
 {
 	return (v2i){ .x = lhs.x / rhs.x, .y = lhs.y / rhs.y };
@@ -193,6 +207,16 @@ IMDEF s32 v2i_dot(v2i lhs, v2i rhs)
 IMDEF s32 v2i_cross(v2i lhs, v2i rhs)
 {
 	return lhs.x * rhs.y - lhs.y * rhs.x;
+}
+
+IMDEF v2i v2i_lperp(v2i v)
+{
+	return (v2i){ .x = -v.y, .y = v.x };
+}
+
+IMDEF v2i v2i_rperp(v2i v)
+{
+	return (v2i){ .x = v.y, .y = -v.x };
 }
 
 IMDEF v2i v2i_inverse(v2i v)
