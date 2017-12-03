@@ -130,15 +130,18 @@ FMDEF b32 v3f_equal(v3f lhs, v3f rhs);
 
 /* 3x3 Matrix */
 
-typedef r32 m3f[9];
+typedef struct m3f
+{
+	r32 v[9];
+} m3f;
 
 FMGDECL const m3f g_m3f_identity;
 FMGDECL const m3f g_m3f_zero;
 
-FMDEF void m3f_init_rot(m3f m, r32 radians);
-FMDEF void m3f_mul_m3(const m3f lhs, const m3f rhs, m3f res);
-FMDEF v2f  m3f_mul_v2(const m3f m, v2f v);
-FMDEF b32  m3f_equal(const m3f lhs, const m3f rhs);
+FMDEF m3f m3f_init_rot(r32 radians);
+FMDEF m3f m3f_mul_m3(m3f lhs, m3f rhs);
+FMDEF v2f m3f_mul_v2(m3f m, v2f v);
+FMDEF b32 m3f_equal(m3f lhs, m3f rhs);
 
 /* 4x4 Matrix */
 
@@ -570,52 +573,52 @@ FMGDEF const m3f g_m3f_zero = {
 	0, 0, 0
 };
 
-FMDEF void m3f_init_rot(m3f m, r32 radians)
+FMDEF m3f m3f_init_rot(r32 radians)
 {
-	m[0] = cosf(radians);
-	m[1] = -sinf(radians);
-	m[2] = 0;
-	m[3] = -m[1];
-	m[4] = m[0];
-	m[5] = 0;
-	m[6] = 0;
-	m[7] = 0;
-	m[8] = 1;
+	m3f m;
+	m.v[0] = cosf(radians);
+	m.v[1] = -sinf(radians);
+	m.v[2] = 0;
+	m.v[3] = -m.v[1];
+	m.v[4] = m.v[0];
+	m.v[5] = 0;
+	m.v[6] = 0;
+	m.v[7] = 0;
+	m.v[8] = 1;
+	return m;
 }
 
-FMDEF void m3f_mul_m3(const m3f lhs, const m3f rhs, m3f res)
+FMDEF m3f m3f_mul_m3(m3f lhs, m3f rhs)
 {
+	m3f res = g_m3f_zero;
 	const r32 *lhs_i, *rhs_k;
 	r32 *res_i, lhs_ik;
-	memset(res, 0, 9 * sizeof(r32));
 	for (int i = 0; i < 3; i++) {
-		lhs_i = lhs + 3 * i;
-		res_i = res + 3 * i;
+		lhs_i = lhs.v + 3 * i;
+		res_i = res.v + 3 * i;
 		for (int k = 0; k < 3; k++) {
-			rhs_k = rhs + 3 * k;
+			rhs_k = rhs.v + 3 * k;
 			lhs_ik = lhs_i[k];
 			for (int j = 0; j < 3; j++)
 				res_i[j] += lhs_ik * rhs_k[j];
 		}
 	}
+	return res;
 }
 
-FMDEF v2f m3f_mul_v2(const m3f m, v2f v)
+FMDEF v2f m3f_mul_v2(m3f m, v2f v)
 {
 	v2f result;
-	result.x = m[0] * v.x + m[1] * v.y + m[2];
-	result.y = m[3] * v.x + m[4] * v.y + m[5];
+	result.x = m.v[0] * v.x + m.v[1] * v.y + m.v[2];
+	result.y = m.v[3] * v.x + m.v[4] * v.y + m.v[5];
 	return result;
 }
 
-FMDEF b32 m3f_equal(const m3f lhs, const m3f rhs)
+FMDEF b32 m3f_equal(m3f lhs, m3f rhs)
 {
-	for (int i = 0; i < 3; i++)
-		for (int j = 0; j < 3; j++)
-			if (lhs[3*i+j] != rhs[3*i+j])
-				return false;
-	return true;
+	return memcmp(lhs.v, rhs.v, 9 * sizeof(r32)) == 0;
 }
+
 
 /* 4x4 Matrix */
 
@@ -776,26 +779,26 @@ FMDEF b32 m4f_equal(m4f lhs, m4f rhs)
 FMDEF m4f m4f_from_m3(m3f src)
 {
 	return (m4f) {
-		src[0], src[1], 0, src[2],
-		src[3], src[4], 0, src[5],
-		0,      0,      1, 0,
-		src[6], src[7], 0, src[8],
+		src.v[0], src.v[1], 0, src.v[2],
+		src.v[3], src.v[4], 0, src.v[5],
+		0,        0,        1, 0,
+		src.v[6], src.v[7], 0, src.v[8],
 	};
 }
 
 FMDEF void m4f_to_m3(m4f src, m3f dst)
 {
-	dst[0] = src.v[0];
-	dst[1] = src.v[1];
-	dst[2] = src.v[3];
+	dst.v[0] = src.v[0];
+	dst.v[1] = src.v[1];
+	dst.v[2] = src.v[3];
 
-	dst[3] = src.v[4];
-	dst[4] = src.v[5];
-	dst[5] = src.v[7];
+	dst.v[3] = src.v[4];
+	dst.v[4] = src.v[5];
+	dst.v[5] = src.v[7];
 
-	dst[6] = src.v[12];
-	dst[7] = src.v[13];
-	dst[8] = src.v[15];
+	dst.v[6] = src.v[12];
+	dst.v[7] = src.v[13];
+	dst.v[8] = src.v[15];
 }
 
 /* Interval */
