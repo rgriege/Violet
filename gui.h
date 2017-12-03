@@ -3982,7 +3982,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	gui->panel = panel->parent;
 }
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(WIN32)
 static
 b32 pgui__grid_active(const gui_panel_t *panel)
 {
