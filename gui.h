@@ -49,6 +49,7 @@ color_t color_from_float(const r32 *f);
 void    color_to_hex(color_t c, char *hex, u32 n);
 color_t color_from_hex(const char *hex);
 b32     color_equal(color_t lhs, color_t rhs);
+color_t color_blend(color_t src, color_t dst);
 
 
 /* Mesh */
@@ -337,6 +338,12 @@ b32       gui_widget_active(const gui_t *gui, u64 id);
 b32       gui_widget_focused(const gui_t *gui, u64 id);
 b32       gui_any_widget_active(const gui_t *gui);
 b32       gui_any_widget_has_focus(const gui_t *gui);
+void      gui_widget_interactivity_enable(gui_t *gui);
+/* NOTE: this will not interrupt currently active widgets */
+void      gui_widget_interactivity_disable(gui_t *gui);
+/* NOTE: I usually hate 'conditional' methods, but this cleans up usage code */
+void      gui_widget_interactivity_disable_if(gui_t *gui, b32 cond, u32 *restore_val);
+void      gui_widget_interactivity_restore(gui_t *gui, u32 val);
 
 /* Splits */
 
@@ -529,6 +536,7 @@ typedef struct gui_widget_style
 	gui_element_style_t inactive;
 	gui_element_style_t hot;
 	gui_element_style_t active;
+	gui_element_style_t disabled; /* only colors are used */
 } gui_widget_style_t;
 
 typedef struct gui_slider_style
@@ -707,6 +715,16 @@ color_t color_from_hex(const char *hex)
 b32 color_equal(color_t lhs, color_t rhs)
 {
 	return memcmp(&lhs, &rhs, sizeof(color_t)) == 0;
+}
+
+color_t color_blend(color_t src, color_t dst)
+{
+	return (color_t) {
+		.r = src.r / 2 + dst.r / 2,
+		.g = src.g / 2 + dst.g / 2,
+		.b = src.b / 2 + dst.b / 2,
+		.a = src.a / 2 + dst.a / 2,
+	};
 }
 
 
@@ -1326,6 +1344,12 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	.color = gi_white, \
 }
 
+#define gi__gui_line_style_disabled { \
+	.thickness = 1.f, \
+	.dash_len = 0.f, \
+	.color = gi_black, \
+}
+
 #define gi__gui_line_style_dark { \
 	.thickness = 1.f, \
 	.dash_len = 0.f, \
@@ -1353,10 +1377,24 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	.padding = 4, \
 }
 
+#define gi__gui_btn_text_style_disabled { \
+	.size = 14, \
+	.color = gi_black, \
+	.align = GUI_ALIGN_MIDCENTER, \
+	.padding = 4, \
+}
+
 #define gi__gui_btn_inactive_style_default { \
 	.line = gi__gui_line_style_default, \
 	.text = gi__gui_btn_text_style_default, \
 	.bg_color = gi_grey77, \
+	.outline_color = gi_nocolor, \
+}
+
+#define gi__gui_btn_disabled_style_default { \
+	.line = gi__gui_line_style_disabled, \
+	.text = gi__gui_btn_text_style_disabled, \
+	.bg_color = gi_black, \
 	.outline_color = gi_nocolor, \
 }
 
@@ -1375,6 +1413,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 		.bg_color = gi_orange, \
 		.outline_color = gi_nocolor, \
 	}, \
+	.disabled = gi__gui_btn_disabled_style_default, \
 }
 
 #define gi__gui_chk_style_default { \
@@ -1397,6 +1436,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 		.bg_color = gi_orange, \
 		.outline_color = gi_nocolor, \
 	}, \
+	.disabled = gi__gui_btn_disabled_style_default, \
 }
 
 #define gi__gui_slider_style_default { \
@@ -1406,6 +1446,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 		.inactive = gi__gui_btn_inactive_style_default, \
 		.hot = gi__gui_btn_inactive_style_default, \
 		.active = gi__gui_btn_inactive_style_default, \
+		.disabled = gi__gui_btn_disabled_style_default, \
 	}, \
 	.track_narrow = false, \
 }
@@ -1443,6 +1484,7 @@ const gui_style_t g_gui_style_default = {
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
+			.disabled = { 0 },
 		},
 		.titlebar = {
 			.line = gi__gui_line_style_default,
@@ -1478,6 +1520,7 @@ const gui_style_t g_gui_style_default = {
 				.bg_color = gi_nocolor,
 				.outline_color = gi_nocolor,
 			},
+			.disabled = { 0 },
 		},
 		.scrollbar = gi__gui_slider_style_default,
 		.cell_bg_color = gi_nocolor,
@@ -1511,6 +1554,7 @@ const gui_style_t g_gui_style_default = {
 	.inactive = gi__gui_element_style_invis, \
 	.hot = gi__gui_element_style_invis, \
 	.active = gi__gui_element_style_invis, \
+	.disabled = gi__gui_element_style_invis, \
 }
 
 #define gi__gui_slider_style_invis { \
@@ -1647,6 +1691,7 @@ typedef struct gui_t
 	u8 style_stack[GUI_STYLE_STACK_LIMIT];
 	u32 style_stack_sz;
 
+	u32 widget_interactivity_disabled;
 	u64 hot_id;    /* hover */
 	u64 active_id; /* mouse down */
 	u64 focus_id;  /* widgets like input boxes change state post-click */
@@ -1809,6 +1854,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	memset(gui->prev_keys, 0, KB_COUNT);
 	memset(gui->key_toggles, 0, KBT_COUNT * sizeof(gui__key_toggle_state_t));
 
+	gui->widget_interactivity_disabled = 0;
 	gui->hot_id = 0;
 	gui->active_id = 0;
 	gui->focus_id = 0;
@@ -2855,19 +2901,36 @@ gui__widget_status_t gui__widget_status(const gui_t *gui, u64 id)
 }
 
 static
-const gui_element_style_t *gui__element_style(gui__widget_status_t status,
-                                              const gui_widget_style_t *style)
+gui_element_style_t gui__element_style(const gui_t *gui,
+                                       gui__widget_status_t status,
+                                       const gui_widget_style_t *widget_style)
 {
+	gui_element_style_t style;
+
 	switch (status) {
 	case GUI__WIDGET_ACTIVE:
-		return &style->active;
+		style = widget_style->active;
+	break;
 	case GUI__WIDGET_HOT:
-		return &style->hot;
+		style = widget_style->hot;
+	break;
 	case GUI__WIDGET_INACTIVE:
-		return &style->inactive;
+		style = widget_style->inactive;
+	break;
 	}
-	assert(false);
-	return NULL;
+
+	if (gui->widget_interactivity_disabled) {
+		style.line.color = color_blend(widget_style->disabled.line.color,
+		                               style.line.color);
+		style.text.color = color_blend(widget_style->disabled.text.color,
+		                               style.text.color);
+		style.bg_color = color_blend(widget_style->disabled.bg_color,
+		                             style.bg_color);
+		style.outline_color = color_blend(widget_style->disabled.outline_color,
+		                                  style.outline_color);
+	}
+
+	return style;
 }
 
 void gui_pen_null(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -2947,14 +3010,44 @@ b32 gui__convert_key_to_char(const gui_t *gui, gui_key_t key, char *c)
 	return *c != 0;
 }
 
+const b32 g_gui_npt_chars_print[128] = {
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+};
+
+const b32 g_gui_npt_chars_numeric[128] = {
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+};
+
 b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
             const char *hint, npt_flags_t flags)
+{
+	return gui_npt_chars(gui, x, y, w, h, txt, n, hint, flags,
+	                     g_gui_npt_chars_print);
+}
+
+b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+                  const char *hint, npt_flags_t flags, const b32 chars[128])
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b32 contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                           && gui__box_half_visible(gui, box);
+	                           && gui__box_half_visible(gui, box)
+	                           && !gui->widget_interactivity_disabled;
 	b32 complete = false;
 	const char *displayed_txt;
 
@@ -3061,15 +3154,9 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		gui->hot_id_found_this_frame = true;
 	}
 
-
-	const gui_element_style_t *style;
-	if (gui->active_id == id || gui->focus_id == id)
-		style = &gui->style.npt.active;
-	else if (gui->hot_id == id)
-		style = &gui->style.npt.hot;
-	else
-		style = &gui->style.npt.inactive;
-	gui->style.npt.pen(gui, x, y, w, h, style);
+	const gui__widget_status_t status = gui__widget_status(gui, id);
+	const gui_element_style_t style = gui__element_style(gui, status, &gui->style.npt);
+	gui->style.npt.pen(gui, x, y, w, h, &style);
 
 	if (flags & NPT_PASSWORD) {
 		const u32 sz = strlen(txt);
@@ -3077,23 +3164,23 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		for (u32 i = 0; i < sz; ++i)
 			gui->pw_buf[i] = '*';
 		gui->pw_buf[sz] = '\0';
-		gui_txt_styled(gui, x, y, w, h, gui->pw_buf, &style->text);
+		gui_txt_styled(gui, x, y, w, h, gui->pw_buf, &style.text);
 		displayed_txt = gui->pw_buf;
 	} else {
-		gui_txt_styled(gui, x, y, w, h, txt, &style->text);
+		gui_txt_styled(gui, x, y, w, h, txt, &style.text);
 		displayed_txt = txt;
 	}
 	if (gui->focus_id == id) {
 		gui->focus_id_found_this_frame = true;
 		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
-			const color_t color = style->text.color;
-			const font_t *font = gui__get_font(gui, style->text.size);
+			const color_t color = style.text.color;
+			const font_t *font = gui__get_font(gui, style.text.size);
 			gui__txt_char_pos(gui, &x, &y, w, h, displayed_txt,
-			                  gui->npt_cursor_pos, &style->text);
+			                  gui->npt_cursor_pos, &style.text);
 			gui_line(gui, x + 1, y + font->descent, x + 1, y + font->ascent, 1, color);
 		}
 	} else if (hint && strlen(txt) == 0) {
-		gui_txt_styled(gui, x, y, w, h, hint, &style->text);
+		gui_txt_styled(gui, x, y, w, h, hint, &style.text);
 	}
 	return complete;
 }
@@ -3106,7 +3193,8 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	box2i box;
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	*contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                  && gui__box_half_visible(gui, box);
+	                  && gui__box_half_visible(gui, box)
+	                  && !gui->widget_interactivity_disabled;
 	if (gui->hot_id == id) {
 		if (!*contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
@@ -3153,11 +3241,11 @@ gui__widget_status_t gui__btn_status(const gui_t *gui, u64 id, b32 contains_mous
 static
 void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      const char *txt, gui__widget_status_t status,
-                     const gui_widget_style_t *style_)
+                     const gui_widget_style_t *widget_style)
 {
-	const gui_element_style_t *style = gui__element_style(status, style_);
-	style_->pen(gui, x, y, w, h, style);
-	gui_txt_styled(gui, x, y, w, h, txt, &style->text);
+	const gui_element_style_t style = gui__element_style(gui, status, widget_style);
+	widget_style->pen(gui, x, y, w, h, &style);
+	gui_txt_styled(gui, x, y, w, h, txt, &style.text);
 }
 
 btn_val_t gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
@@ -3177,8 +3265,8 @@ btn_val_t gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 	b32 contains_mouse;
 	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, id, &contains_mouse);
 	const gui__widget_status_t status = gui__btn_status(gui, id, contains_mouse);
-	const gui_element_style_t *style = gui__element_style(status, &gui->style.btn);
-	gui->style.btn.pen(gui, x, y, w, h, style);
+	const gui_element_style_t style = gui__element_style(gui, status, &gui->style.btn);
+	gui->style.btn.pen(gui, x, y, w, h, &style);
 	gui_img_boxed(gui, x, y, w, h, fname, scale);
 	return ret;
 }
@@ -3189,9 +3277,9 @@ btn_val_t gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 	b32 contains_mouse;
 	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, id, &contains_mouse);
 	const gui__widget_status_t status = gui__btn_status(gui, id, contains_mouse);
-	const gui_element_style_t *style = gui__element_style(status, &gui->style.btn);
-	gui->style.btn.pen(gui, x, y, w, h, style);
-	pen(gui, x, y, w, h, style);
+	const gui_element_style_t style = gui__element_style(gui, status, &gui->style.btn);
+	gui->style.btn.pen(gui, x, y, w, h, &style);
+	pen(gui, x, y, w, h, &style);
 	return ret;
 }
 
@@ -3217,7 +3305,7 @@ void gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val
 	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
 	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
-	const gui_element_style_t *style;
+	gui_element_style_t style;
 
 	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS)
 		*val = !*val;
@@ -3228,9 +3316,9 @@ void gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val
 		status = GUI__WIDGET_HOT;
 	else if (*val)
 		status = GUI__WIDGET_ACTIVE;
-	style = gui__element_style(status, &gui->style.chk);
-	gui->style.chk.pen(gui, x, y, w, h, style);
-	pen(gui, x, y, w, h, style);
+	style = gui__element_style(gui, status, &gui->style.chk);
+	gui->style.chk.pen(gui, x, y, w, h, &style);
+	pen(gui, x, y, w, h, &style);
 }
 
 typedef enum gui__slider_orientation
@@ -3254,7 +3342,8 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 		box.max = (v2i){ .x=x+hnd_len+(w-hnd_len)**val, .y=y+h };
 	}
 	const b32 contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                           && gui__box_half_visible(gui, box);
+	                           && gui__box_half_visible(gui, box)
+	                           && !gui->widget_interactivity_disabled;
 
 	if (gui->hot_id == id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
@@ -3291,26 +3380,26 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	}
 
 	const gui__widget_status_t status = gui__widget_status(gui, id);
-	const gui_element_style_t *style_track =
-		gui__element_style(status, &gui->style.slider.track);
-	const gui_element_style_t *style_handle =
-		gui__element_style(status, &gui->style.slider.handle);
+	const gui_element_style_t style_track =
+		gui__element_style(gui, status, &gui->style.slider.track);
+	const gui_element_style_t style_handle =
+		gui__element_style(gui, status, &gui->style.slider.handle);
 	if (orientation == GUI__SLIDER_Y) {
 		if (gui->style.slider.track_narrow)
 			gui->style.slider.track.pen(gui, x, y + hnd_len / 2, w, h - hnd_len,
-			                            style_track);
+			                            &style_track);
 		else
-			gui->style.slider.track.pen(gui, x, y, w, h, style_track);
+			gui->style.slider.track.pen(gui, x, y, w, h, &style_track);
 		gui->style.slider.handle.pen(gui, x, y + (h - hnd_len) * *val, w, hnd_len,
-		                             style_handle);
+		                             &style_handle);
 	} else {
 		if (gui->style.slider.track_narrow)
 			gui->style.slider.track.pen(gui, x + hnd_len / 2, y, w - hnd_len, h,
-			                            style_track);
+			                            &style_track);
 		else
-			gui->style.slider.track.pen(gui, x, y, w, h, style_track);
+			gui->style.slider.track.pen(gui, x, y, w, h, &style_track);
 		gui->style.slider.handle.pen(gui, x + (w - hnd_len) * *val, y, hnd_len, h,
-		                             style_handle);
+		                             &style_handle);
 	}
 	return gui->active_id == id;
 }
@@ -3425,11 +3514,11 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 
 static
 void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id,
-                      const gui_widget_style_t *style_)
+                      const gui_widget_style_t *widget_style)
 {
 	const gui__widget_status_t status = gui__widget_status(gui, id);
-	const gui_element_style_t *style = gui__element_style(status, style_);
-	style_->pen(gui, x, y, w, h, style);
+	const gui_element_style_t style = gui__element_style(gui, status, widget_style);
+	widget_style->pen(gui, x, y, w, h, &style);
 }
 
 static
@@ -3453,7 +3542,8 @@ b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, u32 w, u32 h,
 
 	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
 	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                 && gui__box_half_visible(gui, box);
+	                 && gui__box_half_visible(gui, box)
+	                 && !gui->widget_interactivity_disabled;
 	return gui__drag(gui, x, y, contains_mouse, mb, id, cb, udata);
 }
 
@@ -3535,7 +3625,8 @@ b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
 	box2i box;
 	box2i_from_center(&box, pos, (v2i){r, r});
 	const b32 contains_mouse =    (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r
-	                           && gui__box_half_visible(gui, box);
+	                           && gui__box_half_visible(gui, box)
+	                           && !gui->widget_interactivity_disabled;
 	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
 	gui_style_push_pen(gui, drag.pen, gui_pen_circ);
 	gui__drag_render(gui, *x - r, *y - r, 2 * r, 2 * r, id, &gui->style.drag);
@@ -3574,6 +3665,29 @@ b32 gui_any_widget_active(const gui_t *gui)
 b32 gui_any_widget_has_focus(const gui_t *gui)
 {
 	return gui->focus_id != 0;
+}
+
+void gui_widget_interactivity_enable(gui_t *gui)
+{
+	assert(gui->widget_interactivity_disabled > 0);
+	--gui->widget_interactivity_disabled;
+}
+
+void gui_widget_interactivity_disable(gui_t *gui)
+{
+	++gui->widget_interactivity_disabled;
+}
+
+void gui_widget_interactivity_disable_if(gui_t *gui, b32 cond, u32 *restore_val)
+{
+	*restore_val = gui->widget_interactivity_disabled;
+	if (cond)
+		gui_widget_interactivity_disable(gui);
+}
+
+void gui_widget_interactivity_restore(gui_t *gui, u32 val)
+{
+	gui->widget_interactivity_disabled = val;
 }
 
 void gui__split_init(gui_t *gui, gui_split_t *split,
