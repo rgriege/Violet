@@ -291,7 +291,6 @@ b32  gui_point_visible(const gui_t *gui, s32 x, s32 y);
 typedef enum npt_flags_t
 {
 	NPT_PASSWORD = 1 << 0,
-	NPT_NUMERIC  = 1 << 1,
 } npt_flags_t;
 
 typedef enum btn_val_t
@@ -301,8 +300,13 @@ typedef enum btn_val_t
 	BTN_HOLD,
 } btn_val_t;
 
+const b32 g_gui_npt_chars_print[128];
+const b32 g_gui_npt_chars_numeric[128];
+
 b32       gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                   const char *hint, npt_flags_t flags);
+b32       gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+                        const char *hint, npt_flags_t flags, const b32 chars[128]);
 btn_val_t gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 btn_val_t gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                       img_scale_t scale);
@@ -477,6 +481,8 @@ btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen);
 void      pgui_chk(gui_t *gui, const char *lbl, b32 *val);
 b32       pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint,
                    npt_flags_t flags);
+b32       pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
+                         npt_flags_t flags, const b32 chars[128]);
 void      pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 b32       pgui_slider_x(gui_t *gui, r32 *val);
@@ -3112,9 +3118,8 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 					gui->npt_cursor_pos = len;
 				} else if (   gui__convert_key_to_char(gui, key_idx, &key_char)
 				           && len < n-1
-				           && (  (flags & NPT_NUMERIC) == 0
-				               ? (isgraph(key_char) || key_char == ' ')
-				               : isdigit(key_char))) {
+									 && key_char >= 0
+				           && chars[(u8)key_char]) {
 					for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
 						txt[i] = txt[i-1];
 					txt[gui->npt_cursor_pos++] = key_char;
@@ -4341,10 +4346,16 @@ void pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 
 b32 pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, npt_flags_t flags)
 {
+	return pgui_npt_chars(gui, lbl, n, hint, flags, g_gui_npt_chars_print);
+}
+
+b32 pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
+                   npt_flags_t flags, const b32 chars[128])
+{
 	b32 result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	result = gui_npt(gui, x, y, w, h, lbl, n, hint, flags);
+	result = gui_npt_chars(gui, x, y, w, h, lbl, n, hint, flags, chars);
 	return result;
 }
 
