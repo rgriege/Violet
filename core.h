@@ -36,6 +36,9 @@ typedef struct timespec timepoint_t;
 #define offsetof(s, m) (&(((s*)(NULL))->m))
 #endif
 
+#ifdef static_assert
+#undef static_assert
+#endif
 #define static_assert(cnd, msg) typedef int msg[(cnd) ? 1 : -1]
 
 #define UNUSED(x) ((void)(x))
