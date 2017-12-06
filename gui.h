@@ -199,8 +199,9 @@ b32    gui_begin_frame(gui_t *gui);
 void   gui_end_frame(gui_t *gui);
 void   gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t*, void*), void *udata);
 
-timepoint_t gui_frame_start(gui_t *gui);
-timepoint_t gui_last_input_time(gui_t *gui);
+timepoint_t gui_frame_start(const gui_t *gui);
+u32         gui_frame_time_milli(const gui_t *gui);
+timepoint_t gui_last_input_time(const gui_t *gui);
 
 
 typedef enum mouse_button_t
@@ -2355,15 +2356,13 @@ void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
              void *udata)
 {
 	const u32 target_frame_milli = 1000/fps;
-	timepoint_t start, end;
+	u32 frame_milli;
 	b32 quit = false;
 	while(gui_begin_frame(gui) && !quit) {
 		vlt_mem_advance_gen();
-		start = time_current();
 		quit = ufunc(gui, udata);
 		gui_end_frame(gui);
-		end = time_current();
-		const u32 frame_milli = time_diff_milli(start, end);
+		frame_milli = time_diff_milli(gui_frame_start(gui), time_current());
 		if (frame_milli < target_frame_milli)
 			time_sleep_milli(target_frame_milli - frame_milli);
 		else
@@ -2371,12 +2370,17 @@ void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
 	}
 }
 
-timepoint_t gui_frame_start(gui_t *gui)
+timepoint_t gui_frame_start(const gui_t *gui)
 {
 	return gui->frame_start_time;
 }
 
-timepoint_t gui_last_input_time(gui_t *gui)
+u32 gui_frame_time_milli(const gui_t *gui)
+{
+	return gui->frame_time_milli;
+}
+
+timepoint_t gui_last_input_time(const gui_t *gui)
 {
 	return gui->last_input_time;
 }
