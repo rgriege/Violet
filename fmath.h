@@ -217,6 +217,7 @@ FMDEF b32  box2f_overlaps(box2f lhs, box2f rhs);
 FMDEF b32  box2f_eq(box2f lhs, box2f rhs);
 FMDEF void box2f_extend_point(box2f *b, v2f p);
 FMDEF void box2f_extend_box(box2f *b, box2f other);
+FMDEF void box2f_extend_scalar(box2f *b, r32 dim);
 FMDEF void box2f_translate(box2f *b, v2f v);
 FMDEF void box2f_transform(box2f *b, const m3f mat);
 FMDEF v2f  box2f_get_center(box2f b);
@@ -979,6 +980,14 @@ FMDEF void box2f_extend_box(box2f *lhs, box2f rhs)
 {
 	box2f_extend_point(lhs, rhs.min);
 	box2f_extend_point(lhs, rhs.max);
+}
+
+FMDEF void box2f_extend_scalar(box2f *b, r32 dim)
+{
+	b->min.x -= dim;
+	b->min.y -= dim;
+	b->max.x += dim;
+	b->max.y += dim;
 }
 
 FMDEF void box2f_translate(box2f *box, v2f off)
