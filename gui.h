@@ -1685,12 +1685,14 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		gui->parent_gl_context = SDL_GL_GetCurrentContext();
 	}
 
+#ifndef __EMSCRIPTEN__
 	// Use OpenGL 3.3 core
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+#endif
 	// SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	if (SDL_GetNumVideoDisplays() < 1) {
@@ -4461,6 +4463,33 @@ void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
 
 /* Shaders */
 
+#ifdef __EMSCRIPTEN__
+static const char *g_vertex_shader =
+	"uniform vec2 window_halfdim;\n"
+	"attribute vec2 position;\n"
+	"attribute vec4 color;\n"
+	"attribute vec2 tex_coord;\n"
+	"varying vec2 TexCoord;\n"
+	"varying vec4 Color;\n"
+	"\n"
+	"void main() {\n"
+	"  vec2 p = (position - window_halfdim) / window_halfdim;\n"
+	"  gl_Position = vec4(p.xy, 0.0, 1.0);\n"
+	"  TexCoord = tex_coord;\n"
+	"  Color = color;\n"
+	"}";
+
+static const char *g_fragment_shader =
+	"precision mediump float;\n"
+	"uniform sampler2D tex;\n"
+	"varying vec2 TexCoord;\n"
+	"varying vec4 Color;\n"
+	"\n"
+	"void main() {\n"
+	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
+	"  gl_FragColor = texture2D(tex, TexCoord_flipped) * Color;\n"
+	"}";
+#else
 static const char *g_vertex_shader =
 	"#version 330\n"
 	"layout(location = 0) in vec2 position;\n"
@@ -4488,6 +4517,7 @@ static const char *g_fragment_shader =
 	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
 	"  FragColor = texture(tex, TexCoord_flipped) * Color;\n"
 	"}";
+#endif
 
 #undef GUI_IMPLEMENTATION
 #endif // GUI_IMPLEMENTATION

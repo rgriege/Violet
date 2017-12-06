@@ -823,7 +823,9 @@ int main(int argc, char *const argv[])
 {
 	vlt_init();
 	app_entry(argc, argv);
+#ifndef __EMSCRIPTEN__
 	vlt_destroy();
+#endif
 }
 
 #define main app_entry
