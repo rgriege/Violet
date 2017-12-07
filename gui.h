@@ -221,6 +221,7 @@ typedef enum mouse_button_t
 
 void mouse_pos(const gui_t *gui, s32 *x, s32 *y);
 void mouse_pos_last(const gui_t *gui, s32 *x, s32 *y);
+void mouse_pos_press(const gui_t *gui, s32 *x, s32 *y);
 void mouse_pos_global(const gui_t *gui, s32 *x, s32 *y);
 b32  mouse_pressed(const gui_t *gui, u32 mask);
 b32  mouse_pressed_bg(const gui_t *gui, u32 mask);
@@ -1678,6 +1679,7 @@ typedef struct gui_t
 	v2i win_halfdim;
 	v2i mouse_pos;
 	v2i mouse_pos_last;
+	v2i mouse_pos_press;
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
 	b32 mouse_covered_by_panel;
@@ -1864,6 +1866,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_pos_last = gui->mouse_pos;
+	gui->mouse_pos_press = gui->mouse_pos;
 	gui->mouse_debug = false;
 
 	memset(gui->prev_keys, 0, KB_COUNT);
@@ -2036,10 +2039,14 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->mouse_pos_last = gui->mouse_pos;
 	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
+	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
+		gui->mouse_pos_press = gui->mouse_pos;
+
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
 	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
 	static const v2i g_v2i_2 = { .x=2, .y=2 };
 	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
+
 	gui->mouse_covered_by_panel = false;
 
 	gui->keys = SDL_GetKeyboardState(&key_cnt);
@@ -2458,6 +2465,12 @@ void mouse_pos_last(const gui_t *gui, s32 *x, s32 *y)
 {
 	*x = gui->mouse_pos_last.x;
 	*y = gui->mouse_pos_last.y;
+}
+
+void mouse_pos_press(const gui_t *gui, s32 *x, s32 *y)
+{
+	*x = gui->mouse_pos_press.x;
+	*y = gui->mouse_pos_press.y;
 }
 
 void mouse_pos_global(const gui_t *gui, s32 *x, s32 *y)
