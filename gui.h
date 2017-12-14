@@ -1666,6 +1666,9 @@ typedef struct gui_t
 
 	u32 vao, vbo[VBO_COUNT];
 	shader_prog_t shader;
+#ifdef __EMSCRIPTEN__
+	s32 shader_attrib_loc[VBO_COUNT];
+#endif
 	texture_t texture_white;
 	texture_t texture_white_dotted;
 	v2f verts[GUI_MAX_VERTS];
@@ -1818,7 +1821,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	GL_CHECK(glEnable, GL_SCISSOR_TEST);
 
 	GL_CHECK(glGenVertexArrays, 1, &gui->vao);
-	GL_CHECK(glGenBuffers, 3, gui->vbo);
+	GL_CHECK(glGenBuffers, VBO_COUNT, gui->vbo);
 
 	static const color_t texture_white_data[1] = { gi_white };
 	texture_init(&gui->texture_white, 1, 1, GL_RGBA, texture_white_data);
@@ -1833,6 +1836,12 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	if (!shader_program_load_from_strings(&gui->shader, g_vertex_shader,
 	                                      g_fragment_shader))
 		goto err_white;
+
+#ifdef __EMSCRIPTEN__
+	gui->shader_attrib_loc[VBO_VERT]  = shader_program_attrib(&gui->shader, "position");
+	gui->shader_attrib_loc[VBO_COLOR] = shader_program_attrib(&gui->shader, "color");
+	gui->shader_attrib_loc[VBO_TEX]   = shader_program_attrib(&gui->shader, "tex_coord");
+#endif
 
 	gui->cursors[GUI__CURSOR_DEFAULT] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
 	gui->cursors[GUI__CURSOR_RESIZE_NS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
@@ -2363,6 +2372,12 @@ void gui__complete_scissor(gui_t *gui)
 
 void gui_end_frame(gui_t *gui)
 {
+#ifdef __EMSCRIPTEN__
+	const s32 *loc = gui->shader_attrib_loc;
+#else
+	const s32 loc[VBO_COUNT] = { VBO_VERT, VBO_COLOR, VBO_TEX };
+#endif
+
 	gui__complete_scissor(gui);
 
 	GL_CHECK(glDisable, GL_DEPTH_TEST);
@@ -2370,25 +2385,25 @@ void gui_end_frame(gui_t *gui)
 
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_VERT]);
 	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
-	             gui->verts, GL_STREAM_DRAW);
-	GL_CHECK(glVertexAttribPointer, VBO_VERT, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	GL_CHECK(glEnableVertexAttribArray, VBO_VERT);
+	         gui->verts, GL_STREAM_DRAW);
+	GL_CHECK(glVertexAttribPointer, loc[VBO_VERT], 2, GL_FLOAT, GL_FALSE, 0, 0);
+	GL_CHECK(glEnableVertexAttribArray, loc[VBO_VERT]);
 
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_COLOR]);
 	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(color_t),
-	             gui->vert_colors, GL_STREAM_DRAW);
-	GL_CHECK(glVertexAttribPointer, VBO_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
-	GL_CHECK(glEnableVertexAttribArray, VBO_COLOR);
+	         gui->vert_colors, GL_STREAM_DRAW);
+	GL_CHECK(glVertexAttribPointer, loc[VBO_COLOR], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
+	GL_CHECK(glEnableVertexAttribArray, loc[VBO_COLOR]);
 
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_TEX]);
 	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
-	             gui->vert_tex_coords, GL_STREAM_DRAW);
-	GL_CHECK(glVertexAttribPointer, VBO_TEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	GL_CHECK(glEnableVertexAttribArray, VBO_TEX);
+	         gui->vert_tex_coords, GL_STREAM_DRAW);
+	GL_CHECK(glVertexAttribPointer, loc[VBO_TEX], 2, GL_FLOAT, GL_FALSE, 0, 0);
+	GL_CHECK(glEnableVertexAttribArray, loc[VBO_TEX]);
 
 	GL_CHECK(glUseProgram, gui->shader.handle);
 	GL_CHECK(glUniform2f, glGetUniformLocation(gui->shader.handle, "window_halfdim"),
-	                     gui->win_halfdim.x, gui->win_halfdim.y);
+	         gui->win_halfdim.x, gui->win_halfdim.y);
 
 	/* NOTE(rgriege): This method of ordering creates an inconsistency:
 	 * panels/layers must be called from top-to-bottom, but widgets/primitives
@@ -2408,7 +2423,7 @@ void gui_end_frame(gui_t *gui)
 		     draw_call != draw_call_end; ++draw_call) {
 			GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
 			GL_CHECK(glDrawArrays, g_draw_call_types[draw_call->type],
-			             draw_call->idx, draw_call->cnt);
+			         draw_call->idx, draw_call->cnt);
 		}
 	}
 
