@@ -138,7 +138,10 @@ typedef struct m3f
 FMGDECL const m3f g_m3f_identity;
 FMGDECL const m3f g_m3f_zero;
 
-FMDEF m3f m3f_init_rot(r32 radians);
+FMDEF m3f m3f_init_scale(v2f scale);
+FMDEF m3f m3f_init_translation(v2f disp);
+FMDEF m3f m3f_init_rotation(r32 radians);
+FMDEF m3f m3f_inverse(m3f m);
 FMDEF m3f m3f_mul_m3(m3f lhs, m3f rhs);
 FMDEF v2f m3f_mul_v2(m3f m, v2f v);
 FMDEF b32 m3f_equal(m3f lhs, m3f rhs);
@@ -267,6 +270,7 @@ FMDEF b32   polyf_is_convex(const v2f *v, u32 n);
 FMDEF b32   polyf_contains(const v2f *v, u32 n, v2f point);
 FMDEF void  polyf_bounding_box(const v2f *v, u32 n, box2f *box);
 FMDEF void  polyf_translate(v2f *v, u32 n, v2f delta);
+FMDEF void  polyf_transform(v2f *v, u32 n, const m3f mat);
 FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis);
 FMDEF v2f   polyf_center(const v2f *v, u32 n);
 FMDEF r32   polyf_area(const v2f *v, u32 n);
@@ -574,7 +578,25 @@ FMGDEF const m3f g_m3f_zero = {
 	0, 0, 0
 };
 
-FMDEF m3f m3f_init_rot(r32 radians)
+FMDEF m3f m3f_init_scale(v2f scale)
+{
+	return (m3f) {
+		scale.x, 0,       0,
+		0,       scale.y, 0,
+		0,       0,       1,
+	};
+}
+
+FMDEF m3f m3f_init_translation(v2f disp)
+{
+	return (m3f) {
+		1, 0, disp.x,
+		0, 1, disp.y,
+		0, 0, 1,
+	};
+}
+
+FMDEF m3f m3f_init_rotation(r32 radians)
 {
 	m3f m;
 	m.v[0] = cosf(radians);
@@ -587,6 +609,18 @@ FMDEF m3f m3f_init_rot(r32 radians)
 	m.v[7] = 0;
 	m.v[8] = 1;
 	return m;
+}
+
+FMDEF m3f m3f_inverse(m3f m)
+{
+	const r32 determinant_inv = m.v[0] * m.v[4] - m.v[1] * m.v[3];
+	assert(determinant_inv != 0.f);
+	const r32 s = 1.f / determinant_inv;
+	return (m3f) {
+		 m.v[4] * s, -m.v[1] * s, 0,
+		-m.v[3] * s,  m.v[0] * s, 0,
+		0,           0,           1,
+	};
 }
 
 FMDEF m3f m3f_mul_m3(m3f lhs, m3f rhs)
@@ -1289,6 +1323,12 @@ FMDEF void polyf_translate(v2f *v, u32 n, v2f delta)
 {
 	for (const v2f *vn = v+n; v != vn; ++v)
 		v2f_add_eq(v, delta);
+}
+
+FMDEF void polyf_transform(v2f *v, u32 n, const m3f mat)
+{
+	for (const v2f *vn = v+n; v != vn; ++v)
+		*v = m3f_mul_v2(mat, *v);
 }
 
 FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis)
