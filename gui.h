@@ -251,6 +251,7 @@ typedef enum img_scale
 } img_scale_t;
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
+void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c);
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t line);
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t line);
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t line);
@@ -2582,9 +2583,14 @@ const u8* keyboard_state(const gui_t *gui)
 }
 
 
-/* Immediate Mode API */
+/* Primitives */
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
+{
+	gui_linef(gui, x0, y0, x1, y1, w, c);
+}
+
+void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c)
 {
 	assert(w >= 1);
 	if (w == 1) {
