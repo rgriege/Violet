@@ -613,13 +613,19 @@ FMDEF m3f m3f_init_rotation(r32 radians)
 
 FMDEF m3f m3f_inverse(m3f m)
 {
-	const r32 determinant_inv = m.v[0] * m.v[4] - m.v[1] * m.v[3];
-	assert(determinant_inv != 0.f);
-	const r32 s = 1.f / determinant_inv;
+	const v3f c0 = { m.v[0], m.v[3], m.v[6] };
+	const v3f c1 = { m.v[1], m.v[4], m.v[7] };
+	const v3f c2 = { m.v[2], m.v[5], m.v[8] };
+	const r32 det = v3f_dot(c0, v3f_cross(c1, c2));
+	assert(det != 0.f);
+	const r32 s = 1.f / det;
+	const v3f r0 = v3f_scale(v3f_cross(c1, c2), s);
+	const v3f r1 = v3f_scale(v3f_cross(c2, c0), s);
+	const v3f r2 = v3f_scale(v3f_cross(c0, c1), s);
 	return (m3f) {
-		 m.v[4] * s, -m.v[1] * s, 0,
-		-m.v[3] * s,  m.v[0] * s, 0,
-		0,           0,           1,
+		r0.x, r0.y, r0.z,
+		r1.x, r1.y, r1.z,
+		r2.x, r2.y, r2.z,
 	};
 }
 
