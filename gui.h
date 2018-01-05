@@ -345,6 +345,7 @@ u64       gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void      gui_widget_focus(gui_t *gui, u64 id); /* careful! */
 b32       gui_widget_active(const gui_t *gui, u64 id);
 b32       gui_widget_focused(const gui_t *gui, u64 id);
+b32       gui_any_widget_hot(const gui_t *gui);
 b32       gui_any_widget_active(const gui_t *gui);
 b32       gui_any_widget_has_focus(const gui_t *gui);
 void      gui_widget_interactivity_enable(gui_t *gui);
@@ -3719,6 +3720,11 @@ b32 gui_widget_active(const gui_t *gui, u64 id)
 b32 gui_widget_focused(const gui_t *gui, u64 id)
 {
 	return gui->focus_id == id;
+}
+
+b32 gui_any_widget_hot(const gui_t *gui)
+{
+	return gui->hot_id != 0;
 }
 
 b32 gui_any_widget_active(const gui_t *gui)
