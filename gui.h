@@ -3148,7 +3148,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				} else if (key_idx == KB_DELETE) {
 					for (u32 i = gui->npt_cursor_pos; i < len; ++i)
 						txt[i] = txt[i+1];
-				} else if (key_idx == KB_RETURN) {
+				} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
 					gui->focus_id = 0;
 					complete = true;
 				} else if (key_idx == KB_ESCAPE) {
