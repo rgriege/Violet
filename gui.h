@@ -295,7 +295,8 @@ b32  gui_point_visible(const gui_t *gui, s32 x, s32 y);
 
 typedef enum npt_flags_t
 {
-	NPT_PASSWORD = 1 << 0,
+	NPT_PASSWORD       = 1 << 0,
+	NPT_CLEAR_ON_FOCUS = 1 << 1,
 } npt_flags_t;
 
 typedef enum btn_val_t
@@ -3193,8 +3194,13 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->focus_id = 0;
 	} else if (gui->active_id == id) {
 		if (mouse_released(gui, MB_LEFT)) {
-			if (contains_mouse)
+			if (contains_mouse) {
 				gui->focus_id = id;
+				if (flags & NPT_CLEAR_ON_FOCUS) {
+					txt[0] = '\0';
+					gui->npt_cursor_pos = 0;
+				}
+			}
 			gui->active_id = 0;
 			gui->repeat_timer = gui->repeat_delay;
 		} else {
