@@ -424,7 +424,7 @@ typedef enum gui_panel_flags
 	GUI_PANEL_DRAGGABLE   = 0x08,
 	GUI_PANEL_CLOSABLE    = 0x10,
 	GUI_PANEL_SCROLLBARS  = 0x20,
-	GUI_PANEL_FULL        = 0x2f,
+	GUI_PANEL_FULL        = 0x3f,
 } gui_panel_flags_t;
 
 typedef struct gui_panel_grid_strip
