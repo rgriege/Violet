@@ -32,6 +32,9 @@ typedef struct timespec timepoint_t;
 /* Utility macros */
 
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
+
+#define B2PS(x) (x), sizeof(x)
+
 #ifndef offsetof
 #define offsetof(s, m) (&(((s*)(NULL))->m))
 #endif
@@ -264,6 +267,8 @@ u32 hashn(const char *str, u32 n);
 
 #define memswp(a, b, type) \
 	do { type tmp = a; a = b; b = tmp; } while(0)
+
+#define memclr(x) memset(&(x), 0, sizeof(x))
 
 #ifndef REVERSE_MAX_SIZE
 #define REVERSE_MAX_SIZE 128
