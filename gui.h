@@ -4360,9 +4360,7 @@ void pgui_spacer(gui_t *gui)
 
 void pgui_spacer_blank(gui_t *gui)
 {
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_rect(gui, x, y, w, h, g_nocolor, g_nocolor);
+	pgui__cell_advance(gui->panel);
 }
 
 void pgui_txt(gui_t *gui, const char *str)
