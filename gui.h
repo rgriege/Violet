@@ -250,6 +250,10 @@ typedef enum img_scale
 	IMG_CENTERED,
 } img_scale_t;
 
+#ifndef GUI_FONT_FILE_PATH
+#define GUI_FONT_FILE_PATH "Roboto.ttf"
+#endif
+
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
 void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c);
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t line);
@@ -2751,7 +2755,7 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 		return font;
 
 	font = array_append_null(gui->fonts);
-	if (font_load(font, "Roboto.ttf", sz)) {
+	if (font_load(font, GUI_FONT_FILE_PATH, sz)) {
 		return font;
 	} else {
 		array_pop(gui->fonts);
@@ -4172,7 +4176,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	gui->panel = panel->parent;
 }
 
-#if defined(DEBUG) || defined(WIN32)
+#if defined(DEBUG) || defined(WIN32) || defined(__EMSCRIPTEN__)
 static
 b32 pgui__grid_active(const gui_panel_t *panel)
 {
