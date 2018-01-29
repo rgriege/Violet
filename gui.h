@@ -267,6 +267,8 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                    img_scale_t scale);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_t align);
+void gui_txt_dim(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
+                 gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph);
 s32  gui_txt_width(gui_t *gui, const char *txt, u32 sz);
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_unmask(gui_t *gui);
@@ -2322,19 +2324,13 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 }
 
 static
-void text__render(gui_t *gui, const texture_t *texture, r32 yb, r32 x0, r32 y0,
+void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
                   r32 x1, r32 y1, r32 s0, r32 t0, r32 s1, r32 t1, color_t color)
 {
-	r32 dy;
 	box2f mask, bbox;
 
 	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
 	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
-
-	/* NOTE(rgriege): stbtt assumes y=0 at top, but for violet y=0 is at bottom */
-	dy = y1 - y0;
-	y0 = yb + (yb - y1);
-	y1 = y0 + dy;
 
 	gui__current_maskf(gui, &mask);
 	box2f_from_dims(&bbox, x0, y1, x1, y0);
@@ -2764,6 +2760,15 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 }
 
 static
+void gui__fixup_stbtt_aligned_quad(stbtt_aligned_quad *q, r32 yb)
+{
+	/* NOTE(rgriege): stbtt assumes y=0 at top, but for violet y=0 is at bottom */
+	const r32 dy = q->y1 - q->y0;
+	q->y0 = yb + (yb - q->y1);
+	q->y1 = q->y0 + dy;
+}
+
+static
 void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
                        const char *txt, u32 pos, const gui_text_style_t *style)
 {
@@ -2819,7 +2824,8 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
 			stbtt_GetPackedQuad(font->char_info, font->texture.width,
 			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
 			                    &x, &y, &q, 1);
-			text__render(gui, &font->texture, y, q.x0, q.y0, q.x1, q.y1, q.s0, q.t0,
+			gui__fixup_stbtt_aligned_quad(&q, y);
+			text__render(gui, &font->texture, q.x0, q.y0, q.x1, q.y1, q.s0, q.t0,
 			             q.s1, q.t1, style->color);
 		} else if (*c == '\n') {
 			y -= font->newline_dist;
@@ -2885,6 +2891,52 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 		.padding = 0,
 	};
 	gui__txt(gui, &x, &y, txt, &style);
+}
+
+void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
+                 gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph)
+{
+	font_t *font;
+	r32 x = x_, y = y_;
+	ivalf x_range, y_range;
+	stbtt_aligned_quad q;
+	const gui_text_style_t style = {
+		.size = sz,
+		.color = g_nocolor,
+		.align = align,
+		.padding = 0,
+	};
+
+	font = gui__get_font(gui, style.size);
+	assert(font);
+
+	x += font__line_offset_x(font, txt, &style);
+	y += font__offset_y(font, txt, &style);
+
+	x_range.l = x_range.r = x;
+	y_range.l = y_range.r = y;
+
+	for (const char *c = txt; *c != '\0'; ++c) {
+		const int ch = *(const u8*)c;
+		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR) {
+			stbtt_GetPackedQuad(font->char_info, font->texture.width,
+			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
+			                    &x, &y, &q, 1);
+			gui__fixup_stbtt_aligned_quad(&q, y);
+
+			x_range.l = min(x_range.l, q.x0);
+			x_range.r = max(x_range.r, q.x1);
+			y_range.l = min(y_range.l, q.y0);
+			y_range.r = max(y_range.r, q.y1);
+		} else if (*c == '\n') {
+			y -= font->newline_dist;
+			x = x_ + font__line_offset_x(font, c + 1, &style);
+		}
+	}
+	*px = x_range.l;
+	*py = y_range.l;
+	*pw = ivalf_length(x_range);
+	*ph = ivalf_length(y_range);
 }
 
 s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
