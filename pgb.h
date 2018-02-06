@@ -138,6 +138,12 @@ pgb_byte *pgb__page_first_usable_slot(pgb_page_t *page)
 }
 
 static
+pgb_byte *pgb__alloc_get_sz_slot(const pgb_byte* ptr, pgb_page_t *page)
+{
+	return &page->alloc_sizes[(ptr - &page->start) / pgb__page_alignment(page)];
+}
+
+static
 size_t pgb__alloc_get_sz(const pgb_byte* ptr, const pgb_page_t *page)
 {
 	const size_t alignment = pgb__page_alignment(page);
@@ -437,8 +443,11 @@ void pgb_restore(pgb_watermark_t watermark)
 	}
 	pgb->current_page = watermark.page;
 	pgb->current_ptr  = watermark.ptr;
-	if (pgb->current_page)
+	if (pgb->current_page) {
+		pgb_byte *sz_slot = pgb__alloc_get_sz_slot(pgb->current_ptr, pgb->current_page);
+		memset(sz_slot, 0, &pgb->current_page->header_begin - sz_slot);
 		pgb->current_page->next = NULL;
+	}
 }
 
 void pgb_stats(const pgb_t *pgb, size_t *byte_cnt_, size_t *page_cnt_)
