@@ -34,6 +34,7 @@ typedef struct timespec timepoint_t;
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
 
 #define B2PS(x) (x), sizeof(x)
+#define B2PC(x) (x), countof(x)
 
 #ifndef offsetof
 #define offsetof(s, m) (&(((s*)(NULL))->m))
