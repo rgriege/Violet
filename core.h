@@ -226,7 +226,7 @@ typedef struct alloc_tracker
 } alloc_tracker_t;
 
 void alloc_tracker_advance_gen(alloc_tracker_t *tracker);
-void alloc_tracker_log_usage(alloc_tracker_t *tracker);
+void alloc_tracker_log_usage(alloc_tracker_t *tracker, b32 warn_active_allocations);
 void alloc_tracker_log_current_gen(alloc_tracker_t *tracker, size_t gen);
 
 void *tracked_malloc(size_t size, allocator_t *a  MEMCALL_ARGS);
@@ -485,21 +485,21 @@ void alloc_tracker_advance_gen(alloc_tracker_t *tracker)
 	error_if(tracker->generation == 0, "generation wrap-around");
 }
 
-void alloc_tracker_log_usage(alloc_tracker_t *tracker)
+void alloc_tracker_log_usage(alloc_tracker_t *tracker, b32 warn_active_allocations)
 {
-	alloc_node_t *node;
+	log_info("***HEAP***");
 
-	log_info("memory diagnostic:");
+	if (warn_active_allocations) {
+		alloc_node_t *node = tracker->head;
+		while (node) {
+			log_warn("%p: %6lu bytes still active from %s @ gen %lu!",
+			         node + 1, node->sz, node->location, node->generation);
+			node = node->next;
+		}
 
-	node = tracker->head;
- 	while (node) {
- 		log_warn("%p: %6lu bytes still active from %s @ gen %lu!",
-		          node + 1, node->sz, node->location, node->generation);
- 		node = node->next;
- 	}
-
-	if (tracker->current_bytes != 0)
-		log_warn("exit:  %10lu bytes still allocated!", tracker->current_bytes);
+		if (tracker->current_bytes != 0)
+			log_warn("exit:  %10lu bytes still allocated!", tracker->current_bytes);
+	}
 
 	log_info("peak:  %10lu bytes", tracker->peak_bytes);
  	log_info("total: %10lu bytes in %lu chunks",
@@ -598,20 +598,31 @@ void vlt_mem_advance_gen(void)
 }
 
 static
-void vlt_mem_log_usage_(size_t temp_bytes, size_t temp_page_cnt)
+void vlt_mem_log_usage_(size_t temp_bytes_current, size_t temp_pages_current,
+                        size_t temp_bytes_total, size_t temp_pages_total,
+                        b32 warn_active_allocations)
 {
+	log_info("memory diagnostic:");
 #ifdef VLT_TRACK_MEMORY
-	alloc_tracker_log_usage(g_allocator->udata);
+	alloc_tracker_log_usage(g_allocator->udata, warn_active_allocations);
 #endif
-	log_info("temp:  %10lu bytes in %lu pages", temp_bytes, temp_page_cnt);
+	log_info("***TEMP***");
+	log_info("temp:");
+
+	if (warn_active_allocations && temp_bytes_current != 0)
+		log_warn("%6lu bytes still active in %lu pages!",
+		         temp_bytes_current, temp_pages_current);
+
+	log_info("current:  %7lu bytes in %lu pages", temp_bytes_current, temp_pages_current);
+	log_info("total:    %7lu bytes in %lu pages", temp_bytes_total, temp_pages_total);
 }
 
 void vlt_mem_log_usage(void)
 {
 	const pgb_t *pgb = g_temp_allocator->udata;
-	size_t temp_bytes, temp_page_cnt;
-	pgb_stats(pgb, &temp_bytes, &temp_page_cnt);
-	vlt_mem_log_usage_(temp_bytes, temp_page_cnt);
+	size_t bytes_used, pages_used, bytes_total, pages_total;
+	pgb_stats(pgb, &bytes_used, &pages_used, &bytes_total, &pages_total);
+	vlt_mem_log_usage_(bytes_used, pages_used, bytes_total, pages_total, false);
 }
 
 
@@ -818,10 +829,10 @@ static
 void vlt_destroy(void)
 {
 	pgb_t *pgb = g_temp_allocator->udata;
-	size_t temp_bytes, temp_page_cnt;
-	pgb_stats(pgb, &temp_bytes, &temp_page_cnt);
+	size_t bytes_used, pages_used, bytes_total, pages_total;
+	pgb_stats(pgb, &bytes_used, &pages_used, &bytes_total, &pages_total);
 	pgb_destroy(pgb);
-	vlt_mem_log_usage_(temp_bytes, temp_page_cnt);
+	vlt_mem_log_usage_(bytes_used, pages_used, bytes_total, pages_total, true);
 }
 
 int app_entry(int argc, char *const argv[]);

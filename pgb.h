@@ -51,7 +51,8 @@ typedef struct pg_watermark
 pgb_watermark_t pgb_save(pgb_t *pgb);
 void            pgb_restore(pgb_watermark_t watermark);
 
-void pgb_stats(const pgb_t *pgb, size_t *byte_cnt, size_t *page_cnt);
+void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
+               size_t *bytes_available, size_t *pages_available);
 
 #endif // PGB_H
 
@@ -450,25 +451,28 @@ void pgb_restore(pgb_watermark_t watermark)
 	}
 }
 
-void pgb_stats(const pgb_t *pgb, size_t *byte_cnt_, size_t *page_cnt_)
+void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
+               size_t *bytes_available, size_t *pages_available)
 {
-	size_t byte_cnt = 0, page_cnt = 0;
-	pgb_page_t *page = pgb->current_page;
+	pgb_page_t *page;
+
+	*bytes_used = 0;
+	*pages_used = 0;
+	page = pgb->current_page;
 	while (page) {
-		pgb_page_t *prev = page->prev;
-		byte_cnt += page->size;
-		++page_cnt;
-		page = prev;
+		*bytes_used += page->size;
+		++*pages_used;
+		page = page->prev;
 	}
+
+	*bytes_available = *bytes_used;
+	*pages_available = *pages_used;
 	page = pgb->heap->first_page;
 	while (page) {
-		pgb_page_t *next = page->next;
-		byte_cnt += page->size;
-		++page_cnt;
-		page = next;
+		*bytes_available += page->size;
+		++*pages_available;
+		page = page->next;
 	}
-	*byte_cnt_ = byte_cnt;
-	*page_cnt_ = page_cnt;
 }
 
 #undef PGB_IMPLEMENTATION
