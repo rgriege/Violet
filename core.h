@@ -482,7 +482,8 @@ void alloc_tracker__append_node(alloc_tracker_t *tracker,
 void alloc_tracker_advance_gen(alloc_tracker_t *tracker)
 {
 	++tracker->generation;
-	error_if(tracker->generation == 0, "generation wrap-around");
+	if (tracker->generation == 0)
+		log_warn("generation wrap-around");
 }
 
 void alloc_tracker_log_usage(alloc_tracker_t *tracker, b32 warn_active_allocations)
