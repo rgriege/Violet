@@ -274,6 +274,7 @@ FMDEF void  polyf_transform(v2f *v, u32 n, const m3f mat);
 FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis);
 FMDEF v2f   polyf_center(const v2f *v, u32 n);
 FMDEF r32   polyf_area(const v2f *v, u32 n);
+FMDEF r32   polyf_perimeter(const v2f *v, u32 n);
 FMDEF v2f   polyf_centroid(const v2f *v, u32 n);
 FMDEF b32   polyf_is_cc(const v2f *v, u32 n);
 FMDEF b32   polyf_segment_intersect(const v2f *v, u32 n, v2f v0, v2f v1);
@@ -1382,6 +1383,14 @@ static r32 polyf__area(const v2f *v, u32 n)
 FMDEF r32 polyf_area(const v2f *v, u32 n)
 {
 	return fabsf(polyf__area(v, n));
+}
+
+FMDEF r32 polyf_perimeter(const v2f *v, u32 n)
+{
+	r32 perimeter = 0.f;
+	for (u32 i = 0; i < n; ++i)
+		perimeter += v2f_dist(v[i], v[(i+1)%n]);
+	return perimeter;
 }
 
 FMDEF v2f polyf_centroid(const v2f *v, u32 n)
