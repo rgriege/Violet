@@ -340,13 +340,15 @@ b32 file_save_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 b32 file_open_dialog_ex(char *fname, u32 fname_sz,
                         const file_dialog_filter_t filters[], u32 num_filters)
 {
-	return file_open_dialog(fname, fname_sz, NULL);
+	const file_dialog_filter_t filter = {0};
+	return file_open_dialog(fname, fname_sz, filter);
 }
 
 b32 file_save_dialog_ex(char *fname, u32 fname_sz,
                         const file_dialog_filter_t filters[], u32 num_filters)
 {
-	return file_save_dialog(fname, fname_sz, NULL);
+	const file_dialog_filter_t filter = {0};
+	return file_save_dialog(fname, fname_sz, filter);
 }
 
 b32 file_exists(const char *path)
