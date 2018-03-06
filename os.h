@@ -5,10 +5,17 @@
 
 /* File system */
 
-b32  file_open_dialog(char *fname, u32 n, const char *ext);
-b32  file_save_dialog(char *fname, u32 n, const char *ext);
-b32  file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext);
-b32  file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext);
+typedef struct {
+	const char *name;
+	const char *pattern;
+} file_dialog_filter_t;
+
+b32  file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter);
+b32  file_save_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter);
+b32  file_open_dialog_ex(char *fname, u32 fname_sz,
+                         const file_dialog_filter_t filters[], u32 num_filters);
+b32  file_save_dialog_ex(char *fname, u32 fname_sz,
+                         const file_dialog_filter_t filters[], u32 num_filters);
 
 b32  file_exists(const char *path);
 b32  dir_exists(const char *path);
@@ -79,12 +86,17 @@ int rmdir(const char *path)
 }
 
 static
-b32 file__dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
+b32 file__dialog(char *filename, u32 fname_sz,
+                 const file_dialog_filter_t filters[], u32 num_filters,
                  CLSID clsid, IID iid)
 {
 	b32 retval = false;
 	PWSTR ext_buf = NULL;
-	COMDLG_FILTERSPEC *filters = NULL;
+	COMDLG_FILTERSPEC *filterspec = NULL;
+	size_t ttl_sz;
+	PWSTR p;
+
+	assert(num_filters > 0);
 
 	if (!SUCCEEDED(CoInitializeEx(NULL,   COINIT_APARTMENTTHREADED
 	                                    | COINIT_DISABLE_OLE1DDE)))
@@ -95,24 +107,36 @@ b32 file__dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 		goto err_init;
 	IFileDialog *dialog = vp;
 
-	if (n_ext) {
-		ext_buf = amalloc(8*(n_ext+1)*sizeof(wchar_t), g_temp_allocator);
-		mbstowcs(ext_buf, ext[0], 8);
-		if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, ext_buf)))
-			goto err_ext;
-
-		filters = amalloc(n_ext*sizeof(COMDLG_FILTERSPEC), g_temp_allocator);
-		for (u32 i = 0; i < n_ext; ++i) {
-			PWSTR spec = ext_buf+(i+1)*8;
-			spec[0] = L'*';
-			spec[1] = L'.';
-			mbstowcs(spec + 2, ext[i], 6);
-			filters[i].pszSpec = spec;
-			filters[i].pszName = spec + 2;
-		}
-		if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, n_ext, filters)))
-			goto err_ext;
+	ttl_sz = 0;
+	for (u32 i = 0; i < num_filters; ++i) {
+		ttl_sz += strlen(filters[i].name) + 1;
+		ttl_sz += strlen(filters[i].pattern) + 1;
 	}
+	ext_buf = amalloc(ttl_sz * sizeof(wchar_t), g_temp_allocator);
+
+	p = ext_buf;
+	for (u32 i = 0; i < num_filters; ++i) {
+		const size_t name_sz = strlen(filters[i].name) + 1;
+		const size_t pattern_sz = strlen(filters[i].pattern) + 1;
+		assert(   pattern_sz > 2
+		       && filters[i].pattern[0] == '*'
+		       && filters[i].pattern[1] == '.');
+		mbstowcs(p, filters[i].name, name_sz);
+		p += name_sz;
+		mbstowcs(p, filters[i].pattern, pattern_sz);
+		p += pattern_sz;
+	}
+
+	filterspec = amalloc(num_filters * sizeof(COMDLG_FILTERSPEC), g_temp_allocator);
+	p = ext_buf;
+	for (u32 i = 0; i < num_filters; ++i) {
+		filterspec[i].pszName = p;
+		p += strlen(filters[i].name) + 1;
+		filterspec[i].pszSpec = p;
+		p += strlen(filters[i].pattern) + 1;
+	}
+	if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, num_filters, filterspec)))
+		goto err_ext;
 
 	if (!SUCCEEDED(dialog->lpVtbl->Show(dialog, NULL)))
 		goto err_dlg;
@@ -126,7 +150,7 @@ b32 file__dialog(char *filename, u32 n, const char *ext[], u32 n_ext,
 	                                            &psz_file_path)))
 		goto err_itm;
 
-	wcstombs(filename, psz_file_path, n);
+	wcstombs(filename, psz_file_path, fname_sz);
 	CoTaskMemFree(psz_file_path);
 	retval = true;
 
@@ -135,7 +159,7 @@ err_itm:
 err_dlg:
 	dialog->lpVtbl->Release(dialog);
 err_ext:
-	afree(filters, g_temp_allocator);
+	afree(filterspec, g_temp_allocator);
 	afree(ext_buf, g_temp_allocator);
 err_init:
 	CoUninitialize();
@@ -143,28 +167,28 @@ out:
 	return retval;
 }
 
-b32 file_open_dialog(char *fname, u32 n, const char *ext)
+b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
-	const char *extensions[1] = { ext };
-	return file_open_dialog_ex(fname, n, extensions, ext ? 1 : 0);
+	return file_open_dialog_ex(fname, fname_sz, &filter, 1);
 }
 
-b32 file_save_dialog(char *fname, u32 n, const char *ext)
+b32 file_save_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
-	const char *extensions[1] = { ext };
-	return file_save_dialog_ex(fname, n, extensions, ext ? 1 : 0);
+	return file_save_dialog_ex(fname, fname_sz, &filter, 1);
 }
 
-b32 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+b32 file_open_dialog_ex(char *fname, u32 fname_sz,
+                        const file_dialog_filter_t filters[], u32 num_filters)
 {
-	return file__dialog(fname, n, ext, n_ext, CLSID_FileOpenDialog,
-	                    IID_IFileOpenDialog);
+	return file__dialog(fname, fname_sz, filters, num_filters,
+	                    CLSID_FileOpenDialog, IID_IFileOpenDialog);
 }
 
-b32 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+b32 file_save_dialog_ex(char *fname, u32 fname_sz,
+                        const file_dialog_filter_t filters[], u32 num_filters)
 {
-	return file__dialog(fname, n, ext, n_ext, CLSID_FileSaveDialog,
-	                    IID_IFileSaveDialog);
+	return file__dialog(fname, fname_sz, filters, num_filters,
+	                    CLSID_FileSaveDialog, IID_IFileSaveDialog);
 }
 
 b32 file_exists(const char *path)
@@ -303,24 +327,26 @@ out:
 	return retval;
 }
 
-b32 file_open_dialog(char *fname, u32 n, const char *ext)
+b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
-	return file__dialog(fname, n, "zenity --file-selection");
+	return file__dialog(fname, fname_sz, "zenity --file-selection");
 }
 
-b32 file_save_dialog(char *fname, u32 n, const char *ext)
+b32 file_save_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
-	return file__dialog(fname, n, "zenity --file-selection --save");
+	return file__dialog(fname, fname_sz, "zenity --file-selection --save");
 }
 
-b32 file_open_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+b32 file_open_dialog_ex(char *fname, u32 fname_sz,
+                        const file_dialog_filter_t filters[], u32 num_filters)
 {
-	return file_open_dialog(fname, n, NULL);
+	return file_open_dialog(fname, fname_sz, NULL);
 }
 
-b32 file_save_dialog_ex(char *fname, u32 n, const char *ext[], u32 n_ext)
+b32 file_save_dialog_ex(char *fname, u32 fname_sz,
+                        const file_dialog_filter_t filters[], u32 num_filters)
 {
-	return file_save_dialog(fname, n, NULL);
+	return file_save_dialog(fname, fname_sz, NULL);
 }
 
 b32 file_exists(const char *path)
