@@ -107,7 +107,7 @@ b32 file__dialog(char *filename, u32 fname_sz,
 		goto err_init;
 	IFileDialog *dialog = vp;
 
-	ttl_sz = 0;
+	ttl_sz = strlen(filters[0].pattern) - 1;
 	for (u32 i = 0; i < num_filters; ++i) {
 		ttl_sz += strlen(filters[i].name) + 1;
 		ttl_sz += strlen(filters[i].pattern) + 1;
@@ -115,6 +115,14 @@ b32 file__dialog(char *filename, u32 fname_sz,
 	ext_buf = amalloc(ttl_sz * sizeof(wchar_t), g_temp_allocator);
 
 	p = ext_buf;
+	{
+		const size_t pattern_sz = strlen(filters[0].pattern) - 1;
+		assert(   strlen(filters[0].pattern) > 2
+		       && filters[0].pattern[0] == '*'
+		       && filters[0].pattern[1] == '.');
+		mbstowcs(p, filters[0].pattern + 2, pattern_sz);
+		p += pattern_sz;
+	}
 	for (u32 i = 0; i < num_filters; ++i) {
 		const size_t name_sz = strlen(filters[i].name) + 1;
 		const size_t pattern_sz = strlen(filters[i].pattern) + 1;
@@ -127,8 +135,12 @@ b32 file__dialog(char *filename, u32 fname_sz,
 		p += pattern_sz;
 	}
 
-	filterspec = amalloc(num_filters * sizeof(COMDLG_FILTERSPEC), g_temp_allocator);
 	p = ext_buf;
+	if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, p)))
+		goto err_ext;
+	p += strlen(filters[0].pattern) - 1;
+
+	filterspec = amalloc(num_filters * sizeof(COMDLG_FILTERSPEC), g_temp_allocator);
 	for (u32 i = 0; i < num_filters; ++i) {
 		filterspec[i].pszName = p;
 		p += strlen(filters[i].name) + 1;
@@ -136,7 +148,7 @@ b32 file__dialog(char *filename, u32 fname_sz,
 		p += strlen(filters[i].pattern) + 1;
 	}
 	if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, num_filters, filterspec)))
-		goto err_ext;
+		goto err_exts;
 
 	if (!SUCCEEDED(dialog->lpVtbl->Show(dialog, NULL)))
 		goto err_dlg;
@@ -158,8 +170,9 @@ err_itm:
 	item->lpVtbl->Release(item);
 err_dlg:
 	dialog->lpVtbl->Release(dialog);
-err_ext:
+err_exts:
 	afree(filterspec, g_temp_allocator);
+err_ext:
 	afree(ext_buf, g_temp_allocator);
 err_init:
 	CoUninitialize();
