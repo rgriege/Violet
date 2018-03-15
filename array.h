@@ -217,7 +217,7 @@ ARRDEF array_size_t array__index(void *a, const void *userp, size_t sz,
 {
 	for (arr_bytep p=a, end=(arr_bytep)a+array_sz(a)*sz; p!=end; p+=sz)
 		if (cmp(p, userp) == 0)
-			return (p-(arr_bytep)a)/sz;
+			return (array_size_t)((p-(arr_bytep)a)/sz);
 	return ~0;
 }
 

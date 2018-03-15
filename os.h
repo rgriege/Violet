@@ -242,7 +242,7 @@ b32 _mkdir(const char *path)
 
 char *app_data_dir(const char *app_name, allocator_t *a)
 {
-	u32 n;
+	size_t n;
 	char *path;
 	FILE *fp = fopen(".access_check", "w");
 	if (!fp) {
@@ -271,7 +271,7 @@ char *app_data_dir(const char *app_name, allocator_t *a)
 
 lib_handle lib_load(const char *_filename)
 {
-	const u32 sz = strlen(_filename);
+	const size_t sz = strlen(_filename);
 	char *filename = amalloc(sz + 4, g_temp_allocator);
 	strcpy(filename, _filename);
 	strcat(filename, ".dll");
@@ -300,8 +300,8 @@ const char *lib_err()
 
 b32 open_file_external(const char *filename)
 {
-	const int ret = (int)ShellExecute(NULL, "open", filename, NULL, NULL,
-	                                  SW_SHOWNORMAL);
+	const INT_PTR ret = (INT_PTR)ShellExecute(NULL, "open", filename,
+	                                          NULL, NULL, SW_SHOWNORMAL);
 	if (ret <= 32) {
 		log_error("failed to open %s in an external program with error %d",
 		          filename, ret);

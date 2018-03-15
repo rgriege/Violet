@@ -52,7 +52,7 @@ LSTDEF void  list__destroy(list_t *list  MEMCALL_ARGS);
 
 LSTDEF void *list__append(list_t *list, const void *item_, size_t sz  MEMCALL_ARGS)
 {
-	const u32 item_sz = sz + sizeof(list__item_header_t);
+	const size_t item_sz = sz + sizeof(list__item_header_t);
 	allocator_t *a = list__allocator(*list);
 	list__item_header_t *header = a->malloc_(item_sz, a  MEMCALL_VARS);
 	void *item = header + 1;

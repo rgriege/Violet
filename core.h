@@ -355,7 +355,8 @@ thread_local const struct error_handler *g_error_handler = &(struct error_handle
 
 void error_handler_push(error_f func, void *udata)
 {
-	u32 idx = g_error_handler->prev ? g_error_handler - g_error_handler_stack + 1 : 0;
+	const size_t idx = g_error_handler->prev
+	                 ? g_error_handler - g_error_handler_stack + 1 : 0;
 	assert(idx < ERROR_HANDLER_STACK_SIZE);
 	g_error_handler_stack[idx].func = func;
 	g_error_handler_stack[idx].udata = udata;

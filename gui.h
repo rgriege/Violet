@@ -3194,7 +3194,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				modify = true;
 			}
 			if (modify) {
-				u32 len = strlen(txt);
+				u32 len = (u32)strlen(txt);
 				char key_char = 0;
 				if (key_idx == KB_BACKSPACE) {
 					if (gui->npt_cursor_pos > 0) {
@@ -3215,7 +3215,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 					u32 cnt;
 					if (   SDL_HasClipboardText()
 					    && (clipboard = SDL_GetClipboardText())
-					    && (cnt = min(n - 1 - len, strlen(clipboard))) > 0) {
+					    && (cnt = min(n - 1 - len, (u32)strlen(clipboard))) > 0) {
 						memmove(&txt[gui->npt_cursor_pos + cnt],
 								&txt[gui->npt_cursor_pos],
 								len - gui->npt_cursor_pos + 1);
@@ -3286,7 +3286,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	gui->style.npt.pen(gui, x, y, w, h, &style);
 
 	if (flags & NPT_PASSWORD) {
-		const u32 sz = strlen(txt);
+		const u32 sz = (u32)strlen(txt);
 		array_reserve(gui->pw_buf, sz+1);
 		for (u32 i = 0; i < sz; ++i)
 			gui->pw_buf[i] = '*';
@@ -4657,7 +4657,7 @@ void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size)
 	if (gui->style_stack_sz + 2 * sizeof(size_t) + size < GUI_STYLE_STACK_LIMIT) {
 		const void *loc = ((u8*)&gui->style) + offset;
 		memcpy(&gui->style_stack[gui->style_stack_sz], loc, size);
-		gui->style_stack_sz += size;
+		gui->style_stack_sz += (u32)size;
 		memcpy(&gui->style_stack[gui->style_stack_sz], &size, sizeof(size_t));
 		gui->style_stack_sz += sizeof(size_t);
 		memcpy(&gui->style_stack[gui->style_stack_sz], &offset, sizeof(size_t));
@@ -4676,7 +4676,7 @@ void gui_style_pop(gui_t *gui)
 		memcpy(&offset, &gui->style_stack[gui->style_stack_sz], sizeof(size_t));
 		gui->style_stack_sz -= sizeof(size_t);
 		memcpy(&size, &gui->style_stack[gui->style_stack_sz], sizeof(size_t));
-		gui->style_stack_sz -= size;
+		gui->style_stack_sz -= (u32)size;
 		memcpy(((u8*)&gui->style) + offset,
 		       &gui->style_stack[gui->style_stack_sz], size);
 	} else {
