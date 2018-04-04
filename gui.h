@@ -2650,9 +2650,10 @@ void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c)
 {
 	assert(w >= 1);
 	if (w == 1) {
-		v2f poly[2] = {
-			{ x0, y0 },
-			{ x1, y1 }
+		/* NOTE(rgriege): fixes blurry lines due to anti-aliasing problem */
+		const v2f poly[2] = {
+			{ x0 + 0.5f, y0 + 0.5f },
+			{ x1 + 0.5f, y1 + 0.5f }
 		};
 		gui__poly(gui, poly, 2, g_nocolor, c);
 	} else {
