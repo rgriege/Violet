@@ -355,12 +355,12 @@ b32       gui_widget_focused(const gui_t *gui, u64 id);
 b32       gui_any_widget_hot(const gui_t *gui);
 b32       gui_any_widget_active(const gui_t *gui);
 b32       gui_any_widget_has_focus(const gui_t *gui);
-void      gui_widget_interactivity_enable(gui_t *gui);
 /* NOTE: this will not interrupt currently active widgets */
-void      gui_widget_interactivity_disable(gui_t *gui);
+void      gui_lock(gui_t *gui);
+void      gui_unlock(gui_t *gui);
 /* NOTE: I usually hate 'conditional' methods, but this cleans up usage code */
-void      gui_widget_interactivity_disable_if(gui_t *gui, b32 cond, u32 *restore_val);
-void      gui_widget_interactivity_restore(gui_t *gui, u32 val);
+void      gui_lock_if(gui_t *gui, b32 cond, u32 *restore_val);
+void      gui_lock_restore(gui_t *gui, u32 val);
 
 /* Splits */
 
@@ -1769,7 +1769,7 @@ typedef struct gui_t
 	u8 style_stack[GUI_STYLE_STACK_LIMIT];
 	u32 style_stack_sz;
 
-	u32 widget_interactivity_disabled;
+	u32 lock;
 	u64 hot_id;    /* hover */
 	u64 active_id; /* mouse down */
 	u64 focus_id;  /* widgets like input boxes change state post-click */
@@ -1945,7 +1945,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	memset(gui->prev_keys, 0, KB_COUNT);
 	memset(gui->key_toggles, 0, KBT_COUNT * sizeof(gui__key_toggle_state_t));
 
-	gui->widget_interactivity_disabled = 0;
+	gui->lock = 0;
 	gui->hot_id = 0;
 	gui->active_id = 0;
 	gui->focus_id = 0;
@@ -3097,7 +3097,7 @@ gui_element_style_t gui__element_style(const gui_t *gui,
 	break;
 	}
 
-	if (gui->widget_interactivity_disabled) {
+	if (gui->lock) {
 		style.line.color = color_blend(widget_style->disabled.line.color,
 		                               style.line.color);
 		style.text.color = color_blend(widget_style->disabled.text.color,
@@ -3225,7 +3225,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	const b32 contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
 	                           && gui__box_half_visible(gui, box)
-	                           && !gui->widget_interactivity_disabled;
+	                           && !gui->lock;
 	b32 complete = false;
 	const char *displayed_txt;
 
@@ -3376,7 +3376,7 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	*contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
 	                  && gui__box_half_visible(gui, box)
-	                  && !gui->widget_interactivity_disabled;
+	                  && !gui->lock;
 	if (gui->hot_id == id) {
 		if (!*contains_mouse || gui->mouse_covered_by_panel) {
 			gui->hot_id = 0;
@@ -3530,7 +3530,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	}
 	const b32 contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
 	                           && gui__box_half_visible(gui, box)
-	                           && !gui->widget_interactivity_disabled;
+	                           && !gui->lock;
 
 	if (gui->hot_id == id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
@@ -3734,7 +3734,7 @@ b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, u32 w, u32 h,
 	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
 	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
 	                 && gui__box_half_visible(gui, box)
-	                 && !gui->widget_interactivity_disabled;
+	                 && !gui->lock;
 	return gui__drag(gui, x, y, contains_mouse, mb, id, cb, udata);
 }
 
@@ -3817,7 +3817,7 @@ b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
 	box2i_from_center(&box, pos, (v2i){r, r});
 	const b32 contains_mouse =    (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r
 	                           && gui__box_half_visible(gui, box)
-	                           && !gui->widget_interactivity_disabled;
+	                           && !gui->lock;
 	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
 	gui_style_push_pen(gui, drag.pen, gui_pen_circ);
 	gui__drag_render(gui, *x - r, *y - r, 2 * r, 2 * r, id, &gui->style.drag);
@@ -3863,27 +3863,27 @@ b32 gui_any_widget_has_focus(const gui_t *gui)
 	return gui->focus_id != 0;
 }
 
-void gui_widget_interactivity_enable(gui_t *gui)
+void gui_lock(gui_t *gui)
 {
-	assert(gui->widget_interactivity_disabled > 0);
-	--gui->widget_interactivity_disabled;
+	++gui->lock;
 }
 
-void gui_widget_interactivity_disable(gui_t *gui)
+void gui_unlock(gui_t *gui)
 {
-	++gui->widget_interactivity_disabled;
+	assert(gui->lock > 0);
+	--gui->lock;
 }
 
-void gui_widget_interactivity_disable_if(gui_t *gui, b32 cond, u32 *restore_val)
+void gui_lock_if(gui_t *gui, b32 cond, u32 *restore_val)
 {
-	*restore_val = gui->widget_interactivity_disabled;
+	*restore_val = gui->lock;
 	if (cond)
-		gui_widget_interactivity_disable(gui);
+		gui_lock(gui);
 }
 
-void gui_widget_interactivity_restore(gui_t *gui, u32 val)
+void gui_lock_restore(gui_t *gui, u32 val)
 {
-	gui->widget_interactivity_disabled = val;
+	gui->lock = val;
 }
 
 void gui__split_init(gui_t *gui, gui_split_t *split,
