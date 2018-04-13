@@ -323,7 +323,7 @@ btn_val_t gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 btn_val_t gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                       img_scale_t scale);
 btn_val_t gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen);
-void      gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+b32       gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                   b32 *val);
 void      gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen,
                       b32 *val);
@@ -333,7 +333,7 @@ b32       gui_range_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
                       r32 min, r32 max);
 b32       gui_range_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
                       r32 min, r32 max);
-void      gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+b32       gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      const char *txt, u32 *val, u32 opt);
 void      gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                       const char *txt, u32 *val, u32 opt);
@@ -492,12 +492,12 @@ void      pgui_img(gui_t *gui, const char *fname, img_scale_t scale);
 btn_val_t pgui_btn_txt(gui_t *gui, const char *lbl);
 btn_val_t pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale);
 btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen);
-void      pgui_chk(gui_t *gui, const char *lbl, b32 *val);
+b32       pgui_chk(gui_t *gui, const char *lbl, b32 *val);
 b32       pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint,
                    npt_flags_t flags);
 b32       pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
                          npt_flags_t flags, const b32 chars[128]);
-void      pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
+b32       pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 b32       pgui_slider_x(gui_t *gui, r32 *val);
 b32       pgui_slider_y(gui_t *gui, r32 *val);
@@ -3465,13 +3465,17 @@ btn_val_t gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 	return ret;
 }
 
-void gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
+b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
+	b32 toggled = false;
 	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
-	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS)
+
+	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS) {
 		*val = !*val;
+		toggled = true;
+	}
 
 	if (gui->active_id == id)
 		status = contains_mouse ? GUI__WIDGET_ACTIVE : GUI__WIDGET_HOT;
@@ -3480,6 +3484,7 @@ void gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	else if (*val)
 		status = GUI__WIDGET_ACTIVE;
 	gui__btn_render(gui, x, y, w, h, txt, status, &gui->style.chk);
+	return toggled;
 }
 
 void gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
@@ -3614,16 +3619,19 @@ b32 gui_range_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
 	return result;
 }
 
-void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                const char *txt, u32 *val, u32 opt)
+b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+               const char *txt, u32 *val, u32 opt)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	const b32 selected = *val == opt;
+	const b32 was_selected = *val == opt;
 	gui__widget_status_t status = GUI__WIDGET_INACTIVE;
 	b32 contains_mouse;
+	b32 selected = false;
+
 	if (   gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS
-	    && !selected) {
+	    && !was_selected) {
 		*val = opt;
+		selected = true;
 	}
 
 	if (gui->active_id == id)
@@ -3633,6 +3641,7 @@ void gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	else if (*val == opt)
 		status = GUI__WIDGET_ACTIVE;
 	gui__btn_render(gui, x, y, w, h, txt, status, &gui->style.select);
+	return selected;
 }
 
 void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -4578,11 +4587,11 @@ btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen)
 	return result;
 }
 
-void pgui_chk(gui_t *gui, const char *lbl, b32 *val)
+b32 pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_chk(gui, x, y, w, h, lbl, val);
+	return gui_chk(gui, x, y, w, h, lbl, val);
 }
 
 b32 pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, npt_flags_t flags)
@@ -4600,11 +4609,11 @@ b32 pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
 	return result;
 }
 
-void pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
+b32 pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_select(gui, x, y, w, h, lbl, val, opt);
+	return gui_select(gui, x, y, w, h, lbl, val, opt);
 }
 
 void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
