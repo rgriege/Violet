@@ -301,8 +301,9 @@ b32  gui_point_visible(const gui_t *gui, s32 x, s32 y);
 
 typedef enum npt_flags_t
 {
-	NPT_PASSWORD       = 1 << 0,
-	NPT_CLEAR_ON_FOCUS = 1 << 1,
+	NPT_PASSWORD            = 1 << 0,
+	NPT_CLEAR_ON_FOCUS      = 1 << 1,
+	NPT_COMPLETE_ON_DEFOCUS = 1 << 2,
 } npt_flags_t;
 
 typedef enum btn_val_t
@@ -3301,8 +3302,11 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->repeat_timer = gui->repeat_delay;
 			gui->npt_prev_key_idx = KB_COUNT;
 		}
-		if (mouse_pressed(gui, MB_LEFT) && !contains_mouse)
+		if (mouse_pressed(gui, MB_LEFT) && !contains_mouse) {
 			gui->focus_id = 0;
+			if (flags & NPT_COMPLETE_ON_DEFOCUS)
+				complete = true;
+		}
 	} else if (gui->active_id == id) {
 		if (mouse_released(gui, MB_LEFT)) {
 			if (contains_mouse) {
