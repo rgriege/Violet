@@ -4190,9 +4190,10 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	assert(panel->parent == gui->panel);
 
-	gui->panel = panel;
+	if (panel->closed)
+		return false;
 
-	panel->closed = false;
+	gui->panel = panel;
 
 	if (panel->split.leaf)
 		box2i_to_xywh(panel->split.box, &panel->x, &panel->y, &panel->width, &panel->height);
@@ -4350,8 +4351,10 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	else
 		panel->pri = ++gui->next_panel_pri;
 
-	if (panel->collapsed || panel->closed)
+	if (panel->collapsed || panel->closed) {
+		gui->panel = panel->parent;
 		return false;
+	}
 
 	/* background outline display */
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
