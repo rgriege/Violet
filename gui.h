@@ -474,13 +474,13 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 
-void pgui_row(gui_t *gui, r32 height, r32 width_ratio);
+void pgui_row(gui_t *gui, r32 height);
 void pgui_row_cells(gui_t *gui, r32 height, const r32 *cells, u32 num_cells);
 #define pgui_row_cellsv(gui, height, cells) \
 	pgui_row_cells(gui, height, cells, countof(cells))
 void pgui_row_empty(gui_t *gui, r32 height);
 
-void pgui_col(gui_t *gui, r32 width, r32 height_ratio);
+void pgui_col(gui_t *gui, r32 width);
 void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells);
 #define pgui_col_cellsv(gui, width, cells) \
 	pgui_col_cells(gui, width, cells, countof(cells))
@@ -4488,9 +4488,10 @@ b32 pgui__grid_active(const gui_panel_t *panel)
 }
 #endif
 
-void pgui_row(gui_t *gui, r32 height, r32 width_ratio)
+void pgui_row(gui_t *gui, r32 height)
 {
-	pgui_row_cells(gui, height, &width_ratio, 1);
+	const r32 cols[1] = { GUI_GRID_REMAINING };
+	pgui_row_cellsv(gui, height, cols);
 }
 
 static
@@ -4529,6 +4530,8 @@ void pgui__strip(gui_t *gui, b32 vertical, r32 minor_dim_,
 				strip->dim.y = panel->grid.pos.y - panel->y - panel->padding.y;
 			else
 				strip->dim.x = panel->x + panel->width - panel->padding.x - panel->grid.pos.x;
+			if (strip->dim.d[vertical] < major_dim)
+				strip->dim.d[vertical] = major_dim;
 		} else {
 			strip->dim.d[vertical] = major_dim;
 		}
@@ -4638,13 +4641,14 @@ void pgui__cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 
 void pgui_row_empty(gui_t *gui, r32 height)
 {
-	pgui_row(gui, height, 1.f);
+	pgui_row(gui, height);
 	pgui__cell_advance(gui->panel);
 }
 
-void pgui_col(gui_t *gui, r32 height, r32 width_ratio)
+void pgui_col(gui_t *gui, r32 height)
 {
-	pgui_col_cells(gui, height, &width_ratio, 1);
+	const r32 rows[1] = { GUI_GRID_REMAINING };
+	pgui_col_cellsv(gui, height, rows);
 }
 
 void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells)
@@ -4654,7 +4658,7 @@ void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells)
 
 void pgui_col_empty(gui_t *gui, r32 width)
 {
-	pgui_col(gui, width, 1.f);
+	pgui_col(gui, width);
 	pgui__cell_advance(gui->panel);
 }
 
