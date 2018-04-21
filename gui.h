@@ -547,6 +547,7 @@ typedef struct gui_text_style
 	color_t color;
 	gui_align_t align;
 	s32 padding;
+	b32 wrap;
 } gui_text_style_t;
 
 typedef struct gui_element_style
@@ -611,6 +612,7 @@ void         gui_style_set(gui_t *gui, const gui_style_t *style);
 
 void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size);
 void gui_style_push_color_(gui_t *gui, size_t offset, color_t val);
+void gui_style_push_b32_(gui_t *gui, size_t offset, u32 val);
 void gui_style_push_u32_(gui_t *gui, size_t offset, u32 val);
 void gui_style_push_r32_(gui_t *gui, size_t offset, r32 val);
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
@@ -624,6 +626,8 @@ void gui_style_pop(gui_t *gui);
 /* literals */
 #define gui_style_push_color(gui, loc, val) \
 	gui_style_push_color_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_b32(gui, loc, val) \
+	gui_style_push_b32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_u32(gui, loc, val) \
 	gui_style_push_u32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_r32(gui, loc, val) \
@@ -1391,6 +1395,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	.color = gi_white, \
 	.align = GUI_ALIGN_LEFT | GUI_ALIGN_MIDDLE, \
 	.padding = 4, \
+	.wrap = false, \
 }
 
 #define gi__gui_text_style_dark { \
@@ -1398,6 +1403,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	.color = gi_black, \
 	.align = GUI_ALIGN_MIDCENTER, \
 	.padding = 4, \
+	.wrap = false, \
 }
 
 #define gi__gui_btn_text_style_default { \
@@ -1405,6 +1411,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	.color = gi_white, \
 	.align = GUI_ALIGN_MIDCENTER, \
 	.padding = 4, \
+	.wrap = false, \
 }
 
 #define gi__gui_btn_text_style_disabled { \
@@ -1412,6 +1419,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	.color = gi_black, \
 	.align = GUI_ALIGN_MIDCENTER, \
 	.padding = 4, \
+	.wrap = false, \
 }
 
 #define gi__gui_btn_inactive_style_default { \
@@ -1611,6 +1619,7 @@ const gui_style_t g_gui_style_default = {
 	.color = gi_nocolor, \
 	.align = GUI_ALIGN_LEFT | GUI_ALIGN_MIDDLE, \
 	.padding = 4, \
+	.wrap = false, \
 }
 
 #define gi__gui_element_style_invis { \
@@ -2825,16 +2834,75 @@ void gui__fixup_stbtt_aligned_quad(stbtt_aligned_quad *q, r32 yb)
 }
 
 static
+void gui__add_char_to_line_width(font_t *font, char c, r32 *line_width)
+{
+	const int ch = c;
+	r32 y = 0;
+	stbtt_aligned_quad q;
+
+	if (ch < GUI__FONT_MIN_CHAR && ch > GUI__FONT_MAX_CHAR)
+		return;
+
+	stbtt_GetPackedQuad(font->char_info, font->texture.width, font->texture.height,
+	                    ch - GUI__FONT_MIN_CHAR, line_width, &y, &q, 1);
+}
+
+static
+void gui__wrap_txt(gui_t *gui, char *txt, const gui_text_style_t *style, r32 max_width)
+{
+	char *p = txt;
+	r32 line_width = style->padding;
+	font_t *font = gui__get_font(gui, style->size);
+	assert(font);
+
+	while (*p != 0) {
+		char *p_word_start = NULL;
+		r32 line_width_word_start;
+
+		if (*p == ' ') {
+			p_word_start = p;
+			gui__add_char_to_line_width(font, *p, &line_width);
+			++p;
+		} else if (*p == '\n') {
+			++p;
+			line_width = style->padding;
+		}
+		line_width_word_start = line_width;
+
+		while (*p != ' ' && *p != '\n' && *p != 0) {
+			gui__add_char_to_line_width(font, *p, &line_width);
+			++p;
+		}
+
+		if (line_width >= max_width) {
+			if (p_word_start)
+				*p_word_start = '\n';
+			line_width = style->padding + line_width - line_width_word_start;
+		}
+	}
+}
+
+static
 void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
-                       const char *txt, u32 pos, const gui_text_style_t *style)
+                       const char *txt_, u32 pos, const gui_text_style_t *style)
 {
 	font_t *font;
 	s32 ix_ = *ix, iy_ = *iy;
 	r32 x, y;
 	stbtt_aligned_quad q;
+	array(char) buf = NULL;
+	const char *txt = txt_;
 
 	font = gui__get_font(gui, style->size);
 	assert(font);
+
+	if (style->wrap) {
+		const u32 len = strlen(txt);
+		array_init_ex(buf, len + 1, g_temp_allocator);
+		memcpy(buf, txt, len + 1);
+		gui__wrap_txt(gui, buf, style, w);
+		txt = buf;
+	}
 
 	font__align_anchor(&ix_, &iy_, w, h, style->align);
 	x = ix_ + font__line_offset_x(font, txt, style);
@@ -2858,6 +2926,8 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 out:
 	*ix = x;
 	*iy = y;
+	if (buf)
+		array_destroy(buf);
 }
 
 static
@@ -2894,7 +2964,7 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
 
 static
 u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
-                       const char *txt, v2i mouse, const gui_text_style_t *style)
+                       const char *txt_, v2i mouse, const gui_text_style_t *style)
 {
 	font_t *font;
 	s32 xi = xi_, yi = yi_;
@@ -2903,6 +2973,16 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	u32 closest_pos;
 	s32 closest_dist, dist;
 	v2i p;
+	array(char) buf = NULL;
+	const char *txt = txt_;
+
+	if (style->wrap) {
+		const u32 len = strlen(txt);
+		array_init_ex(buf, len + 1, g_temp_allocator);
+		memcpy(buf, txt, len + 1);
+		gui__wrap_txt(gui, buf, style, w);
+		txt = buf;
+	}
 
 	font = gui__get_font(gui, style->size);
 	assert(font);
@@ -2934,6 +3014,8 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 			closest_pos = c - txt + 1;
 		}
 	}
+	if (buf)
+		array_destroy(buf);
 	return closest_pos;
 }
 
@@ -2945,6 +3027,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 		.color = c,
 		.align = align,
 		.padding = 0,
+		.wrap = false,
 	};
 	gui__txt(gui, &x, &y, txt, &style);
 }
@@ -2961,6 +3044,7 @@ void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 		.color = g_nocolor,
 		.align = align,
 		.padding = 0,
+		.wrap = false,
 	};
 
 	font = gui__get_font(gui, style.size);
@@ -3040,8 +3124,20 @@ void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
 void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, const gui_text_style_t *style)
 {
+	const u32 len = strlen(txt);
+	array(char) buf;
+
 	font__align_anchor(&x, &y, w, h, style->align);
-	gui__txt(gui, &x, &y, txt, style);
+
+	if (style->wrap) {
+		array_init_ex(buf, len + 1, g_temp_allocator);
+		memcpy(buf, txt, len + 1);
+		gui__wrap_txt(gui, buf, style, w);
+		gui__txt(gui, &x, &y, buf, style);
+		array_destroy(buf);
+	} else {
+		gui__txt(gui, &x, &y, txt, style);
+	}
 }
 
 /* Widgets */
@@ -3279,6 +3375,30 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 						gui->npt_cursor_pos += cnt;
 						SDL_free(clipboard);
 					}
+				} else if (key_idx == KB_UP) {
+					const u32 orig_pos = gui->npt_cursor_pos;
+					const gui_text_style_t *style = &gui->style.npt.active.text;
+					const font_t *font = gui__get_font(gui, style->size);
+					v2i cursor;
+					gui__txt_char_pos(gui, &cursor.x, &cursor.y, w, h, txt,
+					                  gui->npt_cursor_pos, style);
+					cursor.y += font->newline_dist;
+					gui->npt_cursor_pos
+						= gui__txt_mouse_pos(gui, x, y, w, h, txt, cursor, style);
+					if (gui->npt_cursor_pos == orig_pos && orig_pos != 0)
+						gui->npt_cursor_pos = 0;
+				} else if (key_idx == KB_DOWN) {
+					const u32 orig_pos = gui->npt_cursor_pos;
+					const gui_text_style_t *style = &gui->style.npt.active.text;
+					const font_t *font = gui__get_font(gui, style->size);
+					v2i cursor;
+					gui__txt_char_pos(gui, &cursor.x, &cursor.y, w, h, txt,
+					                  gui->npt_cursor_pos, style);
+					cursor.y -= font->newline_dist;
+					gui->npt_cursor_pos
+						= gui__txt_mouse_pos(gui, x, y, w, h, txt, cursor, style);
+					if (gui->npt_cursor_pos == orig_pos && orig_pos != len)
+						gui->npt_cursor_pos = len;
 				} else if (key_idx == KB_LEFT) {
 					if (gui->npt_cursor_pos > 0)
 						--gui->npt_cursor_pos;
@@ -4858,6 +4978,7 @@ void gui_style_push_##name##_(gui_t *gui, size_t offset, type val) \
 }
 
 GUI_STYLE_STACK_PUSH_LITERAL(color, color_t);
+GUI_STYLE_STACK_PUSH_LITERAL(b32, b32);
 GUI_STYLE_STACK_PUSH_LITERAL(u32, u32);
 GUI_STYLE_STACK_PUSH_LITERAL(r32, r32);
 
