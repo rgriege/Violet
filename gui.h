@@ -463,14 +463,16 @@ typedef struct gui_panel
 	v2i required_dim;
 	s32 body_height;
 	s32 pri;
-	struct gui_panel *parent;
+	struct gui_panel *parent, *prev, *next;
 	gui_split_t split;
 	b32 closed;
 	b32 collapsed;
+	b32 tabbed_out;
 } gui_panel_t;
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
                      const char *title, gui_panel_flags_t flags);
+void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 
@@ -580,6 +582,7 @@ typedef struct gui_panel_style
 	color_t border_color;
 	gui_element_style_t titlebar;
 	gui_widget_style_t  drag;
+	gui_widget_style_t  tab;
 	gui_widget_style_t  close;
 	gui_widget_style_t  collapse;
 	gui_widget_style_t  restore;
@@ -1518,6 +1521,12 @@ const gui_style_t g_gui_style_default = {
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
 		.border_color = gi_grey128,
+		.titlebar = {
+			.line = gi__gui_line_style_default,
+			.text = gi__gui_text_style_default,
+			.bg_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+			.outline_color = gi_nocolor,
+		},
 		.drag = {
 			.pen = gui_pen_panel_drag,
 			.inactive = {
@@ -1540,11 +1549,27 @@ const gui_style_t g_gui_style_default = {
 			},
 			.disabled = { 0 },
 		},
-		.titlebar = {
-			.line = gi__gui_line_style_default,
-			.text = gi__gui_text_style_default,
-			.bg_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
-			.outline_color = gi_nocolor,
+		.tab = {
+			.pen = gui_pen_rect,
+			.inactive = {
+				.line = gi__gui_line_style_default,
+				.text = gi__gui_btn_text_style_default,
+				.bg_color = { .r=0x66, .g=0x66, .b=0x66, .a=0xff },
+				.outline_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
+			},
+			.hot = {
+				.line = gi__gui_line_style_default,
+				.text = gi__gui_btn_text_style_default,
+				.bg_color = gi_grey77,
+				.outline_color = gi_nocolor,
+			},
+			.active = {
+				.line = gi__gui_line_style_default,
+				.text = gi__gui_btn_text_style_default,
+				.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
+				.outline_color = gi_nocolor,
+			},
+			.disabled = gi__gui_btn_disabled_style_default,
 		},
 		.close = {
 			.pen = gui_pen_panel_close,
@@ -1673,6 +1698,7 @@ const gui_style_t g_gui_style_invis = {
 		.bg_color          = gi_nocolor,
 		.border_color      = gi_nocolor,
 		.drag              = gi__gui_widget_style_invis,
+		.tab               = gi__gui_widget_style_invis,
 		.titlebar          = gi__gui_element_style_invis,
 		.close             = gi__gui_widget_style_invis,
 		.collapse          = gi__gui_widget_style_invis,
@@ -4335,7 +4361,6 @@ void gui__split(gui_t *gui, gui_split_t *split)
 		gui__split(gui, split->sp2);
 }
 
-
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
                      const char *title, gui_panel_flags_t flags)
 {
@@ -4358,12 +4383,41 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->required_dim = g_v2i_zero;
 
 	panel->parent = NULL;
+	panel->prev   = NULL;
+	panel->next   = NULL;
 	panel->split.leaf = false;
 
 	panel->closed = false;
 	panel->collapsed = false;
+	panel->tabbed_out = false;
 
 	pgui_panel_to_front(gui, panel);
+}
+
+static
+void pgui__validate_tab_flags(gui_panel_flags_t flags0, gui_panel_flags_t flags1)
+{
+	assert(flags0 & GUI_PANEL_TITLEBAR);
+	assert(flags1 & GUI_PANEL_TITLEBAR);
+	assert((flags0 & GUI_PANEL_DRAGGABLE)   == (flags1 & GUI_PANEL_DRAGGABLE));
+	assert((flags0 & GUI_PANEL_RESIZABLE)   == (flags1 & GUI_PANEL_RESIZABLE));
+	assert((flags0 & GUI_PANEL_CLOSABLE)    == (flags1 & GUI_PANEL_CLOSABLE));
+	assert((flags0 & GUI_PANEL_COLLAPSABLE) == (flags1 & GUI_PANEL_COLLAPSABLE));
+}
+
+void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab)
+{
+	gui_panel_t *last;
+
+	pgui__validate_tab_flags(panel->flags, tab->flags);
+
+	last = panel;
+	while (last->next)
+		last = last->next;
+
+	last->next = tab;
+	tab->prev = last;
+	tab->tabbed_out = true;
 }
 
 static
@@ -4389,31 +4443,11 @@ b32 gui__current_panel_contains_mouse(const gui_t *gui)
 	return box2i_contains_point(box, gui->mouse_pos);
 }
 
-b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
+static
+void pgui__panel_resize(gui_t *gui, gui_panel_t *panel)
 {
 	v2i resize;
 	s32 resize_delta;
-	b32 dragging;
-
-	assert(panel->parent == gui->panel);
-
-	if (panel->closed)
-		return false;
-
-	gui->panel = panel;
-
-	if (panel->split.leaf)
-		box2i_to_xywh(panel->split.box, &panel->x, &panel->y, &panel->width, &panel->height);
-
-	if (gui->style.panel.padding >= 1.f) {
-		panel->padding.x = gui->style.panel.padding;
-		panel->padding.y = gui->style.panel.padding;
-	} else {
-	  panel->padding.x = panel->width * gui->style.panel.padding;
-	  panel->padding.y = panel->height * gui->style.panel.padding;
-	}
-
-	/* resizing */
 
 	if (   (panel->flags & GUI_PANEL_RESIZABLE)
 	    && !panel->split.leaf
@@ -4475,24 +4509,27 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 		gui_style_pop(gui);
 	}
+}
 
-	/* titlebar / dragging */
-
+static
+void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
+{
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
 		const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
 		u64 drag_id = ~0;
-		s32 rx;
+		s32 rw, rx;
+		s32 tab_count;
 
 		panel->grid.pos.y = panel->y + panel->height - dim;
 
 		if ((panel->flags & GUI_PANEL_DRAGGABLE) && !panel->split.leaf) {
-			dragging = gui__drag_logic(gui, &drag_id, &panel->x, &panel->grid.pos.y,
-			                           dim, dim, MB_LEFT,
-			                           gui__drag_default_callback, NULL);
-			if (dragging)
+			*dragging = gui__drag_logic(gui, &drag_id, &panel->x, &panel->grid.pos.y,
+			                            dim, dim, MB_LEFT,
+			                            gui__drag_default_callback, NULL);
+			if (*dragging)
 				panel->y = panel->grid.pos.y - panel->height + dim;
 		} else {
-			dragging = false;
+			*dragging = false;
 		}
 
 		gui_rect(gui, panel->x, panel->grid.pos.y, panel->width,
@@ -4500,17 +4537,47 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		         gui->style.panel.titlebar.outline_color);
 
 		gui__drag_render(gui, panel->x, panel->grid.pos.y, dim, dim, drag_id,
-		                 dragging, &gui->style.panel.drag);
+		                 *dragging, &gui->style.panel.drag);
 
-		gui_txt_styled(gui, panel->x + dim, panel->grid.pos.y, panel->width, dim,
-		               panel->title, &gui->style.panel.titlebar.text);
-
-		rx = panel->x + panel->width;
+		rw = 0;
 		if (panel->flags & GUI_PANEL_COLLAPSABLE)
-			rx -= dim;
+			rw += dim;
 		if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf)
-			rx -= dim;
+			rw += dim;
 
+		tab_count = 0;
+		for (gui_panel_t *p = panel; p; p = p->next)
+			++tab_count;
+		if (tab_count > 1) {
+			s32 tab_dim, tab_idx;
+			u32 selected_tab_idx;
+			tab_dim = (panel->width - dim - rw) / tab_count;
+			tab_dim = min(tab_dim, 100);
+			tab_idx = 0;
+			selected_tab_idx = 0;
+			for (gui_panel_t *p = panel; p; p = p->next) {
+				if (!p->tabbed_out)
+					selected_tab_idx = (u32)tab_idx;
+				++tab_idx;
+			}
+			tab_idx = 0;
+			gui_style_push(gui, select, gui->style.panel.tab);
+			for (gui_panel_t *p = panel; p; p = p->next) {
+				if (gui_select(gui, panel->x + dim + tab_idx * tab_dim, panel->grid.pos.y,
+				               tab_dim, dim, p->title, &selected_tab_idx, (u32)tab_idx)) {
+					for (gui_panel_t *px = panel; px; px = px->next)
+						px->tabbed_out = true;
+					p->tabbed_out = false;
+				}
+				++tab_idx;
+			}
+			gui_style_pop(gui);
+		} else {
+			gui_txt_styled(gui, panel->x + dim, panel->grid.pos.y, panel->width, dim,
+			               panel->title, &gui->style.panel.titlebar.text);
+		}
+
+		rx = panel->x + panel->width - rw;
 		if (panel->flags & GUI_PANEL_COLLAPSABLE) {
 			const s32 y = panel->grid.pos.y;
 			if (panel->collapsed)
@@ -4542,27 +4609,77 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->grid.pos.y -= panel->padding.y;
 		panel->body_height = panel->height - dim;
 	} else {
-		dragging = false;
+		*dragging = false;
 		panel->grid.pos.y = panel->y + panel->height - panel->padding.y;
 		panel->body_height = panel->height;
 	}
+}
 
-	if (panel->collapsed) {
-		/* background outline display */
-		const s32 h = GUI_PANEL_TITLEBAR_HEIGHT;
-		gui_rect(gui, panel->x, panel->y + panel->height - h, panel->width, h,
-		         g_nocolor, gui->style.panel.border_color);
+b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
+{
+	b32 dragging;
+
+	if (panel->prev) {
+		gui_panel_t *first = panel->prev;
+		while (first->prev)
+			first = first->prev;
+
+		panel->x           = first->x;
+		panel->y           = first->y;
+		panel->width       = first->width;
+		panel->height      = first->height;
+		panel->grid.pos.y  = first->grid.pos.y;
+		panel->padding     = first->padding;
+		panel->body_height = first->body_height;
+		panel->parent      = first->parent;
+		memcpy(&panel->split, &first->split, sizeof(first->split));
+		panel->closed      = first->closed;
+		panel->collapsed   = first->collapsed;
+
+		gui->panel = panel;
+	} else {
+		assert(panel->parent == gui->panel);
+
+		if (panel->closed)
+			return false;
+
+		gui->panel = panel;
+
+		if (panel->split.leaf)
+			box2i_to_xywh(panel->split.box, &panel->x, &panel->y,
+			              &panel->width, &panel->height);
+
+		if (gui->style.panel.padding >= 1.f) {
+			panel->padding.x = gui->style.panel.padding;
+			panel->padding.y = gui->style.panel.padding;
+		} else {
+			panel->padding.x = panel->width  * gui->style.panel.padding;
+			panel->padding.y = panel->height * gui->style.panel.padding;
+		}
+
+		pgui__panel_resize(gui, panel);
+		pgui__panel_titlebar(gui, panel, &dragging);
+
+		if (panel->collapsed) {
+			/* background outline display */
+			const s32 h = GUI_PANEL_TITLEBAR_HEIGHT;
+			gui_rect(gui, panel->x, panel->y + panel->height - h, panel->width, h,
+			         g_nocolor, gui->style.panel.border_color);
+		}
+
+		if (   dragging
+		    || (   gui__allow_new_panel_interaction(gui)
+		        && mouse_pressed(gui, MB_LEFT)
+		        && gui__current_panel_contains_mouse(gui))) {
+			pgui_panel_to_front(gui, panel);
+		} else {
+			panel->pri = ++gui->next_panel_pri;
+			for (gui_panel_t *p = panel->next; p; p = p->next)
+				p->pri = ++gui->next_panel_pri;
+		}
 	}
 
-	if (   dragging
-	    || (   gui__allow_new_panel_interaction(gui)
-	        && mouse_pressed(gui, MB_LEFT)
-	        && gui__current_panel_contains_mouse(gui)))
-		pgui_panel_to_front(gui, panel);
-	else
-		panel->pri = ++gui->next_panel_pri;
-
-	if (panel->collapsed || panel->closed) {
+	if (panel->closed || panel->collapsed || panel->tabbed_out) {
 		gui->panel = panel->parent;
 		return false;
 	}
@@ -5023,7 +5140,11 @@ void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel)
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
 {
-	panel->pri = --gui->min_panel_pri;
+	gui_panel_t *last = panel;
+	while (last->next)
+		last = last->next;
+	for (gui_panel_t *p = last; p; p = p->prev)
+		p->pri = --gui->min_panel_pri;
 }
 
 int pgui_panel_sort(const void *lhs_, const void *rhs_)
