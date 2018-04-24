@@ -3048,7 +3048,7 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	assert(font);
 
 	if (style->wrap) {
-		const u32 len = strlen(txt);
+		const u32 len = (u32)strlen(txt);
 		array_init_ex(buf, len + 1, g_temp_allocator);
 		memcpy(buf, txt, len + 1);
 		gui__wrap_txt(gui, buf, style, w);
@@ -3128,7 +3128,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	const char *txt = txt_;
 
 	if (style->wrap) {
-		const u32 len = strlen(txt);
+		const u32 len = (u32)strlen(txt);
 		array_init_ex(buf, len + 1, g_temp_allocator);
 		memcpy(buf, txt, len + 1);
 		gui__wrap_txt(gui, buf, style, w);
@@ -3275,7 +3275,7 @@ void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
 void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, const gui_text_style_t *style)
 {
-	const u32 len = strlen(txt);
+	const u32 len = (u32)strlen(txt);
 	array(char) buf;
 
 	font__align_anchor(&x, &y, w, h, style->align);
@@ -3570,12 +3570,12 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		gui__on_widget_tab_focused(gui, id);
 		if (flags & NPT_CLEAR_ON_FOCUS)
 			txt[0] = '\0';
-		gui->npt_cursor_pos = strlen(txt);
+		gui->npt_cursor_pos = (u32)strlen(txt);
 	} else if (gui->focus_prev_widget_id == id) {
 		gui__on_widget_tab_focused(gui, id);
 		if (flags & NPT_CLEAR_ON_FOCUS)
 			txt[0] = '\0';
-		gui->npt_cursor_pos = strlen(txt);
+		gui->npt_cursor_pos = (u32)strlen(txt);
 	} else if (gui->active_id == id) {
 		if (mouse_released(gui, MB_LEFT)) {
 			if (contains_mouse) {
