@@ -3566,16 +3566,20 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			if (flags & NPT_COMPLETE_ON_DEFOCUS)
 				complete = true;
 		}
-	} else if (gui->focus_next_widget) {
+	} else if (gui->focus_next_widget && !gui->lock) {
 		gui__on_widget_tab_focused(gui, id);
 		if (flags & NPT_CLEAR_ON_FOCUS)
 			txt[0] = '\0';
 		gui->npt_cursor_pos = (u32)strlen(txt);
 	} else if (gui->focus_prev_widget_id == id) {
-		gui__on_widget_tab_focused(gui, id);
-		if (flags & NPT_CLEAR_ON_FOCUS)
-			txt[0] = '\0';
-		gui->npt_cursor_pos = (u32)strlen(txt);
+		if (gui->lock) {
+			gui->focus_prev_widget_id = gui->prev_widget_id;
+		} else {
+			gui__on_widget_tab_focused(gui, id);
+			if (flags & NPT_CLEAR_ON_FOCUS)
+				txt[0] = '\0';
+			gui->npt_cursor_pos = (u32)strlen(txt);
+		}
 	} else if (gui->active_id == id) {
 		if (mouse_released(gui, MB_LEFT)) {
 			if (contains_mouse) {
@@ -3653,7 +3657,9 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	                  && !gui->lock;
 
 	if (gui->focus_id == id) {
-		if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
+		if (gui->lock) {
+			gui->focus_id = 0;
+		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
 			gui__tab_focus_adjacent_widget(gui);
 		} else {
 			gui->focus_id_found_this_frame = true;
@@ -3664,8 +3670,13 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 			             || gui->key_repeat.val == KB_KP_ENTER))
 				retval = key_pressed(gui, gui->key_repeat.val) ? BTN_PRESS : BTN_HOLD;
 		}
-	} else if (gui->focus_next_widget || gui->focus_prev_widget_id == id) {
+	} else if (gui->focus_next_widget && !gui->lock) {
 		gui__on_widget_tab_focused(gui, id);
+	} else if (gui->focus_prev_widget_id == id) {
+		if (gui->lock)
+			gui->focus_prev_widget_id = gui->prev_widget_id;
+		else
+			gui__on_widget_tab_focused(gui, id);
 	}
 
 	if (gui->hot_id == id) {
@@ -3824,7 +3835,9 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	              && !gui->lock;
 
 	if (gui->focus_id == id) {
-		if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
+		if (gui->lock) {
+			gui->focus_id = 0;
+		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
 			gui__tab_focus_adjacent_widget(gui);
 		} else {
 			gui->focus_id_found_this_frame = true;
@@ -3854,8 +3867,13 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 				}
 			}
 		}
-	} else if (gui->focus_next_widget || gui->focus_prev_widget_id == id) {
+	} else if (gui->focus_next_widget && !gui->lock) {
 		gui__on_widget_tab_focused(gui, id);
+	} else if (gui->focus_prev_widget_id == id) {
+		if (gui->lock)
+			gui->focus_prev_widget_id = gui->prev_widget_id;
+		else
+			gui__on_widget_tab_focused(gui, id);
 	}
 
 	if (gui->hot_id == id) {
@@ -3999,7 +4017,9 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 	*id = gui_widget_id(gui, *x, *y);
 
 	if (gui->focus_id == *id) {
-		if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
+		if (gui->lock) {
+			gui->focus_id = 0;
+		} if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
 			gui__tab_focus_adjacent_widget(gui);
 		} else {
 			gui->focus_id_found_this_frame = true;
@@ -4022,8 +4042,13 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 				}
 			}
 		}
-	} else if (gui->focus_next_widget || gui->focus_prev_widget_id == *id) {
+	} else if (gui->focus_next_widget && !gui->lock) {
 		gui__on_widget_tab_focused(gui, *id);
+	} else if (gui->focus_prev_widget_id == *id) {
+		if (gui->lock)
+			gui->focus_prev_widget_id = gui->prev_widget_id;
+		else
+			gui__on_widget_tab_focused(gui, *id);
 	}
 
 	if (gui->hot_id == *id) {
