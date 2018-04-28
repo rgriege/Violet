@@ -4344,14 +4344,6 @@ out:
 	gui->panel = panel->parent;
 }
 
-#if defined(DEBUG) || defined(WIN32) || defined(__EMSCRIPTEN__)
-static
-b32 pgui__grid_active(const gui_panel_t *panel)
-{
-	return panel->grid.depth > 0;
-}
-#endif
-
 void pgui_row(gui_t *gui, r32 height, r32 width_ratio)
 {
 	pgui_row_cells(gui, height, &width_ratio, 1);
@@ -4687,7 +4679,7 @@ void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 	gui_panel_grid_strip_t *strip;
 
 	assert(gui->panel);
-	assert(pgui__grid_active(gui->panel));
+	assert(gui->panel->grid.depth > 0);
 
 	strip = &gui->panel->grid.strips[gui->panel->grid.depth - 1];
 
@@ -4717,7 +4709,7 @@ u64 pgui_next_widget_id(const gui_t *gui)
 	 * without scroll, so scrolling doesn't reset focus id */
 	s32 x, y;
 	assert(gui->panel);
-	assert(pgui__grid_active(gui->panel));
+	assert(gui->panel->grid.depth > 0);
 	pgui_cell(gui, &x, &y, NULL, NULL);
 	return gui_widget_id(gui, x, y);
 }
