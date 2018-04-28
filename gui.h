@@ -2235,19 +2235,24 @@ b32 gui_begin_frame(gui_t *gui)
 		switch (evt.type) {
 		case SDL_QUIT:
 			quit = true;
-			break;
+		break;
 		case SDL_MOUSEWHEEL:
 			gui->mouse_btn |= (evt.wheel.y > 0 ? MB_WHEELUP : MB_WHEELDOWN);
 			gui->last_input_time = now;
-			break;
+		break;
+		case SDL_WINDOWEVENT:
+			if (evt.window.event == SDL_WINDOWEVENT_CLOSE)
+				quit = true;
+			else
+				gui->last_input_time = now;
+		break;
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
 		case SDL_MOUSEMOTION:
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
-		case SDL_WINDOWEVENT:
 			gui->last_input_time = now;
-			break;
+		break;
 		}
 	}
 
