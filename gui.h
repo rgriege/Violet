@@ -1821,6 +1821,7 @@ typedef struct gui_t
 	const u8 *keys;
 	gui__key_toggle_state_t key_toggles[KBT_COUNT];
 	gui__repeat_t key_repeat;
+	char text_npt[32];
 
 	/* style */
 	SDL_Cursor *cursors[GUI__CURSOR_COUNT];
@@ -2222,15 +2223,17 @@ b32 gui_begin_frame(gui_t *gui)
 	s32 key_cnt;
 	b32 quit = false;
 	float bg_color[4];
+	SDL_Event evt;
+	const u32 last_mouse_btn = gui->mouse_btn;
 	timepoint_t now = time_current();
+
 	gui->frame_time_milli = time_diff_milli(gui->frame_start_time, now);
 	gui->frame_start_time = now;
 
 	SDL_GL_MakeCurrent(gui->window, gui->gl_context);
 
-	SDL_Event evt;
-	const u32 last_mouse_btn = gui->mouse_btn;
 	gui->mouse_btn = 0;
+	gui->text_npt[0] = '\0';
 	while (SDL_PollEvent(&evt) == 1) {
 		switch (evt.type) {
 		case SDL_QUIT:
@@ -2252,6 +2255,9 @@ b32 gui_begin_frame(gui_t *gui)
 		case SDL_MOUSEBUTTONDOWN:
 		case SDL_MOUSEBUTTONUP:
 			gui->last_input_time = now;
+		break;
+		case SDL_TEXTINPUT:
+			strncat(gui->text_npt, evt.text.text, countof(gui->text_npt));
 		break;
 		}
 	}
@@ -2284,6 +2290,32 @@ b32 gui_begin_frame(gui_t *gui)
 		}
 		gui__repeat_update(&gui->key_repeat, key, cnt, gui->frame_time_milli);
 	}
+	if (gui->key_repeat.triggered && SDL_IsTextInputActive()) {
+		/* some of the keypad keys don't seem to trigger SDL_TEXTINPUT events */
+		const size_t len = strlen(gui->text_npt);
+		char c = '\0';
+		switch (gui->key_repeat.val) {
+		case KB_KP_1:        c = '1'; break;
+		case KB_KP_2:        c = '2'; break;
+		case KB_KP_3:        c = '3'; break;
+		case KB_KP_4:        c = '4'; break;
+		case KB_KP_5:        c = '5'; break;
+		case KB_KP_6:        c = '6'; break;
+		case KB_KP_7:        c = '7'; break;
+		case KB_KP_8:        c = '8'; break;
+		case KB_KP_9:        c = '9'; break;
+		case KB_KP_0:        c = '0'; break;
+		case KB_KP_PERIOD:   c = '.'; break;
+		case KB_KP_EQUALS:   c = '='; break;
+		break;
+		default:
+		break;
+		}
+		if (c && len < countof(gui->text_npt) - 1) {
+			gui->text_npt[len]   = c;
+			gui->text_npt[len+1] = '\0';
+		}
+	}
 	assert(key_cnt > KB_COUNT);
 	gui__toggle_key(gui, KBT_CAPS, KB_CAPSLOCK);
 	gui__toggle_key(gui, KBT_SCROLL, KB_SCROLLLOCK);
@@ -2303,6 +2335,8 @@ b32 gui_begin_frame(gui_t *gui)
 	if (gui->focus_id != 0 && !gui->focus_id_found_this_frame) {
 		log_warn("focus widget %" PRIu64 " was not drawn", gui->focus_id);
 		gui->focus_id = 0;
+		if (SDL_IsTextInputActive())
+			SDL_StopTextInput();
 	}
 	gui->focus_id_found_this_frame = false;
 
@@ -3394,52 +3428,6 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	         style->outline_color);
 }
 
-static inline
-b32 gui__convert_key_to_char(const gui_t *gui, gui_key_t key, char *c)
-{
-	static const char gui_key_chars[KB_COUNT] = {
-		0, 0, 0, 0,
-		'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-		'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-		'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-		0, 0, 0, '\t', ' ',
-		'-', '=', '[', ']', '\\',
-		0,
-		';', '\'', '`', ',', '.', '/',
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* KB_CAPSLOCK - KB_F12 */
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* KB_PRINTSCREEN - KB_UP */
-		0,
-		'/', '*', '-', '+', 0,
-		'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-		'.', '=',
-	};
-
-	static const char caps[128] = {
-			0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
-		 10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
-		 20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
-		 30,  31,  32,  33,  34,  35,  36,  37,  38,  34,
-		 40,  41,  42,  43,  60,  95,  62,  63,  41,  33,
-		 64,  35,  36,  37,  94,  38,  42,  40,  58,  58,
-		 60,  43,  62,  63,  64,  65,  66,  67,  68,  69,
-		 70,  71,  72,  73,  74,  75,  76,  77,  78,  79,
-		 80,  81,  82,  83,  84,  85,  86,  87,  88,  89,
-		 90, 123, 124, 125,  94,  95, 126,  65,  66,  67,
-		 68,  69,  70,  71,  72,  73,  74,  75,  76,  77,
-		 78,  79,  80,  81,  82,  83,  84,  85,  86,  87,
-		 88,  89,  90, 123, 124, 125, 126, 127
-	};
-
-	*c = gui_key_chars[key];
-	if (isalpha(*c)) {
-		if (key_mod(gui, KBM_SHIFT) != key_toggled(gui, KBT_CAPS))
-			*c = caps[(u8)*c];
-	} else if (key_mod(gui, KBM_SHIFT)) {
-		*c = caps[(u8)*c];
-	}
-	return *c != 0;
-}
-
 const b32 g_gui_npt_chars_print[128] = {
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -3502,10 +3490,19 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
 			                                         gui->mouse_pos, style);
 		}
-		if (gui->key_repeat.triggered) {
-			const u32 key_idx = gui->key_repeat.val;
+		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
 			u32 len = (u32)strlen(txt);
-			char key_char = 0;
+			for (u32 k = 0, kn = strlen(gui->text_npt); k < kn; ++k) {
+				if (gui->text_npt[k] > 0 && len < n - 1 && chars[(u8)gui->text_npt[k]]) {
+					for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
+						txt[i] = txt[i-1];
+					txt[gui->npt_cursor_pos++] = gui->text_npt[k];
+					++len;
+				}
+			}
+		} else if (gui->key_repeat.triggered) {
+			const u32 key_idx = gui->key_repeat.val;
+			const u32 len = (u32)strlen(txt);
 			if (key_idx == KB_BACKSPACE) {
 				if (gui->npt_cursor_pos > 0) {
 					for (u32 i = gui->npt_cursor_pos - 1; i < len; ++i)
@@ -3517,9 +3514,11 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 					txt[i] = txt[i+1];
 			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
 				gui->focus_id = 0;
+				SDL_StopTextInput();
 				complete = true;
 			} else if (key_idx == KB_ESCAPE) {
 				gui->focus_id = 0;
+				SDL_StopTextInput();
 			} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
 				char *clipboard;
 				u32 cnt;
@@ -3553,13 +3552,6 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				gui->npt_cursor_pos = 0;
 			} else if (key_idx == KB_END) {
 				gui->npt_cursor_pos = len;
-			} else if (   gui__convert_key_to_char(gui, key_idx, &key_char)
-			           && len < n-1
-			           && key_char >= 0
-			           && chars[(u8)key_char]) {
-				for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
-					txt[i] = txt[i-1];
-				txt[gui->npt_cursor_pos++] = key_char;
 			} else if (key_idx == KB_TAB) {
 				if (flags & NPT_COMPLETE_ON_DEFOCUS)
 					complete = true;
@@ -3568,11 +3560,13 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		}
 		if (mouse_pressed(gui, MB_LEFT) && !contains_mouse) {
 			gui->focus_id = 0;
+			SDL_StopTextInput();
 			if (flags & NPT_COMPLETE_ON_DEFOCUS)
 				complete = true;
 		}
 	} else if (gui->focus_next_widget && !gui->lock) {
 		gui__on_widget_tab_focused(gui, id);
+		SDL_StartTextInput();
 		if (flags & NPT_CLEAR_ON_FOCUS)
 			txt[0] = '\0';
 		gui->npt_cursor_pos = (u32)strlen(txt);
@@ -3581,6 +3575,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->focus_prev_widget_id = gui->prev_widget_id;
 		} else {
 			gui__on_widget_tab_focused(gui, id);
+			SDL_StartTextInput();
 			if (flags & NPT_CLEAR_ON_FOCUS)
 				txt[0] = '\0';
 			gui->npt_cursor_pos = (u32)strlen(txt);
@@ -3589,6 +3584,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		if (mouse_released(gui, MB_LEFT)) {
 			if (contains_mouse) {
 				gui->focus_id = id;
+				SDL_StartTextInput();
 				if (flags & NPT_CLEAR_ON_FOCUS) {
 					txt[0] = '\0';
 					gui->npt_cursor_pos = 0;
