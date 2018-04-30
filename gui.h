@@ -2257,7 +2257,9 @@ b32 gui_begin_frame(gui_t *gui)
 			gui->last_input_time = now;
 		break;
 		case SDL_TEXTINPUT:
-			strncat(gui->text_npt, evt.text.text, countof(gui->text_npt));
+			if (   strlen(gui->text_npt) + strlen(evt.text.text) + 1
+			    <= countof(gui->text_npt))
+				strcat(gui->text_npt, evt.text.text);
 		break;
 		}
 	}
