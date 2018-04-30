@@ -841,11 +841,13 @@ void vlt_destroy(void)
 int app_entry(int argc, char *const argv[]);
 int main(int argc, char *const argv[])
 {
+	int ret;
 	vlt_init();
-	app_entry(argc, argv);
+	ret = app_entry(argc, argv);
 #ifndef __EMSCRIPTEN__
 	vlt_destroy();
 #endif
+	return ret;
 }
 
 #define main app_entry
