@@ -3432,7 +3432,7 @@ void gui__npt_move_cursor_vertical(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	const u32 orig_pos = gui->npt_cursor_pos;
 	const gui_text_style_t *style = &gui->style.npt.active.text;
-	v2i cursor;
+	v2i cursor = { .x = x, .y = y };
 
 	gui__txt_char_pos(gui, &cursor.x, &cursor.y, w, h, txt, orig_pos, style);
 	cursor.y += diff;
