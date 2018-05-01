@@ -2292,32 +2292,6 @@ b32 gui_begin_frame(gui_t *gui)
 		}
 		gui__repeat_update(&gui->key_repeat, key, cnt, gui->frame_time_milli);
 	}
-	if (gui->key_repeat.triggered && SDL_IsTextInputActive()) {
-		/* some of the keypad keys don't seem to trigger SDL_TEXTINPUT events */
-		const size_t len = strlen(gui->text_npt);
-		char c = '\0';
-		switch (gui->key_repeat.val) {
-		case KB_KP_1:        c = '1'; break;
-		case KB_KP_2:        c = '2'; break;
-		case KB_KP_3:        c = '3'; break;
-		case KB_KP_4:        c = '4'; break;
-		case KB_KP_5:        c = '5'; break;
-		case KB_KP_6:        c = '6'; break;
-		case KB_KP_7:        c = '7'; break;
-		case KB_KP_8:        c = '8'; break;
-		case KB_KP_9:        c = '9'; break;
-		case KB_KP_0:        c = '0'; break;
-		case KB_KP_PERIOD:   c = '.'; break;
-		case KB_KP_EQUALS:   c = '='; break;
-		break;
-		default:
-		break;
-		}
-		if (c && len < countof(gui->text_npt) - 1) {
-			gui->text_npt[len]   = c;
-			gui->text_npt[len+1] = '\0';
-		}
-	}
 	assert(key_cnt > KB_COUNT);
 	gui__toggle_key(gui, KBT_CAPS, KB_CAPSLOCK);
 	gui__toggle_key(gui, KBT_SCROLL, KB_SCROLLLOCK);
@@ -3467,6 +3441,72 @@ void gui__npt_move_cursor_vertical(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		gui->npt_cursor_pos = fallback;
 }
 
+static
+b32 gui__key_up(const gui_t *gui)
+{
+#ifndef __APPLE__
+	return gui->key_repeat.val == KB_UP
+	    || (gui->key_repeat.val == KB_KP_8 && !key_toggled(gui, KBT_NUM));
+#else
+	return gui->key_repeat.val == KB_UP;
+#endif
+}
+
+static
+b32 gui__key_down(const gui_t *gui)
+{
+#ifndef __APPLE__
+	return gui->key_repeat.val == KB_DOWN
+	    || (gui->key_repeat.val == KB_KP_2 && !key_toggled(gui, KBT_NUM));
+#else
+	return gui->key_repeat.val == KB_DOWN;
+#endif
+}
+
+static
+b32 gui__key_left(const gui_t *gui)
+{
+#ifndef __APPLE__
+	return gui->key_repeat.val == KB_LEFT
+	    || (gui->key_repeat.val == KB_KP_4 && !key_toggled(gui, KBT_NUM));
+#else
+	return gui->key_repeat.val == KB_LEFT;
+#endif
+}
+
+static
+b32 gui__key_right(const gui_t *gui)
+{
+#ifndef __APPLE__
+	return gui->key_repeat.val == KB_RIGHT
+	    || (gui->key_repeat.val == KB_KP_6 && !key_toggled(gui, KBT_NUM));
+#else
+	return gui->key_repeat.val == KB_RIGHT;
+#endif
+}
+
+static
+b32 gui__key_home(const gui_t *gui)
+{
+#ifndef __APPLE__
+	return gui->key_repeat.val == KB_HOME
+	    || (gui->key_repeat.val == KB_KP_7 && !key_toggled(gui, KBT_NUM));
+#else
+	return gui->key_repeat.val == KB_HOME;
+#endif
+}
+
+static
+b32 gui__key_end(const gui_t *gui)
+{
+#ifndef __APPLE__
+	return gui->key_repeat.val == KB_END
+	    || (gui->key_repeat.val == KB_KP_1 && !key_toggled(gui, KBT_NUM));
+#else
+	return gui->key_repeat.val == KB_END;
+#endif
+}
+
 b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
             const char *hint, npt_flags_t flags)
 {
@@ -3494,7 +3534,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		}
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
 			u32 len = (u32)strlen(txt);
-			for (u32 k = 0, kn = strlen(gui->text_npt); k < kn; ++k) {
+			for (size_t k = 0, kn = strlen(gui->text_npt); k < kn; ++k) {
 				if (gui->text_npt[k] > 0 && len < n - 1 && chars[(u8)gui->text_npt[k]]) {
 					for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
 						txt[i] = txt[i-1];
@@ -3534,25 +3574,25 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 					gui->npt_cursor_pos += cnt;
 					SDL_free(clipboard);
 				}
-			} else if (key_idx == KB_UP) {
+			} else if (gui__key_up(gui)) {
 				const gui_text_style_t *style = &gui->style.npt.active.text;
 				const font_t *font = gui__get_font(gui, style->size);
 				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt,
 				                              font->newline_dist, 0);
-			} else if (key_idx == KB_DOWN) {
+			} else if (gui__key_down(gui)) {
 				const gui_text_style_t *style = &gui->style.npt.active.text;
 				const font_t *font = gui__get_font(gui, style->size);
 				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt,
 				                              -font->newline_dist, len);
-			} else if (key_idx == KB_LEFT) {
+			} else if (gui__key_left(gui)) {
 				if (gui->npt_cursor_pos > 0)
 					--gui->npt_cursor_pos;
-			} else if (key_idx == KB_RIGHT) {
+			} else if (gui__key_right(gui)) {
 				if (gui->npt_cursor_pos < len)
 					++gui->npt_cursor_pos;
-			} else if (key_idx == KB_HOME) {
+			} else if (gui__key_home(gui)) {
 				gui->npt_cursor_pos = 0;
-			} else if (key_idx == KB_END) {
+			} else if (gui__key_end(gui)) {
 				gui->npt_cursor_pos = len;
 			} else if (key_idx == KB_TAB) {
 				if (flags & NPT_COMPLETE_ON_DEFOCUS)
@@ -3850,20 +3890,20 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 				if (orientation == GUI__SLIDER_X) {
 					const s32 mid = (box.min.x + box.max.x) / 2;
 					const s32 dim = box.max.x - box.min.x;
-					if (gui->key_repeat.val == KB_LEFT) {
+					if (gui__key_left(gui)) {
 						gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
 						moved_while_focused = true;
-					} else if (gui->key_repeat.val == KB_RIGHT) {
+					} else if (gui__key_right(gui)) {
 						gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
 						moved_while_focused = true;
 					}
 				} else {
 					const s32 mid = (box.min.y + box.max.y) / 2;
 					const s32 dim = box.max.y - box.min.y;
-					if (gui->key_repeat.val == KB_UP) {
+					if (gui__key_up(gui)) {
 						gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
 						moved_while_focused = true;
-					} else if (gui->key_repeat.val == KB_DOWN) {
+					} else if (gui__key_down(gui)) {
 						gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
 						moved_while_focused = true;
 					}
@@ -4030,13 +4070,13 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 				gui->focus_id = 0;
 			} else if (gui->key_repeat.triggered) {
 				const s32 xo = *x, yo = *y;
-				if (gui->key_repeat.val == KB_UP)
+				if (gui__key_up(gui))
 					cb(x, y, *x, *y + 1, 0, 0, udata);
-				else if (gui->key_repeat.val == KB_DOWN)
+				else if (gui__key_down(gui))
 					cb(x, y, *x, *y - 1, 0, 0, udata);
-				else if (gui->key_repeat.val == KB_LEFT)
+				else if (gui__key_left(gui))
 					cb(x, y, *x - 1, *y, 0, 0, udata);
-				else if (gui->key_repeat.val == KB_RIGHT)
+				else if (gui__key_right(gui))
 					cb(x, y, *x + 1, *y, 0, 0, udata);
 				if (xo != *x || yo != *y) {
 					*id = gui_widget_id(gui, *x, *y);
