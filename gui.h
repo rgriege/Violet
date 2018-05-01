@@ -350,7 +350,7 @@ b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
                      gui_drag_callback_t cb, void *udata);
 
 u64       gui_widget_id(const gui_t *gui, s32 x, s32 y);
-void      gui_widget_focus(gui_t *gui, u64 id); /* careful! */
+void      gui_widget_focus_next(gui_t *gui);
 b32       gui_widget_active(const gui_t *gui, u64 id);
 b32       gui_widget_focused(const gui_t *gui, u64 id);
 b32       gui_any_widget_hot(const gui_t *gui);
@@ -4258,9 +4258,12 @@ u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 	return (((u64)x) << 48) | (((u64)y) << 32) | panel_id;
 }
 
-void gui_widget_focus(gui_t *gui, u64 id)
+void gui_widget_focus_next(gui_t *gui)
 {
-	gui->focus_id = id;
+	if (   gui->focus_id == 0
+	    && !gui->focus_next_widget
+	    && gui->focus_prev_widget_id == 0)
+		gui->focus_next_widget = true;
 }
 
 b32 gui_widget_active(const gui_t *gui, u64 id)
