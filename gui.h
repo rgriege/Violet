@@ -474,6 +474,8 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
                      const char *title, gui_panel_flags_t flags);
 void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
+void pgui_panel_collapse(gui_panel_t *panel);
+void pgui_panel_restore(gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 
 void pgui_row(gui_t *gui, r32 height);
@@ -4583,6 +4585,19 @@ void pgui__panel_resize(gui_t *gui, gui_panel_t *panel)
 }
 
 static
+void pgui__panel_collapse_toggle(gui_panel_t *panel)
+{
+	panel->collapsed = !panel->collapsed;
+	if (panel->split.leaf && panel->split.parent) {
+		/* TODO(rgriege): allow collapsing second child in split */
+		gui_split_t *parent = panel->split.parent;
+		assert(&panel->split == parent->sp1);
+		parent->sz = panel->collapsed
+		           ? GUI_PANEL_TITLEBAR_HEIGHT : parent->default_sz;
+	}
+}
+
+static
 void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 {
 	if (panel->flags & GUI_PANEL_TITLEBAR) {
@@ -4655,15 +4670,8 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 				gui_style_push(gui, btn, gui->style.panel.restore);
 			else
 				gui_style_push(gui, btn, gui->style.panel.collapse);
-			if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS) {
-				panel->collapsed = !panel->collapsed;
-				if (panel->split.leaf && panel->split.parent) {
-					/* TODO(rgriege): allow collapsing second child in split */
-					gui_split_t *parent = panel->split.parent;
-					assert(&panel->split == parent->sp1);
-					parent->sz = panel->collapsed ? dim : parent->default_sz;
-				}
-			}
+			if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+				pgui__panel_collapse_toggle(panel);
 			gui_style_pop(gui);
 			rx += dim;
 		}
@@ -4775,6 +4783,20 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		gui_mask(gui, box.min.x, box.min.y, box.max.x - box.min.x, box.max.y - box.min.y);
 	}
 	return true;
+}
+
+void pgui_panel_collapse(gui_panel_t *panel)
+{
+	assert(panel->flags & GUI_PANEL_COLLAPSABLE);
+	if (!panel->collapsed)
+		pgui__panel_collapse_toggle(panel);
+}
+
+void pgui_panel_restore(gui_panel_t *panel)
+{
+	assert(panel->flags & GUI_PANEL_COLLAPSABLE);
+	if (panel->collapsed)
+		pgui__panel_collapse_toggle(panel);
 }
 
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
