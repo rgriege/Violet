@@ -177,7 +177,7 @@ b32 gui_triangulate(const v2f *v, u32 n, v2f **triangles);
 
 /* General Gui */
 
-typedef struct gui_t gui_t;
+typedef struct gui gui_t;
 
 typedef enum gui_flags_t
 {
@@ -338,6 +338,9 @@ b32       gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      const char *txt, u32 *val, u32 opt);
 void      gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                       const char *txt, u32 *val, u32 opt);
+void      gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                             u32 *val, u32 num_items);
+b32       gui_dropdown_item(gui_t *gui, const char *txt);
 typedef void(*gui_drag_callback_t)(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                                    s32 offset_x, s32 offset_y, void *udata);
 b32       gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb);
@@ -504,6 +507,8 @@ b32       pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
                          npt_flags_t flags, const b32 chars[128]);
 b32       pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
+void      pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
+b32       pgui_dropdown_item(gui_t *gui, const char *txt);
 b32       pgui_slider_x(gui_t *gui, r32 *val);
 b32       pgui_slider_y(gui_t *gui, r32 *val);
 b32       pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max);
@@ -604,6 +609,7 @@ typedef struct gui_style
 	gui_widget_style_t chk;
 	gui_slider_style_t slider;
 	gui_widget_style_t select;
+	gui_widget_style_t dropdown;
 	gui_widget_style_t drag;
 	gui_panel_style_t  panel;
 	gui_line_style_t   split;
@@ -1519,6 +1525,7 @@ const gui_style_t g_gui_style_default = {
 	.chk = gi__gui_chk_style_default,
 	.slider = gi__gui_slider_style_default,
 	.select = gi__gui_btn_style_default,
+	.dropdown = gi__gui_btn_style_default,
 	.drag = gi__gui_chk_style_default,
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
@@ -1695,6 +1702,7 @@ const gui_style_t g_gui_style_invis = {
 	.chk      = gi__gui_widget_style_invis,
 	.slider   = gi__gui_slider_style_invis,
 	.select   = gi__gui_widget_style_invis,
+	.dropdown = gi__gui_widget_style_invis,
 	.drag     = gi__gui_widget_style_invis,
 	.panel    = {
 		.bg_color          = gi_nocolor,
@@ -1779,7 +1787,7 @@ typedef struct gui__repeat
 	b32 triggered;
 } gui__repeat_t;
 
-typedef struct gui_t
+typedef struct gui
 {
 	timepoint_t creation_time;
 	timepoint_t frame_start_time;
@@ -1805,6 +1813,7 @@ typedef struct gui_t
 	draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
 	u32 draw_call_cnt;
 	gui__scissor_t scissors[GUI_MAX_SCISSORS];
+	u32 scissor_idx;
 	u32 scissor_cnt;
 
 	/* mouse */
@@ -1852,6 +1861,31 @@ typedef struct gui_t
 	v2i drag_offset;
 	char *pw_buf;
 	v2f *vert_buf;
+	struct
+	{
+		u64 id;
+		s32 x, y, w, h;
+		u32 val;
+		u32 num_items;
+		u32 item_idx;
+		b32 triggered_by_key;
+		b32 contains_mouse;
+	} current_dropdown;
+	struct
+	{
+		u64 id;
+		s32 x, y, w, h;
+		u32 *val;
+		u32 num_items;
+		u32 item_idx;
+		b32 render_items;
+		b32 close_at_end;
+		char selected_item_txt[128];
+		struct
+		{
+			s32 x, y, w, h;
+		} prev_mask;
+	} focused_dropdown;
 
 	/* splits & panels */
 	gui_split_t *root_split;
@@ -2220,6 +2254,18 @@ void gui__on_widget_tab_focused(gui_t *gui, u64 id)
 	gui->focus_id_found_this_frame = true;
 }
 
+static
+void gui__defocus_dropdown(gui_t *gui)
+{
+	gui->focused_dropdown.id                   = 0;
+	gui->focused_dropdown.val                  = NULL;
+	gui->focused_dropdown.num_items            = 0;
+	gui->focused_dropdown.item_idx             = 0;
+	gui->focused_dropdown.render_items         = false;
+	gui->focused_dropdown.close_at_end         = false;
+	gui->focused_dropdown.selected_item_txt[0] = '\0';
+}
+
 b32 gui_begin_frame(gui_t *gui)
 {
 	s32 key_cnt;
@@ -2327,6 +2373,7 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->vert_cnt = 0;
 	gui->draw_call_cnt = 0;
+	gui->scissor_idx = 0;
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
 
@@ -2338,6 +2385,35 @@ b32 gui_begin_frame(gui_t *gui)
 	color_as_float_array(bg_color, gui->style.bg_color);
 	GL_CHECK(glClearColor, bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
 	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	/* focused dropdown */
+	if (gui->focused_dropdown.id != 0) {
+		const s32 x = gui->focused_dropdown.x;
+		const s32 y = gui->focused_dropdown.y;
+		const s32 w = gui->focused_dropdown.w;
+		const s32 h = gui->focused_dropdown.h;
+		const u32 num_items = gui->focused_dropdown.num_items;
+		box2i box;
+		box2i_from_dims(&box, x, y + h, x + w, y - (s32)num_items * h);
+
+		gui->focused_dropdown.render_items = true;
+
+		/* catch mouse_covered_by_panel */
+		if (box2i_contains_point(box, gui->mouse_pos)) {
+			gui->mouse_covered_by_panel = true;
+		} else if (mouse_pressed(gui, ~0)) {
+			gui__defocus_dropdown(gui);
+			gui->focus_id = 0;
+		}
+	}
+
+	if (gui->focused_dropdown.id != 0) {
+		/* reserve first scissor for dropdown items */
+		assert(gui->scissor_idx == 0 && gui->scissor_cnt == 1);
+		gui->scissor_idx = 1;
+		gui->scissor_cnt = 2;
+		memcpy(&gui->scissors[1], &gui->scissors[0], sizeof(gui->scissors[0]));
+	}
 
 	gui->use_default_cursor = true;
 	if (gui->root_split) {
@@ -2409,11 +2485,11 @@ void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
 static
 void gui__current_mask(const gui_t *gui, box2i *box)
 {
-	assert(gui->scissor_cnt > 0);
-	box2i_from_xywh(box, gui->scissors[gui->scissor_cnt-1].x,
-	                gui->scissors[gui->scissor_cnt-1].y,
-	                gui->scissors[gui->scissor_cnt-1].w,
-	                gui->scissors[gui->scissor_cnt-1].h);
+	assert(gui->scissor_idx < gui->scissor_cnt);
+	box2i_from_xywh(box, gui->scissors[gui->scissor_idx].x,
+	                gui->scissors[gui->scissor_idx].y,
+	                gui->scissors[gui->scissor_idx].w,
+	                gui->scissors[gui->scissor_idx].h);
 }
 
 static
@@ -2596,13 +2672,17 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 static
 void gui__complete_scissor(gui_t *gui)
 {
-	if (gui->scissor_cnt > 0) {
-		if (gui->draw_call_cnt == gui->scissors[gui->scissor_cnt-1].draw_call_idx)
-			--gui->scissor_cnt;
-		else
-			gui->scissors[gui->scissor_cnt-1].draw_call_cnt
-				= gui->draw_call_cnt - gui->scissors[gui->scissor_cnt-1].draw_call_idx;
-	}
+	gui__scissor_t *scissor;
+
+	if (gui->scissor_cnt == 0)
+		return;
+
+	scissor = &gui->scissors[gui->scissor_idx];
+	if (   gui->scissor_idx + 1 == gui->scissor_cnt
+	    && scissor->draw_call_idx == gui->draw_call_cnt)
+		--gui->scissor_cnt;
+	else
+		scissor->draw_call_cnt = gui->draw_call_cnt - scissor->draw_call_idx;
 }
 
 void gui_end_frame(gui_t *gui)
@@ -3262,19 +3342,22 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 	return width;
 }
 
+void gui__mask(gui_t *gui, u32 idx, s32 x, s32 y, s32 w, s32 h)
+{
+	gui->scissors[idx].draw_call_idx = gui->draw_call_cnt;
+	gui->scissors[idx].draw_call_cnt = 0;
+	gui->scissors[idx].x = x;
+	gui->scissors[idx].y = y;
+	gui->scissors[idx].w = w;
+	gui->scissors[idx].h = h;
+	gui->scissor_idx = idx;
+}
+
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
 	gui__complete_scissor(gui);
-
 	assert(gui->scissor_cnt < GUI_MAX_SCISSORS);
-
-	gui->scissors[gui->scissor_cnt].draw_call_idx = gui->draw_call_cnt;
-	gui->scissors[gui->scissor_cnt].draw_call_cnt = 0;
-	gui->scissors[gui->scissor_cnt].x = x;
-	gui->scissors[gui->scissor_cnt].y = y;
-	gui->scissors[gui->scissor_cnt].w = w;
-	gui->scissors[gui->scissor_cnt].h = h;
-
+	gui__mask(gui, gui->scissor_cnt, x, y, w, h);
 	++gui->scissor_cnt;
 }
 
@@ -4054,6 +4137,223 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
 }
 
+void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                        u32 *val, u32 num_items)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	const b32 render_items = gui->focus_id == id;
+	b32 contains_mouse, triggered_by_key = false;
+	gui__widget_render_state_t render_state;
+	box2i box;
+
+	assert(gui->current_dropdown.num_items == 0); /* cannot nest dropdown menus */
+
+	box2i_from_dims(&box, x, y+h, x+w, y);
+	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                 && gui__box_half_visible(gui, box)
+	                 && !gui->lock;
+
+	if (gui->focus_id == id) {
+		if (gui->lock) {
+			gui__defocus_dropdown(gui);
+			gui->focus_id = 0;
+		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
+			gui__defocus_dropdown(gui);
+			gui__tab_focus_adjacent_widget(gui);
+		} else {
+			gui->focus_id_found_this_frame = true;
+			if (gui->key_repeat.triggered) {
+				if (gui__key_up(gui) && *val > 0) {
+					--*val;
+					triggered_by_key = true;
+				} else if (gui__key_down(gui) && *val + 1 < num_items) {
+					++*val;
+					triggered_by_key = true;
+				}
+			}
+		}
+	} else if (gui->focus_next_widget && !gui->lock) {
+		gui__on_widget_tab_focused(gui, id);
+	} else if (gui->focus_prev_widget_id == id) {
+		if (gui->lock)
+			gui->focus_prev_widget_id = gui->prev_widget_id;
+		else
+			gui__on_widget_tab_focused(gui, id);
+	}
+
+	if (gui->hot_id == id) {
+		if (!contains_mouse || gui->mouse_covered_by_panel) {
+			gui->hot_id = 0;
+		} else if (mouse_pressed(gui, MB_LEFT)) {
+			gui->hot_id = 0;
+			gui->active_id = id;
+			gui->active_id_found_this_frame = true;
+		} else {
+			gui->hot_id_found_this_frame = true;
+		}
+	} else if (gui->active_id == id) {
+		gui->active_id_found_this_frame = true;
+		if (mouse_released(gui, MB_LEFT)) {
+			if (contains_mouse) {
+				gui->focus_id = id;
+				gui->focus_id_found_this_frame = true;
+			}
+			gui->active_id = 0;
+		}
+	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
+		gui->hot_id = id;
+		gui->hot_id_found_this_frame = true;
+	}
+	gui->prev_widget_id = id;
+
+	/* store current dropdown state */
+	gui->current_dropdown.id               = id;
+	gui->current_dropdown.x                = x;
+	gui->current_dropdown.y                = y;
+	gui->current_dropdown.w                = w;
+	gui->current_dropdown.h                = h;
+	gui->current_dropdown.val              = *val;
+	gui->current_dropdown.num_items        = num_items;
+	gui->current_dropdown.item_idx         = 0;
+	gui->current_dropdown.triggered_by_key = triggered_by_key;
+	gui->current_dropdown.contains_mouse   = contains_mouse;
+
+	/* render appropriate label in gui_dropdown_item */
+	render_state = gui__widget_render_state(gui, id, triggered_by_key,
+	                                        false, contains_mouse);
+	gui__btn_render(gui, x, y, w, h, "", render_state, &gui->style.dropdown);
+	{
+		const gui_element_style_t style
+			= gui__element_style(gui, render_state, &gui->style.dropdown);
+		const gui_element_style_t style_pen = {
+			.line = {
+				.thickness = 1.f,
+				.dash_len = 0.f,
+				.color = style.text.color,
+			},
+			.text = style.text,
+			.bg_color = gi_nocolor,
+			.outline_color = gi_nocolor,
+		};
+		const s32 px = (style.text.align & GUI_ALIGN_RIGHT) ? x : x + w - h;
+		gui_pen_panel_collapse(gui, px, y, h, h, &style_pen);
+	}
+
+	if (gui->focus_id == id) {
+		gui->focused_dropdown.id               = id;
+		gui->focused_dropdown.x                = x;
+		gui->focused_dropdown.y                = y;
+		gui->focused_dropdown.w                = w;
+		gui->focused_dropdown.h                = h;
+		gui->focused_dropdown.val              = val;
+		gui->focused_dropdown.num_items        = num_items;
+		gui->focused_dropdown.item_idx         = 0;
+		gui->focused_dropdown.render_items     = render_items;
+		gui->focused_dropdown.close_at_end     = false;
+		if (!render_items)
+			gui->focused_dropdown.selected_item_txt[0] = '\0';
+	}
+}
+
+static
+void gui__dropdown_selected_text(gui_t *gui, const char *txt)
+{
+	const u64 id               = gui->current_dropdown.id;
+	s32 x                      = gui->current_dropdown.x;
+	s32 w                      = gui->current_dropdown.w;
+	const s32 y                = gui->current_dropdown.y;
+	const s32 h                = gui->current_dropdown.h;
+	const b32 triggered_by_key = gui->current_dropdown.triggered_by_key;
+	const b32 contains_mouse   = gui->current_dropdown.contains_mouse;
+	gui__widget_render_state_t render_state;
+	gui_element_style_t style;
+	render_state = gui__widget_render_state(gui, id, triggered_by_key,
+	                                        false, contains_mouse);
+	style = gui__element_style(gui, render_state, &gui->style.dropdown);
+	if (style.text.align & GUI_ALIGN_LEFT) {
+		w -= h;
+	} else if (style.text.align & GUI_ALIGN_RIGHT) {
+		x += h;
+		w -= h;
+	}
+	gui_txt_styled(gui, x, y, w, h, txt, &style.text);
+}
+
+b32 gui_dropdown_item(gui_t *gui, const char *txt)
+{
+	b32 chosen = false;
+
+	assert(gui->current_dropdown.num_items != 0);
+
+	/* cache item text so it can be rendered in the pre-dropdown mask */
+	if (   gui->current_dropdown.id == gui->focused_dropdown.id
+	    && gui->current_dropdown.val == gui->current_dropdown.item_idx) {
+		const size_t n = countof(gui->focused_dropdown.selected_item_txt);
+		strncpy(gui->focused_dropdown.selected_item_txt, txt, n);
+		gui->focused_dropdown.selected_item_txt[n-1] = '\0';
+	}
+
+	/* render item button for focused dropdown */
+	if (   gui->current_dropdown.id == gui->focused_dropdown.id
+	    && gui->focused_dropdown.render_items) {
+		const s32 w = gui->focused_dropdown.w;
+		const s32 h = gui->focused_dropdown.h;
+		const s32 x = gui->focused_dropdown.x;
+		const s32 y = gui->focused_dropdown.y
+		            - (s32)(gui->focused_dropdown.item_idx + 1) * h;
+
+		assert(gui->focused_dropdown.num_items != 0);
+
+		/* switch to reserved first scissor before first item */
+		if (gui->focused_dropdown.item_idx == 0) {
+			const s32 mask_h = gui->focused_dropdown.num_items
+			                 * gui->focused_dropdown.h;
+			const s32 mask_y = gui->focused_dropdown.y - mask_h;
+			gui->focused_dropdown.prev_mask.x = gui->scissors[gui->scissor_idx].x;
+			gui->focused_dropdown.prev_mask.y = gui->scissors[gui->scissor_idx].y;
+			gui->focused_dropdown.prev_mask.w = gui->scissors[gui->scissor_idx].w;
+			gui->focused_dropdown.prev_mask.h = gui->scissors[gui->scissor_idx].h;
+			gui__dropdown_selected_text(gui, gui->focused_dropdown.selected_item_txt);
+			gui__complete_scissor(gui);
+			gui__mask(gui, 0, x, mask_y, w, mask_h);
+		}
+
+		/* mouse_covered_by_panel set by dropdown handling in gui_begin_frame */
+		gui->mouse_covered_by_panel = false;
+		gui_style_push(gui, btn, gui_style(gui)->dropdown);
+		if (gui_btn_txt(gui, x, y, w, h, txt) == BTN_PRESS) {
+			*gui->focused_dropdown.val = gui->current_dropdown.item_idx;
+			gui->focused_dropdown.close_at_end = true;
+			chosen = true;
+		} else if (   gui->current_dropdown.triggered_by_key
+		           && *gui->focused_dropdown.val == gui->current_dropdown.item_idx) {
+			chosen = true;
+		}
+		gui_style_pop(gui);
+		gui->mouse_covered_by_panel = true;
+
+		/* switch to new scissor (mirroring interrupted scissor) after last item */
+		if (++gui->focused_dropdown.item_idx == gui->focused_dropdown.num_items) {
+			gui_mask(gui, gui->focused_dropdown.prev_mask.x,
+			         gui->focused_dropdown.prev_mask.y,
+			         gui->focused_dropdown.prev_mask.w,
+			         gui->focused_dropdown.prev_mask.h);
+		  if (gui->focused_dropdown.close_at_end) {
+				gui__defocus_dropdown(gui);
+				gui->focus_id = 0;
+			}
+		}
+	} else if (gui->current_dropdown.val == gui->current_dropdown.item_idx) {
+		gui__dropdown_selected_text(gui, txt);
+	}
+
+	/* end current dropdown list */
+	if (++gui->current_dropdown.item_idx == gui->current_dropdown.num_items)
+		memclr(gui->current_dropdown);
+
+	return chosen;
+}
+
 static
 b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
               u64 *id, gui_drag_callback_t cb, void *udata)
@@ -4253,11 +4553,18 @@ b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
 }
 
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
+#define GUI__SCISSOR_PANEL_ID (UINT_MAX-1)
+#define GUI__MAX_PANEL_ID     (UINT_MAX-2)
 
 u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 {
-	u32 panel_id = gui->panel ? gui->panel->id : GUI__DEFAULT_PANEL_ID;
-	return (((u64)x) << 48) | (((u64)y) << 32) | panel_id;
+	if (   gui->current_dropdown.num_items != 0
+	    && gui->current_dropdown.id == gui->focused_dropdown.id)
+		return (((u64)x) << 48) | (((u64)y) << 32) | GUI__SCISSOR_PANEL_ID;
+	else if (gui->panel)
+		return (((u64)x) << 48) | (((u64)y) << 32) | gui->panel->id;
+	else
+		return (((u64)x) << 48) | (((u64)y) << 32) | GUI__DEFAULT_PANEL_ID;
 }
 
 void gui_widget_focus_next(gui_t *gui)
@@ -4442,7 +4749,7 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->width = w;
 	panel->height = h;
 	panel->id = ++gui->next_panel_id;
-	assert(gui->next_panel_id != GUI__DEFAULT_PANEL_ID);
+	assert(gui->next_panel_id <= GUI__MAX_PANEL_ID);
 
 	panel->title = title;
 	panel->flags = flags;
@@ -5165,6 +5472,18 @@ void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	gui_mselect(gui, x, y, w, h, txt, val, opt);
+}
+
+void pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_dropdown_begin(gui, x, y, w, h, val, num_items);
+}
+
+b32 pgui_dropdown_item(gui_t *gui, const char *txt)
+{
+	return gui_dropdown_item(gui, txt);
 }
 
 b32 pgui_slider_x(gui_t *gui, r32 *val)
