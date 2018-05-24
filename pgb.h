@@ -459,14 +459,19 @@ void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
 	*bytes_used = 0;
 	*pages_used = 0;
 	page = pgb->current_page;
+	if (page) {
+		*bytes_used += pgb->current_ptr - pgb__page_first_usable_slot(page);
+		++*pages_used;
+		page = page->prev;
+	}
 	while (page) {
 		*bytes_used += page->size;
 		++*pages_used;
 		page = page->prev;
 	}
 
-	*bytes_available = *bytes_used;
-	*pages_available = *pages_used;
+	*bytes_available = 0;
+	*pages_available = 0;
 	page = pgb->heap->first_page;
 	while (page) {
 		*bytes_available += page->size;
