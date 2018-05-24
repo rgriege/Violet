@@ -835,7 +835,9 @@ void vlt_destroy(void)
 	size_t bytes_used, pages_used, bytes_total, pages_total;
 	pgb_stats(pgb, &bytes_used, &pages_used, &bytes_total, &pages_total);
 	pgb_destroy(pgb);
-	vlt_mem_log_usage_(bytes_used, pages_used, bytes_total, pages_total, true);
+	pgb_heap_destroy(&g_temp_memory_heap);
+	vlt_mem_log_usage_(bytes_used, pages_used, bytes_total, pages_total,
+	                   thread_type == VLT_THREAD_MAIN);
 }
 
 int app_entry(int argc, char *const argv[]);
