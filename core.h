@@ -99,6 +99,17 @@ typedef union intptr
 static_assert(sizeof(r32) == 4, invalid_floating_point_size);
 static_assert(sizeof(r64) == 8, invalid_double_size);
 
+/* Initialization */
+
+typedef enum vlt_thread_type
+{
+	VLT_THREAD_MAIN,
+	VLT_THREAD_OTHER,
+} vlt_thread_type_e;
+
+void vlt_init(vlt_thread_type_e thread_type);
+void vlt_destroy(vlt_thread_type_e thread_type);
+
 /* Error handling */
 
 typedef void (*error_f)(const char *msg, void *udata);
@@ -188,7 +199,7 @@ typedef struct allocator
 #define afree(p, a)             (a)->free_(p, a  MEMCALL_LOCATION)
 
 /* Default global allocator */
-extern thread_local allocator_t *g_allocator;
+extern allocator_t *g_allocator;
 
 /* Temporary memory global allocator */
 extern thread_local allocator_t *g_temp_allocator;
@@ -348,11 +359,13 @@ void error_fatal(const char *msg, void *udata)
 
 thread_local struct error_handler g_error_handler_stack[ERROR_HANDLER_STACK_SIZE];
 
-thread_local const struct error_handler *g_error_handler = &(struct error_handler) {
+const struct error_handler g_error_handler0 = {
 	.func = error_fatal,
 	.udata = NULL,
 	.prev = NULL,
 };
+
+thread_local const struct error_handler *g_error_handler = NULL;
 
 void error_handler_push(error_f func, void *udata)
 {
@@ -382,10 +395,61 @@ void error_catch(const char *msg, void *udata)
 /* Memory allocation */
 
 #ifdef VLT_TRACK_MEMORY
-thread_local allocator_t *g_allocator =
-	&allocator_create(tracked, &(alloc_tracker_t){0});
+
+#include <SDL_thread.h>
+
+typedef struct global_alloc_tracker
+{
+	SDL_mutex *mutex;
+	alloc_tracker_t tracker;
+} global_alloc_tracker_t;
+
+void *global_tracked_malloc(size_t size, allocator_t *a  MEMCALL_ARGS)
+{
+	global_alloc_tracker_t *global_tracker = a->udata;
+	allocator_t a_ = allocator_create(tracked, &global_tracker->tracker);
+	void *p;
+	SDL_LockMutex(global_tracker->mutex);
+	p = tracked_malloc(size, &a_  MEMCALL_VARS);
+	SDL_UnlockMutex(global_tracker->mutex);
+	return p;
+}
+
+void *global_tracked_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS)
+{
+	global_alloc_tracker_t *global_tracker = a->udata;
+	allocator_t a_ = allocator_create(tracked, &global_tracker->tracker);
+	void *p;
+	SDL_LockMutex(global_tracker->mutex);
+	p = tracked_calloc(nmemb, size, &a_  MEMCALL_VARS);
+	SDL_UnlockMutex(global_tracker->mutex);
+	return p;
+}
+
+void *global_tracked_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS)
+{
+	global_alloc_tracker_t *global_tracker = a->udata;
+	allocator_t a_ = allocator_create(tracked, &global_tracker->tracker);
+	void *p;
+	SDL_LockMutex(global_tracker->mutex);
+	p = tracked_realloc(ptr, size, &a_  MEMCALL_VARS);
+	SDL_UnlockMutex(global_tracker->mutex);
+	return p;
+}
+
+void global_tracked_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
+{
+	global_alloc_tracker_t *global_tracker = a->udata;
+	allocator_t a_ = allocator_create(tracked, &global_tracker->tracker);
+	SDL_LockMutex(global_tracker->mutex);
+	tracked_free(ptr, &a_  MEMCALL_VARS);
+	SDL_UnlockMutex(global_tracker->mutex);
+}
+
+
+allocator_t *g_allocator = &allocator_create(global_tracked, &(global_alloc_tracker_t){0});
 #else
-thread_local allocator_t *g_allocator = &allocator_create(default, NULL);
+allocator_t *g_allocator = &allocator_create(default, NULL);
 #endif
 
 static
@@ -399,7 +463,9 @@ void log_alloc(const char *prefix, size_t sz  MEMCALL_ARGS)
 #define PGB_IMPLEMENTATION
 #include "violet/pgb.h"
 
-thread_local allocator_t *g_temp_allocator = &allocator_create(pgb, &(pgb_t){0});
+thread_local pgb_t g_temp_allocator_pgb    = {0};
+thread_local allocator_t g_temp_allocator_ = {0};
+thread_local allocator_t *g_temp_allocator = NULL;
 
 thread_local pgb_heap_t g_temp_memory_heap = { .first_page = NULL };
 
@@ -596,7 +662,10 @@ void tracked_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
 void vlt_mem_advance_gen(void)
 {
 #ifdef VLT_TRACK_MEMORY
-	alloc_tracker_advance_gen(g_allocator->udata);
+	global_alloc_tracker_t *global_tracker = g_allocator->udata;
+	SDL_LockMutex(global_tracker->mutex);
+	alloc_tracker_advance_gen(&global_tracker->tracker);
+	SDL_UnlockMutex(global_tracker->mutex);
 #endif
 }
 
@@ -607,7 +676,12 @@ void vlt_mem_log_usage_(size_t temp_bytes_current, size_t temp_pages_current,
 {
 	log_info("memory diagnostic:");
 #ifdef VLT_TRACK_MEMORY
-	alloc_tracker_log_usage(g_allocator->udata, warn_active_allocations);
+	{
+		global_alloc_tracker_t *global_tracker = g_allocator->udata;
+		SDL_LockMutex(global_tracker->mutex);
+		alloc_tracker_log_usage(&global_tracker->tracker, warn_active_allocations);
+		SDL_UnlockMutex(global_tracker->mutex);
+	}
 #endif
 	log_info("***TEMP***");
 	log_info("temp:");
@@ -819,17 +893,25 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 #include <crtdbg.h>
 #endif
 
-static
-void vlt_init(void)
+void vlt_init(vlt_thread_type_e thread_type)
 {
+	g_error_handler  = &g_error_handler0;
+#ifdef VLT_TRACK_MEMORY
+	if (thread_type == VLT_THREAD_MAIN) {
+		global_alloc_tracker_t *global_tracker = g_allocator->udata;
+		global_tracker->mutex = SDL_CreateMutex();
+	}
+#endif
+	g_temp_allocator_ = allocator_create(pgb, &g_temp_allocator_pgb);
+	g_temp_allocator  = &g_temp_allocator_;
 	pgb_init(g_temp_allocator->udata, &g_temp_memory_heap);
+
 #if defined(_WIN32) && defined(DEBUG_HEAP)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF);
 #endif
 }
 
-static
-void vlt_destroy(void)
+void vlt_destroy(vlt_thread_type_e thread_type)
 {
 	pgb_t *pgb = g_temp_allocator->udata;
 	size_t bytes_used, pages_used, bytes_total, pages_total;
@@ -838,16 +920,24 @@ void vlt_destroy(void)
 	pgb_heap_destroy(&g_temp_memory_heap);
 	vlt_mem_log_usage_(bytes_used, pages_used, bytes_total, pages_total,
 	                   thread_type == VLT_THREAD_MAIN);
+	g_temp_allocator = NULL;
+#ifdef VLT_TRACK_MEMORY
+	if (thread_type == VLT_THREAD_MAIN) {
+		global_alloc_tracker_t *global_tracker = g_allocator->udata;
+		SDL_DestroyMutex(global_tracker->mutex);
+	}
+#endif
+	g_error_handler  = NULL;
 }
 
 int app_entry(int argc, char *const argv[]);
 int main(int argc, char *const argv[])
 {
 	int ret;
-	vlt_init();
+	vlt_init(VLT_THREAD_MAIN);
 	ret = app_entry(argc, argv);
 #ifndef __EMSCRIPTEN__
-	vlt_destroy();
+	vlt_destroy(VLT_THREAD_MAIN);
 #endif
 	return ret;
 }
