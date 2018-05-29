@@ -75,6 +75,8 @@ DMGDECL const v2d g_v2d_zero;
 DMDEF void v2d_set(v2d *v, r64 x, r64 y);
 DMDEF r64  v2d_mag(v2d v);
 DMDEF r64  v2d_mag_sq(v2d v);
+DMDEF r64  v2d_dist(v2d lhs, v2d rhs);
+DMDEF r64  v2d_dist_sq(v2d lhs, v2d rhs);
 DMDEF v2d  v2d_normalize(v2d v);
 DMDEF void v2d_normalize_eq(v2d *v);
 DMDEF v2d  v2d_scale(v2d v, r64 s);
@@ -158,6 +160,16 @@ DMDEF r64 v2d_mag(v2d v)
 DMDEF r64 v2d_mag_sq(v2d v)
 {
 	return v2d_dot(v, v);
+}
+
+DMDEF r64 v2d_dist(v2d lhs, v2d rhs)
+{
+	return sqrt(v2d_dist_sq(lhs, rhs));
+}
+
+DMDEF r64 v2d_dist_sq(v2d lhs, v2d rhs)
+{
+	return v2d_mag_sq(v2d_sub(lhs, rhs));
 }
 
 DMDEF v2d v2d_normalize(v2d v)
