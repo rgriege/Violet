@@ -4167,7 +4167,8 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	                 && !gui->lock;
 
 	if (gui->focus_id == id) {
-		if (gui->lock) {
+		if (   gui->lock
+		    || (mouse_released(gui, MB_LEFT) && contains_mouse)) {
 			gui__defocus_dropdown(gui);
 			gui->focus_id = 0;
 		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
