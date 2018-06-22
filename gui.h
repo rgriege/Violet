@@ -402,6 +402,7 @@ void gui_split_init(gui_t *gui, gui_split_t *split,
 void gui_vsplit_init(gui_t *gui, gui_split_t *split,
                      gui_split_t *sp1, r32 sz, gui_split_t *sp2,
                      gui_split_flags_t flags);
+void gui_compute_split_boxes(gui_t *gui);
 
 
 /* Panels */
@@ -718,8 +719,7 @@ int __builtin_popcount(u32 x)
 #endif // _M_X64
 #endif // _MSC_VER
 
-static void gui__split(gui_t *gui, gui_split_t *split);
-
+static void gui__split(gui_t *gui, gui_split_t *split, b32 render);
 
 static const char *g_vertex_shader;
 static const char *g_fragment_shader;
@@ -2427,7 +2427,7 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->use_default_cursor = true;
 	if (gui->root_split) {
 		box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
-		gui__split(gui, gui->root_split);
+		gui__split(gui, gui->root_split, true);
 	}
 
 	gui->next_panel_pri = 0;
@@ -4686,7 +4686,7 @@ s32 gui__split_dim(r32 sz, r32 w)
 }
 
 static
-void gui__split(gui_t *gui, gui_split_t *split)
+void gui__split(gui_t *gui, gui_split_t *split, b32 render)
 {
 	s32 x, y, w, h, sz1;
 
@@ -4696,7 +4696,9 @@ void gui__split(gui_t *gui, gui_split_t *split)
 	box2i_to_xywh(split->box, &x, &y, &w, &h);
 
 	/* checking use_default_cursor ensures only 1 resize happens per frame */
-	if (split->flags & GUI_SPLIT_RESIZABLE && gui->use_default_cursor) {
+	if (   (split->flags & GUI_SPLIT_RESIZABLE)
+	    && gui->use_default_cursor
+	    && render) {
 		gui_style_push(gui, drag.hot.bg_color, gui->style.drag.inactive.bg_color);
 		gui_style_push(gui, drag.active.bg_color, gui->style.drag.inactive.bg_color);
 		if (split->vert) {
@@ -4734,20 +4736,29 @@ void gui__split(gui_t *gui, gui_split_t *split)
 		const s32 xm = split->box.min.x + sz1;
 		split->sp1->box.max.x = xm;
 		split->sp2->box.min.x = xm;
-		gui_line_styled(gui, xm, split->box.min.y, xm, split->box.max.y,
-		                &gui->style.split);
+		if (render)
+			gui_line_styled(gui, xm, split->box.min.y, xm, split->box.max.y,
+			                &gui->style.split);
 	} else {
 		const s32 ym = split->box.max.y - sz1;
 		split->sp1->box.min.y = ym;
 		split->sp2->box.max.y = ym;
-		gui_line_styled(gui, split->box.min.x, ym, split->box.max.x, ym,
-		                &gui->style.split);
+		if (render)
+			gui_line_styled(gui, split->box.min.x, ym, split->box.max.x, ym,
+			                &gui->style.split);
 	}
 
 	if (!split->sp1->leaf)
-		gui__split(gui, split->sp1);
+		gui__split(gui, split->sp1, render);
 	if (!split->sp2->leaf)
-		gui__split(gui, split->sp2);
+		gui__split(gui, split->sp2, render);
+}
+
+void gui_compute_split_boxes(gui_t *gui)
+{
+	assert(gui->root_split);
+	box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
+	gui__split(gui, gui->root_split, false);
 }
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
