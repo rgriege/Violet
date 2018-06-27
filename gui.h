@@ -247,7 +247,7 @@ b32 key_pressed(const gui_t *gui, gui_key_t key);
 b32 key_released(const gui_t *gui, gui_key_t key);
 b32 key_mod(const gui_t *gui, gui_key_mod_t mod);
 b32 key_toggled(const gui_t *gui, gui_key_toggle_t toggle);
-const u8* keyboard_state(const gui_t *gui);
+const u8 *keyboard_state(const gui_t *gui);
 
 
 
@@ -2900,7 +2900,7 @@ b32 key_toggled(const gui_t *gui, gui_key_toggle_t toggle)
 	return gui->key_toggles[toggle] != GUI__KBT_OFF;
 }
 
-const u8* keyboard_state(const gui_t *gui)
+const u8 *keyboard_state(const gui_t *gui)
 {
 	return gui->keys;
 }
