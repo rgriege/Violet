@@ -930,6 +930,7 @@ void vlt_destroy(vlt_thread_type_e thread_type)
 	g_error_handler  = NULL;
 }
 
+#ifndef VIOLET_NO_MAIN
 int app_entry(int argc, char *const argv[]);
 int main(int argc, char *const argv[])
 {
@@ -943,6 +944,7 @@ int main(int argc, char *const argv[])
 }
 
 #define main app_entry
+#endif // VIOLET_NO_MAIN
 
 #undef CORE_IMPLEMENTATION
 #endif // CORE_IMPLEMENTATION
