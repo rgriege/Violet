@@ -244,6 +244,7 @@ void pgb_heap_destroy(pgb_heap_t *heap)
 		std_free(page);
 		page = next;
 	}
+	heap->first_page = NULL;
 }
 
 struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t size)
