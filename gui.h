@@ -1429,7 +1429,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 #define gi__gui_text_style_default { \
 	.size = 14, \
 	.color = gi_white, \
-	.align = GUI_ALIGN_LEFT | GUI_ALIGN_MIDDLE, \
+	.align = GUI_ALIGN_MIDLEFT, \
 	.padding = 4, \
 	.wrap = false, \
 }
@@ -1561,7 +1561,7 @@ const gui_style_t g_gui_style_default = {
 			},
 			.active = {
 				.line = gi__gui_line_style_default,
-				.text = gi__gui_text_style_default,
+				.text = gi__gui_btn_text_style_default,
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
@@ -1605,7 +1605,7 @@ const gui_style_t g_gui_style_default = {
 			},
 			.active = {
 				.line = gi__gui_line_style_default,
-				.text = gi__gui_text_style_default,
+				.text = gi__gui_btn_text_style_default,
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
@@ -1627,7 +1627,7 @@ const gui_style_t g_gui_style_default = {
 			},
 			.active = {
 				.line = gi__gui_line_style_default,
-				.text = gi__gui_text_style_default,
+				.text = gi__gui_btn_text_style_default,
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
@@ -1649,7 +1649,7 @@ const gui_style_t g_gui_style_default = {
 			},
 			.active = {
 				.line = gi__gui_line_style_default,
-				.text = gi__gui_text_style_default,
+				.text = gi__gui_btn_text_style_default,
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
