@@ -66,6 +66,10 @@ typedef struct v2f
 FMGDECL const v2f g_v2f_x_axis;
 FMGDECL const v2f g_v2f_y_axis;
 FMGDECL const v2f g_v2f_zero;
+FMGDECL const v2f g_v2f_up;
+FMGDECL const v2f g_v2f_down;
+FMGDECL const v2f g_v2f_left;
+FMGDECL const v2f g_v2f_right;
 
 FMDEF void v2f_set(v2f *v, r32 x, r32 y);
 FMDEF r32  v2f_mag(v2f v);
@@ -297,9 +301,13 @@ FMDEF r32   polyf_pt_dist_sq(const v2f *v, u32 n, v2f p);
 
 /* 2D Vector */
 
-FMGDEF const v2f g_v2f_x_axis = { 1, 0 };
-FMGDEF const v2f g_v2f_y_axis = { 0, 1 };
-FMGDEF const v2f g_v2f_zero   = { 0, 0 };
+FMGDEF const v2f g_v2f_x_axis = {  1,  0 };
+FMGDEF const v2f g_v2f_y_axis = {  0,  1 };
+FMGDEF const v2f g_v2f_zero   = {  0,  0 };
+FMGDEF const v2f g_v2f_up     = {  0,  1 };
+FMGDEF const v2f g_v2f_down   = {  0, -1 };
+FMGDEF const v2f g_v2f_left   = { -1,  0 };
+FMGDEF const v2f g_v2f_right  = {  1,  0 };
 
 FMDEF void v2f_set(v2f *v, r32 x, r32 y)
 {
