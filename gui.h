@@ -635,6 +635,7 @@ void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size);
 void gui_style_push_color_(gui_t *gui, size_t offset, color_t val);
 void gui_style_push_b32_(gui_t *gui, size_t offset, u32 val);
 void gui_style_push_u32_(gui_t *gui, size_t offset, u32 val);
+void gui_style_push_s32_(gui_t *gui, size_t offset, s32 val);
 void gui_style_push_r32_(gui_t *gui, size_t offset, r32 val);
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
 void gui_style_pop(gui_t *gui);
@@ -651,6 +652,8 @@ void gui_style_pop(gui_t *gui);
 	gui_style_push_b32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_u32(gui, loc, val) \
 	gui_style_push_u32_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_s32(gui, loc, val) \
+	gui_style_push_s32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_r32(gui, loc, val) \
 	gui_style_push_r32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_pen(gui, loc, val) \
@@ -5747,6 +5750,7 @@ void gui_style_push_##name##_(gui_t *gui, size_t offset, type val) \
 GUI_STYLE_STACK_PUSH_LITERAL(color, color_t);
 GUI_STYLE_STACK_PUSH_LITERAL(b32, b32);
 GUI_STYLE_STACK_PUSH_LITERAL(u32, u32);
+GUI_STYLE_STACK_PUSH_LITERAL(s32, s32);
 GUI_STYLE_STACK_PUSH_LITERAL(r32, r32);
 
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
