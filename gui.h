@@ -3628,6 +3628,9 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			const gui_text_style_t *style = &gui->style.npt.active.text;
 			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
 			                                         gui->mouse_pos, style);
+		} else {
+			const u32 len = (u32)strlen(txt);
+			gui->npt_cursor_pos = clamp(0, gui->npt_cursor_pos, len);
 		}
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
 			u32 len = (u32)strlen(txt);
