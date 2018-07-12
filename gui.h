@@ -264,11 +264,11 @@ typedef enum img_scale
 #endif
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
-void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c);
-void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t line);
-void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t line);
-void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t line);
-void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t line);
+void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c);
+void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke);
+void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke);
+void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
+void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
                 r32 opacity);
@@ -2911,12 +2911,28 @@ const u8 *keyboard_state(const gui_t *gui)
 
 /* Primitives */
 
-void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
+static
+void gui__line_wide(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1,
+                    r32 w, color_t c)
 {
-	gui_linef(gui, x0, y0, x1, y1, w, c);
+	v2f poly[4] = {
+		{ x0, y0 },
+		{ x0, y0 },
+		{ x1, y1 },
+		{ x1, y1 }
+	};
+	v2f dir = v2f_scale(v2f_dir(poly[0], poly[2]), w / 2.f);
+	v2f perp = v2f_lperp(dir);
+
+	poly[0] = v2f_sub(v2f_sub(poly[0], dir), perp);
+	poly[1] = v2f_add(v2f_sub(poly[1], dir), perp);
+	poly[2] = v2f_add(v2f_add(poly[2], dir), perp);
+	poly[3] = v2f_sub(v2f_add(poly[3], dir), perp);
+
+	gui__poly(gui, poly, 4, c, g_nocolor);
 }
 
-void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c)
+void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
 {
 	assert(w >= 1);
 	if (w == 1) {
@@ -2927,21 +2943,18 @@ void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c)
 		};
 		gui__poly(gui, poly, 2, g_nocolor, c);
 	} else {
-		v2f poly[4] = {
-			{ x0, y0 },
-			{ x0, y0 },
-			{ x1, y1 },
-			{ x1, y1 }
-		};
-		v2f dir = v2f_scale(v2f_dir(poly[0], poly[2]), w / 2.f);
-		v2f perp = v2f_lperp(dir);
+		gui__line_wide(gui, x0, y0, x1, y1, w, c);
+	}
+}
 
-		poly[0] = v2f_sub(v2f_sub(poly[0], dir), perp);
-		poly[1] = v2f_add(v2f_sub(poly[1], dir), perp);
-		poly[2] = v2f_add(v2f_add(poly[2], dir), perp);
-		poly[3] = v2f_sub(v2f_add(poly[3], dir), perp);
-
-		gui__poly(gui, poly, 4, c, g_nocolor);
+void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c)
+{
+	assert(w >= 1);
+	if (fabsf(w - 1) < 0.01f) {
+		const v2f poly[2] = { { x0, y0 }, { x1, y1 } };
+		gui__poly(gui, poly, 2, g_nocolor, c);
+	} else {
+		gui__line_wide(gui, x0, y0, x1, y1, w, c);
 	}
 }
 
