@@ -8,6 +8,8 @@
 
 b32  vson_read_header(FILE *fp, const char *label);
 b32  vson_read_b8(FILE *fp, const char *label, b8 *val);
+b32  vson_read_u8(FILE *fp, const char *label, u8 *val);
+b32  vson_read_s8(FILE *fp, const char *label, s8 *val);
 b32  vson_read_u16(FILE *fp, const char *label, u16 *val);
 b32  vson_read_s16(FILE *fp, const char *label, s16 *val);
 b32  vson_read_b32(FILE *fp, const char *label, b32 *val);
@@ -109,10 +111,32 @@ b32 vson_read_b8(FILE *fp, const char *label, b8 *val)
 	return false;
 }
 
+b32 vson_read_u8(FILE *fp, const char *label, u8 *val)
+{
+	u32 val_;
+	if (vson_read_u32(fp, label, &val_) && val_ <= UINT8_MAX) {
+		*val = val_;
+		return true;
+	}
+	return false;
+}
+
+b32 vson_read_s8(FILE *fp, const char *label, s8 *val)
+{
+	s32 val_;
+	if (   vson_read_s32(fp, label, &val_)
+	    && val_ >= INT8_MIN
+	    && val_ <= INT8_MAX) {
+		*val = val_;
+		return true;
+	}
+	return false;
+}
+
 b32 vson_read_u16(FILE *fp, const char *label, u16 *val)
 {
 	u32 val_;
-	if (vson_read_u32(fp, label, &val_) && (val_ & 0xffff0000) == 0) {
+	if (vson_read_u32(fp, label, &val_) && val_ <= UINT16_MAX) {
 		*val = val_;
 		return true;
 	}
