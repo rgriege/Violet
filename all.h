@@ -11,6 +11,7 @@
 #define IMATH_IMPLEMENTATION
 #define LIST_IMPLEMENTATION
 #define OS_IMPLEMENTATION
+#define STRING_IMPLEMENTATION
 #define VSON_IMPLEMENTATION
 #undef VIOLET_IMPLEMENTATION
 #endif
@@ -24,6 +25,8 @@
 #include "violet/dmath.h"
 #include "violet/fmath.h"
 #include "violet/imath.h"
+/* String */
+#include "violet/string.h"
 /* Gui */
 #ifndef VIOLET_NO_GUI
 #include "violet/graphics.h"
