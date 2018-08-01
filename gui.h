@@ -476,7 +476,7 @@ typedef struct gui_panel
 	v2i required_dim;
 	s32 body_height;
 	s32 pri;
-	struct gui_panel *parent, *prev, *next;
+	struct gui_panel *prev, *next;
 	gui_split_t split;
 	b32 closed;
 	b32 collapsed;
@@ -523,10 +523,6 @@ b32       pgui_slider_x(gui_t *gui, r32 *val);
 b32       pgui_slider_y(gui_t *gui, r32 *val);
 b32       pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max);
 b32       pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max);
-
-void pgui_subpanel_init(gui_t *gui, gui_panel_t *subpanel);
-void pgui_subpanel(gui_t *gui, gui_panel_t *subpanel);
-void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel);
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
@@ -4806,7 +4802,6 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 	panel->scroll_rate.y = GUI_SCROLL_RATE;
 	panel->required_dim = g_v2i_zero;
 
-	panel->parent = NULL;
 	panel->prev   = NULL;
 	panel->next   = NULL;
 	panel->split.leaf = false;
@@ -5061,15 +5056,12 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->grid.pos.y  = first->grid.pos.y;
 		panel->padding     = first->padding;
 		panel->body_height = first->body_height;
-		panel->parent      = first->parent;
 		memcpy(&panel->split, &first->split, sizeof(first->split));
 		panel->closed      = first->closed;
 		panel->collapsed   = first->collapsed;
 
 		gui->panel = panel;
 	} else {
-		assert(panel->parent == gui->panel);
-
 		if (panel->closed)
 			return false;
 
@@ -5110,7 +5102,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	}
 
 	if (panel->closed || panel->collapsed || panel->tabbed_out) {
-		gui->panel = panel->parent;
+		gui->panel = NULL;
 		return false;
 	}
 
@@ -5162,13 +5154,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	}
 
 	/* NOTE(rgriege): would be great to avoid the additional mask here */
-	if (panel->parent)
-		gui_mask(gui, panel->parent->x + panel->parent->padding.x,
-		         panel->parent->y + panel->parent->padding.y,
-		         panel->parent->width - panel->parent->padding.x * 2,
-		         panel->parent->body_height - panel->parent->padding.y * 2);
-	else
-		gui_unmask(gui);
+	gui_unmask(gui);
 
 	/* background display */
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
@@ -5232,13 +5218,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		panel->scroll.x = 0;
 	}
 
-	if (panel->parent)
-		gui_mask(gui, panel->parent->x + panel->parent->padding.x,
-		         panel->parent->y + panel->parent->padding.y,
-		         panel->parent->width - panel->parent->padding.x * 2,
-		         panel->parent->body_height - panel->parent->padding.y * 2);
-	else
-		gui_unmask(gui);
+	gui_unmask(gui);
 
 out:
 	if (panel->flags & GUI_PANEL_TITLEBAR)
@@ -5246,10 +5226,10 @@ out:
 	else
 		panel->body_height = panel->height;
 
-	if (contains_mouse && !panel->parent)
+	if (contains_mouse)
 		gui->mouse_covered_by_panel = true;
 
-	gui->panel = panel->parent;
+	gui->panel = NULL;
 }
 
 void pgui_row(gui_t *gui, r32 height, u32 num_cells)
@@ -5566,28 +5546,6 @@ b32 pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max)
 	b32 result = pgui_slider_y(gui, &slider_val);
 	*val = (max - min) * slider_val + min;
 	return result;
-}
-
-
-void pgui_subpanel_init(gui_t *gui, gui_panel_t *subpanel)
-{
-	pgui_panel_init(gui, subpanel, 0, 0, 0, 0, NULL, 0);
-}
-
-void pgui_subpanel(gui_t *gui, gui_panel_t *subpanel)
-{
-	assert(!subpanel->split.leaf);
-	assert(!(subpanel->flags & GUI_PANEL_COLLAPSABLE));
-	assert(!(subpanel->flags & GUI_PANEL_CLOSABLE));
-	pgui__cell_consume(gui, &subpanel->x, &subpanel->y,
-	                   &subpanel->width, &subpanel->height);
-	subpanel->parent = gui->panel;
-	check(pgui_panel(gui, subpanel));
-}
-
-void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel)
-{
-	pgui_panel_finish(gui, subpanel);
 }
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
