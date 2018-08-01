@@ -97,6 +97,7 @@ IMDEF b32   box2i_contains_point(box2i b, v2i p);
 IMDEF void  box2i_clamp_point(box2i b, v2i *p);
 IMDEF b32   box2i_eq(box2i lhs, box2i rhs);
 IMDEF v2i   box2i_get_center(box2i b);
+IMDEF v2i   box2i_get_extent(box2i b);
 IMDEF v2i   box2i_get_half_dim(box2i b);
 
 /* Polygon */
@@ -309,6 +310,11 @@ IMDEF b32 box2i_eq(box2i lhs, box2i rhs)
 IMDEF v2i box2i_get_center(box2i box)
 {
 	return v2i_add(box.min, box2i_get_half_dim(box));
+}
+
+IMDEF v2i box2i_get_extent(box2i b)
+{
+	return v2i_sub(b.max, b.min);
 }
 
 IMDEF v2i box2i_get_half_dim(box2i box)

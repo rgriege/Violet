@@ -74,6 +74,7 @@ typedef struct timespec timepoint_t;
 typedef bool b8;
 typedef uint8_t u8;
 typedef int8_t s8;
+typedef int16_t b16;
 typedef uint16_t u16;
 typedef int16_t s16;
 typedef uint32_t b32;
@@ -930,6 +931,7 @@ void vlt_destroy(vlt_thread_type_e thread_type)
 	g_error_handler  = NULL;
 }
 
+#ifndef VIOLET_NO_MAIN
 int app_entry(int argc, char *const argv[]);
 int main(int argc, char *const argv[])
 {
@@ -943,6 +945,7 @@ int main(int argc, char *const argv[])
 }
 
 #define main app_entry
+#endif // VIOLET_NO_MAIN
 
 #undef CORE_IMPLEMENTATION
 #endif // CORE_IMPLEMENTATION

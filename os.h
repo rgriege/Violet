@@ -29,6 +29,7 @@ b32  rmdir_f(const char *path);
 
 /* Dynamic library */
 
+#ifndef VIOLET_NO_LIB
 #ifdef _WIN32
 typedef HMODULE lib_handle;
 #else
@@ -39,6 +40,7 @@ lib_handle  lib_load(const char *filename);
 void       *lib_func(lib_handle hnd, const char *name);
 b32         lib_close(lib_handle hnd);
 const char *lib_err();
+#endif // VIOLET_NO_LIB
 
 /* IO */
 
@@ -269,6 +271,7 @@ char *app_data_dir(const char *app_name, allocator_t *a)
 
 /* Dynamic library */
 
+#ifndef VIOLET_NO_LIB
 lib_handle lib_load(const char *_filename)
 {
 	const size_t sz = strlen(_filename);
@@ -297,6 +300,7 @@ const char *lib_err()
 	              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
 	return buf;
 }
+#endif // VIOLET_NO_LIB
 
 b32 open_file_external(const char *filename)
 {
@@ -411,6 +415,7 @@ char *app_data_dir(const char *app_name, allocator_t *a)
 
 /* Dynamic library */
 
+#ifndef VIOLET_NO_LIB
 lib_handle lib_load(const char *_filename)
 {
 	const u32 sz = strlen(_filename);
@@ -436,6 +441,7 @@ const char *lib_err()
 {
 	return dlerror();
 }
+#endif // VIOLET_NO_LIB
 
 b32 open_file_external(const char *filename)
 {

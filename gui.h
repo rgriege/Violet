@@ -264,11 +264,11 @@ typedef enum img_scale
 #endif
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
-void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c);
-void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t line);
-void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t line);
-void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t line);
-void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t line);
+void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c);
+void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke);
+void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke);
+void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
+void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
                 r32 opacity);
@@ -402,6 +402,7 @@ void gui_split_init(gui_t *gui, gui_split_t *split,
 void gui_vsplit_init(gui_t *gui, gui_split_t *split,
                      gui_split_t *sp1, r32 sz, gui_split_t *sp2,
                      gui_split_flags_t flags);
+void gui_compute_split_boxes(gui_t *gui);
 
 
 /* Panels */
@@ -490,13 +491,13 @@ void pgui_panel_collapse(gui_panel_t *panel);
 void pgui_panel_restore(gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 
-void pgui_row(gui_t *gui, r32 height);
+void pgui_row(gui_t *gui, r32 height, u32 num_cells);
 void pgui_row_cells(gui_t *gui, r32 height, const r32 *cells, u32 num_cells);
 #define pgui_row_cellsv(gui, height, cells) \
 	pgui_row_cells(gui, height, cells, countof(cells))
 void pgui_row_empty(gui_t *gui, r32 height);
 
-void pgui_col(gui_t *gui, r32 width);
+void pgui_col(gui_t *gui, r32 width, u32 num_cells);
 void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells);
 #define pgui_col_cellsv(gui, width, cells) \
 	pgui_col_cells(gui, width, cells, countof(cells))
@@ -634,6 +635,7 @@ void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size);
 void gui_style_push_color_(gui_t *gui, size_t offset, color_t val);
 void gui_style_push_b32_(gui_t *gui, size_t offset, u32 val);
 void gui_style_push_u32_(gui_t *gui, size_t offset, u32 val);
+void gui_style_push_s32_(gui_t *gui, size_t offset, s32 val);
 void gui_style_push_r32_(gui_t *gui, size_t offset, r32 val);
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
 void gui_style_pop(gui_t *gui);
@@ -650,6 +652,8 @@ void gui_style_pop(gui_t *gui);
 	gui_style_push_b32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_u32(gui, loc, val) \
 	gui_style_push_u32_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_s32(gui, loc, val) \
+	gui_style_push_s32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_r32(gui, loc, val) \
 	gui_style_push_r32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_pen(gui, loc, val) \
@@ -718,8 +722,7 @@ int __builtin_popcount(u32 x)
 #endif // _M_X64
 #endif // _MSC_VER
 
-static void gui__split(gui_t *gui, gui_split_t *split);
-
+static void gui__split(gui_t *gui, gui_split_t *split, b32 render);
 
 static const char *g_vertex_shader;
 static const char *g_fragment_shader;
@@ -1429,7 +1432,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 #define gi__gui_text_style_default { \
 	.size = 14, \
 	.color = gi_white, \
-	.align = GUI_ALIGN_LEFT | GUI_ALIGN_MIDDLE, \
+	.align = GUI_ALIGN_MIDLEFT, \
 	.padding = 4, \
 	.wrap = false, \
 }
@@ -1561,7 +1564,7 @@ const gui_style_t g_gui_style_default = {
 			},
 			.active = {
 				.line = gi__gui_line_style_default,
-				.text = gi__gui_text_style_default,
+				.text = gi__gui_btn_text_style_default,
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
@@ -1605,7 +1608,7 @@ const gui_style_t g_gui_style_default = {
 			},
 			.active = {
 				.line = gi__gui_line_style_default,
-				.text = gi__gui_text_style_default,
+				.text = gi__gui_btn_text_style_default,
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
@@ -1627,7 +1630,7 @@ const gui_style_t g_gui_style_default = {
 			},
 			.active = {
 				.line = gi__gui_line_style_default,
-				.text = gi__gui_text_style_default,
+				.text = gi__gui_btn_text_style_default,
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
@@ -1649,7 +1652,7 @@ const gui_style_t g_gui_style_default = {
 			},
 			.active = {
 				.line = gi__gui_line_style_default,
-				.text = gi__gui_text_style_default,
+				.text = gi__gui_btn_text_style_default,
 				.bg_color = gi_orange,
 				.outline_color = gi_nocolor,
 			},
@@ -2427,7 +2430,7 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->use_default_cursor = true;
 	if (gui->root_split) {
 		box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
-		gui__split(gui, gui->root_split);
+		gui__split(gui, gui->root_split, true);
 	}
 
 	gui->next_panel_pri = 0;
@@ -2912,12 +2915,28 @@ const u8 *keyboard_state(const gui_t *gui)
 
 /* Primitives */
 
-void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
+static
+void gui__line_wide(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1,
+                    r32 w, color_t c)
 {
-	gui_linef(gui, x0, y0, x1, y1, w, c);
+	v2f poly[4] = {
+		{ x0, y0 },
+		{ x0, y0 },
+		{ x1, y1 },
+		{ x1, y1 }
+	};
+	v2f dir = v2f_scale(v2f_dir(poly[0], poly[2]), w / 2.f);
+	v2f perp = v2f_lperp(dir);
+
+	poly[0] = v2f_sub(v2f_sub(poly[0], dir), perp);
+	poly[1] = v2f_add(v2f_sub(poly[1], dir), perp);
+	poly[2] = v2f_add(v2f_add(poly[2], dir), perp);
+	poly[3] = v2f_sub(v2f_add(poly[3], dir), perp);
+
+	gui__poly(gui, poly, 4, c, g_nocolor);
 }
 
-void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c)
+void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
 {
 	assert(w >= 1);
 	if (w == 1) {
@@ -2928,21 +2947,18 @@ void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, s32 w, color_t c)
 		};
 		gui__poly(gui, poly, 2, g_nocolor, c);
 	} else {
-		v2f poly[4] = {
-			{ x0, y0 },
-			{ x0, y0 },
-			{ x1, y1 },
-			{ x1, y1 }
-		};
-		v2f dir = v2f_scale(v2f_dir(poly[0], poly[2]), w / 2.f);
-		v2f perp = v2f_lperp(dir);
+		gui__line_wide(gui, x0, y0, x1, y1, w, c);
+	}
+}
 
-		poly[0] = v2f_sub(v2f_sub(poly[0], dir), perp);
-		poly[1] = v2f_add(v2f_sub(poly[1], dir), perp);
-		poly[2] = v2f_add(v2f_add(poly[2], dir), perp);
-		poly[3] = v2f_sub(v2f_add(poly[3], dir), perp);
-
-		gui__poly(gui, poly, 4, c, g_nocolor);
+void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c)
+{
+	assert(w >= 1);
+	if (fabsf(w - 1) < 0.01f) {
+		const v2f poly[2] = { { x0, y0 }, { x1, y1 } };
+		gui__poly(gui, poly, 2, g_nocolor, c);
+	} else {
+		gui__line_wide(gui, x0, y0, x1, y1, w, c);
 	}
 }
 
@@ -3629,6 +3645,9 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			const gui_text_style_t *style = &gui->style.npt.active.text;
 			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
 			                                         gui->mouse_pos, style);
+		} else {
+			const u32 len = (u32)strlen(txt);
+			gui->npt_cursor_pos = clamp(0, gui->npt_cursor_pos, len);
 		}
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
 			u32 len = (u32)strlen(txt);
@@ -4691,7 +4710,7 @@ s32 gui__split_dim(r32 sz, r32 w)
 }
 
 static
-void gui__split(gui_t *gui, gui_split_t *split)
+void gui__split(gui_t *gui, gui_split_t *split, b32 render)
 {
 	s32 x, y, w, h, sz1;
 
@@ -4701,7 +4720,9 @@ void gui__split(gui_t *gui, gui_split_t *split)
 	box2i_to_xywh(split->box, &x, &y, &w, &h);
 
 	/* checking use_default_cursor ensures only 1 resize happens per frame */
-	if (split->flags & GUI_SPLIT_RESIZABLE && gui->use_default_cursor) {
+	if (   (split->flags & GUI_SPLIT_RESIZABLE)
+	    && gui->use_default_cursor
+	    && render) {
 		gui_style_push(gui, drag.hot.bg_color, gui->style.drag.inactive.bg_color);
 		gui_style_push(gui, drag.active.bg_color, gui->style.drag.inactive.bg_color);
 		if (split->vert) {
@@ -4739,20 +4760,29 @@ void gui__split(gui_t *gui, gui_split_t *split)
 		const s32 xm = split->box.min.x + sz1;
 		split->sp1->box.max.x = xm;
 		split->sp2->box.min.x = xm;
-		gui_line_styled(gui, xm, split->box.min.y, xm, split->box.max.y,
-		                &gui->style.split);
+		if (render)
+			gui_line_styled(gui, xm, split->box.min.y, xm, split->box.max.y,
+			                &gui->style.split);
 	} else {
 		const s32 ym = split->box.max.y - sz1;
 		split->sp1->box.min.y = ym;
 		split->sp2->box.max.y = ym;
-		gui_line_styled(gui, split->box.min.x, ym, split->box.max.x, ym,
-		                &gui->style.split);
+		if (render)
+			gui_line_styled(gui, split->box.min.x, ym, split->box.max.x, ym,
+			                &gui->style.split);
 	}
 
 	if (!split->sp1->leaf)
-		gui__split(gui, split->sp1);
+		gui__split(gui, split->sp1, render);
 	if (!split->sp2->leaf)
-		gui__split(gui, split->sp2);
+		gui__split(gui, split->sp2, render);
+}
+
+void gui_compute_split_boxes(gui_t *gui)
+{
+	assert(gui->root_split);
+	box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
+	gui__split(gui, gui->root_split, false);
 }
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
@@ -5222,10 +5252,12 @@ out:
 	gui->panel = panel->parent;
 }
 
-void pgui_row(gui_t *gui, r32 height)
+void pgui_row(gui_t *gui, r32 height, u32 num_cells)
 {
-	const r32 cols[1] = { GUI_GRID_REMAINING };
-	pgui_row_cellsv(gui, height, cols);
+	const r32 cells[GUI_PANEL_MAX_GRID_CELLS] = { 0 };
+	static_assert(GUI_GRID_REMAINING == 0, invalid_initialization);
+	assert(num_cells < GUI_PANEL_MAX_GRID_CELLS);
+	pgui_row_cells(gui, height, cells, num_cells);
 }
 
 static
@@ -5375,14 +5407,16 @@ void pgui__cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 
 void pgui_row_empty(gui_t *gui, r32 height)
 {
-	pgui_row(gui, height);
+	pgui_row(gui, height, 1);
 	pgui__cell_advance(gui->panel);
 }
 
-void pgui_col(gui_t *gui, r32 height)
+void pgui_col(gui_t *gui, r32 width, u32 num_cells)
 {
-	const r32 rows[1] = { GUI_GRID_REMAINING };
-	pgui_col_cellsv(gui, height, rows);
+	const r32 cells[GUI_PANEL_MAX_GRID_CELLS] = { 0 };
+	static_assert(GUI_GRID_REMAINING == 0, invalid_initialization);
+	assert(num_cells < GUI_PANEL_MAX_GRID_CELLS);
+	pgui_col_cells(gui, width, cells, num_cells);
 }
 
 void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells)
@@ -5392,7 +5426,7 @@ void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells)
 
 void pgui_col_empty(gui_t *gui, r32 width)
 {
-	pgui_col(gui, width);
+	pgui_col(gui, width, 1);
 	pgui__cell_advance(gui->panel);
 }
 
@@ -5737,6 +5771,7 @@ void gui_style_push_##name##_(gui_t *gui, size_t offset, type val) \
 GUI_STYLE_STACK_PUSH_LITERAL(color, color_t);
 GUI_STYLE_STACK_PUSH_LITERAL(b32, b32);
 GUI_STYLE_STACK_PUSH_LITERAL(u32, u32);
+GUI_STYLE_STACK_PUSH_LITERAL(s32, s32);
 GUI_STYLE_STACK_PUSH_LITERAL(r32, r32);
 
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
