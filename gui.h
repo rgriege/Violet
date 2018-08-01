@@ -5364,112 +5364,92 @@ void pgui__panel_collapse_toggle(gui_panel_t *panel)
 static
 void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 {
-#if 1
-	*dragging = false;
-	return;
-#else
-	if (panel->flags & GUI_PANEL_TITLEBAR) {
-		const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
-		u64 drag_id = ~0;
-		s32 rw, rx;
-		s32 tab_count;
+	const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
+	s32 y;
+	u64 drag_id = ~0;
+	s32 rw, rx;
+	s32 tab_count;
 
-	pgui_grid(gui, panel->x, + panel->padding.x,
-	          panel->y + panel->padding.y,
-	          panel->width - panel->padding.x * 2,
-	          panel->body_height - panel->padding.y * 2);
-		panel->grid.pos.y = panel->y + panel->height - dim;
+	y = panel->y + panel->height - dim;
 
-		if ((panel->flags & GUI_PANEL_DRAGGABLE) && !panel->split.leaf) {
-			*dragging = gui__drag_logic(gui, &drag_id, &panel->x, &panel->grid.pos.y,
-			                            dim, dim, MB_LEFT,
-			                            gui__drag_default_callback, NULL);
-			if (*dragging)
-				panel->y = panel->grid.pos.y - panel->height + dim;
-		} else {
-			*dragging = false;
-		}
-
-		gui_rect(gui, panel->x, panel->grid.pos.y, panel->width,
-		         dim, gui->style.panel.titlebar.bg_color,
-		         gui->style.panel.titlebar.outline_color);
-
-		gui__drag_render(gui, panel->x, panel->grid.pos.y, dim, dim, drag_id,
-		                 *dragging, &gui->style.panel.drag);
-
-		rw = 0;
-		if (panel->flags & GUI_PANEL_COLLAPSABLE)
-			rw += dim;
-		if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf)
-			rw += dim;
-
-		tab_count = 0;
-		for (gui_panel_t *p = panel; p; p = p->next)
-			++tab_count;
-		if (tab_count > 1) {
-			s32 tab_dim, tab_idx;
-			u32 selected_tab_idx;
-			tab_dim = (panel->width - dim - rw) / tab_count;
-			tab_dim = min(tab_dim, 100);
-			tab_idx = 0;
-			selected_tab_idx = 0;
-			for (gui_panel_t *p = panel; p; p = p->next) {
-				if (!p->tabbed_out)
-					selected_tab_idx = (u32)tab_idx;
-				++tab_idx;
-			}
-			tab_idx = 0;
-			gui_style_push(gui, select, gui->style.panel.tab);
-			for (gui_panel_t *p = panel; p; p = p->next) {
-				if (gui_select(gui, panel->x + dim + tab_idx * tab_dim, panel->grid.pos.y,
-				               tab_dim, dim, p->title, &selected_tab_idx, (u32)tab_idx)) {
-					for (gui_panel_t *px = panel; px; px = px->next)
-						px->tabbed_out = true;
-					p->tabbed_out = false;
-				}
-				++tab_idx;
-			}
-			gui_style_pop(gui);
-		} else {
-			gui_txt_styled(gui, panel->x + dim, panel->grid.pos.y, panel->width, dim,
-			               panel->title, &gui->style.panel.titlebar.text);
-		}
-
-		rx = panel->x + panel->width - rw;
-		if (panel->flags & GUI_PANEL_COLLAPSABLE) {
-			const s32 y = panel->grid.pos.y;
-			if (panel->collapsed)
-				gui_style_push(gui, btn, gui->style.panel.restore);
-			else
-				gui_style_push(gui, btn, gui->style.panel.collapse);
-			if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
-				pgui__panel_collapse_toggle(panel);
-			gui_style_pop(gui);
-			rx += dim;
-		}
-
-		if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf) {
-			const s32 y = panel->grid.pos.y;
-			gui_style_push(gui, btn, gui->style.panel.close);
-			if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
-				panel->closed = true;
-			gui_style_pop(gui);
-			rx += dim;
-		}
-
-		panel->grid.pos.y -= panel->padding.y;
-		panel->body_height = panel->height - dim;
+	if ((panel->flags & GUI_PANEL_DRAGGABLE) && !panel->split.leaf) {
+		*dragging = gui__drag_logic(gui, &drag_id, &panel->x, &y, dim, dim,
+		                            MB_LEFT, gui__drag_default_callback, NULL);
+		if (*dragging)
+			panel->y = y - panel->height + dim;
 	} else {
 		*dragging = false;
-		panel->grid.pos.y = panel->y + panel->height - panel->padding.y;
-		panel->body_height = panel->height;
 	}
-#endif
+
+	gui_rect(gui, panel->x, y, panel->width,
+	         dim, gui->style.panel.titlebar.bg_color,
+	         gui->style.panel.titlebar.outline_color);
+
+	gui__drag_render(gui, panel->x, y, dim, dim, drag_id,
+	                 *dragging, &gui->style.panel.drag);
+
+	rw = 0;
+	if (panel->flags & GUI_PANEL_COLLAPSABLE)
+		rw += dim;
+	if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf)
+		rw += dim;
+
+	tab_count = 0;
+	for (gui_panel_t *p = panel; p; p = p->next)
+		++tab_count;
+	if (tab_count > 1) {
+		s32 tab_dim, tab_idx;
+		u32 selected_tab_idx;
+		tab_dim = (panel->width - dim - rw) / tab_count;
+		tab_dim = min(tab_dim, 100);
+		tab_idx = 0;
+		selected_tab_idx = 0;
+		for (gui_panel_t *p = panel; p; p = p->next) {
+			if (!p->tabbed_out)
+				selected_tab_idx = (u32)tab_idx;
+			++tab_idx;
+		}
+		tab_idx = 0;
+		gui_style_push(gui, select, gui->style.panel.tab);
+		for (gui_panel_t *p = panel; p; p = p->next) {
+			if (gui_select(gui, panel->x + dim + tab_idx * tab_dim, y,
+			               tab_dim, dim, p->title, &selected_tab_idx, (u32)tab_idx)) {
+				for (gui_panel_t *px = panel; px; px = px->next)
+					px->tabbed_out = true;
+				p->tabbed_out = false;
+			}
+			++tab_idx;
+		}
+		gui_style_pop(gui);
+	} else {
+		gui_txt_styled(gui, panel->x + dim, y, panel->width, dim,
+		               panel->title, &gui->style.panel.titlebar.text);
+	}
+
+	rx = panel->x + panel->width - rw;
+	if (panel->flags & GUI_PANEL_COLLAPSABLE) {
+		if (panel->collapsed)
+			gui_style_push(gui, btn, gui->style.panel.restore);
+		else
+			gui_style_push(gui, btn, gui->style.panel.collapse);
+		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+			pgui__panel_collapse_toggle(panel);
+		gui_style_pop(gui);
+		rx += dim;
+	}
+
+	if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf) {
+		gui_style_push(gui, btn, gui->style.panel.close);
+		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+			panel->closed = true;
+		gui_style_pop(gui);
+		rx += dim;
+	}
 }
 
 b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 {
-	b32 dragging;
+	b32 dragging = false;
 
 	if (panel->prev) {
 		gui_panel_t *first = panel->prev;
@@ -5506,7 +5486,11 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		}
 
 		pgui__panel_resize(gui, panel);
-		pgui__panel_titlebar(gui, panel, &dragging);
+		panel->body_height = panel->height;
+		if (panel->flags & GUI_PANEL_TITLEBAR) {
+			pgui__panel_titlebar(gui, panel, &dragging);
+			panel->body_height -= GUI_PANEL_TITLEBAR_HEIGHT;
+		}
 
 		if (panel->collapsed) {
 			/* background outline display */
@@ -5537,9 +5521,8 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	         g_nocolor, gui->style.panel.border_color);
 
 	pgui_grid(gui, panel->x + panel->padding.x + panel->scroll.x,
-	          panel->y + panel->padding.y + panel->scroll.y,
-	          panel->width - panel->padding.x * 2,
-	          panel->body_height - panel->padding.y * 2);
+	          panel->y + panel->padding.y + panel->body_height + panel->scroll.y,
+	          panel->width - panel->padding.x * 2, 0);
 
 	panel->required_dim = v2i_scale(panel->padding, 2);
 
