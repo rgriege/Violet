@@ -1223,9 +1223,6 @@ FMDEF ivalf linef_project(v2f a, v2f b, v2f axis)
 	ivalf projection;
 	r32 dp_a, dp_b;
 
-	if (!v2f_is_unit(axis))
-		v2f_normalize_eq(&axis);
-
 	dp_a = v2f_dot(a, axis);
 	dp_b = v2f_dot(b, axis);
 
@@ -1348,9 +1345,6 @@ FMDEF void polyf_transform(v2f *v, u32 n, const m3f mat)
 
 FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis)
 {
-	if (!v2f_is_unit(axis))
-		v2f_normalize_eq(&axis);
-
 	const r32 v0_proj = v2f_dot(*v, axis);
 	ivalf projection = { .l = v0_proj, .r = v0_proj };
 
