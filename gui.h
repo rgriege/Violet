@@ -2706,6 +2706,7 @@ void gui_end_frame(gui_t *gui)
 #else
 	const s32 loc[VBO_COUNT] = { VBO_VERT, VBO_COLOR, VBO_TEX };
 #endif
+	GLuint current_texture = 0;
 
 	gui__complete_scissor(gui);
 
@@ -2750,7 +2751,10 @@ void gui_end_frame(gui_t *gui)
 		for (draw_call_t *draw_call = gui->draw_calls + scissor->draw_call_idx,
 		                 *draw_call_end = draw_call + scissor->draw_call_cnt;
 		     draw_call != draw_call_end; ++draw_call) {
-			GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
+			if (draw_call->tex != current_texture) {
+				GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
+				current_texture = draw_call->tex;
+			}
 			GL_CHECK(glDrawArrays, g_draw_call_types[draw_call->type],
 			         draw_call->idx, draw_call->cnt);
 		}
@@ -4201,7 +4205,8 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	                 && !gui->lock;
 
 	if (gui->focus_id == id) {
-		if (gui->lock) {
+		if (   gui->lock
+		    || (mouse_released(gui, MB_LEFT) && contains_mouse)) {
 			gui__defocus_dropdown(gui);
 			gui->focus_id = 0;
 		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
