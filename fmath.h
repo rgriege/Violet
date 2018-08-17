@@ -281,6 +281,9 @@ FMDEF r32   polyf_area(const v2f *v, u32 n);
 FMDEF r32   polyf_perimeter(const v2f *v, u32 n);
 FMDEF v2f   polyf_centroid(const v2f *v, u32 n);
 FMDEF b32   polyf_is_cc(const v2f *v, u32 n);
+FMDEF b32   polyf_line_intersect(const v2f *v, u32 n, v2f v0, v2f v1);
+FMDEF u32   polyf_line_intersections(const v2f *v, u32 n, v2f v0, v2f v1,
+                                     v2f *first, v2f *last);
 FMDEF b32   polyf_segment_intersect(const v2f *v, u32 n, v2f v0, v2f v1);
 FMDEF b32   polyf_segment_intersection(const v2f *v, u32 n, v2f v0, v2f v1,
                                        v2f *isec);
@@ -1427,6 +1430,38 @@ FMDEF b32 polyf_is_cc(const v2f *v, u32 n)
 		sine_sum += v2f_cross(ab, bc) / v2f_mag(ab) / v2f_mag(bc);
 	}
 	return sine_sum > 0;
+}
+
+FMDEF b32 polyf_line_intersect(const v2f *v, u32 n, v2f v0, v2f v1)
+{
+	v2f first, last;
+	return polyf_line_intersections(v, n, v0, v1, &first, &last) > 0;
+}
+
+FMDEF u32 polyf_line_intersections(const v2f *v, u32 n, v2f v0, v2f v1,
+                                   v2f *first, v2f *last)
+{
+	const v2f dir = v2f_dir(v0, v1);
+	u32 cnt = 0;
+	v2f prev = v[n-1];
+	r32 t, u, min_u = FLT_MAX, max_u = -FLT_MAX;
+	for (const v2f *vn=v+n; v!=vn; ++v) {
+		if (   fabsf(v2f_dot(dir, v2f_dir(prev, *v))) < 0.999f
+		    && fmath_line_intersect_coords(prev, *v, v0, v1, &t, &u)
+		    && t >= 0.f && t <= 1.f) {
+			if (u < min_u) {
+				min_u = u;
+				*first = fmath_line_extrapolate(v0, v1, u);
+			}
+			if (u > max_u) {
+				max_u = u;
+				*last = fmath_line_extrapolate(v0, v1, u);
+			}
+			++cnt;
+		}
+		prev = *v;
+	}
+	return cnt;
 }
 
 FMDEF b32 polyf_segment_intersect(const v2f *v, u32 n, v2f v0, v2f v1)
