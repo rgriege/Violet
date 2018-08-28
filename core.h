@@ -290,6 +290,19 @@ u32 hashn(const char *str, u32 n);
 void reverse(void *data, size_t size, size_t count);
 #define reverse_buf(buf) reverse(buf, sizeof((buf)[0]), countof(buf))
 
+void buf_insert_(void *p, size_t idx, size_t nmemb, size_t size);
+#define buf_insert(p, idx, val, nmemb) \
+	do { \
+		const size_t buf_insert_idx_ = idx; \
+		buf_insert_(p, buf_insert_idx_, nmemb, sizeof(*(p))); \
+		(p)[buf_insert_idx_] = (val); \
+	} while (0);
+
+void buf_remove_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
+#define buf_remove(p, idx, nmemb)      buf_remove_(p, idx, 1, nmemb, sizeof(*p))
+#define buf_remove_n(p, idx, n, nmemb) buf_remove_(p, idx, n, nmemb, sizeof(*p))
+
+
 /* Time */
 
 timepoint_t time_current();
@@ -734,6 +747,20 @@ void reverse(void *data, size_t size, size_t count)
 		memcpy(r, l, size);
 		memcpy(l, scratch, size);
 	}
+}
+
+void buf_insert_(void *p_, size_t idx, size_t nmemb, size_t size)
+{
+	char *p = p_;
+	for (char *pi = p+(nmemb-1)*size, *pn = p+idx*size; pi != pn; pi -= size)
+		memcpy(pi, pi-size, size);
+}
+
+void buf_remove_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
+{
+	char *p = p_;
+	for (char *pi = p+(idx+n)*size, *pn = p+nmemb*size; pi != pn; pi += size)
+		memcpy(pi-n*size, pi, size);
 }
 
 /* Time */
