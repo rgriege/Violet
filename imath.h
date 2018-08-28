@@ -80,6 +80,20 @@ IMDEF v2i  v2i_inverse(v2i v);
 IMDEF void v2i_inverse_eq(v2i *v);
 IMDEF b32  v2i_equal(v2i lhs, v2i rhs);
 
+/* Interval */
+
+typedef struct ivali
+{
+	s32 l, r;
+} ivali;
+
+IMGDECL const ivali g_ivali_0_to_1;
+
+IMDEF ivali ivali_range(s32 center, s32 radius);
+IMDEF s32   ivali_center(ivali i);
+IMDEF void  ivali_slide(ivali *i, s32 d);
+IMDEF s32   ivali_length(ivali i);
+
 /* 2D Anti-aliased bounding box */
 
 typedef struct box2i
@@ -235,6 +249,32 @@ IMDEF void v2i_inverse_eq(v2i *v)
 IMDEF b32 v2i_equal(v2i lhs, v2i rhs)
 {
 	return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
+/* Interval */
+
+IMDEF ivali ivali_range(s32 center, s32 radius)
+{
+	return (ivali){
+		.l = center - radius,
+		.r = center + radius,
+	};
+}
+
+IMDEF s32 ivali_center(ivali i)
+{
+	return (i.l + i.r) / 2;
+}
+
+IMDEF void ivali_slide(ivali *i, s32 d)
+{
+	i->l += d;
+	i->r += d;
+}
+
+IMDEF s32 ivali_length(ivali i)
+{
+	return i.r - i.l;
 }
 
 /* 2D Anti-aliased bounding box */

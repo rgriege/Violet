@@ -858,12 +858,6 @@ FMDEF void m4f_to_m3(m4f src, m3f dst)
 
 FMGDEF const ivalf g_ivalf_0_to_1 = { .l = 0.f, .r = 1.f };
 
-FMDEF void ivalf_slide(ivalf *i, r32 d)
-{
-	i->l += d;
-	i->r += d;
-}
-
 FMDEF ivalf ivalf_range(r32 center, r32 radius)
 {
 	return (ivalf){
@@ -875,6 +869,12 @@ FMDEF ivalf ivalf_range(r32 center, r32 radius)
 FMDEF r32 ivalf_center(ivalf i)
 {
 	return (i.l + i.r) / 2.f;
+}
+
+FMDEF void ivalf_slide(ivalf *i, r32 d)
+{
+	i->l += d;
+	i->r += d;
 }
 
 FMDEF r32 ivalf_length(ivalf i)
