@@ -207,6 +207,8 @@ void   gui_maximize(gui_t *gui);
 void   gui_fullscreen(gui_t *gui);
 b32    gui_begin_frame(gui_t *gui);
 void   gui_end_frame(gui_t *gui);
+void   gui_end_frame_ex(gui_t *gui, u32 target_frame_milli,
+                        u32 idle_frame_milli, u32 idle_start_milli);
 void   gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t*, void*), void *udata);
 
 timepoint_t gui_frame_start(const gui_t *gui);
@@ -2773,6 +2775,23 @@ void gui_end_frame(gui_t *gui)
 	SDL_GL_SwapWindow(gui->window);
 
 	memcpy(gui->prev_keys, gui->keys, KB_COUNT);
+}
+
+void gui_end_frame_ex(gui_t *gui, u32 target_frame_milli,
+                      u32 idle_frame_milli, u32 idle_start_milli)
+{
+	u32 frame_milli;
+
+	gui_end_frame(gui);
+	frame_milli = time_diff_milli(gui_frame_start(gui), time_current());
+
+	if (frame_milli > target_frame_milli)
+		log_warn("long frame: %ums", frame_milli);
+	else if (  time_diff_milli(gui_last_input_time(gui), gui_frame_start(gui))
+	         > idle_start_milli)
+		time_sleep_milli(idle_frame_milli - frame_milli);
+	else
+		time_sleep_milli(target_frame_milli - frame_milli);
 }
 
 void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),

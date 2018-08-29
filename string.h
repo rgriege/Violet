@@ -162,8 +162,9 @@ char *imstrcatn(char *imstr, const char *src)
 
 char *imstrcat2(const char *src1, const char *src2)
 {
+	assert(strlen(src1) < IMPRINT_BUFFER_SIZE);
 	imstrcpy(src1);
-	return strncat(g_imprint_buf, src2, IMPRINT_BUFFER_SIZE);
+	return strncat(g_imprint_buf, src2, IMPRINT_BUFFER_SIZE-strlen(src1)-1);
 }
 
 void str_cpy(str_t *dst, const char *src)
