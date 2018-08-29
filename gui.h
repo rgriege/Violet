@@ -539,6 +539,7 @@ b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_collapse(gui_panel_t *panel);
 void pgui_panel_restore(gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
+b32  pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 
@@ -5569,7 +5570,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		}
 	}
 
-	if (panel->closed || panel->collapsed || panel->tabbed_out) {
+	if (!pgui_panel_content_visible(gui, panel)) {
 		gui->panel = NULL;
 		return false;
 	}
@@ -5702,6 +5703,11 @@ out:
 		gui->mouse_covered_by_panel = true;
 
 	gui->panel = NULL;
+}
+
+b32 pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel)
+{
+	return !(panel->closed || panel->collapsed || panel->tabbed_out);
 }
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
