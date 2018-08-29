@@ -4217,7 +4217,7 @@ void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	assert(gui->current_dropdown.num_items == 0); /* cannot nest menus */
 
-	box2i_from_dims(&box, x, y+h, x+w, y);
+	box2i_from_xywh(&box, x, y, w, h);
 	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
 	                 && gui__box_half_visible(gui, box)
 	                 && !gui->lock;
@@ -4318,7 +4318,7 @@ void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	strcpy(gui->current_dropdown.selected_item_txt, "");
 
 	if (gui->focus_id == id) {
-		/* Add an extra row to the mask (but not the grid) for
+		/* Add an extra row to the render mask (but not the grid) for
 		 * the main button's selected item text */
 		const s32 grid_h = h * num_items;
 		const s32 grid_y = y - grid_h;
@@ -4332,7 +4332,7 @@ void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		gui->focused_dropdown.mask.x = x;
 		gui->focused_dropdown.mask.y = grid_y;
 		gui->focused_dropdown.mask.w = item_w;
-		gui->focused_dropdown.mask.h = grid_h + h;
+		gui->focused_dropdown.mask.h = grid_h; /* skip '+h' for mouse coverage */
 		gui__mask(gui, 0, x, grid_y, item_w, grid_h + h);
 		pgui_grid_begin(gui, &gui->grid_dropdown, x, grid_y, item_w, grid_h);
 		pgui_col(gui, 0, num_items);
