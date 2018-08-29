@@ -361,6 +361,9 @@ b32       gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
 b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb);
 b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
                      gui_drag_callback_t cb, void *udata);
+b32       gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         const char *txt, s32 item_w, u32 num_items);
+void      gui_menu_end(gui_t *gui);
 
 u64       gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void      gui_widget_focus_next(gui_t *gui);
@@ -1840,6 +1843,7 @@ typedef struct gui
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
 	b32 mouse_covered_by_panel;
+	b32 mouse_covered_by_dropdown;
 	b32 mouse_debug;
 	gui__repeat_t mouse_repeat;
 
@@ -2340,7 +2344,8 @@ b32 gui_begin_frame(gui_t *gui)
 	static const v2i g_v2i_2 = { .x=2, .y=2 };
 	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
 
-	gui->mouse_covered_by_panel = false;
+	gui->mouse_covered_by_panel    = false;
+	gui->mouse_covered_by_dropdown = false;
 
 	gui->keys = SDL_GetKeyboardState(&key_cnt);
 	{
@@ -2413,7 +2418,8 @@ b32 gui_begin_frame(gui_t *gui)
 
 		/* catch mouse_covered_by_panel */
 		if (box2i_contains_point(box, gui->mouse_pos)) {
-			gui->mouse_covered_by_panel = true;
+			gui->mouse_covered_by_panel    = true;
+			gui->mouse_covered_by_dropdown = true;
 		} else if (mouse_pressed(gui, ~0)) {
 			gui__defocus_dropdown(gui);
 			gui->focus_id = 0;
@@ -3426,16 +3432,26 @@ void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 static
 b32 gui__allow_new_panel_interaction(const gui_t *gui)
 {
-	return    (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
-	       && gui->active_id == 0
-	       && !gui->mouse_covered_by_panel;
+	return (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
+	    && gui->active_id == 0
+	    && !gui->mouse_covered_by_panel;
+}
+
+static
+b32 gui__mouse_covered(const gui_t *gui)
+{
+	return gui->mouse_covered_by_panel
+	    && !(   gui->mouse_covered_by_dropdown
+	         && gui->current_dropdown.id != 0);
 }
 
 static
 b32 gui__allow_new_interaction(const gui_t *gui)
 {
-	return    gui__allow_new_panel_interaction(gui)
-	       && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
+	return (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
+	    && gui->active_id == 0
+	    && !gui__mouse_covered(gui)
+	    && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
 }
 
 typedef enum gui__widget_render_state
@@ -3841,7 +3857,7 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	}
 
 	if (gui->hot_id == id) {
-		if (!*contains_mouse || gui->mouse_covered_by_panel) {
+		if (!*contains_mouse || gui__mouse_covered(gui)) {
 			gui->hot_id = 0;
 		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->hot_id = 0;
@@ -4170,8 +4186,9 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
 }
 
-void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                        u32 *val, u32 num_items)
+void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         const char *txt, s32 item_w,
+                         u32 *val, u32 num_items)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse, triggered_by_key = false;
@@ -4248,8 +4265,8 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	 * appropriate label will be rendered in gui_dropdown_item */
 	render_state = gui__widget_render_state(gui, id, triggered_by_key,
 	                                        false, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, "", render_state, &gui->style.dropdown);
-	{
+	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
+	if (strlen(txt) == 0) {
 		const gui_element_style_t style
 			= gui__element_style(gui, render_state, &gui->style.dropdown);
 		const gui_element_style_t style_pen = {
@@ -4294,12 +4311,18 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		gui->focused_dropdown.id     = id;
 		gui->focused_dropdown.mask.x = x;
 		gui->focused_dropdown.mask.y = grid_y;
-		gui->focused_dropdown.mask.w = w;
+		gui->focused_dropdown.mask.w = item_w;
 		gui->focused_dropdown.mask.h = grid_h + h;
-		gui__mask(gui, 0, x, grid_y, w, grid_h + h);
-		pgui_grid_begin(gui, &gui->grid_dropdown, x, grid_y, w, grid_h);
+		gui__mask(gui, 0, x, grid_y, item_w, grid_h + h);
+		pgui_grid_begin(gui, &gui->grid_dropdown, x, grid_y, item_w, grid_h);
 		pgui_col(gui, 0, num_items);
 	}
+}
+
+void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                        u32 *val, u32 num_items)
+{
+	gui__dropdown_begin(gui, x, y, w, h, "", w, val, num_items);
 }
 
 static
@@ -4341,6 +4364,22 @@ b32 gui_dropdown_item(gui_t *gui, const char *txt)
 	return chosen;
 }
 
+static
+void gui__dropdown_end_focused(gui_t *gui)
+{
+	/* switch to new scissor (mirroring interrupted scissor) after last item */
+	pgui_grid_end(gui, &gui->grid_dropdown);
+	gui_mask(gui, gui->current_dropdown.prev_mask.x,
+	         gui->current_dropdown.prev_mask.y,
+	         gui->current_dropdown.prev_mask.w,
+	         gui->current_dropdown.prev_mask.h);
+
+	if (gui->current_dropdown.close_at_end) {
+		gui__defocus_dropdown(gui);
+		gui->focus_id = 0;
+	}
+}
+
 void gui_dropdown_end(gui_t *gui)
 {
 	s32 x           = gui->current_dropdown.x;
@@ -4362,21 +4401,8 @@ void gui_dropdown_end(gui_t *gui)
 	}
 	gui_txt_styled(gui, x, y, w, h, txt, &style.text);
 
-	/* switch to new scissor (mirroring interrupted scissor) after last item */
-	if (gui->current_dropdown.id == gui->focus_id) {
-		pgui_grid_end(gui, &gui->grid_dropdown);
-		gui_mask(gui, gui->current_dropdown.prev_mask.x,
-		         gui->current_dropdown.prev_mask.y,
-		         gui->current_dropdown.prev_mask.w,
-		         gui->current_dropdown.prev_mask.h);
-	}
-
-	if (gui->current_dropdown.close_at_end) {
-		assert(gui->current_dropdown.id == gui->focus_id);
-		gui__defocus_dropdown(gui);
-		gui->focus_id = 0;
-	}
-
+	if (gui->current_dropdown.id == gui->focus_id)
+		gui__dropdown_end_focused(gui);
 	memclr(gui->current_dropdown);
 }
 
@@ -4576,6 +4602,28 @@ b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
 	gui__drag_render(gui, *x - r, *y - r, 2 * r, 2 * r, id, ret, &gui->style.drag);
 	gui_style_pop(gui);
 	return ret;
+}
+
+b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                   const char *txt, s32 item_w, u32 num_items)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	u32 val = 0;
+	gui__dropdown_begin(gui, x, y, w, h, txt, item_w, &val, num_items);
+	if (gui->focus_id == id) {
+		return true;
+	} else {
+		memclr(gui->current_dropdown);
+		return false;
+	}
+}
+
+void gui_menu_end(gui_t *gui)
+{
+	/* TODO(rgriege): focus_id -> focus_stack to support nested menus */
+	if (gui->current_dropdown.id == gui->focus_id)
+		gui__dropdown_end_focused(gui);
+	memclr(gui->current_dropdown);
 }
 
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
