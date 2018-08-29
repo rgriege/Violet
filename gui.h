@@ -5582,7 +5582,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	assert(!gui->grid);
 	pgui_grid_begin(gui, &gui->grid_panel,
 	                panel->x + panel->padding.x + panel->scroll.x,
-	                panel->y + panel->padding.y + panel->body_height + panel->scroll.y,
+	                panel->y + panel->body_height + panel->scroll.y - panel->padding.y,
 	                panel->width - panel->padding.x * 2, 0);
 
 	panel->required_dim = v2i_scale(panel->padding, 2);
