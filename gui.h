@@ -2741,6 +2741,9 @@ void gui_end_frame(gui_t *gui)
 
 	assert(gui->grid == NULL);
 
+	if (gui->root_split && !gui->splits_rendered_this_frame)
+		gui_splits_render(gui);
+
 	gui__complete_scissor(gui);
 
 	GL_CHECK(glDisable, GL_DEPTH_TEST);
