@@ -513,7 +513,8 @@ typedef enum gui_panel_flags
 	GUI_PANEL_CLOSABLE    = 0x08,
 	GUI_PANEL_COLLAPSABLE = 0x10,
 	GUI_PANEL_SCROLLBARS  = 0x20,
-	GUI_PANEL_FULL        = 0x3f,
+	GUI_PANEL_DOCKABLE    = 0x40,
+	GUI_PANEL_FULL        = 0x4f,
 } gui_panel_flags_t;
 
 typedef struct gui_panel
@@ -1931,7 +1932,7 @@ typedef struct gui
 
 	/* panels */
 	gui_panel_t *panel;
-	b32 is_dragging_panel;
+	b32 is_dragging_dockable_panel;
 	u32 next_panel_id;
 	s32 next_panel_pri, min_panel_pri;
 } gui_t;
@@ -2144,7 +2145,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->splits_rendered_this_frame = false;
 
 	gui->panel = NULL;
-	gui->is_dragging_panel = false;
+	gui->is_dragging_dockable_panel = false;
 	gui->next_panel_id = 1;
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
@@ -2465,7 +2466,7 @@ b32 gui_begin_frame(gui_t *gui)
 		gui->splits_rendered_this_frame = false;
 	}
 
-	gui->is_dragging_panel = false;
+	gui->is_dragging_dockable_panel = false;
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
 
@@ -5427,7 +5428,7 @@ void gui__split_render_leaf(gui_t *gui, gui_split_t *split)
 	s32 x, y, w, h, xm, ym, s;
 	v2i mouse;
 
-	if (!(gui->is_dragging_panel && gui__has_free_splits(gui, 2)))
+	if (!(gui->is_dragging_dockable_panel && gui__has_free_splits(gui, 2)))
 		return;
 
 	mouse_pos(gui, &mouse.x, &mouse.y);
@@ -5573,6 +5574,7 @@ void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
 	s32 x, y, w, h;
 
 	assert(split);
+	assert(flags & GUI_PANEL_DOCKABLE);
 
 	box2i_to_xywh(split->box, &x, &y, &w, &h);
 	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
@@ -5916,7 +5918,8 @@ void pgui__panel_stop_dragging(gui_t *gui, gui_panel_t *panel)
 {
 	gui_split_t *split, *sp1, *sp2;
 
-	if (   !gui->root_split
+	if (   !(panel->flags & GUI_PANEL_DOCKABLE)
+	    || !gui->root_split
 	    || !gui__has_free_splits(gui, 2)
 	    || !gui__find_split(gui, gui->mouse_pos, &split))
 		return;
@@ -6026,7 +6029,8 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		}
 
 		if (dragging) {
-			gui->is_dragging_panel = true;
+			if (panel->flags & GUI_PANEL_DOCKABLE)
+				gui->is_dragging_dockable_panel = true;
 			if (gui->active_id == 0)
 				pgui__panel_stop_dragging(gui, panel);
 		}
