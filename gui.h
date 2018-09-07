@@ -469,20 +469,18 @@ typedef enum gui_split_flags
 
 typedef struct gui_split
 {
-	b32 vert, leaf;
-	gui_split_flags_t flags;
+	s32 flags;
 	struct gui_split *parent, *sp1, *sp2;
 	r32 sz, default_sz;
 	box2i box;
 } gui_split_t;
 
-void gui_split_init(gui_t *gui, gui_split_t *split,
-                    gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                    gui_split_flags_t flags);
-void gui_vsplit_init(gui_t *gui, gui_split_t *split,
-                     gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                     gui_split_flags_t flags);
-void gui_compute_split_boxes(gui_t *gui);
+void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits);
+b32  gui_split2h(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
+                 gui_split_t **sp2, gui_split_flags_t flags);
+b32  gui_split2v(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
+                 gui_split_t **sp2, gui_split_flags_t flags);
+void gui_splits_compute(gui_t *gui);
 
 
 /* Panels */
@@ -528,14 +526,21 @@ typedef struct gui_panel
 	s32 body_height;
 	s32 pri;
 	struct gui_panel *prev, *next;
-	gui_split_t split;
+	gui_split_t *split;
 	b32 closed;
 	b32 collapsed;
 	b32 tabbed_out;
 } gui_panel_t;
 
-void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
+void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
+                     s32 x, s32 y, s32 w, s32 h,
                      const char *title, gui_panel_flags_t flags);
+void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
+                              s32 w, s32 h,
+                              const char *title, gui_panel_flags_t flags);
+void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
+                              gui_split_t *split,
+                              const char *title, gui_panel_flags_t flags);
 void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_collapse(gui_panel_t *panel);
@@ -544,6 +549,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 b32  pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
+int  pgui_panel_sortp(const void *lhs, const void *rhs);
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                              const gui_element_style_t *style);
@@ -731,8 +737,6 @@ int __builtin_popcount(u32 x)
 }
 #endif // _M_X64
 #endif // _MSC_VER
-
-static void gui__split(gui_t *gui, gui_split_t *split, b32 render);
 
 static const char *g_vertex_shader;
 static const char *g_fragment_shader;
@@ -1907,13 +1911,19 @@ typedef struct gui
 		} mask;
 	} focused_dropdown;
 
-	/* layout */
+	/* grid */
 	gui_grid_t grid_panel;
 	gui_grid_t grid_dropdown;
 	gui_grid_t *grid;
 
-	/* splits & panels */
+	/* splits */
+	gui_split_t *splits;
+	u32 splits_cap;
+	u32 splits_cnt;
 	gui_split_t *root_split;
+	b32 splits_rendered_this_frame;
+
+	/* panels */
 	gui_panel_t *panel;
 	u32 next_panel_id;
 	s32 next_panel_pri, min_panel_pri;
@@ -2121,7 +2131,12 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->grid = NULL;
 
+	gui->splits = NULL;
+	gui->splits_cap = 0;
+	gui->splits_cnt = 0;
 	gui->root_split = NULL;
+	gui->splits_rendered_this_frame = false;
+
 	gui->panel = NULL;
 	gui->next_panel_id = 1;
 	gui->next_panel_pri = 0;
@@ -2437,8 +2452,8 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->use_default_cursor = true;
 	if (gui->root_split) {
-		box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
-		gui__split(gui, gui->root_split, true);
+		gui_splits_compute(gui);
+		gui->splits_rendered_this_frame = false;
 	}
 
 	gui->next_panel_pri = 0;
@@ -5149,41 +5164,74 @@ void pgui_menu_end(gui_t *gui)
 	gui_menu_end(gui);
 }
 
-void gui__split_init(gui_t *gui, gui_split_t *split,
-                     gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                     gui_split_flags_t flags, b32 vert)
+#define GUI_SPLIT_VERTICAL (GUI_SPLIT_FULL + 1)
+
+void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits)
 {
-	if (!gui->root_split) {
-		gui->root_split = split;
-		split->parent = NULL;
-	} else {
-		assert(split->parent);
-	}
+	gui->splits     = splits;
+	gui->splits_cap = num_splits;
+	gui->splits_cnt = 0;
+}
+
+void gui__split_init(gui_split_t *split, gui_split_flags_t flags,
+                     gui_split_t *parent)
+{
 	split->flags      = flags;
-	split->vert       = vert;
-	split->leaf       = false;
+	split->parent     = parent;
+	split->sp1        = NULL;
+	split->sp2        = NULL;
+	split->sz         = 0;
+	split->default_sz = 0;
+	box2i_from_xywh(&split->box, 0, 0, 0, 0);
+}
+
+b32 gui__split2(gui_t *gui, gui_split_t *split_, gui_split_t **psp1, r32 sz,
+                gui_split_t **psp2, gui_split_flags_t flags)
+{
+	gui_split_t *split, *sp1 = NULL, *sp2 = NULL;
+	b32 success = false;
+
+	if (gui->splits_cnt + !gui->root_split + 2 > gui->splits_cap)
+		goto out;
+
+	if (!gui->root_split) {
+		gui->root_split = &gui->splits[gui->splits_cnt++];
+		gui__split_init(gui->root_split, 0, NULL);
+	} else if (split_) {
+		assert(split_->parent);
+	}
+
+	split = split_ ? split_ : &gui->splits[gui->splits_cnt-1];
+
+	sp1 = &gui->splits[gui->splits_cnt++];
+	sp2 = &gui->splits[gui->splits_cnt++];
+
+	split->flags      = flags;
 	split->sp1        = sp1;
 	split->sp2        = sp2;
 	split->sz         = sz;
 	split->default_sz = sz;
-	sp1->parent       = split;
-	sp2->parent       = split;
-	sp1->leaf         = true;
-	sp2->leaf         = true;
+	gui__split_init(sp1, 0, split);
+	gui__split_init(sp2, 0, split);
+
+out:
+	if (psp1)
+		*psp1 = sp1;
+	if (psp2)
+		*psp2 = sp2;
+	return success;
 }
 
-void gui_split_init(gui_t *gui, gui_split_t *split,
-                    gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                    gui_split_flags_t flags)
+b32 gui_split2h(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
+                gui_split_t **sp2, gui_split_flags_t flags)
 {
-	gui__split_init(gui, split, sp1, sz, sp2, flags, false);
+	return gui__split2(gui, split, sp1, sz, sp2, flags);
 }
 
-void gui_vsplit_init(gui_t *gui, gui_split_t *split,
-                     gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                     gui_split_flags_t flags)
+b32 gui_split2v(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
+                gui_split_t **sp2, gui_split_flags_t flags)
 {
-	gui__split_init(gui, split, sp1, sz, sp2, flags, true);
+	return gui__split2(gui, split, sp1, sz, sp2, flags | GUI_SPLIT_VERTICAL);
 }
 
 static
@@ -5202,22 +5250,29 @@ s32 gui__split_dim(r32 sz, r32 w)
 }
 
 static
-void gui__split(gui_t *gui, gui_split_t *split, b32 render)
+b32 gui__split_is_leaf(const gui_split_t *split)
 {
-	s32 x, y, w, h, sz1;
+	return !split->sp1 && !split->sp2;
+}
+
+static
+void gui__split_render(gui_t *gui, gui_split_t *split, b32 *changed)
+{
+	s32 x, y, w, h;
 
 	assert(split);
-	assert(!split->leaf);
+	assert(!gui__split_is_leaf(split));
 
 	box2i_to_xywh(split->box, &x, &y, &w, &h);
 
 	/* checking use_default_cursor ensures only 1 resize happens per frame */
 	if (   (split->flags & GUI_SPLIT_RESIZABLE)
 	    && gui->use_default_cursor
-	    && render) {
-		gui_style_push(gui, drag.hot.bg_color, gui->style.drag.inactive.bg_color);
-		gui_style_push(gui, drag.active.bg_color, gui->style.drag.inactive.bg_color);
-		if (split->vert) {
+	    && !gui->mouse_covered_by_panel) {
+		gui_style_push(gui, drag.inactive.bg_color, g_nocolor);
+		gui_style_push(gui, drag.hot.bg_color, g_nocolor);
+		gui_style_push(gui, drag.active.bg_color, g_nocolor);
+		if (split->flags & GUI_SPLIT_VERTICAL) {
 			const s32 orig_drag_x =   x - GUI_SPLIT_RESIZE_BORDER / 2
 			                        + gui__split_dim(split->sz, w);
 			s32 drag_x = orig_drag_x;
@@ -5227,6 +5282,7 @@ void gui__split(gui_t *gui, gui_split_t *split, b32 render)
 				else
 					split->sz = (r32)(drag_x + GUI_SPLIT_RESIZE_BORDER / 2 - x) / w;
 				split->default_sz = split->sz;
+				*changed = true;
 			}
 		} else {
 			const s32 orig_drag_y =   y + h - GUI_SPLIT_RESIZE_BORDER / 2
@@ -5238,58 +5294,81 @@ void gui__split(gui_t *gui, gui_split_t *split, b32 render)
 				else
 					split->sz = (r32)(y + h - drag_y - GUI_SPLIT_RESIZE_BORDER / 2) / h;
 				split->default_sz = split->sz;
+				*changed = true;
 			}
 		}
 		gui_style_pop(gui);
 		gui_style_pop(gui);
+		gui_style_pop(gui);
 	}
 
-	sz1 = gui__split_dim(split->sz, split->vert ? w : h);
+	if (split->flags & GUI_SPLIT_VERTICAL) {
+		const s32 xm = split->sp1->box.max.x;
+		gui_line_styled(gui, xm, y, xm, y + h, &gui->style.split);
+	} else {
+		const s32 ym = split->sp1->box.min.y;
+		gui_line_styled(gui, x, ym, x + w, ym, &gui->style.split);
+	}
+
+	if (!gui__split_is_leaf(split->sp1))
+		gui__split_render(gui, split->sp1, changed);
+	if (!gui__split_is_leaf(split->sp2))
+		gui__split_render(gui, split->sp2, changed);
+}
+
+static
+void gui__split_compute(gui_t *gui, gui_split_t *split)
+{
+	s32 x, y, w, h, sz1;
+
+	assert(split);
+	assert(!gui__split_is_leaf(split));
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+
+	sz1 = gui__split_dim(split->sz, (split->flags & GUI_SPLIT_VERTICAL) ? w : h);
 	split->sp1->box = split->box;
 	split->sp2->box = split->box;
 
-	if (split->vert) {
+	if (split->flags & GUI_SPLIT_VERTICAL) {
 		const s32 xm = split->box.min.x + sz1;
 		split->sp1->box.max.x = xm;
 		split->sp2->box.min.x = xm;
-		if (render)
-			gui_line_styled(gui, xm, split->box.min.y, xm, split->box.max.y,
-			                &gui->style.split);
 	} else {
 		const s32 ym = split->box.max.y - sz1;
 		split->sp1->box.min.y = ym;
 		split->sp2->box.max.y = ym;
-		if (render)
-			gui_line_styled(gui, split->box.min.x, ym, split->box.max.x, ym,
-			                &gui->style.split);
 	}
 
-	if (!split->sp1->leaf)
-		gui__split(gui, split->sp1, render);
-	if (!split->sp2->leaf)
-		gui__split(gui, split->sp2, render);
+	if (!gui__split_is_leaf(split->sp1))
+		gui__split_compute(gui, split->sp1);
+	if (!gui__split_is_leaf(split->sp2))
+		gui__split_compute(gui, split->sp2);
 }
 
-void gui_compute_split_boxes(gui_t *gui)
+void gui_splits_compute(gui_t *gui)
 {
 	assert(gui->root_split);
 	box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
-	gui__split(gui, gui->root_split, false);
+	gui__split_compute(gui, gui->root_split);
 }
 
-void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
-                     const char *title, gui_panel_flags_t flags)
+void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
+                      s32 x, s32 y, s32 w, s32 h,
+                      const char *title, gui_panel_flags_t flags)
 {
+	assert(id <= GUI__MAX_PANEL_ID);
+	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
+
 	panel->x = x;
 	panel->y = y;
 	panel->width = w;
 	panel->height = h;
-	panel->id = ++gui->next_panel_id;
+	panel->id = id ? id : ++gui->next_panel_id;
 	assert(gui->next_panel_id <= GUI__MAX_PANEL_ID);
 
 	panel->title = title;
 	panel->flags = flags;
-	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
 
 	panel->scroll = g_v2i_zero;
 	panel->scroll_rate.x = GUI_SCROLL_RATE;
@@ -5298,13 +5377,41 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
 
 	panel->prev   = NULL;
 	panel->next   = NULL;
-	panel->split.leaf = false;
+	panel->split  = NULL;
 
-	panel->closed = false;
-	panel->collapsed = false;
+	panel->closed     = false;
+	panel->collapsed  = false;
 	panel->tabbed_out = false;
+}
 
+void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
+                     s32 x, s32 y, s32 w, s32 h,
+                     const char *title, gui_panel_flags_t flags)
+{
+	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
 	pgui_panel_to_front(gui, panel);
+}
+
+void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
+                              s32 w, s32 h,
+                              const char *title, gui_panel_flags_t flags)
+{
+	const s32 x = (2*gui->win_halfdim.x - w)/2;
+	const s32 y = (2*gui->win_halfdim.y - h)/2;
+	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
+}
+
+void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
+                              gui_split_t *split,
+                              const char *title, gui_panel_flags_t flags)
+{
+	s32 x, y, w, h;
+
+	assert(split);
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
+	panel->split = split;
 }
 
 static
@@ -5363,7 +5470,7 @@ void pgui__panel_resize(gui_t *gui, gui_panel_t *panel)
 	s32 resize_delta;
 
 	if (   (panel->flags & GUI_PANEL_RESIZABLE)
-	    && !panel->split.leaf
+	    && !panel->split
 	    && !panel->collapsed
 	    && gui->use_default_cursor) {
 		gui_style_push(gui, drag, g_gui_style_invis.drag);
@@ -5428,10 +5535,10 @@ static
 void pgui__panel_collapse_toggle(gui_panel_t *panel)
 {
 	panel->collapsed = !panel->collapsed;
-	if (panel->split.leaf && panel->split.parent) {
+	if (panel->split && panel->split->parent) {
 		/* TODO(rgriege): allow collapsing second child in split */
-		gui_split_t *parent = panel->split.parent;
-		assert(&panel->split == parent->sp1);
+		gui_split_t *parent = panel->split->parent;
+		assert(panel->split == parent->sp1);
 		parent->sz = panel->collapsed
 		           ? GUI_PANEL_TITLEBAR_HEIGHT : parent->default_sz;
 	}
@@ -5448,7 +5555,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 
 	y = panel->y + panel->height - dim;
 
-	if ((panel->flags & GUI_PANEL_DRAGGABLE) && !panel->split.leaf) {
+	if ((panel->flags & GUI_PANEL_DRAGGABLE) && !panel->split) {
 		*dragging = gui__drag_logic(gui, &drag_id, &panel->x, &y, dim, dim,
 		                            MB_LEFT, gui__drag_default_callback, NULL);
 		if (*dragging)
@@ -5467,7 +5574,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	rw = 0;
 	if (panel->flags & GUI_PANEL_COLLAPSABLE)
 		rw += dim;
-	if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf)
+	if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split)
 		rw += dim;
 
 	tab_count = 0;
@@ -5514,7 +5621,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 		rx += dim;
 	}
 
-	if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf) {
+	if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split) {
 		gui_style_push(gui, btn, gui->style.panel.close);
 		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
 			panel->closed = true;
@@ -5529,6 +5636,14 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	assert(!gui->panel);
 
+	if (panel->split && !gui->splits_rendered_this_frame) {
+		b32 changed = false;
+		gui__split_render(gui, gui->root_split, &changed);
+		if (changed)
+			gui_splits_compute(gui);
+		gui->splits_rendered_this_frame = true;
+	}
+
 	if (panel->prev) {
 		gui_panel_t *first = panel->prev;
 		while (first->prev)
@@ -5540,7 +5655,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->height      = first->height;
 		panel->padding     = first->padding;
 		panel->body_height = first->body_height;
-		memcpy(&panel->split, &first->split, sizeof(first->split));
+		panel->split       = first->split;
 		panel->closed      = first->closed;
 		panel->collapsed   = first->collapsed;
 
@@ -5551,8 +5666,8 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 		gui->panel = panel;
 
-		if (panel->split.leaf)
-			box2i_to_xywh(panel->split.box, &panel->x, &panel->y,
+		if (panel->split)
+			box2i_to_xywh(panel->split->box, &panel->x, &panel->y,
 			              &panel->width, &panel->height);
 
 		if (gui->style.panel.padding >= 1.f) {
@@ -5742,6 +5857,13 @@ int pgui_panel_sort(const void *lhs_, const void *rhs_)
 {
 	const gui_panel_t *lhs = lhs_, *rhs = rhs_;
 	return lhs->pri - rhs->pri;
+}
+
+int pgui_panel_sortp(const void *lhs_, const void *rhs_)
+{
+	const gui_panel_t *const *lhs = lhs_;
+	const gui_panel_t *const *rhs = rhs_;
+	return pgui_panel_sort(*lhs, *rhs);
 }
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
