@@ -4828,7 +4828,7 @@ void pgui__strip(gui_t *gui, b32 vertical, s32 minor_dim,
 	}
 	if (major_dim_inherited) {
 		gui__strip_set_dim(gui, strip, 0, vertical);
-		assert(strip->dim.d[vertical] > major_dim);
+		assert(strip->dim.d[vertical] >= major_dim);
 	} else {
 		gui__strip_set_dim(gui, strip, major_dim, vertical);
 	}
