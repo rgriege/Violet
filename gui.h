@@ -2465,6 +2465,7 @@ b32 gui_begin_frame(gui_t *gui)
 		gui->splits_rendered_this_frame = false;
 	}
 
+	gui->is_dragging_panel = false;
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
 
