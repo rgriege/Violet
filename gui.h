@@ -5856,6 +5856,12 @@ void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
 int pgui_panel_sort(const void *lhs_, const void *rhs_)
 {
 	const gui_panel_t *lhs = lhs_, *rhs = rhs_;
+	if (lhs->split && rhs->split)
+		return 0;
+	else if (lhs->split)
+		return 1;
+	else if (rhs->split)
+		return -1;
 	return lhs->pri - rhs->pri;
 }
 
