@@ -2349,18 +2349,20 @@ b32 gui_begin_frame(gui_t *gui)
 	}
 
 	gui->mouse_pos_last = gui->mouse_pos;
+
 	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
-	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
-		gui->mouse_pos_press = gui->mouse_pos;
-	gui__repeat_update(&gui->mouse_repeat, gui->mouse_btn,
-	                   __builtin_popcount(gui->mouse_btn),
-	                   gui->frame_time_milli);
 
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
 	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
 	static const v2i g_v2i_2 = { .x=2, .y=2 };
 	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
+
+	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
+		gui->mouse_pos_press = gui->mouse_pos;
+	gui__repeat_update(&gui->mouse_repeat, gui->mouse_btn,
+	                   __builtin_popcount(gui->mouse_btn),
+	                   gui->frame_time_milli);
 
 	gui->mouse_covered_by_panel    = false;
 	gui->mouse_covered_by_dropdown = false;
