@@ -473,6 +473,7 @@ typedef struct gui_split
 	struct gui_split *parent, *sp1, *sp2;
 	r32 sz, default_sz;
 	box2i box;
+	struct gui_panel *panel;
 } gui_split_t;
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits);
@@ -542,9 +543,12 @@ void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
                               gui_split_t *split,
                               const char *title, gui_panel_flags_t flags);
 void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
+void pgui_panel_select_tab(gui_panel_t *panel);
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_collapse(gui_panel_t *panel);
 void pgui_panel_restore(gui_panel_t *panel);
+void pgui_panel_open(gui_t *gui, gui_panel_t *panel);
+void pgui_panel_close(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 b32  pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
@@ -1925,6 +1929,7 @@ typedef struct gui
 
 	/* panels */
 	gui_panel_t *panel;
+	b32 is_dragging_panel;
 	u32 next_panel_id;
 	s32 next_panel_pri, min_panel_pri;
 } gui_t;
@@ -2138,6 +2143,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->splits_rendered_this_frame = false;
 
 	gui->panel = NULL;
+	gui->is_dragging_panel = false;
 	gui->next_panel_id = 1;
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
@@ -4667,17 +4673,20 @@ void gui_menu_end(gui_t *gui)
 #define GUI__SCISSOR_PANEL_ID (UINT_MAX-1)
 #define GUI__MAX_PANEL_ID     (UINT_MAX-2)
 
+u64 gui__widget_id(const gui_t *gui, u32 base_id, s32 x, s32 y)
+{
+	return (((u64)x) << 48) | (((u64)y) << 32) | base_id;
+}
+
 u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 {
-	u32 base_id;
 	if (   gui->current_dropdown.id != 0
 	    && gui->current_dropdown.id == gui->focused_dropdown.id)
-		base_id = GUI__SCISSOR_PANEL_ID;
+		return gui__widget_id(gui, GUI__SCISSOR_PANEL_ID, x, y);
 	else if (gui->panel)
-		base_id = gui->panel->id;
+		return gui__widget_id(gui, gui->panel->id, x, y);
 	else
-		base_id = GUI__DEFAULT_PANEL_ID;
-	return (((u64)x) << 48) | (((u64)y) << 32) | base_id;
+		return gui__widget_id(gui, GUI__DEFAULT_PANEL_ID, x, y);
 }
 
 void gui_widget_focus_next(gui_t *gui)
@@ -5185,6 +5194,7 @@ void gui__split_init(gui_split_t *split, gui_split_flags_t flags,
 	split->sz         = 0;
 	split->default_sz = 0;
 	box2i_from_xywh(&split->box, 0, 0, 0, 0);
+	split->panel      = NULL;
 }
 
 b32 gui__split2(gui_t *gui, gui_split_t *split_, gui_split_t **psp1, r32 sz,
@@ -5258,13 +5268,74 @@ b32 gui__split_is_leaf(const gui_split_t *split)
 }
 
 static
-void gui__split_render(gui_t *gui, gui_split_t *split, b32 *changed)
+b32 gui__find_split_from(gui_split_t *split, v2i point, gui_split_t **splitp)
+{
+	if (!gui__split_is_leaf(split)) {
+		return gui__find_split_from(split->sp1, point, splitp)
+		    || gui__find_split_from(split->sp2, point, splitp);
+	} else if (box2i_contains_point(split->box, point)) {
+		*splitp = split;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static
+b32 gui__find_split(gui_t *gui, v2i point, gui_split_t **split)
+{
+	return gui__find_split_from(gui->root_split, point, split);
+}
+
+enum gui__split_division_type
+{
+	GUI__SPLIT_DIVISION_NONE,
+	GUI__SPLIT_DIVISION_CENTER,
+	GUI__SPLIT_DIVISION_LEFT,
+	GUI__SPLIT_DIVISION_RIGHT,
+	GUI__SPLIT_DIVISION_TOP,
+	GUI__SPLIT_DIVISION_BOTTOM,
+};
+
+static
+s32 gui__split_division(const gui_split_t *split, v2i point)
+{
+	s32 x, y, w, h, xm, ym, dx, dy, s;
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+
+	xm = x+w/2;
+	ym = y+h/2;
+	dx = abs(point.x - xm);
+	dy = abs(point.y - ym);
+	s = min(w/4, h/4)/2;
+	if (dx < s && dy < s) {
+		return GUI__SPLIT_DIVISION_CENTER;
+	} else if (dx > dy) {
+		if (dx > 2*s)
+			return GUI__SPLIT_DIVISION_NONE;
+		else if (point.x > xm)
+			return GUI__SPLIT_DIVISION_LEFT;
+		else
+			return GUI__SPLIT_DIVISION_RIGHT;
+	} else {
+		if (dy > 2*s)
+			return GUI__SPLIT_DIVISION_NONE;
+		else if (point.y > ym)
+			return GUI__SPLIT_DIVISION_TOP;
+		else
+			return GUI__SPLIT_DIVISION_BOTTOM;
+	}
+	return GUI__SPLIT_DIVISION_NONE;
+}
+
+static
+void gui__split_render(gui_t *gui, gui_split_t *split, b32 *changed);
+
+static
+void gui__split_render_branch(gui_t *gui, gui_split_t *split, b32 *changed)
 {
 	s32 x, y, w, h;
-
-	assert(split);
-	assert(!gui__split_is_leaf(split));
-
 	box2i_to_xywh(split->box, &x, &y, &w, &h);
 
 	/* checking use_default_cursor ensures only 1 resize happens per frame */
@@ -5312,10 +5383,56 @@ void gui__split_render(gui_t *gui, gui_split_t *split, b32 *changed)
 		gui_line_styled(gui, x, ym, x + w, ym, &gui->style.split);
 	}
 
-	if (!gui__split_is_leaf(split->sp1))
+	if (split->sp1)
 		gui__split_render(gui, split->sp1, changed);
-	if (!gui__split_is_leaf(split->sp2))
+	if (split->sp2)
 		gui__split_render(gui, split->sp2, changed);
+}
+
+static
+void gui__split_render_leaf(gui_t *gui, gui_split_t *split)
+{
+	s32 x, y, w, h, xm, ym, s;
+	v2i mouse;
+
+	if (!(gui->is_dragging_panel && gui->splits_cnt + 2 <= gui->splits_cap))
+		return;
+
+	mouse_pos(gui, &mouse.x, &mouse.y);
+	if (!box2i_contains_point(split->box, mouse))
+		return;
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+	xm = x+w/2;
+	ym = y+h/2;
+	s = min(w/4, h/4)/2;
+
+	switch (gui__split_division(split, mouse)) {
+	case GUI__SPLIT_DIVISION_NONE:
+	break;
+	case GUI__SPLIT_DIVISION_CENTER:
+		gui_rect(gui, xm-s, ym-s, 2*s, 2*s, g_nocolor, g_white);
+	break;
+	case GUI__SPLIT_DIVISION_LEFT:
+	case GUI__SPLIT_DIVISION_RIGHT:
+		gui_line(gui, xm, y, xm, y + h, 1, g_white);
+	break;
+	case GUI__SPLIT_DIVISION_TOP:
+	case GUI__SPLIT_DIVISION_BOTTOM:
+		gui_line(gui, x, ym, x + w, ym, 1, g_white);
+	break;
+	}
+}
+
+static
+void gui__split_render(gui_t *gui, gui_split_t *split, b32 *changed)
+{
+	assert(split);
+
+	if (!gui__split_is_leaf(split))
+		gui__split_render_branch(gui, split, changed);
+	else
+		gui__split_render_leaf(gui, split);
 }
 
 static
@@ -5414,6 +5531,7 @@ void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
 	box2i_to_xywh(split->box, &x, &y, &w, &h);
 	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
 	panel->split = split;
+	split->panel = panel;
 }
 
 static
@@ -5440,6 +5558,48 @@ void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab)
 	last->next = tab;
 	tab->prev = last;
 	tab->tabbed_out = true;
+}
+
+void pgui_panel_remove_tab(gui_t *gui, gui_panel_t *panel)
+{
+	gui_panel_t *next_tab = NULL;
+
+	/* remove from neighbor linked list */
+	if (panel->prev) {
+		panel->prev->next = panel->next;
+		next_tab = panel->prev;
+	}
+	if (panel->next) {
+		panel->next->prev = panel->prev;
+		next_tab = panel->next;
+	}
+
+	if (!panel->tabbed_out && next_tab)
+		pgui_panel_select_tab(next_tab);
+
+	/* remove from container split */
+	if (panel->split) {
+		panel->split->panel = next_tab;
+		if (!next_tab) {
+			/* TODO(rgriege): remove split */
+		}
+		panel->split = NULL;
+	}
+
+	/* reset data */
+	panel->prev = NULL;
+	panel->next = NULL;
+	panel->tabbed_out = false;
+}
+
+void pgui_panel_select_tab(gui_panel_t *panel)
+{
+	gui_panel_t *first = panel;
+	while (first->prev)
+		first = first->prev;
+	for (gui_panel_t *p = first; p; p = p->next)
+		p->tabbed_out = true;
+	panel->tabbed_out = false;
 }
 
 static
@@ -5547,6 +5707,31 @@ void pgui__panel_collapse_toggle(gui_panel_t *panel)
 }
 
 static
+s32 box2i_to_point_dist_sq(box2i box, v2i point)
+{
+	s32 dx, dy;
+
+	if (box2i_contains_point(box, point))
+		return 0;
+
+	if (point.x <= box.min.x)
+		dx = box.min.x - point.x;
+	else if (point.x >= box.max.x)
+		dx = point.x - box.max.x;
+	else
+		dx = 0;
+
+	if (point.y <= box.min.y)
+		dy = box.min.y - point.y;
+	else if (point.y >= box.max.y)
+		dy = point.y - box.max.y;
+	else
+		dy = 0;
+
+	return dx*dx + dy*dy;
+}
+
+static
 void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 {
 	const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
@@ -5554,6 +5739,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	u64 drag_id = ~0;
 	s32 rw, rx;
 	s32 tab_count;
+	gui_panel_t *panel_to_remove_from_tabs = NULL;
 
 	y = panel->y + panel->height - dim;
 
@@ -5597,11 +5783,25 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 		tab_idx = 0;
 		gui_style_push(gui, select, gui->style.panel.tab);
 		for (gui_panel_t *p = panel; p; p = p->next) {
-			if (gui_select(gui, panel->x + dim + tab_idx * tab_dim, y,
-			               tab_dim, dim, p->title, &selected_tab_idx, (u32)tab_idx)) {
-				for (gui_panel_t *px = panel; px; px = px->next)
-					px->tabbed_out = true;
-				p->tabbed_out = false;
+			const s32 x = panel->x + dim + tab_idx * tab_dim;
+			const u64 select_id = gui_widget_id(gui, x, y);
+			if (gui_select(gui, x, y, tab_dim, dim, p->title,
+			               &selected_tab_idx, (u32)tab_idx)) {
+				pgui_panel_select_tab(p);
+			} else if (   (p->flags & GUI_PANEL_DRAGGABLE)
+			           && select_id == gui->active_id) {
+				box2i box;
+				box2i_from_xywh(&box, x, y, tab_dim, dim);
+				if (box2i_to_point_dist_sq(box, gui->mouse_pos) > dim*dim) {
+					s32 drag_y;
+					gui->drag_offset.x = -dim/2;
+					gui->drag_offset.y = -dim/2;
+					p->x   = gui->mouse_pos.x - dim/2;
+					drag_y = gui->mouse_pos.y - dim/2;
+					p->y   = drag_y - p->height + dim;
+					gui->active_id = gui__widget_id(gui, p->id, p->x, drag_y);
+					panel_to_remove_from_tabs = p;
+				}
 			}
 			++tab_idx;
 		}
@@ -5629,6 +5829,13 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 			panel->closed = true;
 		gui_style_pop(gui);
 		rx += dim;
+	}
+
+	if (panel_to_remove_from_tabs) {
+		pgui_panel_remove_tab(gui, panel_to_remove_from_tabs);
+		pgui_panel_to_front(gui, panel_to_remove_from_tabs);
+		if (panel_to_remove_from_tabs == panel)
+			pgui__panel_titlebar(gui, panel, dragging);
 	}
 }
 
@@ -5685,6 +5892,24 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		if (panel->flags & GUI_PANEL_TITLEBAR) {
 			pgui__panel_titlebar(gui, panel, &dragging);
 			panel->body_height -= GUI_PANEL_TITLEBAR_HEIGHT;
+		}
+
+		if (dragging) {
+			gui->is_dragging_panel = true;
+			if (gui->active_id == 0) {
+				gui_split_t *split;
+				if (   gui__find_split(gui, gui->mouse_pos, &split)
+				    &&    gui__split_division(split, gui->mouse_pos)
+				       == GUI__SPLIT_DIVISION_CENTER) {
+					if (split->panel) {
+						pgui_panel_add_tab(split->panel, panel);
+						pgui_panel_select_tab(panel);
+					} else {
+						panel->split = split;
+						split->panel = panel;
+					}
+				}
+			}
 		}
 
 		if (panel->collapsed) {
@@ -5747,6 +5972,21 @@ void pgui_panel_restore(gui_panel_t *panel)
 	assert(panel->flags & GUI_PANEL_COLLAPSABLE);
 	if (panel->collapsed)
 		pgui__panel_collapse_toggle(panel);
+}
+
+void pgui_panel_open(gui_t *gui, gui_panel_t *panel)
+{
+	assert(panel->closed);
+	panel->closed = false;
+	pgui_panel_to_front(gui, panel);
+}
+
+void pgui_panel_close(gui_t *gui, gui_panel_t *panel)
+{
+	assert(panel->flags & GUI_PANEL_CLOSABLE);
+	assert(!panel->closed);
+	panel->closed = true;
+	pgui_panel_remove_tab(gui, panel);
 }
 
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
@@ -5858,13 +6098,12 @@ void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
 int pgui_panel_sort(const void *lhs_, const void *rhs_)
 {
 	const gui_panel_t *lhs = lhs_, *rhs = rhs_;
-	if (lhs->split && rhs->split)
-		return 0;
+	if ((lhs->split == rhs->split) || (lhs->split && rhs->split))
+		return lhs->pri - rhs->pri;
 	else if (lhs->split)
 		return 1;
-	else if (rhs->split)
+	else
 		return -1;
-	return lhs->pri - rhs->pri;
 }
 
 int pgui_panel_sortp(const void *lhs_, const void *rhs_)
