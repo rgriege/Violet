@@ -354,7 +354,7 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 /* Profile */
 
 #ifdef PROFILER_ENABLED
-thread_local u32 g_profiler_depth;
+extern thread_local u32 g_profiler_depth;
 #define PROFILE_BLOCK_BEGIN(name) \
 	{ \
 		timepoint_t name##begin = time_current(); \
