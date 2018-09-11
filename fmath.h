@@ -90,6 +90,7 @@ FMDEF void v2f_mul_eq(v2f *lhs, v2f rhs);
 FMDEF v2f  v2f_div(v2f lhs, v2f rhs);
 FMDEF void v2f_div_eq(v2f *lhs, v2f rhs);
 FMDEF v2f  v2f_dir(v2f src, v2f dst);
+FMDEF v2f  v2f_fmadd(v2f v, v2f dir, r32 s);
 FMDEF v2f  v2f_rot(v2f v, r32 radians);
 FMDEF r32  v2f_dot(v2f lhs, v2f rhs);
 FMDEF r32  v2f_cross(v2f lhs, v2f rhs);
@@ -414,6 +415,11 @@ FMDEF void v2f_div_eq(v2f *lhs, v2f rhs)
 FMDEF v2f v2f_dir(v2f src, v2f dst)
 {
 	return v2f_normalize(v2f_sub(dst, src));
+}
+
+FMDEF v2f v2f_fmadd(v2f v, v2f dir, r32 s)
+{
+	return v2f_add(v, v2f_scale(dir, s));
 }
 
 FMDEF v2f v2f_rot(v2f v, r32 radians)
