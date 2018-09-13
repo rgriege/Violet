@@ -382,6 +382,11 @@ void      gui_lock_if(gui_t *gui, b32 cond, u32 *restore_val);
 void      gui_lock_restore(gui_t *gui, u32 val);
 
 
+/* Window */
+
+void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
+
+
 /* Grid layout */
 
 #define GUI_GRID_FLEX 0
@@ -1859,6 +1864,7 @@ typedef struct gui
 	v2i mouse_pos_press;
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
+	b32 mouse_use_precise_input;
 	b32 mouse_covered_by_panel;
 	b32 mouse_covered_by_dropdown;
 	b32 mouse_debug;
@@ -2102,8 +2108,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		while (SDL_PollEvent(&evt) == 1); /* must be run before SDL_GetWindowSize */
 	}
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
-	static const v2i g_v2i_2 = { .x=2, .y=2 };
-	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
+	v2i_scale_inv_eq(&gui->win_halfdim, 2);
 
 	gui->creation_time = time_current();
 	gui->frame_start_time = gui->creation_time;
@@ -2121,6 +2126,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_pos_last = gui->mouse_pos;
 	gui->mouse_pos_press = gui->mouse_pos;
+	gui->mouse_use_precise_input = false;
 	gui->mouse_debug = false;
 	gui__repeat_init(&gui->mouse_repeat);
 
@@ -2208,11 +2214,9 @@ void gui_destroy(gui_t *gui)
 
 void gui_move(const gui_t *gui, s32 dx, s32 dy)
 {
-	const v2i dp = { .x = dx, .y = dy };
-	v2i pos;
-	SDL_GetWindowPosition(gui->window, &pos.x, &pos.y);
-	v2i_add_eq(&pos, dp);
-	SDL_SetWindowPosition(gui->window, pos.x, pos.y);
+	s32 x, y;
+	SDL_GetWindowPosition(gui->window, &x, &y);
+	SDL_SetWindowPosition(gui->window, x + dx, y + dy);
 }
 
 void gui_dim(const gui_t *gui, s32 *x, s32 *y)
@@ -2358,15 +2362,20 @@ b32 gui_begin_frame(gui_t *gui)
 		}
 	}
 
-	gui->mouse_pos_last = gui->mouse_pos;
-
-	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
-	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
-
 	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
-	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
-	static const v2i g_v2i_2 = { .x=2, .y=2 };
-	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
+	v2i_scale_inv_eq(&gui->win_halfdim, 2);
+
+	gui->mouse_pos_last = gui->mouse_pos;
+	if (gui->mouse_use_precise_input) {
+		v2i w, gm;
+		SDL_GetWindowPosition(gui->window, &w.x, &w.y);
+		gui->mouse_btn |= SDL_GetGlobalMouseState(&gm.x, &gm.y);
+		gui->mouse_pos = v2i_sub(gm, w);
+	} else {
+		gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
+	}
+	gui->mouse_pos.y = 2*gui->win_halfdim.y - gui->mouse_pos.y;
+	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
 
 	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
 		gui->mouse_pos_press = gui->mouse_pos;
@@ -4751,6 +4760,29 @@ void gui_lock_if(gui_t *gui, b32 cond, u32 *restore_val)
 void gui_lock_restore(gui_t *gui, u32 val)
 {
 	gui->lock = val;
+}
+
+
+/* Window */
+
+static
+void gui__window_drag_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                         s32 offset_x, s32 offset_y, void *udata) {}
+
+void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	gui_style_push(gui, drag, g_gui_style_invis.drag);
+	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__window_drag_cb, NULL)) {
+		gui->mouse_use_precise_input = true;
+	  if (!v2i_equal(gui->mouse_pos, gui->mouse_pos_last)) {
+			const v2i delta = v2i_sub(gui->mouse_pos, gui->mouse_pos_last);
+			gui_move(gui, delta.x, -delta.y);
+			gui->mouse_pos = gui->mouse_pos_last;
+		}
+	} else {
+		gui->mouse_use_precise_input = false;
+	}
+	gui_style_pop(gui);
 }
 
 
