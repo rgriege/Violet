@@ -202,8 +202,10 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 void   gui_destroy(gui_t *gui);
 void   gui_move(const gui_t *gui, s32 dx, s32 dy);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
+b32    gui_is_maximized(const gui_t *gui);
 void   gui_minimize(gui_t *gui);
 void   gui_maximize(gui_t *gui);
+void   gui_restore(gui_t *gui);
 void   gui_fullscreen(gui_t *gui);
 b32    gui_begin_frame(gui_t *gui);
 void   gui_end_frame(gui_t *gui);
@@ -1857,8 +1859,9 @@ typedef struct gui
 	u32 scissor_idx;
 	u32 scissor_cnt;
 
+	v2i window_dim;
+
 	/* mouse */
-	v2i win_halfdim;
 	v2i mouse_pos;
 	v2i mouse_pos_last;
 	v2i mouse_pos_press;
@@ -2108,8 +2111,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		SDL_Event evt;
 		while (SDL_PollEvent(&evt) == 1); /* must be run before SDL_GetWindowSize */
 	}
-	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
-	v2i_scale_inv_eq(&gui->win_halfdim, 2);
+	SDL_GetWindowSize(gui->window, &gui->window_dim.x, &gui->window_dim.y);
 
 	gui->creation_time = time_current();
 	gui->frame_start_time = gui->creation_time;
@@ -2223,8 +2225,28 @@ void gui_move(const gui_t *gui, s32 dx, s32 dy)
 
 void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 {
-	*x = gui->win_halfdim.x * 2;
-	*y = gui->win_halfdim.y * 2;
+	*x = gui->window_dim.x;
+	*y = gui->window_dim.y;
+}
+
+b32 gui_is_maximized(const gui_t *gui)
+{
+	int display_idx;
+	SDL_Rect usable_bounds;
+
+	display_idx = SDL_GetWindowDisplayIndex(gui->window);
+	if (display_idx < 0) {
+		log_error("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
+		return false;
+	}
+
+	if (SDL_GetDisplayUsableBounds(display_idx, &usable_bounds) != 0) {
+		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+		return false;
+	}
+
+	return gui->window_dim.x == usable_bounds.w
+	    && gui->window_dim.y == usable_bounds.h;
 }
 
 void gui_minimize(gui_t *gui)
@@ -2234,6 +2256,8 @@ void gui_minimize(gui_t *gui)
 
 void gui_maximize(gui_t *gui)
 {
+#if 0
+	/* TODO(rgriege): check why SDL_MaximizeWindow wasn't used on windoge */
 	int display_idx;
 	SDL_Rect usable_bounds;
 
@@ -2250,6 +2274,14 @@ void gui_maximize(gui_t *gui)
 
 	SDL_SetWindowPosition(gui->window, usable_bounds.x, usable_bounds.y);
 	SDL_SetWindowSize(gui->window, usable_bounds.w, usable_bounds.h);
+#else
+	SDL_MaximizeWindow(gui->window);
+#endif
+}
+
+void gui_restore(gui_t *gui)
+{
+	SDL_RestoreWindow(gui->window);
 }
 
 void gui_fullscreen(gui_t *gui)
@@ -2376,8 +2408,7 @@ b32 gui_begin_frame(gui_t *gui)
 		}
 	}
 
-	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
-	v2i_scale_inv_eq(&gui->win_halfdim, 2);
+	SDL_GetWindowSize(gui->window, &gui->window_dim.x, &gui->window_dim.y);
 
 	gui->mouse_pos_last = gui->mouse_pos;
 	if (!gui->mouse_in_window || gui->dragging_window) {
@@ -2388,7 +2419,7 @@ b32 gui_begin_frame(gui_t *gui)
 	} else {
 		gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	}
-	gui->mouse_pos.y = 2*gui->win_halfdim.y - gui->mouse_pos.y;
+	gui->mouse_pos.y = gui->window_dim.y - gui->mouse_pos.y;
 	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
 
 	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
@@ -2449,10 +2480,10 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
 
-	GL_CHECK(glViewport, 0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
+	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
 	/* NOTE(rgriege): reset the scissor for glClear */
-	GL_CHECK(glScissor, 0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
+	GL_CHECK(glScissor, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
 	color_as_float_array(bg_color, gui->style.bg_color);
 	GL_CHECK(glClearColor, bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
@@ -2798,7 +2829,7 @@ void gui_end_frame(gui_t *gui)
 
 	GL_CHECK(glUseProgram, gui->shader.handle);
 	GL_CHECK(glUniform2f, glGetUniformLocation(gui->shader.handle, "window_halfdim"),
-	         gui->win_halfdim.x, gui->win_halfdim.y);
+	         gui->window_dim.x/2, gui->window_dim.y/2);
 
 	/* NOTE(rgriege): This method of ordering creates an inconsistency:
 	 * panels/layers must be called from top-to-bottom, but widgets/primitives
@@ -3476,7 +3507,7 @@ void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 
 void gui_unmask(gui_t *gui)
 {
-	gui_mask(gui, 0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
+	gui_mask(gui, 0, 0, gui->window_dim.x, gui->window_dim.y);
 }
 
 void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
@@ -5566,8 +5597,9 @@ void gui_splits_compute_from(gui_t *gui, gui_split_t *split)
 
 void gui_splits_compute(gui_t *gui)
 {
+	const v2i halfdim = v2i_scale_inv(gui->window_dim, 2);
 	assert(gui->root_split);
-	box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
+	box2i_from_center(&gui->root_split->box, halfdim, halfdim);
 	if (!gui__split_is_leaf(gui->root_split))
 		gui_splits_compute_from(gui, gui->root_split);
 }
@@ -5615,8 +5647,8 @@ void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
                               s32 w, s32 h,
                               const char *title, gui_panel_flags_t flags)
 {
-	const s32 x = (2*gui->win_halfdim.x - w)/2;
-	const s32 y = (2*gui->win_halfdim.y - h)/2;
+	const s32 x = (gui->window_dim.x - w)/2;
+	const s32 y = (gui->window_dim.y - h)/2;
 	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
 }
 
