@@ -151,7 +151,7 @@ char *imstrcpy(const char *str)
 
 char *imstrcat(const char *src)
 {
-	return strncat(imstr(), src, IMPRINT_BUFFER_SIZE);
+	return strncat(imstr(), src, IMPRINT_BUFFER_SIZE-strlen(imstr())-1);
 }
 
 char *imstrcatn(char *imstr, const char *src)
