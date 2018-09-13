@@ -1864,7 +1864,7 @@ typedef struct gui
 	v2i mouse_pos_press;
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
-	b32 mouse_use_precise_input;
+	b32 mouse_in_window;
 	b32 mouse_covered_by_panel;
 	b32 mouse_covered_by_dropdown;
 	b32 mouse_debug;
@@ -1926,6 +1926,7 @@ typedef struct gui
 			s32 x, y, w, h;
 		} mask;
 	} focused_dropdown;
+	b32 dragging_window;
 
 	/* grid */
 	gui_grid_t grid_panel;
@@ -2123,10 +2124,10 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->style_stack_sz = 0;
 
-	SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
+	gui->mouse_btn = SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_pos_last = gui->mouse_pos;
 	gui->mouse_pos_press = gui->mouse_pos;
-	gui->mouse_use_precise_input = false;
+	gui->mouse_in_window = true;
 	gui->mouse_debug = false;
 	gui__repeat_init(&gui->mouse_repeat);
 
@@ -2144,6 +2145,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->drag_offset = g_v2i_zero;
 	gui->pw_buf = array_create();
 	gui->vert_buf = array_create();
+	gui->dragging_window = false;
 
 	gui->grid = NULL;
 
@@ -2342,10 +2344,22 @@ b32 gui_begin_frame(gui_t *gui)
 			gui->last_input_time = now;
 		break;
 		case SDL_WINDOWEVENT:
-			if (evt.window.event == SDL_WINDOWEVENT_CLOSE)
+			switch (evt.window.event) {
+			case SDL_WINDOWEVENT_CLOSE:
 				quit = true;
-			else
+			break;
+			case SDL_WINDOWEVENT_LEAVE:
+				gui->mouse_in_window = false;
 				gui->last_input_time = now;
+			break;
+			case SDL_WINDOWEVENT_ENTER:
+				gui->mouse_in_window = true;
+				gui->last_input_time = now;
+			break;
+			default:
+				gui->last_input_time = now;
+			break;
+			}
 		break;
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
@@ -2366,7 +2380,7 @@ b32 gui_begin_frame(gui_t *gui)
 	v2i_scale_inv_eq(&gui->win_halfdim, 2);
 
 	gui->mouse_pos_last = gui->mouse_pos;
-	if (gui->mouse_use_precise_input) {
+	if (!gui->mouse_in_window || gui->dragging_window) {
 		v2i w, gm;
 		SDL_GetWindowPosition(gui->window, &w.x, &w.y);
 		gui->mouse_btn |= SDL_GetGlobalMouseState(&gm.x, &gm.y);
@@ -2464,6 +2478,9 @@ b32 gui_begin_frame(gui_t *gui)
 			gui->focus_id = 0;
 		}
 	}
+
+	/* ensure this is set every frame by a gui_window_drag() call (perf) */
+	gui->dragging_window = false;
 
 	/* reserve first scissor for dropdown items */
 	assert(gui->scissor_idx == 0 && gui->scissor_cnt == 1);
@@ -4773,14 +4790,14 @@ void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
 	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__window_drag_cb, NULL)) {
-		gui->mouse_use_precise_input = true;
+		gui->dragging_window = true;
 	  if (!v2i_equal(gui->mouse_pos, gui->mouse_pos_last)) {
 			const v2i delta = v2i_sub(gui->mouse_pos, gui->mouse_pos_last);
 			gui_move(gui, delta.x, -delta.y);
 			gui->mouse_pos = gui->mouse_pos_last;
 		}
 	} else {
-		gui->mouse_use_precise_input = false;
+		gui->dragging_window = false;
 	}
 	gui_style_pop(gui);
 }
