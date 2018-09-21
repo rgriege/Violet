@@ -2547,8 +2547,6 @@ b32 gui__box_half_visible(const gui_t *gui, box2i box)
 static
 void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
-	r32 dist;
-	v2f last;
 	box2f mask, bbox;
 
 	gui__current_maskf(gui, &mask);
@@ -2557,6 +2555,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 		return;
 
 	if (!color_equal(fill, g_nocolor)) {
+		draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
 		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
@@ -2565,41 +2564,49 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 			gui->vert_colors[gui->vert_cnt+i] = fill;
 			gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
 		}
-		gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
-		gui->draw_calls[gui->draw_call_cnt].cnt = n;
-		gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLE_FAN;
-		gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
+		draw_call->idx = gui->vert_cnt;
+		draw_call->cnt = n;
+		draw_call->type = DRAW_TRIANGLE_FAN;
+		draw_call->tex = gui->texture_white.handle;
 		++gui->draw_call_cnt;
 		gui->vert_cnt += n;
 	}
+
 	if (!color_equal(stroke, g_nocolor)) {
+		draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
+		const r32 dash_len = gui->style.line.dash_len;
 		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
-		if (gui->style.line.dash_len != 0.f) {
-			dist = 0;
-			last = v[n-1];
-			for (u32 i = 0; i < n; ++i) {
-				gui->verts[gui->vert_cnt+i] = v[i];
+		if (dash_len != 0.f) {
+			const u32 vn = n > 2 ? n + 1 : n;
+			r32 dist = 0.f;
+			for (u32 i = 0; i < vn; ++i) {
+				gui->verts[gui->vert_cnt+i] = v[i%n];
 				gui->vert_colors[gui->vert_cnt+i] = stroke;
-				gui->vert_tex_coords[gui->vert_cnt+i].x = dist / gui->style.line.dash_len;
+				gui->vert_tex_coords[gui->vert_cnt+i].x = dist / dash_len;
 				gui->vert_tex_coords[gui->vert_cnt+i].y = 0;
-				dist += v2f_dist(last, v[i]);
+				dist += v2f_dist(v[i%n], v[(i+1)%n]);
 			}
-			gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white_dotted.handle;
+			draw_call->tex = gui->texture_white_dotted.handle;
+			draw_call->idx = gui->vert_cnt;
+			draw_call->cnt = vn;
+			draw_call->type = DRAW_LINE_STRIP;
+			++gui->draw_call_cnt;
+			gui->vert_cnt += vn;
 		} else {
 			for (u32 i = 0; i < n; ++i) {
 				gui->verts[gui->vert_cnt+i] = v[i];
 				gui->vert_colors[gui->vert_cnt+i] = stroke;
 				gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
 			}
-			gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
+			draw_call->tex = gui->texture_white.handle;
+			draw_call->idx = gui->vert_cnt;
+			draw_call->cnt = n;
+			draw_call->type = DRAW_LINE_LOOP;
+			++gui->draw_call_cnt;
+			gui->vert_cnt += n;
 		}
-		gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
-		gui->draw_calls[gui->draw_call_cnt].cnt = n;
-		gui->draw_calls[gui->draw_call_cnt].type = DRAW_LINE_LOOP;
-		++gui->draw_call_cnt;
-		gui->vert_cnt += n;
 	}
 }
 
