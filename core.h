@@ -372,11 +372,13 @@ extern thread_local u32 g_profiler_depth;
 
 #define PROFILE_FUNCTION_BEGIN() PROFILE_BLOCK_BEGIN(__FUNCTION__)
 #define PROFILE_FUNCTION_END() PROFILE_BLOCK_END_(__FUNCTION__, __FUNCTION__)
+#define PROFILE_RESET() g_profiler_depth = 0
 #else
 #define PROFILE_BLOCK_BEGIN(name) NOOP
 #define PROFILE_BLOCK_END(name)   NOOP
 #define PROFILE_FUNCTION_BEGIN()  NOOP
 #define PROFILE_FUNCTION_END()    NOOP
+#define PROFILE_RESET()           NOOP
 #endif
 
 #endif // VIOLET_CORE_H
