@@ -337,7 +337,7 @@ btn_val_t gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 btn_val_t gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen);
 b32       gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                   b32 *val);
-void      gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen,
+b32       gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen,
                       b32 *val);
 b32       gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
 b32       gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
@@ -3959,7 +3959,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	return toggled;
 }
 
-void gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
+b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
@@ -3976,6 +3976,7 @@ void gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val
 	style = gui__element_style(gui, render_state, &gui->style.chk);
 	gui->style.chk.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
+	return toggled;
 }
 
 typedef enum gui__slider_orientation
