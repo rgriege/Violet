@@ -284,6 +284,10 @@ u32 hashn(const char *str, u32 n);
 #define memclr(x) memset(&(x), 0, sizeof(x))
 #define arrclr(x) memset( (x), 0, sizeof(x))
 
+#define arrcmp(x, y) memcmp((x), (y), sizeof(x))
+
+#define arrcpy(x, y) memcpy((x), (y), sizeof(x))
+
 #ifndef REVERSE_MAX_SIZE
 #define REVERSE_MAX_SIZE 128
 #endif
