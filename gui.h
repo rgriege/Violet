@@ -634,6 +634,7 @@ gui_style_t *gui_style(gui_t *gui);
 void         gui_style_set(gui_t *gui, const gui_style_t *style);
 
 void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size);
+void gui_style_push_current_(gui_t *gui, size_t offset, size_t size);
 void gui_style_push_color_(gui_t *gui, size_t offset, color_t val);
 void gui_style_push_b32_(gui_t *gui, size_t offset, u32 val);
 void gui_style_push_u32_(gui_t *gui, size_t offset, u32 val);
@@ -643,11 +644,9 @@ void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
 void gui_style_pop(gui_t *gui);
 
 #define gui_style_push(gui, loc, val) \
-	do { \
-		assert(&gui_style(gui)->loc != &(val)); \
-		gui_style_push_(gui, &(val), offsetof(gui_style_t, loc), sizeof(val)); \
-	} while (0)
-/* literals */
+	gui_style_push_(gui, &(val), offsetof(gui_style_t, loc), sizeof(val))
+#define gui_style_push_current(gui, loc) \
+	gui_style_push_current_(gui, offsetof(gui_style_t, loc), sizeof(gui_style(gui)->loc))
 #define gui_style_push_color(gui, loc, val) \
 	gui_style_push_color_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_b32(gui, loc, val) \
@@ -5757,34 +5756,68 @@ void gui_style_set(gui_t *gui, const gui_style_t *style)
 	gui->style = *style;
 }
 
+typedef struct gui__style_stack_item
+{
+	size_t offset;
+	size_t size;
+} gui__style_stack_item_t;
+
+static
+void *gui__style_stack_item_location(gui_t *gui, gui__style_stack_item_t item)
+{
+	return ((u8*)&gui->style) + item.offset;
+}
+
+static
+b32 gui__style_stack_can_push_item(gui_t *gui, gui__style_stack_item_t item)
+{
+	return gui->style_stack_sz + sizeof(item) + item.size < GUI_STYLE_STACK_LIMIT;
+}
+
+static
+void gui__style_stack_push_item(gui_t *gui, gui__style_stack_item_t item)
+{
+	const void *loc = gui__style_stack_item_location(gui, item);
+	memcpy(&gui->style_stack[gui->style_stack_sz], loc, item.size);
+	gui->style_stack_sz += (u32)item.size;
+	memcpy(&gui->style_stack[gui->style_stack_sz], &item, sizeof(item));
+	gui->style_stack_sz += sizeof(item);
+}
+
 void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size)
 {
-	if (gui->style_stack_sz + 2 * sizeof(size_t) + size < GUI_STYLE_STACK_LIMIT) {
-		const void *loc = ((u8*)&gui->style) + offset;
-		memcpy(&gui->style_stack[gui->style_stack_sz], loc, size);
-		gui->style_stack_sz += (u32)size;
-		memcpy(&gui->style_stack[gui->style_stack_sz], &size, sizeof(size_t));
-		gui->style_stack_sz += sizeof(size_t);
-		memcpy(&gui->style_stack[gui->style_stack_sz], &offset, sizeof(size_t));
-		gui->style_stack_sz += sizeof(size_t);
-		memcpy(((u8*)&gui->style) + offset, value, size);
+	const gui__style_stack_item_t item = { .offset = offset, .size = size };
+	if (gui__style_stack_can_push_item(gui, item)) {
+		void *loc = gui__style_stack_item_location(gui, item);
+		assert(loc != value);
+		gui__style_stack_push_item(gui, item);
+		memcpy(loc, value, item.size);
 	} else {
 		error("style stack limit exceeded");
 	}
 }
 
+void gui_style_push_current_(gui_t *gui, size_t offset, size_t size)
+{
+	const gui__style_stack_item_t item = { .offset = offset, .size = size };
+	if (gui__style_stack_can_push_item(gui, item))
+		gui__style_stack_push_item(gui, item);
+	else
+		error("style stack limit exceeded");
+}
+
 void gui_style_pop(gui_t *gui)
 {
-	if (gui->style_stack_sz > sizeof(size_t) + sizeof(size_t)) {
-		size_t offset, size;
-		gui->style_stack_sz -= sizeof(size_t);
-		memcpy(&offset, &gui->style_stack[gui->style_stack_sz], sizeof(size_t));
-		gui->style_stack_sz -= sizeof(size_t);
-		memcpy(&size, &gui->style_stack[gui->style_stack_sz], sizeof(size_t));
-		gui->style_stack_sz -= (u32)size;
-		memcpy(((u8*)&gui->style) + offset,
-		       &gui->style_stack[gui->style_stack_sz], size);
+	gui__style_stack_item_t item;
+	void *loc;
+	if (gui->style_stack_sz > sizeof(item)) {
+		gui->style_stack_sz -= sizeof(item);
+		memcpy(&item, &gui->style_stack[gui->style_stack_sz], sizeof(item));
+		gui->style_stack_sz -= (u32)item.size;
+		loc = gui__style_stack_item_location(gui, item);
+		memcpy(loc, &gui->style_stack[gui->style_stack_sz], item.size);
 	} else {
+		gui->style_stack_sz = 0;
 		error("style stack empty");
 	}
 }
