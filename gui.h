@@ -3388,9 +3388,11 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 	font_t *font = gui__get_font(gui, sz);
 	assert(font);
 	while (*line != '\0') {
-		const s32 line_width = font__line_width(font, txt);
+		const s32 line_width = font__line_width(font, line);
 		width = max(width, line_width);
 		while (*line != '\0' && *line != '\n')
+			++line;
+		if (*line == '\n')
 			++line;
 	}
 	return width;
