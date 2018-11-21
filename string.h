@@ -169,14 +169,14 @@ char *imstrcat2(const char *src1, const char *src2)
 
 void str_cpy(str_t *dst, const char *src)
 {
-	array_reserve(*dst, strlen(src) + 1);
+	array_reserve(*dst, (array_size_t)(strlen(src) + 1));
 	strcpy(*dst, src);
 }
 
 void str_cat(str_t *dst, const char *src)
 {
 	const size_t sz = array_sz(*dst);
-	array_reserve(*dst, sz + strlen(src) + 1);
+	array_reserve(*dst, (array_size_t)(sz + strlen(src) + 1));
 	strcat(&(*dst)[sz], src);
 }
 
@@ -185,7 +185,7 @@ void str_cat2(str_t *dst, const char *src1, const char *src2)
 	const size_t dsz = array_sz(*dst);
 	const size_t sz1 = strlen(src1);
 	const size_t sz2 = strlen(src2);
-	array_reserve(*dst, dsz + sz1 + sz2 + 1);
+	array_reserve(*dst, (array_size_t)(dsz + sz1 + sz2 + 1));
 	strcat(&(*dst)[dsz], src1);
 	strcat(&(*dst)[dsz+sz1], src2);
 }
