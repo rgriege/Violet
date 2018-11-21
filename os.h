@@ -254,22 +254,21 @@ const char *app_dir(void)
 
 char *app_data_dir(const char *app_name, allocator_t *a)
 {
-	size_t n;
-	char *path;
-	FILE *fp = fopen(".access_check", "w");
-	if (!fp) {
-		PWSTR psz_file_path;
-		if (   SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path)
-		    != S_OK)
-			return NULL;
-
-		n = wcslen(psz_file_path) * sizeof(wchar_t);
-		path = amalloc(n + 4 + strlen(app_name), a);
+#ifndef WINDOWS_LOCAL_PROGRAM_DATA
+	PWSTR psz_file_path;
+	if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path) == S_OK) {
+		const size_t n = wcslen(psz_file_path) * sizeof(wchar_t);
+		char *path = amalloc(n + 4 + strlen(app_name), a);
 		wcstombs(path, psz_file_path, n);
 		CoTaskMemFree(psz_file_path);
 		path_append(path, app_name);
 		return path;
-	} else {
+	}
+	return NULL;
+#else
+	char *path;
+	FILE *fp = fopen(".access_check", "w");
+	if (fp) {
 		fclose(fp);
 		remove(".access_check");
 		path = amalloc(2, a);
@@ -277,6 +276,8 @@ char *app_data_dir(const char *app_name, allocator_t *a)
 		path[1] = '\0';
 		return path;
 	}
+	return NULL;
+#endif
 }
 
 /* Dynamic library */
