@@ -9,9 +9,11 @@ char *sprint_r32(char *buf, u32 n, r32 val, u32 dec);
 
 /* Immediate strings - single string buffer for immediate use.
  * Be very careful when writing functions that take a string as a parameter
- * and use this string - assert(str != imstr()) is recommended. */
+ * and use this string - assert(str != imstr()) is recommended.
+ *
+ * The default is long enough for most OS's max file path length. */
 #ifndef IMPRINT_BUFFER_SIZE
-#define IMPRINT_BUFFER_SIZE 128
+#define IMPRINT_BUFFER_SIZE 4096
 #endif
 
 char *imstr(void);

@@ -199,6 +199,8 @@ typedef enum gui_flags_t
 
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                   gui_flags_t flags);
+gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
+                     gui_flags_t flags, const char *font_file_path);
 void   gui_destroy(gui_t *gui);
 void   gui_move(const gui_t *gui, s32 dx, s32 dy);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
@@ -1850,7 +1852,8 @@ typedef struct gui
 	/* style */
 	SDL_Cursor *cursors[GUI__CURSOR_COUNT];
 	b32 use_default_cursor;
-	font_t *fonts;
+	char font_file_path[256];
+	array(font_t) fonts;
 	cached_img_t *imgs;
 	gui_style_t style;
 	u8 style_stack[GUI_STYLE_STACK_LIMIT];
@@ -1941,8 +1944,8 @@ void gui__repeat_update(gui__repeat_t *repeat, u32 val, u32 pop, u32 frame)
 	}
 }
 
-gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
-                  gui_flags_t flags)
+gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
+                     gui_flags_t flags, const char *font_file_path)
 {
 	gui_t *gui = calloc(1, sizeof(gui_t));
 	if (g_gui_cnt == 0) {
@@ -2062,6 +2065,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
 		if (!gui->cursors[i])
 			goto err_cursor;
+	strncpy(gui->font_file_path, font_file_path, sizeof(gui->font_file_path)-1);
 	gui->fonts = array_create();
 	gui->imgs = array_create();
 
@@ -2139,6 +2143,12 @@ err_sdl:
 	gui = NULL;
 out:
 	return gui;
+}
+
+gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
+                  gui_flags_t flags)
+{
+	return gui_create_ex(x, y, w, h, title, flags, GUI_FONT_FILE_PATH);
 }
 
 void gui_destroy(gui_t *gui)
@@ -3118,7 +3128,7 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 		return font;
 
 	font = array_append_null(gui->fonts);
-	if (font_load(font, GUI_FONT_FILE_PATH, sz)) {
+	if (font_load(font, gui->font_file_path, sz)) {
 		return font;
 	} else {
 		array_pop(gui->fonts);

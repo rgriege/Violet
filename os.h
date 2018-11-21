@@ -5,6 +5,8 @@
 
 /* File system */
 
+static const char *g_file_path_separator;
+
 typedef struct {
 	const char *name;
 	const char *pattern;
@@ -22,10 +24,14 @@ b32  dir_exists(const char *path);
 void path_append(char *lhs, const char *rhs);
 void path_appendn(char *lhs, const char *rhs, u32 sz);
 b32  mkpath(const char *path);
-char *app_data_dir(const char *app_name, allocator_t *a);
 #ifdef VLT_USE_TINYDIR
 b32  rmdir_f(const char *path);
 #endif
+
+const char *app_dir(void);
+char *app_data_dir(const char *app_name, allocator_t *a);
+
+char *imapppath(const char *path_relative_to_app);
 
 /* Dynamic library */
 
@@ -182,6 +188,8 @@ out:
 	return retval;
 }
 
+static const char *g_file_path_separator = "\\";
+
 b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
 	return file_open_dialog_ex(fname, fname_sz, &filter, 1);
@@ -220,18 +228,6 @@ b32 dir_exists(const char *path)
 	       && (attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-void path_append(char *lhs, const char *rhs)
-{
-	strcat(lhs, "\\");
-	strcat(lhs, rhs);
-}
-
-void path_appendn(char *lhs, const char *rhs, u32 sz)
-{
-	strcat(lhs, "\\");
-	strncat(lhs, rhs, sz);
-}
-
 static
 b32 _mkdir(const char *path)
 {
@@ -240,6 +236,20 @@ b32 _mkdir(const char *path)
 		return true;
 
 	return CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
+}
+
+const char *app_dir(void)
+{
+	static char path[MAX_PATH] = {0};
+	if (path[0] != '\0') {
+	} else if (GetModuleFileName(NULL, B2PC(path)) != 0) {
+		char *last = strrchr(path, '\\');
+		if (last)
+			*last = '\0';
+	} else {
+		path[0] = '\0';
+	}
+	return path;
 }
 
 char *app_data_dir(const char *app_name, allocator_t *a)
@@ -344,6 +354,8 @@ out:
 	return retval;
 }
 
+static const char *g_file_path_separator = "/";
+
 b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
 	return file__dialog(fname, fname_sz, "zenity --file-selection");
@@ -380,22 +392,16 @@ b32 dir_exists(const char *path)
 	return stat(path, &s) == 0 && S_ISDIR(s.st_mode);
 }
 
-void path_append(char *lhs, const char *rhs)
-{
-	strcat(lhs, "/");
-	strcat(lhs, rhs);
-}
-
-void path_appendn(char *lhs, const char *rhs, u32 sz)
-{
-	strcat(lhs, "/");
-	strncat(lhs, rhs, sz);
-}
-
 static
 b32 _mkdir(const char *path)
 {
 	return mkdir(path, S_IRWXU) == 0;
+}
+
+const char *app_dir(void)
+{
+	/* TODO(rgriege): this won't work for installed applications on Linux/MacOS */
+	return ".";
 }
 
 char *app_data_dir(const char *app_name, allocator_t *a)
@@ -452,6 +458,18 @@ b32 open_file_external(const char *filename)
 }
 
 #endif
+
+void path_append(char *lhs, const char *rhs)
+{
+	strcat(lhs, g_file_path_separator);
+	strcat(lhs, rhs);
+}
+
+void path_appendn(char *lhs, const char *rhs, u32 sz)
+{
+	strcat(lhs, g_file_path_separator);
+	strncat(lhs, rhs, sz);
+}
 
 b32 mkpath(const char *path)
 {
@@ -535,6 +553,11 @@ out:
 	return success;
 }
 #endif // VLT_USE_TINYDIR
+
+char *imapppath(const char *path_relative_to_app)
+{
+	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), path_relative_to_app);
+}
 
 /* IO */
 
