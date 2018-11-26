@@ -5,7 +5,7 @@
 
 /* File system */
 
-static const char *g_file_path_separator;
+extern const char *g_file_path_separator;
 
 typedef struct {
 	const char *name;
@@ -188,7 +188,7 @@ out:
 	return retval;
 }
 
-static const char *g_file_path_separator = "\\";
+const char *g_file_path_separator = "\\";
 
 b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
@@ -355,7 +355,7 @@ out:
 	return retval;
 }
 
-static const char *g_file_path_separator = "/";
+const char *g_file_path_separator = "/";
 
 b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
