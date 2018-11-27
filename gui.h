@@ -359,13 +359,13 @@ b32       gui_dropdown_item(gui_t *gui, const char *txt);
 void      gui_dropdown_end(gui_t *gui);
 typedef void(*gui_drag_callback_t)(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                                    s32 offset_x, s32 offset_y, void *udata);
-b32       gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb);
-b32       gui_drag_horiz(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb);
-b32       gui_drag_vert(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb);
-b32       gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
+b32       gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb);
+b32       gui_drag_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h, mouse_button_t mb);
+b32       gui_drag_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h, mouse_button_t mb);
+b32       gui_dragx(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
                     gui_drag_callback_t cb, void *udata);
-b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb);
-b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
+b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb);
+b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
                      gui_drag_callback_t cb, void *udata);
 b32       gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          const char *txt, s32 item_w, u32 num_items);
@@ -4626,12 +4626,12 @@ void gui__drag_default_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 	*y = mouse_y + offset_y;
 }
 
-b32 gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb)
+b32 gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb)
 {
 	return gui_dragx(gui, x, y, w, h, mb, gui__drag_default_callback, NULL);
 }
 
-b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, u32 w, u32 h,
+b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, s32 w, s32 h,
                     mouse_button_t mb, gui_drag_callback_t cb, void *udata)
 {
 	box2i box;
@@ -4644,7 +4644,7 @@ b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, u32 w, u32 h,
 	return gui__drag(gui, x, y, contains_mouse, mb, id, cb, udata);
 }
 
-b32 gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
+b32 gui_dragx(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
               gui_drag_callback_t cb, void *udata)
 {
 	u64 id;
@@ -4660,7 +4660,7 @@ void gui__drag_horiz_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 	*x = mouse_x + offset_x;
 }
 
-b32 gui_drag_horiz(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb)
+b32 gui_drag_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h, mouse_button_t mb)
 {
 	return gui_dragx(gui, x, &y, w, h, mb, gui__drag_horiz_callback, NULL);
 }
@@ -4688,7 +4688,7 @@ void gui__drag_vert_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 	*y = mouse_y + offset_y;
 }
 
-b32 gui_drag_vert(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb)
+b32 gui_drag_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h, mouse_button_t mb)
 {
 	return gui_dragx(gui, &x, y, w, h, mb, gui__drag_vert_callback, NULL);
 }
@@ -4709,19 +4709,19 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 	return false;
 }
 
-b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
+b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb)
 {
 	return gui_cdragx(gui, x, y, r, mb, gui__drag_default_callback, NULL);
 }
 
-b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
+b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
               gui_drag_callback_t cb, void *udata)
 {
 	const v2i pos = { *x, *y };
 	u64 id;
 	box2i box;
 	box2i_from_center(&box, pos, (v2i){r, r});
-	const b32 contains_mouse =    (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r
+	const b32 contains_mouse =    v2i_dist_sq(pos, gui->mouse_pos) < r * r
 	                           && gui__box_half_visible(gui, box)
 	                           && !gui->lock;
 	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
