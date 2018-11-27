@@ -5448,7 +5448,7 @@ s32 gui__split_division(const gui_split_t *split, v2i point)
 	} else if (dx > dy) {
 		if (dx > 2*s)
 			return GUI__SPLIT_DIVISION_NONE;
-		else if (point.x > xm)
+		else if (point.x <= xm)
 			return GUI__SPLIT_DIVISION_LEFT;
 		else
 			return GUI__SPLIT_DIVISION_RIGHT;
