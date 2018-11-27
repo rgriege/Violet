@@ -199,6 +199,8 @@ typedef enum gui_flags_t
 
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                   gui_flags_t flags);
+gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
+                     gui_flags_t flags, const char *font_file_path);
 void   gui_destroy(gui_t *gui);
 void   gui_move(const gui_t *gui, s32 dx, s32 dy);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
@@ -339,7 +341,7 @@ btn_val_t gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 btn_val_t gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen);
 b32       gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                   b32 *val);
-void      gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen,
+b32       gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen,
                       b32 *val);
 b32       gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
 b32       gui_slider_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
@@ -665,6 +667,7 @@ gui_style_t *gui_style(gui_t *gui);
 void         gui_style_set(gui_t *gui, const gui_style_t *style);
 
 void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size);
+void gui_style_push_current_(gui_t *gui, size_t offset, size_t size);
 void gui_style_push_color_(gui_t *gui, size_t offset, color_t val);
 void gui_style_push_b32_(gui_t *gui, size_t offset, u32 val);
 void gui_style_push_u32_(gui_t *gui, size_t offset, u32 val);
@@ -674,11 +677,9 @@ void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
 void gui_style_pop(gui_t *gui);
 
 #define gui_style_push(gui, loc, val) \
-	do { \
-		assert(&gui_style(gui)->loc != &(val)); \
-		gui_style_push_(gui, &(val), offsetof(gui_style_t, loc), sizeof(val)); \
-	} while (0)
-/* literals */
+	gui_style_push_(gui, &(val), offsetof(gui_style_t, loc), sizeof(val))
+#define gui_style_push_current(gui, loc) \
+	gui_style_push_current_(gui, offsetof(gui_style_t, loc), sizeof(gui_style(gui)->loc))
 #define gui_style_push_color(gui, loc, val) \
 	gui_style_push_color_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_b32(gui, loc, val) \
@@ -1883,7 +1884,8 @@ typedef struct gui
 	/* style */
 	SDL_Cursor *cursors[GUI__CURSOR_COUNT];
 	b32 use_default_cursor;
-	font_t *fonts;
+	char font_file_path[256];
+	array(font_t) fonts;
 	cached_img_t *imgs;
 	gui_style_t style;
 	u8 style_stack[GUI_STYLE_STACK_LIMIT];
@@ -1983,8 +1985,8 @@ void gui__repeat_update(gui__repeat_t *repeat, u32 val, u32 pop, u32 frame)
 	}
 }
 
-gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
-                  gui_flags_t flags)
+gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
+                     gui_flags_t flags, const char *font_file_path)
 {
 	gui_t *gui = calloc(1, sizeof(gui_t));
 	if (g_gui_cnt == 0) {
@@ -2104,6 +2106,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
 		if (!gui->cursors[i])
 			goto err_cursor;
+	strncpy(gui->font_file_path, font_file_path, sizeof(gui->font_file_path)-1);
 	gui->fonts = array_create();
 	gui->imgs = array_create();
 
@@ -2188,6 +2191,12 @@ err_sdl:
 	gui = NULL;
 out:
 	return gui;
+}
+
+gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
+                  gui_flags_t flags)
+{
+	return gui_create_ex(x, y, w, h, title, flags, GUI_FONT_FILE_PATH);
 }
 
 void gui_destroy(gui_t *gui)
@@ -2638,8 +2647,6 @@ b32 gui__box_half_visible(const gui_t *gui, box2i box)
 static
 void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
-	r32 dist;
-	v2f last;
 	box2f mask, bbox;
 
 	gui__current_maskf(gui, &mask);
@@ -2648,6 +2655,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 		return;
 
 	if (!color_equal(fill, g_nocolor)) {
+		draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
 		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
@@ -2656,41 +2664,49 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 			gui->vert_colors[gui->vert_cnt+i] = fill;
 			gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
 		}
-		gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
-		gui->draw_calls[gui->draw_call_cnt].cnt = n;
-		gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLE_FAN;
-		gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
+		draw_call->idx = gui->vert_cnt;
+		draw_call->cnt = n;
+		draw_call->type = DRAW_TRIANGLE_FAN;
+		draw_call->tex = gui->texture_white.handle;
 		++gui->draw_call_cnt;
 		gui->vert_cnt += n;
 	}
+
 	if (!color_equal(stroke, g_nocolor)) {
+		draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
+		const r32 dash_len = gui->style.line.dash_len;
 		assert(gui->vert_cnt + n <= GUI_MAX_VERTS);
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
-		if (gui->style.line.dash_len != 0.f) {
-			dist = 0;
-			last = v[n-1];
-			for (u32 i = 0; i < n; ++i) {
-				gui->verts[gui->vert_cnt+i] = v[i];
+		if (dash_len != 0.f) {
+			const u32 vn = n > 2 ? n + 1 : n;
+			r32 dist = 0.f;
+			for (u32 i = 0; i < vn; ++i) {
+				gui->verts[gui->vert_cnt+i] = v[i%n];
 				gui->vert_colors[gui->vert_cnt+i] = stroke;
-				gui->vert_tex_coords[gui->vert_cnt+i].x = dist / gui->style.line.dash_len;
+				gui->vert_tex_coords[gui->vert_cnt+i].x = dist / dash_len;
 				gui->vert_tex_coords[gui->vert_cnt+i].y = 0;
-				dist += v2f_dist(last, v[i]);
+				dist += v2f_dist(v[i%n], v[(i+1)%n]);
 			}
-			gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white_dotted.handle;
+			draw_call->tex = gui->texture_white_dotted.handle;
+			draw_call->idx = gui->vert_cnt;
+			draw_call->cnt = vn;
+			draw_call->type = DRAW_LINE_STRIP;
+			++gui->draw_call_cnt;
+			gui->vert_cnt += vn;
 		} else {
 			for (u32 i = 0; i < n; ++i) {
 				gui->verts[gui->vert_cnt+i] = v[i];
 				gui->vert_colors[gui->vert_cnt+i] = stroke;
 				gui->vert_tex_coords[gui->vert_cnt+i] = g_v2f_zero;
 			}
-			gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
+			draw_call->tex = gui->texture_white.handle;
+			draw_call->idx = gui->vert_cnt;
+			draw_call->cnt = n;
+			draw_call->type = DRAW_LINE_LOOP;
+			++gui->draw_call_cnt;
+			gui->vert_cnt += n;
 		}
-		gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
-		gui->draw_calls[gui->draw_call_cnt].cnt = n;
-		gui->draw_calls[gui->draw_call_cnt].type = DRAW_LINE_LOOP;
-		++gui->draw_call_cnt;
-		gui->vert_cnt += n;
 	}
 }
 
@@ -3208,7 +3224,7 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 		return font;
 
 	font = array_append_null(gui->fonts);
-	if (font_load(font, GUI_FONT_FILE_PATH, sz)) {
+	if (font_load(font, gui->font_file_path, sz)) {
 		return font;
 	} else {
 		array_pop(gui->fonts);
@@ -3478,9 +3494,11 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 	font_t *font = gui__get_font(gui, sz);
 	assert(font);
 	while (*line != '\0') {
-		const s32 line_width = font__line_width(font, txt);
+		const s32 line_width = font__line_width(font, line);
 		width = max(width, line_width);
 		while (*line != '\0' && *line != '\n')
+			++line;
+		if (*line == '\n')
 			++line;
 	}
 	return width;
@@ -3658,7 +3676,7 @@ const b32 g_gui_npt_chars_numeric[128] = {
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -4058,7 +4076,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	return toggled;
 }
 
-void gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
+b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	b32 contains_mouse;
@@ -4075,6 +4093,7 @@ void gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val
 	style = gui__element_style(gui, render_state, &gui->style.chk);
 	gui->style.chk.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
+	return toggled;
 }
 
 typedef enum gui__slider_orientation
@@ -6418,34 +6437,68 @@ void gui_style_set(gui_t *gui, const gui_style_t *style)
 	gui->style = *style;
 }
 
+typedef struct gui__style_stack_item
+{
+	size_t offset;
+	size_t size;
+} gui__style_stack_item_t;
+
+static
+void *gui__style_stack_item_location(gui_t *gui, gui__style_stack_item_t item)
+{
+	return ((u8*)&gui->style) + item.offset;
+}
+
+static
+b32 gui__style_stack_can_push_item(gui_t *gui, gui__style_stack_item_t item)
+{
+	return gui->style_stack_sz + sizeof(item) + item.size < GUI_STYLE_STACK_LIMIT;
+}
+
+static
+void gui__style_stack_push_item(gui_t *gui, gui__style_stack_item_t item)
+{
+	const void *loc = gui__style_stack_item_location(gui, item);
+	memcpy(&gui->style_stack[gui->style_stack_sz], loc, item.size);
+	gui->style_stack_sz += (u32)item.size;
+	memcpy(&gui->style_stack[gui->style_stack_sz], &item, sizeof(item));
+	gui->style_stack_sz += sizeof(item);
+}
+
 void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size)
 {
-	if (gui->style_stack_sz + 2 * sizeof(size_t) + size < GUI_STYLE_STACK_LIMIT) {
-		const void *loc = ((u8*)&gui->style) + offset;
-		memcpy(&gui->style_stack[gui->style_stack_sz], loc, size);
-		gui->style_stack_sz += (u32)size;
-		memcpy(&gui->style_stack[gui->style_stack_sz], &size, sizeof(size_t));
-		gui->style_stack_sz += sizeof(size_t);
-		memcpy(&gui->style_stack[gui->style_stack_sz], &offset, sizeof(size_t));
-		gui->style_stack_sz += sizeof(size_t);
-		memcpy(((u8*)&gui->style) + offset, value, size);
+	const gui__style_stack_item_t item = { .offset = offset, .size = size };
+	if (gui__style_stack_can_push_item(gui, item)) {
+		void *loc = gui__style_stack_item_location(gui, item);
+		assert(loc != value);
+		gui__style_stack_push_item(gui, item);
+		memcpy(loc, value, item.size);
 	} else {
 		error("style stack limit exceeded");
 	}
 }
 
+void gui_style_push_current_(gui_t *gui, size_t offset, size_t size)
+{
+	const gui__style_stack_item_t item = { .offset = offset, .size = size };
+	if (gui__style_stack_can_push_item(gui, item))
+		gui__style_stack_push_item(gui, item);
+	else
+		error("style stack limit exceeded");
+}
+
 void gui_style_pop(gui_t *gui)
 {
-	if (gui->style_stack_sz > sizeof(size_t) + sizeof(size_t)) {
-		size_t offset, size;
-		gui->style_stack_sz -= sizeof(size_t);
-		memcpy(&offset, &gui->style_stack[gui->style_stack_sz], sizeof(size_t));
-		gui->style_stack_sz -= sizeof(size_t);
-		memcpy(&size, &gui->style_stack[gui->style_stack_sz], sizeof(size_t));
-		gui->style_stack_sz -= (u32)size;
-		memcpy(((u8*)&gui->style) + offset,
-		       &gui->style_stack[gui->style_stack_sz], size);
+	gui__style_stack_item_t item;
+	void *loc;
+	if (gui->style_stack_sz > sizeof(item)) {
+		gui->style_stack_sz -= sizeof(item);
+		memcpy(&item, &gui->style_stack[gui->style_stack_sz], sizeof(item));
+		gui->style_stack_sz -= (u32)item.size;
+		loc = gui__style_stack_item_location(gui, item);
+		memcpy(loc, &gui->style_stack[gui->style_stack_sz], item.size);
 	} else {
+		gui->style_stack_sz = 0;
 		error("style stack empty");
 	}
 }

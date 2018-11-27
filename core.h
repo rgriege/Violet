@@ -284,6 +284,10 @@ u32 hashn(const char *str, u32 n);
 #define memclr(x) memset(&(x), 0, sizeof(x))
 #define arrclr(x) memset( (x), 0, sizeof(x))
 
+#define arrcmp(x, y) memcmp((x), (y), sizeof(x))
+
+#define arrcpy(x, y) memcpy((x), (y), sizeof(x))
+
 #ifndef REVERSE_MAX_SIZE
 #define REVERSE_MAX_SIZE 128
 #endif
@@ -353,7 +357,7 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 
 /* Profile */
 
-#ifdef PROFILER_ENABLED
+#ifdef PROFILE
 extern thread_local u32 g_profiler_depth;
 #define PROFILE_BLOCK_BEGIN(name) \
 	{ \
@@ -361,20 +365,24 @@ extern thread_local u32 g_profiler_depth;
 		++g_profiler_depth;
 
 #define PROFILE_BLOCK_END_(name, name_str) \
-		timepoint_t name##end = time_current(); \
-		--g_profiler_depth; \
-		log_info("PROFILE: %*s%s=%uus", g_profiler_depth, "", name_str, \
-		         time_diff_micro(name##begin, name##end)); \
+		{ \
+			timepoint_t name##end = time_current(); \
+			--g_profiler_depth; \
+			log_info("PROFILE: %*s%s=%uus", g_profiler_depth, "", name_str, \
+			         time_diff_micro(name##begin, name##end)); \
+		} \
 	}
 #define PROFILE_BLOCK_END(name) PROFILE_BLOCK_END_(name, #name)
 
 #define PROFILE_FUNCTION_BEGIN() PROFILE_BLOCK_BEGIN(__FUNCTION__)
 #define PROFILE_FUNCTION_END() PROFILE_BLOCK_END_(__FUNCTION__, __FUNCTION__)
+#define PROFILE_RESET() g_profiler_depth = 0
 #else
-#define PROFILE_BLOCK_BEGIN(name)
-#define PROFILE_BLOCK_END(name)
-#define PROFILE_FUNCTION_BEGIN()
-#define PROFILE_FUNCTION_END()
+#define PROFILE_BLOCK_BEGIN(name) NOOP
+#define PROFILE_BLOCK_END(name)   NOOP
+#define PROFILE_FUNCTION_BEGIN()  NOOP
+#define PROFILE_FUNCTION_END()    NOOP
+#define PROFILE_RESET()           NOOP
 #endif
 
 #endif // VIOLET_CORE_H
