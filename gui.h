@@ -4884,35 +4884,6 @@ void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 
 /* Grid layout */
 
-/*
- * MARK
- * uses:
- *   dropdown menu
- *   menu bar
- *   panel
- *   bg widgets - sample
- *   input panel - testfit
- *   output panel - testfit
- *
- *         w   h   FLEX cells    notes
- * strict: y   y   y             dropdown menu, menu bar, output panel
- *                               warn when w/h exceeded
- * flex-v: y   n   y             input panel
- *                               infer width from panel width - pad
- *                               allow inf height; track
- *
- * wmax, w
- * init(x, y, w, h):
- *   wmax = w
- *   w = w
- *
- * row(cells):
- *   if (w > 0)
- *     allow_inherit
- *   if (wmax > 0)
- *     check_row_width
- *
- */
 void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h)
 {
 	assert(grid != gui->grid);
