@@ -1959,7 +1959,6 @@ typedef struct gui
 	/* panels */
 	gui_panel_t *panel;
 	b32 is_dragging_dockable_panel;
-	u32 next_panel_id;
 	s32 next_panel_pri, min_panel_pri;
 } gui_t;
 
@@ -2177,7 +2176,6 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->panel = NULL;
 	gui->is_dragging_dockable_panel = false;
-	gui->next_panel_id = 1;
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
 
@@ -5693,8 +5691,7 @@ void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
 	panel->y = y;
 	panel->width = w;
 	panel->height = h;
-	panel->id = id ? id : ++gui->next_panel_id;
-	assert(gui->next_panel_id <= GUI__MAX_PANEL_ID);
+	panel->id = id;
 
 	panel->title = title;
 	panel->flags = flags;
