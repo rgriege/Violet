@@ -481,7 +481,7 @@ void      pgui_menu_end(gui_t *gui);
 typedef enum gui_split_flags
 {
 	GUI_SPLIT_RESIZABLE = 0x1, /* applies to branches */
-	GUI_SPLIT_PERMANENT = 0x2, /* applies to branches */
+	GUI_SPLIT_TEMPORARY = 0x2, /* applies to branches */
 	GUI_SPLIT_DIVISIBLE = 0x4, /* applies to leaves */
 	GUI_SPLIT_FULL      = 0x7,
 } gui_split_flags_t;
@@ -5796,7 +5796,7 @@ void pgui_panel_remove_tab(gui_t *gui, gui_panel_t *panel)
 		if (   !next_tab
 		    && split != gui->root_split
 		    && split->parent
-		    && !(split->parent->flags & GUI_SPLIT_PERMANENT)) {
+		    && (split->parent->flags & GUI_SPLIT_TEMPORARY)) {
 			gui_split_t *parent = split->parent;
 			if (parent->sp1 == split) {
 				if (parent->sp2->panel) {
