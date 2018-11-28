@@ -403,6 +403,14 @@ void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 #define GUI_GRID_MAX_CELLS 128
 #endif
 
+typedef enum gui_grid_flex
+{
+	GUI_GRID_FLEX_NONE       = 0x0,
+	GUI_GRID_FLEX_HORIZONTAL = 0x1,
+	GUI_GRID_FLEX_VERTICAL   = 0x2,
+	GUI_GRID_FLEX_FULL       = 0x3,
+} gui_grid_flex_e;
+
 typedef struct gui_grid_strip
 {
 	b32 vertical;
@@ -417,7 +425,7 @@ typedef struct gui_grid
 	s32 cells[GUI_GRID_MAX_CELLS];
 	gui_grid_strip_t strips[GUI_GRID_MAX_DEPTH];
 	u32 depth;
-	v2i start, dim, pos;
+	v2i start, dim, max_dim, pos;
 	struct gui_grid *prev;
 } gui_grid_t;
 
@@ -569,6 +577,8 @@ b32  pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 int  pgui_panel_sortp(const void *lhs, const void *rhs);
+void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex);
+void pgui_panel_grid_end(gui_t *gui);
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                              const gui_element_style_t *style);
@@ -4855,17 +4865,47 @@ void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 
 /* Grid layout */
 
+/*
+ * MARK
+ * uses:
+ *   dropdown menu
+ *   menu bar
+ *   panel
+ *   bg widgets - sample
+ *   input panel - testfit
+ *   output panel - testfit
+ *
+ *         w   h   FLEX cells    notes
+ * strict: y   y   y             dropdown menu, menu bar, output panel
+ *                               warn when w/h exceeded
+ * flex-v: y   n   y             input panel
+ *                               infer width from panel width - pad
+ *                               allow inf height; track
+ *
+ * wmax, w
+ * init(x, y, w, h):
+ *   wmax = w
+ *   w = w
+ *
+ * row(cells):
+ *   if (w > 0)
+ *     allow_inherit
+ *   if (wmax > 0)
+ *     check_row_width
+ *
+ */
 void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h)
 {
 	assert(grid != gui->grid);
 	grid->prev = gui->grid;
 	grid->depth = 0;
-	grid->dim = g_v2i_zero;
 	grid->start.x = x;
 	grid->start.y = y + h; /* widgets are drawn from high to low */
-	grid->pos = grid->start;
 	grid->dim.x = w;
 	grid->dim.y = h;
+	grid->max_dim.x = w;
+	grid->max_dim.y = h;
+	grid->pos = grid->start;
 	gui->grid = grid;
 }
 
@@ -4895,10 +4935,10 @@ void gui__strip_set_dim(gui_t *gui, gui_grid_strip_t *strip,
 			strip->dim.d[vertical] = dim_.d[vertical];
 		}
 	} else {
-		if (grid->depth == 0)
-			assert(grid->dim.d[vertical] == GUI_GRID_FLEX);
-		else
-			assert(grid->strips[grid->depth-1].dim.d[vertical] == GUI_GRID_FLEX);
+		const s32 prev = (grid->depth == 0)
+		               ? grid->dim.d[vertical]
+		               : grid->strips[grid->depth-1].dim.d[vertical];
+		assert(prev == GUI_GRID_FLEX || dim <= prev);
 		strip->dim.d[vertical] = dim;
 	}
 }
@@ -4988,16 +5028,14 @@ void pgui__strip(gui_t *gui, b32 vertical, s32 minor_dim,
 	}
 
 	if (grid->depth == 0) {
-		// TODO(rgriege): fix panel scrolling with grid
-		/*const v2i dim = {
-			.x =   grid->pos.x + strip->dim.x + panel->padding.x
-			     - (grid->start.x - panel->padding.x),
-			.y =   grid->start.y + panel->padding.y
-			     - (grid->pos.y - strip->dim.y - panel->padding.y),
+		const v2i dim = {
+			.x = strip->dim.x + (grid->pos.x - grid->start.x),
+			.y = strip->dim.y - (grid->pos.y - grid->start.y),
 		};
-		panel->required_dim.x = max(panel->required_dim.x, dim.x);
-		panel->required_dim.y = max(panel->required_dim.y, dim.y);*/
+		grid->max_dim.x = max(grid->max_dim.x, dim.x);
+		grid->max_dim.y = max(grid->max_dim.y, dim.y);
 	}
+
 	++grid->depth;
 }
 
@@ -6180,12 +6218,6 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
 	         g_nocolor, gui->style.panel.border_color);
 
-	assert(!gui->grid);
-	pgui_grid_begin(gui, &gui->grid_panel,
-	                panel->x + panel->padding.x + panel->scroll.x,
-	                panel->y + panel->body_height + panel->scroll.y - panel->padding.y,
-	                panel->width - panel->padding.x * 2, 0);
-
 	panel->required_dim = v2i_scale(panel->padding, 2);
 
 	{
@@ -6242,8 +6274,6 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 
 	/* NOTE(rgriege): would be great to avoid the additional mask here */
 	gui_unmask(gui);
-
-	pgui_grid_end(gui, &gui->grid_panel);
 
 	/* background display */
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
@@ -6351,6 +6381,46 @@ int pgui_panel_sortp(const void *lhs_, const void *rhs_)
 	const gui_panel_t *const *lhs = lhs_;
 	const gui_panel_t *const *rhs = rhs_;
 	return pgui_panel_sort(*lhs, *rhs);
+}
+
+void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex)
+{
+	const gui_panel_t *panel = gui->panel;
+	v2i padding;
+	s32 x, y, w, h;
+
+	assert(panel);
+	assert(!gui->grid);
+
+	padding = panel->padding;
+	x = panel->x                      + panel->scroll.x + padding.x;
+	y = panel->y + panel->body_height + panel->scroll.y - padding.y;
+	w = (flex & GUI_GRID_FLEX_HORIZONTAL) ? 0 : panel->width - 2*padding.x;
+
+	if (flex & GUI_GRID_FLEX_VERTICAL) {
+		h = 0;
+	} else {
+		h = panel->body_height - 2*padding.y;
+		y -= h;
+	}
+
+	pgui_grid_begin(gui, &gui->grid_panel, x, y, w, h);
+}
+
+void pgui_panel_grid_end(gui_t *gui)
+{
+	gui_panel_t *panel = gui->panel;
+	gui_grid_t *grid = gui->grid;
+	v2i required_dim;
+
+	assert(panel);
+	assert(grid);
+	assert(grid == &gui->grid_panel);
+
+	required_dim = v2i_add(grid->max_dim, v2i_scale(panel->padding, 2));
+	panel->required_dim.x = max(panel->required_dim.x, required_dim.x);
+	panel->required_dim.y = max(panel->required_dim.y, required_dim.y);
+	pgui_grid_end(gui, grid);
 }
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
