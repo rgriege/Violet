@@ -5312,9 +5312,10 @@ void pgui_menu_end(gui_t *gui)
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits)
 {
+	memset(splits, 0, num_splits * sizeof(splits[0]));
 	gui->splits     = splits;
 	gui->num_splits = num_splits;
-	memset(splits, 0, num_splits * sizeof(splits[0]));
+	gui->root_split = NULL;
 }
 
 static
@@ -5387,6 +5388,7 @@ b32 gui__split2(gui_t *gui, gui_split_t *split_, b32 vertical,
 	split->default_sz = sz;
 	gui__split_init(sp1, flags & GUI_SPLIT_DIVISIBLE, split);
 	gui__split_init(sp2, flags & GUI_SPLIT_DIVISIBLE, split);
+	success = true;
 
 out:
 	if (psp1)
