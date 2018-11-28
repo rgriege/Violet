@@ -1871,6 +1871,8 @@ typedef struct gui
 	u32 scissor_cnt;
 
 	v2i window_dim;
+	v2i window_restore_pos;
+	v2i window_restore_dim;
 
 	/* mouse */
 	v2i mouse_pos;
@@ -1994,6 +1996,9 @@ void gui__repeat_update(gui__repeat_t *repeat, u32 val, u32 pop, u32 frame)
 		repeat->val = 0;
 	}
 }
+
+static
+void gui__store_window_rect(gui_t *gui);
 
 gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
                      gui_flags_t flags, const char *font_file_path)
@@ -2125,6 +2130,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		while (SDL_PollEvent(&evt) == 1); /* must be run before SDL_GetWindowSize */
 	}
 	SDL_GetWindowSize(gui->window, &gui->window_dim.x, &gui->window_dim.y);
+	gui__store_window_rect(gui);
 
 	gui->creation_time = time_current();
 	gui->frame_start_time = gui->creation_time;
@@ -2248,10 +2254,10 @@ void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 	*y = gui->window_dim.y;
 }
 
-b32 gui_is_maximized(const gui_t *gui)
+static
+b32 gui__maximum_window_rect(const gui_t *gui, SDL_Rect *rect)
 {
 	int display_idx;
-	SDL_Rect usable_bounds;
 
 	display_idx = SDL_GetWindowDisplayIndex(gui->window);
 	if (display_idx < 0) {
@@ -2259,13 +2265,20 @@ b32 gui_is_maximized(const gui_t *gui)
 		return false;
 	}
 
-	if (SDL_GetDisplayUsableBounds(display_idx, &usable_bounds) != 0) {
+	if (SDL_GetDisplayUsableBounds(display_idx, rect) != 0) {
 		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
 		return false;
 	}
 
-	return gui->window_dim.x == usable_bounds.w
-	    && gui->window_dim.y == usable_bounds.h;
+	return true;
+}
+
+b32 gui_is_maximized(const gui_t *gui)
+{
+	SDL_Rect rect;
+	return gui__maximum_window_rect(gui, &rect)
+	    && gui->window_dim.x == rect.w
+	    && gui->window_dim.y == rect.h;
 }
 
 void gui_minimize(gui_t *gui)
@@ -2273,39 +2286,47 @@ void gui_minimize(gui_t *gui)
 	SDL_MinimizeWindow(gui->window);
 }
 
+static
+void gui__store_window_rect(gui_t *gui)
+{
+	v2i pos;
+	SDL_GetWindowPosition(gui->window, &pos.x, &pos.y);
+	gui->window_restore_pos.x = pos.x;
+	gui->window_restore_pos.y = pos.y;
+	gui->window_restore_dim.x = gui->window_dim.x;
+	gui->window_restore_dim.y = gui->window_dim.y;
+}
+
 void gui_maximize(gui_t *gui)
 {
-#if 0
-	/* TODO(rgriege): check why SDL_MaximizeWindow wasn't used on windoge */
-	int display_idx;
-	SDL_Rect usable_bounds;
-
-	display_idx = SDL_GetWindowDisplayIndex(gui->window);
-	if (display_idx < 0) {
-		log_error("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
-		return;
+	/* NOTE(rgriege): needs a workaround because
+	 * SDL_MaximizeWindow consumes the menu bar on windoge */
+	SDL_Rect rect;
+	gui__store_window_rect(gui);
+	if (gui__maximum_window_rect(gui, &rect)) {
+		SDL_SetWindowPosition(gui->window, rect.x, rect.y);
+		SDL_SetWindowSize(gui->window, rect.w, rect.h);
+	} else {
+		/* fallback */
+		SDL_MaximizeWindow(gui->window);
 	}
-
-	if (SDL_GetDisplayUsableBounds(display_idx, &usable_bounds) != 0) {
-		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
-		return;
-	}
-
-	SDL_SetWindowPosition(gui->window, usable_bounds.x, usable_bounds.y);
-	SDL_SetWindowSize(gui->window, usable_bounds.w, usable_bounds.h);
-#else
-	SDL_MaximizeWindow(gui->window);
-#endif
 }
 
 void gui_restore(gui_t *gui)
 {
-	SDL_RestoreWindow(gui->window);
+	const v2i pos = gui->window_restore_pos;
+	const v2i dim = gui->window_restore_dim;
+	/* NOTE(rgriege): order is important here */
+	SDL_SetWindowSize(gui->window, dim.x, dim.y);
+	SDL_SetWindowPosition(gui->window, pos.x, pos.y);
 }
 
 void gui_fullscreen(gui_t *gui)
 {
-	SDL_MaximizeWindow(gui->window);
+	SDL_Rect rect;
+		gui__store_window_rect(gui);
+	if (gui__maximum_window_rect(gui, &rect))
+		SDL_MaximizeWindow(gui->window);
 }
 
 static
