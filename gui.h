@@ -436,12 +436,14 @@ void pgui_row_cells(gui_t *gui, s32 height, const r32 *cells, u32 num_cells);
 #define pgui_row_cellsv(gui, height, cells) \
 	pgui_row_cells(gui, height, cells, countof(cells))
 void pgui_row_empty(gui_t *gui, s32 height);
+void pgui_row_centered(gui_t *gui, s32 height, r32 width);
 
 void pgui_col(gui_t *gui, s32 width, u32 num_cells);
 void pgui_col_cells(gui_t *gui, s32 width, const r32 *cells, u32 num_cells);
 #define pgui_col_cellsv(gui, width, cells) \
 	pgui_col_cells(gui, width, cells, countof(cells))
 void pgui_col_empty(gui_t *gui, s32 width);
+void pgui_col_centered(gui_t *gui, s32 width, r32 height);
 
 void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 u64  pgui_next_widget_id(const gui_t *gui);
@@ -5083,6 +5085,14 @@ void pgui_row_empty(gui_t *gui, s32 height)
 	pgui__grid_advance(gui->grid);
 }
 
+void pgui_row_centered(gui_t *gui, s32 height, r32 width)
+{
+	const r32 cells[3] = { 0, width, 0 };
+	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	assert(countof(cells) < GUI_GRID_MAX_CELLS);
+	pgui_row_cells(gui, height, B2PC(cells));
+}
+
 void pgui_col(gui_t *gui, s32 width, u32 num_cells)
 {
 	const r32 cells[GUI_GRID_MAX_CELLS] = { 0 };
@@ -5100,6 +5110,14 @@ void pgui_col_empty(gui_t *gui, s32 width)
 {
 	pgui_col(gui, width, 1);
 	pgui__grid_advance(gui->grid);
+}
+
+void pgui_col_centered(gui_t *gui, s32 width, r32 height)
+{
+	const r32 cells[3] = { 0, height, 0 };
+	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	assert(countof(cells) < GUI_GRID_MAX_CELLS);
+	pgui_row_cells(gui, width, B2PC(cells));
 }
 
 void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
