@@ -4920,7 +4920,7 @@ void pgui__strip(gui_t *gui, b32 vertical, s32 minor_dim,
 	gui_grid_t *grid = gui->grid;
 	s32 major_dim;
 	b32 major_dim_inherited;
-	u32 unspecified_cell_cnt;
+	s32 unspecified_cell_cnt;
 	s32 cell_total_major_dim;
 	gui_grid_strip_t *strip;
 
