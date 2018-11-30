@@ -4903,10 +4903,12 @@ void gui__strip_set_dim(gui_t *gui, gui_grid_strip_t *strip,
 			strip->dim.d[vertical] = dim_.d[vertical];
 		}
 	} else {
+#ifdef DEBUG
 		const s32 prev = (grid->depth == 0)
 		               ? grid->dim.d[vertical]
 		               : grid->strips[grid->depth-1].dim.d[vertical];
 		assert(prev == GUI_GRID_FLEX || dim <= prev);
+#endif
 		strip->dim.d[vertical] = dim;
 	}
 }
