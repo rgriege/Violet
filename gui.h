@@ -2544,9 +2544,6 @@ b32 gui_begin_frame(gui_t *gui)
 		if (box2i_contains_point(box, gui->mouse_pos)) {
 			gui->mouse_covered_by_panel    = true;
 			gui->mouse_covered_by_dropdown = true;
-		} else if (mouse_pressed(gui, ~0)) {
-			gui__defocus_dropdown(gui);
-			gui->focus_id = 0;
 		}
 	}
 
@@ -3980,16 +3977,8 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                         u64 id, b32 *contains_mouse)
+void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 {
-	btn_val_t retval = BTN_NONE;
-	box2i box;
-	box2i_from_dims(&box, x, y+h, x+w, y);
-	*contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                  && gui__box_half_visible(gui, box)
-	                  && !gui->lock;
-
 	if (gui->focus_id == id) {
 		if (gui->lock) {
 			gui->focus_id = 0;
@@ -3997,12 +3986,8 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 			gui__tab_focus_adjacent_widget(gui);
 		} else {
 			gui->focus_id_found_this_frame = true;
-			if (mouse_pressed(gui, ~0) && !*contains_mouse)
+			if (mouse_pressed(gui, ~0) && !contains_mouse)
 				gui->focus_id = 0;
-			else if (   gui->key_repeat.triggered
-			         && (   gui->key_repeat.val == KB_RETURN
-			             || gui->key_repeat.val == KB_KP_ENTER))
-				retval = key_pressed(gui, gui->key_repeat.val) ? BTN_PRESS : BTN_HOLD;
 		}
 	} else if (gui->focus_next_widget && !gui->lock) {
 		gui__on_widget_tab_focused(gui, id);
@@ -4012,6 +3997,28 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		else
 			gui__on_widget_tab_focused(gui, id);
 	}
+}
+
+static
+btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         u64 id, b32 *contains_mouse)
+{
+	btn_val_t retval = BTN_NONE;
+	box2i box;
+
+	box2i_from_dims(&box, x, y+h, x+w, y);
+	*contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                  && gui__box_half_visible(gui, box)
+	                  && !gui->lock;
+
+	gui__widget_handle_focus(gui, id, *contains_mouse);
+
+	if (   gui->focus_id == id
+	    && !gui->lock
+	    && gui->key_repeat.triggered
+	    && (   gui->key_repeat.val == KB_RETURN
+	        || gui->key_repeat.val == KB_KP_ENTER))
+		retval = key_pressed(gui, gui->key_repeat.val) ? BTN_PRESS : BTN_HOLD;
 
 	if (gui->hot_id == id) {
 		if (!*contains_mouse || gui__mouse_covered(gui)) {
@@ -4169,46 +4176,32 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	              && gui__box_half_visible(gui, box)
 	              && !gui->lock;
 
-	if (gui->focus_id == id) {
-		if (gui->lock) {
-			gui->focus_id = 0;
-		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
-			gui__tab_focus_adjacent_widget(gui);
+	gui__widget_handle_focus(gui, id, contains_mouse);
+
+	if (   gui->focus_id == id
+	    && !gui->lock
+	    && gui->key_repeat.triggered) {
+		if (orientation == GUI__SLIDER_X) {
+			const s32 mid = (box.min.x + box.max.x) / 2;
+			const s32 dim = box.max.x - box.min.x;
+			if (gui__key_left(gui)) {
+				gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
+				moved_while_focused = true;
+			} else if (gui__key_right(gui)) {
+				gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
+				moved_while_focused = true;
+			}
 		} else {
-			gui->focus_id_found_this_frame = true;
-			if (mouse_pressed(gui, ~0) && !contains_mouse) {
-				gui->focus_id = 0;
-			} else if (gui->key_repeat.triggered) {
-				if (orientation == GUI__SLIDER_X) {
-					const s32 mid = (box.min.x + box.max.x) / 2;
-					const s32 dim = box.max.x - box.min.x;
-					if (gui__key_left(gui)) {
-						gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
-						moved_while_focused = true;
-					} else if (gui__key_right(gui)) {
-						gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
-						moved_while_focused = true;
-					}
-				} else {
-					const s32 mid = (box.min.y + box.max.y) / 2;
-					const s32 dim = box.max.y - box.min.y;
-					if (gui__key_up(gui)) {
-						gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
-						moved_while_focused = true;
-					} else if (gui__key_down(gui)) {
-						gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
-						moved_while_focused = true;
-					}
-				}
+			const s32 mid = (box.min.y + box.max.y) / 2;
+			const s32 dim = box.max.y - box.min.y;
+			if (gui__key_up(gui)) {
+				gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
+				moved_while_focused = true;
+			} else if (gui__key_down(gui)) {
+				gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
+				moved_while_focused = true;
 			}
 		}
-	} else if (gui->focus_next_widget && !gui->lock) {
-		gui__on_widget_tab_focused(gui, id);
-	} else if (gui->focus_prev_widget_id == id) {
-		if (gui->lock)
-			gui->focus_prev_widget_id = gui->prev_widget_id;
-		else
-			gui__on_widget_tab_focused(gui, id);
 	}
 
 	if (gui->hot_id == id) {
@@ -4349,7 +4342,8 @@ void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          u32 *val, u32 num_items)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	b32 contains_mouse, triggered_by_key = false;
+	const b32 was_focused = (gui->focus_id == id);
+	b32 contains_mouse, items_contain_mouse, triggered_by_key = false;
 	gui__widget_render_state_t render_state;
 	box2i box;
 
@@ -4361,33 +4355,29 @@ void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	                 && !gui->lock;
 
 	if (gui->focus_id == id) {
-		if (   gui->lock
-		    || (mouse_released(gui, MB_LEFT) && contains_mouse)) {
-			gui__defocus_dropdown(gui);
-			gui->focus_id = 0;
-		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
-			gui__defocus_dropdown(gui);
-			gui__tab_focus_adjacent_widget(gui);
-		} else {
-			gui->focus_id_found_this_frame = true;
-			if (gui->key_repeat.triggered) {
-				if (gui__key_up(gui) && *val > 0) {
-					--*val;
-					triggered_by_key = true;
-				} else if (gui__key_down(gui) && *val + 1 < num_items) {
-					++*val;
-					triggered_by_key = true;
-				}
-			}
-		}
-	} else if (gui->focus_next_widget && !gui->lock) {
-		gui__on_widget_tab_focused(gui, id);
-	} else if (gui->focus_prev_widget_id == id) {
-		if (gui->lock)
-			gui->focus_prev_widget_id = gui->prev_widget_id;
-		else
-			gui__on_widget_tab_focused(gui, id);
+		box2i box_items;
+		box2i_from_xywh(&box_items, x, y, w, h);
+		box_items.min.y -= num_items * h;
+		items_contain_mouse = box2i_contains_point(box_items, gui->mouse_pos);
+	} else {
+		items_contain_mouse = contains_mouse;
 	}
+
+	gui__widget_handle_focus(gui, id, items_contain_mouse);
+
+	if (   gui->focus_id == id
+	    && !gui->lock
+	    && gui->key_repeat.triggered) {
+		if (gui__key_up(gui) && *val > 0) {
+			--*val;
+			triggered_by_key = true;
+		} else if (gui__key_down(gui) && *val + 1 < num_items) {
+			++*val;
+			triggered_by_key = true;
+		}
+	}
+	if (was_focused && gui->focus_id != id)
+		gui__defocus_dropdown(gui);
 
 	if (gui->hot_id == id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
@@ -4501,7 +4491,7 @@ b32 gui_dropdown_item(gui_t *gui, const char *txt)
 		 * Temporarily clear it so buttons work correctly. */
 		gui->mouse_covered_by_panel = false;
 		gui_style_push(gui, btn, gui_style(gui)->dropdown);
-		if (pgui_btn_txt(gui, txt)) {
+		if (pgui_btn_txt(gui, txt) == BTN_PRESS) {
 			*gui->current_dropdown.val = gui->current_dropdown.item_idx;
 			chosen = true;
 		} else if (   gui->current_dropdown.triggered_by_key
@@ -4571,39 +4561,25 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 	b32 retval = false;
 	*id = gui_widget_id(gui, *x, *y);
 
-	if (gui->focus_id == *id) {
-		if (gui->lock) {
-			gui->focus_id = 0;
-		} if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
-			gui__tab_focus_adjacent_widget(gui);
-		} else {
-			gui->focus_id_found_this_frame = true;
-			if (mouse_pressed(gui, ~0) && !contains_mouse) {
-				gui->focus_id = 0;
-			} else if (gui->key_repeat.triggered) {
-				const s32 xo = *x, yo = *y;
-				if (gui__key_up(gui))
-					cb(x, y, *x, *y + 1, 0, 0, udata);
-				else if (gui__key_down(gui))
-					cb(x, y, *x, *y - 1, 0, 0, udata);
-				else if (gui__key_left(gui))
-					cb(x, y, *x - 1, *y, 0, 0, udata);
-				else if (gui__key_right(gui))
-					cb(x, y, *x + 1, *y, 0, 0, udata);
-				if (xo != *x || yo != *y) {
-					*id = gui_widget_id(gui, *x, *y);
-					gui->focus_id = *id;
-					retval = true;
-				}
-			}
+	gui__widget_handle_focus(gui, *id, contains_mouse);
+
+	if (   gui->focus_id == *id
+	    && !gui->lock
+	    && gui->key_repeat.triggered) {
+		const s32 xo = *x, yo = *y;
+		if (gui__key_up(gui))
+			cb(x, y, *x, *y + 1, 0, 0, udata);
+		else if (gui__key_down(gui))
+			cb(x, y, *x, *y - 1, 0, 0, udata);
+		else if (gui__key_left(gui))
+			cb(x, y, *x - 1, *y, 0, 0, udata);
+		else if (gui__key_right(gui))
+			cb(x, y, *x + 1, *y, 0, 0, udata);
+		if (xo != *x || yo != *y) {
+			*id = gui_widget_id(gui, *x, *y);
+			gui->focus_id = *id;
+			retval = true;
 		}
-	} else if (gui->focus_next_widget && !gui->lock) {
-		gui__on_widget_tab_focused(gui, *id);
-	} else if (gui->focus_prev_widget_id == *id) {
-		if (gui->lock)
-			gui->focus_prev_widget_id = gui->prev_widget_id;
-		else
-			gui__on_widget_tab_focused(gui, *id);
 	}
 
 	if (gui->hot_id == *id) {
@@ -5202,7 +5178,7 @@ btn_val_t pgui_btn_txt(gui_t *gui, const char *lbl)
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_txt(gui, x, y, w, h, lbl);
-	if (result)
+	if (result == BTN_PRESS)
 		gui->current_dropdown.close_at_end = true;
 	return result;
 }
@@ -5213,7 +5189,7 @@ btn_val_t pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale)
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_img(gui, x, y, w, h, fname, scale);
-	if (result)
+	if (result == BTN_PRESS)
 		gui->current_dropdown.close_at_end = true;
 	return result;
 }
@@ -5224,7 +5200,7 @@ btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen)
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_pen(gui, x, y, w, h, pen);
-	if (result)
+	if (result == BTN_PRESS)
 		gui->current_dropdown.close_at_end = true;
 	return result;
 }
