@@ -2037,6 +2037,7 @@ typedef struct gui
 
 	/* specific widget state */
 	u32 npt_cursor_pos;
+	b32 npt_performed_action;
 	v2i drag_offset;
 	char *pw_buf;
 	v2f *vert_buf;
@@ -2281,6 +2282,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 
 	gui->npt_cursor_pos = 0;
+	gui->npt_performed_action = false;
 	gui->drag_offset = g_v2i_zero;
 	gui->pw_buf = array_create();
 	gui->vert_buf = array_create();
@@ -3929,190 +3931,6 @@ b32 gui__key_end(const gui_t *gui)
 #endif
 }
 
-b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-            const char *hint, npt_flags_t flags)
-{
-	return gui_npt_chars(gui, x, y, w, h, txt, n, hint, flags,
-	                     g_gui_npt_chars_print);
-}
-
-b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                  const char *hint, npt_flags_t flags, const b32 chars[128])
-{
-	const u64 id = gui_widget_id(gui, x, y);
-	box2i box;
-	box2i_from_dims(&box, x, y+h, x+w, y);
-	const b32 contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                           && gui__box_half_visible(gui, box)
-	                           && !gui->lock;
-	b32 complete = false;
-	const char *displayed_txt;
-
-	if (gui->focus_id == id) {
-		if (contains_mouse && mouse_pressed(gui, MB_LEFT)) {
-			const gui_text_style_t *style = &gui->style.npt.active.text;
-			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
-			                                         gui->mouse_pos, style);
-		} else {
-			const u32 len = (u32)strlen(txt);
-			gui->npt_cursor_pos = clamp(0, gui->npt_cursor_pos, len);
-		}
-		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
-			u32 len = (u32)strlen(txt);
-			for (size_t k = 0, kn = strlen(gui->text_npt); k < kn; ++k) {
-				if (gui->text_npt[k] > 0 && len < n - 1 && chars[(u8)gui->text_npt[k]]) {
-					for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
-						txt[i] = txt[i-1];
-					txt[gui->npt_cursor_pos++] = gui->text_npt[k];
-					++len;
-				}
-			}
-		} else if (gui->key_repeat.triggered) {
-			const u32 key_idx = gui->key_repeat.val;
-			const u32 len = (u32)strlen(txt);
-			if (key_idx == KB_BACKSPACE) {
-				if (gui->npt_cursor_pos > 0) {
-					for (u32 i = gui->npt_cursor_pos - 1; i < len; ++i)
-						txt[i] = txt[i+1];
-					--gui->npt_cursor_pos;
-				}
-			} else if (key_idx == KB_DELETE) {
-				for (u32 i = gui->npt_cursor_pos; i < len; ++i)
-					txt[i] = txt[i+1];
-			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
-				gui->focus_id = 0;
-				SDL_StopTextInput();
-				complete = true;
-			} else if (key_idx == KB_ESCAPE) {
-				gui->focus_id = 0;
-				SDL_StopTextInput();
-			} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
-				char *clipboard;
-				u32 cnt;
-				if (   SDL_HasClipboardText()
-				    && (clipboard = SDL_GetClipboardText())
-				    && (cnt = min(n - 1 - len, (u32)strlen(clipboard))) > 0) {
-					memmove(&txt[gui->npt_cursor_pos + cnt],
-					        &txt[gui->npt_cursor_pos],
-					        len - gui->npt_cursor_pos + 1);
-					memcpy(&txt[gui->npt_cursor_pos], clipboard, cnt);
-					gui->npt_cursor_pos += cnt;
-					SDL_free(clipboard);
-				}
-			} else if (gui__key_up(gui)) {
-				const gui_text_style_t *style = &gui->style.npt.active.text;
-				const font_t *font = gui__get_font(gui, style->size);
-				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt,
-				                              font->newline_dist, 0);
-			} else if (gui__key_down(gui)) {
-				const gui_text_style_t *style = &gui->style.npt.active.text;
-				const font_t *font = gui__get_font(gui, style->size);
-				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt,
-				                              -font->newline_dist, len);
-			} else if (gui__key_left(gui)) {
-				if (gui->npt_cursor_pos > 0)
-					--gui->npt_cursor_pos;
-			} else if (gui__key_right(gui)) {
-				if (gui->npt_cursor_pos < len)
-					++gui->npt_cursor_pos;
-			} else if (gui__key_home(gui)) {
-				gui->npt_cursor_pos = 0;
-			} else if (gui__key_end(gui)) {
-				gui->npt_cursor_pos = len;
-			} else if (key_idx == KB_TAB) {
-				if (flags & NPT_COMPLETE_ON_DEFOCUS)
-					complete = true;
-				gui__tab_focus_adjacent_widget(gui);
-			}
-		}
-		if (mouse_pressed(gui, MB_LEFT) && !contains_mouse) {
-			gui->focus_id = 0;
-			SDL_StopTextInput();
-			if (flags & NPT_COMPLETE_ON_DEFOCUS)
-				complete = true;
-		}
-	} else if (gui->focus_next_widget && !gui->lock) {
-		gui__on_widget_tab_focused(gui, id);
-		SDL_StartTextInput();
-		if (flags & NPT_CLEAR_ON_FOCUS)
-			txt[0] = '\0';
-		gui->npt_cursor_pos = (u32)strlen(txt);
-	} else if (gui->focus_prev_widget_id == id) {
-		if (gui->lock) {
-			gui->focus_prev_widget_id = gui->prev_widget_id;
-		} else {
-			gui__on_widget_tab_focused(gui, id);
-			SDL_StartTextInput();
-			if (flags & NPT_CLEAR_ON_FOCUS)
-				txt[0] = '\0';
-			gui->npt_cursor_pos = (u32)strlen(txt);
-		}
-	} else if (gui->active_id == id) {
-		if (mouse_released(gui, MB_LEFT)) {
-			if (contains_mouse) {
-				gui->focus_id = id;
-				SDL_StartTextInput();
-				if (flags & NPT_CLEAR_ON_FOCUS) {
-					txt[0] = '\0';
-					gui->npt_cursor_pos = 0;
-				}
-			}
-			gui->active_id = 0;
-		} else {
-			gui->active_id_found_this_frame = true;
-		}
-	} else if (gui->hot_id == id) {
-		if (!contains_mouse || gui->mouse_covered_by_panel) {
-			gui->hot_id = 0;
-		} else if (mouse_pressed(gui, MB_LEFT)) {
-			const gui_text_style_t *style = &gui->style.npt.active.text;
-			gui->active_id = id;
-			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
-			                                         gui->mouse_pos, style);
-			gui->hot_id = 0;
-			gui->active_id_found_this_frame = true;
-		} else {
-			gui->hot_id_found_this_frame = true;
-		}
-	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
-		gui->hot_id = id;
-		gui->hot_id_found_this_frame = true;
-	}
-
-	const gui__widget_render_state_t render_state
-		= gui__widget_render_state(gui, id, true, false, contains_mouse);
-	const gui_element_style_t style
-		= gui__element_style(gui, render_state, &gui->style.npt);
-	gui->style.npt.pen(gui, x, y, w, h, &style);
-
-	if (flags & NPT_PASSWORD) {
-		const u32 sz = (u32)strlen(txt);
-		array_reserve(gui->pw_buf, sz+1);
-		for (u32 i = 0; i < sz; ++i)
-			gui->pw_buf[i] = '*';
-		gui->pw_buf[sz] = '\0';
-		gui_txt_styled(gui, x, y, w, h, gui->pw_buf, &style.text);
-		displayed_txt = gui->pw_buf;
-	} else {
-		gui_txt_styled(gui, x, y, w, h, txt, &style.text);
-		displayed_txt = txt;
-	}
-	if (gui->focus_id == id) {
-		gui->focus_id_found_this_frame = true;
-		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
-			const color_t color = style.text.color;
-			const font_t *font = gui__get_font(gui, style.text.size);
-			gui__txt_char_pos(gui, &x, &y, w, h, displayed_txt,
-			                  gui->npt_cursor_pos, &style.text);
-			gui_line(gui, x + 1, y + font->descent, x + 1, y + font->ascent, 1, color);
-		}
-	} else if (hint && strlen(txt) == 0) {
-		gui_txt_styled(gui, x, y, w, h, hint, &style.text);
-	}
-	gui->prev_widget_id = id;
-	return complete;
-}
-
 static
 void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 {
@@ -4121,6 +3939,8 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 			gui->focus_id = 0;
 		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
 			gui__tab_focus_adjacent_widget(gui);
+		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_ESCAPE) {
+			gui->focus_id = 0;
 		} else {
 			gui->focus_id_found_this_frame = true;
 			if (mouse_pressed(gui, ~0) && !contains_mouse)
@@ -4134,6 +3954,202 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 		else
 			gui__on_widget_tab_focused(gui, id);
 	}
+}
+
+static
+void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
+{
+	if (   !gui->npt_performed_action
+	    && (flags & NPT_CLEAR_ON_FOCUS)) {
+		txt[0] = '\0';
+		*len = 0;
+		gui->npt_performed_action = true;
+	}
+}
+
+b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+            const char *hint, npt_flags_t flags)
+{
+	return gui_npt_chars(gui, x, y, w, h, txt, n, hint, flags,
+	                     g_gui_npt_chars_print);
+}
+
+b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+                  const char *hint, npt_flags_t flags, const b32 chars[128])
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	const b32 was_focused = (gui->focus_id == id);
+	const gui_widget_style_t *style = &gui->style.npt;
+	box2i box;
+	b32 contains_mouse, tab_completed;
+	b32 complete = false;
+	gui__widget_render_state_t render_state;
+	gui_element_style_t elem_style;
+	const char *displayed_txt;
+	const char *txt_to_display;
+
+
+	box2i_from_dims(&box, x, y+h, x+w, y);
+	contains_mouse = box2i_contains_point(box, gui->mouse_pos)
+	              && gui__box_half_visible(gui, box)
+	              && !gui->lock;
+
+	gui__widget_handle_focus(gui, id, contains_mouse);
+	tab_completed = was_focused
+	             && gui->focus_id != id
+	             && !gui->lock
+	             && gui->key_repeat.triggered
+	             && gui->key_repeat.val == KB_TAB;
+
+	if (gui->focus_id == id) {
+		if (contains_mouse && mouse_pressed(gui, MB_LEFT)) {
+			const gui_text_style_t *txt_style = &style->active.text;
+			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
+			                                         gui->mouse_pos, txt_style);
+		} else {
+			const u32 len = (u32)strlen(txt);
+			gui->npt_cursor_pos = clamp(0, gui->npt_cursor_pos, len);
+		}
+		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
+			u32 len = (u32)strlen(txt);
+			gui__npt_prep_action(gui, flags, txt, &len);
+			for (size_t k = 0, kn = strlen(gui->text_npt); k < kn; ++k) {
+				if (gui->text_npt[k] > 0 && len < n - 1 && chars[(u8)gui->text_npt[k]]) {
+					for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
+						txt[i] = txt[i-1];
+					txt[gui->npt_cursor_pos++] = gui->text_npt[k];
+					++len;
+				}
+			}
+		} else if (gui->key_repeat.triggered) {
+			const u32 key_idx = gui->key_repeat.val;
+			u32 len = (u32)strlen(txt);
+			if (key_idx == KB_BACKSPACE) {
+				gui__npt_prep_action(gui, flags, txt, &len);
+				if (gui->npt_cursor_pos > 0) {
+					for (u32 i = gui->npt_cursor_pos - 1; i < len; ++i)
+						txt[i] = txt[i+1];
+					--gui->npt_cursor_pos;
+				}
+			} else if (key_idx == KB_DELETE) {
+				gui__npt_prep_action(gui, flags, txt, &len);
+				for (u32 i = gui->npt_cursor_pos; i < len; ++i)
+					txt[i] = txt[i+1];
+			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
+				gui__npt_prep_action(gui, flags, txt, &len);
+				gui->focus_id = 0;
+				complete = true;
+			} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
+				char *clipboard;
+				u32 cnt;
+				gui__npt_prep_action(gui, flags, txt, &len);
+				if (   SDL_HasClipboardText()
+				    && (clipboard = SDL_GetClipboardText())
+				    && (cnt = min(n - 1 - len, (u32)strlen(clipboard))) > 0) {
+					memmove(&txt[gui->npt_cursor_pos + cnt],
+					        &txt[gui->npt_cursor_pos],
+					        len - gui->npt_cursor_pos + 1);
+					memcpy(&txt[gui->npt_cursor_pos], clipboard, cnt);
+					gui->npt_cursor_pos += cnt;
+					SDL_free(clipboard);
+				}
+			} else if (gui__key_up(gui)) {
+				const gui_text_style_t *txt_style = &style->active.text;
+				const font_t *font = gui__get_font(gui, txt_style->size);
+				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt,
+				                              font->newline_dist, 0);
+			} else if (gui__key_down(gui)) {
+				const gui_text_style_t *txt_style = &style->active.text;
+				const font_t *font = gui__get_font(gui, txt_style->size);
+				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt,
+				                              -font->newline_dist, len);
+			} else if (gui__key_left(gui)) {
+				if (gui->npt_cursor_pos > 0)
+					--gui->npt_cursor_pos;
+			} else if (gui__key_right(gui)) {
+				if (gui->npt_cursor_pos < len)
+					++gui->npt_cursor_pos;
+			} else if (gui__key_home(gui)) {
+				gui->npt_cursor_pos = 0;
+			} else if (gui__key_end(gui)) {
+				gui->npt_cursor_pos = len;
+			}
+		}
+	} else if (gui->active_id == id) {
+		if (mouse_released(gui, MB_LEFT)) {
+			if (contains_mouse)
+				gui->focus_id = id;
+			gui->active_id = 0;
+		} else {
+			gui->active_id_found_this_frame = true;
+		}
+	} else if (gui->hot_id == id) {
+		if (!contains_mouse || gui->mouse_covered_by_panel) {
+			gui->hot_id = 0;
+		} else if (mouse_pressed(gui, MB_LEFT)) {
+			gui->active_id = id;
+			gui->hot_id = 0;
+			gui->active_id_found_this_frame = true;
+		} else {
+			gui->hot_id_found_this_frame = true;
+		}
+	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
+		gui->hot_id = id;
+		gui->hot_id_found_this_frame = true;
+	}
+
+	if (was_focused != (gui->focus_id == id)) {
+		if (was_focused) {
+			SDL_StopTextInput();
+			if ((flags & NPT_COMPLETE_ON_DEFOCUS) || tab_completed)
+				complete = true;
+		} else {
+			SDL_StartTextInput();
+			if (flags & NPT_CLEAR_ON_FOCUS) {
+				gui->npt_cursor_pos = 0;
+			} else {
+				const gui_text_style_t *txt_style = &style->active.text;
+				gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
+				                                         gui->mouse_pos, txt_style);
+			}
+			gui->npt_performed_action = false;
+		}
+	}
+
+	render_state = gui__widget_render_state(gui, id, true, false, contains_mouse);
+	elem_style = gui__element_style(gui, render_state, style);
+	style->pen(gui, x, y, w, h, &elem_style);
+	txt_to_display = gui->focus_id != id
+	              || gui->npt_performed_action
+	              || !(flags & NPT_CLEAR_ON_FOCUS)
+	               ? txt : "";
+
+	if (flags & NPT_PASSWORD) {
+		const u32 sz = (u32)strlen(txt_to_display);
+		array_reserve(gui->pw_buf, sz+1);
+		for (u32 i = 0; i < sz; ++i)
+			gui->pw_buf[i] = '*';
+		gui->pw_buf[sz] = '\0';
+		gui_txt_styled(gui, x, y, w, h, gui->pw_buf, &elem_style.text);
+		displayed_txt = gui->pw_buf;
+	} else {
+		gui_txt_styled(gui, x, y, w, h, txt_to_display, &elem_style.text);
+		displayed_txt = txt_to_display;
+	}
+	if (gui->focus_id == id) {
+		gui->focus_id_found_this_frame = true;
+		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
+			const color_t color = elem_style.text.color;
+			const font_t *font = gui__get_font(gui, elem_style.text.size);
+			gui__txt_char_pos(gui, &x, &y, w, h, displayed_txt,
+			                  gui->npt_cursor_pos, &elem_style.text);
+			gui_line(gui, x + 1, y + font->descent, x + 1, y + font->ascent, 1, color);
+		}
+	} else if (txt[0] == 0 && hint) {
+		gui_txt_styled(gui, x, y, w, h, hint, &elem_style.text);
+	}
+	gui->prev_widget_id = id;
+	return complete;
 }
 
 static
