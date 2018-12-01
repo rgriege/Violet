@@ -4298,7 +4298,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	const u64 id = gui_widget_id(gui, x, y);
 	box2i box;
 	b32 contains_mouse;
-	b32 moved_while_focused = false;
+	b32 triggered_by_key = false;
 
 	assert(*val >= 0.f && *val <= 1.f);
 
@@ -4323,20 +4323,20 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 			const s32 dim = box.max.x - box.min.x;
 			if (gui__key_left(gui)) {
 				gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
-				moved_while_focused = true;
+				triggered_by_key = true;
 			} else if (gui__key_right(gui)) {
 				gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
-				moved_while_focused = true;
+				triggered_by_key = true;
 			}
 		} else {
 			const s32 mid = (box.min.y + box.max.y) / 2;
 			const s32 dim = box.max.y - box.min.y;
 			if (gui__key_up(gui)) {
 				gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
-				moved_while_focused = true;
+				triggered_by_key = true;
 			} else if (gui__key_down(gui)) {
 				gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
-				moved_while_focused = true;
+				triggered_by_key = true;
 			}
 		}
 	}
@@ -4376,7 +4376,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	}
 
 	const gui__widget_render_state_t render_state
-		= gui__widget_render_state(gui, id, moved_while_focused, false, contains_mouse);
+		= gui__widget_render_state(gui, id, triggered_by_key, false, contains_mouse);
 	const gui_element_style_t style_track =
 		gui__element_style(gui, render_state, &gui->style.slider.track);
 	const gui_element_style_t style_handle =
@@ -4399,7 +4399,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 		                             &style_handle);
 	}
 	gui->prev_widget_id = id;
-	return gui->active_id == id;
+	return gui->active_id == id || triggered_by_key;
 }
 
 b32 gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val)
