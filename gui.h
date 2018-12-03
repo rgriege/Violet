@@ -75,12 +75,15 @@ typedef struct texture_t
 	u32 handle;
 	u32 width;
 	u32 height;
+	u32 fmt;
+	u32 frame_buffer;
 } texture_t;
 
 b32  texture_load(texture_t *tex, const char *filename);
 void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
 void texture_destroy(texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
+void texture_resize(texture_t *tex, u32 w, u32 h);
 void texture_bind(const texture_t *tex);
 void texture_unbind();
 
@@ -900,17 +903,95 @@ b32 texture_load(texture_t *tex, const char *filename)
 	return ret;
 }
 
-void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
+static void texture__update_framebuffer(texture_t *tex)
 {
-	GL_CHECK(glGenTextures, 1, &tex->handle);
+	/* Create frame buffer */
+
+	GL_CHECK(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, tex->frame_buffer);
+	GL_CHECK(glFramebufferTexture2D, GL_DRAW_FRAMEBUFFER,
+			GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->handle, 0);
+
+	GL_CHECK(glFramebufferTexture2D, GL_DRAW_FRAMEBUFFER,
+			GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex->handle, 0);
+
+	GL_CHECK(glDrawBuffers, 1, (GLuint[]){GL_COLOR_ATTACHMENT0});
+
+	/* Check frame buffer */
+
+	GLuint status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+	GL_ERR_CHECK("glCheckFramebufferStatus");
+	/* TODO(Joao): how should GL functions with a return value be checked? */
+
+	if (status != GL_FRAMEBUFFER_COMPLETE)
+	{
+		printf("Failed to create framebuffer!\n");
+		switch (status)
+		{
+#define prefix "FrameBuffer error: "
+		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+			log_error(prefix "incomplete dimensions");
+		break;
+		case GL_FRAMEBUFFER_UNSUPPORTED:
+			log_error(prefix "unsupported");
+		break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+			log_error(prefix "missing attach");
+		break;
+		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+			log_error(prefix "incomplete attach");
+		break;
+#undef prefix
+		}
+		/* TODO(Joao): fallback to use no framebuffers or exit? */
+		tex->frame_buffer = 0;
+	}
+}
+
+void texture_resize(texture_t *tex, u32 w, u32 h)
+{
 	tex->width = w;
 	tex->height = h;
+
 	texture_bind(tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, fmt, w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
+	GL_CHECK(glTexImage2D, GL_TEXTURE_2D, 0, tex->fmt, w, h, 0, tex->fmt,
+			GL_UNSIGNED_BYTE, NULL);
+
+	if (tex->frame_buffer) {
+		texture__update_framebuffer(tex);
+	}
+}
+
+void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
+{
+	tex->frame_buffer = 0;
+	tex->width = w;
+	tex->height = h;
+	tex->fmt = fmt;
+
+	GL_CHECK(glGenTextures, 1, &tex->handle);
+	texture_bind(tex);
+
+	GL_CHECK(glTexImage2D, GL_TEXTURE_2D, 0, fmt, w, h, 0, fmt,
+			GL_UNSIGNED_BYTE, data);
+
 	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+void texture_target(texture_t *tex)
+{
+	if (tex->frame_buffer == 0) {
+		GL_CHECK(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
+		GL_CHECK(glGenFramebuffers, 1, &tex->frame_buffer);
+
+		texture__update_framebuffer(tex);
+	}
+
+	GL_CHECK(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, tex->frame_buffer);
+	GL_CHECK(glViewport, 0, 0, tex->width, tex->height);
+
 }
 
 void texture_destroy(texture_t *tex)
@@ -918,6 +999,10 @@ void texture_destroy(texture_t *tex)
 	if (tex->handle != 0) {
 		GL_CHECK(glDeleteTextures, 1, &tex->handle);
 		tex->handle = 0;
+	}
+	if (tex->frame_buffer != 0) {
+		GL_CHECK(glDeleteFramebuffers, 1, &tex->frame_buffer);
+		tex->frame_buffer = 0;
 	}
 }
 
