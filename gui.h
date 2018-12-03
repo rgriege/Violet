@@ -202,11 +202,15 @@ typedef enum gui_flags_t
 
 gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                   gui_flags_t flags);
+gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
+                     gui_flags_t flags, const char *font_file_path);
 void   gui_destroy(gui_t *gui);
 void   gui_move(const gui_t *gui, s32 dx, s32 dy);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
+b32    gui_is_maximized(const gui_t *gui);
 void   gui_minimize(gui_t *gui);
 void   gui_maximize(gui_t *gui);
+void   gui_restore(gui_t *gui);
 void   gui_fullscreen(gui_t *gui);
 b32    gui_begin_frame(gui_t *gui);
 void   gui_end_frame(gui_t *gui);
@@ -355,16 +359,20 @@ void      gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void      gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                              u32 *val, u32 num_items);
 b32       gui_dropdown_item(gui_t *gui, const char *txt);
+void      gui_dropdown_end(gui_t *gui);
 typedef void(*gui_drag_callback_t)(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                                    s32 offset_x, s32 offset_y, void *udata);
-b32       gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb);
-b32       gui_drag_horiz(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb);
-b32       gui_drag_vert(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb);
-b32       gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
+b32       gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb);
+b32       gui_drag_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h, mouse_button_t mb);
+b32       gui_drag_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h, mouse_button_t mb);
+b32       gui_dragx(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
                     gui_drag_callback_t cb, void *udata);
-b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb);
-b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
+b32       gui_cdrag(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb);
+b32       gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
                      gui_drag_callback_t cb, void *udata);
+b32       gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         const char *txt, s32 item_w, u32 num_items);
+void      gui_menu_end(gui_t *gui);
 
 u64       gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void      gui_widget_focus_next(gui_t *gui);
@@ -380,6 +388,95 @@ void      gui_unlock(gui_t *gui);
 void      gui_lock_if(gui_t *gui, b32 cond, u32 *restore_val);
 void      gui_lock_restore(gui_t *gui, u32 val);
 
+
+/* Window */
+
+void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
+
+
+/* Grid layout */
+
+#define GUI_GRID_FLEX 0
+
+#ifndef GUI_GRID_MAX_DEPTH
+#define GUI_GRID_MAX_DEPTH 8
+#endif
+
+#ifndef GUI_GRID_MAX_CELLS
+#define GUI_GRID_MAX_CELLS 128
+#endif
+
+typedef enum gui_grid_flex
+{
+	GUI_GRID_FLEX_NONE       = 0x0,
+	GUI_GRID_FLEX_HORIZONTAL = 0x1,
+	GUI_GRID_FLEX_VERTICAL   = 0x2,
+	GUI_GRID_FLEX_FULL       = 0x3,
+} gui_grid_flex_e;
+
+typedef struct gui_grid_strip
+{
+	b32 vertical;
+	s32 *current_cell;
+	s32 *max_cell;
+	u32 num_cells;
+	v2i dim;
+} gui_grid_strip_t;
+
+typedef struct gui_grid
+{
+	s32 cells[GUI_GRID_MAX_CELLS];
+	gui_grid_strip_t strips[GUI_GRID_MAX_DEPTH];
+	u32 depth;
+	v2i start, dim, max_dim, pos;
+	struct gui_grid *prev;
+} gui_grid_t;
+
+void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h);
+void pgui_grid_end(gui_t *gui, gui_grid_t *grid);
+void pgui_row(gui_t *gui, s32 height, u32 num_cells);
+void pgui_row_cells(gui_t *gui, s32 height, const r32 *cells, u32 num_cells);
+#define pgui_row_cellsv(gui, height, cells) \
+	pgui_row_cells(gui, height, cells, countof(cells))
+void pgui_row_empty(gui_t *gui, s32 height);
+void pgui_row_centered(gui_t *gui, s32 height, r32 width);
+
+void pgui_col(gui_t *gui, s32 width, u32 num_cells);
+void pgui_col_cells(gui_t *gui, s32 width, const r32 *cells, u32 num_cells);
+#define pgui_col_cellsv(gui, width, cells) \
+	pgui_col_cells(gui, width, cells, countof(cells))
+void pgui_col_empty(gui_t *gui, s32 width);
+void pgui_col_centered(gui_t *gui, s32 width, r32 height);
+
+void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
+u64  pgui_next_widget_id(const gui_t *gui);
+
+void      pgui_spacer(gui_t *gui);
+void      pgui_spacer_blank(gui_t *gui);
+void      pgui_txt(gui_t *gui, const char *str);
+void      pgui_img(gui_t *gui, const char *fname, img_scale_t scale);
+btn_val_t pgui_btn_txt(gui_t *gui, const char *lbl);
+btn_val_t pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale);
+btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen);
+b32       pgui_chk(gui_t *gui, const char *lbl, b32 *val);
+b32       pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint,
+                   npt_flags_t flags);
+b32       pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
+                         npt_flags_t flags, const b32 chars[128]);
+b32       pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
+void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
+void      pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
+b32       pgui_dropdown_item(gui_t *gui, const char *txt);
+void      pgui_dropdown_end(gui_t *gui);
+b32       pgui_slider_x(gui_t *gui, r32 *val);
+b32       pgui_slider_y(gui_t *gui, r32 *val);
+b32       pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max);
+b32       pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max);
+b32       pgui_menu_begin(gui_t *gui, const char *txt,
+                          s32 item_w, u32 num_items);
+void      pgui_menu_end(gui_t *gui);
+
+
 /* Splits */
 
 #ifndef GUI_SPLIT_RESIZE_BORDER
@@ -388,42 +485,33 @@ void      gui_lock_restore(gui_t *gui, u32 val);
 
 typedef enum gui_split_flags
 {
-	GUI_SPLIT_RESIZABLE = 0x1,
-	GUI_SPLIT_FULL      = 0x1,
+	GUI_SPLIT_RESIZABLE = 0x1, /* applies to branches */
+	GUI_SPLIT_TEMPORARY = 0x2, /* applies to branches */
+	GUI_SPLIT_DIVISIBLE = 0x4, /* applies to leaves */
+	GUI_SPLIT_FULL      = 0x7,
 } gui_split_flags_t;
 
 typedef struct gui_split
 {
-	b32 vert, leaf;
-	gui_split_flags_t flags;
+	b16 in_use;
+	b16 vertical;
+	s32 flags;
 	struct gui_split *parent, *sp1, *sp2;
 	r32 sz, default_sz;
 	box2i box;
+	struct gui_panel *panel;
 } gui_split_t;
 
-void gui_split_init(gui_t *gui, gui_split_t *split,
-                    gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                    gui_split_flags_t flags);
-void gui_vsplit_init(gui_t *gui, gui_split_t *split,
-                     gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                     gui_split_flags_t flags);
-void gui_compute_split_boxes(gui_t *gui);
+void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits);
+b32  gui_split2h(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
+                 gui_split_t **sp2, gui_split_flags_t flags);
+b32  gui_split2v(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
+                 gui_split_t **sp2, gui_split_flags_t flags);
+void gui_splits_compute(gui_t *gui);
+void gui_splits_render(gui_t *gui);
 
 
 /* Panels */
-
-#define GUI_GRID_REMAINING 0
-#define GUI_GRID_MINOR_DIM_INHERITED 0
-#define GUI_COL_WIDTH_INHERITED GUI_GRID_MINOR_DIM_INHERITED
-#define GUI_ROW_HEIGHT_INHERITED GUI_GRID_MINOR_DIM_INHERITED
-
-#ifndef GUI_PANEL_MAX_GRID_DEPTH
-#define GUI_PANEL_MAX_GRID_DEPTH 8
-#endif
-
-#ifndef GUI_PANEL_MAX_GRID_CELLS
-#define GUI_PANEL_MAX_GRID_CELLS 64
-#endif
 
 #ifndef GUI_SCROLL_RATE
 #define GUI_SCROLL_RATE 20
@@ -449,17 +537,9 @@ typedef enum gui_panel_flags
 	GUI_PANEL_CLOSABLE    = 0x08,
 	GUI_PANEL_COLLAPSABLE = 0x10,
 	GUI_PANEL_SCROLLBARS  = 0x20,
-	GUI_PANEL_FULL        = 0x3f,
+	GUI_PANEL_DOCKABLE    = 0x40,
+	GUI_PANEL_FULL        = 0x4f,
 } gui_panel_flags_t;
-
-typedef struct gui_panel_grid_strip
-{
-	b32 vertical;
-	u32 *current_cell;
-	u32 *max_cell;
-	u32 num_cells;
-	v2i dim;
-} gui_panel_grid_strip_t;
 
 typedef struct gui_panel
 {
@@ -468,77 +548,42 @@ typedef struct gui_panel
 	gui_panel_flags_t flags;
 	u32 id;
 	intptr userdata;
-	struct
-	{
-		u32 cells[GUI_PANEL_MAX_GRID_CELLS];
-		gui_panel_grid_strip_t strips[GUI_PANEL_MAX_GRID_DEPTH];
-		u32 depth;
-		v2i start, pos;
-	} grid;
 	v2i scroll;
 	v2i scroll_rate;
 	v2i padding;
 	v2i required_dim;
 	s32 body_height;
 	s32 pri;
-	struct gui_panel *parent, *prev, *next;
-	gui_split_t split;
+	struct gui_panel *prev, *next;
+	gui_split_t *split;
 	b32 closed;
 	b32 collapsed;
 	b32 tabbed_out;
 } gui_panel_t;
 
-void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
+void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
+                     s32 x, s32 y, s32 w, s32 h,
                      const char *title, gui_panel_flags_t flags);
+void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
+                              s32 w, s32 h,
+                              const char *title, gui_panel_flags_t flags);
+void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
+                              gui_split_t *split,
+                              const char *title, gui_panel_flags_t flags);
 void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
+void pgui_panel_select_tab(gui_panel_t *panel);
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_collapse(gui_panel_t *panel);
 void pgui_panel_restore(gui_panel_t *panel);
+void pgui_panel_open(gui_t *gui, gui_panel_t *panel);
+void pgui_panel_close(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
-
-void pgui_row(gui_t *gui, r32 height, u32 num_cells);
-void pgui_row_cells(gui_t *gui, r32 height, const r32 *cells, u32 num_cells);
-#define pgui_row_cellsv(gui, height, cells) \
-	pgui_row_cells(gui, height, cells, countof(cells))
-void pgui_row_empty(gui_t *gui, r32 height);
-
-void pgui_col(gui_t *gui, r32 width, u32 num_cells);
-void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells);
-#define pgui_col_cellsv(gui, width, cells) \
-	pgui_col_cells(gui, width, cells, countof(cells))
-void pgui_col_empty(gui_t *gui, r32 width);
-
-void      pgui_spacer(gui_t *gui);
-void      pgui_spacer_blank(gui_t *gui);
-void      pgui_txt(gui_t *gui, const char *str);
-void      pgui_img(gui_t *gui, const char *fname, img_scale_t scale);
-btn_val_t pgui_btn_txt(gui_t *gui, const char *lbl);
-btn_val_t pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale);
-btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen);
-b32       pgui_chk(gui_t *gui, const char *lbl, b32 *val);
-b32       pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint,
-                   npt_flags_t flags);
-b32       pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
-                         npt_flags_t flags, const b32 chars[128]);
-b32       pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
-void      pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
-void      pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
-b32       pgui_dropdown_item(gui_t *gui, const char *txt);
-b32       pgui_slider_x(gui_t *gui, r32 *val);
-b32       pgui_slider_y(gui_t *gui, r32 *val);
-b32       pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max);
-b32       pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max);
-
-void pgui_subpanel_init(gui_t *gui, gui_panel_t *subpanel);
-void pgui_subpanel(gui_t *gui, gui_panel_t *subpanel);
-void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel);
-
+b32  pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
-
-void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
-
-u64  pgui_next_widget_id(const gui_t *gui);
+int  pgui_panel_sortp(const void *lhs, const void *rhs);
+void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex);
+void pgui_panel_grid_end(gui_t *gui);
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                              const gui_element_style_t *style);
@@ -725,8 +770,6 @@ int __builtin_popcount(u32 x)
 }
 #endif // _M_X64
 #endif // _MSC_VER
-
-static void gui__split(gui_t *gui, gui_split_t *split, b32 render);
 
 static const char *g_vertex_shader;
 static const char *g_fragment_shader;
@@ -1914,14 +1957,19 @@ typedef struct gui
 	u32 scissor_idx;
 	u32 scissor_cnt;
 
+	v2i window_dim;
+	v2i window_restore_pos;
+	v2i window_restore_dim;
+
 	/* mouse */
-	v2i win_halfdim;
 	v2i mouse_pos;
 	v2i mouse_pos_last;
 	v2i mouse_pos_press;
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
+	b32 mouse_in_window;
 	b32 mouse_covered_by_panel;
+	b32 mouse_covered_by_dropdown;
 	b32 mouse_debug;
 	gui__repeat_t mouse_repeat;
 
@@ -1935,7 +1983,8 @@ typedef struct gui
 	/* style */
 	SDL_Cursor *cursors[GUI__CURSOR_COUNT];
 	b32 use_default_cursor;
-	font_t *fonts;
+	char font_file_path[256];
+	array(font_t) fonts;
 	cached_img_t *imgs;
 	gui_style_t style;
 	u8 style_stack[GUI_STYLE_STACK_LIMIT];
@@ -1963,32 +2012,40 @@ typedef struct gui
 	{
 		u64 id;
 		s32 x, y, w, h;
-		u32 val;
+		u32 *val;
 		u32 num_items;
 		u32 item_idx;
 		b32 triggered_by_key;
-		b32 contains_mouse;
+		b32 close_at_end;
+		s32 render_state;
+		char selected_item_txt[128];
+		struct {
+			s32 x, y, w, h;
+		} prev_mask;
 	} current_dropdown;
 	struct
 	{
 		u64 id;
-		s32 x, y, w, h;
-		u32 *val;
-		u32 num_items;
-		u32 item_idx;
-		b32 render_items;
-		b32 close_at_end;
-		char selected_item_txt[128];
-		struct
-		{
+		struct {
 			s32 x, y, w, h;
-		} prev_mask;
+		} mask;
 	} focused_dropdown;
+	b32 dragging_window;
 
-	/* splits & panels */
+	/* grid */
+	gui_grid_t grid_panel;
+	gui_grid_t grid_dropdown;
+	gui_grid_t *grid;
+
+	/* splits */
+	gui_split_t *splits;
+	u32 num_splits;
 	gui_split_t *root_split;
+	b32 splits_rendered_this_frame;
+
+	/* panels */
 	gui_panel_t *panel;
-	u32 next_panel_id;
+	b32 is_dragging_dockable_panel;
 	s32 next_panel_pri, min_panel_pri;
 } gui_t;
 
@@ -2026,8 +2083,11 @@ void gui__repeat_update(gui__repeat_t *repeat, u32 val, u32 pop, u32 frame)
 	}
 }
 
-gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
-                  gui_flags_t flags)
+static
+void gui__store_window_rect(gui_t *gui);
+
+gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
+                     gui_flags_t flags, const char *font_file_path)
 {
 	gui_t *gui = calloc(1, sizeof(gui_t));
 	if (g_gui_cnt == 0) {
@@ -2147,6 +2207,7 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
 		if (!gui->cursors[i])
 			goto err_cursor;
+	strncpy(gui->font_file_path, font_file_path, sizeof(gui->font_file_path)-1);
 	gui->fonts = array_create();
 	gui->imgs = array_create();
 
@@ -2154,9 +2215,8 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 		SDL_Event evt;
 		while (SDL_PollEvent(&evt) == 1); /* must be run before SDL_GetWindowSize */
 	}
-	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
-	static const v2i g_v2i_2 = { .x=2, .y=2 };
-	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
+	SDL_GetWindowSize(gui->window, &gui->window_dim.x, &gui->window_dim.y);
+	gui__store_window_rect(gui);
 
 	gui->creation_time = time_current();
 	gui->frame_start_time = gui->creation_time;
@@ -2171,9 +2231,10 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->style_stack_sz = 0;
 
-	SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
+	gui->mouse_btn = SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_pos_last = gui->mouse_pos;
 	gui->mouse_pos_press = gui->mouse_pos;
+	gui->mouse_in_window = true;
 	gui->mouse_debug = false;
 	gui__repeat_init(&gui->mouse_repeat);
 
@@ -2191,10 +2252,17 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->drag_offset = g_v2i_zero;
 	gui->pw_buf = array_create();
 	gui->vert_buf = array_create();
+	gui->dragging_window = false;
 
+	gui->grid = NULL;
+
+	gui->splits = NULL;
+	gui->num_splits = 0;
 	gui->root_split = NULL;
+	gui->splits_rendered_this_frame = false;
+
 	gui->panel = NULL;
-	gui->next_panel_id = 1;
+	gui->is_dragging_dockable_panel = false;
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
 
@@ -2226,6 +2294,12 @@ out:
 	return gui;
 }
 
+gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
+                  gui_flags_t flags)
+{
+	return gui_create_ex(x, y, w, h, title, flags, GUI_FONT_FILE_PATH);
+}
+
 void gui_destroy(gui_t *gui)
 {
 	array_destroy(gui->pw_buf);
@@ -2254,17 +2328,42 @@ void gui_destroy(gui_t *gui)
 
 void gui_move(const gui_t *gui, s32 dx, s32 dy)
 {
-	const v2i dp = { .x = dx, .y = dy };
-	v2i pos;
-	SDL_GetWindowPosition(gui->window, &pos.x, &pos.y);
-	v2i_add_eq(&pos, dp);
-	SDL_SetWindowPosition(gui->window, pos.x, pos.y);
+	s32 x, y;
+	SDL_GetWindowPosition(gui->window, &x, &y);
+	SDL_SetWindowPosition(gui->window, x + dx, y + dy);
 }
 
 void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 {
-	*x = gui->win_halfdim.x * 2;
-	*y = gui->win_halfdim.y * 2;
+	*x = gui->window_dim.x;
+	*y = gui->window_dim.y;
+}
+
+static
+b32 gui__maximum_window_rect(const gui_t *gui, SDL_Rect *rect)
+{
+	int display_idx;
+
+	display_idx = SDL_GetWindowDisplayIndex(gui->window);
+	if (display_idx < 0) {
+		log_error("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
+		return false;
+	}
+
+	if (SDL_GetDisplayUsableBounds(display_idx, rect) != 0) {
+		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+		return false;
+	}
+
+	return true;
+}
+
+b32 gui_is_maximized(const gui_t *gui)
+{
+	SDL_Rect rect;
+	return gui__maximum_window_rect(gui, &rect)
+	    && gui->window_dim.x == rect.w
+	    && gui->window_dim.y == rect.h;
 }
 
 void gui_minimize(gui_t *gui)
@@ -2272,29 +2371,47 @@ void gui_minimize(gui_t *gui)
 	SDL_MinimizeWindow(gui->window);
 }
 
+static
+void gui__store_window_rect(gui_t *gui)
+{
+	v2i pos;
+	SDL_GetWindowPosition(gui->window, &pos.x, &pos.y);
+	gui->window_restore_pos.x = pos.x;
+	gui->window_restore_pos.y = pos.y;
+	gui->window_restore_dim.x = gui->window_dim.x;
+	gui->window_restore_dim.y = gui->window_dim.y;
+}
+
 void gui_maximize(gui_t *gui)
 {
-	int display_idx;
-	SDL_Rect usable_bounds;
-
-	display_idx = SDL_GetWindowDisplayIndex(gui->window);
-	if (display_idx < 0) {
-		log_error("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
-		return;
+	/* NOTE(rgriege): needs a workaround because
+	 * SDL_MaximizeWindow consumes the menu bar on windoge */
+	SDL_Rect rect;
+	gui__store_window_rect(gui);
+	if (gui__maximum_window_rect(gui, &rect)) {
+		SDL_SetWindowPosition(gui->window, rect.x, rect.y);
+		SDL_SetWindowSize(gui->window, rect.w, rect.h);
+	} else {
+		/* fallback */
+		SDL_MaximizeWindow(gui->window);
 	}
+}
 
-	if (SDL_GetDisplayUsableBounds(display_idx, &usable_bounds) != 0) {
-		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
-		return;
-	}
-
-	SDL_SetWindowPosition(gui->window, usable_bounds.x, usable_bounds.y);
-	SDL_SetWindowSize(gui->window, usable_bounds.w, usable_bounds.h);
+void gui_restore(gui_t *gui)
+{
+	const v2i pos = gui->window_restore_pos;
+	const v2i dim = gui->window_restore_dim;
+	/* NOTE(rgriege): order is important here */
+	SDL_SetWindowSize(gui->window, dim.x, dim.y);
+	SDL_SetWindowPosition(gui->window, pos.x, pos.y);
 }
 
 void gui_fullscreen(gui_t *gui)
 {
-	SDL_MaximizeWindow(gui->window);
+	SDL_Rect rect;
+		gui__store_window_rect(gui);
+	if (gui__maximum_window_rect(gui, &rect))
+		SDL_MaximizeWindow(gui->window);
 }
 
 static
@@ -2355,13 +2472,7 @@ void gui__on_widget_tab_focused(gui_t *gui, u64 id)
 static
 void gui__defocus_dropdown(gui_t *gui)
 {
-	gui->focused_dropdown.id                   = 0;
-	gui->focused_dropdown.val                  = NULL;
-	gui->focused_dropdown.num_items            = 0;
-	gui->focused_dropdown.item_idx             = 0;
-	gui->focused_dropdown.render_items         = false;
-	gui->focused_dropdown.close_at_end         = false;
-	gui->focused_dropdown.selected_item_txt[0] = '\0';
+	gui->focused_dropdown.id = 0;
 }
 
 b32 gui_begin_frame(gui_t *gui)
@@ -2390,10 +2501,22 @@ b32 gui_begin_frame(gui_t *gui)
 			gui->last_input_time = now;
 		break;
 		case SDL_WINDOWEVENT:
-			if (evt.window.event == SDL_WINDOWEVENT_CLOSE)
+			switch (evt.window.event) {
+			case SDL_WINDOWEVENT_CLOSE:
 				quit = true;
-			else
+			break;
+			case SDL_WINDOWEVENT_LEAVE:
+				gui->mouse_in_window = false;
 				gui->last_input_time = now;
+			break;
+			case SDL_WINDOWEVENT_ENTER:
+				gui->mouse_in_window = true;
+				gui->last_input_time = now;
+			break;
+			default:
+				gui->last_input_time = now;
+			break;
+			}
 		break;
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
@@ -2410,21 +2533,28 @@ b32 gui_begin_frame(gui_t *gui)
 		}
 	}
 
+	SDL_GetWindowSize(gui->window, &gui->window_dim.x, &gui->window_dim.y);
+
 	gui->mouse_pos_last = gui->mouse_pos;
-	gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
+	if (!gui->mouse_in_window || gui->dragging_window) {
+		v2i w, gm;
+		SDL_GetWindowPosition(gui->window, &w.x, &w.y);
+		gui->mouse_btn |= SDL_GetGlobalMouseState(&gm.x, &gm.y);
+		gui->mouse_pos = v2i_sub(gm, w);
+	} else {
+		gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
+	}
+	gui->mouse_pos.y = gui->window_dim.y - gui->mouse_pos.y;
 	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
+
 	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
 		gui->mouse_pos_press = gui->mouse_pos;
 	gui__repeat_update(&gui->mouse_repeat, gui->mouse_btn,
 	                   __builtin_popcount(gui->mouse_btn),
 	                   gui->frame_time_milli);
 
-	SDL_GetWindowSize(gui->window, &gui->win_halfdim.x, &gui->win_halfdim.y);
-	gui->mouse_pos.y = gui->win_halfdim.y - gui->mouse_pos.y;
-	static const v2i g_v2i_2 = { .x=2, .y=2 };
-	v2i_div_eq(&gui->win_halfdim, g_v2i_2);
-
-	gui->mouse_covered_by_panel = false;
+	gui->mouse_covered_by_panel    = false;
+	gui->mouse_covered_by_dropdown = false;
 
 	gui->keys = SDL_GetKeyboardState(&key_cnt);
 	{
@@ -2475,10 +2605,10 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->scissor_cnt = 0;
 	gui_unmask(gui);
 
-	GL_CHECK(glViewport, 0, 0, 2*gui->win_halfdim.x, 2*gui->win_halfdim.y);
+	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
 	/* NOTE(rgriege): reset the scissor for glClear */
-	GL_CHECK(glScissor, 0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
+	GL_CHECK(glScissor, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
 	color_as_float_array(bg_color, gui->style.bg_color);
 	GL_CHECK(glClearColor, bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
@@ -2486,39 +2616,38 @@ b32 gui_begin_frame(gui_t *gui)
 
 	/* focused dropdown */
 	if (gui->focused_dropdown.id != 0) {
-		const s32 x = gui->focused_dropdown.x;
-		const s32 y = gui->focused_dropdown.y;
-		const s32 w = gui->focused_dropdown.w;
-		const s32 h = gui->focused_dropdown.h;
-		const u32 num_items = gui->focused_dropdown.num_items;
+		const s32 x = gui->focused_dropdown.mask.x;
+		const s32 y = gui->focused_dropdown.mask.y;
+		const s32 w = gui->focused_dropdown.mask.w;
+		const s32 h = gui->focused_dropdown.mask.h;
 		box2i box;
-		box2i_from_dims(&box, x, y + h, x + w, y - (s32)num_items * h);
+		box2i_from_xywh(&box, x, y, w, h);
 
-		gui->focused_dropdown.render_items = true;
+		assert(gui->focus_id == gui->focused_dropdown.id);
 
 		/* catch mouse_covered_by_panel */
 		if (box2i_contains_point(box, gui->mouse_pos)) {
-			gui->mouse_covered_by_panel = true;
-		} else if (mouse_pressed(gui, ~0)) {
-			gui__defocus_dropdown(gui);
-			gui->focus_id = 0;
+			gui->mouse_covered_by_panel    = true;
+			gui->mouse_covered_by_dropdown = true;
 		}
 	}
 
-	if (gui->focused_dropdown.id != 0) {
-		/* reserve first scissor for dropdown items */
-		assert(gui->scissor_idx == 0 && gui->scissor_cnt == 1);
-		gui->scissor_idx = 1;
-		gui->scissor_cnt = 2;
-		memcpy(&gui->scissors[1], &gui->scissors[0], sizeof(gui->scissors[0]));
-	}
+	/* ensure this is set every frame by a gui_window_drag() call (perf) */
+	gui->dragging_window = false;
+
+	/* reserve first scissor for dropdown items */
+	assert(gui->scissor_idx == 0 && gui->scissor_cnt == 1);
+	gui->scissor_idx = 1;
+	gui->scissor_cnt = 2;
+	memcpy(&gui->scissors[1], &gui->scissors[0], sizeof(gui->scissors[0]));
 
 	gui->use_default_cursor = true;
 	if (gui->root_split) {
-		box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
-		gui__split(gui, gui->root_split, true);
+		gui_splits_compute(gui);
+		gui->splits_rendered_this_frame = false;
 	}
 
+	gui->is_dragging_dockable_panel = false;
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
 
@@ -2799,6 +2928,11 @@ void gui_end_frame(gui_t *gui)
 #endif
 	GLuint current_texture = 0;
 
+	assert(gui->grid == NULL);
+
+	if (gui->root_split && !gui->splits_rendered_this_frame)
+		gui_splits_render(gui);
+
 	gui__complete_scissor(gui);
 
 	GL_CHECK(glDisable, GL_DEPTH_TEST);
@@ -2824,7 +2958,7 @@ void gui_end_frame(gui_t *gui)
 
 	GL_CHECK(glUseProgram, gui->shader.handle);
 	GL_CHECK(glUniform2f, glGetUniformLocation(gui->shader.handle, "window_halfdim"),
-	         gui->win_halfdim.x, gui->win_halfdim.y);
+	         gui->window_dim.x/2, gui->window_dim.y/2);
 
 	/* NOTE(rgriege): This method of ordering creates an inconsistency:
 	 * panels/layers must be called from top-to-bottom, but widgets/primitives
@@ -3203,7 +3337,7 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 		return font;
 
 	font = array_append_null(gui->fonts);
-	if (font_load(font, GUI_FONT_FILE_PATH, sz)) {
+	if (font_load(font, gui->font_file_path, sz)) {
 		return font;
 	} else {
 		array_pop(gui->fonts);
@@ -3473,9 +3607,11 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 	font_t *font = gui__get_font(gui, sz);
 	assert(font);
 	while (*line != '\0') {
-		const s32 line_width = font__line_width(font, txt);
+		const s32 line_width = font__line_width(font, line);
 		width = max(width, line_width);
 		while (*line != '\0' && *line != '\n')
+			++line;
+		if (*line == '\n')
 			++line;
 	}
 	return width;
@@ -3502,7 +3638,7 @@ void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 
 void gui_unmask(gui_t *gui)
 {
-	gui_mask(gui, 0, 0, gui->win_halfdim.x * 2, gui->win_halfdim.y * 2);
+	gui_mask(gui, 0, 0, gui->window_dim.x, gui->window_dim.y);
 }
 
 void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
@@ -3535,16 +3671,26 @@ void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 static
 b32 gui__allow_new_panel_interaction(const gui_t *gui)
 {
-	return    (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
-	       && gui->active_id == 0
-	       && !gui->mouse_covered_by_panel;
+	return (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
+	    && gui->active_id == 0
+	    && !gui->mouse_covered_by_panel;
+}
+
+static
+b32 gui__mouse_covered(const gui_t *gui)
+{
+	return gui->mouse_covered_by_panel
+	    && !(   gui->mouse_covered_by_dropdown
+	         && gui->current_dropdown.id != 0);
 }
 
 static
 b32 gui__allow_new_interaction(const gui_t *gui)
 {
-	return    gui__allow_new_panel_interaction(gui)
-	       && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
+	return (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
+	    && gui->active_id == 0
+	    && !gui__mouse_covered(gui)
+	    && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
 }
 
 typedef enum gui__widget_render_state
@@ -3916,16 +4062,8 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                         u64 id, b32 *contains_mouse)
+void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 {
-	btn_val_t retval = BTN_NONE;
-	box2i box;
-	box2i_from_dims(&box, x, y+h, x+w, y);
-	*contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                  && gui__box_half_visible(gui, box)
-	                  && !gui->lock;
-
 	if (gui->focus_id == id) {
 		if (gui->lock) {
 			gui->focus_id = 0;
@@ -3933,12 +4071,8 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 			gui__tab_focus_adjacent_widget(gui);
 		} else {
 			gui->focus_id_found_this_frame = true;
-			if (mouse_pressed(gui, ~0) && !*contains_mouse)
+			if (mouse_pressed(gui, ~0) && !contains_mouse)
 				gui->focus_id = 0;
-			else if (   gui->key_repeat.triggered
-			         && (   gui->key_repeat.val == KB_RETURN
-			             || gui->key_repeat.val == KB_KP_ENTER))
-				retval = key_pressed(gui, gui->key_repeat.val) ? BTN_PRESS : BTN_HOLD;
 		}
 	} else if (gui->focus_next_widget && !gui->lock) {
 		gui__on_widget_tab_focused(gui, id);
@@ -3948,9 +4082,31 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		else
 			gui__on_widget_tab_focused(gui, id);
 	}
+}
+
+static
+btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         u64 id, b32 *contains_mouse)
+{
+	btn_val_t retval = BTN_NONE;
+	box2i box;
+
+	box2i_from_dims(&box, x, y+h, x+w, y);
+	*contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
+	                  && gui__box_half_visible(gui, box)
+	                  && !gui->lock;
+
+	gui__widget_handle_focus(gui, id, *contains_mouse);
+
+	if (   gui->focus_id == id
+	    && !gui->lock
+	    && gui->key_repeat.triggered
+	    && (   gui->key_repeat.val == KB_RETURN
+	        || gui->key_repeat.val == KB_KP_ENTER))
+		retval = key_pressed(gui, gui->key_repeat.val) ? BTN_PRESS : BTN_HOLD;
 
 	if (gui->hot_id == id) {
-		if (!*contains_mouse || gui->mouse_covered_by_panel) {
+		if (!*contains_mouse || gui__mouse_covered(gui)) {
 			gui->hot_id = 0;
 		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->hot_id = 0;
@@ -4105,46 +4261,32 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	              && gui__box_half_visible(gui, box)
 	              && !gui->lock;
 
-	if (gui->focus_id == id) {
-		if (gui->lock) {
-			gui->focus_id = 0;
-		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
-			gui__tab_focus_adjacent_widget(gui);
+	gui__widget_handle_focus(gui, id, contains_mouse);
+
+	if (   gui->focus_id == id
+	    && !gui->lock
+	    && gui->key_repeat.triggered) {
+		if (orientation == GUI__SLIDER_X) {
+			const s32 mid = (box.min.x + box.max.x) / 2;
+			const s32 dim = box.max.x - box.min.x;
+			if (gui__key_left(gui)) {
+				gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
+				moved_while_focused = true;
+			} else if (gui__key_right(gui)) {
+				gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
+				moved_while_focused = true;
+			}
 		} else {
-			gui->focus_id_found_this_frame = true;
-			if (mouse_pressed(gui, ~0) && !contains_mouse) {
-				gui->focus_id = 0;
-			} else if (gui->key_repeat.triggered) {
-				if (orientation == GUI__SLIDER_X) {
-					const s32 mid = (box.min.x + box.max.x) / 2;
-					const s32 dim = box.max.x - box.min.x;
-					if (gui__key_left(gui)) {
-						gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
-						moved_while_focused = true;
-					} else if (gui__key_right(gui)) {
-						gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
-						moved_while_focused = true;
-					}
-				} else {
-					const s32 mid = (box.min.y + box.max.y) / 2;
-					const s32 dim = box.max.y - box.min.y;
-					if (gui__key_up(gui)) {
-						gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
-						moved_while_focused = true;
-					} else if (gui__key_down(gui)) {
-						gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
-						moved_while_focused = true;
-					}
-				}
+			const s32 mid = (box.min.y + box.max.y) / 2;
+			const s32 dim = box.max.y - box.min.y;
+			if (gui__key_up(gui)) {
+				gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
+				moved_while_focused = true;
+			} else if (gui__key_down(gui)) {
+				gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
+				moved_while_focused = true;
 			}
 		}
-	} else if (gui->focus_next_widget && !gui->lock) {
-		gui__on_widget_tab_focused(gui, id);
-	} else if (gui->focus_prev_widget_id == id) {
-		if (gui->lock)
-			gui->focus_prev_widget_id = gui->prev_widget_id;
-		else
-			gui__on_widget_tab_focused(gui, id);
 	}
 
 	if (gui->hot_id == id) {
@@ -4280,50 +4422,47 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
 }
 
-void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                        u32 *val, u32 num_items)
+void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         const char *txt, s32 item_w,
+                         u32 *val, u32 num_items)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	const b32 render_items = gui->focus_id == id;
-	b32 contains_mouse, triggered_by_key = false;
+	const b32 was_focused = (gui->focus_id == id);
+	b32 contains_mouse, items_contain_mouse, triggered_by_key = false;
 	gui__widget_render_state_t render_state;
 	box2i box;
 
-	assert(gui->current_dropdown.num_items == 0); /* cannot nest dropdown menus */
+	assert(gui->current_dropdown.num_items == 0); /* cannot nest menus */
 
-	box2i_from_dims(&box, x, y+h, x+w, y);
+	box2i_from_xywh(&box, x, y, w, h);
 	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
 	                 && gui__box_half_visible(gui, box)
 	                 && !gui->lock;
 
 	if (gui->focus_id == id) {
-		if (   gui->lock
-		    || (mouse_released(gui, MB_LEFT) && contains_mouse)) {
-			gui__defocus_dropdown(gui);
-			gui->focus_id = 0;
-		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
-			gui__defocus_dropdown(gui);
-			gui__tab_focus_adjacent_widget(gui);
-		} else {
-			gui->focus_id_found_this_frame = true;
-			if (gui->key_repeat.triggered) {
-				if (gui__key_up(gui) && *val > 0) {
-					--*val;
-					triggered_by_key = true;
-				} else if (gui__key_down(gui) && *val + 1 < num_items) {
-					++*val;
-					triggered_by_key = true;
-				}
-			}
-		}
-	} else if (gui->focus_next_widget && !gui->lock) {
-		gui__on_widget_tab_focused(gui, id);
-	} else if (gui->focus_prev_widget_id == id) {
-		if (gui->lock)
-			gui->focus_prev_widget_id = gui->prev_widget_id;
-		else
-			gui__on_widget_tab_focused(gui, id);
+		box2i box_items;
+		box2i_from_xywh(&box_items, x, y, w, h);
+		box_items.min.y -= num_items * h;
+		items_contain_mouse = box2i_contains_point(box_items, gui->mouse_pos);
+	} else {
+		items_contain_mouse = contains_mouse;
 	}
+
+	gui__widget_handle_focus(gui, id, items_contain_mouse);
+
+	if (   gui->focus_id == id
+	    && !gui->lock
+	    && gui->key_repeat.triggered) {
+		if (gui__key_up(gui) && *val > 0) {
+			--*val;
+			triggered_by_key = true;
+		} else if (gui__key_down(gui) && *val + 1 < num_items) {
+			++*val;
+			triggered_by_key = true;
+		}
+	}
+	if (was_focused && gui->focus_id != id)
+		gui__defocus_dropdown(gui);
 
 	if (gui->hot_id == id) {
 		if (!contains_mouse || gui->mouse_covered_by_panel) {
@@ -4339,8 +4478,13 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		gui->active_id_found_this_frame = true;
 		if (mouse_released(gui, MB_LEFT)) {
 			if (contains_mouse) {
-				gui->focus_id = id;
-				gui->focus_id_found_this_frame = true;
+				if (gui->focus_id == id) {
+					gui->focus_id = 0;
+					gui__defocus_dropdown(gui);
+				} else {
+					gui->focus_id = id;
+					gui->focus_id_found_this_frame = true;
+				}
 			}
 			gui->active_id = 0;
 		}
@@ -4350,23 +4494,12 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	}
 	gui->prev_widget_id = id;
 
-	/* store current dropdown state */
-	gui->current_dropdown.id               = id;
-	gui->current_dropdown.x                = x;
-	gui->current_dropdown.y                = y;
-	gui->current_dropdown.w                = w;
-	gui->current_dropdown.h                = h;
-	gui->current_dropdown.val              = *val;
-	gui->current_dropdown.num_items        = num_items;
-	gui->current_dropdown.item_idx         = 0;
-	gui->current_dropdown.triggered_by_key = triggered_by_key;
-	gui->current_dropdown.contains_mouse   = contains_mouse;
-
-	/* render appropriate label in gui_dropdown_item */
+	/* Render dropdown button without label -
+	 * appropriate label will be rendered in gui_dropdown_item */
 	render_state = gui__widget_render_state(gui, id, triggered_by_key,
 	                                        false, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, "", render_state, &gui->style.dropdown);
-	{
+	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
+	if (strlen(txt) == 0) {
 		const gui_element_style_t style
 			= gui__element_style(gui, render_state, &gui->style.dropdown);
 		const gui_element_style_t style_pen = {
@@ -4383,37 +4516,116 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		gui_pen_panel_collapse(gui, px, y, h, h, &style_pen);
 	}
 
+	/* store current dropdown state */
+	gui->current_dropdown.id               = id;
+	gui->current_dropdown.x                = x;
+	gui->current_dropdown.y                = y;
+	gui->current_dropdown.w                = w;
+	gui->current_dropdown.h                = h;
+	gui->current_dropdown.val              = val;
+	gui->current_dropdown.num_items        = num_items;
+	gui->current_dropdown.item_idx         = 0;
+	gui->current_dropdown.triggered_by_key = triggered_by_key;
+	gui->current_dropdown.close_at_end     = false;
+	gui->current_dropdown.render_state     = render_state;
+	strcpy(gui->current_dropdown.selected_item_txt, "");
+
 	if (gui->focus_id == id) {
-		gui->focused_dropdown.id               = id;
-		gui->focused_dropdown.x                = x;
-		gui->focused_dropdown.y                = y;
-		gui->focused_dropdown.w                = w;
-		gui->focused_dropdown.h                = h;
-		gui->focused_dropdown.val              = val;
-		gui->focused_dropdown.num_items        = num_items;
-		gui->focused_dropdown.item_idx         = 0;
-		gui->focused_dropdown.render_items     = render_items;
-		gui->focused_dropdown.close_at_end     = false;
-		if (!render_items)
-			gui->focused_dropdown.selected_item_txt[0] = '\0';
+		/* Add an extra row to the render mask (but not the grid) for
+		 * the main button's selected item text */
+		const s32 grid_h = h * num_items;
+		const s32 grid_y = y - grid_h;
+		const gui__scissor_t *scissor = &gui->scissors[gui->scissor_idx];
+		gui->current_dropdown.prev_mask.x = scissor->x;
+		gui->current_dropdown.prev_mask.y = scissor->y;
+		gui->current_dropdown.prev_mask.w = scissor->w;
+		gui->current_dropdown.prev_mask.h = scissor->h;
+		gui__complete_scissor(gui);
+		gui->focused_dropdown.id     = id;
+		gui->focused_dropdown.mask.x = x;
+		gui->focused_dropdown.mask.y = grid_y;
+		gui->focused_dropdown.mask.w = item_w;
+		gui->focused_dropdown.mask.h = grid_h; /* skip '+h' for mouse coverage */
+		gui__mask(gui, 0, x, grid_y, item_w, grid_h + h);
+		pgui_grid_begin(gui, &gui->grid_dropdown, x, grid_y, item_w, grid_h);
+		pgui_col(gui, 0, num_items);
 	}
 }
 
-static
-void gui__dropdown_selected_text(gui_t *gui, const char *txt)
+void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                        u32 *val, u32 num_items)
 {
-	const u64 id               = gui->current_dropdown.id;
-	s32 x                      = gui->current_dropdown.x;
-	s32 w                      = gui->current_dropdown.w;
-	const s32 y                = gui->current_dropdown.y;
-	const s32 h                = gui->current_dropdown.h;
-	const b32 triggered_by_key = gui->current_dropdown.triggered_by_key;
-	const b32 contains_mouse   = gui->current_dropdown.contains_mouse;
-	gui__widget_render_state_t render_state;
+	gui__dropdown_begin(gui, x, y, w, h, "", w, val, num_items);
+}
+
+static
+b32 gui__dropdown_item_selected(const gui_t *gui)
+{
+	return *gui->current_dropdown.val == gui->current_dropdown.item_idx;
+}
+
+b32 gui_dropdown_item(gui_t *gui, const char *txt)
+{
+	b32 chosen = false;
+
+	assert(gui->current_dropdown.id != 0);
+	assert(gui->current_dropdown.item_idx < gui->current_dropdown.num_items);
+
+	if (gui->current_dropdown.id == gui->focus_id) {
+		/* mouse_covered_by_panel is set by dropdown handling in gui_begin_frame.
+		 * Temporarily clear it so buttons work correctly. */
+		gui->mouse_covered_by_panel = false;
+		gui_style_push(gui, btn, gui_style(gui)->dropdown);
+		if (pgui_btn_txt(gui, txt) == BTN_PRESS) {
+			*gui->current_dropdown.val = gui->current_dropdown.item_idx;
+			chosen = true;
+		} else if (   gui->current_dropdown.triggered_by_key
+		           && gui__dropdown_item_selected(gui)) {
+			chosen = true;
+		}
+		gui_style_pop(gui);
+		gui->mouse_covered_by_panel = true;
+	}
+
+	if (gui__dropdown_item_selected(gui)) {
+		const size_t n = countof(gui->current_dropdown.selected_item_txt);
+		strncpy(gui->current_dropdown.selected_item_txt, txt, n);
+		gui->current_dropdown.selected_item_txt[n-1] = '\0';
+	}
+
+	++gui->current_dropdown.item_idx;
+	return chosen;
+}
+
+static
+void gui__dropdown_end_focused(gui_t *gui)
+{
+	/* switch to new scissor (mirroring interrupted scissor) after last item */
+	pgui_grid_end(gui, &gui->grid_dropdown);
+	gui_mask(gui, gui->current_dropdown.prev_mask.x,
+	         gui->current_dropdown.prev_mask.y,
+	         gui->current_dropdown.prev_mask.w,
+	         gui->current_dropdown.prev_mask.h);
+
+	if (gui->current_dropdown.close_at_end) {
+		gui__defocus_dropdown(gui);
+		gui->focus_id = 0;
+	}
+}
+
+void gui_dropdown_end(gui_t *gui)
+{
+	s32 x           = gui->current_dropdown.x;
+	s32 w           = gui->current_dropdown.w;
+	const s32 y     = gui->current_dropdown.y;
+	const s32 h     = gui->current_dropdown.h;
+	const char *txt = gui->current_dropdown.selected_item_txt;
 	gui_element_style_t style;
-	render_state = gui__widget_render_state(gui, id, triggered_by_key,
-	                                        false, contains_mouse);
-	style = gui__element_style(gui, render_state, &gui->style.dropdown);
+
+	/* render selected item text */
+	assert(strlen(txt) > 0);
+	style = gui__element_style(gui, gui->current_dropdown.render_state,
+	                           &gui->style.dropdown);
 	if (style.text.align & GUI_ALIGN_LEFT) {
 		w -= h;
 	} else if (style.text.align & GUI_ALIGN_RIGHT) {
@@ -4421,81 +4633,10 @@ void gui__dropdown_selected_text(gui_t *gui, const char *txt)
 		w -= h;
 	}
 	gui_txt_styled(gui, x, y, w, h, txt, &style.text);
-}
 
-b32 gui_dropdown_item(gui_t *gui, const char *txt)
-{
-	b32 chosen = false;
-
-	assert(gui->current_dropdown.num_items != 0);
-
-	/* cache item text so it can be rendered in the pre-dropdown mask */
-	if (   gui->current_dropdown.id == gui->focused_dropdown.id
-	    && gui->current_dropdown.val == gui->current_dropdown.item_idx) {
-		const size_t n = countof(gui->focused_dropdown.selected_item_txt);
-		strncpy(gui->focused_dropdown.selected_item_txt, txt, n);
-		gui->focused_dropdown.selected_item_txt[n-1] = '\0';
-	}
-
-	/* render item button for focused dropdown */
-	if (   gui->current_dropdown.id == gui->focused_dropdown.id
-	    && gui->focused_dropdown.render_items) {
-		const s32 w = gui->focused_dropdown.w;
-		const s32 h = gui->focused_dropdown.h;
-		const s32 x = gui->focused_dropdown.x;
-		const s32 y = gui->focused_dropdown.y
-		            - (s32)(gui->focused_dropdown.item_idx + 1) * h;
-
-		assert(gui->focused_dropdown.num_items != 0);
-
-		/* switch to reserved first scissor before first item */
-		if (gui->focused_dropdown.item_idx == 0) {
-			const s32 mask_h = gui->focused_dropdown.num_items
-			                 * gui->focused_dropdown.h;
-			const s32 mask_y = gui->focused_dropdown.y - mask_h;
-			gui->focused_dropdown.prev_mask.x = gui->scissors[gui->scissor_idx].x;
-			gui->focused_dropdown.prev_mask.y = gui->scissors[gui->scissor_idx].y;
-			gui->focused_dropdown.prev_mask.w = gui->scissors[gui->scissor_idx].w;
-			gui->focused_dropdown.prev_mask.h = gui->scissors[gui->scissor_idx].h;
-			gui__dropdown_selected_text(gui, gui->focused_dropdown.selected_item_txt);
-			gui__complete_scissor(gui);
-			gui__mask(gui, 0, x, mask_y, w, mask_h);
-		}
-
-		/* mouse_covered_by_panel set by dropdown handling in gui_begin_frame */
-		gui->mouse_covered_by_panel = false;
-		gui_style_push(gui, btn, gui_style(gui)->dropdown);
-		if (gui_btn_txt(gui, x, y, w, h, txt) == BTN_PRESS) {
-			*gui->focused_dropdown.val = gui->current_dropdown.item_idx;
-			gui->focused_dropdown.close_at_end = true;
-			chosen = true;
-		} else if (   gui->current_dropdown.triggered_by_key
-		           && *gui->focused_dropdown.val == gui->current_dropdown.item_idx) {
-			chosen = true;
-		}
-		gui_style_pop(gui);
-		gui->mouse_covered_by_panel = true;
-
-		/* switch to new scissor (mirroring interrupted scissor) after last item */
-		if (++gui->focused_dropdown.item_idx == gui->focused_dropdown.num_items) {
-			gui_mask(gui, gui->focused_dropdown.prev_mask.x,
-			         gui->focused_dropdown.prev_mask.y,
-			         gui->focused_dropdown.prev_mask.w,
-			         gui->focused_dropdown.prev_mask.h);
-		  if (gui->focused_dropdown.close_at_end) {
-				gui__defocus_dropdown(gui);
-				gui->focus_id = 0;
-			}
-		}
-	} else if (gui->current_dropdown.val == gui->current_dropdown.item_idx) {
-		gui__dropdown_selected_text(gui, txt);
-	}
-
-	/* end current dropdown list */
-	if (++gui->current_dropdown.item_idx == gui->current_dropdown.num_items)
-		memclr(gui->current_dropdown);
-
-	return chosen;
+	if (gui->current_dropdown.id == gui->focus_id)
+		gui__dropdown_end_focused(gui);
+	memclr(gui->current_dropdown);
 }
 
 static
@@ -4505,39 +4646,25 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 	b32 retval = false;
 	*id = gui_widget_id(gui, *x, *y);
 
-	if (gui->focus_id == *id) {
-		if (gui->lock) {
-			gui->focus_id = 0;
-		} if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
-			gui__tab_focus_adjacent_widget(gui);
-		} else {
-			gui->focus_id_found_this_frame = true;
-			if (mouse_pressed(gui, ~0) && !contains_mouse) {
-				gui->focus_id = 0;
-			} else if (gui->key_repeat.triggered) {
-				const s32 xo = *x, yo = *y;
-				if (gui__key_up(gui))
-					cb(x, y, *x, *y + 1, 0, 0, udata);
-				else if (gui__key_down(gui))
-					cb(x, y, *x, *y - 1, 0, 0, udata);
-				else if (gui__key_left(gui))
-					cb(x, y, *x - 1, *y, 0, 0, udata);
-				else if (gui__key_right(gui))
-					cb(x, y, *x + 1, *y, 0, 0, udata);
-				if (xo != *x || yo != *y) {
-					*id = gui_widget_id(gui, *x, *y);
-					gui->focus_id = *id;
-					retval = true;
-				}
-			}
+	gui__widget_handle_focus(gui, *id, contains_mouse);
+
+	if (   gui->focus_id == *id
+	    && !gui->lock
+	    && gui->key_repeat.triggered) {
+		const s32 xo = *x, yo = *y;
+		if (gui__key_up(gui))
+			cb(x, y, *x, *y + 1, 0, 0, udata);
+		else if (gui__key_down(gui))
+			cb(x, y, *x, *y - 1, 0, 0, udata);
+		else if (gui__key_left(gui))
+			cb(x, y, *x - 1, *y, 0, 0, udata);
+		else if (gui__key_right(gui))
+			cb(x, y, *x + 1, *y, 0, 0, udata);
+		if (xo != *x || yo != *y) {
+			*id = gui_widget_id(gui, *x, *y);
+			gui->focus_id = *id;
+			retval = true;
 		}
-	} else if (gui->focus_next_widget && !gui->lock) {
-		gui__on_widget_tab_focused(gui, *id);
-	} else if (gui->focus_prev_widget_id == *id) {
-		if (gui->lock)
-			gui->focus_prev_widget_id = gui->prev_widget_id;
-		else
-			gui__on_widget_tab_focused(gui, *id);
 	}
 
 	if (gui->hot_id == *id) {
@@ -4591,12 +4718,12 @@ void gui__drag_default_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 	*y = mouse_y + offset_y;
 }
 
-b32 gui_drag(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb)
+b32 gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb)
 {
 	return gui_dragx(gui, x, y, w, h, mb, gui__drag_default_callback, NULL);
 }
 
-b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, u32 w, u32 h,
+b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, s32 w, s32 h,
                     mouse_button_t mb, gui_drag_callback_t cb, void *udata)
 {
 	box2i box;
@@ -4609,7 +4736,7 @@ b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, u32 w, u32 h,
 	return gui__drag(gui, x, y, contains_mouse, mb, id, cb, udata);
 }
 
-b32 gui_dragx(gui_t *gui, s32 *x, s32 *y, u32 w, u32 h, mouse_button_t mb,
+b32 gui_dragx(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
               gui_drag_callback_t cb, void *udata)
 {
 	u64 id;
@@ -4625,7 +4752,7 @@ void gui__drag_horiz_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 	*x = mouse_x + offset_x;
 }
 
-b32 gui_drag_horiz(gui_t *gui, s32 *x, s32 y, u32 w, u32 h, mouse_button_t mb)
+b32 gui_drag_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h, mouse_button_t mb)
 {
 	return gui_dragx(gui, x, &y, w, h, mb, gui__drag_horiz_callback, NULL);
 }
@@ -4653,7 +4780,7 @@ void gui__drag_vert_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 	*y = mouse_y + offset_y;
 }
 
-b32 gui_drag_vert(gui_t *gui, s32 x, s32 *y, u32 w, u32 h, mouse_button_t mb)
+b32 gui_drag_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h, mouse_button_t mb)
 {
 	return gui_dragx(gui, &x, y, w, h, mb, gui__drag_vert_callback, NULL);
 }
@@ -4674,19 +4801,19 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 	return false;
 }
 
-b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb)
+b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb)
 {
 	return gui_cdragx(gui, x, y, r, mb, gui__drag_default_callback, NULL);
 }
 
-b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
+b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
               gui_drag_callback_t cb, void *udata)
 {
 	const v2i pos = { *x, *y };
 	u64 id;
 	box2i box;
 	box2i_from_center(&box, pos, (v2i){r, r});
-	const b32 contains_mouse =    (u32)v2i_dist_sq(pos, gui->mouse_pos) < r * r
+	const b32 contains_mouse =    v2i_dist_sq(pos, gui->mouse_pos) < r * r
 	                           && gui__box_half_visible(gui, box)
 	                           && !gui->lock;
 	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
@@ -4696,19 +4823,46 @@ b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, u32 r, mouse_button_t mb,
 	return ret;
 }
 
+b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                   const char *txt, s32 item_w, u32 num_items)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	u32 val = 0;
+	gui__dropdown_begin(gui, x, y, w, h, txt, item_w, &val, num_items);
+	if (gui->focus_id == id) {
+		return true;
+	} else {
+		memclr(gui->current_dropdown);
+		return false;
+	}
+}
+
+void gui_menu_end(gui_t *gui)
+{
+	/* TODO(rgriege): focus_id -> focus_stack to support nested menus */
+	if (gui->current_dropdown.id == gui->focus_id)
+		gui__dropdown_end_focused(gui);
+	memclr(gui->current_dropdown);
+}
+
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
 #define GUI__SCISSOR_PANEL_ID (UINT_MAX-1)
 #define GUI__MAX_PANEL_ID     (UINT_MAX-2)
 
+u64 gui__widget_id(const gui_t *gui, u32 base_id, s32 x, s32 y)
+{
+	return (((u64)x) << 48) | (((u64)y) << 32) | base_id;
+}
+
 u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 {
-	if (   gui->current_dropdown.num_items != 0
+	if (   gui->current_dropdown.id != 0
 	    && gui->current_dropdown.id == gui->focused_dropdown.id)
-		return (((u64)x) << 48) | (((u64)y) << 32) | GUI__SCISSOR_PANEL_ID;
+		return gui__widget_id(gui, GUI__SCISSOR_PANEL_ID, x, y);
 	else if (gui->panel)
-		return (((u64)x) << 48) | (((u64)y) << 32) | gui->panel->id;
+		return gui__widget_id(gui, gui->panel->id, x, y);
 	else
-		return (((u64)x) << 48) | (((u64)y) << 32) | GUI__DEFAULT_PANEL_ID;
+		return gui__widget_id(gui, GUI__DEFAULT_PANEL_ID, x, y);
 }
 
 void gui_widget_focus_next(gui_t *gui)
@@ -4767,42 +4921,574 @@ void gui_lock_restore(gui_t *gui, u32 val)
 	gui->lock = val;
 }
 
-void gui__split_init(gui_t *gui, gui_split_t *split,
-                     gui_split_t *sp1, r32 sz,
-                     gui_split_t *sp2, gui_split_flags_t flags,
-                     b32 vert)
+
+/* Window */
+
+static
+void gui__window_drag_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                         s32 offset_x, s32 offset_y, void *udata) {}
+
+void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
-	if (!gui->root_split) {
-		gui->root_split = split;
-		split->parent = NULL;
+	gui_style_push(gui, drag, g_gui_style_invis.drag);
+	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__window_drag_cb, NULL)) {
+		gui->dragging_window = true;
+	  if (!v2i_equal(gui->mouse_pos, gui->mouse_pos_last)) {
+			const v2i delta = v2i_sub(gui->mouse_pos, gui->mouse_pos_last);
+			gui_move(gui, delta.x, -delta.y);
+			gui->mouse_pos = gui->mouse_pos_last;
+		}
 	} else {
-		assert(split->parent);
+		gui->dragging_window = false;
 	}
+	gui_style_pop(gui);
+}
+
+
+/* Grid layout */
+
+void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h)
+{
+	assert(grid != gui->grid);
+	grid->prev = gui->grid;
+	grid->depth = 0;
+	grid->start.x = x;
+	grid->start.y = y + h; /* widgets are drawn from high to low */
+	grid->dim.x = w;
+	grid->dim.y = h;
+	grid->max_dim.x = w;
+	grid->max_dim.y = h;
+	grid->pos = grid->start;
+	gui->grid = grid;
+}
+
+void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
+{
+	assert(grid);
+	assert(gui->grid == grid);
+	assert(gui->grid->depth == 0);
+	gui->grid = gui->grid->prev;
+}
+
+static
+void gui__strip_set_dim(gui_t *gui, gui_grid_strip_t *strip,
+                        s32 dim, b32 vertical)
+{
+	gui_grid_t *grid = gui->grid;
+	if (dim == GUI_GRID_FLEX) {
+		if (grid->depth == 0) {
+			assert(grid->dim.d[vertical] != GUI_GRID_FLEX);
+			if (vertical)
+				strip->dim.y = grid->pos.y - (grid->start.y - grid->dim.y);
+			else
+				strip->dim.x = grid->start.x + grid->dim.x - grid->pos.x;
+		} else {
+			v2i dim_;
+			pgui_cell(gui, NULL, NULL, &dim_.x, &dim_.y);
+			strip->dim.d[vertical] = dim_.d[vertical];
+		}
+	} else {
+#ifdef DEBUG
+		const s32 prev = (grid->depth == 0)
+		               ? grid->dim.d[vertical]
+		               : grid->strips[grid->depth-1].dim.d[vertical];
+		assert(prev == GUI_GRID_FLEX || dim <= prev);
+#endif
+		strip->dim.d[vertical] = dim;
+	}
+}
+
+static
+void pgui__strip(gui_t *gui, b32 vertical, s32 minor_dim,
+                 const r32 *cells, u32 num_cells)
+{
+	gui_grid_t *grid = gui->grid;
+	s32 major_dim;
+	b32 major_dim_inherited;
+	s32 unspecified_cell_cnt;
+	s32 cell_total_major_dim;
+	gui_grid_strip_t *strip;
+
+	assert(grid);
+	assert(num_cells > 0);
+	assert(grid->depth < GUI_GRID_MAX_DEPTH);
+	assert(num_cells < GUI_GRID_MAX_CELLS);
+	if (grid->depth != 0)
+		assert(  (grid->strips[grid->depth-1].max_cell - grid->cells) + num_cells
+		       < GUI_GRID_MAX_CELLS);
+	/* TODO(rgriege): allow row within row & same for colums */
+	if (grid->depth != 0)
+		assert(grid->strips[grid->depth-1].vertical != vertical);
+
+	strip = &grid->strips[grid->depth];
+	strip->vertical     = vertical;
+	strip->num_cells    = num_cells;
+	strip->dim          = g_v2i_zero;
+	strip->current_cell =   grid->depth > 0
+	                      ? grid->strips[grid->depth-1].max_cell
+	                      : grid->cells;
+	strip->max_cell     = strip->current_cell + num_cells;
+
+
+	/* compute strip dimensions */
+	major_dim = 0;
+	major_dim_inherited = false;
+	for (u32 i = 0; i < num_cells; ++i) {
+		if (cells[i] > 1.f)
+			major_dim += cells[i];
+		else
+			major_dim_inherited = true;
+	}
+	if (major_dim_inherited) {
+		gui__strip_set_dim(gui, strip, 0, vertical);
+		assert(strip->dim.d[vertical] >= major_dim);
+	} else {
+		gui__strip_set_dim(gui, strip, major_dim, vertical);
+	}
+	gui__strip_set_dim(gui, strip, minor_dim, !vertical);
+
+	/* compute cell dimensions */
+	cell_total_major_dim = 0;
+	unspecified_cell_cnt = 0;
+	for (u32 i = 0; i < num_cells; ++i) {
+		if (cells[i] > 1.f) {
+			strip->current_cell[i] = cells[i];
+			cell_total_major_dim += cells[i];
+		} else if (cells[i] > 0.f) {
+			const s32 dim = cells[i] * strip->dim.d[vertical];
+			strip->current_cell[i] = dim;
+			cell_total_major_dim += dim;
+		} else {
+			assert(cells[i] == 0.f);
+			strip->current_cell[i] = 0.f;
+			++unspecified_cell_cnt;
+		}
+	}
+	if (unspecified_cell_cnt) {
+		const s32 total = max((strip->dim.d[vertical] - cell_total_major_dim), 0);
+		const s32 dim = total / unspecified_cell_cnt;
+		const s32 leftover = total % unspecified_cell_cnt;
+		s32 leftover_aggregate = 0, leftover_distributions = 1;
+		for (u32 i = 0; i < num_cells; ++i) {
+			if (strip->current_cell[i] != 0.f)
+				continue;
+			strip->current_cell[i] = dim;
+			leftover_aggregate += leftover;
+			if (leftover_aggregate >= leftover_distributions * unspecified_cell_cnt) {
+				++strip->current_cell[i];
+				++leftover_distributions;
+			}
+		}
+		cell_total_major_dim += total;
+	}
+
+	if (grid->depth == 0) {
+		const v2i dim = {
+			.x = strip->dim.x + (grid->pos.x - grid->start.x),
+			.y = strip->dim.y - (grid->pos.y - grid->start.y),
+		};
+		grid->max_dim.x = max(grid->max_dim.x, dim.x);
+		grid->max_dim.y = max(grid->max_dim.y, dim.y);
+	}
+
+	++grid->depth;
+}
+
+static
+void pgui__grid_advance(gui_grid_t *grid)
+{
+	gui_grid_strip_t *strip;
+
+	assert(grid);
+	assert(grid->depth > 0);
+
+	do {
+		strip = &grid->strips[grid->depth - 1];
+		if (strip->vertical)
+			grid->pos.y -= *strip->current_cell;
+		else
+			grid->pos.x += *strip->current_cell;
+		++strip->current_cell;
+		if (strip->current_cell == strip->max_cell) {
+			--grid->depth;
+			if (strip->vertical)
+				grid->pos.y += strip->dim.y;
+			else
+				grid->pos.x -= strip->dim.x;
+		} else {
+			break;
+		}
+	} while (grid->depth > 0);
+
+	if (grid->depth == 0) {
+		strip = &grid->strips[0];
+		if (strip->vertical)
+			grid->pos.x += strip->dim.x;
+		else
+			grid->pos.y -= strip->dim.y;
+	}
+}
+
+void pgui_row(gui_t *gui, s32 height, u32 num_cells)
+{
+	const r32 cells[GUI_GRID_MAX_CELLS] = { 0 };
+	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	assert(num_cells < GUI_GRID_MAX_CELLS);
+	pgui_row_cells(gui, height, cells, num_cells);
+}
+
+void pgui_row_cells(gui_t *gui, s32 height, const r32 *cells, u32 num_cells)
+{
+	pgui__strip(gui, false, height, cells, num_cells);
+}
+
+void pgui_row_empty(gui_t *gui, s32 height)
+{
+	pgui_row(gui, height, 1);
+	pgui__grid_advance(gui->grid);
+}
+
+void pgui_row_centered(gui_t *gui, s32 height, r32 width)
+{
+	const r32 cells[3] = { 0, width, 0 };
+	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	assert(countof(cells) < GUI_GRID_MAX_CELLS);
+	pgui_row_cells(gui, height, B2PC(cells));
+}
+
+void pgui_col(gui_t *gui, s32 width, u32 num_cells)
+{
+	const r32 cells[GUI_GRID_MAX_CELLS] = { 0 };
+	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	assert(num_cells < GUI_GRID_MAX_CELLS);
+	pgui_col_cells(gui, width, cells, num_cells);
+}
+
+void pgui_col_cells(gui_t *gui, s32 width, const r32 *cells, u32 num_cells)
+{
+	pgui__strip(gui, true, width, cells, num_cells);
+}
+
+void pgui_col_empty(gui_t *gui, s32 width)
+{
+	pgui_col(gui, width, 1);
+	pgui__grid_advance(gui->grid);
+}
+
+void pgui_col_centered(gui_t *gui, s32 width, r32 height)
+{
+	const r32 cells[3] = { 0, height, 0 };
+	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	assert(countof(cells) < GUI_GRID_MAX_CELLS);
+	pgui_row_cells(gui, width, B2PC(cells));
+}
+
+void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	const gui_grid_t *grid = gui->grid;
+	const gui_grid_strip_t *strip;
+	v2i pos, dim;
+
+	assert(grid);
+	assert(grid->depth > 0);
+
+	strip = &grid->strips[grid->depth - 1];
+
+	pos = grid->pos;
+	if (strip->vertical) {
+		dim.x = strip->dim.x;
+		dim.y = (s32)*strip->current_cell;
+	} else {
+		dim.x = (s32)*strip->current_cell;
+		dim.y = strip->dim.y;
+	}
+	pos.y -= dim.y;
+
+	if (x)
+		*x = pos.x;
+	if (y)
+		*y = pos.y;
+	if (w)
+		*w = dim.x;
+	if (h)
+		*h = dim.y;
+}
+
+static
+void pgui__cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	pgui_cell(gui, x, y, w, h);
+	pgui__grid_advance(gui->grid);
+}
+
+u64 pgui_next_widget_id(const gui_t *gui)
+{
+	/* TODO(rgriege): base panel widget id off relative position to panel
+	 * without scroll, so scrolling doesn't reset focus id */
+	s32 x, y;
+	pgui_cell(gui, &x, &y, NULL, NULL);
+	return gui_widget_id(gui, x, y);
+}
+
+void pgui_spacer(gui_t *gui)
+{
+	const gui_panel_style_t *style = &gui->style.panel;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
+}
+
+void pgui_spacer_blank(gui_t *gui)
+{
+	pgui__grid_advance(gui->grid);
+}
+
+void pgui_txt(gui_t *gui, const char *str)
+{
+	const gui_panel_style_t *style = &gui->style.panel;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
+	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
+}
+
+void pgui_img(gui_t *gui, const char *fname, img_scale_t scale)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_img_boxed(gui, x, y, w, h, fname, scale);
+}
+
+btn_val_t pgui_btn_txt(gui_t *gui, const char *lbl)
+{
+	btn_val_t result;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	result = gui_btn_txt(gui, x, y, w, h, lbl);
+	if (result == BTN_PRESS)
+		gui->current_dropdown.close_at_end = true;
+	return result;
+}
+
+btn_val_t pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale)
+{
+	btn_val_t result;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	result = gui_btn_img(gui, x, y, w, h, fname, scale);
+	if (result == BTN_PRESS)
+		gui->current_dropdown.close_at_end = true;
+	return result;
+}
+
+btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen)
+{
+	btn_val_t result;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	result = gui_btn_pen(gui, x, y, w, h, pen);
+	if (result == BTN_PRESS)
+		gui->current_dropdown.close_at_end = true;
+	return result;
+}
+
+b32 pgui_chk(gui_t *gui, const char *lbl, b32 *val)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_chk(gui, x, y, w, h, lbl, val);
+}
+
+b32 pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, npt_flags_t flags)
+{
+	return pgui_npt_chars(gui, lbl, n, hint, flags, g_gui_npt_chars_print);
+}
+
+b32 pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
+                   npt_flags_t flags, const b32 chars[128])
+{
+	b32 result;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	result = gui_npt_chars(gui, x, y, w, h, lbl, n, hint, flags, chars);
+	return result;
+}
+
+b32 pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_select(gui, x, y, w, h, lbl, val, opt);
+}
+
+void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_mselect(gui, x, y, w, h, txt, val, opt);
+}
+
+void pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_dropdown_begin(gui, x, y, w, h, val, num_items);
+}
+
+b32 pgui_dropdown_item(gui_t *gui, const char *txt)
+{
+	return gui_dropdown_item(gui, txt);
+}
+
+void pgui_dropdown_end(gui_t *gui)
+{
+	gui_dropdown_end(gui);
+}
+
+b32 pgui_slider_x(gui_t *gui, r32 *val)
+{
+	b32 ret;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	ret = gui_slider_x(gui, x, y, w, h, val);
+	return ret;
+}
+
+b32 pgui_slider_y(gui_t *gui, r32 *val)
+{
+	b32 ret;
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	ret = gui_slider_y(gui, x, y, w, h, val);
+	return ret;
+}
+
+b32 pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max)
+{
+	r32 slider_val = (*val - min) / (max - min);
+	b32 result = pgui_slider_x(gui, &slider_val);
+	*val = (max - min) * slider_val + min;
+	return result;
+}
+
+b32 pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max)
+{
+	r32 slider_val = (*val - min) / (max - min);
+	b32 result = pgui_slider_y(gui, &slider_val);
+	*val = (max - min) * slider_val + min;
+	return result;
+}
+
+b32 pgui_menu_begin(gui_t *gui, const char *txt, s32 item_w, u32 num_items)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_menu_begin(gui, x, y, w, h, txt, item_w, num_items);
+}
+
+void pgui_menu_end(gui_t *gui)
+{
+	gui_menu_end(gui);
+}
+
+void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits)
+{
+	memset(splits, 0, num_splits * sizeof(splits[0]));
+	gui->splits     = splits;
+	gui->num_splits = num_splits;
+	gui->root_split = NULL;
+}
+
+static
+b32 gui__get_free_splits(gui_t *gui, u32 n, gui_split_t *splits[])
+{
+	u32 n_found = 0;
+	for (u32 i = 0; i < gui->num_splits; ++i) {
+		if (!gui->splits[i].in_use) {
+			splits[n_found++] = &gui->splits[i];
+			if (n_found == n)
+				break;
+		}
+	}
+	return n_found == n;
+}
+
+static
+b32 gui__has_free_splits(gui_t *gui, u32 n)
+{
+	u32 n_found = 0;
+	for (u32 i = 0; i < gui->num_splits; ++i)
+		if (!gui->splits[i].in_use)
+			++n_found;
+	return n_found >= n;
+}
+
+void gui__split_init(gui_split_t *split, gui_split_flags_t flags,
+                     gui_split_t *parent)
+{
+	split->in_use     = true;
 	split->flags      = flags;
-	split->vert       = vert;
-	split->leaf       = false;
+	split->parent     = parent;
+	split->sp1        = NULL;
+	split->sp2        = NULL;
+	split->sz         = 0;
+	split->default_sz = 0;
+	box2i_from_xywh(&split->box, 0, 0, 0, 0);
+	split->panel      = NULL;
+}
+
+b32 gui__split2(gui_t *gui, gui_split_t *split_, b32 vertical,
+                gui_split_t **psp1, r32 sz, gui_split_t **psp2,
+                gui_split_flags_t flags)
+{
+	gui_split_t *splits[3];
+	gui_split_t *split, *sp1 = NULL, *sp2 = NULL;
+	u32 i = 0;
+	b32 success = false;
+
+	if (!gui__get_free_splits(gui, !gui->root_split + 2, splits))
+		goto out;
+
+	if (!gui->root_split) {
+		gui->root_split = splits[i++];
+		gui__split_init(gui->root_split, 0, NULL);
+	} else if (split_) {
+		assert(split_->parent);
+	}
+
+	split = split_ ? split_ : gui->root_split;
+
+	sp1 = splits[i++];
+	sp2 = splits[i++];
+
+	split->vertical   = vertical;
+	split->flags      = flags | GUI_SPLIT_DIVISIBLE;
 	split->sp1        = sp1;
 	split->sp2        = sp2;
 	split->sz         = sz;
 	split->default_sz = sz;
-	sp1->parent       = split;
-	sp2->parent       = split;
-	sp1->leaf         = true;
-	sp2->leaf         = true;
+	gui__split_init(sp1, flags & GUI_SPLIT_DIVISIBLE, split);
+	gui__split_init(sp2, flags & GUI_SPLIT_DIVISIBLE, split);
+	success = true;
+
+out:
+	if (psp1)
+		*psp1 = sp1;
+	if (psp2)
+		*psp2 = sp2;
+	return success;
 }
 
-void gui_split_init(gui_t *gui, gui_split_t *split,
-                    gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                    gui_split_flags_t flags)
+b32 gui_split2h(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
+                gui_split_t **sp2, gui_split_flags_t flags)
 {
-	gui__split_init(gui, split, sp1, sz, sp2, flags, false);
+	return gui__split2(gui, split, false, sp1, sz, sp2, flags);
 }
 
-void gui_vsplit_init(gui_t *gui, gui_split_t *split,
-                     gui_split_t *sp1, r32 sz, gui_split_t *sp2,
-                     gui_split_flags_t flags)
+b32 gui_split2v(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
+                gui_split_t **sp2, gui_split_flags_t flags)
 {
-	gui__split_init(gui, split, sp1, sz, sp2, flags, true);
+	return gui__split2(gui, split, true, sp1, sz, sp2, flags);
 }
 
 static
@@ -4821,22 +5507,90 @@ s32 gui__split_dim(r32 sz, r32 w)
 }
 
 static
-void gui__split(gui_t *gui, gui_split_t *split, b32 render)
+b32 gui__split_is_leaf(const gui_split_t *split)
 {
-	s32 x, y, w, h, sz1;
+	return !split->sp1 && !split->sp2;
+}
 
-	assert(split);
-	assert(!split->leaf);
+static
+b32 gui__find_split_from(gui_split_t *split, v2i point, gui_split_t **splitp)
+{
+	if (!gui__split_is_leaf(split)) {
+		return gui__find_split_from(split->sp1, point, splitp)
+		    || gui__find_split_from(split->sp2, point, splitp);
+	} else if (box2i_contains_point(split->box, point)) {
+		*splitp = split;
+		return true;
+	} else {
+		return false;
+	}
+}
 
+static
+b32 gui__find_split(gui_t *gui, v2i point, gui_split_t **split)
+{
+	return gui__find_split_from(gui->root_split, point, split);
+}
+
+enum gui__split_division_type
+{
+	GUI__SPLIT_DIVISION_NONE,
+	GUI__SPLIT_DIVISION_CENTER,
+	GUI__SPLIT_DIVISION_LEFT,
+	GUI__SPLIT_DIVISION_RIGHT,
+	GUI__SPLIT_DIVISION_TOP,
+	GUI__SPLIT_DIVISION_BOTTOM,
+};
+
+static
+s32 gui__split_division(const gui_split_t *split, v2i point)
+{
+	s32 x, y, w, h, xm, ym, dx, dy, s;
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+
+	xm = x+w/2;
+	ym = y+h/2;
+	dx = abs(point.x - xm);
+	dy = abs(point.y - ym);
+	s = min(w/4, h/4)/2;
+	if (dx < s && dy < s) {
+		return GUI__SPLIT_DIVISION_CENTER;
+	} else if (dx > dy) {
+		if (dx > 2*s)
+			return GUI__SPLIT_DIVISION_NONE;
+		else if (point.x <= xm)
+			return GUI__SPLIT_DIVISION_LEFT;
+		else
+			return GUI__SPLIT_DIVISION_RIGHT;
+	} else {
+		if (dy > 2*s)
+			return GUI__SPLIT_DIVISION_NONE;
+		else if (point.y > ym)
+			return GUI__SPLIT_DIVISION_TOP;
+		else
+			return GUI__SPLIT_DIVISION_BOTTOM;
+	}
+	return GUI__SPLIT_DIVISION_NONE;
+}
+
+static
+void gui__split_render(gui_t *gui, gui_split_t *split, b32 *changed);
+
+static
+void gui__split_render_branch(gui_t *gui, gui_split_t *split, b32 *changed)
+{
+	s32 x, y, w, h;
 	box2i_to_xywh(split->box, &x, &y, &w, &h);
 
 	/* checking use_default_cursor ensures only 1 resize happens per frame */
 	if (   (split->flags & GUI_SPLIT_RESIZABLE)
 	    && gui->use_default_cursor
-	    && render) {
-		gui_style_push(gui, drag.hot.bg_color, gui->style.drag.inactive.bg_color);
-		gui_style_push(gui, drag.active.bg_color, gui->style.drag.inactive.bg_color);
-		if (split->vert) {
+	    && !gui->mouse_covered_by_panel) {
+		gui_style_push(gui, drag.inactive.bg_color, g_nocolor);
+		gui_style_push(gui, drag.hot.bg_color, g_nocolor);
+		gui_style_push(gui, drag.active.bg_color, g_nocolor);
+		if (split->vertical) {
 			const s32 orig_drag_x =   x - GUI_SPLIT_RESIZE_BORDER / 2
 			                        + gui__split_dim(split->sz, w);
 			s32 drag_x = orig_drag_x;
@@ -4846,6 +5600,7 @@ void gui__split(gui_t *gui, gui_split_t *split, b32 render)
 				else
 					split->sz = (r32)(drag_x + GUI_SPLIT_RESIZE_BORDER / 2 - x) / w;
 				split->default_sz = split->sz;
+				*changed = true;
 			}
 		} else {
 			const s32 orig_drag_y =   y + h - GUI_SPLIT_RESIZE_BORDER / 2
@@ -4857,76 +5612,188 @@ void gui__split(gui_t *gui, gui_split_t *split, b32 render)
 				else
 					split->sz = (r32)(y + h - drag_y - GUI_SPLIT_RESIZE_BORDER / 2) / h;
 				split->default_sz = split->sz;
+				*changed = true;
 			}
 		}
 		gui_style_pop(gui);
 		gui_style_pop(gui);
+		gui_style_pop(gui);
 	}
 
-	sz1 = gui__split_dim(split->sz, split->vert ? w : h);
+	if (split->vertical) {
+		const s32 xm = split->sp1->box.max.x;
+		gui_line_styled(gui, xm, y, xm, y + h, &gui->style.split);
+	} else {
+		const s32 ym = split->sp1->box.min.y;
+		gui_line_styled(gui, x, ym, x + w, ym, &gui->style.split);
+	}
+
+	if (split->sp1)
+		gui__split_render(gui, split->sp1, changed);
+	if (split->sp2)
+		gui__split_render(gui, split->sp2, changed);
+}
+
+static
+void gui__split_render_leaf(gui_t *gui, gui_split_t *split)
+{
+	s32 x, y, w, h, xm, ym, s;
+	v2i mouse;
+
+	if (!gui->is_dragging_dockable_panel || !gui__has_free_splits(gui, 2))
+		return;
+
+	mouse_pos(gui, &mouse.x, &mouse.y);
+	if (!box2i_contains_point(split->box, mouse))
+		return;
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+	xm = x+w/2;
+	ym = y+h/2;
+	s = min(w/4, h/4)/2;
+
+	switch (gui__split_division(split, mouse)) {
+	case GUI__SPLIT_DIVISION_NONE:
+	break;
+	case GUI__SPLIT_DIVISION_CENTER:
+		gui_rect(gui, xm-s, ym-s, 2*s, 2*s, g_nocolor, g_white);
+	break;
+	case GUI__SPLIT_DIVISION_LEFT:
+	case GUI__SPLIT_DIVISION_RIGHT:
+		if (split->flags & GUI_SPLIT_DIVISIBLE)
+			gui_line(gui, xm, y, xm, y + h, 1, g_white);
+	break;
+	case GUI__SPLIT_DIVISION_TOP:
+	case GUI__SPLIT_DIVISION_BOTTOM:
+		if (split->flags & GUI_SPLIT_DIVISIBLE)
+			gui_line(gui, x, ym, x + w, ym, 1, g_white);
+	break;
+	}
+}
+
+static
+void gui__split_render(gui_t *gui, gui_split_t *split, b32 *changed)
+{
+	assert(split);
+
+	if (!gui__split_is_leaf(split))
+		gui__split_render_branch(gui, split, changed);
+	else
+		gui__split_render_leaf(gui, split);
+}
+
+static
+void gui__splits_render(gui_t *gui, b32 *changed)
+{
+	gui->splits_rendered_this_frame = true;
+	gui__split_render(gui, gui->root_split, changed);
+}
+
+void gui_splits_render(gui_t *gui)
+{
+	b32 changed;
+	gui__splits_render(gui, &changed);
+}
+
+static
+void gui_splits_compute_from(gui_t *gui, gui_split_t *split)
+{
+	s32 x, y, w, h, sz1;
+
+	assert(split);
+	assert(!gui__split_is_leaf(split));
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+
+	sz1 = gui__split_dim(split->sz, (split->vertical) ? w : h);
 	split->sp1->box = split->box;
 	split->sp2->box = split->box;
 
-	if (split->vert) {
+	if (split->vertical) {
 		const s32 xm = split->box.min.x + sz1;
 		split->sp1->box.max.x = xm;
 		split->sp2->box.min.x = xm;
-		if (render)
-			gui_line_styled(gui, xm, split->box.min.y, xm, split->box.max.y,
-			                &gui->style.split);
 	} else {
 		const s32 ym = split->box.max.y - sz1;
 		split->sp1->box.min.y = ym;
 		split->sp2->box.max.y = ym;
-		if (render)
-			gui_line_styled(gui, split->box.min.x, ym, split->box.max.x, ym,
-			                &gui->style.split);
 	}
 
-	if (!split->sp1->leaf)
-		gui__split(gui, split->sp1, render);
-	if (!split->sp2->leaf)
-		gui__split(gui, split->sp2, render);
+	if (!gui__split_is_leaf(split->sp1))
+		gui_splits_compute_from(gui, split->sp1);
+	if (!gui__split_is_leaf(split->sp2))
+		gui_splits_compute_from(gui, split->sp2);
 }
 
-void gui_compute_split_boxes(gui_t *gui)
+void gui_splits_compute(gui_t *gui)
 {
+	const v2i halfdim = v2i_scale_inv(gui->window_dim, 2);
 	assert(gui->root_split);
-	box2i_from_center(&gui->root_split->box, gui->win_halfdim, gui->win_halfdim);
-	gui__split(gui, gui->root_split, false);
+	box2i_from_center(&gui->root_split->box, halfdim, halfdim);
+	if (!gui__split_is_leaf(gui->root_split))
+		gui_splits_compute_from(gui, gui->root_split);
 }
 
-void pgui_panel_init(gui_t *gui, gui_panel_t *panel, s32 x, s32 y, s32 w, s32 h,
-                     const char *title, gui_panel_flags_t flags)
+void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
+                      s32 x, s32 y, s32 w, s32 h,
+                      const char *title, gui_panel_flags_t flags)
 {
+	assert(id <= GUI__MAX_PANEL_ID);
+	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
+
 	panel->x = x;
 	panel->y = y;
 	panel->width = w;
 	panel->height = h;
-	panel->id = ++gui->next_panel_id;
-	assert(gui->next_panel_id <= GUI__MAX_PANEL_ID);
+	panel->id = id;
 
 	panel->title = title;
 	panel->flags = flags;
-	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
-
-	panel->grid.depth = 0;
 
 	panel->scroll = g_v2i_zero;
 	panel->scroll_rate.x = GUI_SCROLL_RATE;
 	panel->scroll_rate.y = GUI_SCROLL_RATE;
 	panel->required_dim = g_v2i_zero;
 
-	panel->parent = NULL;
 	panel->prev   = NULL;
 	panel->next   = NULL;
-	panel->split.leaf = false;
+	panel->split  = NULL;
 
-	panel->closed = false;
-	panel->collapsed = false;
+	panel->closed     = false;
+	panel->collapsed  = false;
 	panel->tabbed_out = false;
+}
 
+void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
+                     s32 x, s32 y, s32 w, s32 h,
+                     const char *title, gui_panel_flags_t flags)
+{
+	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
 	pgui_panel_to_front(gui, panel);
+}
+
+void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
+                              s32 w, s32 h,
+                              const char *title, gui_panel_flags_t flags)
+{
+	const s32 x = (gui->window_dim.x - w)/2;
+	const s32 y = (gui->window_dim.y - h)/2;
+	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
+}
+
+void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
+                              gui_split_t *split,
+                              const char *title, gui_panel_flags_t flags)
+{
+	s32 x, y, w, h;
+
+	assert(split);
+	assert(flags & GUI_PANEL_DOCKABLE);
+
+	box2i_to_xywh(split->box, &x, &y, &w, &h);
+	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
+	panel->split = split;
+	split->panel = panel;
 }
 
 static
@@ -4953,6 +5820,67 @@ void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab)
 	last->next = tab;
 	tab->prev = last;
 	tab->tabbed_out = true;
+}
+
+void pgui_panel_remove_tab(gui_t *gui, gui_panel_t *panel)
+{
+	gui_panel_t *next_tab = NULL;
+
+	/* remove from neighbor linked list */
+	if (panel->prev) {
+		panel->prev->next = panel->next;
+		next_tab = panel->prev;
+	}
+	if (panel->next) {
+		panel->next->prev = panel->prev;
+		next_tab = panel->next;
+	}
+
+	if (!panel->tabbed_out && next_tab)
+		pgui_panel_select_tab(next_tab);
+
+	/* remove from container split */
+	if (panel->split) {
+		gui_split_t *split = panel->split;
+		split->panel = next_tab;
+		panel->split = NULL;
+		if (   !next_tab
+		    && split != gui->root_split
+		    && split->parent
+		    && (split->parent->flags & GUI_SPLIT_TEMPORARY)) {
+			gui_split_t *parent = split->parent;
+			if (parent->sp1 == split) {
+				if (parent->sp2->panel) {
+					parent->panel = parent->sp2->panel;
+					parent->sp2->panel->split = parent;
+				}
+			} else {
+				if (parent->sp1->panel) {
+					parent->panel = parent->sp1->panel;
+					parent->sp1->panel->split = parent;
+				}
+			}
+			parent->sp1->in_use = false;
+			parent->sp2->in_use = false;
+			parent->sp1 = NULL;
+			parent->sp2 = NULL;
+		}
+	}
+
+	/* reset data */
+	panel->prev = NULL;
+	panel->next = NULL;
+	panel->tabbed_out = false;
+}
+
+void pgui_panel_select_tab(gui_panel_t *panel)
+{
+	gui_panel_t *first = panel;
+	while (first->prev)
+		first = first->prev;
+	for (gui_panel_t *p = first; p; p = p->next)
+		p->tabbed_out = true;
+	panel->tabbed_out = false;
 }
 
 static
@@ -4985,7 +5913,7 @@ void pgui__panel_resize(gui_t *gui, gui_panel_t *panel)
 	s32 resize_delta;
 
 	if (   (panel->flags & GUI_PANEL_RESIZABLE)
-	    && !panel->split.leaf
+	    && !panel->split
 	    && !panel->collapsed
 	    && gui->use_default_cursor) {
 		gui_style_push(gui, drag, g_gui_style_invis.drag);
@@ -5050,115 +5978,241 @@ static
 void pgui__panel_collapse_toggle(gui_panel_t *panel)
 {
 	panel->collapsed = !panel->collapsed;
-	if (panel->split.leaf && panel->split.parent) {
+	if (panel->split && panel->split->parent) {
 		/* TODO(rgriege): allow collapsing second child in split */
-		gui_split_t *parent = panel->split.parent;
-		assert(&panel->split == parent->sp1);
+		gui_split_t *parent = panel->split->parent;
+		assert(panel->split == parent->sp1);
 		parent->sz = panel->collapsed
 		           ? GUI_PANEL_TITLEBAR_HEIGHT : parent->default_sz;
 	}
 }
 
 static
+s32 box2i_to_point_dist_sq(box2i box, v2i point)
+{
+	s32 dx, dy;
+
+	if (box2i_contains_point(box, point))
+		return 0;
+
+	if (point.x <= box.min.x)
+		dx = box.min.x - point.x;
+	else if (point.x >= box.max.x)
+		dx = point.x - box.max.x;
+	else
+		dx = 0;
+
+	if (point.y <= box.min.y)
+		dy = box.min.y - point.y;
+	else if (point.y >= box.max.y)
+		dy = point.y - box.max.y;
+	else
+		dy = 0;
+
+	return dx*dx + dy*dy;
+}
+
+static
 void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 {
-	if (panel->flags & GUI_PANEL_TITLEBAR) {
-		const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
-		u64 drag_id = ~0;
-		s32 rw, rx;
-		s32 tab_count;
+	const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
+	s32 y;
+	u64 drag_id = ~0;
+	s32 rw, rx;
+	s32 tab_count;
+	gui_panel_t *panel_to_remove_from_tabs = NULL;
 
-		panel->grid.pos.y = panel->y + panel->height - dim;
+	y = panel->y + panel->height - dim;
 
-		if ((panel->flags & GUI_PANEL_DRAGGABLE) && !panel->split.leaf) {
-			*dragging = gui__drag_logic(gui, &drag_id, &panel->x, &panel->grid.pos.y,
-			                            dim, dim, MB_LEFT,
-			                            gui__drag_default_callback, NULL);
-			if (*dragging)
-				panel->y = panel->grid.pos.y - panel->height + dim;
-		} else {
-			*dragging = false;
-		}
-
-		gui_rect(gui, panel->x, panel->grid.pos.y, panel->width,
-		         dim, gui->style.panel.titlebar.bg_color,
-		         gui->style.panel.titlebar.outline_color);
-
-		gui__drag_render(gui, panel->x, panel->grid.pos.y, dim, dim, drag_id,
-		                 *dragging, &gui->style.panel.drag);
-
-		rw = 0;
-		if (panel->flags & GUI_PANEL_COLLAPSABLE)
-			rw += dim;
-		if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf)
-			rw += dim;
-
-		tab_count = 0;
-		for (gui_panel_t *p = panel; p; p = p->next)
-			++tab_count;
-		if (tab_count > 1) {
-			s32 tab_dim, tab_idx;
-			u32 selected_tab_idx;
-			tab_dim = (panel->width - dim - rw) / tab_count;
-			tab_dim = min(tab_dim, 100);
-			tab_idx = 0;
-			selected_tab_idx = 0;
-			for (gui_panel_t *p = panel; p; p = p->next) {
-				if (!p->tabbed_out)
-					selected_tab_idx = (u32)tab_idx;
-				++tab_idx;
+	if (panel->flags & GUI_PANEL_DRAGGABLE) {
+		*dragging = gui__drag_logic(gui, &drag_id, &panel->x, &y, dim, dim,
+		                            MB_LEFT, gui__drag_default_callback, NULL);
+		if (*dragging) {
+			panel->y = y - panel->height + dim;
+			if (panel->split) {
+				pgui_panel_remove_tab(gui, panel);
+				pgui_panel_to_front(gui, panel);
+				pgui__panel_titlebar(gui, panel, dragging);
+				return;
 			}
-			tab_idx = 0;
-			gui_style_push(gui, select, gui->style.panel.tab);
-			for (gui_panel_t *p = panel; p; p = p->next) {
-				if (gui_select(gui, panel->x + dim + tab_idx * tab_dim, panel->grid.pos.y,
-				               tab_dim, dim, p->title, &selected_tab_idx, (u32)tab_idx)) {
-					for (gui_panel_t *px = panel; px; px = px->next)
-						px->tabbed_out = true;
-					p->tabbed_out = false;
-				}
-				++tab_idx;
-			}
-			gui_style_pop(gui);
-		} else {
-			gui_txt_styled(gui, panel->x + dim, panel->grid.pos.y, panel->width, dim,
-			               panel->title, &gui->style.panel.titlebar.text);
 		}
-
-		rx = panel->x + panel->width - rw;
-		if (panel->flags & GUI_PANEL_COLLAPSABLE) {
-			const s32 y = panel->grid.pos.y;
-			if (panel->collapsed)
-				gui_style_push(gui, btn, gui->style.panel.restore);
-			else
-				gui_style_push(gui, btn, gui->style.panel.collapse);
-			if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
-				pgui__panel_collapse_toggle(panel);
-			gui_style_pop(gui);
-			rx += dim;
-		}
-
-		if ((panel->flags & GUI_PANEL_CLOSABLE) && !panel->split.leaf) {
-			const s32 y = panel->grid.pos.y;
-			gui_style_push(gui, btn, gui->style.panel.close);
-			if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
-				panel->closed = true;
-			gui_style_pop(gui);
-			rx += dim;
-		}
-
-		panel->grid.pos.y -= panel->padding.y;
-		panel->body_height = panel->height - dim;
 	} else {
 		*dragging = false;
-		panel->grid.pos.y = panel->y + panel->height - panel->padding.y;
-		panel->body_height = panel->height;
+	}
+
+	gui_rect(gui, panel->x, y, panel->width,
+	         dim, gui->style.panel.titlebar.bg_color,
+	         gui->style.panel.titlebar.outline_color);
+
+	gui__drag_render(gui, panel->x, y, dim, dim, drag_id,
+	                 *dragging, &gui->style.panel.drag);
+
+	rw = 0;
+	if (panel->flags & GUI_PANEL_COLLAPSABLE)
+		rw += dim;
+	if (panel->flags & GUI_PANEL_CLOSABLE)
+		rw += dim;
+
+	tab_count = 0;
+	for (gui_panel_t *p = panel; p; p = p->next)
+		++tab_count;
+	if (tab_count > 1) {
+		s32 tab_dim, tab_idx;
+		u32 selected_tab_idx;
+		tab_dim = (panel->width - dim - rw) / tab_count;
+		tab_dim = min(tab_dim, 100);
+		tab_idx = 0;
+		selected_tab_idx = 0;
+		for (gui_panel_t *p = panel; p; p = p->next) {
+			if (!p->tabbed_out)
+				selected_tab_idx = (u32)tab_idx;
+			++tab_idx;
+		}
+		tab_idx = 0;
+		gui_style_push(gui, select, gui->style.panel.tab);
+		for (gui_panel_t *p = panel; p; p = p->next) {
+			const s32 x = panel->x + dim + tab_idx * tab_dim;
+			const u64 select_id = gui_widget_id(gui, x, y);
+			if (gui_select(gui, x, y, tab_dim, dim, p->title,
+			               &selected_tab_idx, (u32)tab_idx)) {
+				pgui_panel_select_tab(p);
+			} else if (   (p->flags & GUI_PANEL_DRAGGABLE)
+			           && select_id == gui->active_id) {
+				box2i box;
+				box2i_from_xywh(&box, x, y, tab_dim, dim);
+				if (box2i_to_point_dist_sq(box, gui->mouse_pos) > dim*dim) {
+					s32 drag_y;
+					gui->drag_offset.x = -dim/2;
+					gui->drag_offset.y = -dim/2;
+					p->x   = gui->mouse_pos.x - dim/2;
+					drag_y = gui->mouse_pos.y - dim/2;
+					p->y   = drag_y - p->height + dim;
+					gui->active_id = gui__widget_id(gui, p->id, p->x, drag_y);
+					panel_to_remove_from_tabs = p;
+				}
+			}
+			++tab_idx;
+		}
+		gui_style_pop(gui);
+	} else {
+		gui_txt_styled(gui, panel->x + dim, y, panel->width, dim,
+		               panel->title, &gui->style.panel.titlebar.text);
+	}
+
+	rx = panel->x + panel->width - rw;
+	if (panel->flags & GUI_PANEL_COLLAPSABLE) {
+		if (panel->collapsed)
+			gui_style_push(gui, btn, gui->style.panel.restore);
+		else
+			gui_style_push(gui, btn, gui->style.panel.collapse);
+		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+			pgui__panel_collapse_toggle(panel);
+		gui_style_pop(gui);
+		rx += dim;
+	}
+
+	if (panel->flags & GUI_PANEL_CLOSABLE) {
+		gui_style_push(gui, btn, gui->style.panel.close);
+		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+			pgui_panel_close(gui, panel);
+		gui_style_pop(gui);
+		rx += dim;
+	}
+
+	if (panel_to_remove_from_tabs) {
+		pgui_panel_remove_tab(gui, panel_to_remove_from_tabs);
+		pgui_panel_to_front(gui, panel_to_remove_from_tabs);
+		if (panel_to_remove_from_tabs == panel)
+			pgui__panel_titlebar(gui, panel, dragging);
+	}
+}
+
+static
+void pgui__panel_stop_dragging(gui_t *gui, gui_panel_t *panel)
+{
+	gui_split_t *split, *sp1, *sp2;
+
+	if (   !(panel->flags & GUI_PANEL_DOCKABLE)
+	    || !gui->root_split
+	    || !gui__has_free_splits(gui, 2)
+	    || !gui__find_split(gui, gui->mouse_pos, &split))
+		return;
+
+	switch (gui__split_division(split, gui->mouse_pos)) {
+	case GUI__SPLIT_DIVISION_NONE:
+	break;
+	case GUI__SPLIT_DIVISION_CENTER:
+		if (split->panel) {
+			pgui_panel_add_tab(split->panel, panel);
+			pgui_panel_select_tab(panel);
+		} else {
+			panel->split = split;
+			split->panel = panel;
+		}
+	break;
+	case GUI__SPLIT_DIVISION_LEFT:
+		if (split->flags & GUI_SPLIT_DIVISIBLE) {
+			gui_split2v(gui, split, &sp1, 0.5f, &sp2, split->flags);
+			sp1->panel = panel;
+			panel->split = sp1;
+			sp2->panel = split->panel;
+			if (split->panel)
+				split->panel->split = sp2;
+			split->panel = NULL;
+			gui_splits_compute_from(gui, split);
+		}
+	break;
+	case GUI__SPLIT_DIVISION_RIGHT:
+		if (split->flags & GUI_SPLIT_DIVISIBLE) {
+			gui_split2v(gui, split, &sp1, 0.5f, &sp2, split->flags);
+			sp1->panel = split->panel;
+			if (split->panel)
+				split->panel->split = sp1;
+			sp2->panel = panel;
+			panel->split = sp2;
+			split->panel = NULL;
+			gui_splits_compute_from(gui, split);
+		}
+	break;
+	case GUI__SPLIT_DIVISION_TOP:
+		if (split->flags & GUI_SPLIT_DIVISIBLE) {
+			gui_split2h(gui, split, &sp1, 0.5f, &sp2, split->flags);
+			sp1->panel = panel;
+			panel->split = sp1;
+			sp2->panel = split->panel;
+			if (split->panel)
+				split->panel->split = sp2;
+			split->panel = NULL;
+			gui_splits_compute_from(gui, split);
+		}
+	break;
+	case GUI__SPLIT_DIVISION_BOTTOM:
+		if (split->flags & GUI_SPLIT_DIVISIBLE) {
+			gui_split2h(gui, split, &sp1, 0.5f, &sp2, split->flags);
+			sp1->panel = split->panel;
+			if (split->panel)
+				split->panel->split = sp1;
+			sp2->panel = panel;
+			panel->split = sp2;
+			split->panel = NULL;
+			gui_splits_compute_from(gui, split);
+		}
+	break;
 	}
 }
 
 b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 {
-	b32 dragging;
+	b32 dragging = false;
+
+	assert(!gui->panel);
+
+	if (panel->split && !gui->splits_rendered_this_frame) {
+		b32 changed = false;
+		gui__splits_render(gui, &changed);
+		if (changed)
+			gui_splits_compute(gui);
+	}
 
 	if (panel->prev) {
 		gui_panel_t *first = panel->prev;
@@ -5169,25 +6223,21 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->y           = first->y;
 		panel->width       = first->width;
 		panel->height      = first->height;
-		panel->grid.pos.y  = first->grid.pos.y;
 		panel->padding     = first->padding;
 		panel->body_height = first->body_height;
-		panel->parent      = first->parent;
-		memcpy(&panel->split, &first->split, sizeof(first->split));
+		panel->split       = first->split;
 		panel->closed      = first->closed;
 		panel->collapsed   = first->collapsed;
 
 		gui->panel = panel;
 	} else {
-		assert(panel->parent == gui->panel);
-
 		if (panel->closed)
 			return false;
 
 		gui->panel = panel;
 
-		if (panel->split.leaf)
-			box2i_to_xywh(panel->split.box, &panel->x, &panel->y,
+		if (panel->split)
+			box2i_to_xywh(panel->split->box, &panel->x, &panel->y,
 			              &panel->width, &panel->height);
 
 		if (gui->style.panel.padding >= 1.f) {
@@ -5199,7 +6249,18 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		}
 
 		pgui__panel_resize(gui, panel);
-		pgui__panel_titlebar(gui, panel, &dragging);
+		panel->body_height = panel->height;
+		if (panel->flags & GUI_PANEL_TITLEBAR) {
+			pgui__panel_titlebar(gui, panel, &dragging);
+			panel->body_height -= GUI_PANEL_TITLEBAR_HEIGHT;
+		}
+
+		if (dragging) {
+			if (panel->flags & GUI_PANEL_DOCKABLE)
+				gui->is_dragging_dockable_panel = true;
+			if (gui->active_id == 0)
+				pgui__panel_stop_dragging(gui, panel);
+		}
 
 		if (panel->collapsed) {
 			/* background outline display */
@@ -5220,18 +6281,14 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		}
 	}
 
-	if (panel->closed || panel->collapsed || panel->tabbed_out) {
-		gui->panel = panel->parent;
+	if (!pgui_panel_content_visible(gui, panel)) {
+		gui->panel = NULL;
 		return false;
 	}
 
 	/* background outline display */
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
 	         g_nocolor, gui->style.panel.border_color);
-
-	panel->grid.pos.x = panel->x + panel->padding.x;
-	panel->grid.start = panel->grid.pos;
-	panel->grid.depth = 0;
 
 	panel->required_dim = v2i_scale(panel->padding, 2);
 
@@ -5261,6 +6318,21 @@ void pgui_panel_restore(gui_panel_t *panel)
 		pgui__panel_collapse_toggle(panel);
 }
 
+void pgui_panel_open(gui_t *gui, gui_panel_t *panel)
+{
+	assert(panel->closed);
+	panel->closed = false;
+	pgui_panel_to_front(gui, panel);
+}
+
+void pgui_panel_close(gui_t *gui, gui_panel_t *panel)
+{
+	assert(panel->flags & GUI_PANEL_CLOSABLE);
+	assert(!panel->closed);
+	panel->closed = true;
+	pgui_panel_remove_tab(gui, panel);
+}
+
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 {
 	b32 contains_mouse;
@@ -5273,13 +6345,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	}
 
 	/* NOTE(rgriege): would be great to avoid the additional mask here */
-	if (panel->parent)
-		gui_mask(gui, panel->parent->x + panel->parent->padding.x,
-		         panel->parent->y + panel->parent->padding.y,
-		         panel->parent->width - panel->parent->padding.x * 2,
-		         panel->parent->body_height - panel->parent->padding.y * 2);
-	else
-		gui_unmask(gui);
+	gui_unmask(gui);
 
 	/* background display */
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
@@ -5343,13 +6409,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		panel->scroll.x = 0;
 	}
 
-	if (panel->parent)
-		gui_mask(gui, panel->parent->x + panel->parent->padding.x,
-		         panel->parent->y + panel->parent->padding.y,
-		         panel->parent->width - panel->parent->padding.x * 2,
-		         panel->parent->body_height - panel->parent->padding.y * 2);
-	else
-		gui_unmask(gui);
+	gui_unmask(gui);
 
 out:
 	if (panel->flags & GUI_PANEL_TITLEBAR)
@@ -5357,348 +6417,15 @@ out:
 	else
 		panel->body_height = panel->height;
 
-	if (contains_mouse && !panel->parent)
+	if (contains_mouse)
 		gui->mouse_covered_by_panel = true;
 
-	gui->panel = panel->parent;
+	gui->panel = NULL;
 }
 
-void pgui_row(gui_t *gui, r32 height, u32 num_cells)
+b32 pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel)
 {
-	const r32 cells[GUI_PANEL_MAX_GRID_CELLS] = { 0 };
-	static_assert(GUI_GRID_REMAINING == 0, invalid_initialization);
-	assert(num_cells < GUI_PANEL_MAX_GRID_CELLS);
-	pgui_row_cells(gui, height, cells, num_cells);
-}
-
-static
-void pgui__strip(gui_t *gui, b32 vertical, r32 minor_dim_,
-                 const r32 *cells, u32 num_cells)
-{
-	gui_panel_t *panel = gui->panel;
-	b32 major_dim_inherited;
-	u32 unspecified_cell_cnt;
-	s32 cell_total_major_dim;
-	gui_panel_grid_strip_t *strip;
-
-	assert(panel);
-	assert(panel->grid.depth < GUI_PANEL_MAX_GRID_DEPTH);
-	assert((minor_dim_ == GUI_GRID_MINOR_DIM_INHERITED) == (panel->grid.depth > 0));
-	assert(   panel->grid.depth == 0
-	       || panel->grid.strips[panel->grid.depth-1].vertical != vertical);
-
-	strip = &panel->grid.strips[panel->grid.depth];
-
-	if (minor_dim_ == GUI_GRID_MINOR_DIM_INHERITED) {
-		pgui_cell(gui, NULL, NULL, &strip->dim.x, &strip->dim.y);
-		major_dim_inherited = true;
-	} else {
-		r32 major_dim = 0.f;
-		strip->dim.d[!vertical] = minor_dim_;
-		major_dim_inherited = false;
-		for (u32 i = 0; i < num_cells; ++i) {
-			if (cells[i] > 1.f)
-				major_dim += cells[i];
-			else
-				major_dim_inherited = true;
-		}
-		if (major_dim_inherited) {
-			if (vertical)
-				strip->dim.y = panel->grid.pos.y - panel->y - panel->padding.y;
-			else
-				strip->dim.x = panel->x + panel->width - panel->padding.x - panel->grid.pos.x;
-			if (strip->dim.d[vertical] < major_dim)
-				strip->dim.d[vertical] = major_dim;
-		} else {
-			strip->dim.d[vertical] = major_dim;
-		}
-	}
-
-	strip->vertical = vertical;
-	strip->num_cells = num_cells;
-	strip->current_cell =   panel->grid.depth > 0
-	                      ? panel->grid.strips[panel->grid.depth-1].max_cell
-	                      : panel->grid.cells;
-	strip->max_cell = strip->current_cell + num_cells;
-
-	assert(strip->max_cell < panel->grid.cells + GUI_PANEL_MAX_GRID_CELLS);
-
-	cell_total_major_dim = 0;
-	unspecified_cell_cnt = 0;
-	for (u32 i = 0; i < num_cells; ++i) {
-		if (cells[i] > 1.f) {
-			strip->current_cell[i] = cells[i];
-			cell_total_major_dim += cells[i];
-		} else if (cells[i] > 0.f) {
-			const u32 dim = cells[i] * strip->dim.d[vertical];
-			strip->current_cell[i] = dim;
-			cell_total_major_dim += dim;
-		} else {
-			assert(cells[i] == 0.f);
-			strip->current_cell[i] = 0.f;
-			++unspecified_cell_cnt;
-		}
-	}
-	if (unspecified_cell_cnt) {
-		const u32 total = max((strip->dim.d[vertical] - cell_total_major_dim), 0);
-		const u32 dim = total / unspecified_cell_cnt;
-		const u32 leftover = total % unspecified_cell_cnt;
-		u32 leftover_aggregate = 0, leftover_distributions = 1;
-		for (u32 i = 0; i < num_cells; ++i) {
-			if (strip->current_cell[i] != 0.f)
-				continue;
-			strip->current_cell[i] = dim;
-			leftover_aggregate += leftover;
-			if (leftover_aggregate >= leftover_distributions * unspecified_cell_cnt) {
-				++strip->current_cell[i];
-				++leftover_distributions;
-			}
-		}
-		cell_total_major_dim += total;
-	}
-
-	if (panel->grid.depth == 0) {
-		const v2i dim = {
-			.x =   panel->grid.pos.x + strip->dim.x + panel->padding.x
-			     - (panel->grid.start.x - panel->padding.x),
-			.y =   panel->grid.start.y + panel->padding.y
-			     - (panel->grid.pos.y - strip->dim.y - panel->padding.y),
-		};
-		panel->required_dim.x = max(panel->required_dim.x, dim.x);
-		panel->required_dim.y = max(panel->required_dim.y, dim.y);
-	}
-	++panel->grid.depth;
-}
-
-void pgui_row_cells(gui_t *gui, r32 height, const r32 *cells, u32 num_cells)
-{
-	pgui__strip(gui, false, height, cells, num_cells);
-}
-
-static
-void pgui__cell_advance(gui_panel_t *panel)
-{
-	gui_panel_grid_strip_t *strip;
-
-	assert(panel->grid.depth > 0);
-
-	do {
-		strip = &panel->grid.strips[panel->grid.depth - 1];
-		if (strip->vertical)
-			panel->grid.pos.y -= *strip->current_cell;
-		else
-			panel->grid.pos.x += *strip->current_cell;
-		++strip->current_cell;
-		if (strip->current_cell == strip->max_cell) {
-			--panel->grid.depth;
-			if (strip->vertical)
-				panel->grid.pos.y += strip->dim.y;
-			else
-				panel->grid.pos.x -= strip->dim.x;
-		} else {
-			break;
-		}
-	} while (panel->grid.depth > 0);
-
-	if (panel->grid.depth == 0) {
-		strip = &panel->grid.strips[0];
-		if (strip->vertical)
-			panel->grid.pos.x += strip->dim.x;
-		else
-			panel->grid.pos.y -= strip->dim.y;
-	}
-}
-
-static
-void pgui__cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
-{
-	pgui_cell(gui, x, y, w, h);
-	pgui__cell_advance(gui->panel);
-}
-
-void pgui_row_empty(gui_t *gui, r32 height)
-{
-	pgui_row(gui, height, 1);
-	pgui__cell_advance(gui->panel);
-}
-
-void pgui_col(gui_t *gui, r32 width, u32 num_cells)
-{
-	const r32 cells[GUI_PANEL_MAX_GRID_CELLS] = { 0 };
-	static_assert(GUI_GRID_REMAINING == 0, invalid_initialization);
-	assert(num_cells < GUI_PANEL_MAX_GRID_CELLS);
-	pgui_col_cells(gui, width, cells, num_cells);
-}
-
-void pgui_col_cells(gui_t *gui, r32 width, const r32 *cells, u32 num_cells)
-{
-	pgui__strip(gui, true, width, cells, num_cells);
-}
-
-void pgui_col_empty(gui_t *gui, r32 width)
-{
-	pgui_col(gui, width, 1);
-	pgui__cell_advance(gui->panel);
-}
-
-void pgui_spacer(gui_t *gui)
-{
-	const gui_panel_style_t *style = &gui->style.panel;
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
-}
-
-void pgui_spacer_blank(gui_t *gui)
-{
-	pgui__cell_advance(gui->panel);
-}
-
-void pgui_txt(gui_t *gui, const char *str)
-{
-	const gui_panel_style_t *style = &gui->style.panel;
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
-	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
-}
-
-void pgui_img(gui_t *gui, const char *fname, img_scale_t scale)
-{
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_img_boxed(gui, x, y, w, h, fname, scale);
-}
-
-btn_val_t pgui_btn_txt(gui_t *gui, const char *lbl)
-{
-	btn_val_t result;
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	result = gui_btn_txt(gui, x, y, w, h, lbl);
-	return result;
-}
-
-btn_val_t pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale)
-{
-	btn_val_t result;
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	result = gui_btn_img(gui, x, y, w, h, fname, scale);
-	return result;
-}
-
-btn_val_t pgui_btn_pen(gui_t *gui, gui_pen_t pen)
-{
-	btn_val_t result;
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	result = gui_btn_pen(gui, x, y, w, h, pen);
-	return result;
-}
-
-b32 pgui_chk(gui_t *gui, const char *lbl, b32 *val)
-{
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	return gui_chk(gui, x, y, w, h, lbl, val);
-}
-
-b32 pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, npt_flags_t flags)
-{
-	return pgui_npt_chars(gui, lbl, n, hint, flags, g_gui_npt_chars_print);
-}
-
-b32 pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
-                   npt_flags_t flags, const b32 chars[128])
-{
-	b32 result;
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	result = gui_npt_chars(gui, x, y, w, h, lbl, n, hint, flags, chars);
-	return result;
-}
-
-b32 pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
-{
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	return gui_select(gui, x, y, w, h, lbl, val, opt);
-}
-
-void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
-{
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_mselect(gui, x, y, w, h, txt, val, opt);
-}
-
-void pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items)
-{
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_dropdown_begin(gui, x, y, w, h, val, num_items);
-}
-
-b32 pgui_dropdown_item(gui_t *gui, const char *txt)
-{
-	return gui_dropdown_item(gui, txt);
-}
-
-b32 pgui_slider_x(gui_t *gui, r32 *val)
-{
-	b32 ret;
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	ret = gui_slider_x(gui, x, y, w, h, val);
-	return ret;
-}
-
-b32 pgui_slider_y(gui_t *gui, r32 *val)
-{
-	b32 ret;
-	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
-	ret = gui_slider_y(gui, x, y, w, h, val);
-	return ret;
-}
-
-b32 pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max)
-{
-	r32 slider_val = (*val - min) / (max - min);
-	b32 result = pgui_slider_x(gui, &slider_val);
-	*val = (max - min) * slider_val + min;
-	return result;
-}
-
-b32 pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max)
-{
-	r32 slider_val = (*val - min) / (max - min);
-	b32 result = pgui_slider_y(gui, &slider_val);
-	*val = (max - min) * slider_val + min;
-	return result;
-}
-
-
-void pgui_subpanel_init(gui_t *gui, gui_panel_t *subpanel)
-{
-	pgui_panel_init(gui, subpanel, 0, 0, 0, 0, NULL, 0);
-}
-
-void pgui_subpanel(gui_t *gui, gui_panel_t *subpanel)
-{
-	assert(!subpanel->split.leaf);
-	assert(!(subpanel->flags & GUI_PANEL_COLLAPSABLE));
-	assert(!(subpanel->flags & GUI_PANEL_CLOSABLE));
-	pgui__cell_consume(gui, &subpanel->x, &subpanel->y,
-	                   &subpanel->width, &subpanel->height);
-	subpanel->parent = gui->panel;
-	check(pgui_panel(gui, subpanel));
-}
-
-void pgui_subpanel_finish(gui_t *gui, gui_panel_t *subpanel)
-{
-	pgui_panel_finish(gui, subpanel);
+	return !(panel->closed || panel->collapsed || panel->tabbed_out);
 }
 
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
@@ -5713,48 +6440,59 @@ void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel)
 int pgui_panel_sort(const void *lhs_, const void *rhs_)
 {
 	const gui_panel_t *lhs = lhs_, *rhs = rhs_;
-	return lhs->pri - rhs->pri;
+	if ((lhs->split == rhs->split) || (lhs->split && rhs->split))
+		return lhs->pri - rhs->pri;
+	else if (lhs->split)
+		return 1;
+	else
+		return -1;
 }
 
-void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+int pgui_panel_sortp(const void *lhs_, const void *rhs_)
 {
-	v2i pos, dim;
-	gui_panel_grid_strip_t *strip;
+	const gui_panel_t *const *lhs = lhs_;
+	const gui_panel_t *const *rhs = rhs_;
+	return pgui_panel_sort(*lhs, *rhs);
+}
 
-	assert(gui->panel);
-	assert(gui->panel->grid.depth > 0);
+void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex)
+{
+	const gui_panel_t *panel = gui->panel;
+	v2i padding;
+	s32 x, y, w, h;
 
-	strip = &gui->panel->grid.strips[gui->panel->grid.depth - 1];
+	assert(panel);
+	assert(!gui->grid);
 
-	pos = v2i_add(gui->panel->grid.pos, gui->panel->scroll);
-	if (strip->vertical) {
-		dim.x = strip->dim.x;
-		dim.y = (s32)*strip->current_cell;
+	padding = panel->padding;
+	x = panel->x                      + panel->scroll.x + padding.x;
+	y = panel->y + panel->body_height + panel->scroll.y - padding.y;
+	w = (flex & GUI_GRID_FLEX_HORIZONTAL) ? 0 : panel->width - 2*padding.x;
+
+	if (flex & GUI_GRID_FLEX_VERTICAL) {
+		h = 0;
 	} else {
-		dim.x = (s32)*strip->current_cell;
-		dim.y = strip->dim.y;
+		h = panel->body_height - 2*padding.y;
+		y -= h;
 	}
-	pos.y -= dim.y;
 
-	if (x)
-		*x = pos.x;
-	if (y)
-		*y = pos.y;
-	if (w)
-		*w = dim.x;
-	if (h)
-		*h = dim.y;
+	pgui_grid_begin(gui, &gui->grid_panel, x, y, w, h);
 }
 
-u64 pgui_next_widget_id(const gui_t *gui)
+void pgui_panel_grid_end(gui_t *gui)
 {
-	/* TODO(rgriege): base panel widget id off relative position to panel
-	 * without scroll, so scrolling doesn't reset focus id */
-	s32 x, y;
-	assert(gui->panel);
-	assert(gui->panel->grid.depth > 0);
-	pgui_cell(gui, &x, &y, NULL, NULL);
-	return gui_widget_id(gui, x, y);
+	gui_panel_t *panel = gui->panel;
+	gui_grid_t *grid = gui->grid;
+	v2i required_dim;
+
+	assert(panel);
+	assert(grid);
+	assert(grid == &gui->grid_panel);
+
+	required_dim = v2i_add(grid->max_dim, v2i_scale(panel->padding, 2));
+	panel->required_dim.x = max(panel->required_dim.x, required_dim.x);
+	panel->required_dim.y = max(panel->required_dim.y, required_dim.y);
+	pgui_grid_end(gui, grid);
 }
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,

@@ -9,9 +9,11 @@ char *sprint_r32(char *buf, u32 n, r32 val, u32 dec);
 
 /* Immediate strings - single string buffer for immediate use.
  * Be very careful when writing functions that take a string as a parameter
- * and use this string - assert(str != imstr()) is recommended. */
+ * and use this string - assert(str != imstr()) is recommended.
+ *
+ * The default is long enough for most OS's max file path length. */
 #ifndef IMPRINT_BUFFER_SIZE
-#define IMPRINT_BUFFER_SIZE 128
+#define IMPRINT_BUFFER_SIZE 4096
 #endif
 
 char *imstr(void);
@@ -169,14 +171,14 @@ char *imstrcat2(const char *src1, const char *src2)
 
 void str_cpy(str_t *dst, const char *src)
 {
-	array_reserve(*dst, strlen(src) + 1);
+	array_reserve(*dst, (array_size_t)(strlen(src) + 1));
 	strcpy(*dst, src);
 }
 
 void str_cat(str_t *dst, const char *src)
 {
 	const size_t sz = array_sz(*dst);
-	array_reserve(*dst, sz + strlen(src) + 1);
+	array_reserve(*dst, (array_size_t)(sz + strlen(src) + 1));
 	strcat(&(*dst)[sz], src);
 }
 
@@ -185,7 +187,7 @@ void str_cat2(str_t *dst, const char *src1, const char *src2)
 	const size_t dsz = array_sz(*dst);
 	const size_t sz1 = strlen(src1);
 	const size_t sz2 = strlen(src2);
-	array_reserve(*dst, dsz + sz1 + sz2 + 1);
+	array_reserve(*dst, (array_size_t)(dsz + sz1 + sz2 + 1));
 	strcat(&(*dst)[dsz], src1);
 	strcat(&(*dst)[dsz+sz1], src2);
 }

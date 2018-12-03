@@ -5,6 +5,8 @@
 
 /* File system */
 
+extern const char *g_file_path_separator;
+
 typedef struct {
 	const char *name;
 	const char *pattern;
@@ -22,10 +24,14 @@ b32  dir_exists(const char *path);
 void path_append(char *lhs, const char *rhs);
 void path_appendn(char *lhs, const char *rhs, u32 sz);
 b32  mkpath(const char *path);
-char *app_data_dir(const char *app_name, allocator_t *a);
 #ifdef VLT_USE_TINYDIR
 b32  rmdir_f(const char *path);
 #endif
+
+const char *app_dir(void);
+char *app_data_dir(const char *app_name, allocator_t *a);
+
+char *imapppath(const char *path_relative_to_app);
 
 /* Dynamic library */
 
@@ -182,6 +188,8 @@ out:
 	return retval;
 }
 
+const char *g_file_path_separator = "\\";
+
 b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
 	return file_open_dialog_ex(fname, fname_sz, &filter, 1);
@@ -220,18 +228,6 @@ b32 dir_exists(const char *path)
 	       && (attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-void path_append(char *lhs, const char *rhs)
-{
-	strcat(lhs, "\\");
-	strcat(lhs, rhs);
-}
-
-void path_appendn(char *lhs, const char *rhs, u32 sz)
-{
-	strcat(lhs, "\\");
-	strncat(lhs, rhs, sz);
-}
-
 static
 b32 _mkdir(const char *path)
 {
@@ -242,24 +238,37 @@ b32 _mkdir(const char *path)
 	return CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
 }
 
+const char *app_dir(void)
+{
+	static char path[MAX_PATH] = {0};
+	if (path[0] != '\0') {
+	} else if (GetModuleFileName(NULL, B2PC(path)) != 0) {
+		char *last = strrchr(path, '\\');
+		if (last)
+			*last = '\0';
+	} else {
+		path[0] = '\0';
+	}
+	return path;
+}
+
 char *app_data_dir(const char *app_name, allocator_t *a)
 {
-	size_t n;
-	char *path;
-	FILE *fp = fopen(".access_check", "w");
-	if (!fp) {
-		PWSTR psz_file_path;
-		if (   SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path)
-		    != S_OK)
-			return NULL;
-
-		n = wcslen(psz_file_path) * sizeof(wchar_t);
-		path = amalloc(n + 4 + strlen(app_name), a);
+#ifndef WINDOWS_LOCAL_PROGRAM_DATA
+	PWSTR psz_file_path;
+	if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path) == S_OK) {
+		const size_t n = wcslen(psz_file_path) * sizeof(wchar_t);
+		char *path = amalloc(n + 4 + strlen(app_name), a);
 		wcstombs(path, psz_file_path, n);
 		CoTaskMemFree(psz_file_path);
 		path_append(path, app_name);
 		return path;
-	} else {
+	}
+	return NULL;
+#else
+	char *path;
+	FILE *fp = fopen(".access_check", "w");
+	if (fp) {
 		fclose(fp);
 		remove(".access_check");
 		path = amalloc(2, a);
@@ -267,6 +276,8 @@ char *app_data_dir(const char *app_name, allocator_t *a)
 		path[1] = '\0';
 		return path;
 	}
+	return NULL;
+#endif
 }
 
 /* Dynamic library */
@@ -344,6 +355,8 @@ out:
 	return retval;
 }
 
+const char *g_file_path_separator = "/";
+
 b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
 {
 	return file__dialog(fname, fname_sz, "zenity --file-selection");
@@ -380,22 +393,16 @@ b32 dir_exists(const char *path)
 	return stat(path, &s) == 0 && S_ISDIR(s.st_mode);
 }
 
-void path_append(char *lhs, const char *rhs)
-{
-	strcat(lhs, "/");
-	strcat(lhs, rhs);
-}
-
-void path_appendn(char *lhs, const char *rhs, u32 sz)
-{
-	strcat(lhs, "/");
-	strncat(lhs, rhs, sz);
-}
-
 static
 b32 _mkdir(const char *path)
 {
 	return mkdir(path, S_IRWXU) == 0;
+}
+
+const char *app_dir(void)
+{
+	/* TODO(rgriege): this won't work for installed applications on Linux/MacOS */
+	return ".";
 }
 
 char *app_data_dir(const char *app_name, allocator_t *a)
@@ -452,6 +459,18 @@ b32 open_file_external(const char *filename)
 }
 
 #endif
+
+void path_append(char *lhs, const char *rhs)
+{
+	strcat(lhs, g_file_path_separator);
+	strcat(lhs, rhs);
+}
+
+void path_appendn(char *lhs, const char *rhs, u32 sz)
+{
+	strcat(lhs, g_file_path_separator);
+	strncat(lhs, rhs, sz);
+}
 
 b32 mkpath(const char *path)
 {
@@ -535,6 +554,11 @@ out:
 	return success;
 }
 #endif // VLT_USE_TINYDIR
+
+char *imapppath(const char *path_relative_to_app)
+{
+	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), path_relative_to_app);
+}
 
 /* IO */
 
