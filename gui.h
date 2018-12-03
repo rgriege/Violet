@@ -3353,21 +3353,22 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                    img_scale_t scale)
 {
 	const img_t *img = gui__find_or_load_img(gui, fname);
-	if (img) {
-		switch (scale) {
-		case IMG_CENTERED:;
-			const s32 x_off = (w - img->texture.width) / 2;
-			const s32 y_off = (h - img->texture.height) / 2;
-			if (x_off >= 0 && y_off >= 0) {
-				gui_img_ex(gui, x + x_off, y + y_off, img, 1.f, 1.f, 1.f);
-				break;
-			}
-		case IMG_SCALED:;
-			const r32 sx = (r32)w / img->texture.width;
-			const r32 sy = (r32)h / img->texture.height;
-			gui_img_ex(gui, x, y, img, sx, sy, 1.f);
-		break;
+	if (!img)
+		return;
+
+	switch (scale) {
+	case IMG_CENTERED:;
+		const s32 x_off = (w - img->texture.width) / 2;
+		const s32 y_off = (h - img->texture.height) / 2;
+		if (x_off >= 0 && y_off >= 0) {
+			gui_img_ex(gui, x + x_off, y + y_off, img, 1.f, 1.f, 1.f);
+			break;
 		}
+	case IMG_SCALED:;
+		const r32 sx = (r32)w / img->texture.width;
+		const r32 sy = (r32)h / img->texture.height;
+		gui_img_ex(gui, x, y, img, sx, sy, 1.f);
+	break;
 	}
 }
 
