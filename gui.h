@@ -6,10 +6,15 @@
 
 /* Color */
 
-typedef struct color_t
+typedef struct color
 {
 	u8 r, g, b, a;
 } color_t;
+
+typedef struct
+{
+	r32 r, g, b, a;
+} colorf_t;
 
 #define gi_black        { .r=0,    .g=0,    .b=0,    .a=0xff }
 #define gi_grey77       { .r=0x4d, .g=0x4d, .b=0x4d, .a=0xff }
@@ -24,6 +29,7 @@ typedef struct color_t
 #define gi_orange       { .r=0xff, .g=0x92, .b=0x1e, .a=0xff }
 #define gi_red          { .r=0xff, .g=0,    .b=0,    .a=0xff }
 #define gi_yellow       { .r=0xff, .g=0xff, .b=0,    .a=0xff }
+#define gi_cyan         { .r=0x00, .g=0xff, .b=0xff, .a=0xff }
 
 #define gi_nocolor      { .r=0,    .g=0,    .b=0,    .a=0 }
 
@@ -41,16 +47,21 @@ typedef struct color_t
 #define g_orange    (color_t)gi_orange
 #define g_red       (color_t)gi_red
 #define g_yellow    (color_t)gi_yellow
+#define g_cyan      (color_t)gi_cyan
 
 #define g_nocolor   (color_t)gi_nocolor
 
-void    color_as_float_array(r32 *f, color_t c);
-color_t color_from_float(const r32 *f);
-void    color_to_hex(color_t c, char *hex, u32 n);
-color_t color_from_hex(const char *hex);
-b32     color_equal(color_t lhs, color_t rhs);
-color_t color_blend(color_t src, color_t dst);
+colorf_t color_to_colorf(color_t c);
+color_t  colorf_to_color(colorf_t cf);
+void     color_to_hex(color_t c, char *hex, u32 n);
+color_t  color_from_hex(const char *hex);
+b32      color_equal(color_t lhs, color_t rhs);
+color_t  color_blend(color_t src, color_t dst);
 
+void    rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v);
+void    hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b);
+#define color_to_hsv(c, h, s, v) rgb_to_hsv((c).r, (c).g, (c).b, h, s, v)
+#define hsv_to_color(h, s, v, c) hsv_to_rgb(h, s, v, &(c)->r, &(c)->g, &(c)->b)
 
 /* Mesh */
 
@@ -278,6 +289,8 @@ typedef enum img_scale
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
 void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c);
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke);
+void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                     color_t bl, color_t br, color_t tr, color_t tl);
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke);
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
@@ -383,6 +396,8 @@ b32  gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
 b32  gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, s32 item_w, u32 num_items);
 void gui_menu_end(gui_t *gui);
+b32  gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c);
+b32  gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c);
 
 u64  gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void gui_widget_focus_next(gui_t *gui);
@@ -483,6 +498,8 @@ b32  pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max);
 b32  pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max);
 b32  pgui_menu_begin(gui_t *gui, const char *txt, s32 item_w, u32 num_items);
 void pgui_menu_end(gui_t *gui);
+b32  pgui_color_picker_sv(gui_t *gui, colorf_t *color);
+b32  pgui_color_picker_h(gui_t *gui, colorf_t *color);
 
 
 /* Splits */
@@ -785,21 +802,23 @@ static const char *g_fragment_shader;
 
 /* Color */
 
-void color_as_float_array(r32 *f, color_t c)
+colorf_t color_to_colorf(color_t c)
 {
-	f[0] = c.r / 255.f;
-	f[1] = c.g / 255.f;
-	f[2] = c.b / 255.f;
-	f[3] = c.a / 255.f;
+	return (colorf_t) {
+		.r = c.r / 255.f,
+		.g = c.g / 255.f,
+		.b = c.b / 255.f,
+		.a = c.a / 255.f,
+	};
 }
 
-color_t color_from_float(const r32 *f)
+color_t colorf_to_color(colorf_t cf)
 {
 	return (color_t) {
-		.r = f[0] * 255.f,
-		.g = f[1] * 255.f,
-		.b = f[2] * 255.f,
-		.a = f[3] * 255.f,
+		.r = cf.r * 255.f,
+		.g = cf.g * 255.f,
+		.b = cf.b * 255.f,
+		.a = cf.a * 255.f,
 	};
 }
 
@@ -853,6 +872,82 @@ color_t color_blend(color_t src, color_t dst)
 		.b = src.b / 2 + dst.b / 2,
 		.a = src.a / 2 + dst.a / 2,
 	};
+}
+
+void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v)
+{
+	const r32 rgb_min = min(r, min(g, b));
+	const r32 rgb_max = max(r, max(g, b));
+	const r32 rgb_del = rgb_max - rgb_min;
+
+	*v = max(r, max(g, b));
+
+	if (r == g && r == b) {
+		/* gray, no chroma */
+		*h = 0.f;
+		*s = 0.f;
+	} else {
+		const r32 r_del = (((rgb_max - r) / 6.f) + (rgb_del / 2.f)) / rgb_del;
+		const r32 g_del = (((rgb_max - g) / 6.f) + (rgb_del / 2.f)) / rgb_del;
+		const r32 b_del = (((rgb_max - b) / 6.f) + (rgb_del / 2.f)) / rgb_del;
+
+		*s = rgb_del / rgb_max;
+
+		if (r == rgb_max)
+			*h = 0.f/3.f + b_del - g_del;
+		else if (g == rgb_max)
+			*h = 1.f/3.f + r_del - b_del;
+		else if (b == rgb_max)
+			*h = 2.f/3.f + g_del - r_del;
+	}
+}
+
+void hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b)
+{
+	if (s == 0.f) {
+		*r = v;
+		*g = v;
+		*b = v;
+	} else {
+		const r32 var_h = (h >= 1.f) ? 0.f : h * 6.f;
+		const r32 var_i = floorf(var_h);
+		const r32 var_1 = v * (1.f - s);
+		const r32 var_2 = v * (1.f - s * (var_h - var_i));
+		const r32 var_3 = v * (1.f - s * (1.f - (var_h - var_i)));
+
+		switch ((int)var_i) {
+		case 0:
+			*r = v;
+			*g = var_3;
+			*b = var_1;
+		break;
+		case 1:
+			*r = var_2;
+			*g = v;
+			*b = var_1;
+		break;
+		case 2:
+			*r = var_1;
+			*g = v;
+			*b = var_3;
+		break;
+		case 3:
+			*r = var_1;
+			*g = var_2;
+			*b = v;
+		break;
+		case 4:
+			*r = var_3;
+			*g = var_1;
+			*b = v;
+		break;
+		default:
+			*r = v;
+			*g = var_1;
+			*b = var_2;
+		break;
+		}
+	}
 }
 
 
@@ -2512,7 +2607,7 @@ b32 gui_begin_frame(gui_t *gui)
 {
 	s32 key_cnt;
 	b32 quit = false, left_window = false;
-	float bg_color[4];
+	const colorf_t bg_color = color_to_colorf(gui->style.bg_color);
 	SDL_Event evt;
 	const u32 last_mouse_btn = gui->mouse_btn;
 	timepoint_t now = time_current();
@@ -2648,8 +2743,7 @@ b32 gui_begin_frame(gui_t *gui)
 	/* NOTE(rgriege): reset the scissor for glClear */
 	GL_CHECK(glScissor, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
-	color_as_float_array(bg_color, gui->style.bg_color);
-	GL_CHECK(glClearColor, bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+	GL_CHECK(glClearColor, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
 	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	/* focused dropdown */
@@ -3254,6 +3348,16 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stro
 		{ x,     y + h },
 	};
 	gui__poly(gui, poly, 4, fill, stroke);
+}
+
+void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                     color_t bl, color_t br, color_t tr, color_t tl)
+{
+	gui_rect(gui, x, y, w, h, g_white, g_nocolor);
+	gui->vert_colors[gui->vert_cnt-4] = bl;
+	gui->vert_colors[gui->vert_cnt-3] = br;
+	gui->vert_colors[gui->vert_cnt-2] = tr;
+	gui->vert_colors[gui->vert_cnt-1] = tl;
 }
 
 #define gui__circ_poly_sz(radius) ((u32)(4 + 2 * radius))
@@ -4919,6 +5023,77 @@ void gui_menu_end(gui_t *gui)
 	memclr(gui->current_dropdown);
 }
 
+static
+void gui__color_picker_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                          s32 offset_x, s32 offset_y, void *udata) {}
+
+b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
+{
+	colorf_t cf_hue = { .a = 1.f };
+	color_t c_hue;
+	r32 hue, sat, val;
+	b32 changed = false;
+	v2i cursor;
+
+	color_to_hsv(*c, &hue, &sat, &val);
+	hsv_to_color(hue, 1.f, 1.f, &cf_hue);
+	c_hue = colorf_to_color(cf_hue);
+
+	gui_rect_mcolor(gui, x, y, w, h, g_white, c_hue,   c_hue,     g_white);
+	gui_rect_mcolor(gui, x, y, w, h, g_black, g_black, g_nocolor, g_nocolor);
+
+	gui_style_push(gui, drag, g_gui_style_invis.drag);
+	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__color_picker_cb, NULL)) {
+		sat = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
+		val = clamp(0, (r32)(gui->mouse_pos.y - y) / h, 1.f);
+		hsv_to_color(hue, sat, val, c);
+		changed = true;
+	}
+	gui_style_pop(gui);
+
+	cursor.x = x+sat*w;
+	cursor.y = y+val*h;
+	gui_circ(gui, cursor.x, cursor.y, 6, g_nocolor, g_white);
+	gui_circ(gui, cursor.x, cursor.y, 7, g_nocolor, g_black);
+
+	return changed;
+}
+
+b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
+{
+	static const color_t rainbow[] = {
+		g_red, g_yellow, g_green, g_cyan, g_blue, g_fuchsia, g_red,
+	};
+
+	b32 changed = false;
+	r32 hue, sat, val;
+	s32 cursor;
+
+	for (u32 i = 0; i < countof(rainbow) - 1; ++i) {
+		const color_t left  = rainbow[i];
+		const color_t right = rainbow[i+1];
+		const s32 xl = x+w*i/6;
+		const s32 xr = x+w*(i+1)/6;
+		gui_rect_mcolor(gui, xl, y, xr-xl, h, left, right, right, left);
+	}
+
+	color_to_hsv(*c, &hue, &sat, &val);
+
+	gui_style_push(gui, drag, g_gui_style_invis.drag);
+	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__color_picker_cb, NULL)) {
+		hue = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
+		hsv_to_color(hue, sat, val, c);
+		changed = true;
+	}
+	gui_style_pop(gui);
+
+	cursor = x+hue*w;
+	gui_rect(gui, cursor-1, y, 2, h, g_nocolor, g_white);
+	gui_rect(gui, cursor-2, y, 4, h, g_nocolor, g_black);
+
+	return changed;
+}
+
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
 #define GUI__SCISSOR_PANEL_ID (UINT_MAX-1)
 #define GUI__MAX_PANEL_ID     (UINT_MAX-2)
@@ -5457,6 +5632,20 @@ b32 pgui_menu_begin(gui_t *gui, const char *txt, s32 item_w, u32 num_items)
 void pgui_menu_end(gui_t *gui)
 {
 	gui_menu_end(gui);
+}
+
+b32 pgui_color_picker_sv(gui_t *gui, colorf_t *color)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_color_picker_sv(gui, x, y, w, h, color);
+}
+
+b32 pgui_color_picker_h(gui_t *gui, colorf_t *color)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_color_picker_h(gui, x, y, w, h, color);
 }
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits)
