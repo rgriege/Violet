@@ -77,6 +77,7 @@ typedef struct texture_t
 	u32 height;
 	u32 fmt;
 	u32 frame_buffer;
+	u32 depth_handle;
 } texture_t;
 
 b32  texture_load(texture_t *tex, const char *filename);
@@ -84,6 +85,7 @@ void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
 void texture_destroy(texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
 void texture_resize(texture_t *tex, u32 w, u32 h);
+void texture_target(texture_t *tex);
 void texture_bind(const texture_t *tex);
 void texture_unbind();
 
@@ -283,6 +285,7 @@ void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
                 r32 opacity);
 void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                    img_scale_t scale);
+img_t *gui_init_cached_img(gui_t *gui, const char *name);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_t align);
 void gui_txt_dim(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
@@ -903,18 +906,40 @@ b32 texture_load(texture_t *tex, const char *filename)
 	return ret;
 }
 
-static void texture__update_framebuffer(texture_t *tex)
+static
+void texture__update_framebuffer(texture_t *tex)
 {
+	u32 depth_handle;
+	b32 depth_only = tex->fmt == GL_DEPTH_COMPONENT;
+
+	if (depth_only) {
+		depth_handle = tex->handle;
+	} else {
+		/* Create depth buffer */
+
+		if (tex->depth_handle == 0) {
+			GL_CHECK(glGenTextures, 1, &tex->depth_handle);
+		}
+
+		GL_CHECK(glBindTexture, GL_TEXTURE_2D, tex->depth_handle);
+		GL_CHECK(glTexImage2D, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+				 tex->width, tex->height, 0, GL_DEPTH_COMPONENT,
+				 GL_UNSIGNED_BYTE, NULL);
+		depth_handle = tex->depth_handle;
+	}
+
 	/* Create frame buffer */
 
 	GL_CHECK(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, tex->frame_buffer);
-	GL_CHECK(glFramebufferTexture2D, GL_DRAW_FRAMEBUFFER,
-			GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->handle, 0);
 
+	if (!depth_only) {
+		GL_CHECK(glFramebufferTexture2D, GL_DRAW_FRAMEBUFFER,
+				 GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->handle, 0);
+	}
 	GL_CHECK(glFramebufferTexture2D, GL_DRAW_FRAMEBUFFER,
-			GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex->handle, 0);
+			 GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_handle, 0);
 
-	GL_CHECK(glDrawBuffers, 1, (GLuint[]){GL_COLOR_ATTACHMENT0});
+	GL_CHECK(glDrawBuffer, depth_only ? GL_NONE : GL_COLOR_ATTACHMENT0);
 
 	/* Check frame buffer */
 
@@ -922,11 +947,9 @@ static void texture__update_framebuffer(texture_t *tex)
 	GL_ERR_CHECK("glCheckFramebufferStatus");
 	/* TODO(Joao): how should GL functions with a return value be checked? */
 
-	if (status != GL_FRAMEBUFFER_COMPLETE)
-	{
-		printf("Failed to create framebuffer!\n");
-		switch (status)
-		{
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		log_error("Failed to create framebuffer!");
+		switch (status) {
 #define prefix "FrameBuffer error: "
 		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
 			log_error(prefix "incomplete dimensions");
@@ -943,8 +966,9 @@ static void texture__update_framebuffer(texture_t *tex)
 #undef prefix
 		}
 		/* TODO(Joao): fallback to use no framebuffers or exit? */
-		tex->frame_buffer = 0;
+		/* tex->frame_buffer = 0; */
 	}
+	texture_unbind();
 }
 
 void texture_resize(texture_t *tex, u32 w, u32 h)
@@ -964,6 +988,7 @@ void texture_resize(texture_t *tex, u32 w, u32 h)
 void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 {
 	tex->frame_buffer = 0;
+	tex->depth_handle = 0;
 	tex->width = w;
 	tex->height = h;
 	tex->fmt = fmt;
@@ -990,7 +1015,6 @@ void texture_target(texture_t *tex)
 	}
 
 	GL_CHECK(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, tex->frame_buffer);
-	GL_CHECK(glViewport, 0, 0, tex->width, tex->height);
 
 }
 
@@ -998,6 +1022,10 @@ void texture_destroy(texture_t *tex)
 {
 	if (tex->handle != 0) {
 		GL_CHECK(glDeleteTextures, 1, &tex->handle);
+		tex->handle = 0;
+	}
+	if (tex->depth_handle != 0) {
+		GL_CHECK(glDeleteTextures, 1, &tex->depth_handle);
 		tex->handle = 0;
 	}
 	if (tex->frame_buffer != 0) {
@@ -3273,6 +3301,16 @@ cached_img_t *gui__find_img(gui_t *gui, u32 id)
 	return NULL;
 }
 
+img_t *gui_init_cached_img(gui_t *gui, const char *name)
+{
+	const u32 id = hash(name);
+	cached_img_t *cached_img;
+
+	cached_img = array_append_null(gui->imgs);
+	cached_img->id = id;
+	return &cached_img->img;
+}
+
 static
 const img_t *gui__find_or_load_img(gui_t *gui, const char *fname)
 {
@@ -4989,10 +5027,10 @@ void gui__strip_set_dim(gui_t *gui, gui_grid_strip_t *strip,
 		}
 	} else {
 #ifdef DEBUG
-		const s32 prev = (grid->depth == 0)
-		               ? grid->dim.d[vertical]
-		               : grid->strips[grid->depth-1].dim.d[vertical];
-		assert(prev == GUI_GRID_FLEX || dim <= prev);
+		/* const s32 prev = (grid->depth == 0) */
+		               /* ? grid->dim.d[vertical] */
+		               /* : grid->strips[grid->depth-1].dim.d[vertical]; */
+		/* assert(prev == GUI_GRID_FLEX || dim <= prev); */
 #endif
 		strip->dim.d[vertical] = dim;
 	}

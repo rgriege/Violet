@@ -176,6 +176,7 @@ FMDEF m4f  m4f_look_at(v3f eye, v3f center, v3f up);
 FMDEF m4f  m4f_mul_m4(m4f lhs, m4f rhs);
 FMDEF v3f  m4f_mul_v3(m4f lhs, v3f rhs);
 FMDEF m4f  m4f_scale(m4f m, v3f scale);
+FMDEF m4f  m4f_inverse(m4f m);
 FMDEF m4f  m4f_translate(m4f m, v3f diff);
 FMDEF m4f  m4f_rotate(m4f m, v3f axis, r32 radians);
 FMDEF m4f  m4f_transpose(m4f m);
@@ -808,6 +809,174 @@ FMDEF v3f m4f_mul_v3(m4f lhs, v3f rhs)
 FMDEF m4f m4f_scale(m4f m, v3f scale)
 {
 	return m4f_mul_m4(m4f_init_scale(scale), m);
+}
+
+FMDEF m4f m4f_inverse(m4f m)
+{
+	m4f dst;
+
+	const r32 m00 = m.v[0 * 4 + 0];
+	const r32 m01 = m.v[0 * 4 + 1];
+	const r32 m02 = m.v[0 * 4 + 2];
+	const r32 m03 = m.v[0 * 4 + 3];
+	const r32 m10 = m.v[1 * 4 + 0];
+	const r32 m11 = m.v[1 * 4 + 1];
+	const r32 m12 = m.v[1 * 4 + 2];
+	const r32 m13 = m.v[1 * 4 + 3];
+	const r32 m20 = m.v[2 * 4 + 0];
+	const r32 m21 = m.v[2 * 4 + 1];
+	const r32 m22 = m.v[2 * 4 + 2];
+	const r32 m23 = m.v[2 * 4 + 3];
+	const r32 m30 = m.v[3 * 4 + 0];
+	const r32 m31 = m.v[3 * 4 + 1];
+	const r32 m32 = m.v[3 * 4 + 2];
+	const r32 m33 = m.v[3 * 4 + 3];
+	const r32 tmp_0  = m22 * m33;
+	const r32 tmp_1  = m32 * m23;
+	const r32 tmp_2  = m12 * m33;
+	const r32 tmp_3  = m32 * m13;
+	const r32 tmp_4  = m12 * m23;
+	const r32 tmp_5  = m22 * m13;
+	const r32 tmp_6  = m02 * m33;
+	const r32 tmp_7  = m32 * m03;
+	const r32 tmp_8  = m02 * m23;
+	const r32 tmp_9  = m22 * m03;
+	const r32 tmp_10 = m02 * m13;
+	const r32 tmp_11 = m12 * m03;
+	const r32 tmp_12 = m20 * m31;
+	const r32 tmp_13 = m30 * m21;
+	const r32 tmp_14 = m10 * m31;
+	const r32 tmp_15 = m30 * m11;
+	const r32 tmp_16 = m10 * m21;
+	const r32 tmp_17 = m20 * m11;
+	const r32 tmp_18 = m00 * m31;
+	const r32 tmp_19 = m30 * m01;
+	const r32 tmp_20 = m00 * m21;
+	const r32 tmp_21 = m20 * m01;
+	const r32 tmp_22 = m00 * m11;
+	const r32 tmp_23 = m10 * m01;
+
+	const r32 t0 = (tmp_0 * m11 + tmp_3 * m21 + tmp_4 * m31) -
+		(tmp_1 * m11 + tmp_2 * m21 + tmp_5 * m31);
+	const r32 t1 = (tmp_1 * m01 + tmp_6 * m21 + tmp_9 * m31) -
+		(tmp_0 * m01 + tmp_7 * m21 + tmp_8 * m31);
+	const r32 t2 = (tmp_2 * m01 + tmp_7 * m11 + tmp_10 * m31) -
+		(tmp_3 * m01 + tmp_6 * m11 + tmp_11 * m31);
+	const r32 t3 = (tmp_5 * m01 + tmp_8 * m11 + tmp_11 * m21) -
+		(tmp_4 * m01 + tmp_9 * m11 + tmp_10 * m21);
+
+	const r32 d = 1.0 / (m00 * t0 + m10 * t1 + m20 * t2 + m30 * t3);
+
+	dst.v[ 0] = d * t0;
+	dst.v[ 1] = d * t1;
+	dst.v[ 2] = d * t2;
+	dst.v[ 3] = d * t3;
+	dst.v[ 4] = d * ((tmp_1 * m10 + tmp_2 * m20 + tmp_5 * m30) -
+	    	(tmp_0 * m10 + tmp_3 * m20 + tmp_4 * m30));
+	dst.v[ 5] = d * ((tmp_0 * m00 + tmp_7 * m20 + tmp_8 * m30) -
+	    	(tmp_1 * m00 + tmp_6 * m20 + tmp_9 * m30));
+	dst.v[ 6] = d * ((tmp_3 * m00 + tmp_6 * m10 + tmp_11 * m30) -
+	    	(tmp_2 * m00 + tmp_7 * m10 + tmp_10 * m30));
+	dst.v[ 7] = d * ((tmp_4 * m00 + tmp_9 * m10 + tmp_10 * m20) -
+	    	(tmp_5 * m00 + tmp_8 * m10 + tmp_11 * m20));
+	dst.v[ 8] = d * ((tmp_12 * m13 + tmp_15 * m23 + tmp_16 * m33) -
+	    	(tmp_13 * m13 + tmp_14 * m23 + tmp_17 * m33));
+	dst.v[ 9] = d * ((tmp_13 * m03 + tmp_18 * m23 + tmp_21 * m33) -
+	    	(tmp_12 * m03 + tmp_19 * m23 + tmp_20 * m33));
+	dst.v[10] = d * ((tmp_14 * m03 + tmp_19 * m13 + tmp_22 * m33) -
+	    	(tmp_15 * m03 + tmp_18 * m13 + tmp_23 * m33));
+	dst.v[11] = d * ((tmp_17 * m03 + tmp_20 * m13 + tmp_23 * m23) -
+	    	(tmp_16 * m03 + tmp_21 * m13 + tmp_22 * m23));
+	dst.v[12] = d * ((tmp_14 * m22 + tmp_17 * m32 + tmp_13 * m12) -
+	    	(tmp_16 * m32 + tmp_12 * m12 + tmp_15 * m22));
+	dst.v[13] = d * ((tmp_20 * m32 + tmp_12 * m02 + tmp_19 * m22) -
+	    	(tmp_18 * m22 + tmp_21 * m32 + tmp_13 * m02));
+	dst.v[14] = d * ((tmp_18 * m12 + tmp_23 * m32 + tmp_15 * m02) -
+	    	(tmp_22 * m32 + tmp_14 * m02 + tmp_19 * m12));
+	dst.v[15] = d * ((tmp_22 * m22 + tmp_16 * m02 + tmp_21 * m12) -
+			(tmp_20 * m12 + tmp_23 * m22 + tmp_17 * m02));
+
+	return dst;
+}
+
+FMDEF m4f m4f_inverse2(m4f m)
+{
+    m4f inv;
+	r32 det;
+
+    inv.v[0] = m.v[5]  * m.v[10] * m.v[15] - m.v[5]  * m.v[11] * m.v[14] - 
+             m.v[9]  * m.v[6]  * m.v[15] + m.v[9]  * m.v[7]  * m.v[14] +
+             m.v[13] * m.v[6]  * m.v[11] - m.v[13] * m.v[7]  * m.v[10];
+
+    inv.v[4] = -m.v[4]  * m.v[10] * m.v[15] + m.v[4]  * m.v[11] * m.v[14] + 
+              m.v[8]  * m.v[6]  * m.v[15] - m.v[8]  * m.v[7]  * m.v[14] - 
+              m.v[12] * m.v[6]  * m.v[11] + m.v[12] * m.v[7]  * m.v[10];
+
+    inv.v[8] = m.v[4]  * m.v[9] * m.v[15] - m.v[4]  * m.v[11] * m.v[13] - 
+             m.v[8]  * m.v[5] * m.v[15] + m.v[8]  * m.v[7] * m.v[13] + 
+             m.v[12] * m.v[5] * m.v[11] - m.v[12] * m.v[7] * m.v[9];
+
+    inv.v[12] = -m.v[4]  * m.v[9] * m.v[14] + m.v[4]  * m.v[10] * m.v[13] +
+               m.v[8]  * m.v[5] * m.v[14] - m.v[8]  * m.v[6] * m.v[13] - 
+               m.v[12] * m.v[5] * m.v[10] + m.v[12] * m.v[6] * m.v[9];
+
+    inv.v[1] = -m.v[1]  * m.v[10] * m.v[15] + m.v[1]  * m.v[11] * m.v[14] + 
+              m.v[9]  * m.v[2] * m.v[15] - m.v[9]  * m.v[3] * m.v[14] - 
+              m.v[13] * m.v[2] * m.v[11] + m.v[13] * m.v[3] * m.v[10];
+
+    inv.v[5] = m.v[0]  * m.v[10] * m.v[15] - m.v[0]  * m.v[11] * m.v[14] - 
+             m.v[8]  * m.v[2] * m.v[15] + m.v[8]  * m.v[3] * m.v[14] + 
+             m.v[12] * m.v[2] * m.v[11] - m.v[12] * m.v[3] * m.v[10];
+
+    inv.v[9] = -m.v[0]  * m.v[9] * m.v[15] + m.v[0]  * m.v[11] * m.v[13] + 
+              m.v[8]  * m.v[1] * m.v[15] - m.v[8]  * m.v[3] * m.v[13] - 
+              m.v[12] * m.v[1] * m.v[11] + m.v[12] * m.v[3] * m.v[9];
+
+    inv.v[13] = m.v[0]  * m.v[9] * m.v[14] - m.v[0]  * m.v[10] * m.v[13] - 
+              m.v[8]  * m.v[1] * m.v[14] + m.v[8]  * m.v[2] * m.v[13] + 
+              m.v[12] * m.v[1] * m.v[10] - m.v[12] * m.v[2] * m.v[9];
+
+    inv.v[2] = m.v[1]  * m.v[6] * m.v[15] - m.v[1]  * m.v[7] * m.v[14] - 
+             m.v[5]  * m.v[2] * m.v[15] + m.v[5]  * m.v[3] * m.v[14] + 
+             m.v[13] * m.v[2] * m.v[7] - m.v[13] * m.v[3] * m.v[6];
+
+    inv.v[6] = -m.v[0]  * m.v[6] * m.v[15] + m.v[0]  * m.v[7] * m.v[14] + 
+              m.v[4]  * m.v[2] * m.v[15] - m.v[4]  * m.v[3] * m.v[14] - 
+              m.v[12] * m.v[2] * m.v[7] + m.v[12] * m.v[3] * m.v[6];
+
+    inv.v[10] = m.v[0]  * m.v[5] * m.v[15] - m.v[0]  * m.v[7] * m.v[13] - 
+              m.v[4]  * m.v[1] * m.v[15] + m.v[4]  * m.v[3] * m.v[13] + 
+              m.v[12] * m.v[1] * m.v[7] - m.v[12] * m.v[3] * m.v[5];
+
+    inv.v[14] = -m.v[0]  * m.v[5] * m.v[14] + m.v[0]  * m.v[6] * m.v[13] + 
+               m.v[4]  * m.v[1] * m.v[14] - m.v[4]  * m.v[2] * m.v[13] - 
+               m.v[12] * m.v[1] * m.v[6] + m.v[12] * m.v[2] * m.v[5];
+
+    inv.v[3] = -m.v[1] * m.v[6] * m.v[11] + m.v[1] * m.v[7] * m.v[10] + 
+              m.v[5] * m.v[2] * m.v[11] - m.v[5] * m.v[3] * m.v[10] - 
+              m.v[9] * m.v[2] * m.v[7] + m.v[9] * m.v[3] * m.v[6];
+
+    inv.v[7] = m.v[0] * m.v[6] * m.v[11] - m.v[0] * m.v[7] * m.v[10] - 
+             m.v[4] * m.v[2] * m.v[11] + m.v[4] * m.v[3] * m.v[10] + 
+             m.v[8] * m.v[2] * m.v[7] - m.v[8] * m.v[3] * m.v[6];
+
+    inv.v[11] = -m.v[0] * m.v[5] * m.v[11] + m.v[0] * m.v[7] * m.v[9] + 
+               m.v[4] * m.v[1] * m.v[11] - m.v[4] * m.v[3] * m.v[9] - 
+               m.v[8] * m.v[1] * m.v[7] + m.v[8] * m.v[3] * m.v[5];
+
+    inv.v[15] = m.v[0] * m.v[5] * m.v[10] - m.v[0] * m.v[6] * m.v[9] - 
+              m.v[4] * m.v[1] * m.v[10] + m.v[4] * m.v[2] * m.v[9] + 
+              m.v[8] * m.v[1] * m.v[6] - m.v[8] * m.v[2] * m.v[5];
+
+	det = m.v[0] * inv.v[0] + m.v[1] * inv.v[4] + m.v[2] * inv.v[8] + m.v[3] *
+		  inv.v[12];
+
+    det = 1.0 / det;
+
+    for (u32 i = 0; i < 16; i++)
+        inv.v[i] = inv.v[i] * det;
+
+    return inv;
 }
 
 FMDEF m4f m4f_translate(m4f m, v3f diff)
