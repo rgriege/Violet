@@ -922,7 +922,7 @@ void texture__update_framebuffer(texture_t *tex)
 		}
 
 		GL_CHECK(glBindTexture, GL_TEXTURE_2D, tex->depth_handle);
-		GL_CHECK(glTexImage2D, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+		GL_CHECK(glTexImage2D, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
 				 tex->width, tex->height, 0, GL_DEPTH_COMPONENT,
 				 GL_UNSIGNED_BYTE, NULL);
 		depth_handle = tex->depth_handle;
