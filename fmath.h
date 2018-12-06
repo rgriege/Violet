@@ -757,7 +757,7 @@ FMDEF m4f m4f_perspective(r32 fovy, r32 aspect, r32 near_z, r32 far_z)
 
 FMDEF m4f m4f_orthographic(r32 w, r32 h, r32 near_z, r32 far_z)
 {
-	const u32 depth = (far_z - near_z)
+	const r32 depth = (far_z - near_z);
 	return (m4f) {
 		2.f / w,    0.f,      0.f,                0.f,
 		0.f,        2.f / h,  0.f,                0.f,
