@@ -57,51 +57,68 @@ void sprint__separators(char *buf, size_t sep_off, size_t sep_cnt, size_t len)
 {
 	for (size_t i = 0; i < sep_cnt; ++i) {
 		const size_t sep_pos = sep_off + i * 4;
-		memmove(buf + sep_pos + 1, buf + sep_pos, len + sep_cnt - sep_pos);
+		memmove(buf + sep_pos + 1, buf + sep_pos, len - sep_pos + 1);
 		buf[sep_pos] = ',';
 	}
 }
 
+static
+void sprint__stats(const char *buf, u32 dec,
+                   size_t *off, size_t *len,
+                   size_t *sep_cnt, size_t *sep_off)
+{
+	*off = (buf[0] == '-');
+	*len = strlen(buf);
+	*sep_cnt = (*len - *off - 1) / 3;
+	*sep_off = ((*len - *off - 1) % 3) + 1 + *off;
+	*len += *sep_cnt + (dec > 0) + dec;
+
+}
+
 char *sprint_u32(char *buf, u32 n, u32 val)
 {
-	size_t len, sep_cnt, sep_off;
+	size_t off, len, sep_cnt, sep_off;
 
 	snprintf(buf, n, "%u", val);
-	len = strlen(buf);
-	sep_cnt = (len - 1) / 3;
-	sep_off = ((len - 1) % 3) + 1;
+	sprint__stats(buf, 0, &off, &len, &sep_cnt, &sep_off);
+
+	if (len >= n) {
+		assert(false);
+		goto out;
+	}
 
 	if (sep_cnt > 0)
 		sprint__separators(buf, sep_off, sep_cnt, len);
+out:
 	return buf;
 }
 
 char *sprint_s32(char *buf, u32 n, s32 val)
 {
-	size_t len, sep_cnt, sep_off;
+	size_t off, len, sep_cnt, sep_off;
 
 	snprintf(buf, n, "%d", val);
-	len = strlen(buf);
-	sep_cnt = (len - 1) / 3;
-	sep_off = ((len - 1) % 3) + 1;
+	sprint__stats(buf, 0, &off, &len, &sep_cnt, &sep_off);
+
+	if (len >= n) {
+		assert(false);
+		goto out;
+	}
 
 	if (sep_cnt > 0)
 		sprint__separators(buf, sep_off, sep_cnt, len);
+out:
 	return buf;
 }
 
 char *sprint_r32(char *buf, u32 n, r32 val, u32 dec)
 {
-	size_t len, sep_cnt, sep_off;
+	size_t off, len, sep_cnt, sep_off;
 
 	assert(dec >= 0 && dec < 9);
 
 	snprintf(buf, n, "%.0f", val);
-	len = strlen(buf);
-	sep_cnt = (len - 1) / 3;
-	sep_off = ((len - 1) % 3) + 1;
-
-	assert(len + sep_cnt < n);
+	sprint__stats(buf, dec, &off, &len, &sep_cnt, &sep_off);
 
 	{
 		char fmt[8] = "%.xf";
@@ -109,8 +126,15 @@ char *sprint_r32(char *buf, u32 n, r32 val, u32 dec)
 		snprintf(buf, n, fmt, val);
 	}
 
+	if (len >= n) {
+		assert(false);
+		goto out;
+	}
+
 	if (sep_cnt > 0)
 		sprint__separators(buf, sep_off, sep_cnt, len);
+
+out:
 	return buf;
 }
 
