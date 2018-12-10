@@ -172,7 +172,8 @@ FMDEF m4f  m4f_init_translation(v3f disp);
 FMDEF m4f  m4f_init_rotation(v3f axis, r32 radians);
 FMDEF m4f  m4f_init_rotation_y(r32 radians);
 FMDEF m4f  m4f_perspective(r32 fovy, r32 aspect, r32 near_z, r32 far_z);
-FMDEF m4f  m4f_orthographic(r32 w, r32 h, r32 near_z, r32 far_z);
+FMDEF m4f  m4f_orthographic(r32 left, r32 right, r32 bottom, r32 top,
+                            r32 near_z, r32 far_z);
 FMDEF m4f  m4f_look_at(v3f eye, v3f center, v3f up);
 FMDEF m4f  m4f_mul_m4(m4f lhs, m4f rhs);
 FMDEF v3f  m4f_mul_v3(m4f lhs, v3f rhs);
@@ -755,14 +756,17 @@ FMDEF m4f m4f_perspective(r32 fovy, r32 aspect, r32 near_z, r32 far_z)
 	};
 }
 
-FMDEF m4f m4f_orthographic(r32 w, r32 h, r32 near_z, r32 far_z)
+FMDEF m4f m4f_orthographic(r32 left, r32 right, r32 bottom, r32 top,
+                           r32 near_z, r32 far_z)
 {
+	const r32 w = (right - left);
+	const r32 h = (top - bottom);
 	const r32 depth = (far_z - near_z);
 	return (m4f) {
-		2.f / w,    0.f,      0.f,                0.f,
-		0.f,        2.f / h,  0.f,                0.f,
-		0.f,        0.f,     -2.f / depth, -(far_z + near_z) / depth,
-		0.f,        0.f,      0.f,                1.f
+		2.f / w, 0.f,      0.f,          (right + left) / w,
+		0.f,     2.f / h,  0.f,          (top + bottom) / h,
+		0.f,     0.f,     -2.f / depth, -(far_z + near_z) / depth,
+		0.f,     0.f,      0.f,          1.f
 	};
 }
 
