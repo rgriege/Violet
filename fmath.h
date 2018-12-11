@@ -58,9 +58,10 @@ typedef float r32;
 
 /* 2D Vector */
 
-typedef struct v2f
+typedef union v2f
 {
-	r32 x, y;
+	struct { r32 x, y; };
+	struct { r32 d[2]; };
 } v2f;
 
 FMGDECL const v2f g_v2f_x_axis;
@@ -109,9 +110,10 @@ FMDEF v2f  v2f_midpoint(v2f v0, v2f v1);
 
 /* 3D Vector */
 
-typedef struct v3f
+typedef union v3f
 {
-	r32 x, y, z;
+	struct { r32 x, y, z; };
+	struct { r32 d[3]; };
 } v3f;
 
 FMGDECL const v3f g_v3f_x_axis;

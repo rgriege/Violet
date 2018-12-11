@@ -57,16 +57,12 @@ typedef double r64;
 
 /* 2D Vector */
 
-typedef struct v2d
+typedef union v2d
 {
+	struct { r64 x, y; };
+	struct { r64 d[2]; };
 #ifndef DMATH_NO_SSE
-	union
-	{
-		struct { r64 x, y; };
-		__m128d v;
-	};
-#else
-	r64 x, y;
+	struct { __m128d v; };
 #endif
 } v2d;
 
