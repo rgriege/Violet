@@ -318,6 +318,14 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 b32  gui_point_visible(const gui_t *gui, s32 x, s32 y);
 
 
+
+/* Render buffer */
+
+v2f *gui_verts_mut(gui_t *gui);
+u32  gui_verts_cnt(const gui_t *gui);
+
+
+
 /* Widgets */
 
 typedef enum npt_flags_t
@@ -3810,6 +3818,16 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	gui_circ(gui, x + w / 2, y + h / 2, min(w / 2, h / 2), style->bg_color,
 	         style->outline_color);
+}
+
+v2f *gui_verts_mut(gui_t *gui)
+{
+	return gui->verts;
+}
+
+u32 gui_verts_cnt(const gui_t *gui)
+{
+	return gui->vert_cnt;
 }
 
 const b32 g_gui_npt_chars_print[128] = {
