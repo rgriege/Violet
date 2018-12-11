@@ -44,13 +44,10 @@ typedef int s32;
 
 /* 2D Vector */
 
-typedef struct v2i
+typedef union v2i
 {
-	union
-	{
-		struct { s32 x, y; };
-		struct { s32 d[2]; };
-	};
+	struct { s32 x, y; };
+	struct { s32 d[2]; };
 } v2i;
 
 IMGDECL const v2i g_v2i_zero;
