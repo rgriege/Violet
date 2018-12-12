@@ -6,14 +6,17 @@
 
 /* Color */
 
-typedef struct color
+typedef union
 {
-	u8 r, g, b, a;
+	struct { u8 r, g, b, a; };
+	struct { u8 d[4]; };
+	struct { u32 val; };
 } color_t;
 
-typedef struct
+typedef union
 {
-	r32 r, g, b, a;
+	struct { r32 r, g, b, a; };
+	struct { r32 d[4]; };
 } colorf_t;
 
 #define gi_black        { .r=0,    .g=0,    .b=0,    .a=0xff }
