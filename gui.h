@@ -2531,8 +2531,10 @@ b32 gui_begin_frame(gui_t *gui)
 			quit = true;
 		break;
 		case SDL_MOUSEWHEEL:
-			gui->mouse_btn |= (evt.wheel.y > 0 ? MB_WHEELUP : MB_WHEELDOWN);
-			gui->last_input_time = now;
+			if (evt.wheel.y != 0) {
+				gui->mouse_btn |= (evt.wheel.y > 0 ? MB_WHEELUP : MB_WHEELDOWN);
+				gui->last_input_time = now;
+			}
 		break;
 		case SDL_WINDOWEVENT:
 			switch (evt.window.event) {
