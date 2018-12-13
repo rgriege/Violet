@@ -2000,7 +2000,6 @@ typedef struct gui
 	v2i mouse_pos_press;
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
-	b32 mouse_in_window;
 	b32 mouse_covered_by_panel;
 	b32 mouse_covered_by_dropdown;
 	b32 mouse_debug;
@@ -2268,7 +2267,6 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->mouse_btn = SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_pos_last = gui->mouse_pos;
 	gui->mouse_pos_press = gui->mouse_pos;
-	gui->mouse_in_window = true;
 	gui->mouse_debug = false;
 	gui__repeat_init(&gui->mouse_repeat);
 
@@ -2513,7 +2511,7 @@ void gui__defocus_dropdown(gui_t *gui)
 b32 gui_begin_frame(gui_t *gui)
 {
 	s32 key_cnt;
-	b32 quit = false;
+	b32 quit = false, left_window = false;
 	float bg_color[4];
 	SDL_Event evt;
 	const u32 last_mouse_btn = gui->mouse_btn;
@@ -2543,12 +2541,7 @@ b32 gui_begin_frame(gui_t *gui)
 				quit = true;
 			break;
 			case SDL_WINDOWEVENT_LEAVE:
-				gui->mouse_in_window = false;
-				gui->last_input_time = now;
-			break;
-			case SDL_WINDOWEVENT_ENTER:
-				gui->mouse_in_window = true;
-				gui->last_input_time = now;
+				left_window = true;
 			break;
 			default:
 				gui->last_input_time = now;
@@ -2573,16 +2566,22 @@ b32 gui_begin_frame(gui_t *gui)
 	SDL_GetWindowSize(gui->window, &gui->window_dim.x, &gui->window_dim.y);
 
 	gui->mouse_pos_last = gui->mouse_pos;
-	if (!gui->mouse_in_window || gui->dragging_window) {
+	if (gui->dragging_window) {
 		v2i w, gm;
 		SDL_GetWindowPosition(gui->window, &w.x, &w.y);
 		gui->mouse_btn |= SDL_GetGlobalMouseState(&gm.x, &gm.y);
+		gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
 		gui->mouse_pos = v2i_sub(gm, w);
+	} else if (left_window) {
+		gui->mouse_btn = 0;
+		gui->mouse_btn_diff = 0;
+		gui->hot_id = 0;
+		gui->active_id = 0;
 	} else {
 		gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
+		gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
 	}
 	gui->mouse_pos.y = gui->window_dim.y - gui->mouse_pos.y;
-	gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
 
 	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
 		gui->mouse_pos_press = gui->mouse_pos;
