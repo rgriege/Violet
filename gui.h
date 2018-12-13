@@ -2589,6 +2589,8 @@ b32 gui_begin_frame(gui_t *gui)
 	gui__repeat_update(&gui->mouse_repeat, gui->mouse_btn,
 	                   __builtin_popcount(gui->mouse_btn),
 	                   gui->frame_time_milli);
+	if (mouse_down(gui, ~0))
+		gui->last_input_time = now;
 
 	gui->mouse_covered_by_panel    = false;
 	gui->mouse_covered_by_dropdown = false;
