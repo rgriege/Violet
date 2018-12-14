@@ -61,10 +61,12 @@ color_t  color_from_hex(const char *hex);
 b32      color_equal(color_t lhs, color_t rhs);
 color_t  color_blend(color_t src, color_t dst);
 
-void    rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v);
-void    hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b);
-#define color_to_hsv(c, h, s, v) rgb_to_hsv((c).r, (c).g, (c).b, h, s, v)
-#define hsv_to_color(h, s, v, c) hsv_to_rgb(h, s, v, &(c)->r, &(c)->g, &(c)->b)
+void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v);
+void hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b);
+void color_to_hsv(colorf_t c, r32 *h, r32 *s, r32 *v);
+void hsv_to_color(r32 h, r32 s, r32 v, colorf_t *c);
+void color_to_hsv8(color_t c, u8 *h, u8 *s, u8 *v);
+void hsv_to_color8(u8 h, u8 s, u8 v, color_t *c);
 
 /* Mesh */
 
@@ -402,6 +404,10 @@ b32  gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_menu_end(gui_t *gui);
 b32  gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c);
 b32  gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c);
+b32  gui_color_picker(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
+                      s32 pw, s32 ph, colorf_t *c);
+b32  gui_color_picker8(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
+                       s32 pw, s32 ph, color_t *c);
 
 u64  gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void gui_widget_focus_next(gui_t *gui);
@@ -504,6 +510,8 @@ b32  pgui_menu_begin(gui_t *gui, const char *txt, s32 item_w, u32 num_items);
 void pgui_menu_end(gui_t *gui);
 b32  pgui_color_picker_sv(gui_t *gui, colorf_t *color);
 b32  pgui_color_picker_h(gui_t *gui, colorf_t *color);
+b32  pgui_color_picker(gui_t *gui, s32 pw, s32 ph, colorf_t *c);
+b32  pgui_color_picker8(gui_t *gui, s32 pw, s32 ph, color_t *c);
 
 
 /* Splits */
@@ -952,6 +960,35 @@ void hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b)
 		break;
 		}
 	}
+}
+
+void color_to_hsv(colorf_t c, r32 *h, r32 *s, r32 *v)
+{
+	rgb_to_hsv(c.r, c.g, c.b, h, s, v);
+}
+
+void hsv_to_color(r32 h, r32 s, r32 v, colorf_t *c)
+{
+	hsv_to_rgb(h, s, v, &c->r, &c->g, &c->b);
+}
+
+void color_to_hsv8(color_t c, u8 *h, u8 *s, u8 *v)
+{
+	r32 hf, sf, vf;
+	color_to_hsv(color_to_colorf(c), &hf, &sf, &vf);
+	*h = (u8)(255.f*hf);
+	*s = (u8)(255.f*sf);
+	*v = (u8)(255.f*vf);
+}
+
+void hsv_to_color8(u8 h, u8 s, u8 v, color_t *c)
+{
+	const r32 hf = (r32)h/255.f;
+	const r32 sf = (r32)s/255.f;
+	const r32 vf = (r32)v/255.f;
+	colorf_t cf;
+	hsv_to_color(hf, sf, vf, &cf);
+	*c = colorf_to_color(cf);
 }
 
 
@@ -2160,6 +2197,7 @@ typedef struct gui
 		b32 close_at_end;
 	} popup;
 	b32 dragging_window;
+	colorf_t color_picker8_color;
 
 	/* grid */
 	gui_grid_t grid_panel;
@@ -2390,6 +2428,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->dropdown.id = 0;
 	gui->popup.id = 0;
 	gui->dragging_window = false;
+	gui->color_picker8_color = (colorf_t){0};
 
 	gui->grid = NULL;
 
@@ -4987,33 +5026,144 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 		g_red, g_yellow, g_green, g_cyan, g_blue, g_fuchsia, g_red,
 	};
 
+	const b32 horizontal = (w > h);
 	b32 changed = false;
 	r32 hue, sat, val;
 	s32 cursor;
 
-	for (u32 i = 0; i < countof(rainbow) - 1; ++i) {
-		const color_t left  = rainbow[i];
-		const color_t right = rainbow[i+1];
-		const s32 xl = x+w*i/6;
-		const s32 xr = x+w*(i+1)/6;
-		gui_rect_mcolor(gui, xl, y, xr-xl, h, left, right, right, left);
+	if (horizontal) {
+		for (u32 i = 0; i < countof(rainbow) - 1; ++i) {
+			const color_t left  = rainbow[i];
+			const color_t right = rainbow[i+1];
+			const s32 xl = x+w*i/6;
+			const s32 xr = x+w*(i+1)/6;
+			gui_rect_mcolor(gui, xl, y, xr-xl, h, left, right, right, left);
+		}
+	} else {
+		for (u32 i = 0; i < countof(rainbow) - 1; ++i) {
+			const color_t top    = rainbow[i];
+			const color_t bottom = rainbow[i+1];
+			const s32 yt = y+h-h*i/6;
+			const s32 yb = y+h-h*(i+1)/6;
+			gui_rect_mcolor(gui, x, yb, w, yt-yb, bottom, bottom, top, top);
+		}
 	}
 
 	color_to_hsv(*c, &hue, &sat, &val);
 
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
 	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__color_picker_cb, NULL)) {
-		hue = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
+		if (horizontal)
+			hue = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
+		else
+			hue = 1.f-clamp(0, (r32)(gui->mouse_pos.y - y) / h, 1.f);
 		hsv_to_color(hue, sat, val, c);
 		changed = true;
 	}
 	gui_style_pop(gui);
 
-	cursor = x+hue*w;
-	gui_rect(gui, cursor-1, y, 2, h, g_nocolor, g_white);
-	gui_rect(gui, cursor-2, y, 4, h, g_nocolor, g_black);
+	if (horizontal) {
+		cursor = x+hue*w;
+		gui_rect(gui, cursor-1, y, 2, h, g_nocolor, g_white);
+		gui_rect(gui, cursor-2, y, 4, h, g_nocolor, g_black);
+	} else {
+		cursor = y+(1.f-hue)*h;
+		gui_rect(gui, x, cursor-1, w, 2, g_nocolor, g_white);
+		gui_rect(gui, x, cursor-2, w, 4, g_nocolor, g_black);
+	}
 
 	return changed;
+}
+
+b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                     s32 pw, s32 ph, colorf_t *c)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	const b32 was_focused = (gui->focus_id == id);
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	const s32 px = x;
+	const s32 py = y - ph;
+	gui__widget_render_state_t render_state;
+	gui_style_t *style = gui_style(gui);
+	color_t color = colorf_to_color(*c);
+
+	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
+		if (gui->focus_id == id) {
+			gui->focus_id = 0;
+		} else {
+			gui->focus_id = id;
+			gui->focus_id_found_this_frame = true;
+		}
+	}
+
+	if (   gui->focus_id == id
+	    && mouse_pressed(gui, ~0)
+	    && !contains_mouse
+	    && !gui__widget_contains_mouse(gui, px, py, pw, ph))
+		gui->focus_id = 0;
+
+	if (was_focused && gui->focus_id != id)
+		gui__defocus_popup(gui);
+
+	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
+
+	gui_style_push_current(gui, btn);
+	style->btn.hot.outline_color = g_white;
+	style->btn.inactive.bg_color = color;
+	style->btn.hot.bg_color      = color;
+	style->btn.active.bg_color   = color;
+	gui__btn_render(gui, x, y, w, h, "", render_state, &gui->style.btn);
+	gui_style_pop(gui);
+
+	if (gui->focus_id == id) {
+		static const r32 rows[] = { 0, 2, 0.1f };
+		static const r32 cols[] = { 0, 2, 0.1f };
+		b32 changed = false;
+
+		gui__popup_begin(gui, id, px, py, pw, ph);
+		gui_rect(gui, px, py, pw, ph, g_nocolor, style->panel.border_color);
+
+		pgui_col_cellsv(gui, 0, rows);
+
+		pgui_row_cellsv(gui, 0, cols);
+		if (pgui_color_picker_sv(gui, c)) changed = true;
+		pgui_spacer(gui);
+		if (pgui_color_picker_h(gui, c)) changed = true;
+
+		if (changed) color = colorf_to_color(*c);
+
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols);
+		gui_style_push_color(gui, panel.cell_bg_color, color);
+		pgui_spacer(gui);
+		gui_style_pop(gui);
+		pgui_spacer(gui);
+		pgui_spacer(gui);
+
+		gui__popup_end(gui);
+		return changed;
+	} else {
+		return false;
+	}
+}
+
+b32 gui_color_picker8(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                      s32 pw, s32 ph, color_t *c)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	if (gui->focus_id == id) {
+		if (gui_color_picker(gui, x, y, w, h, pw, ph, &gui->color_picker8_color)) {
+			*c = colorf_to_color(gui->color_picker8_color);
+			return true;
+		}
+	} else {
+		colorf_t cf = color_to_colorf(*c);
+		gui_color_picker(gui, x, y, w, h, pw, ph, &cf);
+		if (gui->focus_id == id)
+			gui->color_picker8_color = cf;
+	}
+	return false;
 }
 
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
@@ -5567,6 +5717,20 @@ b32 pgui_color_picker_h(gui_t *gui, colorf_t *color)
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	return gui_color_picker_h(gui, x, y, w, h, color);
+}
+
+b32 pgui_color_picker(gui_t *gui, s32 pw, s32 ph, colorf_t *color)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_color_picker(gui, x, y, w, h, pw, ph, color);
+}
+
+b32 pgui_color_picker8(gui_t *gui, s32 pw, s32 ph, color_t *color)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_color_picker8(gui, x, y, w, h, pw, ph, color);
 }
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits)
