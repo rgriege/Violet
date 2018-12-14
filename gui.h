@@ -4655,14 +4655,12 @@ void gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 	gui->popup.mask.h = h;
 	gui->popup.close_at_end = false;
 	gui__mask(gui, 0, x, y, w, h);
-	pgui_grid_begin(gui, &gui->grid_popup, x, y, w, h);
 }
 
 static
 void gui__popup_end(gui_t *gui)
 {
 	/* switch to new scissor (mirroring interrupted scissor) after last item */
-	pgui_grid_end(gui, &gui->grid_popup);
 	gui_mask(gui, gui->popup.prev_mask.x, gui->popup.prev_mask.y,
 	         gui->popup.prev_mask.w, gui->popup.prev_mask.h);
 
@@ -4716,6 +4714,7 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	if (gui->focus_id == id) {
 		gui__popup_begin(gui, id, px, py, pw, ph);
+		pgui_grid_begin(gui, &gui->grid_popup, px, py, pw, ph);
 		pgui_col(gui, 0, num_items);
 	}
 }
@@ -4766,8 +4765,10 @@ void gui_dropdown_end(gui_t *gui)
 
 	assert(strlen(txt) > 0);
 
-	if (gui->dropdown.id == gui->focus_id)
+	if (gui->dropdown.id == gui->focus_id) {
+		pgui_grid_end(gui, &gui->grid_popup);
 		gui__popup_end(gui);
+	}
 
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
 
@@ -4969,6 +4970,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	if (gui->focus_id == id) {
 		gui__popup_begin(gui, id, px, py, pw, ph);
+		pgui_grid_begin(gui, &gui->grid_popup, px, py, pw, ph);
 		pgui_col(gui, 0, num_items);
 		return true;
 	} else {
@@ -4980,6 +4982,7 @@ void gui_menu_end(gui_t *gui)
 {
 	/* TODO(rgriege): focus_id -> focus_stack to support nested menus */
 	assert(gui->popup.id != 0 && gui->popup.id == gui->focus_id);
+	pgui_grid_end(gui, &gui->grid_popup);
 	gui__popup_end(gui);
 }
 
@@ -5100,10 +5103,17 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	if (gui->focus_id == id) {
 		static const r32 rows[] = { 0, 2, 0.1f };
 		static const r32 cols[] = { 0, 2, 0.1f };
+		const s32 gx = px + style->panel.padding;
+		const s32 gy = py + style->panel.padding;
+		const s32 gw = pw - style->panel.padding*2;
+		const s32 gh = ph - style->panel.padding*2;
 		b32 changed = false;
 
 		gui__popup_begin(gui, id, px, py, pw, ph);
-		gui_rect(gui, px, py, pw, ph, g_nocolor, style->panel.border_color);
+		pgui_grid_begin(gui, &gui->grid_popup, gx, gy, gw, gh);
+		/* NOTE(rgriege): shrink required to pass entire rect through scissor */
+		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color,
+		         style->panel.border_color);
 
 		pgui_col_cellsv(gui, 0, rows);
 
@@ -5123,6 +5133,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		pgui_spacer(gui);
 		pgui_spacer(gui);
 
+		pgui_grid_end(gui, &gui->grid_popup);
 		gui__popup_end(gui);
 		return changed;
 	} else {
