@@ -4106,6 +4106,14 @@ b32 gui__widget_contains_mouse(const gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 }
 
 static
+b32 gui__popup_contains_mouse(const gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	box2i box;
+	box2i_from_dims(&box, x, y+h, x+w, y);
+	return box2i_contains_point(box, gui->mouse_pos) && !gui->lock;
+}
+
+static
 void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 {
 	if (gui->focus_id == id) {
@@ -4605,6 +4613,31 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 }
 
 static
+void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse,
+                          s32 px, s32 py, s32 pw, s32 ph)
+{
+	const b32 was_focused = (gui->focus_id == id);
+
+	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
+		if (gui->focus_id == id) {
+			gui->focus_id = 0;
+		} else {
+			gui->focus_id = id;
+			gui->focus_id_found_this_frame = true;
+		}
+	}
+
+	if (   gui->focus_id == id
+	    && mouse_pressed(gui, ~0)
+	    && !contains_mouse
+	    && !gui__popup_contains_mouse(gui, px, py, pw, ph))
+		gui->focus_id = 0;
+
+	if (was_focused && gui->focus_id != id)
+		gui__defocus_popup(gui);
+}
+
+static
 void gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 {
 	/* only 1 active popup allowed */
@@ -4643,7 +4676,6 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                         u32 *val, u32 num_items)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	const b32 was_focused = (gui->focus_id == id);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const s32 pw = w;
 	const s32 ph = h * num_items;
@@ -4654,14 +4686,7 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	assert(gui->dropdown.id == 0); /* cannot nest dropdowns */
 
-	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
-		if (gui->focus_id == id) {
-			gui->focus_id = 0;
-		} else {
-			gui->focus_id = id;
-			gui->focus_id_found_this_frame = true;
-		}
-	}
+	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
 
 	if (gui->focus_id == id && !gui->lock && gui->key_repeat.triggered) {
 		if (gui__key_up(gui) && *val > 0) {
@@ -4672,15 +4697,6 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 			triggered_by_key = true;
 		}
 	}
-
-	if (   gui->focus_id == id
-	    && mouse_pressed(gui, ~0)
-	    && !contains_mouse
-	    && !gui__widget_contains_mouse(gui, px, py, pw, ph))
-		gui->focus_id = 0;
-
-	if (was_focused && gui->focus_id != id)
-		gui__defocus_popup(gui);
 
 	render_state = gui__widget_render_state(gui, id, triggered_by_key,
 	                                        false, contains_mouse);
@@ -4939,7 +4955,6 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                    const char *txt, s32 item_w, u32 num_items)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	const b32 was_focused = (gui->focus_id == id);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const s32 pw = item_w;
 	const s32 ph = h * num_items;
@@ -4947,23 +4962,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const s32 py = y - ph;
 	gui__widget_render_state_t render_state;
 
-	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
-		if (gui->focus_id == id) {
-			gui->focus_id = 0;
-		} else {
-			gui->focus_id = id;
-			gui->focus_id_found_this_frame = true;
-		}
-	}
-
-	if (   gui->focus_id == id
-	    && mouse_pressed(gui, ~0)
-	    && !contains_mouse
-	    && !gui__widget_contains_mouse(gui, px, py, pw, ph))
-		gui->focus_id = 0;
-
-	if (was_focused && gui->focus_id != id)
-		gui__defocus_popup(gui);
+	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
 
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
@@ -5079,7 +5078,6 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      s32 pw, s32 ph, colorf_t *c)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	const b32 was_focused = (gui->focus_id == id);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const s32 px = x;
 	const s32 py = y - ph;
@@ -5087,23 +5085,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui_style_t *style = gui_style(gui);
 	color_t color = colorf_to_color(*c);
 
-	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
-		if (gui->focus_id == id) {
-			gui->focus_id = 0;
-		} else {
-			gui->focus_id = id;
-			gui->focus_id_found_this_frame = true;
-		}
-	}
-
-	if (   gui->focus_id == id
-	    && mouse_pressed(gui, ~0)
-	    && !contains_mouse
-	    && !gui__widget_contains_mouse(gui, px, py, pw, ph))
-		gui->focus_id = 0;
-
-	if (was_focused && gui->focus_id != id)
-		gui__defocus_popup(gui);
+	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
 
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
 
