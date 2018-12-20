@@ -10,6 +10,7 @@ b32  vson_read_header(FILE *fp, const char *label);
 b32  vson_read_b8(FILE *fp, const char *label, b8 *val);
 b32  vson_read_u8(FILE *fp, const char *label, u8 *val);
 b32  vson_read_s8(FILE *fp, const char *label, s8 *val);
+b32  vson_read_char(FILE *fp, const char *label, char *val);
 b32  vson_read_u16(FILE *fp, const char *label, u16 *val);
 b32  vson_read_s16(FILE *fp, const char *label, s16 *val);
 b32  vson_read_b32(FILE *fp, const char *label, b32 *val);
@@ -25,6 +26,7 @@ void vson_write_s32(FILE *fp, const char *label, s32 val);
 void vson_write_u32(FILE *fp, const char *label, u32 val);
 void vson_write_r32(FILE *fp, const char *label, r32 val);
 void vson_write_r64(FILE *fp, const char *label, r64 val);
+void vson_write_char(FILE *fp, const char *label, char val);
 void vson_write_str(FILE *fp, const char *label, const char *val);
 
 #endif
@@ -78,21 +80,32 @@ static b32 vson__skip_rest_of_line(FILE *fp)
 	return c == '\n';
 }
 
-static b32 vson__read_rest_of_line(FILE *fp, char *str, u32 n)
+static u32 vson__read_rest_of_line(FILE *fp, char *str, u32 n)
 {
 	char c, *p = str;
 	while ((u32)(p - str) < n && (c = fgetc(fp)) != EOF && c != '\n')
 		*(p++) = c;
 	if (c != '\n') {
 		vson__skip_rest_of_line(fp);
-		return false;
+		return 0;
 	}
 	if (p > str && p[-1] == '\r')
 		p[-1] = '\0';
 	else
 		*p = '\0';
-	return true;
+	return p - str;
 }
+
+#define VSON_READ_VAL(expr) \
+	char buf[VSON_VALUE_SZ]; \
+	if (!vson__read_label(fp, label)) { \
+		vson__skip_rest_of_line(fp); \
+		return false; \
+	} \
+	if (vson__read_rest_of_line(fp, buf, VSON_VALUE_SZ) == 0) \
+		return false; \
+	*val = expr; \
+	return true
 
 b32 vson_read_header(FILE *fp, const char *label)
 {
@@ -124,13 +137,16 @@ b32 vson_read_u8(FILE *fp, const char *label, u8 *val)
 b32 vson_read_s8(FILE *fp, const char *label, s8 *val)
 {
 	s32 val_;
-	if (   vson_read_s32(fp, label, &val_)
-	    && val_ >= INT8_MIN
-	    && val_ <= INT8_MAX) {
+	if (vson_read_s32(fp, label, &val_) && val_ >= INT8_MIN && val_ <= INT8_MAX) {
 		*val = val_;
 		return true;
 	}
 	return false;
+}
+
+b32 vson_read_char(FILE *fp, const char *label, char *val)
+{
+	VSON_READ_VAL(buf[0]);
 }
 
 b32 vson_read_u16(FILE *fp, const char *label, u16 *val)
@@ -157,45 +173,27 @@ b32 vson_read_s16(FILE *fp, const char *label, s16 *val)
 
 b32 vson_read_b32(FILE *fp, const char *label, b32 *val)
 {
-	char c;
-	if (vson__read_label(fp, label) && (c = fgetc(fp)) != EOF) {
-		*val = c != '0' && c != 'f';
-		return true;
-	}
-
-	vson__skip_rest_of_line(fp);
-	return false;
+	VSON_READ_VAL(buf[0] != '0' && buf[0] != 'f' && buf[0] != ' ');
 }
-
-#define VSON_READ_VAL(expr) \
-	char buf[VSON_VALUE_SZ]; \
-	if (!vson__read_label(fp, label)) { \
-		vson__skip_rest_of_line(fp); \
-		return false; \
-	} \
-	if (!vson__read_rest_of_line(fp, buf, VSON_VALUE_SZ)) \
-		return false; \
-	*val = expr; \
-	return true;
 
 b32 vson_read_s32(FILE *fp, const char *label, s32 *val)
 {
-	VSON_READ_VAL(strtol(buf, NULL, 10))
+	VSON_READ_VAL(strtol(buf, NULL, 10));
 }
 
 b32 vson_read_u32(FILE *fp, const char *label, u32 *val)
 {
-	VSON_READ_VAL(strtoul(buf, NULL, 10))
+	VSON_READ_VAL(strtoul(buf, NULL, 10));
 }
 
 b32 vson_read_r32(FILE *fp, const char *label, r32 *val)
 {
-	VSON_READ_VAL(strtof(buf, NULL))
+	VSON_READ_VAL(strtof(buf, NULL));
 }
 
 b32 vson_read_r64(FILE *fp, const char *label, r64 *val)
 {
-	VSON_READ_VAL(strtod(buf, NULL))
+	VSON_READ_VAL(strtod(buf, NULL));
 }
 
 b32 vson_read_str(FILE *fp, const char *label, char *val, u32 sz)
@@ -247,6 +245,11 @@ void vson_write_r32(FILE *fp, const char *label, r32 val)
 void vson_write_r64(FILE *fp, const char *label, r64 val)
 {
 	fprintf(fp, "%s: %f\n", label, val);
+}
+
+void vson_write_char(FILE *fp, const char *label, char val)
+{
+	fprintf(fp, "%s: %c\n", label, val);
 }
 
 void vson_write_str(FILE *fp, const char *label, const char *val)
