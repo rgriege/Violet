@@ -5025,7 +5025,7 @@ b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 {
 	static const color_t rainbow[] = {
-		g_red, g_yellow, g_green, g_cyan, g_blue, g_fuchsia, g_red,
+		gi_red, gi_yellow, gi_green, gi_cyan, gi_blue, gi_fuchsia, gi_red,
 	};
 
 	const b32 horizontal = (w > h);
