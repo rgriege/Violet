@@ -817,20 +817,20 @@ static const char *g_fragment_shader;
 colorf_t color_to_colorf(color_t c)
 {
 	return (colorf_t) {
-		.r = c.r / 255.f,
-		.g = c.g / 255.f,
-		.b = c.b / 255.f,
-		.a = c.a / 255.f,
+		.r = (r32)c.r / 255.f,
+		.g = (r32)c.g / 255.f,
+		.b = (r32)c.b / 255.f,
+		.a = (r32)c.a / 255.f,
 	};
 }
 
 color_t colorf_to_color(colorf_t cf)
 {
 	return (color_t) {
-		.r = cf.r * 255.f,
-		.g = cf.g * 255.f,
-		.b = cf.b * 255.f,
-		.a = cf.a * 255.f,
+		.r = (u8)(cf.r * 255.f),
+		.g = (u8)(cf.g * 255.f),
+		.b = (u8)(cf.b * 255.f),
+		.a = (u8)(cf.a * 255.f),
 	};
 }
 
@@ -888,8 +888,8 @@ color_t color_blend(color_t src, color_t dst)
 
 void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v)
 {
-	const r32 rgb_min = min(r, min(g, b));
-	const r32 rgb_max = max(r, max(g, b));
+	const r32 rgb_min = fminf(r, fminf(g, b));
+	const r32 rgb_max = fmaxf(r, fmaxf(g, b));
 	const r32 rgb_del = rgb_max - rgb_min;
 
 	*v = max(r, max(g, b));
