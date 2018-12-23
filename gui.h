@@ -6,10 +6,18 @@
 
 /* Color */
 
-typedef struct color_t
+typedef union
 {
-	u8 r, g, b, a;
+	struct { u8 r, g, b, a; };
+	struct { u8 d[4]; };
+	struct { u32 val; };
 } color_t;
+
+typedef union
+{
+	struct { r32 r, g, b, a; };
+	struct { r32 d[4]; };
+} colorf_t;
 
 #define gi_black        { .r=0,    .g=0,    .b=0,    .a=0xff }
 #define gi_grey77       { .r=0x4d, .g=0x4d, .b=0x4d, .a=0xff }
@@ -24,6 +32,7 @@ typedef struct color_t
 #define gi_orange       { .r=0xff, .g=0x92, .b=0x1e, .a=0xff }
 #define gi_red          { .r=0xff, .g=0,    .b=0,    .a=0xff }
 #define gi_yellow       { .r=0xff, .g=0xff, .b=0,    .a=0xff }
+#define gi_cyan         { .r=0x00, .g=0xff, .b=0xff, .a=0xff }
 
 #define gi_nocolor      { .r=0,    .g=0,    .b=0,    .a=0 }
 
@@ -41,16 +50,23 @@ typedef struct color_t
 #define g_orange    (color_t)gi_orange
 #define g_red       (color_t)gi_red
 #define g_yellow    (color_t)gi_yellow
+#define g_cyan      (color_t)gi_cyan
 
 #define g_nocolor   (color_t)gi_nocolor
 
-void    color_as_float_array(r32 *f, color_t c);
-color_t color_from_float(const r32 *f);
-void    color_to_hex(color_t c, char *hex, u32 n);
-color_t color_from_hex(const char *hex);
-b32     color_equal(color_t lhs, color_t rhs);
-color_t color_blend(color_t src, color_t dst);
+colorf_t color_to_colorf(color_t c);
+color_t  colorf_to_color(colorf_t cf);
+void     color_to_hex(color_t c, char *hex, u32 n);
+color_t  color_from_hex(const char *hex);
+b32      color_equal(color_t lhs, color_t rhs);
+color_t  color_blend(color_t src, color_t dst);
 
+void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v);
+void hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b);
+void color_to_hsv(colorf_t c, r32 *h, r32 *s, r32 *v);
+void hsv_to_color(r32 h, r32 s, r32 v, colorf_t *c);
+void color_to_hsv8(color_t c, u8 *h, u8 *s, u8 *v);
+void hsv_to_color8(u8 h, u8 s, u8 v, color_t *c);
 
 /* Mesh */
 
@@ -278,6 +294,8 @@ typedef enum img_scale
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
 void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c);
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke);
+void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                     color_t bl, color_t br, color_t tr, color_t tl);
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke);
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
@@ -345,6 +363,7 @@ typedef enum btn_val_t
 
 const b32 g_gui_npt_chars_print[128];
 const b32 g_gui_npt_chars_numeric[128];
+const b32 g_gui_npt_chars_hex[128];
 
 b32  gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
              const char *hint, npt_flags_t flags);
@@ -383,6 +402,12 @@ b32  gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
 b32  gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, s32 item_w, u32 num_items);
 void gui_menu_end(gui_t *gui);
+b32  gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c);
+b32  gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c);
+b32  gui_color_picker(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
+                      s32 pw, s32 ph, colorf_t *c);
+b32  gui_color_picker8(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
+                       s32 pw, s32 ph, color_t *c);
 
 u64  gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void gui_widget_focus_next(gui_t *gui);
@@ -483,6 +508,10 @@ b32  pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max);
 b32  pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max);
 b32  pgui_menu_begin(gui_t *gui, const char *txt, s32 item_w, u32 num_items);
 void pgui_menu_end(gui_t *gui);
+b32  pgui_color_picker_sv(gui_t *gui, colorf_t *color);
+b32  pgui_color_picker_h(gui_t *gui, colorf_t *color);
+b32  pgui_color_picker(gui_t *gui, s32 pw, s32 ph, colorf_t *c);
+b32  pgui_color_picker8(gui_t *gui, s32 pw, s32 ph, color_t *c);
 
 
 /* Splits */
@@ -785,21 +814,23 @@ static const char *g_fragment_shader;
 
 /* Color */
 
-void color_as_float_array(r32 *f, color_t c)
+colorf_t color_to_colorf(color_t c)
 {
-	f[0] = c.r / 255.f;
-	f[1] = c.g / 255.f;
-	f[2] = c.b / 255.f;
-	f[3] = c.a / 255.f;
+	return (colorf_t) {
+		.r = (r32)c.r / 255.f,
+		.g = (r32)c.g / 255.f,
+		.b = (r32)c.b / 255.f,
+		.a = (r32)c.a / 255.f,
+	};
 }
 
-color_t color_from_float(const r32 *f)
+color_t colorf_to_color(colorf_t cf)
 {
 	return (color_t) {
-		.r = f[0] * 255.f,
-		.g = f[1] * 255.f,
-		.b = f[2] * 255.f,
-		.a = f[3] * 255.f,
+		.r = (u8)(cf.r * 255.f),
+		.g = (u8)(cf.g * 255.f),
+		.b = (u8)(cf.b * 255.f),
+		.a = (u8)(cf.a * 255.f),
 	};
 }
 
@@ -853,6 +884,111 @@ color_t color_blend(color_t src, color_t dst)
 		.b = src.b / 2 + dst.b / 2,
 		.a = src.a / 2 + dst.a / 2,
 	};
+}
+
+void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v)
+{
+	const r32 rgb_min = fminf(r, fminf(g, b));
+	const r32 rgb_max = fmaxf(r, fmaxf(g, b));
+	const r32 rgb_del = rgb_max - rgb_min;
+
+	*v = max(r, max(g, b));
+
+	if (r == g && r == b) {
+		/* gray, no chroma */
+		*h = 0.f;
+		*s = 0.f;
+	} else {
+		const r32 r_del = (((rgb_max - r) / 6.f) + (rgb_del / 2.f)) / rgb_del;
+		const r32 g_del = (((rgb_max - g) / 6.f) + (rgb_del / 2.f)) / rgb_del;
+		const r32 b_del = (((rgb_max - b) / 6.f) + (rgb_del / 2.f)) / rgb_del;
+
+		*s = rgb_del / rgb_max;
+
+		if (r == rgb_max)
+			*h = 0.f/3.f + b_del - g_del;
+		else if (g == rgb_max)
+			*h = 1.f/3.f + r_del - b_del;
+		else if (b == rgb_max)
+			*h = 2.f/3.f + g_del - r_del;
+	}
+}
+
+void hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b)
+{
+	if (s == 0.f) {
+		*r = v;
+		*g = v;
+		*b = v;
+	} else {
+		const r32 var_h = (h >= 1.f) ? 0.f : h * 6.f;
+		const r32 var_i = floorf(var_h);
+		const r32 var_1 = v * (1.f - s);
+		const r32 var_2 = v * (1.f - s * (var_h - var_i));
+		const r32 var_3 = v * (1.f - s * (1.f - (var_h - var_i)));
+
+		switch ((int)var_i) {
+		case 0:
+			*r = v;
+			*g = var_3;
+			*b = var_1;
+		break;
+		case 1:
+			*r = var_2;
+			*g = v;
+			*b = var_1;
+		break;
+		case 2:
+			*r = var_1;
+			*g = v;
+			*b = var_3;
+		break;
+		case 3:
+			*r = var_1;
+			*g = var_2;
+			*b = v;
+		break;
+		case 4:
+			*r = var_3;
+			*g = var_1;
+			*b = v;
+		break;
+		default:
+			*r = v;
+			*g = var_1;
+			*b = var_2;
+		break;
+		}
+	}
+}
+
+void color_to_hsv(colorf_t c, r32 *h, r32 *s, r32 *v)
+{
+	rgb_to_hsv(c.r, c.g, c.b, h, s, v);
+}
+
+void hsv_to_color(r32 h, r32 s, r32 v, colorf_t *c)
+{
+	hsv_to_rgb(h, s, v, &c->r, &c->g, &c->b);
+}
+
+void color_to_hsv8(color_t c, u8 *h, u8 *s, u8 *v)
+{
+	r32 hf, sf, vf;
+	color_to_hsv(color_to_colorf(c), &hf, &sf, &vf);
+	*h = (u8)(255.f*hf);
+	*s = (u8)(255.f*sf);
+	*v = (u8)(255.f*vf);
+}
+
+void hsv_to_color8(u8 h, u8 s, u8 v, color_t *c)
+{
+	const r32 hf = (r32)h/255.f;
+	const r32 sf = (r32)s/255.f;
+	const r32 vf = (r32)v/255.f;
+	colorf_t cf;
+	hsv_to_color(hf, sf, vf, &cf);
+	*c = colorf_to_color(cf);
 }
 
 
@@ -2001,7 +2137,7 @@ typedef struct gui
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
 	b32 mouse_covered_by_panel;
-	b32 mouse_covered_by_dropdown;
+	b32 mouse_covered_by_popup;
 	b32 mouse_debug;
 	gui__repeat_t mouse_repeat;
 
@@ -2049,25 +2185,23 @@ typedef struct gui
 		u32 num_items;
 		u32 item_idx;
 		b32 triggered_by_key;
-		b32 close_at_end;
 		s32 render_state;
 		char selected_item_txt[128];
-		struct {
-			s32 x, y, w, h;
-		} prev_mask;
-	} current_dropdown;
+	} dropdown;
 	struct
 	{
 		u64 id;
 		struct {
 			s32 x, y, w, h;
-		} mask;
-	} focused_dropdown;
+		} prev_mask, mask;
+		b32 close_at_end;
+	} popup;
 	b32 dragging_window;
+	colorf_t color_picker8_color;
 
 	/* grid */
 	gui_grid_t grid_panel;
-	gui_grid_t grid_dropdown;
+	gui_grid_t grid_popup;
 	gui_grid_t *grid;
 
 	/* splits */
@@ -2114,6 +2248,12 @@ void gui__repeat_update(gui__repeat_t *repeat, u32 val, u32 pop, u32 frame)
 	} else {
 		repeat->val = 0;
 	}
+}
+
+static
+b32 gui__key_triggered(const gui_t *gui, u32 key)
+{
+	return gui->key_repeat.triggered && gui->key_repeat.val == key;
 }
 
 static
@@ -2285,7 +2425,10 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->drag_offset = g_v2i_zero;
 	gui->pw_buf = array_create();
 	gui->vert_buf = array_create();
+	gui->dropdown.id = 0;
+	gui->popup.id = 0;
 	gui->dragging_window = false;
+	gui->color_picker8_color = (colorf_t){0};
 
 	gui->grid = NULL;
 
@@ -2503,16 +2646,16 @@ void gui__on_widget_tab_focused(gui_t *gui, u64 id)
 }
 
 static
-void gui__defocus_dropdown(gui_t *gui)
+void gui__defocus_popup(gui_t *gui)
 {
-	gui->focused_dropdown.id = 0;
+	gui->popup.id = 0;
 }
 
 b32 gui_begin_frame(gui_t *gui)
 {
 	s32 key_cnt;
 	b32 quit = false, left_window = false;
-	float bg_color[4];
+	const colorf_t bg_color = color_to_colorf(gui->style.bg_color);
 	SDL_Event evt;
 	const u32 last_mouse_btn = gui->mouse_btn;
 	timepoint_t now = time_current();
@@ -2591,8 +2734,8 @@ b32 gui_begin_frame(gui_t *gui)
 	if (mouse_down(gui, ~0))
 		gui->last_input_time = now;
 
-	gui->mouse_covered_by_panel    = false;
-	gui->mouse_covered_by_dropdown = false;
+	gui->mouse_covered_by_panel = false;
+	gui->mouse_covered_by_popup = false;
 
 	gui->keys = SDL_GetKeyboardState(&key_cnt);
 	{
@@ -2630,9 +2773,7 @@ b32 gui_begin_frame(gui_t *gui)
 	}
 	gui->focus_id_found_this_frame = false;
 
-	if (   gui->key_repeat.triggered
-	    && gui->key_repeat.val == KB_TAB
-	    && gui->focus_id == 0)
+	if (gui__key_triggered(gui, KB_TAB) && gui->focus_id == 0)
 		gui__tab_focus_adjacent_widget(gui);
 
 	gui->active_id_at_frame_start = gui->active_id;
@@ -2648,32 +2789,29 @@ b32 gui_begin_frame(gui_t *gui)
 	/* NOTE(rgriege): reset the scissor for glClear */
 	GL_CHECK(glScissor, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
-	color_as_float_array(bg_color, gui->style.bg_color);
-	GL_CHECK(glClearColor, bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+	GL_CHECK(glClearColor, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
 	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	/* focused dropdown */
-	if (gui->focused_dropdown.id != 0) {
-		const s32 x = gui->focused_dropdown.mask.x;
-		const s32 y = gui->focused_dropdown.mask.y;
-		const s32 w = gui->focused_dropdown.mask.w;
-		const s32 h = gui->focused_dropdown.mask.h;
+	/* popup */
+	if (gui->popup.id != 0) {
+		const s32 x = gui->popup.mask.x;
+		const s32 y = gui->popup.mask.y;
+		const s32 w = gui->popup.mask.w;
+		const s32 h = gui->popup.mask.h;
 		box2i box;
 		box2i_from_xywh(&box, x, y, w, h);
 
-		assert(gui->focus_id == gui->focused_dropdown.id);
+		assert(gui->focus_id == gui->popup.id);
 
 		/* catch mouse_covered_by_panel */
-		if (box2i_contains_point(box, gui->mouse_pos)) {
-			gui->mouse_covered_by_panel    = true;
-			gui->mouse_covered_by_dropdown = true;
-		}
+		if (box2i_contains_point(box, gui->mouse_pos))
+			gui->mouse_covered_by_popup = true;
 	}
 
 	/* ensure this is set every frame by a gui_window_drag() call (perf) */
 	gui->dragging_window = false;
 
-	/* reserve first scissor for dropdown items */
+	/* reserve first scissor for popups */
 	assert(gui->scissor_idx == 0 && gui->scissor_cnt == 1);
 	gui->scissor_idx = 1;
 	gui->scissor_cnt = 2;
@@ -3137,11 +3275,18 @@ b32 mouse_released_bg(const gui_t *gui, u32 mask)
 	return mouse_released(gui, mask) && mouse_over_bg(gui);
 }
 
+static
+b32 gui__mouse_covered(const gui_t *gui)
+{
+	return gui->mouse_covered_by_panel
+	    && (!gui->mouse_covered_by_popup || gui->popup.id == 0);
+}
+
 b32 mouse_over_bg(const gui_t *gui)
 {
 	return gui->active_id == 0
 	    && gui->active_id_at_frame_start == 0
-	    && !gui->mouse_covered_by_panel;
+	    && !gui__mouse_covered(gui);
 }
 
 void mouse_scroll(const gui_t *gui, s32 *dir)
@@ -3254,6 +3399,16 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stro
 		{ x,     y + h },
 	};
 	gui__poly(gui, poly, 4, fill, stroke);
+}
+
+void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                     color_t bl, color_t br, color_t tr, color_t tl)
+{
+	gui_rect(gui, x, y, w, h, g_white, g_nocolor);
+	gui->vert_colors[gui->vert_cnt-4] = bl;
+	gui->vert_colors[gui->vert_cnt-3] = br;
+	gui->vert_colors[gui->vert_cnt-2] = tr;
+	gui->vert_colors[gui->vert_cnt-1] = tl;
 }
 
 #define gui__circ_poly_sz(radius) ((u32)(4 + 2 * radius))
@@ -3723,15 +3878,7 @@ b32 gui__allow_new_panel_interaction(const gui_t *gui)
 {
 	return (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
 	    && gui->active_id == 0
-	    && !gui->mouse_covered_by_panel;
-}
-
-static
-b32 gui__mouse_covered(const gui_t *gui)
-{
-	return gui->mouse_covered_by_panel
-	    && !(   gui->mouse_covered_by_dropdown
-	         && gui->current_dropdown.id != 0);
+	    && !gui__mouse_covered(gui);
 }
 
 static
@@ -3856,6 +4003,17 @@ const b32 g_gui_npt_chars_numeric[128] = {
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
 
+const b32 g_gui_npt_chars_hex[128] = {
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
+	0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+	0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+};
+
 static
 void gui__npt_move_cursor_vertical(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                                    const char *txt, s32 diff, u32 fallback)
@@ -3938,18 +4096,36 @@ b32 gui__key_end(const gui_t *gui)
 }
 
 static
+b32 gui__widget_contains_mouse(const gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	box2i box;
+	box2i_from_dims(&box, x, y+h, x+w, y);
+	return box2i_contains_point(box, gui->mouse_pos)
+	    && gui__box_half_visible(gui, box)
+	    && !gui->lock;
+}
+
+static
+b32 gui__popup_contains_mouse(const gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	box2i box;
+	box2i_from_dims(&box, x, y+h, x+w, y);
+	return box2i_contains_point(box, gui->mouse_pos) && !gui->lock;
+}
+
+static
 void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 {
 	if (gui->focus_id == id) {
 		if (gui->lock) {
 			gui->focus_id = 0;
-		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_TAB) {
+		} else if (gui__key_triggered(gui, KB_TAB)) {
 			gui__tab_focus_adjacent_widget(gui);
-		} else if (gui->key_repeat.triggered && gui->key_repeat.val == KB_ESCAPE) {
+		} else if (gui__key_triggered(gui, KB_ESCAPE)) {
 			gui->focus_id = 0;
 		} else {
 			gui->focus_id_found_this_frame = true;
-			if (mouse_pressed(gui, ~0) && !contains_mouse)
+			if (mouse_pressed(gui, ~0) && !contains_mouse && id != gui->popup.id)
 				gui->focus_id = 0;
 		}
 	} else if (gui->focus_next_widget && !gui->lock) {
@@ -3965,10 +4141,10 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 static
 void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
 {
-	if (   !gui->npt_performed_action
-	    && (flags & NPT_CLEAR_ON_FOCUS)) {
+	if (!gui->npt_performed_action && (flags & NPT_CLEAR_ON_FOCUS)) {
 		txt[0] = '\0';
 		*len = 0;
+		gui->npt_cursor_pos = 0;
 		gui->npt_performed_action = true;
 	}
 }
@@ -3980,44 +4156,37 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	                     g_gui_npt_chars_print);
 }
 
+static
+btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse);
+
 b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                   const char *hint, npt_flags_t flags, const b32 chars[128])
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_focused = (gui->focus_id == id);
 	const gui_widget_style_t *style = &gui->style.npt;
-	box2i box;
-	b32 contains_mouse, tab_completed;
+	b32 contains_mouse;
 	b32 complete = false;
 	gui__widget_render_state_t render_state;
 	gui_element_style_t elem_style;
 	const char *displayed_txt;
 	const char *txt_to_display;
 
+	contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS && !was_focused) {
+		gui->focus_id = id;
+		gui->focus_id_found_this_frame = true;
+	}
 
-	box2i_from_dims(&box, x, y+h, x+w, y);
-	contains_mouse = box2i_contains_point(box, gui->mouse_pos)
-	              && gui__box_half_visible(gui, box)
-	              && !gui->lock;
-
-	gui__widget_handle_focus(gui, id, contains_mouse);
-	tab_completed = was_focused
-	             && gui->focus_id != id
-	             && !gui->lock
-	             && gui->key_repeat.triggered
-	             && gui->key_repeat.val == KB_TAB;
-
+	if (gui->active_id == id && contains_mouse) {
+		const gui_text_style_t *txt_style = &style->active.text;
+		gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
+		                                         gui->mouse_pos, txt_style);
+	}
 	if (gui->focus_id == id) {
-		if (contains_mouse && mouse_pressed(gui, MB_LEFT)) {
-			const gui_text_style_t *txt_style = &style->active.text;
-			gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
-			                                         gui->mouse_pos, txt_style);
-		} else {
-			const u32 len = (u32)strlen(txt);
-			gui->npt_cursor_pos = clamp(0, gui->npt_cursor_pos, len);
-		}
+		u32 len = (u32)strlen(txt);
+		gui->npt_cursor_pos = clamp(0, gui->npt_cursor_pos, len);
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
-			u32 len = (u32)strlen(txt);
 			gui__npt_prep_action(gui, flags, txt, &len);
 			for (size_t k = 0, kn = strlen(gui->text_npt); k < kn; ++k) {
 				if (gui->text_npt[k] > 0 && len < n - 1 && chars[(u8)gui->text_npt[k]]) {
@@ -4029,7 +4198,6 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			}
 		} else if (gui->key_repeat.triggered) {
 			const u32 key_idx = gui->key_repeat.val;
-			u32 len = (u32)strlen(txt);
 			if (key_idx == KB_BACKSPACE) {
 				gui__npt_prep_action(gui, flags, txt, &len);
 				if (gui->npt_cursor_pos > 0) {
@@ -4062,13 +4230,13 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			} else if (gui__key_up(gui)) {
 				const gui_text_style_t *txt_style = &style->active.text;
 				const font_t *font = gui__get_font(gui, txt_style->size);
-				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt,
-				                              font->newline_dist, 0);
+				const s32 dy = font->newline_dist;
+				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
 			} else if (gui__key_down(gui)) {
 				const gui_text_style_t *txt_style = &style->active.text;
 				const font_t *font = gui__get_font(gui, txt_style->size);
-				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt,
-				                              -font->newline_dist, len);
+				const s32 dy = -font->newline_dist;
+				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
 			} else if (gui__key_left(gui)) {
 				if (gui->npt_cursor_pos > 0)
 					--gui->npt_cursor_pos;
@@ -4081,33 +4249,13 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				gui->npt_cursor_pos = len;
 			}
 		}
-	} else if (gui->active_id == id) {
-		if (mouse_released(gui, MB_LEFT)) {
-			if (contains_mouse)
-				gui->focus_id = id;
-			gui->active_id = 0;
-		} else {
-			gui->active_id_found_this_frame = true;
-		}
-	} else if (gui->hot_id == id) {
-		if (!contains_mouse || gui->mouse_covered_by_panel) {
-			gui->hot_id = 0;
-		} else if (mouse_pressed(gui, MB_LEFT)) {
-			gui->active_id = id;
-			gui->hot_id = 0;
-			gui->active_id_found_this_frame = true;
-		} else {
-			gui->hot_id_found_this_frame = true;
-		}
-	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
-		gui->hot_id = id;
-		gui->hot_id_found_this_frame = true;
 	}
 
 	if (was_focused != (gui->focus_id == id)) {
 		if (was_focused) {
 			SDL_StopTextInput();
-			if ((flags & NPT_COMPLETE_ON_DEFOCUS) || tab_completed)
+			if (   (flags & NPT_COMPLETE_ON_DEFOCUS)
+			    || (!gui->lock && gui__key_triggered(gui, KB_TAB)))
 				complete = true;
 		} else {
 			SDL_StartTextInput();
@@ -4122,7 +4270,8 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		}
 	}
 
-	render_state = gui__widget_render_state(gui, id, true, false, contains_mouse);
+	render_state = gui__widget_render_state(gui, id, true, false,
+	                                        contains_mouse || gui->focus_id == id);
 	elem_style = gui__element_style(gui, render_state, style);
 	style->pen(gui, x, y, w, h, &elem_style);
 	txt_to_display = gui->focus_id != id
@@ -4143,7 +4292,6 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		displayed_txt = txt_to_display;
 	}
 	if (gui->focus_id == id) {
-		gui->focus_id_found_this_frame = true;
 		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
 			const color_t color = elem_style.text.color;
 			const font_t *font = gui__get_font(gui, elem_style.text.size);
@@ -4159,18 +4307,11 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                         u64 id, b32 *contains_mouse)
+btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse)
 {
 	btn_val_t retval = BTN_NONE;
-	box2i box;
 
-	box2i_from_dims(&box, x, y+h, x+w, y);
-	*contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                  && gui__box_half_visible(gui, box)
-	                  && !gui->lock;
-
-	gui__widget_handle_focus(gui, id, *contains_mouse);
+	gui__widget_handle_focus(gui, id, contains_mouse);
 
 	if (   gui->focus_id == id
 	    && !gui->lock
@@ -4179,8 +4320,17 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	        || gui->key_repeat.val == KB_KP_ENTER))
 		retval = key_pressed(gui, gui->key_repeat.val) ? BTN_PRESS : BTN_HOLD;
 
-	if (gui->hot_id == id) {
-		if (!*contains_mouse || gui__mouse_covered(gui)) {
+	if (gui->active_id == id) {
+		gui->active_id_found_this_frame = true;
+		if (mouse_released(gui, MB_LEFT)) {
+			if (contains_mouse)
+				retval = BTN_PRESS;
+			gui->active_id = 0;
+		} else if (contains_mouse && gui->mouse_repeat.triggered) {
+			retval = BTN_HOLD;
+		}
+	} else if (gui->hot_id == id) {
+		if (!contains_mouse || gui__mouse_covered(gui)) {
 			gui->hot_id = 0;
 		} else if (mouse_pressed(gui, MB_LEFT)) {
 			gui->hot_id = 0;
@@ -4189,16 +4339,7 @@ btn_val_t gui__btn_logic(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		} else {
 			gui->hot_id_found_this_frame = true;
 		}
-	} else if (gui->active_id == id) {
-		gui->active_id_found_this_frame = true;
-		if (mouse_released(gui, MB_LEFT)) {
-			if (*contains_mouse)
-				retval = BTN_PRESS;
-			gui->active_id = 0;
-		} else if (*contains_mouse && gui->mouse_repeat.triggered) {
-			retval = BTN_HOLD;
-		}
-	} else if (gui__allow_new_interaction(gui) && *contains_mouse) {
+	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
 		gui->hot_id = id;
 		gui->hot_id_found_this_frame = true;
 	}
@@ -4219,8 +4360,8 @@ void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	b32 contains_mouse;
-	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, id, &contains_mouse);
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse);
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.btn);
@@ -4231,8 +4372,8 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                 img_scale_t scale)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	b32 contains_mouse;
-	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, id, &contains_mouse);
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse);
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
@@ -4245,8 +4386,8 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	b32 contains_mouse;
-	const btn_val_t ret = gui__btn_logic(gui, x, y, w, h, id, &contains_mouse);
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse);
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
@@ -4259,11 +4400,11 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	b32 contains_mouse;
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 toggled = false;
 	gui__widget_render_state_t render_state;
 
-	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
 		*val = !*val;
 		toggled = true;
 	}
@@ -4276,12 +4417,12 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	b32 contains_mouse;
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 toggled = false;
 	gui__widget_render_state_t render_state;
 	gui_element_style_t style;
 
-	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
 		*val = !*val;
 		toggled = true;
 	}
@@ -4300,127 +4441,102 @@ typedef enum gui__slider_orientation
 } gui__slider_orientation_t;
 
 static
-void gui__slider_move(s32 x, s32 y, s32 w, s32 h, s32 hnd_len, s32 pos,
-                      gui__slider_orientation_t orientation, r32 *val)
+void gui__slider_move_x(s32 x, s32 w, s32 *hx, s32 hw, s32 dx, r32 *val)
 {
-	if (orientation == GUI__SLIDER_X) {
-		const r32 min_x = x+hnd_len/2;
-		const r32 max_x = x+w-hnd_len/2;
-		*val = fmath_clamp(0, (pos-min_x)/(max_x-min_x), 1.f);
-	} else {
-		const r32 min_y = y+hnd_len/2;
-		const r32 max_y = y+h-hnd_len/2;
-		*val = fmath_clamp(0, (pos-min_y)/(max_y-min_y), 1.f);
-	}
+	const r32 min = x+hw/2;
+	const r32 max = x+w-hw/2;
+	const s32 pos = *hx+dx+hw/2;
+	*val = fmath_clamp(0, (pos-min)/(max-min), 1.f);
+	*hx = x+(w-hw)*(*val);
+}
+
+static
+void gui__slider_move_y(s32 y, s32 h, s32 *hy, s32 hh, s32 dy, r32 *val)
+{
+	const r32 min = y+hh/2;
+	const r32 max = y+h-hh/2;
+	const s32 pos = *hy+dy+hh/2;
+	*val = fmath_clamp(0, (pos-min)/(max-min), 1.f);
+	*hy = y+(h-hh)*(*val);
 }
 
 b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
                 gui__slider_orientation_t orientation)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	box2i box;
+	const b32 was_hot = (gui->hot_id == id);
+	s32 hx, hy, hw, hh;
 	b32 contains_mouse;
 	b32 triggered_by_key = false;
 
 	assert(*val >= 0.f && *val <= 1.f);
 
 	if (orientation == GUI__SLIDER_X) {
-		box.min = (v2i){ .x=x+(w-hnd_len)**val, .y=y };
-		box.max = (v2i){ .x=x+hnd_len+(w-hnd_len)**val, .y=y+h };
+		hw = hnd_len;
+		hh = h;
+		hx = x+(w-hw)*(*val);
+		hy = y;
 	} else {
-		box.min = (v2i){ .x=x, .y=y+(h-hnd_len)**val };
-		box.max = (v2i){ .x=x+w, .y=y+hnd_len+(h-hnd_len)**val };
-	}
-	contains_mouse = box2i_contains_point(box, gui->mouse_pos)
-	              && gui__box_half_visible(gui, box)
-	              && !gui->lock;
-
-	gui__widget_handle_focus(gui, id, contains_mouse);
-
-	if (   gui->focus_id == id
-	    && !gui->lock
-	    && gui->key_repeat.triggered) {
-		if (orientation == GUI__SLIDER_X) {
-			const s32 mid = (box.min.x + box.max.x) / 2;
-			const s32 dim = box.max.x - box.min.x;
-			if (gui__key_left(gui)) {
-				gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
-				triggered_by_key = true;
-			} else if (gui__key_right(gui)) {
-				gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
-				triggered_by_key = true;
-			}
-		} else {
-			const s32 mid = (box.min.y + box.max.y) / 2;
-			const s32 dim = box.max.y - box.min.y;
-			if (gui__key_up(gui)) {
-				gui__slider_move(x, y, w, h, hnd_len, mid + dim, orientation, val);
-				triggered_by_key = true;
-			} else if (gui__key_down(gui)) {
-				gui__slider_move(x, y, w, h, hnd_len, mid - dim, orientation, val);
-				triggered_by_key = true;
-			}
-		}
+		hw = w;
+		hh = hnd_len;
+		hx = x;
+		hy = y+(h-hh)*(*val);
 	}
 
-	if (gui->hot_id == id) {
-		if (!contains_mouse || gui->mouse_covered_by_panel) {
-			gui->hot_id = 0;
-		} else if (mouse_pressed(gui, MB_LEFT)) {
-			gui->hot_id = 0;
-			gui->active_id = id;
-			gui->active_id_found_this_frame = true;
-			gui->drag_offset.x = box.min.x+(box.max.x-box.min.x)/2-gui->mouse_pos.x;
-			gui->drag_offset.y = box.min.y+(box.max.y-box.min.y)/2-gui->mouse_pos.y;
-		} else {
-			gui->hot_id_found_this_frame = true;
-		}
-	} else if (gui->active_id == id) {
-		if (!mouse_released(gui, MB_LEFT)) {
-			if (orientation == GUI__SLIDER_Y) {
-				const r32 min_y = y+hnd_len/2;
-				const r32 max_y = y+h-hnd_len/2;
-				const s32 mouse_y = gui->mouse_pos.y+gui->drag_offset.y;
-				*val = fmath_clamp(0, (mouse_y-min_y)/(max_y-min_y), 1.f);
+	contains_mouse = gui__widget_contains_mouse(gui, hx, hy, hw, hh);
+	gui__btn_logic(gui, id, contains_mouse);
+
+	if (gui->focus_id == id) {
+	  if (!gui->lock && gui->key_repeat.triggered) {
+			if (orientation == GUI__SLIDER_X) {
+				if (gui__key_left(gui)) {
+					gui__slider_move_x(x, w, &hx, hw, -hw, val);
+					triggered_by_key = true;
+				} else if (gui__key_right(gui)) {
+					gui__slider_move_x(x, w, &hx, hw,  hw, val);
+					triggered_by_key = true;
+				}
 			} else {
-				const r32 min_x = x+hnd_len/2;
-				const r32 max_x = x+w-hnd_len/2;
-				const s32 mouse_x = gui->mouse_pos.x+gui->drag_offset.x;
-				*val = fmath_clamp(0, (mouse_x-min_x)/(max_x-min_x), 1.f);
+				if (gui__key_up(gui)) {
+					gui__slider_move_y(y, h, &hy, hh,  hh, val);
+					triggered_by_key = true;
+				} else if (gui__key_down(gui)) {
+					gui__slider_move_y(y, h, &hy, hh, -hh, val);
+					triggered_by_key = true;
+				}
 			}
-			gui->active_id_found_this_frame = true;
-		} else {
-			gui->active_id = 0;
 		}
-	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
-		gui->hot_id = id;
-		gui->hot_id_found_this_frame = true;
 	}
+	if (gui->active_id == id) {
+		if (was_hot) {
+			gui->drag_offset.x = gui->mouse_pos.x - hx;
+			gui->drag_offset.y = gui->mouse_pos.y - hy;
+		} else {
+			if (orientation == GUI__SLIDER_X) {
+				const s32 dx = gui->mouse_pos.x - gui->drag_offset.x - hx;
+				gui__slider_move_x(x, w, &hx, hw, dx, val);
+			} else {
+				const s32 dy = gui->mouse_pos.y - gui->drag_offset.y - hy;
+				gui__slider_move_y(y, h, &hy, hh, dy, val);
+			}
+		}
+	}
+
 
 	const gui__widget_render_state_t render_state
-		= gui__widget_render_state(gui, id, triggered_by_key, false, contains_mouse);
+		= gui__widget_render_state(gui, id, triggered_by_key, false, true);
 	const gui_element_style_t style_track =
 		gui__element_style(gui, render_state, &gui->style.slider.track);
 	const gui_element_style_t style_handle =
 		gui__element_style(gui, render_state, &gui->style.slider.handle);
-	if (orientation == GUI__SLIDER_Y) {
-		if (gui->style.slider.track_narrow)
-			gui->style.slider.track.pen(gui, x, y + hnd_len / 2, w, h - hnd_len,
-			                            &style_track);
-		else
-			gui->style.slider.track.pen(gui, x, y, w, h, &style_track);
-		gui->style.slider.handle.pen(gui, x, y + (h - hnd_len) * *val, w, hnd_len,
-		                             &style_handle);
+	if (orientation == GUI__SLIDER_X) {
+		const s32 dx = (gui->style.slider.track_narrow) ? hw : 0;
+		gui->style.slider.track.pen(gui, x + dx/2, y, w - dx, h, &style_track);
 	} else {
-		if (gui->style.slider.track_narrow)
-			gui->style.slider.track.pen(gui, x + hnd_len / 2, y, w - hnd_len, h,
-			                            &style_track);
-		else
-			gui->style.slider.track.pen(gui, x, y, w, h, &style_track);
-		gui->style.slider.handle.pen(gui, x + (w - hnd_len) * *val, y, hnd_len, h,
-		                             &style_handle);
+		const s32 dy = (gui->style.slider.track_narrow) ? hh : 0;
+		gui->style.slider.track.pen(gui, x, y + dy/2, w, h - dy, &style_track);
 	}
-	gui->prev_widget_id = id;
+	gui->style.slider.handle.pen(gui, hx, hy, hw, hh, &style_handle);
 	return gui->active_id == id || triggered_by_key;
 }
 
@@ -4457,11 +4573,11 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_selected = *val == opt;
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	gui__widget_render_state_t render_state;
-	b32 contains_mouse;
 	b32 selected = false;
 
-	if (   gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS
+	if (   gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS
 	    && !was_selected) {
 		*val = opt;
 		selected = true;
@@ -4477,11 +4593,11 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                  const char *txt, u32 *val, u32 opt)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	b32 contains_mouse;
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 selected = false;
 	gui__widget_render_state_t render_state;
 
-	if (gui__btn_logic(gui, x, y, w, h, id, &contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
 	  if (!(*val & opt)) {
 			*val |= opt;
 			selected = true;
@@ -4496,37 +4612,81 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
 }
 
-void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                         const char *txt, s32 item_w,
-                         u32 *val, u32 num_items)
+static
+void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse,
+                          s32 px, s32 py, s32 pw, s32 ph)
 {
-	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_focused = (gui->focus_id == id);
-	b32 contains_mouse, items_contain_mouse, triggered_by_key = false;
-	gui__widget_render_state_t render_state;
-	box2i box;
 
-	assert(gui->current_dropdown.num_items == 0); /* cannot nest menus */
-
-	box2i_from_xywh(&box, x, y, w, h);
-	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                 && gui__box_half_visible(gui, box)
-	                 && !gui->lock;
-
-	if (gui->focus_id == id) {
-		box2i box_items;
-		box2i_from_xywh(&box_items, x, y, w, h);
-		box_items.min.y -= num_items * h;
-		items_contain_mouse = box2i_contains_point(box_items, gui->mouse_pos);
-	} else {
-		items_contain_mouse = contains_mouse;
+	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
+		if (gui->focus_id == id) {
+			gui->focus_id = 0;
+		} else {
+			gui->focus_id = id;
+			gui->focus_id_found_this_frame = true;
+		}
 	}
 
-	gui__widget_handle_focus(gui, id, items_contain_mouse);
-
 	if (   gui->focus_id == id
-	    && !gui->lock
-	    && gui->key_repeat.triggered) {
+	    && mouse_pressed(gui, ~0)
+	    && !contains_mouse
+	    && !gui__popup_contains_mouse(gui, px, py, pw, ph))
+		gui->focus_id = 0;
+
+	if (was_focused && gui->focus_id != id)
+		gui__defocus_popup(gui);
+}
+
+static
+void gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
+{
+	/* only 1 active popup allowed */
+	assert(gui->popup.id == 0 || gui->popup.id == id);
+	const gui__scissor_t *scissor = &gui->scissors[gui->scissor_idx];
+	gui->popup.prev_mask.x = scissor->x;
+	gui->popup.prev_mask.y = scissor->y;
+	gui->popup.prev_mask.w = scissor->w;
+	gui->popup.prev_mask.h = scissor->h;
+	gui__complete_scissor(gui);
+	gui->popup.id     = id;
+	gui->popup.mask.x = x;
+	gui->popup.mask.y = y;
+	gui->popup.mask.w = w;
+	gui->popup.mask.h = h;
+	gui->popup.close_at_end = false;
+	gui__mask(gui, 0, x, y, w, h);
+}
+
+static
+void gui__popup_end(gui_t *gui)
+{
+	/* switch to new scissor (mirroring interrupted scissor) after last item */
+	gui_mask(gui, gui->popup.prev_mask.x, gui->popup.prev_mask.y,
+	         gui->popup.prev_mask.w, gui->popup.prev_mask.h);
+
+	if (gui->popup.close_at_end) {
+		gui__defocus_popup(gui);
+		gui->focus_id = 0;
+	}
+}
+
+void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                        u32 *val, u32 num_items)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	const s32 pw = w;
+	const s32 ph = h * num_items;
+	const s32 px = x;
+	const s32 py = y - ph;
+	b32 triggered_by_key = false;
+	gui__widget_render_state_t render_state;
+
+	assert(gui->dropdown.id == 0); /* cannot nest dropdowns */
+
+	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
+
+	if (gui->focus_id == id && !gui->lock && gui->key_repeat.triggered) {
 		if (gui__key_up(gui) && *val > 0) {
 			--*val;
 			triggered_by_key = true;
@@ -4535,242 +4695,143 @@ void gui__dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 			triggered_by_key = true;
 		}
 	}
-	if (was_focused && gui->focus_id != id)
-		gui__defocus_dropdown(gui);
 
-	if (gui->hot_id == id) {
-		if (!contains_mouse || gui->mouse_covered_by_panel) {
-			gui->hot_id = 0;
-		} else if (mouse_pressed(gui, MB_LEFT)) {
-			gui->hot_id = 0;
-			gui->active_id = id;
-			gui->active_id_found_this_frame = true;
-		} else {
-			gui->hot_id_found_this_frame = true;
-		}
-	} else if (gui->active_id == id) {
-		gui->active_id_found_this_frame = true;
-		if (mouse_released(gui, MB_LEFT)) {
-			if (contains_mouse) {
-				if (gui->focus_id == id) {
-					gui->focus_id = 0;
-					gui__defocus_dropdown(gui);
-				} else {
-					gui->focus_id = id;
-					gui->focus_id_found_this_frame = true;
-				}
-			}
-			gui->active_id = 0;
-		}
-	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
-		gui->hot_id = id;
-		gui->hot_id_found_this_frame = true;
-	}
-	gui->prev_widget_id = id;
-
-	/* Render dropdown button without label -
-	 * appropriate label will be rendered in gui_dropdown_item */
 	render_state = gui__widget_render_state(gui, id, triggered_by_key,
 	                                        false, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
-	if (strlen(txt) == 0) {
-		const gui_element_style_t style
-			= gui__element_style(gui, render_state, &gui->style.dropdown);
-		const gui_element_style_t style_pen = {
-			.line = {
-				.thickness = 1.f,
-				.dash_len = 0.f,
-				.color = style.text.color,
-			},
-			.text = style.text,
-			.bg_color = gi_nocolor,
-			.outline_color = gi_nocolor,
-		};
-		const s32 px = (style.text.align & GUI_ALIGN_RIGHT) ? x : x + w - h;
-		gui_pen_panel_collapse(gui, px, y, h, h, &style_pen);
-	}
 
 	/* store current dropdown state */
-	gui->current_dropdown.id               = id;
-	gui->current_dropdown.x                = x;
-	gui->current_dropdown.y                = y;
-	gui->current_dropdown.w                = w;
-	gui->current_dropdown.h                = h;
-	gui->current_dropdown.val              = val;
-	gui->current_dropdown.num_items        = num_items;
-	gui->current_dropdown.item_idx         = 0;
-	gui->current_dropdown.triggered_by_key = triggered_by_key;
-	gui->current_dropdown.close_at_end     = false;
-	gui->current_dropdown.render_state     = render_state;
-	strcpy(gui->current_dropdown.selected_item_txt, "");
+	gui->dropdown.id               = id;
+	gui->dropdown.x                = x;
+	gui->dropdown.y                = y;
+	gui->dropdown.w                = w;
+	gui->dropdown.h                = h;
+	gui->dropdown.val              = val;
+	gui->dropdown.num_items        = num_items;
+	gui->dropdown.item_idx         = 0;
+	gui->dropdown.triggered_by_key = triggered_by_key;
+	gui->dropdown.render_state     = render_state;
+	strcpy(gui->dropdown.selected_item_txt, "");
 
 	if (gui->focus_id == id) {
-		/* Add an extra row to the render mask (but not the grid) for
-		 * the main button's selected item text */
-		const s32 grid_h = h * num_items;
-		const s32 grid_y = y - grid_h;
-		const gui__scissor_t *scissor = &gui->scissors[gui->scissor_idx];
-		gui->current_dropdown.prev_mask.x = scissor->x;
-		gui->current_dropdown.prev_mask.y = scissor->y;
-		gui->current_dropdown.prev_mask.w = scissor->w;
-		gui->current_dropdown.prev_mask.h = scissor->h;
-		gui__complete_scissor(gui);
-		gui->focused_dropdown.id     = id;
-		gui->focused_dropdown.mask.x = x;
-		gui->focused_dropdown.mask.y = grid_y;
-		gui->focused_dropdown.mask.w = item_w;
-		gui->focused_dropdown.mask.h = grid_h; /* skip '+h' for mouse coverage */
-		gui__mask(gui, 0, x, grid_y, item_w, grid_h + h);
-		pgui_grid_begin(gui, &gui->grid_dropdown, x, grid_y, item_w, grid_h);
+		gui__popup_begin(gui, id, px, py, pw, ph);
+		pgui_grid_begin(gui, &gui->grid_popup, px, py, pw, ph);
 		pgui_col(gui, 0, num_items);
 	}
-}
-
-void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                        u32 *val, u32 num_items)
-{
-	gui__dropdown_begin(gui, x, y, w, h, "", w, val, num_items);
 }
 
 static
 b32 gui__dropdown_item_selected(const gui_t *gui)
 {
-	return *gui->current_dropdown.val == gui->current_dropdown.item_idx;
+	return *gui->dropdown.val == gui->dropdown.item_idx;
 }
 
 b32 gui_dropdown_item(gui_t *gui, const char *txt)
 {
 	b32 chosen = false;
 
-	assert(gui->current_dropdown.id != 0);
-	assert(gui->current_dropdown.item_idx < gui->current_dropdown.num_items);
+	assert(gui->dropdown.id != 0);
+	assert(gui->dropdown.item_idx < gui->dropdown.num_items);
 
-	if (gui->current_dropdown.id == gui->focus_id) {
-		/* mouse_covered_by_panel is set by dropdown handling in gui_begin_frame.
-		 * Temporarily clear it so buttons work correctly. */
-		gui->mouse_covered_by_panel = false;
+	if (gui->dropdown.id == gui->focus_id) {
 		gui_style_push(gui, btn, gui_style(gui)->dropdown);
 		if (pgui_btn_txt(gui, txt) == BTN_PRESS) {
-			*gui->current_dropdown.val = gui->current_dropdown.item_idx;
+			*gui->dropdown.val = gui->dropdown.item_idx;
 			chosen = true;
-		} else if (   gui->current_dropdown.triggered_by_key
+		} else if (   gui->dropdown.triggered_by_key
 		           && gui__dropdown_item_selected(gui)) {
 			chosen = true;
 		}
 		gui_style_pop(gui);
-		gui->mouse_covered_by_panel = true;
 	}
 
 	if (gui__dropdown_item_selected(gui)) {
-		const size_t n = countof(gui->current_dropdown.selected_item_txt);
-		strncpy(gui->current_dropdown.selected_item_txt, txt, n);
-		gui->current_dropdown.selected_item_txt[n-1] = '\0';
+		const size_t n = countof(gui->dropdown.selected_item_txt);
+		strncpy(gui->dropdown.selected_item_txt, txt, n);
+		gui->dropdown.selected_item_txt[n-1] = '\0';
 	}
 
-	++gui->current_dropdown.item_idx;
+	++gui->dropdown.item_idx;
 	return chosen;
-}
-
-static
-void gui__dropdown_end_focused(gui_t *gui)
-{
-	/* switch to new scissor (mirroring interrupted scissor) after last item */
-	pgui_grid_end(gui, &gui->grid_dropdown);
-	gui_mask(gui, gui->current_dropdown.prev_mask.x,
-	         gui->current_dropdown.prev_mask.y,
-	         gui->current_dropdown.prev_mask.w,
-	         gui->current_dropdown.prev_mask.h);
-
-	if (gui->current_dropdown.close_at_end) {
-		gui__defocus_dropdown(gui);
-		gui->focus_id = 0;
-	}
 }
 
 void gui_dropdown_end(gui_t *gui)
 {
-	s32 x           = gui->current_dropdown.x;
-	s32 w           = gui->current_dropdown.w;
-	const s32 y     = gui->current_dropdown.y;
-	const s32 h     = gui->current_dropdown.h;
-	const char *txt = gui->current_dropdown.selected_item_txt;
-	gui_element_style_t style;
+	const s32 x     = gui->dropdown.x;
+	const s32 w     = gui->dropdown.w;
+	const s32 y     = gui->dropdown.y;
+	const s32 h     = gui->dropdown.h;
+	const char *txt = gui->dropdown.selected_item_txt;
+	const s32 render_state = gui->dropdown.render_state;
 
-	/* render selected item text */
 	assert(strlen(txt) > 0);
-	style = gui__element_style(gui, gui->current_dropdown.render_state,
-	                           &gui->style.dropdown);
-	if (style.text.align & GUI_ALIGN_LEFT) {
-		w -= h;
-	} else if (style.text.align & GUI_ALIGN_RIGHT) {
-		x += h;
-		w -= h;
-	}
-	gui_txt_styled(gui, x, y, w, h, txt, &style.text);
 
-	if (gui->current_dropdown.id == gui->focus_id)
-		gui__dropdown_end_focused(gui);
-	memclr(gui->current_dropdown);
+	if (gui->dropdown.id == gui->focus_id) {
+		pgui_grid_end(gui, &gui->grid_popup);
+		gui__popup_end(gui);
+	}
+
+	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
+
+	const gui_element_style_t style
+		= gui__element_style(gui, render_state, &gui->style.dropdown);
+	const gui_element_style_t style_pen = {
+		.line = {
+			.thickness = 1.f,
+			.dash_len = 0.f,
+			.color = style.text.color,
+		},
+		.text = style.text,
+		.bg_color = gi_nocolor,
+		.outline_color = gi_nocolor,
+	};
+	const s32 px = (style.text.align & GUI_ALIGN_RIGHT) ? x : x + w - h;
+	gui_pen_panel_collapse(gui, px, y, h, h, &style_pen);
+
+	memclr(gui->dropdown);
 }
 
 static
 b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
-              u64 *id, gui_drag_callback_t cb, void *udata)
+              u64 *pid, gui_drag_callback_t cb, void *udata)
 {
-	b32 retval = false;
-	*id = gui_widget_id(gui, *x, *y);
+	b32 changed = false;
+	u64 id = gui_widget_id(gui, *x, *y);
+	const b32 was_hot = (gui->hot_id == id);
 
-	gui__widget_handle_focus(gui, *id, contains_mouse);
+	gui__btn_logic(gui, id, contains_mouse);
 
-	if (   gui->focus_id == *id
-	    && !gui->lock
-	    && gui->key_repeat.triggered) {
-		const s32 xo = *x, yo = *y;
-		if (gui__key_up(gui))
-			cb(x, y, *x, *y + 1, 0, 0, udata);
-		else if (gui__key_down(gui))
-			cb(x, y, *x, *y - 1, 0, 0, udata);
-		else if (gui__key_left(gui))
-			cb(x, y, *x - 1, *y, 0, 0, udata);
-		else if (gui__key_right(gui))
-			cb(x, y, *x + 1, *y, 0, 0, udata);
-		if (xo != *x || yo != *y) {
-			*id = gui_widget_id(gui, *x, *y);
-			gui->focus_id = *id;
-			retval = true;
+	if (gui->focus_id == id) {
+	  if (!gui->lock && gui->key_repeat.triggered) {
+			const s32 xo = *x, yo = *y;
+			if (gui__key_up(gui))
+				cb(x, y, *x, *y + 1, 0, 0, udata);
+			else if (gui__key_down(gui))
+				cb(x, y, *x, *y - 1, 0, 0, udata);
+			else if (gui__key_left(gui))
+				cb(x, y, *x - 1, *y, 0, 0, udata);
+			else if (gui__key_right(gui))
+				cb(x, y, *x + 1, *y, 0, 0, udata);
+			if (xo != *x || yo != *y) {
+				id = gui_widget_id(gui, *x, *y);
+				gui->focus_id = id;
+				changed = true;
+			}
 		}
-	}
-
-	if (gui->hot_id == *id) {
-		if (!contains_mouse || gui->mouse_covered_by_panel) {
-			gui->hot_id = 0;
-		} else if (mouse_pressed(gui, mb)) {
-			gui->hot_id = 0;
-			gui->active_id = *id;
-			gui->active_id_found_this_frame = true;
+	} else if (gui->active_id == id) {
+		if (was_hot) {
 			gui->drag_offset.x = *x - gui->mouse_pos.x;
 			gui->drag_offset.y = *y - gui->mouse_pos.y;
-			retval = true;
 		} else {
-			gui->hot_id_found_this_frame = true;
+			cb(x, y, gui->mouse_pos.x, gui->mouse_pos.y,
+			   gui->drag_offset.x, gui->drag_offset.y, udata);
+			id = gui_widget_id(gui, *x, *y);
+			gui->active_id = id;
+			changed = true;
 		}
-	} else if (gui->active_id == *id) {
-		cb(x, y, gui->mouse_pos.x, gui->mouse_pos.y,
-		   gui->drag_offset.x, gui->drag_offset.y, udata);
-		*id = gui_widget_id(gui, *x, *y);
-		retval = true;
-		if (mouse_released(gui, mb)) {
-			gui->active_id = 0;
-		} else {
-			gui->active_id = *id;
-			gui->active_id_found_this_frame = true;
-		}
-	} else if (gui__allow_new_interaction(gui) && contains_mouse) {
-		gui->hot_id = *id;
-		gui->hot_id_found_this_frame = true;
 	}
-	gui->prev_widget_id = *id;
-	return retval;
+
+	*pid = id;
+	return changed;
 }
 
 static
@@ -4800,13 +4861,7 @@ b32 gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb)
 b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, s32 w, s32 h,
                     mouse_button_t mb, gui_drag_callback_t cb, void *udata)
 {
-	box2i box;
-	b32 contains_mouse;
-
-	box2i_from_dims(&box, *x, *y+h, *x+w, *y);
-	contains_mouse =    box2i_contains_point(box, gui->mouse_pos)
-	                 && gui__box_half_visible(gui, box)
-	                 && !gui->lock;
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, *x, *y, w, h);
 	return gui__drag(gui, x, y, contains_mouse, mb, id, cb, udata);
 }
 
@@ -4901,12 +4956,24 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                    const char *txt, s32 item_w, u32 num_items)
 {
 	const u64 id = gui_widget_id(gui, x, y);
-	u32 val = 0;
-	gui__dropdown_begin(gui, x, y, w, h, txt, item_w, &val, num_items);
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	const s32 pw = item_w;
+	const s32 ph = h * num_items;
+	const s32 px = x;
+	const s32 py = y - ph;
+	gui__widget_render_state_t render_state;
+
+	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
+
+	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
+
 	if (gui->focus_id == id) {
+		gui__popup_begin(gui, id, px, py, pw, ph);
+		pgui_grid_begin(gui, &gui->grid_popup, px, py, pw, ph);
+		pgui_col(gui, 0, num_items);
 		return true;
 	} else {
-		memclr(gui->current_dropdown);
 		return false;
 	}
 }
@@ -4914,14 +4981,187 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_menu_end(gui_t *gui)
 {
 	/* TODO(rgriege): focus_id -> focus_stack to support nested menus */
-	if (gui->current_dropdown.id == gui->focus_id)
-		gui__dropdown_end_focused(gui);
-	memclr(gui->current_dropdown);
+	assert(gui->popup.id != 0 && gui->popup.id == gui->focus_id);
+	pgui_grid_end(gui, &gui->grid_popup);
+	gui__popup_end(gui);
+}
+
+static
+void gui__color_picker_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                          s32 offset_x, s32 offset_y, void *udata) {}
+
+b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
+{
+	colorf_t cf_hue = { .a = 1.f };
+	color_t c_hue;
+	r32 hue, sat, val;
+	b32 changed = false;
+	v2i cursor;
+
+	color_to_hsv(*c, &hue, &sat, &val);
+	hsv_to_color(hue, 1.f, 1.f, &cf_hue);
+	c_hue = colorf_to_color(cf_hue);
+
+	gui_rect_mcolor(gui, x, y, w, h, g_white, c_hue,   c_hue,     g_white);
+	gui_rect_mcolor(gui, x, y, w, h, g_black, g_black, g_nocolor, g_nocolor);
+
+	gui_style_push(gui, drag, g_gui_style_invis.drag);
+	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__color_picker_cb, NULL)) {
+		sat = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
+		val = clamp(0, (r32)(gui->mouse_pos.y - y) / h, 1.f);
+		hsv_to_color(hue, sat, val, c);
+		changed = true;
+	}
+	gui_style_pop(gui);
+
+	cursor.x = x+sat*w;
+	cursor.y = y+val*h;
+	gui_circ(gui, cursor.x, cursor.y, 6, g_nocolor, g_white);
+	gui_circ(gui, cursor.x, cursor.y, 7, g_nocolor, g_black);
+
+	return changed;
+}
+
+b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
+{
+	static const color_t rainbow[] = {
+		g_red, g_yellow, g_green, g_cyan, g_blue, g_fuchsia, g_red,
+	};
+
+	const b32 horizontal = (w > h);
+	b32 changed = false;
+	r32 hue, sat, val;
+	s32 cursor;
+
+	if (horizontal) {
+		for (u32 i = 0; i < countof(rainbow) - 1; ++i) {
+			const color_t left  = rainbow[i];
+			const color_t right = rainbow[i+1];
+			const s32 xl = x+w*i/6;
+			const s32 xr = x+w*(i+1)/6;
+			gui_rect_mcolor(gui, xl, y, xr-xl, h, left, right, right, left);
+		}
+	} else {
+		for (u32 i = 0; i < countof(rainbow) - 1; ++i) {
+			const color_t top    = rainbow[i];
+			const color_t bottom = rainbow[i+1];
+			const s32 yt = y+h-h*i/6;
+			const s32 yb = y+h-h*(i+1)/6;
+			gui_rect_mcolor(gui, x, yb, w, yt-yb, bottom, bottom, top, top);
+		}
+	}
+
+	color_to_hsv(*c, &hue, &sat, &val);
+
+	gui_style_push(gui, drag, g_gui_style_invis.drag);
+	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__color_picker_cb, NULL)) {
+		if (horizontal)
+			hue = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
+		else
+			hue = 1.f-clamp(0, (r32)(gui->mouse_pos.y - y) / h, 1.f);
+		hsv_to_color(hue, sat, val, c);
+		changed = true;
+	}
+	gui_style_pop(gui);
+
+	if (horizontal) {
+		cursor = x+hue*w;
+		gui_rect(gui, cursor-1, y, 2, h, g_nocolor, g_white);
+		gui_rect(gui, cursor-2, y, 4, h, g_nocolor, g_black);
+	} else {
+		cursor = y+(1.f-hue)*h;
+		gui_rect(gui, x, cursor-1, w, 2, g_nocolor, g_white);
+		gui_rect(gui, x, cursor-2, w, 4, g_nocolor, g_black);
+	}
+
+	return changed;
+}
+
+b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                     s32 pw, s32 ph, colorf_t *c)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	const s32 px = x;
+	const s32 py = y - ph;
+	gui__widget_render_state_t render_state;
+	gui_style_t *style = gui_style(gui);
+	color_t color = colorf_to_color(*c);
+
+	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
+
+	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
+
+	gui_style_push_current(gui, btn);
+	style->btn.hot.outline_color = g_white;
+	style->btn.inactive.bg_color = color;
+	style->btn.hot.bg_color      = color;
+	style->btn.active.bg_color   = color;
+	gui__btn_render(gui, x, y, w, h, "", render_state, &gui->style.btn);
+	gui_style_pop(gui);
+
+	if (gui->focus_id == id) {
+		static const r32 rows[] = { 0, 2, 0.1f };
+		static const r32 cols[] = { 0, 2, 0.1f };
+		const s32 gx = px + style->panel.padding;
+		const s32 gy = py + style->panel.padding;
+		const s32 gw = pw - style->panel.padding*2;
+		const s32 gh = ph - style->panel.padding*2;
+		b32 changed = false;
+
+		gui__popup_begin(gui, id, px, py, pw, ph);
+		pgui_grid_begin(gui, &gui->grid_popup, gx, gy, gw, gh);
+		/* NOTE(rgriege): shrink required to pass entire rect through scissor */
+		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color,
+		         style->panel.border_color);
+
+		pgui_col_cellsv(gui, 0, rows);
+
+		pgui_row_cellsv(gui, 0, cols);
+		if (pgui_color_picker_sv(gui, c)) changed = true;
+		pgui_spacer(gui);
+		if (pgui_color_picker_h(gui, c)) changed = true;
+
+		if (changed) color = colorf_to_color(*c);
+
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols);
+		gui_style_push_color(gui, panel.cell_bg_color, color);
+		pgui_spacer(gui);
+		gui_style_pop(gui);
+		pgui_spacer(gui);
+		pgui_spacer(gui);
+
+		pgui_grid_end(gui, &gui->grid_popup);
+		gui__popup_end(gui);
+		return changed;
+	} else {
+		return false;
+	}
+}
+
+b32 gui_color_picker8(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                      s32 pw, s32 ph, color_t *c)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	if (gui->focus_id == id) {
+		if (gui_color_picker(gui, x, y, w, h, pw, ph, &gui->color_picker8_color)) {
+			*c = colorf_to_color(gui->color_picker8_color);
+			return true;
+		}
+	} else {
+		colorf_t cf = color_to_colorf(*c);
+		gui_color_picker(gui, x, y, w, h, pw, ph, &cf);
+		if (gui->focus_id == id)
+			gui->color_picker8_color = cf;
+	}
+	return false;
 }
 
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
-#define GUI__SCISSOR_PANEL_ID (UINT_MAX-1)
-#define GUI__MAX_PANEL_ID     (UINT_MAX-2)
+#define GUI__POPUP_PANEL_ID  (UINT_MAX-1)
+#define GUI__MAX_PANEL_ID    (UINT_MAX-2)
 
 u64 gui__widget_id(const gui_t *gui, u32 base_id, s32 x, s32 y)
 {
@@ -4930,9 +5170,8 @@ u64 gui__widget_id(const gui_t *gui, u32 base_id, s32 x, s32 y)
 
 u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 {
-	if (   gui->current_dropdown.id != 0
-	    && gui->current_dropdown.id == gui->focused_dropdown.id)
-		return gui__widget_id(gui, GUI__SCISSOR_PANEL_ID, x, y);
+	if (gui->popup.id != 0 && gui->scissor_idx == 0)
+		return gui__widget_id(gui, GUI__POPUP_PANEL_ID, x, y);
 	else if (gui->panel)
 		return gui__widget_id(gui, gui->panel->id, x, y);
 	else
@@ -5334,7 +5573,7 @@ s32 pgui_btn_txt(gui_t *gui, const char *lbl)
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_txt(gui, x, y, w, h, lbl);
 	if (result == BTN_PRESS)
-		gui->current_dropdown.close_at_end = true;
+		gui->popup.close_at_end = true;
 	return result;
 }
 
@@ -5345,7 +5584,7 @@ s32 pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale)
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_img(gui, x, y, w, h, fname, scale);
 	if (result == BTN_PRESS)
-		gui->current_dropdown.close_at_end = true;
+		gui->popup.close_at_end = true;
 	return result;
 }
 
@@ -5356,7 +5595,7 @@ s32 pgui_btn_pen(gui_t *gui, gui_pen_t pen)
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_pen(gui, x, y, w, h, pen);
 	if (result == BTN_PRESS)
-		gui->current_dropdown.close_at_end = true;
+		gui->popup.close_at_end = true;
 	return result;
 }
 
@@ -5457,6 +5696,34 @@ b32 pgui_menu_begin(gui_t *gui, const char *txt, s32 item_w, u32 num_items)
 void pgui_menu_end(gui_t *gui)
 {
 	gui_menu_end(gui);
+}
+
+b32 pgui_color_picker_sv(gui_t *gui, colorf_t *color)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_color_picker_sv(gui, x, y, w, h, color);
+}
+
+b32 pgui_color_picker_h(gui_t *gui, colorf_t *color)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_color_picker_h(gui, x, y, w, h, color);
+}
+
+b32 pgui_color_picker(gui_t *gui, s32 pw, s32 ph, colorf_t *color)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_color_picker(gui, x, y, w, h, pw, ph, color);
+}
+
+b32 pgui_color_picker8(gui_t *gui, s32 pw, s32 ph, color_t *color)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_color_picker8(gui, x, y, w, h, pw, ph, color);
 }
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits)
@@ -5654,7 +5921,7 @@ void gui__split_render_branch(gui_t *gui, gui_split_t *split, b32 *changed)
 	/* checking use_default_cursor ensures only 1 resize happens per frame */
 	if (   (split->flags & GUI_SPLIT_RESIZABLE)
 	    && gui->use_default_cursor
-	    && !gui->mouse_covered_by_panel) {
+	    && !gui__mouse_covered(gui)) {
 		gui_style_push(gui, drag.inactive.bg_color, g_nocolor);
 		gui_style_push(gui, drag.hot.bg_color, g_nocolor);
 		gui_style_push(gui, drag.active.bg_color, g_nocolor);
@@ -6424,7 +6691,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	if (panel->body_height < panel->required_dim.y) {
 		const s32 needed = panel->required_dim.y - panel->body_height;
 		if (   !key_mod(gui, KBM_SHIFT)
-		    && !gui->mouse_covered_by_panel
+		    && !gui__mouse_covered(gui)
 		    && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
@@ -6452,7 +6719,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	if (panel->width < panel->required_dim.x) {
 		const s32 needed = panel->required_dim.x - panel->width;
 		if (   key_mod(gui, KBM_SHIFT)
-		    && !gui->mouse_covered_by_panel
+		    && !gui__mouse_covered(gui)
 		    && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
