@@ -86,22 +86,25 @@ void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n);
 
 /* Texture */
 
+typedef enum texture_blend
+{
+	TEXTURE_BLEND_NRM,
+	TEXTURE_BLEND_ADD,
+	TEXTURE_BLEND_MUL,
+} texture_blend_e;
+
 typedef struct texture_t
 {
 	u32 handle;
 	u32 width;
 	u32 height;
-	u32 fmt;
-	u32 frame_buffer;
-	u32 depth_handle;
+	texture_blend_e blend;
 } texture_t;
 
 b32  texture_load(texture_t *tex, const char *filename);
 void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
 void texture_destroy(texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
-void texture_resize(texture_t *tex, u32 w, u32 h);
-void texture_target(texture_t *tex);
 void texture_bind(const texture_t *tex);
 void texture_unbind();
 
@@ -1047,92 +1050,11 @@ b32 texture_load(texture_t *tex, const char *filename)
 	return ret;
 }
 
-static
-void texture__update_framebuffer(texture_t *tex)
-{
-	u32 depth_handle;
-	b32 depth_only = tex->fmt == GL_DEPTH_COMPONENT;
-
-	if (depth_only) {
-		depth_handle = tex->handle;
-	} else {
-		/* Create depth buffer */
-
-		if (tex->depth_handle == 0) {
-			GL_CHECK(glGenTextures, 1, &tex->depth_handle);
-		}
-
-		GL_CHECK(glBindTexture, GL_TEXTURE_2D, tex->depth_handle);
-		GL_CHECK(glTexImage2D, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32,
-				 tex->width, tex->height, 0, GL_DEPTH_COMPONENT,
-				 GL_UNSIGNED_BYTE, NULL);
-		depth_handle = tex->depth_handle;
-	}
-
-	/* Create frame buffer */
-
-	GL_CHECK(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, tex->frame_buffer);
-
-	if (!depth_only) {
-		GL_CHECK(glFramebufferTexture2D, GL_DRAW_FRAMEBUFFER,
-				 GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->handle, 0);
-	}
-	GL_CHECK(glFramebufferTexture2D, GL_DRAW_FRAMEBUFFER,
-			 GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_handle, 0);
-
-	GL_CHECK(glDrawBuffer, depth_only ? GL_NONE : GL_COLOR_ATTACHMENT0);
-
-	/* Check frame buffer */
-
-	GLuint status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
-	GL_ERR_CHECK("glCheckFramebufferStatus");
-	/* TODO(Joao): how should GL functions with a return value be checked? */
-
-	if (status != GL_FRAMEBUFFER_COMPLETE) {
-		log_error("Failed to create framebuffer!");
-		switch (status) {
-#define prefix "FrameBuffer error: "
-		case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-			log_error(prefix "incomplete dimensions");
-		break;
-		case GL_FRAMEBUFFER_UNSUPPORTED:
-			log_error(prefix "unsupported");
-		break;
-		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-			log_error(prefix "missing attach");
-		break;
-		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-			log_error(prefix "incomplete attach");
-		break;
-#undef prefix
-		}
-		/* TODO(Joao): fallback to use no framebuffers or exit? */
-		/* tex->frame_buffer = 0; */
-	}
-	texture_unbind();
-}
-
-void texture_resize(texture_t *tex, u32 w, u32 h)
-{
-	tex->width = w;
-	tex->height = h;
-
-	texture_bind(tex);
-	GL_CHECK(glTexImage2D, GL_TEXTURE_2D, 0, tex->fmt, w, h, 0, tex->fmt,
-			GL_UNSIGNED_BYTE, NULL);
-
-	if (tex->frame_buffer) {
-		texture__update_framebuffer(tex);
-	}
-}
-
 void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 {
-	tex->frame_buffer = 0;
-	tex->depth_handle = 0;
 	tex->width = w;
 	tex->height = h;
-	tex->fmt = fmt;
+	tex->blend = TEXTURE_BLEND_NRM;
 
 	GL_CHECK(glGenTextures, 1, &tex->handle);
 	texture_bind(tex);
@@ -1146,32 +1068,11 @@ void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void texture_target(texture_t *tex)
-{
-	if (tex->frame_buffer == 0) {
-		GL_CHECK(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, 0);
-		GL_CHECK(glGenFramebuffers, 1, &tex->frame_buffer);
-
-		texture__update_framebuffer(tex);
-	}
-
-	GL_CHECK(glBindFramebuffer, GL_DRAW_FRAMEBUFFER, tex->frame_buffer);
-
-}
-
 void texture_destroy(texture_t *tex)
 {
 	if (tex->handle != 0) {
 		GL_CHECK(glDeleteTextures, 1, &tex->handle);
 		tex->handle = 0;
-	}
-	if (tex->depth_handle != 0) {
-		GL_CHECK(glDeleteTextures, 1, &tex->depth_handle);
-		tex->handle = 0;
-	}
-	if (tex->frame_buffer != 0) {
-		GL_CHECK(glDeleteFramebuffers, 1, &tex->frame_buffer);
-		tex->frame_buffer = 0;
 	}
 }
 
@@ -2059,6 +1960,7 @@ typedef struct draw_call
 	GLsizei cnt;
 	u32 type;
 	GLuint tex;
+	texture_blend_e blend;
 } draw_call_t;
 
 typedef struct gui__scissor
@@ -3022,6 +2924,13 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 	v2f_set(&gui->verts[gui->vert_cnt+2], x + w, y + h);
 	v2f_set(&gui->verts[gui->vert_cnt+3], x + w, y);
 
+	if (texture->blend == TEXTURE_BLEND_MUL) {
+		const r32 brightness = ((r32)color.a) / 255.f;
+		color.r *= brightness;
+		color.g *= brightness;
+		color.b *= brightness;
+	}
+
 	gui->vert_colors[gui->vert_cnt]   = color;
 	gui->vert_colors[gui->vert_cnt+1] = color;
 	gui->vert_colors[gui->vert_cnt+2] = color;
@@ -3036,6 +2945,7 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 	gui->draw_calls[gui->draw_call_cnt].cnt = 4;
 	gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLE_FAN;
 	gui->draw_calls[gui->draw_call_cnt].tex = texture->handle;
+	gui->draw_calls[gui->draw_call_cnt].blend = texture->blend;
 	++gui->draw_call_cnt;
 
 	gui->vert_cnt += 4;
@@ -3154,6 +3064,18 @@ void gui_end_frame(gui_t *gui)
 		     draw_call != draw_call_end; ++draw_call) {
 			if (draw_call->tex != current_texture) {
 				GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
+				switch (draw_call->blend) {
+					case TEXTURE_BLEND_NRM:
+						GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+						break;
+					case TEXTURE_BLEND_ADD:
+						GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE);
+						break;
+					case TEXTURE_BLEND_MUL:
+						GL_CHECK(glBlendFunc, GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
+						break;
+
+				}
 				current_texture = draw_call->tex;
 			}
 			GL_CHECK(glDrawArrays, g_draw_call_types[draw_call->type],
