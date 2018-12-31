@@ -2783,6 +2783,7 @@ void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
 	gui->draw_calls[gui->draw_call_cnt].cnt = n;
 	gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLES;
 	gui->draw_calls[gui->draw_call_cnt].tex = gui->texture_white.handle;
+	gui->draw_calls[gui->draw_call_cnt].blend = TEXTURE_BLEND_NRM;
 	++gui->draw_call_cnt;
 	gui->vert_cnt += n;
 }
@@ -2859,6 +2860,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 		draw_call->cnt = n;
 		draw_call->type = DRAW_TRIANGLE_FAN;
 		draw_call->tex = gui->texture_white.handle;
+		draw_call->blend = TEXTURE_BLEND_NRM;
 		++gui->draw_call_cnt;
 		gui->vert_cnt += n;
 	}
@@ -2883,6 +2885,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 			draw_call->idx = gui->vert_cnt;
 			draw_call->cnt = vn;
 			draw_call->type = DRAW_LINE_STRIP;
+			draw_call->blend = TEXTURE_BLEND_NRM;
 			++gui->draw_call_cnt;
 			gui->vert_cnt += vn;
 		} else {
@@ -2895,6 +2898,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 			draw_call->idx = gui->vert_cnt;
 			draw_call->cnt = n;
 			draw_call->type = DRAW_LINE_LOOP;
+			draw_call->blend = TEXTURE_BLEND_NRM;
 			++gui->draw_call_cnt;
 			gui->vert_cnt += n;
 		}
@@ -2984,6 +2988,7 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 	gui->draw_calls[gui->draw_call_cnt].cnt = 4;
 	gui->draw_calls[gui->draw_call_cnt].type = DRAW_TRIANGLE_FAN;
 	gui->draw_calls[gui->draw_call_cnt].tex = texture->handle;
+	gui->draw_calls[gui->draw_call_cnt].blend = texture->blend;
 	++gui->draw_call_cnt;
 
 	gui->vert_cnt += 4;
@@ -3013,6 +3018,8 @@ void gui_end_frame(gui_t *gui)
 	const s32 loc[VBO_COUNT] = { VBO_VERT, VBO_COLOR, VBO_TEX };
 #endif
 	GLuint current_texture = 0;
+
+	texture_blend_e current_blend = TEXTURE_BLEND_NRM;
 
 	assert(gui->grid == NULL);
 
@@ -3064,6 +3071,9 @@ void gui_end_frame(gui_t *gui)
 		     draw_call != draw_call_end; ++draw_call) {
 			if (draw_call->tex != current_texture) {
 				GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
+				current_texture = draw_call->tex;
+			}
+			if (draw_call->blend != current_blend) {
 				switch (draw_call->blend) {
 					case TEXTURE_BLEND_NRM:
 						GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -3074,10 +3084,10 @@ void gui_end_frame(gui_t *gui)
 					case TEXTURE_BLEND_MUL:
 						GL_CHECK(glBlendFunc, GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
 						break;
-
 				}
-				current_texture = draw_call->tex;
+				current_blend = draw_call->blend;
 			}
+
 			GL_CHECK(glDrawArrays, g_draw_call_types[draw_call->type],
 			         draw_call->idx, draw_call->cnt);
 		}
