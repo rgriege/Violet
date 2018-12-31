@@ -3028,6 +3028,8 @@ void gui_end_frame(gui_t *gui)
 
 	gui__complete_scissor(gui);
 
+	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	GL_CHECK(glDisable, GL_DEPTH_TEST);
 	GL_CHECK(glBindVertexArray, gui->vao);
 
