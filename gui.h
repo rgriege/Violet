@@ -4091,7 +4091,7 @@ b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse);
+btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse, mouse_button_t mb);
 
 b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                   const char *hint, npt_flags_t flags, const b32 chars[128])
@@ -4107,7 +4107,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	const char *txt_to_display;
 
 	contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS && !was_focused) {
+	if (gui__btn_logic(gui, id, contains_mouse, MB_LEFT) == BTN_PRESS && !was_focused) {
 		gui->focus_id = id;
 		gui->focus_id_found_this_frame = true;
 	}
@@ -4241,7 +4241,7 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse)
+btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse, mouse_button_t mb)
 {
 	btn_val_t retval = BTN_NONE;
 
@@ -4256,7 +4256,7 @@ btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse)
 
 	if (gui->active_id == id) {
 		gui->active_id_found_this_frame = true;
-		if (mouse_released(gui, MB_LEFT)) {
+		if (mouse_released(gui, mb)) {
 			if (contains_mouse)
 				retval = BTN_PRESS;
 			gui->active_id = 0;
@@ -4266,7 +4266,7 @@ btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse)
 	} else if (gui->hot_id == id) {
 		if (!contains_mouse || gui__mouse_covered(gui)) {
 			gui->hot_id = 0;
-		} else if (mouse_pressed(gui, MB_LEFT)) {
+		} else if (mouse_pressed(gui, mb)) {
 			gui->hot_id = 0;
 			gui->active_id = id;
 			gui->active_id_found_this_frame = true;
@@ -4295,7 +4295,7 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse);
+	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse, MB_LEFT);
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.btn);
@@ -4307,7 +4307,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse);
+	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse, MB_LEFT);
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
@@ -4321,7 +4321,7 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse);
+	const btn_val_t ret = gui__btn_logic(gui, id, contains_mouse, MB_LEFT);
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
@@ -4338,7 +4338,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	b32 toggled = false;
 	gui__widget_render_state_t render_state;
 
-	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, contains_mouse, MB_LEFT) == BTN_PRESS) {
 		*val = !*val;
 		toggled = true;
 	}
@@ -4356,7 +4356,7 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	gui__widget_render_state_t render_state;
 	gui_element_style_t style;
 
-	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, contains_mouse, MB_LEFT) == BTN_PRESS) {
 		*val = !*val;
 		toggled = true;
 	}
@@ -4418,7 +4418,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	}
 
 	contains_mouse = gui__widget_contains_mouse(gui, hx, hy, hw, hh);
-	gui__btn_logic(gui, id, contains_mouse);
+	gui__btn_logic(gui, id, contains_mouse, MB_LEFT);
 
 	if (gui->focus_id == id) {
 	  if (!gui->lock && gui->key_repeat.triggered) {
@@ -4511,7 +4511,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__widget_render_state_t render_state;
 	b32 selected = false;
 
-	if (   gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS
+	if (   gui__btn_logic(gui, id, contains_mouse, MB_LEFT) == BTN_PRESS
 	    && !was_selected) {
 		*val = opt;
 		selected = true;
@@ -4531,7 +4531,7 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	b32 selected = false;
 	gui__widget_render_state_t render_state;
 
-	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, contains_mouse, MB_LEFT) == BTN_PRESS) {
 	  if (!(*val & opt)) {
 			*val |= opt;
 			selected = true;
@@ -4552,7 +4552,7 @@ void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse,
 {
 	const b32 was_focused = (gui->focus_id == id);
 
-	if (gui__btn_logic(gui, id, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, contains_mouse, MB_LEFT) == BTN_PRESS) {
 		if (gui->focus_id == id) {
 			gui->focus_id = 0;
 		} else {
@@ -4732,7 +4732,7 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 	u64 id = gui_widget_id(gui, *x, *y);
 	const b32 was_hot = (gui->hot_id == id);
 
-	gui__btn_logic(gui, id, contains_mouse);
+	gui__btn_logic(gui, id, contains_mouse, mb);
 
 	if (gui->focus_id == id) {
 	  if (!gui->lock && gui->key_repeat.triggered) {
