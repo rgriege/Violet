@@ -91,6 +91,7 @@ typedef enum texture_blend
 	TEXTURE_BLEND_NRM,
 	TEXTURE_BLEND_ADD,
 	TEXTURE_BLEND_MUL,
+	TEXTURE_BLEND_MAX = TEXTURE_BLEND_MUL,
 } texture_blend_e;
 
 typedef struct texture_t
@@ -304,7 +305,7 @@ void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
-                r32 opacity);
+                r32 rotation, r32 opacity);
 void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                    img_scale_t scale);
 img_t *gui_init_cached_img(gui_t *gui, const char *name);
@@ -2907,26 +2908,50 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 
 static
 void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
-                     r32 sx, r32 sy, color_t color)
+                     r32 sx, r32 sy, r32 rotation, color_t color)
 {
-	r32 w, h;
+	static const v2f corners[] = {
+		{ 0.f, 0.f },
+		{ 0.f, 1.f },
+		{ 1.f, 1.f },
+		{ 1.f, 0.f }
+	};
+	const v2f scale = {
+		texture->width * sx,
+		texture->height * sy 
+	};
+	v2f points[4];
+
 	box2f mask, bbox;
 
 	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
 	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
-	w = texture->width * sx;
-	h = texture->height * sy;
+	m3f transform = m3f_init_translation((v2f){ x, y });
+
+	if (rotation != 0.f) {
+
+		transform = m3f_mul_m3(transform,
+		                       m3f_init_translation((v2f){scale.x / 2.f, scale.y / 2.f}));
+
+		transform = m3f_mul_m3(transform,
+		                       m3f_init_rotation(rotation));
+
+		transform = m3f_mul_m3(transform,
+		                       m3f_init_translation((v2f){-scale.x / 2.f, -scale.y / 2.f}));
+	}
+
+	transform = m3f_mul_m3(transform, m3f_init_scale(scale));
+
+	for (u32 i = 0; i < countof(points); ++i)
+		points[i] = m3f_mul_v2(transform, corners[i]);
 
 	gui__current_maskf(gui, &mask);
-	box2f_from_xywh(&bbox, x, y, w, h);
+
+	polyf_bounding_box(points, countof(points), &bbox);
+
 	if (!box2f_overlaps(mask, bbox))
 		return;
-
-	v2f_set(&gui->verts[gui->vert_cnt],   x,     y);
-	v2f_set(&gui->verts[gui->vert_cnt+1], x,     y + h);
-	v2f_set(&gui->verts[gui->vert_cnt+2], x + w, y + h);
-	v2f_set(&gui->verts[gui->vert_cnt+3], x + w, y);
 
 	if (texture->blend == TEXTURE_BLEND_MUL) {
 		const r32 brightness = ((r32)color.a) / 255.f;
@@ -2935,15 +2960,11 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		color.b *= brightness;
 	}
 
-	gui->vert_colors[gui->vert_cnt]   = color;
-	gui->vert_colors[gui->vert_cnt+1] = color;
-	gui->vert_colors[gui->vert_cnt+2] = color;
-	gui->vert_colors[gui->vert_cnt+3] = color;
-
-	v2f_set(&gui->vert_tex_coords[gui->vert_cnt],   0, 0);
-	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+1], 0, 1);
-	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+2], 1, 1);
-	v2f_set(&gui->vert_tex_coords[gui->vert_cnt+3], 1, 0);
+	for (u32 i = 0; i < countof(points); ++i) {
+		gui->verts[gui->vert_cnt + i]           = points[i];
+		gui->vert_colors[gui->vert_cnt + i]     = color;
+		gui->vert_tex_coords[gui->vert_cnt + i] = corners[i];
+	}
 
 	gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
 	gui->draw_calls[gui->draw_call_cnt].cnt = 4;
@@ -3432,15 +3453,15 @@ void gui_img(gui_t *gui, s32 x, s32 y, const char *fname)
 {
 	const img_t *img = gui__find_or_load_img(gui, fname);
 	if (img)
-		gui_img_ex(gui, x, y, img, 1.f, 1.f, 1.f);
+		gui_img_ex(gui, x, y, img, 1.f, 1.f, 0.f, 1.f);
 }
 
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
-                r32 opacity)
+                r32 rotation, r32 opacity)
 {
 	color_t color = g_white;
 	color.a = opacity * 255;
-	texture__render(gui, &img->texture, x, y, sx, sy, color);
+	texture__render(gui, &img->texture, x, y, sx, sy, rotation, color);
 }
 
 void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
@@ -3455,13 +3476,13 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 		const s32 x_off = (w - img->texture.width) / 2;
 		const s32 y_off = (h - img->texture.height) / 2;
 		if (x_off >= 0 && y_off >= 0) {
-			gui_img_ex(gui, x + x_off, y + y_off, img, 1.f, 1.f, 1.f);
+			gui_img_ex(gui, x + x_off, y + y_off, img, 1.f, 1.f, 0.f, 1.f);
 			break;
 		}
 	case IMG_SCALED:;
 		const r32 sx = (r32)w / img->texture.width;
 		const r32 sy = (r32)h / img->texture.height;
-		gui_img_ex(gui, x, y, img, sx, sy, 1.f);
+		gui_img_ex(gui, x, y, img, sx, sy, 0.f, 1.f);
 	break;
 	}
 }
