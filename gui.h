@@ -2920,6 +2920,8 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		texture->width * sx,
 		texture->height * sy 
 	};
+	v2f points[4];
+
 	box2f mask, bbox;
 
 	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
@@ -2941,25 +2943,15 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 
 	transform = m3f_mul_m3(transform, m3f_init_scale(scale));
 
-	const v2f p0 = m3f_mul_v2(transform, corners[0]);
-	const v2f p1 = m3f_mul_v2(transform, corners[1]);
-	const v2f p2 = m3f_mul_v2(transform, corners[2]);
-	const v2f p3 = m3f_mul_v2(transform, corners[3]);
+	for (u32 i = 0; i < countof(points); ++i)
+		points[i] = m3f_mul_v2(transform, corners[i]);
 
 	gui__current_maskf(gui, &mask);
 
-	box2f_from_point(&bbox, p0);
-	box2f_extend_point(&bbox, p1);
-	box2f_extend_point(&bbox, p2);
-	box2f_extend_point(&bbox, p3);
+	polyf_bounding_box(points, countof(points), &bbox);
 
 	if (!box2f_overlaps(mask, bbox))
 		return;
-
-	gui->verts[gui->vert_cnt]   = p0;
-	gui->verts[gui->vert_cnt+1] = p1;
-	gui->verts[gui->vert_cnt+2] = p2;
-	gui->verts[gui->vert_cnt+3] = p3;
 
 	if (texture->blend == TEXTURE_BLEND_MUL) {
 		const r32 brightness = ((r32)color.a) / 255.f;
@@ -2968,15 +2960,11 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		color.b *= brightness;
 	}
 
-	gui->vert_colors[gui->vert_cnt]   = color;
-	gui->vert_colors[gui->vert_cnt+1] = color;
-	gui->vert_colors[gui->vert_cnt+2] = color;
-	gui->vert_colors[gui->vert_cnt+3] = color;
-
-	gui->vert_tex_coords[gui->vert_cnt]   = corners[0];
-	gui->vert_tex_coords[gui->vert_cnt+1] = corners[1];
-	gui->vert_tex_coords[gui->vert_cnt+2] = corners[2];
-	gui->vert_tex_coords[gui->vert_cnt+3] = corners[3];
+	for (u32 i = 0; i < countof(points); ++i) {
+		gui->verts[gui->vert_cnt + i]           = points[i];
+		gui->vert_colors[gui->vert_cnt + i]     = color;
+		gui->vert_tex_coords[gui->vert_cnt + i] = corners[i];
+	}
 
 	gui->draw_calls[gui->draw_call_cnt].idx = gui->vert_cnt;
 	gui->draw_calls[gui->draw_call_cnt].cnt = 4;
