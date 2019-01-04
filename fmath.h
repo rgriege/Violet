@@ -250,6 +250,7 @@ FMDEF void box3f_extend_point(box3f *b, v3f p);
 FMDEF v3f  box3f_get_center(box3f b);
 FMDEF v3f  box3f_get_extent(box3f b);
 FMDEF v3f  box3f_get_half_dim(box3f b);
+FMDEF void box3f_clip_v3f(box3f b, v3f *p);
 
 /* Line/Segment utilities */
 
@@ -1223,6 +1224,14 @@ FMDEF v3f box3f_get_half_dim(box3f b)
 {
 	return v3f_scale(v3f_sub(b.max, b.min), 0.5f);
 }
+
+FMDEF void box3f_clip_v3f(box3f b, v3f *p)
+{
+	p->x = fmaxf(fminf(p->x, b.max.x), b.min.x);
+	p->y = fmaxf(fminf(p->y, b.max.y), b.min.y);
+	p->z = fmaxf(fminf(p->z, b.max.z), b.min.z);
+}
+
 
 FMDEF v2f fmath_line_extrapolate(v2f a, v2f b, r32 t)
 {
