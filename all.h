@@ -3,6 +3,7 @@
 
 #ifdef VIOLET_IMPLEMENTATION
 #define ARRAY_IMPLEMENTATION
+#define COLOR_IMPLEMENTATION
 #define CORE_IMPLEMENTATION
 #define DMATH_IMPLEMENTATION
 #define FMATH_IMPLEMENTATION
@@ -13,6 +14,7 @@
 #define OS_IMPLEMENTATION
 #define STRING_IMPLEMENTATION
 #define VSON_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #undef VIOLET_IMPLEMENTATION
 #endif
 
@@ -28,9 +30,12 @@
 /* String */
 #include "violet/string.h"
 /* Gui */
+#include "violet/color.h"
 #ifndef VIOLET_NO_GUI
 #include "violet/graphics.h"
 #include "violet/gui.h"
+#else
+#include "violet/stbi.h"
 #endif
 /* OS */
 #include "violet/os.h"
