@@ -266,17 +266,10 @@ char *app_data_dir(const char *app_name, allocator_t *a)
 	}
 	return NULL;
 #else
-	char *path;
-	FILE *fp = fopen(".access_check", "w");
-	if (fp) {
-		fclose(fp);
-		remove(".access_check");
-		path = amalloc(2, a);
-		path[0] = '.';
-		path[1] = '\0';
-		return path;
-	}
-	return NULL;
+	char *path = amalloc(2, a);
+	path[0] = '.';
+	path[1] = '\0';
+	return path;
 #endif
 }
 
@@ -407,17 +400,10 @@ const char *app_dir(void)
 
 char *app_data_dir(const char *app_name, allocator_t *a)
 {
-	char *path;
-	FILE *fp = fopen(".access_check", "w");
-	if (fp) {
-		fclose(fp);
-		remove(".access_check");
-		path = amalloc(2, a);
-		path[0] = '.';
-		path[1] = '\0';
-		return path;
-	}
-	return NULL;
+	char *path = amalloc(2, a);
+	path[0] = '.';
+	path[1] = '\0';
+	return path;
 }
 
 /* Dynamic library */
