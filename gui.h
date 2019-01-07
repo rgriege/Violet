@@ -41,6 +41,8 @@ typedef struct texture_t
 
 b32  texture_load(texture_t *tex, const char *filename);
 void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
+m3f  texture_get_transform(const texture_t *texture, s32 x, s32 y,
+                           r32 sx, r32 sy, r32 rotation);
 void texture_destroy(texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
 void texture_bind(const texture_t *tex);
@@ -2658,26 +2660,13 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 	}
 }
 
-static
-void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
-                     r32 sx, r32 sy, r32 rotation, color_t color)
+m3f texture_get_transform(const texture_t *texture, s32 x, s32 y,
+                          r32 sx, r32 sy, r32 rotation)
 {
-	static const v2f corners[] = {
-		{ 0.f, 0.f },
-		{ 0.f, 1.f },
-		{ 1.f, 1.f },
-		{ 1.f, 0.f }
-	};
 	const v2f scale = {
-		texture->width * sx,
-		texture->height * sy 
+		((r32)texture->width) * sx,
+		((r32)texture->height) * sy 
 	};
-	v2f points[4];
-
-	box2f mask, bbox;
-
-	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
-	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
 	m3f transform = m3f_init_translation((v2f){ x, y });
 
@@ -2693,7 +2682,27 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		                       m3f_init_translation((v2f){-scale.x / 2.f, -scale.y / 2.f}));
 	}
 
-	transform = m3f_mul_m3(transform, m3f_init_scale(scale));
+	return m3f_mul_m3(transform, m3f_init_scale(scale));
+}
+
+static
+void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
+                     r32 sx, r32 sy, r32 rotation, color_t color)
+{
+	static const v2f corners[] = {
+		{ 0.f, 0.f },
+		{ 0.f, 1.f },
+		{ 1.f, 1.f },
+		{ 1.f, 0.f }
+	};
+	v2f points[4];
+
+	box2f mask, bbox;
+
+	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
+	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
+
+	const m3f transform = texture_get_transform(texture, x, y, sx, sy, rotation);
 
 	for (u32 i = 0; i < countof(points); ++i)
 		points[i] = m3f_mul_v2(transform, corners[i]);
