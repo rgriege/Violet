@@ -240,6 +240,8 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stro
 void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      color_t bl, color_t br, color_t tr, color_t tl);
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke);
+void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
+             color_t fill, color_t stroke);
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
@@ -3218,25 +3220,33 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui->vert_colors[gui->vert_cnt-1] = tl;
 }
 
-#define gui__circ_poly_sz(radius) ((u32)(4 + 2 * radius))
+#define gui__arc_poly_sz(radius, start, end) \
+			(u32)((2.f + radius) * ((end - start) / fPI))
 
-static
-void gui__circ_poly(r32 x, r32 y, r32 r, v2f *v, u32 nmax)
+void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
+             color_t fill, color_t stroke)
 {
-	const u32 n = gui__circ_poly_sz(r);
-	const r32 radians_slice = 2 * fPI / n;
-	assert(n <= nmax);
-	for (u32 i = 0; i < n; ++i) {
-		const r32 radians = i * radians_slice;
-		v[i] = (v2f){ .x=x+r*cos(radians), .y=y+r*sin(radians) };
+	const u32 segments = gui__arc_poly_sz(r, angle_start, angle_end);
+	array_set_sz(gui->vert_buf, segments);
+	const r32 radians_slice = (angle_end - angle_start) / (segments - 1);
+	for (u32 i = 0; i < segments; ++i) {
+		const r32 radians = angle_start + radians_slice * i;
+		gui->vert_buf[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
 	}
+	gui__poly(gui, gui->vert_buf, segments, fill, stroke);
+	array_clear(gui->vert_buf);
 }
 
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
-	array_set_sz(gui->vert_buf, gui__circ_poly_sz(r));
-	gui__circ_poly(x, y, r, A2PN(gui->vert_buf));
-	gui__poly(gui, gui->vert_buf, gui__circ_poly_sz(r), fill, stroke);
+	const u32 segments = gui__arc_poly_sz(r, 0, fPI * 2.f);
+	array_set_sz(gui->vert_buf, segments);
+	const r32 radians_slice = (fPI * 2.f) / segments;
+	for (u32 i = 0; i < segments; ++i) {
+		const r32 radians = radians_slice * i;
+		gui->vert_buf[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
+	}
+	gui__poly(gui, gui->vert_buf, segments, fill, stroke);
 	array_clear(gui->vert_buf);
 }
 
