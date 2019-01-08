@@ -2992,10 +2992,16 @@ b32 mouse_released_bg(const gui_t *gui, u32 mask)
 }
 
 static
+b32 gui__inside_popup(const gui_t *gui)
+{
+	return gui->popup.id != 0 && gui->scissor_idx == 0;
+}
+
+static
 b32 gui__mouse_covered(const gui_t *gui)
 {
 	return gui->mouse_covered_by_panel
-	    && (!gui->mouse_covered_by_popup || gui->popup.id == 0);
+	    || (gui->mouse_covered_by_popup && !gui__inside_popup(gui));
 }
 
 b32 mouse_over_bg(const gui_t *gui)
@@ -4886,7 +4892,7 @@ u64 gui__widget_id(const gui_t *gui, u32 base_id, s32 x, s32 y)
 
 u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 {
-	if (gui->popup.id != 0 && gui->scissor_idx == 0)
+	if (gui__inside_popup(gui))
 		return gui__widget_id(gui, GUI__POPUP_PANEL_ID, x, y);
 	else if (gui->panel)
 		return gui__widget_id(gui, gui->panel->id, x, y);
