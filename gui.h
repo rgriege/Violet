@@ -3132,33 +3132,16 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 #define gui__arc_poly_sz(radius, start, end) \
 			(u32)((2.f + radius) * ((end - start) / fPI))
 
-static
-void gui__arc_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
-                    v2f *v, u32 segments)
-{
-	const r32 radians_slice = (angle_end - angle_start) / (segments - 1);
-	for (u32 i = 0; i < segments; ++i) {
-		const r32 radians = angle_start + radians_slice * i;
-		v[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
-	}
-}
-
-static
-void gui__circ_poly(r32 x, r32 y, r32 r, v2f *v, u32 segments)
-{
-	const r32 radians_slice = (fPI * 2.f) / segments;
-	for (u32 i = 0; i < segments; ++i) {
-		const r32 radians = radians_slice * i;
-		v[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
-	}
-}
-
 void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke)
 {
 	const u32 segments = gui__arc_poly_sz(r, angle_start, angle_end);
 	array_set_sz(gui->vert_buf, segments);
-	gui__arc_poly(x, y, r, angle_start, angle_end, A2PN(gui->vert_buf));
+	const r32 radians_slice = (angle_end - angle_start) / (segments - 1);
+	for (u32 i = 0; i < segments; ++i) {
+		const r32 radians = angle_start + radians_slice * i;
+		gui->vert_buf[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
+	}
 	gui__poly(gui, gui->vert_buf, segments, fill, stroke);
 	array_clear(gui->vert_buf);
 }
@@ -3167,7 +3150,11 @@ void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
 	const u32 segments = gui__arc_poly_sz(r, 0, fPI * 2.f);
 	array_set_sz(gui->vert_buf, segments);
-	gui__circ_poly(x, y, r, A2PN(gui->vert_buf));
+	const r32 radians_slice = (fPI * 2.f) / segments;
+	for (u32 i = 0; i < segments; ++i) {
+		const r32 radians = radians_slice * i;
+		gui->vert_buf[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
+	}
 	gui__poly(gui, gui->vert_buf, segments, fill, stroke);
 	array_clear(gui->vert_buf);
 }
