@@ -221,4 +221,5 @@ void str_catw(str_t *dst, const char *src)
 	str_cat2(dst, " ", src);
 }
 
+#undef STRING_IMPLEMENTATION
 #endif

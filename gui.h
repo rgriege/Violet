@@ -4826,17 +4826,15 @@ void gui_menu_end(gui_t *gui)
 	gui__popup_end(gui);
 }
 
-static
-void gui__color_picker_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                          s32 offset_x, s32 offset_y, void *udata) {}
-
 b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 {
+	const colorf_t c_orig = *c;
 	colorf_t cf_hue = { .a = 1.f };
 	color_t c_hue;
 	r32 hue, sat, val;
 	b32 changed = false;
 	v2i cursor;
+	s32 nx = x, ny = y;
 
 	color_to_hsv(*c, &hue, &sat, &val);
 	hsv_to_color(hue, 1.f, 1.f, &cf_hue);
@@ -4846,11 +4844,24 @@ b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 	gui_rect_mcolor(gui, x, y, w, h, g_black, g_black, g_nocolor, g_nocolor);
 
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
-	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__color_picker_cb, NULL)) {
-		sat = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
-		val = clamp(0, (r32)(gui->mouse_pos.y - y) / h, 1.f);
+	if (gui_drag(gui, &nx, &ny, w, h, MB_LEFT)) {
+		const u64 old_id = gui_widget_id(gui,  x,  y);
+		const u64 new_id = gui_widget_id(gui, nx, ny);
+		if (gui__is_most_focused_widget(gui, new_id)) {
+			gui__defocus_widget(gui, new_id);
+			gui__focus_widget(gui, old_id);
+		}
+		if (gui->active_id == new_id)
+			gui->active_id = old_id;
+		if (mouse_down(gui, MB_LEFT)) {
+			sat = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
+			val = clamp(0, (r32)(gui->mouse_pos.y - y) / h, 1.f);
+		} else {
+			sat = clamp(0, sat + (r32)(nx - x) / w, 1.f);
+			val = clamp(0, val + (r32)(ny - y) / h, 1.f);
+		}
 		hsv_to_color(hue, sat, val, c);
-		changed = true;
+		changed = !colorf_equal(*c, c_orig);
 	}
 	gui_style_pop(gui);
 
@@ -4868,10 +4879,12 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 		gi_red, gi_yellow, gi_green, gi_cyan, gi_blue, gi_fuchsia, gi_red,
 	};
 
+	const colorf_t c_orig = *c;
 	const b32 horizontal = (w > h);
 	b32 changed = false;
 	r32 hue, sat, val;
 	s32 cursor;
+	s32 nx = x, ny = y;
 
 	if (horizontal) {
 		for (u32 i = 0; i < countof(rainbow) - 1; ++i) {
@@ -4894,13 +4907,28 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 	color_to_hsv(*c, &hue, &sat, &val);
 
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
-	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__color_picker_cb, NULL)) {
-		if (horizontal)
-			hue = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
-		else
-			hue = 1.f-clamp(0, (r32)(gui->mouse_pos.y - y) / h, 1.f);
+	if (gui_drag(gui, &nx, &ny, w, h, MB_LEFT)) {
+		const u64 old_id = gui_widget_id(gui,  x,  y);
+		const u64 new_id = gui_widget_id(gui, nx, ny);
+		if (gui__is_most_focused_widget(gui, new_id)) {
+			gui__defocus_widget(gui, new_id);
+			gui__focus_widget(gui, old_id);
+		}
+		if (gui->active_id == new_id)
+			gui->active_id = old_id;
+		if (mouse_down(gui, MB_LEFT)) {
+			if (horizontal)
+				hue = clamp(0, (r32)(gui->mouse_pos.x - x) / w, 1.f);
+			else
+				hue = 1.f-clamp(0, (r32)(gui->mouse_pos.y - y) / h, 1.f);
+		} else {
+			if (horizontal)
+				hue = clamp(0, hue + (r32)(nx - x) / w, 1.f);
+			else
+				hue = clamp(0, hue - (r32)(ny - y) / h, 1.f);
+		}
 		hsv_to_color(hue, sat, val, c);
-		changed = true;
+		changed = !colorf_equal(*c, c_orig);
 	}
 	gui_style_pop(gui);
 
@@ -4941,19 +4969,29 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui_style_pop(gui);
 
 	if (gui_widget_focused(gui, id)) {
+		static const r32 cols_major[] = { 0, 80 };
 		static const r32 rows[] = { 0, 2, 0.1f };
 		static const r32 cols[] = { 0, 2, 0.1f };
+		static const r32 cols_npt[] = { 20, 0 };
+		static const r32 rows_npt[] = {
+			20, 5, 20, 5, 20, 10, 20, 5, 20, 5, 20, 10, 20
+		};
 		const s32 gx = px + style->panel.padding;
 		const s32 gy = py + style->panel.padding;
 		const s32 gw = pw - style->panel.padding*2;
 		const s32 gh = ph - style->panel.padding*2;
-		b32 changed = false;
+		const npt_flags_t flags = NPT_CLEAR_ON_FOCUS;
+		const b32 *chars = g_gui_npt_chars_hex;
+		b32 changed = false, changed_npt = false;
+		u8 ch, cs, cv;
 
 		gui__popup_begin(gui, id, px, py, pw, ph);
 		pgui_grid_begin(gui, &gui->grid_popup, gx, gy, gw, gh);
 		/* NOTE(rgriege): shrink required to pass entire rect through scissor */
 		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color,
 		         style->panel.border_color);
+
+		pgui_row_cellsv(gui, 0, cols_major);
 
 		pgui_col_cellsv(gui, 0, rows);
 
@@ -4972,6 +5010,79 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		gui_style_pop(gui);
 		pgui_spacer(gui);
 		pgui_spacer(gui);
+
+		gui_style_push_u32(gui, txt.align, GUI_ALIGN_MIDRIGHT);
+
+		pgui_col_cellsv(gui, 0, rows_npt);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "r");
+		if (pgui_npt_val(gui, imprintf("%u", color.r), flags, chars)) {
+			changed_npt = true;
+			color.r = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "g");
+		if (pgui_npt_val(gui, imprintf("%u", color.g), flags, chars)) {
+			changed_npt = true;
+			color.g = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "b");
+		if (pgui_npt_val(gui, imprintf("%u", color.b), flags, chars)) {
+			changed_npt = true;
+			color.b = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		}
+		pgui_row_empty(gui, 0);
+
+		color_to_hsv8(color, &ch, &cs, &cv);
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "h");
+		if (pgui_npt_val(gui, imprintf("%u", ch), flags, chars)) {
+			changed_npt = true;
+			ch = strtoul(gui_npt_val_buf(gui), NULL, 0);
+			hsv_to_color8(ch, cs, cv, &color);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "s");
+		if (pgui_npt_val(gui, imprintf("%u", cs), flags, chars)) {
+			changed_npt = true;
+			cs = strtoul(gui_npt_val_buf(gui), NULL, 0);
+			hsv_to_color8(ch, cs, cv, &color);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "v");
+		if (pgui_npt_val(gui, imprintf("%u", cv), flags, chars)) {
+			changed_npt = true;
+			cv = strtoul(gui_npt_val_buf(gui), NULL, 0);
+			hsv_to_color8(ch, cs, cv, &color);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "#");
+		if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x", color.r, color.g, color.b), flags, chars)) {
+			const color_t c_orig = color;
+			if (color_from_hex(gui_npt_val_buf(gui), &color))
+				changed_npt = true;
+			else
+				color = c_orig;
+		}
+
+		gui_style_pop(gui);
+
+		if (changed_npt) {
+			*c = color_to_colorf(color);
+			changed = true;
+		}
 
 		pgui_grid_end(gui, &gui->grid_popup);
 		gui__popup_end(gui);

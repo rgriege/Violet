@@ -52,8 +52,9 @@ typedef union
 colorf_t color_to_colorf(color_t c);
 color_t  colorf_to_color(colorf_t cf);
 void     color_to_hex(color_t c, char *hex, u32 n);
-color_t  color_from_hex(const char *hex);
+b32      color_from_hex(const char *hex, color_t *c);
 b32      color_equal(color_t lhs, color_t rhs);
+b32      colorf_equal(colorf_t lhs, colorf_t rhs);
 color_t  color_blend(color_t src, color_t dst);
 
 void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v);
@@ -94,9 +95,8 @@ void color_to_hex(color_t c, char *hex, u32 n)
 	snprintf(hex, n, "#%.2x%.2x%.2x%.2x", c.r, c.g, c.b, c.a);
 }
 
-color_t color_from_hex(const char *hex)
+b32 color_from_hex(const char *hex, color_t *c)
 {
-	color_t c = g_nocolor;
 	u32 val;
 
 	if (*hex == '#')
@@ -106,29 +106,32 @@ color_t color_from_hex(const char *hex)
 	switch (strlen(hex)) {
 	case 6:
 		// no alpha
-		c.r = (val >> 16) & 0xff;
-		c.g = (val >> 8) & 0xff;
-		c.b = val & 0xff;
-		c.a = 255;
-		break;
+		c->r = (val >> 16) & 0xff;
+		c->g = (val >> 8) & 0xff;
+		c->b = val & 0xff;
+		c->a = 255;
+		return true;
 	case 8:
 		// with alpha
-		c.r = (val >> 24) & 0xff;
-		c.g = (val >> 16) & 0xff;
-		c.b = (val >> 8) & 0xff;
-		c.a = val & 0xff;
-		break;
+		c->r = (val >> 24) & 0xff;
+		c->g = (val >> 16) & 0xff;
+		c->b = (val >> 8) & 0xff;
+		c->a = val & 0xff;
+		return true;
 	default:
-		log_error("invalid color string '%s'", hex);
-		break;
+		*c = g_nocolor;
+		return false;
 	}
-
-	return c;
 }
 
 b32 color_equal(color_t lhs, color_t rhs)
 {
 	return memcmp(&lhs, &rhs, sizeof(color_t)) == 0;
+}
+
+b32 colorf_equal(colorf_t lhs, colorf_t rhs)
+{
+	return memcmp(&lhs, &rhs, sizeof(colorf_t)) == 0;
 }
 
 color_t color_blend(color_t src, color_t dst)
