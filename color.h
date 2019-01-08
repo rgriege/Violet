@@ -241,7 +241,7 @@ void hsv_to_color8(u8 h, u8 s, u8 v, color_t *c)
 	const r32 hf = (r32)h/255.f;
 	const r32 sf = (r32)s/255.f;
 	const r32 vf = (r32)v/255.f;
-	colorf_t cf;
+	colorf_t cf = { .a=(r32)c->a/255.f };
 	hsv_to_color(hf, sf, vf, &cf);
 	*c = colorf_to_color(cf);
 }
