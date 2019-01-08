@@ -290,6 +290,11 @@ u32  gui_verts_cnt(const gui_t *gui);
 
 /* Widgets */
 
+/* Limit for input boxes & dropdowns */
+#ifndef GUI_TXT_MAX_LENGTH
+#define GUI_TXT_MAX_LENGTH 128
+#endif
+
 typedef enum npt_flags_t
 {
 	NPT_PASSWORD            = 1 << 0,
@@ -308,10 +313,14 @@ const b32 g_gui_npt_chars_print[128];
 const b32 g_gui_npt_chars_numeric[128];
 const b32 g_gui_npt_chars_hex[128];
 
-b32  gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-             const char *hint, npt_flags_t flags);
-b32  gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                   const char *hint, npt_flags_t flags, const b32 chars[128]);
+const char *gui_npt_val_buf(const gui_t *gui);
+
+b32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+                 const char *hint, npt_flags_t flags);
+b32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+                    const char *hint, npt_flags_t flags, const b32 chars[128]);
+b32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+                 npt_flags_t flags, const b32 chars[128]);
 s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                  img_scale_t scale);
@@ -437,9 +446,12 @@ s32  pgui_btn_txt(gui_t *gui, const char *lbl);
 s32  pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale);
 s32  pgui_btn_pen(gui_t *gui, gui_pen_t pen);
 b32  pgui_chk(gui_t *gui, const char *lbl, b32 *val);
-b32  pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, npt_flags_t flags);
-b32  pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
-                    npt_flags_t flags, const b32 chars[128]);
+b32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
+                  npt_flags_t flags);
+b32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
+                     npt_flags_t flags, const b32 chars[128]);
+b32  pgui_npt_val(gui_t *gui, const char *txt,
+                  npt_flags_t flags, const b32 chars[128]);
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 void pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
@@ -729,6 +741,7 @@ void gui_style_pop(gui_t *gui);
 #include "violet/fmath.h"
 #include "violet/graphics.h"
 #include "violet/imath.h"
+#include "violet/string.h"
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #ifdef _M_X64
@@ -1832,7 +1845,8 @@ typedef struct gui
 	u32 npt_cursor_pos;
 	b32 npt_performed_action;
 	v2i drag_offset;
-	char *pw_buf;
+	char pw_buf[GUI_TXT_MAX_LENGTH];
+	char npt_val_buf[GUI_TXT_MAX_LENGTH];
 	v2f *vert_buf;
 	struct
 	{
@@ -1843,7 +1857,7 @@ typedef struct gui
 		u32 item_idx;
 		b32 triggered_by_key;
 		s32 render_state;
-		char selected_item_txt[128];
+		char selected_item_txt[GUI_TXT_MAX_LENGTH];
 	} dropdown;
 	struct
 	{
@@ -2080,7 +2094,8 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->npt_cursor_pos = 0;
 	gui->npt_performed_action = false;
 	gui->drag_offset = g_v2i_zero;
-	gui->pw_buf = array_create();
+	gui->pw_buf[0] = 0;
+	gui->npt_val_buf[0] = 0;
 	gui->vert_buf = array_create();
 	gui->dropdown.id = 0;
 	gui->popup.id = 0;
@@ -2135,7 +2150,6 @@ gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 void gui_destroy(gui_t *gui)
 {
-	array_destroy(gui->pw_buf);
 	array_destroy(gui->vert_buf);
 	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
 		SDL_FreeCursor(gui->cursors[i]);
@@ -3871,18 +3885,18 @@ void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
 	}
 }
 
-b32 gui_npt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-            const char *hint, npt_flags_t flags)
+b32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+                const char *hint, npt_flags_t flags)
 {
-	return gui_npt_chars(gui, x, y, w, h, txt, n, hint, flags,
-	                     g_gui_npt_chars_print);
+	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags,
+	                      g_gui_npt_chars_print);
 }
 
 static
 btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse, mouse_button_t mb);
 
-b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                  const char *hint, npt_flags_t flags, const b32 chars[128])
+b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+                   const char *hint, npt_flags_t flags, const b32 chars[128])
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_focused = (gui->focus_id == id);
@@ -4002,8 +4016,9 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	               ? txt : "";
 
 	if (flags & NPT_PASSWORD) {
-		const u32 sz = (u32)strlen(txt_to_display);
-		array_reserve(gui->pw_buf, sz+1);
+		const u32 sz_ = (u32)strlen(txt_to_display);
+		const u32 sz = min(sz_, GUI_TXT_MAX_LENGTH-1);
+		assert(sz < GUI_TXT_MAX_LENGTH);
 		for (u32 i = 0; i < sz; ++i)
 			gui->pw_buf[i] = '*';
 		gui->pw_buf[sz] = '\0';
@@ -4026,6 +4041,32 @@ b32 gui_npt_chars(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	}
 	gui->prev_widget_id = id;
 	return complete;
+}
+
+const char *gui_npt_val_buf(const gui_t *gui)
+{
+	return gui->npt_val_buf;
+}
+
+b32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+                npt_flags_t flags, const b32 chars[128])
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	if (gui_widget_focused(gui, id)) {
+		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt_val_buf),
+		                      "", flags, chars);
+	} else if (gui_any_widget_has_focus(gui)) {
+		char buf[GUI_TXT_MAX_LENGTH];
+		strncpy(buf, txt, countof(buf));
+		gui_npt_txt_ex(gui, x, y, w, h, B2PC(buf), "", flags, chars);
+		if (gui_widget_focused(gui, id))
+			strncpy(gui->npt_val_buf, txt, countof(gui->npt_val_buf));
+		return false;
+	} else {
+		strncpy(gui->npt_val_buf, txt, countof(gui->npt_val_buf));
+		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt_val_buf),
+		                      "", flags, chars);
+	}
 }
 
 static
@@ -5328,19 +5369,26 @@ b32 pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 	return gui_chk(gui, x, y, w, h, lbl, val);
 }
 
-b32 pgui_npt(gui_t *gui, char *lbl, u32 n, const char *hint, npt_flags_t flags)
+b32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
+                 npt_flags_t flags)
 {
-	return pgui_npt_chars(gui, lbl, n, hint, flags, g_gui_npt_chars_print);
+	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, g_gui_npt_chars_print);
 }
 
-b32 pgui_npt_chars(gui_t *gui, char *lbl, u32 n, const char *hint,
-                   npt_flags_t flags, const b32 chars[128])
+b32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
+                    npt_flags_t flags, const b32 chars[128])
 {
-	b32 result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	result = gui_npt_chars(gui, x, y, w, h, lbl, n, hint, flags, chars);
-	return result;
+	return gui_npt_txt_ex(gui, x, y, w, h, lbl, n, hint, flags, chars);
+}
+
+b32 pgui_npt_val(gui_t *gui, const char *txt,
+                 npt_flags_t flags, const b32 chars[128])
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_npt_val(gui, x, y, w, h, txt, flags, chars);
 }
 
 b32 pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
@@ -5376,20 +5424,16 @@ void pgui_dropdown_end(gui_t *gui)
 
 b32 pgui_slider_x(gui_t *gui, r32 *val)
 {
-	b32 ret;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	ret = gui_slider_x(gui, x, y, w, h, val);
-	return ret;
+	return gui_slider_x(gui, x, y, w, h, val);
 }
 
 b32 pgui_slider_y(gui_t *gui, r32 *val)
 {
-	b32 ret;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	ret = gui_slider_y(gui, x, y, w, h, val);
-	return ret;
+	return gui_slider_y(gui, x, y, w, h, val);
 }
 
 b32 pgui_range_x(gui_t *gui, r32 *val, r32 min, r32 max)
