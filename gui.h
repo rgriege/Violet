@@ -2679,7 +2679,7 @@ b32 gui__box_half_visible(const gui_t *gui, box2i box)
 }
 
 static
-void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
+void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke, b32 closed)
 {
 	box2f mask, bbox;
 
@@ -2714,7 +2714,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 		assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
 
 		if (dash_len != 0.f) {
-			const u32 vn = n > 2 ? n + 1 : n;
+			const u32 vn = closed ? n + 1 : n;
 			r32 dist = 0.f;
 			for (u32 i = 0; i < vn; ++i) {
 				gui->verts[gui->vert_cnt+i] = v[i%n];
@@ -2739,7 +2739,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 			draw_call->tex = gui->texture_white.handle;
 			draw_call->idx = gui->vert_cnt;
 			draw_call->cnt = n;
-			draw_call->type = DRAW_LINE_LOOP;
+			draw_call->type = closed ? DRAW_LINE_LOOP : DRAW_LINE_STRIP;
 			draw_call->blend = TEXTURE_BLEND_NRM;
 			++gui->draw_call_cnt;
 			gui->vert_cnt += n;
@@ -3170,7 +3170,7 @@ void gui__line_wide(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1,
 	poly[2] = v2f_add(v2f_add(poly[2], dir), perp);
 	poly[3] = v2f_sub(v2f_add(poly[3], dir), perp);
 
-	gui__poly(gui, poly, 4, c, g_nocolor);
+	gui__poly(gui, poly, 4, c, g_nocolor, false);
 }
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
@@ -3182,7 +3182,7 @@ void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
 			{ x0 + 0.5f, y0 + 0.5f },
 			{ x1 + 0.5f, y1 + 0.5f }
 		};
-		gui__poly(gui, poly, 2, g_nocolor, c);
+		gui__poly(gui, poly, 2, g_nocolor, c, false);
 	} else {
 		gui__line_wide(gui, x0, y0, x1, y1, w, c);
 	}
@@ -3193,7 +3193,7 @@ void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c)
 	assert(w >= 1);
 	if (fabsf(w - 1) < 0.01f) {
 		const v2f poly[2] = { { x0, y0 }, { x1, y1 } };
-		gui__poly(gui, poly, 2, g_nocolor, c);
+		gui__poly(gui, poly, 2, g_nocolor, c, false);
 	} else {
 		gui__line_wide(gui, x0, y0, x1, y1, w, c);
 	}
@@ -3207,7 +3207,7 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stro
 		{ x + w, y + h },
 		{ x,     y + h },
 	};
-	gui__poly(gui, poly, 4, fill, stroke);
+	gui__poly(gui, poly, 4, fill, stroke, true);
 }
 
 void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -3223,30 +3223,32 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 #define gui__arc_poly_sz(radius, start, end) \
 			(u32)((2.f + radius) * ((end - start) / fPI))
 
+static
+void gui__arc_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
+                    v2f *v, u32 segments, b32 closed)
+{
+	const r32 radians_slice = (angle_end - angle_start) / (segments - !closed);
+	for (u32 i = 0; i < segments; ++i) {
+		const r32 radians = angle_start + radians_slice * i;
+		v[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
+	}
+}
+
+
 void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke)
 {
-	const u32 segments = gui__arc_poly_sz(r, angle_start, angle_end);
-	array_set_sz(gui->vert_buf, segments);
-	const r32 radians_slice = (angle_end - angle_start) / (segments - 1);
-	for (u32 i = 0; i < segments; ++i) {
-		const r32 radians = angle_start + radians_slice * i;
-		gui->vert_buf[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
-	}
-	gui__poly(gui, gui->vert_buf, segments, fill, stroke);
+	array_set_sz(gui->vert_buf, gui__arc_poly_sz(r, angle_start, angle_end));
+	gui__arc_poly(x, y, r, angle_start, angle_end, A2PN(gui->vert_buf), false);
+	gui__poly(gui, A2PN(gui->vert_buf), fill, stroke, false);
 	array_clear(gui->vert_buf);
 }
 
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
-	const u32 segments = gui__arc_poly_sz(r, 0, fPI * 2.f);
-	array_set_sz(gui->vert_buf, segments);
-	const r32 radians_slice = (fPI * 2.f) / segments;
-	for (u32 i = 0; i < segments; ++i) {
-		const r32 radians = radians_slice * i;
-		gui->vert_buf[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
-	}
-	gui__poly(gui, gui->vert_buf, segments, fill, stroke);
+	array_set_sz(gui->vert_buf, gui__arc_poly_sz(r, 0, fPI * 2.f));
+	gui__arc_poly(x, y, r, 0, fPI * 2.f, A2PN(gui->vert_buf), true);
+	gui__poly(gui, A2PN(gui->vert_buf), fill, stroke, true);
 	array_clear(gui->vert_buf);
 }
 
@@ -3264,14 +3266,14 @@ void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
 	if (n == 3 || fill.a == 0 || polyf_is_convex(v, n)) {
-		gui__poly(gui, v, n, fill, stroke);
+		gui__poly(gui, v, n, fill, stroke, true);
 	} else {
 		if (gui_triangulate(v, n, &gui->vert_buf)) {
 			gui__triangles(gui, A2PN(gui->vert_buf), fill);
 			array_clear(gui->vert_buf);
 		}
 		if (stroke.a != 0)
-			gui__poly(gui, v, n, g_nocolor, stroke);
+			gui__poly(gui, v, n, g_nocolor, stroke, true);
 	}
 }
 
