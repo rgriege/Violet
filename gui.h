@@ -305,7 +305,7 @@ typedef enum npt_flags_t
 {
 	NPT_PASSWORD            = 1 << 0,
 	NPT_CLEAR_ON_FOCUS      = 1 << 1,
-	NPT_COMPLETE_ON_DEFOCUS = 1 << 2,
+	NPT_COMPLETE_ON_ESCAPE  = 1 << 2,
 } npt_flags_t;
 
 typedef enum btn_val_t
@@ -1850,11 +1850,14 @@ typedef struct gui
 	u64 prev_widget_id;
 
 	/* specific widget state */
-	u32 npt_cursor_pos;
-	b32 npt_performed_action;
+	struct {
+		u32 cursor_pos;
+		b32 performed_action;
+		u32 initial_txt_hash;
+		char val_buf[GUI_TXT_MAX_LENGTH];
+		char pw_buf[GUI_TXT_MAX_LENGTH];
+	} npt;
 	v2i drag_offset;
-	char pw_buf[GUI_TXT_MAX_LENGTH];
-	char npt_val_buf[GUI_TXT_MAX_LENGTH];
 	v2f *vert_buf;
 	struct
 	{
@@ -2099,11 +2102,12 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->prev_widget_id = 0;
 
 
-	gui->npt_cursor_pos = 0;
-	gui->npt_performed_action = false;
+	gui->npt.cursor_pos = 0;
+	gui->npt.performed_action = false;
+	gui->npt.initial_txt_hash = 0;
+	gui->npt.pw_buf[0] = 0;
+	gui->npt.val_buf[0] = 0;
 	gui->drag_offset = g_v2i_zero;
-	gui->pw_buf[0] = 0;
-	gui->npt_val_buf[0] = 0;
 	gui->vert_buf = array_create();
 	gui->dropdown.id = 0;
 	gui->popup.id = 0;
@@ -3837,15 +3841,15 @@ static
 void gui__npt_move_cursor_vertical(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                                    const char *txt, s32 diff, u32 fallback)
 {
-	const u32 orig_pos = gui->npt_cursor_pos;
+	const u32 orig_pos = gui->npt.cursor_pos;
 	const gui_text_style_t *style = &gui->style.npt.active.text;
 	v2i cursor = { .x = x, .y = y };
 
 	gui__txt_char_pos(gui, &cursor.x, &cursor.y, w, h, txt, orig_pos, style);
 	cursor.y += diff;
-	gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt, cursor, style);
-	if (gui->npt_cursor_pos == orig_pos && orig_pos != fallback)
-		gui->npt_cursor_pos = fallback;
+	gui->npt.cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt, cursor, style);
+	if (gui->npt.cursor_pos == orig_pos && orig_pos != fallback)
+		gui->npt.cursor_pos = fallback;
 }
 
 static
@@ -3967,12 +3971,12 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 contains_mouse)
 static
 void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
 {
-	if (!gui->npt_performed_action && (flags & NPT_CLEAR_ON_FOCUS)) {
+	if (!gui->npt.performed_action && (flags & NPT_CLEAR_ON_FOCUS)) {
 		txt[0] = '\0';
 		*len = 0;
-		gui->npt_cursor_pos = 0;
-		gui->npt_performed_action = true;
+		gui->npt.cursor_pos = 0;
 	}
+	gui->npt.performed_action = true;
 }
 
 b32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
@@ -4004,19 +4008,19 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 
 	if (gui->active_id == id && contains_mouse) {
 		const gui_text_style_t *txt_style = &style->active.text;
-		gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
+		gui->npt.cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
 		                                         gui->mouse_pos, txt_style);
 	}
 	if (gui_widget_focused(gui, id)) {
 		u32 len = (u32)strlen(txt);
-		gui->npt_cursor_pos = clamp(0, gui->npt_cursor_pos, len);
+		gui->npt.cursor_pos = clamp(0, gui->npt.cursor_pos, len);
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
 			gui__npt_prep_action(gui, flags, txt, &len);
 			for (size_t k = 0, kn = strlen(gui->text_npt); k < kn; ++k) {
 				if (gui->text_npt[k] > 0 && len < n - 1 && chars[(u8)gui->text_npt[k]]) {
-					for (u32 i = len + 1; i > gui->npt_cursor_pos; --i)
+					for (u32 i = len + 1; i > gui->npt.cursor_pos; --i)
 						txt[i] = txt[i-1];
-					txt[gui->npt_cursor_pos++] = gui->text_npt[k];
+					txt[gui->npt.cursor_pos++] = gui->text_npt[k];
 					++len;
 				}
 			}
@@ -4024,14 +4028,14 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			const u32 key_idx = gui->key_repeat.val;
 			if (key_idx == KB_BACKSPACE) {
 				gui__npt_prep_action(gui, flags, txt, &len);
-				if (gui->npt_cursor_pos > 0) {
-					for (u32 i = gui->npt_cursor_pos - 1; i < len; ++i)
+				if (gui->npt.cursor_pos > 0) {
+					for (u32 i = gui->npt.cursor_pos - 1; i < len; ++i)
 						txt[i] = txt[i+1];
-					--gui->npt_cursor_pos;
+					--gui->npt.cursor_pos;
 				}
 			} else if (key_idx == KB_DELETE) {
 				gui__npt_prep_action(gui, flags, txt, &len);
-				for (u32 i = gui->npt_cursor_pos; i < len; ++i)
+				for (u32 i = gui->npt.cursor_pos; i < len; ++i)
 					txt[i] = txt[i+1];
 			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
 				gui__npt_prep_action(gui, flags, txt, &len);
@@ -4044,11 +4048,11 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				if (   SDL_HasClipboardText()
 				    && (clipboard = SDL_GetClipboardText())
 				    && (cnt = min(n - 1 - len, (u32)strlen(clipboard))) > 0) {
-					memmove(&txt[gui->npt_cursor_pos + cnt],
-					        &txt[gui->npt_cursor_pos],
-					        len - gui->npt_cursor_pos + 1);
-					memcpy(&txt[gui->npt_cursor_pos], clipboard, cnt);
-					gui->npt_cursor_pos += cnt;
+					memmove(&txt[gui->npt.cursor_pos + cnt],
+					        &txt[gui->npt.cursor_pos],
+					        len - gui->npt.cursor_pos + 1);
+					memcpy(&txt[gui->npt.cursor_pos], clipboard, cnt);
+					gui->npt.cursor_pos += cnt;
 					SDL_free(clipboard);
 				}
 			} else if (gui__key_up(gui)) {
@@ -4062,15 +4066,15 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				const s32 dy = -font->newline_dist;
 				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
 			} else if (gui__key_left(gui)) {
-				if (gui->npt_cursor_pos > 0)
-					--gui->npt_cursor_pos;
+				if (gui->npt.cursor_pos > 0)
+					--gui->npt.cursor_pos;
 			} else if (gui__key_right(gui)) {
-				if (gui->npt_cursor_pos < len)
-					++gui->npt_cursor_pos;
+				if (gui->npt.cursor_pos < len)
+					++gui->npt.cursor_pos;
 			} else if (gui__key_home(gui)) {
-				gui->npt_cursor_pos = 0;
+				gui->npt.cursor_pos = 0;
 			} else if (gui__key_end(gui)) {
-				gui->npt_cursor_pos = len;
+				gui->npt.cursor_pos = len;
 			}
 		}
 	}
@@ -4078,19 +4082,23 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (was_focused != gui_widget_focused(gui, id)) {
 		if (was_focused) {
 			SDL_StopTextInput();
-			if (   (flags & NPT_COMPLETE_ON_DEFOCUS)
-			    || (!gui->lock && gui__key_triggered(gui, KB_TAB)))
+			if (   !complete
+			    && gui->npt.initial_txt_hash != hashn(txt, n)
+			    && !gui->lock
+			    && (   (flags & NPT_COMPLETE_ON_ESCAPE)
+			        || !gui__key_triggered(gui, KB_ESCAPE)))
 				complete = true;
 		} else {
 			SDL_StartTextInput();
 			if (flags & NPT_CLEAR_ON_FOCUS) {
-				gui->npt_cursor_pos = 0;
+				gui->npt.cursor_pos = 0;
 			} else {
 				const gui_text_style_t *txt_style = &style->active.text;
-				gui->npt_cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
+				gui->npt.cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
 				                                         gui->mouse_pos, txt_style);
 			}
-			gui->npt_performed_action = false;
+			gui->npt.performed_action = false;
+			gui->npt.initial_txt_hash = hashn(txt, n);
 		}
 	}
 
@@ -4099,7 +4107,7 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	elem_style = gui__element_style(gui, render_state, style);
 	style->pen(gui, x, y, w, h, &elem_style);
 	txt_to_display = !gui_widget_focused(gui, id)
-	              || gui->npt_performed_action
+	              || gui->npt.performed_action
 	              || !(flags & NPT_CLEAR_ON_FOCUS)
 	               ? txt : "";
 
@@ -4108,10 +4116,10 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		const u32 sz = min(sz_, GUI_TXT_MAX_LENGTH-1);
 		assert(sz < GUI_TXT_MAX_LENGTH);
 		for (u32 i = 0; i < sz; ++i)
-			gui->pw_buf[i] = '*';
-		gui->pw_buf[sz] = '\0';
-		gui_txt_styled(gui, x, y, w, h, gui->pw_buf, &elem_style.text);
-		displayed_txt = gui->pw_buf;
+			gui->npt.pw_buf[i] = '*';
+		gui->npt.pw_buf[sz] = '\0';
+		gui_txt_styled(gui, x, y, w, h, gui->npt.pw_buf, &elem_style.text);
+		displayed_txt = gui->npt.pw_buf;
 	} else {
 		gui_txt_styled(gui, x, y, w, h, txt_to_display, &elem_style.text);
 		displayed_txt = txt_to_display;
@@ -4121,7 +4129,7 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			const color_t color = elem_style.text.color;
 			const font_t *font = gui__get_font(gui, elem_style.text.size);
 			gui__txt_char_pos(gui, &x, &y, w, h, displayed_txt,
-			                  gui->npt_cursor_pos, &elem_style.text);
+			                  gui->npt.cursor_pos, &elem_style.text);
 			gui_line(gui, x + 1, y + font->descent, x + 1, y + font->ascent, 1, color);
 		}
 	} else if (txt[0] == 0 && hint) {
@@ -4133,7 +4141,7 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 
 const char *gui_npt_val_buf(const gui_t *gui)
 {
-	return gui->npt_val_buf;
+	return gui->npt.val_buf;
 }
 
 b32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
@@ -4141,18 +4149,18 @@ b32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	if (gui_widget_focused(gui, id)) {
-		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt_val_buf),
+		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt.val_buf),
 		                      "", flags, chars);
 	} else if (gui_any_widget_has_focus(gui)) {
 		char buf[GUI_TXT_MAX_LENGTH];
 		strncpy(buf, txt, countof(buf));
 		gui_npt_txt_ex(gui, x, y, w, h, B2PC(buf), "", flags, chars);
 		if (gui_widget_focused(gui, id))
-			strncpy(gui->npt_val_buf, txt, countof(gui->npt_val_buf));
+			strncpy(gui->npt.val_buf, txt, countof(gui->npt.val_buf));
 		return false;
 	} else {
-		strncpy(gui->npt_val_buf, txt, countof(gui->npt_val_buf));
-		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt_val_buf),
+		strncpy(gui->npt.val_buf, txt, countof(gui->npt.val_buf));
+		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt.val_buf),
 		                      "", flags, chars);
 	}
 }
