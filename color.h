@@ -56,6 +56,7 @@ b32      color_from_hex(const char *hex, color_t *c);
 b32      color_equal(color_t lhs, color_t rhs);
 b32      colorf_equal(colorf_t lhs, colorf_t rhs);
 color_t  color_blend(color_t src, color_t dst);
+colorf_t colorf_mix(colorf_t lhs, colorf_t rhs, r32 t);
 
 void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v);
 void hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b);
@@ -142,6 +143,23 @@ color_t color_blend(color_t src, color_t dst)
 		.b = src.b / 2 + dst.b / 2,
 		.a = src.a / 2 + dst.a / 2,
 	};
+}
+
+colorf_t colorf_mix(colorf_t lhs, colorf_t rhs, r32 t)
+{
+	if (t == 1.f)
+		return lhs;
+	else if (t == 0.f)
+		return rhs;
+	else {
+		const r32 ti = 1.f - t;
+		return (colorf_t) {
+			.r = lhs.r * t + rhs.r * ti,
+			.g = lhs.g * t + rhs.g * ti,
+			.b = lhs.b * t + rhs.b * ti,
+			.a = lhs.a * t + rhs.a * ti,
+		};
+	}
 }
 
 void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v)
