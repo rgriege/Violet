@@ -309,9 +309,11 @@ typedef enum npt_flags_t
 	NPT_COMPLETE_ON_TAB       = 1 << 3,
 	NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
 	NPT_COMPLETE_ON_ESCAPE    = 1 << 5,
+	NPT_COMPLETE_ON_UNCHANGED = 1 << 6,
 	NPT_COMPLETE_ON_DEFOCUS   = NPT_COMPLETE_ON_TAB
 	                          | NPT_COMPLETE_ON_CLICK_OUT
-	                          | NPT_COMPLETE_ON_ESCAPE,
+	                          | NPT_COMPLETE_ON_ESCAPE
+	                          | NPT_COMPLETE_ON_UNCHANGED,
 } npt_flags_t;
 
 typedef enum btn_val_t
@@ -4090,7 +4092,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (was_focused != gui_widget_focused(gui, id)) {
 		if (was_focused) {
 			SDL_StopTextInput();
-			if (complete || gui->npt.initial_txt_hash == hashn(txt, n) || gui->lock) {
+			if (complete || gui->lock) {
 			} else if (   (flags & NPT_COMPLETE_ON_TAB)
 			           && gui__key_triggered(gui, KB_TAB)) {
 				complete = NPT_COMPLETE_ON_TAB;
@@ -4101,6 +4103,9 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			} else if (   (flags & NPT_COMPLETE_ON_ESCAPE)
 			           && gui__key_triggered(gui, KB_ESCAPE)) {
 				complete = NPT_COMPLETE_ON_ESCAPE;
+			} else if (   (flags & NPT_COMPLETE_ON_UNCHANGED)
+			           || gui->npt.initial_txt_hash != hashn(txt, n)) {
+				complete = NPT_COMPLETE_ON_UNCHANGED;
 			}
 		} else {
 			SDL_StartTextInput();
