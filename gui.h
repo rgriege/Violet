@@ -303,9 +303,15 @@ u32  gui_verts_cnt(const gui_t *gui);
 
 typedef enum npt_flags_t
 {
-	NPT_PASSWORD            = 1 << 0,
-	NPT_CLEAR_ON_FOCUS      = 1 << 1,
-	NPT_COMPLETE_ON_ESCAPE  = 1 << 2,
+	NPT_PASSWORD              = 1 << 0,
+	NPT_CLEAR_ON_FOCUS        = 1 << 1,
+	NPT_COMPLETE_ON_ENTER     = 1 << 2, /* always enabled */
+	NPT_COMPLETE_ON_TAB       = 1 << 3,
+	NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
+	NPT_COMPLETE_ON_ESCAPE    = 1 << 5,
+	NPT_COMPLETE_ON_DEFOCUS   = NPT_COMPLETE_ON_TAB
+	                          | NPT_COMPLETE_ON_CLICK_OUT
+	                          | NPT_COMPLETE_ON_ESCAPE,
 } npt_flags_t;
 
 typedef enum btn_val_t
@@ -321,11 +327,13 @@ const b32 g_gui_npt_chars_hex[128];
 
 const char *gui_npt_val_buf(const gui_t *gui);
 
-b32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+/* returns NPT_COMPLETE_ON_XXX if completed using an enabled completion method
+ * or 0 otherwise */
+s32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                  const char *hint, npt_flags_t flags);
-b32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+s32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                     const char *hint, npt_flags_t flags, const b32 chars[128]);
-b32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                  npt_flags_t flags, const b32 chars[128]);
 s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
@@ -451,11 +459,11 @@ s32  pgui_btn_txt(gui_t *gui, const char *lbl);
 s32  pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale);
 s32  pgui_btn_pen(gui_t *gui, gui_pen_t pen);
 b32  pgui_chk(gui_t *gui, const char *lbl, b32 *val);
-b32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
+s32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
                   npt_flags_t flags);
-b32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
+s32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
                      npt_flags_t flags, const b32 chars[128]);
-b32  pgui_npt_val(gui_t *gui, const char *txt,
+s32  pgui_npt_val(gui_t *gui, const char *txt,
                   npt_flags_t flags, const b32 chars[128]);
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
@@ -3979,7 +3987,7 @@ void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
 	gui->npt.performed_action = true;
 }
 
-b32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+s32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                 const char *hint, npt_flags_t flags)
 {
 	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags,
@@ -3989,14 +3997,14 @@ b32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 static
 btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse, mouse_button_t mb);
 
-b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                    const char *hint, npt_flags_t flags, const b32 chars[128])
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_focused = gui_widget_focused(gui, id);
 	const gui_widget_style_t *style = &gui->style.npt;
 	b32 contains_mouse;
-	b32 complete = false;
+	b32 complete = 0;
 	gui__widget_render_state_t render_state;
 	gui_element_style_t elem_style;
 	const char *displayed_txt;
@@ -4040,7 +4048,7 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
 				gui__npt_prep_action(gui, flags, txt, &len);
 				gui__defocus_widget(gui, id);
-				complete = true;
+				complete = NPT_COMPLETE_ON_ENTER;
 			} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
 				char *clipboard;
 				u32 cnt;
@@ -4082,12 +4090,18 @@ b32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (was_focused != gui_widget_focused(gui, id)) {
 		if (was_focused) {
 			SDL_StopTextInput();
-			if (   !complete
-			    && gui->npt.initial_txt_hash != hashn(txt, n)
-			    && !gui->lock
-			    && (   (flags & NPT_COMPLETE_ON_ESCAPE)
-			        || !gui__key_triggered(gui, KB_ESCAPE)))
-				complete = true;
+			if (complete || gui->npt.initial_txt_hash == hashn(txt, n) || gui->lock) {
+			} else if (   (flags & NPT_COMPLETE_ON_TAB)
+			           && gui__key_triggered(gui, KB_TAB)) {
+				complete = NPT_COMPLETE_ON_TAB;
+			} else if (   (flags & NPT_COMPLETE_ON_CLICK_OUT)
+			           && mouse_pressed(gui, ~0)
+			           && !contains_mouse) {
+				complete = NPT_COMPLETE_ON_CLICK_OUT;
+			} else if (   (flags & NPT_COMPLETE_ON_ESCAPE)
+			           && gui__key_triggered(gui, KB_ESCAPE)) {
+				complete = NPT_COMPLETE_ON_ESCAPE;
+			}
 		} else {
 			SDL_StartTextInput();
 			if (flags & NPT_CLEAR_ON_FOCUS) {
@@ -4144,7 +4158,7 @@ const char *gui_npt_val_buf(const gui_t *gui)
 	return gui->npt.val_buf;
 }
 
-b32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
                 npt_flags_t flags, const b32 chars[128])
 {
 	const u64 id = gui_widget_id(gui, x, y);
@@ -4157,7 +4171,7 @@ b32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
 		gui_npt_txt_ex(gui, x, y, w, h, B2PC(buf), "", flags, chars);
 		if (gui_widget_focused(gui, id))
 			strncpy(gui->npt.val_buf, txt, countof(gui->npt.val_buf));
-		return false;
+		return 0;
 	} else {
 		strncpy(gui->npt.val_buf, txt, countof(gui->npt.val_buf));
 		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt.val_buf),
@@ -5000,7 +5014,9 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		const s32 gy = py + style->panel.padding;
 		const s32 gw = pw - style->panel.padding*2;
 		const s32 gh = ph - style->panel.padding*2;
-		const npt_flags_t flags = NPT_CLEAR_ON_FOCUS;
+		const npt_flags_t flags = NPT_CLEAR_ON_FOCUS
+		                        | NPT_COMPLETE_ON_TAB
+		                        | NPT_COMPLETE_ON_CLICK_OUT;
 		const b32 *chars = g_gui_npt_chars_hex;
 		b32 changed = false, changed_npt = false;
 		u8 ch, cs, cv;
@@ -5580,13 +5596,13 @@ b32 pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 	return gui_chk(gui, x, y, w, h, lbl, val);
 }
 
-b32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
+s32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
                  npt_flags_t flags)
 {
 	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, g_gui_npt_chars_print);
 }
 
-b32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
+s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
                     npt_flags_t flags, const b32 chars[128])
 {
 	s32 x, y, w, h;
@@ -5594,7 +5610,7 @@ b32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
 	return gui_npt_txt_ex(gui, x, y, w, h, lbl, n, hint, flags, chars);
 }
 
-b32 pgui_npt_val(gui_t *gui, const char *txt,
+s32 pgui_npt_val(gui_t *gui, const char *txt,
                  npt_flags_t flags, const b32 chars[128])
 {
 	s32 x, y, w, h;
