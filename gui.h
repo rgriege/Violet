@@ -147,6 +147,11 @@ void font_destroy(font_t *f);
 u32 gui_triangulate_out_sz(u32 n);
 b32 gui_triangulate(const v2f *v, u32 n, v2f **triangles);
 
+/* always counter-clockwise; angles must be between 0 and 2*pi radians */
+void arc_to_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
+                 v2f *v, u32 segments, b32 closed);
+u32  arc_poly_sz(r32 r, r32 angle_start, r32 angle_end);
+
 
 /* General Gui */
 
@@ -1385,6 +1390,27 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	}
 
 	return true;
+}
+
+u32 arc_poly_sz(r32 r, r32 angle_start, r32 angle_end)
+{
+	const r32 angle_delta = angle_end > angle_start
+	                      ? angle_end - angle_start
+	                      : angle_end - angle_start + 2.f*fPI;
+	return (u32)((2.f + r) * (angle_delta / fPI));
+}
+
+void arc_to_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
+                 v2f *v, u32 segments, b32 closed)
+{
+	const r32 angle_delta = angle_end > angle_start
+	                      ? angle_end - angle_start
+	                      : angle_end - angle_start + 2.f*fPI;
+	const r32 radians_slice = angle_delta / (segments - !closed);
+	for (u32 i = 0; i < segments; ++i) {
+		const r32 radians = angle_start + radians_slice * i;
+		v[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
+	}
 }
 
 
@@ -3232,34 +3258,19 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui->vert_colors[gui->vert_cnt-1] = tl;
 }
 
-#define gui__arc_poly_sz(radius, start, end) \
-			(u32)((2.f + radius) * ((end - start) / fPI))
-
-static
-void gui__arc_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
-                    v2f *v, u32 segments, b32 closed)
-{
-	const r32 radians_slice = (angle_end - angle_start) / (segments - !closed);
-	for (u32 i = 0; i < segments; ++i) {
-		const r32 radians = angle_start + radians_slice * i;
-		v[i] = (v2f){ .x=x+r*cosf(radians), .y=y+r*sinf(radians) };
-	}
-}
-
-
 void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke)
 {
-	array_set_sz(gui->vert_buf, gui__arc_poly_sz(r, angle_start, angle_end));
-	gui__arc_poly(x, y, r, angle_start, angle_end, A2PN(gui->vert_buf), false);
+	array_set_sz(gui->vert_buf, arc_poly_sz(r, angle_start, angle_end));
+	arc_to_poly(x, y, r, angle_start, angle_end, A2PN(gui->vert_buf), false);
 	gui__poly(gui, A2PN(gui->vert_buf), fill, stroke, false);
 	array_clear(gui->vert_buf);
 }
 
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
-	array_set_sz(gui->vert_buf, gui__arc_poly_sz(r, 0, fPI * 2.f));
-	gui__arc_poly(x, y, r, 0, fPI * 2.f, A2PN(gui->vert_buf), true);
+	array_set_sz(gui->vert_buf, arc_poly_sz(r, 0, fPI * 2.f));
+	arc_to_poly(x, y, r, 0, fPI * 2.f, A2PN(gui->vert_buf), true);
 	gui__poly(gui, A2PN(gui->vert_buf), fill, stroke, true);
 	array_clear(gui->vert_buf);
 }
