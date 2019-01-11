@@ -249,6 +249,8 @@ void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke);
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
+void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke);
+void gui_polylinef(gui_t *gui, const v2f *v, u32 n, color_t stroke);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity);
@@ -3298,6 +3300,22 @@ void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 		if (stroke.a != 0)
 			gui__poly(gui, v, n, g_nocolor, stroke, true);
 	}
+}
+
+void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke)
+{
+	array_set_sz(gui->vert_buf, n);
+	for (u32 i = 0; i < n; ++i) {
+		gui->vert_buf[i].x = v[i].x;
+		gui->vert_buf[i].y = v[i].y;
+	}
+	gui_polylinef(gui, gui->vert_buf, n, stroke);
+	array_clear(gui->vert_buf);
+}
+
+void gui_polylinef(gui_t *gui, const v2f *v, u32 n, color_t stroke)
+{
+	gui__poly(gui, v, n, g_nocolor, stroke, false);
 }
 
 static
