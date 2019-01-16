@@ -278,6 +278,18 @@ u32 hashn(const char *str, u32 n);
 
 /* Utility */
 
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
+#define max(x, y) (((x) < (y)) ? (y) : (x))
+#define min(x, y) (((x) > (y)) ? (y) : (x))
+
+#define clamp(lo, val, hi) max(lo, min(hi, val))
+
 #define memswp(a, b, type) \
 	do { type tmp = a; a = b; b = tmp; } while(0)
 
