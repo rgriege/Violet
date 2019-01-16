@@ -305,6 +305,11 @@ void swap(void *lhs, void *rhs, size_t size);
 void reverse(void *data, size_t size, size_t count);
 #define reverse_buf(buf) reverse(buf, sizeof((buf)[0]), countof(buf))
 
+void isort(void *base, size_t nmemb, size_t size,
+           int (*compar)(const void *, const void *));
+int  sort_s32_asc(const void *lhs, const void *rhs);
+int  sort_s32_desc(const void *lhs, const void *rhs);
+
 void buf_insert_(void *p, size_t idx, size_t nmemb, size_t size);
 #define buf_insert(p, idx, val, nmemb) \
 	do { \
@@ -802,6 +807,27 @@ void reverse(void *data_, size_t size, size_t count)
 	char *data = data_;
 	for (size_t i = 0, n = count/2; i < n; ++i)
 		swap(data+i*size, data+(count-1-i)*size, size);
+}
+
+void isort(void *base_, size_t nmemb, size_t size,
+           int (*compar)(const void *, const void *))
+{
+	char *base = base_;
+	for (size_t i = 1; i < nmemb; ++i)
+		for (size_t j = i; j > 0 && compar(base+(j-1)*size, base+j*size) > 0; --j)
+			swap(base+(j-1)*size, base+j*size, size);
+}
+
+int sort_s32_asc(const void *lhs_, const void *rhs_)
+{
+	const s32 *lhs = lhs_, *rhs = rhs_;
+	return *rhs - *lhs;
+}
+
+int sort_s32_desc(const void *lhs_, const void *rhs_)
+{
+	const s32 *lhs = lhs_, *rhs = rhs_;
+	return *lhs - *rhs;
 }
 
 void buf_insert_(void *p_, size_t idx, size_t nmemb, size_t size)

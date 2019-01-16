@@ -1746,10 +1746,13 @@ typedef struct draw_call
 	texture_blend_e blend;
 } draw_call_t;
 
+#define GUI__SCISSOR_PRIORITY_POPUP 1
+
 typedef struct gui__scissor
 {
 	u32 draw_call_idx, draw_call_cnt;
 	s32 x, y, w, h;
+	s32 pri;
 } gui__scissor_t;
 
 typedef struct cached_img
@@ -1808,8 +1811,7 @@ typedef struct gui
 	draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
 	u32 draw_call_cnt;
 	gui__scissor_t scissors[GUI_MAX_SCISSORS];
-	u32 scissor_idx;
-	u32 scissor_cnt;
+	gui__scissor_t *scissor;
 
 	v2i window_dim;
 	v2i window_restore_pos;
@@ -1886,6 +1888,7 @@ typedef struct gui
 		struct {
 			s32 x, y, w, h;
 		} prev_mask, mask;
+		b32 inside;
 		b32 close_at_end;
 	} popup; /* TODO(rgriege): support nested popups */
 	b32 dragging_window;
@@ -2538,8 +2541,8 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->vert_cnt = 0;
 	gui->draw_call_cnt = 0;
-	gui->scissor_idx = 0;
-	gui->scissor_cnt = 0;
+	memclr(gui->scissors);
+	gui->scissor = &gui->scissors[0];
 	gui_unmask(gui);
 
 	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
@@ -2551,6 +2554,7 @@ b32 gui_begin_frame(gui_t *gui)
 	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	/* popup */
+	gui->popup.inside = false;
 	if (gui->popup.id != 0) {
 		const s32 x = gui->popup.mask.x;
 		const s32 y = gui->popup.mask.y;
@@ -2568,12 +2572,6 @@ b32 gui_begin_frame(gui_t *gui)
 
 	/* ensure this is set every frame by a gui_window_drag() call (perf) */
 	gui->dragging_window = false;
-
-	/* reserve first scissor for popups */
-	assert(gui->scissor_idx == 0 && gui->scissor_cnt == 1);
-	gui->scissor_idx = 1;
-	gui->scissor_cnt = 2;
-	memcpy(&gui->scissors[1], &gui->scissors[0], sizeof(gui->scissors[0]));
 
 	gui->use_default_cursor = true;
 	if (gui->root_split) {
@@ -2647,11 +2645,8 @@ void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
 static
 void gui__current_mask(const gui_t *gui, box2i *box)
 {
-	assert(gui->scissor_idx < gui->scissor_cnt);
-	box2i_from_xywh(box, gui->scissors[gui->scissor_idx].x,
-	                gui->scissors[gui->scissor_idx].y,
-	                gui->scissors[gui->scissor_idx].w,
-	                gui->scissors[gui->scissor_idx].h);
+	const gui__scissor_t *curr = gui->scissor;
+	box2i_from_xywh(box, curr->x, curr->y, curr->w, curr->h);
 }
 
 static
@@ -2877,21 +2872,8 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 	gui->vert_cnt += 4;
 }
 
-static
-void gui__complete_scissor(gui_t *gui)
-{
-	gui__scissor_t *scissor;
-
-	if (gui->scissor_cnt == 0)
-		return;
-
-	scissor = &gui->scissors[gui->scissor_idx];
-	if (   gui->scissor_idx + 1 == gui->scissor_cnt
-	    && scissor->draw_call_idx == gui->draw_call_cnt)
-		--gui->scissor_cnt;
-	else
-		scissor->draw_call_cnt = gui->draw_call_cnt - scissor->draw_call_idx;
-}
+static void gui__complete_scissor(gui_t *gui);
+static int gui__scissor_sort(const void *lhs, const void *rhs);
 
 void gui_end_frame(gui_t *gui)
 {
@@ -2910,6 +2892,14 @@ void gui_end_frame(gui_t *gui)
 		gui_splits_render(gui);
 
 	gui__complete_scissor(gui);
+
+	const u32 n_scissors = gui->scissor - &gui->scissors[0] + 1;
+	/* move popups to the back of the array
+	 * can't use qsort - not guaranteed to be stable */
+	isort(gui->scissors, n_scissors, sizeof(gui->scissors[0]), gui__scissor_sort);
+	/* front-to-back -> back-to-front */
+	reverse(gui->scissors, sizeof(gui->scissors[0]), n_scissors);
+
 
 	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -2947,13 +2937,11 @@ void gui_end_frame(gui_t *gui)
 	 * if overlapping widges are in the same panel/layer, but that doesn't seem
 	 * like a use case to design for other than dragging icons on a desktop,
 	 * which could be 'solved' by placing the dragged icon on a separate layer. */
-	for (gui__scissor_t *scissor_first = gui->scissors,
-	                    *scissor = scissor_first + gui->scissor_cnt - 1;
-	     scissor >= scissor_first; --scissor) {
+	for (u32 i = 0; i < n_scissors; ++i) {
+		const gui__scissor_t *scissor = &gui->scissors[i];
 		GL_CHECK(glScissor, scissor->x, scissor->y, scissor->w, scissor->h);
-		for (draw_call_t *draw_call = gui->draw_calls + scissor->draw_call_idx,
-		                 *draw_call_end = draw_call + scissor->draw_call_cnt;
-		     draw_call != draw_call_end; ++draw_call) {
+		for (u32 j = 0; j < scissor->draw_call_cnt; ++j) {
+			draw_call_t *draw_call = &gui->draw_calls[scissor->draw_call_idx+j];
 			if (draw_call->tex != current_texture) {
 				GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
 				current_texture = draw_call->tex;
@@ -3093,16 +3081,10 @@ b32 mouse_released_bg(const gui_t *gui, u32 mask)
 }
 
 static
-b32 gui__inside_popup(const gui_t *gui)
-{
-	return gui->popup.id != 0 && gui->scissor_idx == 0;
-}
-
-static
 b32 gui__mouse_covered(const gui_t *gui)
 {
 	return gui->mouse_covered_by_panel
-	    || (gui->mouse_covered_by_popup && !gui__inside_popup(gui));
+	    || (gui->mouse_covered_by_popup && !gui->popup.inside);
 }
 
 b32 mouse_over_bg(const gui_t *gui)
@@ -3655,29 +3637,51 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 	return width;
 }
 
-void gui__mask(gui_t *gui, u32 idx, s32 x, s32 y, s32 w, s32 h)
+static
+void gui__create_scissor(gui_t *gui)
 {
-	gui->scissors[idx].draw_call_idx = gui->draw_call_cnt;
-	gui->scissors[idx].draw_call_cnt = 0;
-	gui->scissors[idx].x = x;
-	gui->scissors[idx].y = y;
-	gui->scissors[idx].w = w;
-	gui->scissors[idx].h = h;
-	gui->scissor_idx = idx;
+	if (gui->scissor->draw_call_cnt == 0)
+		{}
+	else if (gui->scissor+1 < gui->scissors+countof(gui->scissors))
+		++gui->scissor;
+	else
+		assert(0);
+}
+
+static
+void gui__complete_scissor(gui_t *gui)
+{
+	const u32 draw_call_cnt = gui->draw_call_cnt - gui->scissor->draw_call_idx;
+	if (draw_call_cnt > 0)
+		gui->scissor->draw_call_cnt = draw_call_cnt;
+	else if (gui->scissor > &gui->scissors[0])
+		--gui->scissor;
 }
 
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
 	gui__complete_scissor(gui);
-	assert(gui->scissor_cnt < GUI_MAX_SCISSORS);
-	gui__mask(gui, gui->scissor_cnt, x, y, w, h);
-	++gui->scissor_cnt;
+	gui__create_scissor(gui);
+	gui->scissor->draw_call_idx = gui->draw_call_cnt;
+	gui->scissor->x = x;
+	gui->scissor->y = y;
+	gui->scissor->w = w;
+	gui->scissor->h = h;
+	gui->scissor->pri = 0;
 }
 
 void gui_unmask(gui_t *gui)
 {
 	gui_mask(gui, 0, 0, gui->window_dim.x, gui->window_dim.y);
 }
+
+static
+int gui__scissor_sort(const void *lhs_, const void *rhs_)
+{
+	const gui__scissor_t *lhs = lhs_, *rhs = rhs_;
+	return rhs->pri - lhs->pri;
+}
+
 
 void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
                      const gui_line_style_t *style)
@@ -4518,19 +4522,22 @@ void gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 {
 	/* only 1 active popup allowed */
 	assert(gui->popup.id == 0 || gui->popup.id == id);
-	const gui__scissor_t *scissor = &gui->scissors[gui->scissor_idx];
-	gui->popup.prev_mask.x = scissor->x;
-	gui->popup.prev_mask.y = scissor->y;
-	gui->popup.prev_mask.w = scissor->w;
-	gui->popup.prev_mask.h = scissor->h;
-	gui__complete_scissor(gui);
-	gui->popup.id     = id;
+
+	gui->popup.prev_mask.x = gui->scissor->x;
+	gui->popup.prev_mask.y = gui->scissor->y;
+	gui->popup.prev_mask.w = gui->scissor->w;
+	gui->popup.prev_mask.h = gui->scissor->h;
+
+	gui_mask(gui, x, y, w, h);
+	gui->scissor->pri = GUI__SCISSOR_PRIORITY_POPUP;
+
+	gui->popup.id = id;
 	gui->popup.mask.x = x;
 	gui->popup.mask.y = y;
 	gui->popup.mask.w = w;
 	gui->popup.mask.h = h;
 	gui->popup.close_at_end = false;
-	gui__mask(gui, 0, x, y, w, h);
+	gui->popup.inside = true;
 }
 
 static
@@ -4539,6 +4546,8 @@ void gui__popup_end(gui_t *gui)
 	/* switch to new scissor (mirroring interrupted scissor) after last item */
 	gui_mask(gui, gui->popup.prev_mask.x, gui->popup.prev_mask.y,
 	         gui->popup.prev_mask.w, gui->popup.prev_mask.h);
+
+	gui->popup.inside = false;
 
 	if (gui->popup.close_at_end || gui->focus_next_widget) {
 		gui__defocus_widget(gui, gui->popup.id);
@@ -5162,7 +5171,7 @@ u64 gui__widget_id(const gui_t *gui, u32 base_id, s32 x, s32 y)
 
 u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 {
-	if (gui__inside_popup(gui))
+	if (gui->popup.inside)
 		return gui__widget_id(gui, GUI__POPUP_PANEL_ID, x, y);
 	else if (gui->panel)
 		return gui__widget_id(gui, gui->panel->id, x, y);
