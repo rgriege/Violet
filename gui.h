@@ -301,6 +301,10 @@ u32  gui_verts_cnt(const gui_t *gui);
 #define GUI_FOCUS_STACK_SIZE 2
 #endif
 
+#ifndef GUI_HINT_TIMER
+#define GUI_HINT_TIMER 1000
+#endif
+
 typedef enum npt_flags_t
 {
 	NPT_PASSWORD              = 1 << 0,
@@ -641,6 +645,7 @@ typedef struct gui_widget_style
 	gui_element_style_t hot;
 	gui_element_style_t active;
 	gui_element_style_t disabled; /* only colors are used */
+	const char *hint;
 } gui_widget_style_t;
 
 typedef struct gui_slider_style
@@ -669,17 +674,18 @@ typedef struct gui_panel_style
 typedef struct gui_style
 {
 	color_t bg_color;
-	gui_line_style_t   line;
-	gui_text_style_t   txt;
-	gui_widget_style_t npt;
-	gui_widget_style_t btn;
-	gui_widget_style_t chk;
-	gui_slider_style_t slider;
-	gui_widget_style_t select;
-	gui_widget_style_t dropdown;
-	gui_widget_style_t drag;
-	gui_panel_style_t  panel;
-	gui_line_style_t   split;
+	gui_line_style_t    line;
+	gui_text_style_t    txt;
+	gui_widget_style_t  npt;
+	gui_widget_style_t  btn;
+	gui_widget_style_t  chk;
+	gui_slider_style_t  slider;
+	gui_widget_style_t  select;
+	gui_widget_style_t  dropdown;
+	gui_widget_style_t  drag;
+	gui_element_style_t hint;
+	gui_panel_style_t   panel;
+	gui_line_style_t    split;
 } gui_style_t;
 
 const gui_style_t g_gui_style_default;
@@ -696,6 +702,7 @@ void gui_style_push_u32_(gui_t *gui, size_t offset, u32 val);
 void gui_style_push_s32_(gui_t *gui, size_t offset, s32 val);
 void gui_style_push_r32_(gui_t *gui, size_t offset, r32 val);
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
+void gui_style_push_ptr_(gui_t *gui, size_t offset, void *ptr);
 void gui_style_pop(gui_t *gui);
 
 #define gui_style_push(gui, loc, val) \
@@ -714,6 +721,8 @@ void gui_style_pop(gui_t *gui);
 	gui_style_push_r32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_pen(gui, loc, val) \
 	gui_style_push_pen_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_ptr(gui, loc, val) \
+	gui_style_push_ptr_(gui, offsetof(gui_style_t, loc), val)
 
 #ifndef GUI_STYLE_STACK_LIMIT
 #define GUI_STYLE_STACK_LIMIT 2048
@@ -1473,6 +1482,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 		.outline_color = gi_nocolor, \
 	}, \
 	.disabled = gi__gui_btn_disabled_style_default, \
+	.hint = NULL, \
 }
 
 #define gi__gui_chk_style_default { \
@@ -1496,6 +1506,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 		.outline_color = gi_nocolor, \
 	}, \
 	.disabled = gi__gui_btn_disabled_style_default, \
+	.hint = NULL, \
 }
 
 #define gi__gui_slider_style_default { \
@@ -1506,8 +1517,16 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 		.hot = gi__gui_btn_inactive_style_default, \
 		.active = gi__gui_btn_inactive_style_default, \
 		.disabled = gi__gui_btn_disabled_style_default, \
+		.hint = NULL, \
 	}, \
 	.track_narrow = false, \
+}
+
+#define gi__gui_hint_style_default { \
+	.line = gi__gui_line_style_default, \
+	.text = gi__gui_btn_text_style_default, \
+	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff }, \
+	.outline_color = gi_white, \
 }
 
 const gui_style_t g_gui_style_default = {
@@ -1521,6 +1540,7 @@ const gui_style_t g_gui_style_default = {
 	.select = gi__gui_btn_style_default,
 	.dropdown = gi__gui_btn_style_default,
 	.drag = gi__gui_chk_style_default,
+	.hint = gi__gui_hint_style_default,
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
 		.border_color = gi_grey128,
@@ -1551,6 +1571,7 @@ const gui_style_t g_gui_style_default = {
 				.outline_color = gi_nocolor,
 			},
 			.disabled = { 0 },
+			.hint = NULL, \
 		},
 		.tab = {
 			.pen = gui_pen_rect,
@@ -1573,6 +1594,7 @@ const gui_style_t g_gui_style_default = {
 				.outline_color = gi_nocolor,
 			},
 			.disabled = gi__gui_btn_disabled_style_default,
+			.hint = NULL, \
 		},
 		.close = {
 			.pen = gui_pen_panel_close,
@@ -1595,6 +1617,7 @@ const gui_style_t g_gui_style_default = {
 				.outline_color = gi_nocolor,
 			},
 			.disabled = { 0 },
+			.hint = NULL, \
 		},
 		.collapse = {
 			.pen = gui_pen_panel_collapse,
@@ -1617,6 +1640,7 @@ const gui_style_t g_gui_style_default = {
 				.outline_color = gi_nocolor,
 			},
 			.disabled = { 0 },
+			.hint = NULL, \
 		},
 		.restore = {
 			.pen = gui_pen_panel_restore,
@@ -1639,6 +1663,7 @@ const gui_style_t g_gui_style_default = {
 				.outline_color = gi_nocolor,
 			},
 			.disabled = { 0 },
+			.hint = NULL, \
 		},
 		.scrollbar = gi__gui_slider_style_default,
 		.cell_bg_color = gi_nocolor,
@@ -1679,6 +1704,7 @@ const gui_style_t g_gui_style_default = {
 	.hot = gi__gui_element_style_invis, \
 	.active = gi__gui_element_style_invis, \
 	.disabled = gi__gui_element_style_invis, \
+	.hint = NULL, \
 }
 
 #define gi__gui_slider_style_invis { \
@@ -1698,6 +1724,7 @@ const gui_style_t g_gui_style_invis = {
 	.select   = gi__gui_widget_style_invis,
 	.dropdown = gi__gui_widget_style_invis,
 	.drag     = gi__gui_widget_style_invis,
+	.hint     = gi__gui_element_style_invis,
 	.panel    = {
 		.bg_color          = gi_nocolor,
 		.border_color      = gi_nocolor,
@@ -1746,6 +1773,7 @@ typedef struct draw_call
 	texture_blend_e blend;
 } draw_call_t;
 
+#define GUI__SCISSOR_PRIORITY_HINT  2
 #define GUI__SCISSOR_PRIORITY_POPUP 1
 
 typedef struct gui__scissor
@@ -1860,6 +1888,7 @@ typedef struct gui
 	b32 focus_next_widget;
 	u64 focus_prev_widget_id;
 	u64 prev_widget_id;
+	u64 hot_id_last_frame;
 
 	/* specific widget state */
 	struct {
@@ -1893,6 +1922,7 @@ typedef struct gui
 	} popup; /* TODO(rgriege): support nested popups */
 	b32 dragging_window;
 	colorf_t color_picker8_color;
+	s32 hint_timer;
 
 	/* grid */
 	gui_grid_t grid_panel;
@@ -2113,6 +2143,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->focus_next_widget = false;
 	gui->focus_prev_widget_id = 0;
 	gui->prev_widget_id = 0;
+	gui->hot_id_last_frame = 0;
 
 
 	gui->npt.cursor_pos = 0;
@@ -2126,6 +2157,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->popup.id = 0;
 	gui->dragging_window = false;
 	gui->color_picker8_color = (colorf_t){0};
+	gui->hint_timer = GUI_HINT_TIMER;
 
 	gui->grid = NULL;
 
@@ -2539,6 +2571,17 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->active_id_at_frame_start = gui->active_id;
 
+	if (gui->active_id != 0)
+		gui->hint_timer = GUI_HINT_TIMER;
+	else if (gui->hot_id != 0 && gui->hot_id == gui->hot_id_last_frame)
+		gui->hint_timer = max(gui->hint_timer - (s32)gui->frame_time_milli,
+		                      -GUI_HINT_TIMER);
+	else
+		gui->hint_timer = min(gui->hint_timer + (s32)gui->frame_time_milli,
+		                      GUI_HINT_TIMER);
+
+	gui->hot_id_last_frame = gui->hot_id;
+
 	gui->vert_cnt = 0;
 	gui->draw_call_cnt = 0;
 	memclr(gui->scissors);
@@ -2894,7 +2937,7 @@ void gui_end_frame(gui_t *gui)
 	gui__complete_scissor(gui);
 
 	const u32 n_scissors = gui->scissor - &gui->scissors[0] + 1;
-	/* move popups to the back of the array
+	/* move hints/popups to the back of the array
 	 * can't use qsort - not guaranteed to be stable */
 	isort(gui->scissors, n_scissors, sizeof(gui->scissors[0]), gui__scissor_sort);
 	/* front-to-back -> back-to-front */
@@ -3676,6 +3719,17 @@ void gui_unmask(gui_t *gui)
 }
 
 static
+void gui__mask_pop(gui_t *gui)
+{
+	if (gui->scissor > &gui->scissors[0]) {
+		const gui__scissor_t *prev = gui->scissor-1;
+		gui_mask(gui, prev->x, prev->y, prev->w, prev->h);
+	} else {
+		gui_unmask(gui);
+	}
+}
+
+static
 int gui__scissor_sort(const void *lhs_, const void *rhs_)
 {
 	const gui__scissor_t *lhs = lhs_, *rhs = rhs_;
@@ -3993,6 +4047,28 @@ void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
 	gui->npt.performed_action = true;
 }
 
+static
+void gui__hint_render(gui_t *gui, u64 id, const char *hint)
+{
+	if (id == gui->hot_id && gui->hint_timer <= 0 && hint) {
+		const gui_element_style_t *style = &gui->style.hint;
+		const s32 x = gui->mouse_pos.x;
+		const s32 y = gui->mouse_pos.y;
+		s32 rx, ry, rw, rh;
+		gui_txt_dim(gui, x, y, style->text.size, hint,
+		            GUI_ALIGN_BOTLEFT, &rx, &ry, &rw, &rh);
+		rx = (x + rw < gui->window_dim.x) ? x : x - rw;
+		ry = (y + rh < gui->window_dim.y) ? y : y - rh;
+		rw += 2 * style->text.padding;
+		rh += 2 * style->text.padding;
+		gui_mask(gui, rx, ry, rw, rh);
+		gui->scissor->pri = GUI__SCISSOR_PRIORITY_HINT;
+		gui_rect(gui, rx, ry, rw, rh, style->bg_color, style->outline_color);
+		gui_txt_styled(gui, rx, ry, rw, rh, hint, &style->text);
+		gui__mask_pop(gui);
+	}
+}
+
 s32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                 const char *hint, npt_flags_t flags)
 {
@@ -4158,6 +4234,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	} else if (txt[0] == 0 && hint) {
 		gui_txt_styled(gui, x, y, w, h, hint, &elem_style.text);
 	}
+	gui__hint_render(gui, id, gui->style.npt.hint);
 	gui->prev_widget_id = id;
 	return complete;
 }
@@ -4247,6 +4324,7 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.btn);
+	gui__hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
 
@@ -4262,6 +4340,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 		= gui__element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
 	gui_img_boxed(gui, x, y, w, h, fname, scale);
+	gui__hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
 
@@ -4276,6 +4355,7 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 		= gui__element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
+	gui__hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
 
@@ -4293,6 +4373,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 
 	render_state = gui__widget_render_state(gui, id, toggled, *val, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.chk);
+	gui__hint_render(gui, id, gui->style.chk.hint);
 	return toggled;
 }
 
@@ -4313,6 +4394,7 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	style = gui__element_style(gui, render_state, &gui->style.chk);
 	gui->style.chk.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
+	gui__hint_render(gui, id, gui->style.chk.hint);
 	return toggled;
 }
 
@@ -4419,6 +4501,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 		gui->style.slider.track.pen(gui, x, y + dy/2, w, h - dy, &style_track);
 	}
 	gui->style.slider.handle.pen(gui, hx, hy, hw, hh, &style_handle);
+	gui__hint_render(gui, id, gui->style.slider.handle.hint);
 	return gui->active_id == id || triggered_by_key;
 }
 
@@ -4468,6 +4551,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	render_state = gui__widget_render_state(gui, id, selected, *val == opt,
 	                                        contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
+	gui__hint_render(gui, id, gui->style.select.hint);
 	return selected;
 }
 
@@ -4492,6 +4576,7 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	render_state = gui__widget_render_state(gui, id, selected, *val & opt,
 	                                        contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
+	gui__hint_render(gui, id, gui->style.select.hint);
 }
 
 static
@@ -4653,6 +4738,8 @@ void gui_dropdown_end(gui_t *gui)
 	if (gui_widget_focused(gui, gui->dropdown.id)) {
 		pgui_grid_end(gui, &gui->grid_popup);
 		gui__popup_end(gui);
+	} else {
+		gui__hint_render(gui, gui->dropdown.id, gui->style.dropdown.hint);
 	}
 
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
@@ -4731,6 +4818,7 @@ void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id,
 	const gui_element_style_t style
 		= gui__element_style(gui, render_state, widget_style);
 	widget_style->pen(gui, x, y, w, h, &style);
+	gui__hint_render(gui, id, widget_style->hint);
 }
 
 static
@@ -4862,6 +4950,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		pgui_col(gui, 0, num_items);
 		return true;
 	} else {
+		gui__hint_render(gui, id, gui->style.dropdown.hint);
 		return false;
 	}
 }
@@ -6998,6 +7087,7 @@ GUI_STYLE_STACK_PUSH_LITERAL(b32, b32);
 GUI_STYLE_STACK_PUSH_LITERAL(u32, u32);
 GUI_STYLE_STACK_PUSH_LITERAL(s32, s32);
 GUI_STYLE_STACK_PUSH_LITERAL(r32, r32);
+GUI_STYLE_STACK_PUSH_LITERAL(ptr, void*);
 
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
 {
