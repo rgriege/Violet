@@ -3,10 +3,6 @@
 
 #define array_size_t u32
 
-#ifndef ARRAY_ELEM_MAX_SZ
-#define ARRAY_ELEM_MAX_SZ 128
-#endif
-
 #ifdef ARRAY_STATIC
 #define ARRDEF static
 #else
@@ -71,12 +67,7 @@ typedef struct array__head
 #define array_pop(a)               (--array_sz(a))
 #define array_clear(a)             (array_sz(a) = 0)
 
-#define array_reverse(a)           do { \
-                                     static_assert(   array__esz(a) \
-                                                   <= ARRAY_ELEM_MAX_SZ, \
-                                                   grow_ARRAY_ELEM_MAX_SZ); \
-                                     array__reverse(a, array__esz(a)); \
-                                      } while (0);
+#define array_reverse(a)           reverse(a, array__esz(a), array_sz(a))
 #define array_qsort(a, cmp)        qsort(a, array_sz(a), array__esz(a), cmp)
 #define array_bsearch(a, e, cmp)   bsearch(&(e), a, array_sz(a), \
                                            array__esz(a), cmp)
@@ -193,14 +184,6 @@ ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz)
 
 ARRDEF void array__reverse(void *a, size_t sz)
 {
-	char scratch[ARRAY_ELEM_MAX_SZ];
-	for (array_size_t i = 0, n = array_sz(a)/2; i < n; ++i) {
-		arr_bytep l = (arr_bytep)a+i*sz;
-		arr_bytep r = (arr_bytep)a+(array_sz(a)-1-i)*sz;
-		memcpy(scratch, r, sz);
-		memcpy(r, l, sz);
-		memcpy(l, scratch, sz);
-	}
 }
 
 ARRDEF void *array__find(void *a, const void *userp, size_t sz,

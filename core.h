@@ -300,9 +300,8 @@ u32 hashn(const char *str, u32 n);
 
 #define arrcpy(x, y) memcpy((x), (y), sizeof(x))
 
-#ifndef REVERSE_MAX_SIZE
-#define REVERSE_MAX_SIZE 128
-#endif
+void swap(void *lhs, void *rhs, size_t size);
+
 void reverse(void *data, size_t size, size_t count);
 #define reverse_buf(buf) reverse(buf, sizeof((buf)[0]), countof(buf))
 
@@ -782,17 +781,27 @@ u32 hashn(const char *str, u32 n)
 	return hash;
 }
 
-void reverse(void *data, size_t size, size_t count)
+void swap(void *lhs_, void *rhs_, size_t size_)
 {
-	char scratch[REVERSE_MAX_SIZE];
-	assert(size <= REVERSE_MAX_SIZE);
-	for (size_t i = 0, n = count/2; i < n; ++i) {
-		char *l = (char*)data + i * size;
-		char *r = (char*)data + (count - 1 - i) * size;
-		memcpy(scratch, r, size);
-		memcpy(r, l, size);
-		memcpy(l, scratch, size);
-	}
+	char *lhs = lhs_, *rhs = rhs_;
+	size_t size = size_;
+	char tmp[128];
+	do {
+		const size_t size_iter = min(size, sizeof(tmp));
+		memcpy(tmp, lhs, size_iter);
+		memcpy(lhs, rhs, size_iter);
+		memcpy(rhs, tmp, size_iter);
+		lhs += size_iter;
+		rhs += size_iter;
+		size -= size_iter;
+	} while (size > 0);
+}
+
+void reverse(void *data_, size_t size, size_t count)
+{
+	char *data = data_;
+	for (size_t i = 0, n = count/2; i < n; ++i)
+		swap(data+i*size, data+(count-1-i)*size, size);
 }
 
 void buf_insert_(void *p_, size_t idx, size_t nmemb, size_t size)
@@ -808,6 +817,7 @@ void buf_remove_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
 	for (char *pi = p+(idx+n)*size, *pn = p+nmemb*size; pi != pn; pi += size)
 		memcpy(pi-n*size, pi, size);
 }
+
 
 /* Time */
 
