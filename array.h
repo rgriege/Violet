@@ -58,6 +58,10 @@ typedef struct array__head
                                                            MEMCALL_LOCATION), \
                                     (a)+array_sz(a) - 1)
 #define array_append(a, e)         (*array_append_null(a) = e)
+#define array_appendn(a, p, n)     ((a)=array__reserve(a, array_sz(a)+n, \
+                                                       array__esz(a) \
+                                                       MEMCALL_LOCATION), \
+                                    array__appendn(a, p, n, array__esz(a)))
 #define array_insert_null(a, i)    ((a)=array__insert_null(a, i, array__esz(a) \
                                                            MEMCALL_LOCATION), \
                                     (a)+(i))
@@ -94,6 +98,7 @@ ARRDEF void *array__reserve(void *a, array_size_t nmemb, size_t sz
 ARRDEF void *array__copy(void *dst, const void *src, size_t sz  MEMCALL_ARGS);
 ARRDEF void *array__grow(void *a, size_t sz  MEMCALL_ARGS);
 ARRDEF void *array__append_null(void *a, size_t sz  MEMCALL_ARGS);
+ARRDEF void array__appendn(void *a, void *p, array_size_t n, size_t sz);
 ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz
                                 MEMCALL_ARGS);
 ARRDEF void array__remove(void *a, array_size_t idx, array_size_t n, size_t sz);
@@ -158,6 +163,12 @@ ARRDEF void *array__append_null(void *a, size_t sz  MEMCALL_ARGS)
 	a = array__grow(a, sz  MEMCALL_VARS);
 	++array_sz(a);
 	return a;
+}
+
+ARRDEF void array__appendn(void *a, void *p, array_size_t n, size_t sz)
+{
+	memcpy(((char*)a)+array_sz(a)*sz, p, n*sz);
+	array_sz(a) += n;
 }
 
 ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz
