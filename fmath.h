@@ -92,6 +92,7 @@ FMDEF v2f  v2f_div(v2f lhs, v2f rhs);
 FMDEF void v2f_div_eq(v2f *lhs, v2f rhs);
 FMDEF v2f  v2f_dir(v2f src, v2f dst);
 FMDEF v2f  v2f_fmadd(v2f v, v2f dir, r32 s);
+FMDEF v2f  v2f_fmsub(v2f v, v2f dir, r32 s);
 FMDEF v2f  v2f_rot(v2f v, r32 radians);
 FMDEF r32  v2f_dot(v2f lhs, v2f rhs);
 FMDEF r32  v2f_cross(v2f lhs, v2f rhs);
@@ -113,6 +114,7 @@ FMDEF v2f  v2f_midpoint(v2f v0, v2f v1);
 typedef union v3f
 {
 	struct { r32 x, y, z; };
+	struct { v2f xy; };
 	struct { r32 d[3]; };
 } v3f;
 
@@ -197,6 +199,7 @@ typedef struct ivalf
 } ivalf;
 
 FMGDECL const ivalf g_ivalf_0_to_1;
+FMGDECL const ivalf g_ivalf_zero;
 
 FMDEF ivalf ivalf_range(r32 center, r32 radius);
 FMDEF r32   ivalf_center(ivalf i);
@@ -426,6 +429,11 @@ FMDEF v2f v2f_dir(v2f src, v2f dst)
 FMDEF v2f v2f_fmadd(v2f v, v2f dir, r32 s)
 {
 	return v2f_add(v, v2f_scale(dir, s));
+}
+
+FMDEF v2f v2f_fmsub(v2f v, v2f dir, r32 s)
+{
+	return v2f_sub(v, v2f_scale(dir, s));
 }
 
 FMDEF v2f v2f_rot(v2f v, r32 radians)
@@ -972,6 +980,7 @@ FMDEF void m4f_to_m3(m4f src, m3f dst)
 /* Interval */
 
 FMGDEF const ivalf g_ivalf_0_to_1 = { .l = 0.f, .r = 1.f };
+FMGDEF const ivalf g_ivalf_zero   = { .l = 0.f, .r = 0.f };
 
 FMDEF ivalf ivalf_range(r32 center, r32 radius)
 {
