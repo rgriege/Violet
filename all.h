@@ -11,6 +11,9 @@
 #define GUI_IMPLEMENTATION
 #define IMATH_IMPLEMENTATION
 #define LIST_IMPLEMENTATION
+#ifndef NO_LOCALIZE
+#define LOCALIZE_IMPLEMENTATION
+#endif
 #define OS_IMPLEMENTATION
 #define STRING_IMPLEMENTATION
 #define VSON_IMPLEMENTATION
@@ -27,8 +30,11 @@
 #include "violet/dmath.h"
 #include "violet/fmath.h"
 #include "violet/imath.h"
+/* Serialization */
+#include "violet/vson.h"
 /* String */
 #include "violet/string.h"
+#include "violet/localize.h"
 /* Gui */
 #include "violet/color.h"
 #ifndef VIOLET_NO_GUI
@@ -39,8 +45,6 @@
 #endif
 /* OS */
 #include "violet/os.h"
-/* Serialization */
-#include "violet/vson.h"
 
 /* Additional utilities useful when using the entire library */
 
