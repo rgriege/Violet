@@ -40,6 +40,8 @@ typedef struct timespec timepoint_t;
 #define offsetof(s, m) (&(((s*)(NULL))->m))
 #endif
 
+#define polarity(x) (((x) > 0) - ((x) < 0))
+
 #ifdef static_assert
 #undef static_assert
 #endif
