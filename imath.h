@@ -28,20 +28,6 @@ typedef int s32;
 #define IMATH_IMPLEMENTATION
 #endif
 
-/* General utilities */
-
-#ifdef min
-#undef min
-#endif
-#ifdef max
-#undef max
-#endif
-
-#define max(x, y) (((x) < (y)) ? (y) : (x))
-#define min(x, y) (((x) > (y)) ? (y) : (x))
-
-#define clamp(lo, val, hi) max(lo, min(hi, val))
-
 /* 2D Vector */
 
 typedef union v2i
