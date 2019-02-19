@@ -709,7 +709,7 @@ void gui_style_push_u32_(gui_t *gui, size_t offset, u32 val);
 void gui_style_push_s32_(gui_t *gui, size_t offset, s32 val);
 void gui_style_push_r32_(gui_t *gui, size_t offset, r32 val);
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
-void gui_style_push_ptr_(gui_t *gui, size_t offset, void *ptr);
+void gui_style_push_ptr_(gui_t *gui, size_t offset, const void *ptr);
 void gui_style_pop(gui_t *gui);
 
 #define gui_style_push(gui, loc, val) \
@@ -7116,7 +7116,7 @@ GUI_STYLE_STACK_PUSH_LITERAL(b32, b32);
 GUI_STYLE_STACK_PUSH_LITERAL(u32, u32);
 GUI_STYLE_STACK_PUSH_LITERAL(s32, s32);
 GUI_STYLE_STACK_PUSH_LITERAL(r32, r32);
-GUI_STYLE_STACK_PUSH_LITERAL(ptr, void*);
+GUI_STYLE_STACK_PUSH_LITERAL(ptr, const void*);
 
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
 {
