@@ -58,7 +58,7 @@ const char *localize_string(const char *str)
 		return str;
 
 	const localized_string_t *string = localize__find_slot(hash(str));
-	return &g_localized_string_memory[string->index];
+	return string->id == 0 ? str : &g_localized_string_memory[string->index];
 }
 
 b32 localize_is_language_default(void)
