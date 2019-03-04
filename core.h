@@ -204,16 +204,14 @@ typedef struct allocator
 /* Default global allocator */
 extern allocator_t *g_allocator;
 
-/* Temporary memory global allocator */
-extern thread_local allocator_t *g_temp_allocator;
-
-/* Default allocator */
 void *default_malloc(size_t size, allocator_t *a  MEMCALL_ARGS);
 void *default_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS);
 void *default_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS);
 void  default_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
 
-/* Paged bump memory allocator */
+/* Temporary memory allocator */
+extern thread_local allocator_t *g_temp_allocator;
+
 #include "violet/pgb.h"
 
 typedef pgb_watermark_t temp_memory_mark_t;
@@ -222,6 +220,11 @@ typedef pgb_watermark_t temp_memory_mark_t;
 allocator_t temp_memory_fork_(pgb_t *pgb);
 #define     temp_memory_fork()         temp_memory_fork_(&(pgb_t){0})
 void        temp_memory_merge(allocator_t *fork);
+
+void *temp_malloc(size_t size, allocator_t *a  MEMCALL_ARGS);
+void *temp_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS);
+void *temp_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS);
+void  temp_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
 
 /* Tracking allocator */
 typedef struct alloc_node
@@ -537,7 +540,7 @@ thread_local pgb_heap_t g_temp_memory_heap = { .first_page = NULL };
 
 allocator_t temp_memory_fork_(pgb_t *pgb)
 {
-	allocator_t allocator = allocator_create(pgb, pgb);
+	allocator_t allocator = allocator_create(temp, pgb);
 	pgb_init(allocator.udata, &g_temp_memory_heap);
 	return allocator;
 }
@@ -570,6 +573,30 @@ void default_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
 {
 	std_free(ptr);
 }
+
+
+/* Temporary allocator */
+
+void *temp_malloc(size_t size, allocator_t *a  MEMCALL_ARGS)
+{
+	return pgb_malloc(size, a->udata  MEMCALL_VARS);
+}
+
+void *temp_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS)
+{
+	return pgb_calloc(nmemb, size, a->udata  MEMCALL_VARS);
+}
+
+void *temp_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS)
+{
+	return pgb_realloc(ptr, size, a->udata  MEMCALL_VARS);
+}
+
+void temp_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
+{
+	pgb_free(ptr, a->udata  MEMCALL_VARS);
+}
+
 
 /* Tracking allocator */
 
@@ -1018,7 +1045,7 @@ void vlt_init(vlt_thread_type_e thread_type)
 		global_tracker->mutex = SDL_CreateMutex();
 	}
 #endif
-	g_temp_allocator_ = allocator_create(pgb, &g_temp_allocator_pgb);
+	g_temp_allocator_ = allocator_create(temp, &g_temp_allocator_pgb);
 	g_temp_allocator  = &g_temp_allocator_;
 	pgb_init(g_temp_allocator->udata, &g_temp_memory_heap);
 

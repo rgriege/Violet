@@ -36,10 +36,10 @@ typedef struct pgb
 void pgb_init(pgb_t *pgb, pgb_heap_t *heap);
 void pgb_destroy(pgb_t *pgb);
 
-void *pgb_malloc(size_t size, allocator_t *a  MEMCALL_ARGS);
-void *pgb_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS);
-void *pgb_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS);
-void  pgb_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
+void *pgb_malloc(size_t size, pgb_t *pgb  MEMCALL_ARGS);
+void *pgb_calloc(size_t nmemb, size_t size, pgb_t *pgb  MEMCALL_ARGS);
+void *pgb_realloc(void *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS);
+void  pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS);
 
 typedef struct pg_watermark
 {
@@ -319,9 +319,8 @@ void pgb__add_page_for_alloc(pgb_t *pgb, size_t alloc_size, size_t *aligned_size
 	*aligned_size = pgb__page_align(alloc_size, page);
 }
 
-void *pgb_malloc(size_t size, allocator_t *a  MEMCALL_ARGS)
+void *pgb_malloc(size_t size, pgb_t *pgb  MEMCALL_ARGS)
 {
-	pgb_t *pgb = a->udata;
 	pgb_byte *ptr;
 	size_t aligned_size;
 	if (size == 0)
@@ -341,9 +340,9 @@ void *pgb_malloc(size_t size, allocator_t *a  MEMCALL_ARGS)
 	return ptr;
 }
 
-void *pgb_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS)
+void *pgb_calloc(size_t nmemb, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 {
-	void *ptr = pgb_malloc(nmemb * size, a  MEMCALL_VARS);
+	void *ptr = pgb_malloc(nmemb * size, pgb  MEMCALL_VARS);
 	memset(ptr, 0, nmemb * size);
 	return ptr;
 }
@@ -362,10 +361,9 @@ void pgb__restore_current_page_ptr(pgb_t *pgb)
 	pgb->current_ptr = pgb__page_first_usable_slot(page);
 }
 
-void *pgb_realloc(void *ptr_, size_t size, allocator_t *a  MEMCALL_ARGS)
+void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 {
 	pgb_byte *ptr = ptr_;
-	pgb_t *pgb = a->udata;
 	if (ptr) {
 		if (size) {
 			if (   pgb->current_page
@@ -383,24 +381,23 @@ void *pgb_realloc(void *ptr_, size_t size, allocator_t *a  MEMCALL_ARGS)
 				while (page && !pgb__ptr_in_page(ptr, page))
 					page = page->prev;
 				error_if(!page, "could not find page for allocation");
-				new_ptr = pgb_malloc(size, a  MEMCALL_VARS);
+				new_ptr = pgb_malloc(size, pgb  MEMCALL_VARS);
 				memcpy(new_ptr, ptr, pgb__alloc_get_sz(ptr, page));
 				return new_ptr;
 			}
 		} else {
-			pgb_free(ptr, a  MEMCALL_VARS);
+			pgb_free(ptr, pgb  MEMCALL_VARS);
 			return NULL;
 		}
 	} else if (size) {
-		return pgb_malloc(size, a  MEMCALL_VARS);
+		return pgb_malloc(size, pgb  MEMCALL_VARS);
 	} else {
 		return NULL;
 	}
 }
 
-void pgb_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
+void pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS)
 {
-	pgb_t *pgb = a->udata;
 	if (pgb__ptr_is_last_alloc(ptr, pgb)) {
 		pgb__alloc_set_sz(ptr, pgb->current_page, 0);
 		pgb->current_ptr = ptr;
