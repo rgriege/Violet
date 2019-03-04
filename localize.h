@@ -58,6 +58,13 @@ const char *localize_string(const char *str)
 		return str;
 
 	const localized_string_t *string = localize__find_slot(hash(str));
+#ifdef DEBUG
+	static b32 s_warned_missing_localized_string = false;
+	if (string->id == 0 && !s_warned_missing_localized_string) {
+		log_warn("missing localization for string %s");
+		s_warned_missing_localized_string = true;
+	}
+#endif
 	return string->id == 0 ? str : &g_localized_string_memory[string->index];
 }
 
