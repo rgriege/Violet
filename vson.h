@@ -205,15 +205,11 @@ b32 vson_read_str(FILE *fp, const char *label, char *val, u32 sz)
 		return false;
 	}
 
-	while ((u32)(p - val) < sz && (c = fgetc(fp)) != EOF && c != '\n')
+	while (p < sz + val && (c = fgetc(fp)) != EOF && c != '\n' && c != '\r')
 		*(p++) = c;
 
-	if (c == EOF) {
+	if (p < val + sz && (c == EOF || c == '\r' || c == '\n')) {
 		*p = '\0';
-		return true;
-	} else if (c == '\n') {
-		if (p > val && p[-1] == '\r')
-			p[-1] = '\0';
 		return true;
 	} else {
 		return false;
