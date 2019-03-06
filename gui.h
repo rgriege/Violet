@@ -1380,6 +1380,9 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	memcpy(v, v_, n_ * sizeof(*v_));
 	n = n_;
 
+	if (!polyf_is_cc(v_, n_))
+		reverse(v, sizeof(*v_), n);
+
 	while (n > 2) {
 		const u32 old_n = n;
 		for (u32 i = 0; i < n; ++i) {
