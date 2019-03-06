@@ -390,11 +390,13 @@ b32  gui_color_picker8(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
 
 u64  gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void gui_widget_focus_next(gui_t *gui);
+b32  gui_widget_hot(const gui_t *gui, u64 id);
 b32  gui_widget_active(const gui_t *gui, u64 id);
 b32  gui_widget_focused(const gui_t *gui, u64 id);
 b32  gui_any_widget_hot(const gui_t *gui);
 b32  gui_any_widget_active(const gui_t *gui);
 b32  gui_any_widget_has_focus(const gui_t *gui);
+b32  gui_locked(const gui_t *gui);
 void gui_lock(gui_t *gui);
 void gui_unlock(gui_t *gui);
 /* NOTE: I usually hate 'conditional' methods, but this cleans up usage code */
@@ -5308,6 +5310,11 @@ void gui_widget_focus_next(gui_t *gui)
 		gui->focus_next_widget = true;
 }
 
+b32 gui_widget_hot(const gui_t *gui, u64 id)
+{
+	return gui->hot_id == id;
+}
+
 b32 gui_widget_active(const gui_t *gui, u64 id)
 {
 	return gui->active_id == id;
@@ -5334,6 +5341,11 @@ b32 gui_any_widget_active(const gui_t *gui)
 b32 gui_any_widget_has_focus(const gui_t *gui)
 {
 	return gui->focus_ids[0] != 0;
+}
+
+b32 gui_locked(const gui_t *gui)
+{
+	return gui->lock > 0;
 }
 
 void gui_lock(gui_t *gui)
