@@ -1548,20 +1548,15 @@ FMDEF b32 polyf_is_cc(const v2f *v, u32 n)
 {
 	assert(n>=3);
 
-	r32 sine_sum = 0;
+	r32 twice_area = 0.f;
 	for (u32 i=0, last=n-1; i<=last; ++i)
 	{
-		v2f a = v[(i>0 ? i-1 : last)];
-		v2f b = v[i];
-		v2f c = v[(i<last ? i+1 : 0)];
+		v2f a = v[i];
+		v2f b = v[(i<last ? i+1 : 0)];
 
-		v2f ab, bc;
-		ab = v2f_sub(b, a);
-		bc = v2f_sub(c, b);
-
-		sine_sum += v2f_cross(ab, bc) / v2f_mag(ab) / v2f_mag(bc);
+		twice_area += v2f_cross(a, b);
 	}
-	return sine_sum > 0;
+	return twice_area > 0.f;
 }
 
 FMDEF b32 polyf_line_intersect(const v2f *v, u32 n, v2f v0, v2f v1)
