@@ -10,36 +10,6 @@
 #include "violet/os.h"
 
 static
-void *file_read_all(const char *filename, allocator_t *a)
-{
-	FILE *fp;
-	size_t file_size;
-	void *bytes = NULL;
-
-	fp = fopen(filename, "r");
-	if (!fp)
-		return NULL;
-
-	if (fseek(fp, 0, SEEK_END) == -1)
-		goto out;
-
-	file_size = ftell(fp);
-	bytes = amalloc(file_size, a);
-
-	fseek(fp, 0, SEEK_SET);
-
-	if (fread(bytes, 1, file_size, fp) != file_size) {
-		afree(bytes, a);
-		bytes = NULL;
-		goto out;
-	}
-
-out:
-	fclose(fp);
-	return bytes;
-}
-
-static
 char *skip_whitespace(const char *str)
 {
 	char *p = (char*)str;
@@ -81,7 +51,7 @@ int main(int argc, char *const argv[])
 	}
 
 	for (int i = 1; i < argc; ++i) {
-		void *contents = file_read_all(argv[i], g_allocator);
+		void *contents = file_read_all(argv[i], "r", g_allocator);
 		if (!contents) {
 			printf("Failed to read file '%s'\n", argv[i]);
 			return 1;

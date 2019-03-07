@@ -774,6 +774,7 @@ void gui_style_pop(gui_t *gui);
 #include "violet/imath.h"
 #include "violet/string.h"
 #include "violet/utf8.h"
+#include "violet/os.h"
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #ifdef _M_X64
@@ -1125,11 +1126,6 @@ void img_destroy(img_t *img)
 
 /* Font */
 
-/* NOTE(rgriege): based on a cursory glance at C:\Windoge\Fonts,
- * 1MB seems to be sufficient for most fonts */
-#define TTF_BUFFER_SZ (1 << 20)
-static unsigned char ttf_buffer[TTF_BUFFER_SZ];
-
 static
 int rgtt_PackFontRanges(stbtt_pack_context *spc, stbtt_fontinfo *info,
                         stbtt_pack_range *ranges, int num_ranges)
@@ -1179,57 +1175,84 @@ int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
 	return rgtt_PackFontRanges(spc, info, &range, 1);
 }
 
+static
+int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info,
+              unsigned char **bitmap, s32 *bmp_w, s32 *bmp_h)
+{
+	stbtt_pack_context context;
+	int ret = 0;
+
+	while (1) {
+		if (!stbtt_PackBegin(&context, *bitmap, *bmp_w, *bmp_h,
+		                     4 * *bmp_w, 1, NULL))
+			goto out;
+
+		if (rgtt_PackFontRange(&context, info, font_size, 0,
+		                       info->numGlyphs, char_info)) {
+			break;
+		} else if (*bmp_w < 1024) {
+			*bmp_w *= 2;
+			*bitmap = arealloc(*bitmap, 4 * *bmp_w * *bmp_h, g_temp_allocator);
+			memset(*bitmap, 0, 4 * *bmp_w * *bmp_h);
+		} else if (*bmp_h < 1024) {
+			*bmp_h *= 2;
+			*bitmap = arealloc(*bitmap, 4 * *bmp_w * *bmp_h, g_temp_allocator);
+			memset(*bitmap, 0, 4 * *bmp_w * *bmp_h);
+		} else {
+			goto out;
+		}
+	}
+
+	stbtt_PackEnd(&context);
+	ret = 1;
+
+out:
+	return ret;
+}
+
 b32 font_load(font_t *f, const char *filename, u32 sz)
 {
-#define BMP_DIM 512
+	s32 w = 512, h = 512;
 	b32 retval = false;
-	unsigned char bitmap[4*BMP_DIM*BMP_DIM], row[4*BMP_DIM];
-	FILE *fp;
-	stbtt_pack_context context;
+	unsigned char *bitmap;
 	stbtt_fontinfo info;
 	int ascent, descent, line_gap;
 	r32 scale;
 
-	fp = fopen(filename, "rb");
-	if (!fp)
+	void *ttf = file_read_all(filename, "rb", g_temp_allocator);
+	if (!ttf)
 		goto out;
 
-	if (fread(ttf_buffer, 1, TTF_BUFFER_SZ, fp) == 0) {
-		fclose(fp);
-		goto out;
-	}
-	fclose(fp);
-
-	if (!stbtt_InitFont(&info, ttf_buffer,
-	                    stbtt_GetFontOffsetForIndex(ttf_buffer, 0)))
-		goto out;
-
-	/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
-	memset(bitmap, 0, 4*BMP_DIM*BMP_DIM);
-
-	if (!stbtt_PackBegin(&context, bitmap, BMP_DIM, BMP_DIM, 4*BMP_DIM, 1, NULL))
-		goto out;
-
-	/* TODO(rgriege): oversample with smaller fonts */
-	// stbtt_PackSetOversampling(&context, 2, 2);
+	if (!stbtt_InitFont(&info, ttf, stbtt_GetFontOffsetForIndex(ttf, 0)))
+		goto err_ttf;
 
 	f->num_glyphs = info.numGlyphs;
 	log_debug("packing %d glyphs for %s:%u", f->num_glyphs, filename, sz);
 	f->char_info = malloc(f->num_glyphs * sizeof(stbtt_packedchar));
-	if (!rgtt_PackFontRange(&context, &info, sz, 0,
-	                        f->num_glyphs, f->char_info))
-		goto pack_fail;
 
-	stbtt_PackEnd(&context);
+	bitmap = amalloc(4*w*h, g_temp_allocator);
+	/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
+	memset(bitmap, 0, 4*w*h);
 
-	for (int i = 0; i < BMP_DIM; ++i) {
-		memset(row, ~0, 4*BMP_DIM);
-		for (int j = 0; j < BMP_DIM; ++j)
-			row[j*4+3] = bitmap[4*i*BMP_DIM+j];
-		memcpy(&bitmap[4*i*BMP_DIM], row, 4*BMP_DIM);
+	/* TODO(rgriege): oversample with smaller fonts */
+	// stbtt_PackSetOversampling(&context, 2, 2);
+
+	if (!rgtt_Pack(&info, sz, f->char_info, &bitmap, &w, &h))
+		goto err_ttf;
+
+	/* greyscale to rgba */
+	{
+		unsigned char *row = amalloc(4*w, g_temp_allocator);
+		for (int i = 0; i < h; ++i) {
+			memset(row, ~0, 4*w);
+			for (int j = 0; j < w; ++j)
+				row[j*4+3] = bitmap[4*i*w+j];
+			memcpy(&bitmap[4*i*w], row, 4*w);
+		}
+		afree(row, g_temp_allocator);
 	}
 
-	texture_init(&f->texture, BMP_DIM, BMP_DIM, GL_RGBA, bitmap);
+	texture_init(&f->texture, w, h, GL_RGBA, bitmap);
 
 	f->filename = filename;
 	f->sz = sz;
@@ -1240,11 +1263,13 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	f->line_gap = scale * line_gap;
 	f->newline_dist = scale * (ascent - descent + line_gap);
 	retval = true;
-	goto out;
 
-pack_fail:
-	free(f->char_info);
+err_ttf:
+	afree(bitmap, g_temp_allocator);
+	afree(ttf, g_temp_allocator);
 out:
+	if (!retval)
+		free(f->char_info);
 	return retval;
 }
 
