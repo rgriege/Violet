@@ -545,7 +545,11 @@ out:
 
 char *imapppath(const char *path_relative_to_app)
 {
-	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), path_relative_to_app);
+	static char buf[4096] = {0};
+	strncpy(buf, app_dir(), countof(buf));
+	strncat(buf, g_file_path_separator, countof(buf)-strlen(buf)-1);
+	strncat(buf, path_relative_to_app, countof(buf)-strlen(buf)-1);
+	return buf;
 }
 
 void *file_read_all(const char *fname, const char *mode, allocator_t *a)
