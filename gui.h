@@ -1184,7 +1184,7 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info,
 
 	while (1) {
 		if (!stbtt_PackBegin(&context, *bitmap, *bmp_w, *bmp_h,
-		                     4 * *bmp_w, 1, NULL))
+		                     *bmp_w, 1, NULL))
 			goto out;
 
 		if (rgtt_PackFontRange(&context, info, font_size, 0,
@@ -1192,12 +1192,12 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info,
 			break;
 		} else if (*bmp_w < 1024) {
 			*bmp_w *= 2;
-			*bitmap = arealloc(*bitmap, 4 * *bmp_w * *bmp_h, g_temp_allocator);
-			memset(*bitmap, 0, 4 * *bmp_w * *bmp_h);
+			*bitmap = arealloc(*bitmap, *bmp_w * *bmp_h, g_temp_allocator);
+			memset(*bitmap, 0, *bmp_w * *bmp_h);
 		} else if (*bmp_h < 1024) {
 			*bmp_h *= 2;
-			*bitmap = arealloc(*bitmap, 4 * *bmp_w * *bmp_h, g_temp_allocator);
-			memset(*bitmap, 0, 4 * *bmp_w * *bmp_h);
+			*bitmap = arealloc(*bitmap, *bmp_w * *bmp_h, g_temp_allocator);
+			memset(*bitmap, 0, *bmp_w * *bmp_h);
 		} else {
 			goto out;
 		}
@@ -1219,6 +1219,8 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	int ascent, descent, line_gap;
 	r32 scale;
 
+	f->char_info = NULL;
+
 	void *ttf = file_read_all(filename, "rb", g_temp_allocator);
 	if (!ttf)
 		goto out;
@@ -1230,9 +1232,9 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	log_debug("packing %d glyphs for %s:%u", f->num_glyphs, filename, sz);
 	f->char_info = malloc(f->num_glyphs * sizeof(stbtt_packedchar));
 
-	bitmap = amalloc(4*w*h, g_temp_allocator);
+	bitmap = amalloc(w*h, g_temp_allocator);
 	/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
-	memset(bitmap, 0, 4*w*h);
+	memset(bitmap, 0, w*h);
 
 	/* TODO(rgriege): oversample with smaller fonts */
 	// stbtt_PackSetOversampling(&context, 2, 2);
@@ -1240,19 +1242,11 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	if (!rgtt_Pack(&info, sz, f->char_info, &bitmap, &w, &h))
 		goto err_ttf;
 
-	/* greyscale to rgba */
-	{
-		unsigned char *row = amalloc(4*w, g_temp_allocator);
-		for (int i = 0; i < h; ++i) {
-			memset(row, ~0, 4*w);
-			for (int j = 0; j < w; ++j)
-				row[j*4+3] = bitmap[4*i*w+j];
-			memcpy(&bitmap[4*i*w], row, 4*w);
-		}
-		afree(row, g_temp_allocator);
-	}
-
-	texture_init(&f->texture, w, h, GL_RGBA, bitmap);
+	texture_init(&f->texture, w, h, GL_RED, bitmap);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
 
 	f->filename = filename;
 	f->sz = sz;
@@ -1268,7 +1262,7 @@ err_ttf:
 	afree(bitmap, g_temp_allocator);
 	afree(ttf, g_temp_allocator);
 out:
-	if (!retval)
+	if (!retval && f->char_info)
 		free(f->char_info);
 	return retval;
 }
