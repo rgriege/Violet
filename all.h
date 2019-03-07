@@ -16,6 +16,7 @@
 #endif
 #define OS_IMPLEMENTATION
 #define STRING_IMPLEMENTATION
+#define UTF8_IMPLEMENTATION
 #define VSON_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #undef VIOLET_IMPLEMENTATION
@@ -35,6 +36,7 @@
 /* String */
 #include "violet/string.h"
 #include "violet/localize.h"
+#include "violet/utf8.h"
 /* Gui */
 #include "violet/color.h"
 #ifndef VIOLET_NO_GUI

@@ -133,6 +133,7 @@ typedef struct font_t
 {
 	const char *filename;
 	u32 sz;
+	s32 num_glyphs;
 	s32 ascent, descent, line_gap, newline_dist;
 	void *char_info;
 	texture_t texture;
@@ -323,6 +324,13 @@ typedef enum npt_flags_t
 	                          | NPT_COMPLETE_ON_UNCHANGED,
 } npt_flags_t;
 
+typedef struct npt_filter
+{
+	b8 ascii[127];
+	b8 non_ascii;
+} npt_filter_t;
+typedef const npt_filter_t* npt_filter_p;
+
 typedef enum btn_val_t
 {
 	BTN_NONE,
@@ -330,10 +338,11 @@ typedef enum btn_val_t
 	BTN_HOLD,
 } btn_val_t;
 
-const b32 g_gui_npt_chars_print[128];
-const b32 g_gui_npt_chars_numeric[128];
-const b32 g_gui_npt_chars_hex[128];
+const npt_filter_t g_gui_npt_filter_print;
+const npt_filter_t g_gui_npt_filter_numeric;
+const npt_filter_t g_gui_npt_filter_hex;
 
+b32 gui_npt_filter(npt_filter_p filter, s32 codepoint);
 const char *gui_npt_val_buf(const gui_t *gui);
 
 /* returns NPT_COMPLETE_ON_XXX if completed using an enabled completion method
@@ -341,9 +350,9 @@ const char *gui_npt_val_buf(const gui_t *gui);
 s32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                  const char *hint, npt_flags_t flags);
 s32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                    const char *hint, npt_flags_t flags, const b32 chars[128]);
+                    const char *hint, npt_flags_t flags, npt_filter_p filter);
 s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
-                 npt_flags_t flags, const b32 chars[128]);
+                 npt_flags_t flags, npt_filter_p filter);
 s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                  img_scale_t scale);
@@ -471,9 +480,9 @@ b32  pgui_chk(gui_t *gui, const char *lbl, b32 *val);
 s32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
                   npt_flags_t flags);
 s32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
-                     npt_flags_t flags, const b32 chars[128]);
+                     npt_flags_t flags, npt_filter_p filter);
 s32  pgui_npt_val(gui_t *gui, const char *txt,
-                  npt_flags_t flags, const b32 chars[128]);
+                  npt_flags_t flags, npt_filter_p filter);
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 void pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
@@ -764,6 +773,7 @@ void gui_style_pop(gui_t *gui);
 #include "violet/graphics.h"
 #include "violet/imath.h"
 #include "violet/string.h"
+#include "violet/utf8.h"
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #ifdef _M_X64
@@ -1169,10 +1179,6 @@ int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
 	return rgtt_PackFontRanges(spc, info, &range, 1);
 }
 
-#define GUI__FONT_MIN_CHAR 32
-#define GUI__FONT_MAX_CHAR 254
-#define GUI__FONT_NUM_CHAR (GUI__FONT_MAX_CHAR - GUI__FONT_MIN_CHAR + 1)
-
 b32 font_load(font_t *f, const char *filename, u32 sz)
 {
 #define BMP_DIM 512
@@ -1207,9 +1213,11 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	/* TODO(rgriege): oversample with smaller fonts */
 	// stbtt_PackSetOversampling(&context, 2, 2);
 
-	f->char_info = malloc(GUI__FONT_NUM_CHAR * sizeof(stbtt_packedchar));
-	if (!rgtt_PackFontRange(&context, &info, sz, GUI__FONT_MIN_CHAR,
-	                        GUI__FONT_NUM_CHAR, f->char_info))
+	f->num_glyphs = info.numGlyphs;
+	log_debug("packing %d glyphs for %s:%u", f->num_glyphs, filename, sz);
+	f->char_info = malloc(f->num_glyphs * sizeof(stbtt_packedchar));
+	if (!rgtt_PackFontRange(&context, &info, sz, 0,
+	                        f->num_glyphs, f->char_info))
 		goto pack_fail;
 
 	stbtt_PackEnd(&context);
@@ -1264,16 +1272,19 @@ void font__align_anchor(s32 *x, s32 *y, s32 w, s32 h, gui_align_t align)
 static
 s32 font__line_width(font_t *f, const char *txt)
 {
-	r32 width = 0, y = 0;
+	const char *p = txt;
+	char *pnext;
+	s32 cp;
 	stbtt_aligned_quad q;
+	r32 width = 0, y = 0;
 
-	for (const char *c = txt; *c != '\0'; ++c) {
-		const int ch = *(const u8*)c;
-		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR)
-			stbtt_GetPackedQuad(f->char_info, f->texture.width, f->texture.height,
-			                    ch - GUI__FONT_MIN_CHAR, &width, &y, &q, 1);
-		else if (*c == '\n')
+	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
+		p = pnext;
+		if (cp == '\n')
 			goto out;
+		else if (cp < f->num_glyphs)
+			stbtt_GetPackedQuad(f->char_info, f->texture.width, f->texture.height,
+			                    cp, &width, &y, &q, 1);
 	}
 out:
 	return width;
@@ -1889,7 +1900,7 @@ typedef struct gui
 
 	/* specific widget state */
 	struct {
-		u32 cursor_pos;
+		u32 cursor_pos; /* byte, NOT GLYPH, offset */
 		b32 performed_action;
 		u32 initial_txt_hash;
 		char val_buf[GUI_TXT_MAX_LENGTH];
@@ -3422,50 +3433,53 @@ void gui__fixup_stbtt_aligned_quad(stbtt_aligned_quad *q, r32 yb)
 }
 
 static
-void gui__add_char_to_line_width(font_t *font, char c, r32 *line_width)
+void gui__add_codepoint_to_line_width(font_t *font, s32 cp, r32 *line_width)
 {
-	const int ch = c;
+	const texture_t *texture = &font->texture;
 	r32 y = 0;
 	stbtt_aligned_quad q;
 
-	if (ch < GUI__FONT_MIN_CHAR && ch > GUI__FONT_MAX_CHAR)
-		return;
-
-	stbtt_GetPackedQuad(font->char_info, font->texture.width, font->texture.height,
-	                    ch - GUI__FONT_MIN_CHAR, line_width, &y, &q, 1);
+	if (cp < font->num_glyphs)
+		stbtt_GetPackedQuad(font->char_info, texture->width, texture->height,
+		                    cp, line_width, &y, &q, 1);
 }
 
 static
 void gui__wrap_txt(gui_t *gui, char *txt, const gui_text_style_t *style, r32 max_width)
 {
 	char *p = txt;
+	char *pnext;
+	s32 cp = utf8_next_codepoint(p, &pnext);
 	r32 line_width = style->padding;
 	font_t *font = gui__get_font(gui, style->size);
 	assert(font);
 
-	while (*p != 0) {
-		char *p_word_start = NULL;
-		r32 line_width_word_start;
+	while (cp != 0) {
+		char *p_space_before_word = NULL;
+		r32 line_width_before_word;
 
-		if (*p == ' ') {
-			p_word_start = p;
-			gui__add_char_to_line_width(font, *p, &line_width);
-			++p;
-		} else if (*p == '\n') {
-			++p;
+		if (cp == ' ') {
+			p_space_before_word = p;
+			gui__add_codepoint_to_line_width(font, cp, &line_width);
+			p = pnext;
+			cp = utf8_next_codepoint(p, &pnext);
+		} else if (cp == '\n') {
+			p = pnext;
+			cp = utf8_next_codepoint(p, &pnext);
 			line_width = style->padding;
 		}
-		line_width_word_start = line_width;
+		line_width_before_word = line_width;
 
-		while (*p != ' ' && *p != '\n' && *p != 0) {
-			gui__add_char_to_line_width(font, *p, &line_width);
-			++p;
+		while (cp != ' ' && cp != '\n' && cp != 0) {
+			gui__add_codepoint_to_line_width(font, cp, &line_width);
+			p = pnext;
+			cp = utf8_next_codepoint(p, &pnext);
 		}
 
 		if (line_width >= max_width) {
-			if (p_word_start)
-				*p_word_start = '\n';
-			line_width = style->padding + line_width - line_width_word_start;
+			if (p_space_before_word)
+				*p_space_before_word = '\n';
+			line_width = style->padding + line_width - line_width_before_word;
 		}
 	}
 }
@@ -3480,6 +3494,10 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	stbtt_aligned_quad q;
 	array(char) buf = NULL;
 	const char *txt = txt_;
+	const char *p = txt;
+	char *pnext;
+	s32 cp;
+	u32 i;
 
 	font = gui__get_font(gui, style->size);
 	assert(font);
@@ -3490,6 +3508,7 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 		memcpy(buf, txt, len + 1);
 		gui__wrap_txt(gui, buf, style, w);
 		txt = buf;
+		p = buf;
 	}
 
 	font__align_anchor(&ix_, &iy_, w, h, style->align);
@@ -3499,16 +3518,17 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	if (pos == 0)
 		goto out;
 
-	for (u32 i = 0; i < pos; ++i) {
-		const int ch = *(const u8*)&txt[i];
-		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR) {
-			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
-			                    &x, &y, &q, 1);
-		} else if (txt[i] == '\n') {
+	i = 0;
+	while (i < pos && (cp = utf8_next_codepoint(p, &pnext)) != 0) {
+		if (cp == '\n') {
 			y -= font->newline_dist;
-			x = ix_ + font__line_offset_x(font, &txt[i+1], style);
+			x = ix_ + font__line_offset_x(font, pnext, style);
+		} else if (cp < font->num_glyphs) {
+			stbtt_GetPackedQuad(font->char_info, font->texture.width,
+			                    font->texture.height, cp, &x, &y, &q, 1);
 		}
+		i += (pnext - p);
+		p = pnext;
 	}
 
 out:
@@ -3525,6 +3545,9 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
 	font_t *font;
 	r32 x = *ix, y = *iy;
 	stbtt_aligned_quad q;
+	const char *p = txt;
+	char *pnext;
+	s32 cp;
 
 	font = gui__get_font(gui, style->size);
 	assert(font);
@@ -3532,19 +3555,18 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
 	x += font__line_offset_x(font, txt, style);
 	y += font__offset_y(font, txt, style);
 
-	for (const char *c = txt; *c != '\0'; ++c) {
-		const int ch = *(const u8*)c;
-		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR) {
+	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
+		if (cp == '\n') {
+			y -= font->newline_dist;
+			x = *ix + font__line_offset_x(font, pnext, style);
+		} else if (cp < font->num_glyphs) {
 			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
-			                    &x, &y, &q, 1);
+			                    font->texture.height, cp, &x, &y, &q, 1);
 			gui__fixup_stbtt_aligned_quad(&q, y);
 			text__render(gui, &font->texture, q.x0, q.y0, q.x1, q.y1, q.s0, q.t0,
 			             q.s1, q.t1, style->color);
-		} else if (*c == '\n') {
-			y -= font->newline_dist;
-			x = *ix + font__line_offset_x(font, c + 1, style);
 		}
+		p = pnext;
 	}
 	*ix = x;
 	*iy = y;
@@ -3562,14 +3584,18 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	s32 closest_dist, dist;
 	v2i p;
 	array(char) buf = NULL;
-	const char *txt = txt_;
+	const char *txt  = txt_;
+	const char *ptxt = txt_;
+	char *pnext;
+	s32 cp;
 
 	if (style->wrap) {
 		const u32 len = (u32)strlen(txt);
 		array_init_ex(buf, len + 1, g_temp_allocator);
 		memcpy(buf, txt, len + 1);
 		gui__wrap_txt(gui, buf, style, w);
-		txt = buf;
+		txt  = buf;
+		ptxt = buf;
 	}
 
 	font = gui__get_font(gui, style->size);
@@ -3583,15 +3609,14 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	closest_pos = 0;
 	closest_dist = v2i_dist_sq(p, mouse);
 
-	for (const char *c = txt; *c != '\0'; ++c) {
-		const int ch = *(const u8*)c;
-		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR) {
-			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
-			                    &x, &y, &q, 1);
-		} else if (*c == '\n') {
+	while ((cp = utf8_next_codepoint(ptxt, &pnext)) != 0) {
+		ptxt = pnext;
+		if (cp == '\n') {
 			y -= font->newline_dist;
-			x = xi + font__line_offset_x(font, c + 1, style);
+			x = xi + font__line_offset_x(font, ptxt, style);
+		} else if (cp < font->num_glyphs) {
+			stbtt_GetPackedQuad(font->char_info, font->texture.width,
+			                    font->texture.height, cp, &x, &y, &q, 1);
 		} else {
 			continue;
 		}
@@ -3599,7 +3624,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 		dist = v2i_dist_sq(p, mouse);
 		if (dist < closest_dist) {
 			closest_dist = dist;
-			closest_pos = c - txt + 1;
+			closest_pos = ptxt - txt;
 		}
 	}
 	if (buf)
@@ -3623,6 +3648,9 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
                  gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph)
 {
+	const char *p = txt;
+	char *pnext;
+	s32 cp;
 	font_t *font;
 	r32 x = x_, y = y_;
 	ivalf x_range, y_range;
@@ -3644,22 +3672,21 @@ void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 	x_range.l = x_range.r = x;
 	y_range.l = y_range.r = y;
 
-	for (const char *c = txt; *c != '\0'; ++c) {
-		const int ch = *(const u8*)c;
-		if (ch >= GUI__FONT_MIN_CHAR && ch <= GUI__FONT_MAX_CHAR) {
+	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
+		if (cp == '\n') {
+			y -= font->newline_dist;
+			x = x_ + font__line_offset_x(font, pnext, &style);
+		} else if (cp < font->num_glyphs) {
 			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, ch - GUI__FONT_MIN_CHAR,
-			                    &x, &y, &q, 1);
+			                    font->texture.height, cp, &x, &y, &q, 1);
 			gui__fixup_stbtt_aligned_quad(&q, y);
 
 			x_range.l = min(x_range.l, q.x0);
 			x_range.r = max(x_range.r, q.x1);
 			y_range.l = min(y_range.l, q.y0);
 			y_range.r = max(y_range.r, q.y1);
-		} else if (*c == '\n') {
-			y -= font->newline_dist;
-			x = x_ + font__line_offset_x(font, c + 1, &style);
 		}
+		p = pnext;
 	}
 	*px = x_range.l;
 	*py = y_range.l;
@@ -3843,37 +3870,46 @@ u32 gui_verts_cnt(const gui_t *gui)
 	return gui->vert_cnt;
 }
 
-const b32 g_gui_npt_chars_print[128] = {
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+const npt_filter_t g_gui_npt_filter_print = {
+	.ascii = {
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	},
+	.non_ascii = 1,
 };
 
-const b32 g_gui_npt_chars_numeric[128] = {
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+const npt_filter_t g_gui_npt_filter_numeric = {
+	.ascii = {
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	},
+	.non_ascii = 0,
 };
 
-const b32 g_gui_npt_chars_hex[128] = {
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
-	0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-	0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+const npt_filter_t g_gui_npt_filter_hex = {
+	.ascii = {
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
+		0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+		0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,
+	},
+	.non_ascii = 0,
 };
 
 static
@@ -4018,18 +4054,30 @@ void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
 	gui->npt.performed_action = true;
 }
 
+b32 gui_npt_filter(npt_filter_p filter, s32 codepoint)
+{
+	if (codepoint < 0)
+		return false;
+	else if (codepoint < 127)
+		return filter->ascii[codepoint];
+	else if (codepoint == 127)
+		return false;
+	else
+		return filter->non_ascii;
+}
+
 s32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                 const char *hint, npt_flags_t flags)
 {
 	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags,
-	                      g_gui_npt_chars_print);
+	                      &g_gui_npt_filter_print);
 }
 
 static
 btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse, mouse_button_t mb);
 
 s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                   const char *hint, npt_flags_t flags, const b32 chars[128])
+                   const char *hint, npt_flags_t flags, npt_filter_p filter)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_focused = gui_widget_focused(gui, id);
@@ -4055,43 +4103,55 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		gui->npt.cursor_pos = clamp(0, gui->npt.cursor_pos, len);
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
 			gui__npt_prep_action(gui, flags, txt, &len);
-			for (size_t k = 0, kn = strlen(gui->text_npt); k < kn; ++k) {
-				if (gui->text_npt[k] > 0 && len < n - 1 && chars[(u8)gui->text_npt[k]]) {
-					for (u32 i = len + 1; i > gui->npt.cursor_pos; --i)
-						txt[i] = txt[i-1];
-					txt[gui->npt.cursor_pos++] = gui->text_npt[k];
-					++len;
+			const char *p = gui->text_npt;
+			char *pnext;
+			s32 cp;
+			u32 cp_sz;
+			while (   (cp = utf8_next_codepoint(p, &pnext)) != 0
+			       && (cp_sz = pnext - p)
+			       && len + cp_sz < n) {
+				if (gui_npt_filter(filter, cp)) {
+					/* move all bytes after the cursor (inc NUL) forward by cp_sz */
+					for (u32 i = len + cp_sz; i > gui->npt.cursor_pos + cp_sz - 1; --i)
+						txt[i] = txt[i-cp_sz];
+					memcpy(&txt[gui->npt.cursor_pos], p, cp_sz);
+					len += cp_sz;
+					gui->npt.cursor_pos += cp_sz;
 				}
+				p = pnext;
 			}
 		} else if (gui->key_repeat.triggered) {
 			const u32 key_idx = gui->key_repeat.val;
 			if (key_idx == KB_BACKSPACE) {
 				gui__npt_prep_action(gui, flags, txt, &len);
 				if (gui->npt.cursor_pos > 0) {
-					for (u32 i = gui->npt.cursor_pos - 1; i < len; ++i)
-						txt[i] = txt[i+1];
-					--gui->npt.cursor_pos;
+					char *cursor = &txt[gui->npt.cursor_pos], *prev;
+					utf8_prev_codepoint(cursor, &prev);
+					gui->npt.cursor_pos -= (cursor - prev);
+					buf_remove_n(txt, gui->npt.cursor_pos, cursor - prev, len+1);
 				}
 			} else if (key_idx == KB_DELETE) {
 				gui__npt_prep_action(gui, flags, txt, &len);
-				for (u32 i = gui->npt.cursor_pos; i < len; ++i)
-					txt[i] = txt[i+1];
+				char *cursor = &txt[gui->npt.cursor_pos], *next;
+				if (utf8_next_codepoint(cursor, &next) != 0)
+					buf_remove_n(txt, gui->npt.cursor_pos, next - cursor, len+1);
 			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
 				gui__npt_prep_action(gui, flags, txt, &len);
 				gui__defocus_widget(gui, id);
 				complete = NPT_COMPLETE_ON_ENTER;
 			} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
 				char *clipboard;
-				u32 cnt;
+				u32 sz;
 				gui__npt_prep_action(gui, flags, txt, &len);
 				if (   SDL_HasClipboardText()
 				    && (clipboard = SDL_GetClipboardText())
-				    && (cnt = min(n - 1 - len, (u32)strlen(clipboard))) > 0) {
-					memmove(&txt[gui->npt.cursor_pos + cnt],
+				    && (sz = strlen(clipboard)) > 0
+				    && len + sz < n) {
+					memmove(&txt[gui->npt.cursor_pos + sz],
 					        &txt[gui->npt.cursor_pos],
 					        len - gui->npt.cursor_pos + 1);
-					memcpy(&txt[gui->npt.cursor_pos], clipboard, cnt);
-					gui->npt.cursor_pos += cnt;
+					memcpy(&txt[gui->npt.cursor_pos], clipboard, sz);
+					gui->npt.cursor_pos += sz;
 					SDL_free(clipboard);
 				}
 			} else if (gui__key_up(gui)) {
@@ -4105,11 +4165,15 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				const s32 dy = -font->newline_dist;
 				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
 			} else if (gui__key_left(gui)) {
-				if (gui->npt.cursor_pos > 0)
-					--gui->npt.cursor_pos;
+				if (gui->npt.cursor_pos > 0) {
+					char *cursor = &txt[gui->npt.cursor_pos], *prev;
+					utf8_prev_codepoint(cursor, &prev);
+					gui->npt.cursor_pos -= (cursor - prev);
+				}
 			} else if (gui__key_right(gui)) {
-				if (gui->npt.cursor_pos < len)
-					++gui->npt.cursor_pos;
+				char *cursor = &txt[gui->npt.cursor_pos], *next;
+				if (utf8_next_codepoint(cursor, &next) != 0)
+					gui->npt.cursor_pos += (next - cursor);
 			} else if (gui__key_home(gui)) {
 				gui->npt.cursor_pos = 0;
 			} else if (gui__key_end(gui)) {
@@ -4160,12 +4224,15 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	               ? txt : "";
 
 	if (flags & NPT_PASSWORD) {
-		const u32 sz_ = (u32)strlen(txt_to_display);
-		const u32 sz = min(sz_, GUI_TXT_MAX_LENGTH-1);
-		assert(sz < GUI_TXT_MAX_LENGTH);
-		for (u32 i = 0; i < sz; ++i)
-			gui->npt.pw_buf[i] = '*';
-		gui->npt.pw_buf[sz] = '\0';
+		assert(strlen(txt_to_display) < GUI_TXT_MAX_LENGTH);
+		const char *p = txt_to_display;
+		char *pnext;
+		u32 i = 0;
+		while (i < GUI_TXT_MAX_LENGTH-1 && utf8_next_codepoint(p, &pnext) != 0) {
+			gui->npt.pw_buf[i++] = '*';
+			p = pnext;
+		}
+		gui->npt.pw_buf[i] = '\0';
 		gui_txt_styled(gui, x, y, w, h, gui->npt.pw_buf, &elem_style.text);
 		displayed_txt = gui->npt.pw_buf;
 	} else {
@@ -4193,23 +4260,23 @@ const char *gui_npt_val_buf(const gui_t *gui)
 }
 
 s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
-                npt_flags_t flags, const b32 chars[128])
+                npt_flags_t flags, npt_filter_p filter)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	if (gui_widget_focused(gui, id)) {
 		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt.val_buf),
-		                      "", flags, chars);
+		                      "", flags, filter);
 	} else if (gui_any_widget_has_focus(gui)) {
 		char buf[GUI_TXT_MAX_LENGTH];
 		strncpy(buf, txt, countof(buf));
-		gui_npt_txt_ex(gui, x, y, w, h, B2PC(buf), "", flags, chars);
+		gui_npt_txt_ex(gui, x, y, w, h, B2PC(buf), "", flags, filter);
 		if (gui_widget_focused(gui, id))
 			strncpy(gui->npt.val_buf, txt, countof(gui->npt.val_buf));
 		return 0;
 	} else {
 		strncpy(gui->npt.val_buf, txt, countof(gui->npt.val_buf));
 		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt.val_buf),
-		                      "", flags, chars);
+		                      "", flags, filter);
 	}
 }
 
@@ -5051,7 +5118,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		const npt_flags_t flags = NPT_CLEAR_ON_FOCUS
 		                        | NPT_COMPLETE_ON_TAB
 		                        | NPT_COMPLETE_ON_CLICK_OUT;
-		const b32 *chars = g_gui_npt_chars_hex;
+		npt_filter_p filter = &g_gui_npt_filter_hex;
 		b32 changed = false, changed_npt = false;
 		u8 ch, cs, cv;
 
@@ -5087,7 +5154,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "r");
-		if (pgui_npt_val(gui, imprintf("%u", color.r), flags, chars)) {
+		if (pgui_npt_val(gui, imprintf("%u", color.r), flags, filter)) {
 			changed_npt = true;
 			color.r = strtoul(gui_npt_val_buf(gui), NULL, 0);
 		}
@@ -5095,7 +5162,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "g");
-		if (pgui_npt_val(gui, imprintf("%u", color.g), flags, chars)) {
+		if (pgui_npt_val(gui, imprintf("%u", color.g), flags, filter)) {
 			changed_npt = true;
 			color.g = strtoul(gui_npt_val_buf(gui), NULL, 0);
 		}
@@ -5103,7 +5170,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "b");
-		if (pgui_npt_val(gui, imprintf("%u", color.b), flags, chars)) {
+		if (pgui_npt_val(gui, imprintf("%u", color.b), flags, filter)) {
 			changed_npt = true;
 			color.b = strtoul(gui_npt_val_buf(gui), NULL, 0);
 		}
@@ -5112,7 +5179,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		color_to_hsv8(color, &ch, &cs, &cv);
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "h");
-		if (pgui_npt_val(gui, imprintf("%u", ch), flags, chars)) {
+		if (pgui_npt_val(gui, imprintf("%u", ch), flags, filter)) {
 			changed_npt = true;
 			ch = strtoul(gui_npt_val_buf(gui), NULL, 0);
 			hsv_to_color8(ch, cs, cv, &color);
@@ -5121,7 +5188,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "s");
-		if (pgui_npt_val(gui, imprintf("%u", cs), flags, chars)) {
+		if (pgui_npt_val(gui, imprintf("%u", cs), flags, filter)) {
 			changed_npt = true;
 			cs = strtoul(gui_npt_val_buf(gui), NULL, 0);
 			hsv_to_color8(ch, cs, cv, &color);
@@ -5130,7 +5197,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "v");
-		if (pgui_npt_val(gui, imprintf("%u", cv), flags, chars)) {
+		if (pgui_npt_val(gui, imprintf("%u", cv), flags, filter)) {
 			changed_npt = true;
 			cv = strtoul(gui_npt_val_buf(gui), NULL, 0);
 			hsv_to_color8(ch, cs, cv, &color);
@@ -5139,7 +5206,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "#");
-		if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x", color.r, color.g, color.b), flags, chars)) {
+		if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x", color.r, color.g, color.b), flags, filter)) {
 			const color_t c_orig = color;
 			if (color_from_hex(gui_npt_val_buf(gui), &color))
 				changed_npt = true;
@@ -5633,23 +5700,23 @@ b32 pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 s32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
                  npt_flags_t flags)
 {
-	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, g_gui_npt_chars_print);
+	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, &g_gui_npt_filter_print);
 }
 
 s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
-                    npt_flags_t flags, const b32 chars[128])
+                    npt_flags_t flags, npt_filter_p filter)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	return gui_npt_txt_ex(gui, x, y, w, h, lbl, n, hint, flags, chars);
+	return gui_npt_txt_ex(gui, x, y, w, h, lbl, n, hint, flags, filter);
 }
 
 s32 pgui_npt_val(gui_t *gui, const char *txt,
-                 npt_flags_t flags, const b32 chars[128])
+                 npt_flags_t flags, npt_filter_p filter)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	return gui_npt_val(gui, x, y, w, h, txt, flags, chars);
+	return gui_npt_val(gui, x, y, w, h, txt, flags, filter);
 }
 
 b32 pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
