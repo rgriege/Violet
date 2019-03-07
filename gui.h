@@ -3438,6 +3438,7 @@ font_t *gui__get_font(gui_t *gui, u32 sz)
 		return font;
 	} else {
 		array_pop(gui->fonts);
+		assert(false);
 		return NULL;
 	}
 }
@@ -3470,8 +3471,10 @@ void gui__wrap_txt(gui_t *gui, char *txt, const gui_text_style_t *style, r32 max
 	char *pnext;
 	s32 cp = utf8_next_codepoint(p, &pnext);
 	r32 line_width = style->padding;
+
 	font_t *font = gui__get_font(gui, style->size);
-	assert(font);
+	if (!font)
+		return;
 
 	while (cp != 0) {
 		char *p_space_before_word = NULL;
@@ -3519,7 +3522,8 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	u32 i;
 
 	font = gui__get_font(gui, style->size);
-	assert(font);
+	if (!font)
+		return;
 
 	if (style->wrap) {
 		const u32 len = (u32)strlen(txt);
@@ -3569,7 +3573,8 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
 	s32 cp;
 
 	font = gui__get_font(gui, style->size);
-	assert(font);
+	if (!font)
+		return;
 
 	x += font__line_offset_x(font, txt, style);
 	y += font__offset_y(font, txt, style);
@@ -3618,7 +3623,8 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	}
 
 	font = gui__get_font(gui, style->size);
-	assert(font);
+	if (!font)
+		return 0;
 
 	font__align_anchor(&xi, &yi, w, h, style->align);
 	x = xi + font__line_offset_x(font, txt, style);
@@ -3683,7 +3689,13 @@ void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 	};
 
 	font = gui__get_font(gui, style.size);
-	assert(font);
+	if (!font) {
+		*px = 0;
+		*py = 0;
+		*pw = 0;
+		*ph = 0;
+		return;
+	}
 
 	x += font__line_offset_x(font, txt, &style);
 	y += font__offset_y(font, txt, &style);
@@ -3717,8 +3729,11 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 {
 	s32 width = 0;
 	const char *line = txt;
+
 	font_t *font = gui__get_font(gui, sz);
-	assert(font);
+	if (!font)
+		return 0;
+
 	while (*line != '\0') {
 		const s32 line_width = font__line_width(font, line);
 		width = max(width, line_width);
@@ -4176,13 +4191,17 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			} else if (gui__key_up(gui)) {
 				const gui_text_style_t *txt_style = &style->active.text;
 				const font_t *font = gui__get_font(gui, txt_style->size);
-				const s32 dy = font->newline_dist;
-				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
+				if (font) {
+					const s32 dy = font->newline_dist;
+					gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
+				}
 			} else if (gui__key_down(gui)) {
 				const gui_text_style_t *txt_style = &style->active.text;
 				const font_t *font = gui__get_font(gui, txt_style->size);
-				const s32 dy = -font->newline_dist;
-				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
+				if (font) {
+					const s32 dy = -font->newline_dist;
+					gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
+				}
 			} else if (gui__key_left(gui)) {
 				if (gui->npt.cursor_pos > 0) {
 					char *cursor = &txt[gui->npt.cursor_pos], *prev;
@@ -4262,9 +4281,12 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
 			const color_t color = elem_style.text.color;
 			const font_t *font = gui__get_font(gui, elem_style.text.size);
-			gui__txt_char_pos(gui, &x, &y, w, h, displayed_txt,
-			                  gui->npt.cursor_pos, &elem_style.text);
-			gui_line(gui, x + 1, y + font->descent, x + 1, y + font->ascent, 1, color);
+			if (font) {
+				gui__txt_char_pos(gui, &x, &y, w, h, displayed_txt,
+				                  gui->npt.cursor_pos, &elem_style.text);
+				x += 1;
+				gui_line(gui, x, y + font->descent, x, y + font->ascent, 1, color);
+			}
 		}
 	} else if (txt[0] == 0 && hint) {
 		gui_txt_styled(gui, x, y, w, h, hint, &elem_style.text);
