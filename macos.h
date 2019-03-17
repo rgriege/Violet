@@ -3,58 +3,9 @@
 #include <CoreFoundation/CFBundle.h>
 #include <CoreFoundation/CFURL.h>
 #include <dlfcn.h>
-/*#include <errno.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>*/
 #include <unistd.h>
 
-b32 file__dialog(char *filename, u32 n, const char *cmd)
-{
-	b32 retval = false;
-	FILE *pipe = popen(cmd, "r");
-	if (!pipe)
-		goto out;
-
-	if (fgets(filename, n-1, pipe) != NULL)
-	{
-		// NOTE(rgriege): newline char added for some reason
-		char *c = strchr(filename, '\n');
-		if (c)
-			*c = 0;
-		retval = true;
-	}
-
-	pclose(pipe);
-out:
-	return retval;
-}
-
 const char *g_file_path_separator = "/";
-
-b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
-{
-	return file__dialog(fname, fname_sz, "zenity --file-selection");
-}
-
-b32 file_save_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
-{
-	return file__dialog(fname, fname_sz, "zenity --file-selection --save");
-}
-
-b32 file_open_dialog_ex(char *fname, u32 fname_sz,
-                        const file_dialog_filter_t filters[], u32 num_filters)
-{
-	const file_dialog_filter_t filter = {0};
-	return file_open_dialog(fname, fname_sz, filter);
-}
-
-b32 file_save_dialog_ex(char *fname, u32 fname_sz,
-                        const file_dialog_filter_t filters[], u32 num_filters)
-{
-	const file_dialog_filter_t filter = {0};
-	return file_save_dialog(fname, fname_sz, filter);
-}
 
 b32 file_exists(const char *path)
 {
@@ -66,83 +17,6 @@ b32 dir_exists(const char *path)
 {
 	struct stat s;
 	return stat(path, &s) == 0 && S_ISDIR(s.st_mode);
-}
-
-static
-b32 _mkdir(const char *path)
-{
-	return mkdir(path, S_IRWXU) == 0;
-}
-
-const char *app_dir(void)
-{
-	static char path[PATH_MAX] = {0};
-	if (path[0] != 0)
-		goto out;
-	CFBundleRef bundle = CFBundleGetMainBundle();
-	if (bundle == NULL)
-		goto out;
-	CFURLRef url = CFBundleCopyExecutableURL(bundle);
-	if (url == NULL)
-		goto out;
-	if (CFURLGetFileSystemRepresentation(url, true, (UInt8*)B2PC(path))) {
-		char *last = strrchr(path, '/');
-		if (last)
-			*last = 0;
-		else
-			path[0] = 0;
-	} else {
-		path[0] = 0;
-	}
-	CFRelease(url);
-out:
-	return path;
-}
-
-char *app_data_dir(const char *app_name, allocator_t *a)
-{
-	char *path = amalloc(2, a);
-	path[0] = '.';
-	path[1] = '\0';
-	return path;
-}
-
-/* Dynamic library */
-
-#ifndef VIOLET_NO_LIB
-lib_handle lib_load(const char *_filename)
-{
-	const u32 sz = strlen(_filename);
-	char *filename = amalloc(sz + 4, g_temp_allocator);
-	strcpy(filename, _filename);
-	strcat(filename, ".so");
-	lib_handle hnd = dlopen(filename, RTLD_NOW | RTLD_LOCAL);
-	afree(filename, g_temp_allocator);
-	return hnd;
-}
-
-void *lib_func(lib_handle hnd, const char *name)
-{
-	return dlsym(hnd, name);
-}
-
-b32 lib_close(lib_handle hnd)
-{
-	return dlclose(hnd) == 0;
-}
-
-const char *lib_err()
-{
-	return dlerror();
-}
-#endif // VIOLET_NO_LIB
-
-b32 open_file_external(const char *filename)
-{
-	char command[256] = "xdg-open ";
-	const size_t sz = strlen(command);
-	strncpy(command + sz, filename, 256 - sz - 1);
-	return run(command) == 0;
 }
 
 void path_append(char *lhs, const char *rhs)
@@ -157,47 +31,37 @@ void path_appendn(char *lhs, const char *rhs, u32 sz)
 	strncat(lhs, rhs, sz);
 }
 
-b32 mkpath(const char *path)
+b32 mkpath(const char *path_)
 {
-	char _path[256];
-	if (strlen(path) > sizeof(_path))
-		return false;
-
-	if (path[0] == '.' && (path[1] == '/' || path[1] == '\\'))
-		strcpy(_path, path + 2);
-	else
-		strcpy(_path, path);
-
-	if (strlen(_path) == 0)
+	if (dir_exists(path_))
 		return true;
 
-	errno = 0;
+	char path[PATH_MAX];
+	if (strlen(path_) > sizeof(path))
+		return false;
 
-	u32 pos = 0, dot_pos = 0;
-	for (char *p = _path + 1; *p; ++p) {
-		switch (*p) {
-		case '/':
-		case '\\': {
-			char c = *p;
-			*p = '\0';
+	if (path_[0] == '.' && path_[1] == '/')
+		strcpy(path, path_ + 2);
+	else
+		strcpy(path, path_);
 
-			if (!_mkdir(_path) && errno != EEXIST)
+	if (strlen(path) == 0)
+		return true;
+
+	u32 pos = 0;
+	char c = 0;
+	for (char *p = path + 1; *p; ++p) {
+		if (*p == g_file_path_separator[0]) {
+			memswp(c, *p, char);
+			if (!dir_exists(path) && mkdir(path, S_IRWXU) != 0 && errno != EEXIST)
 				return false;
-
-			*p = c;
+			memswp(c, *p, char);
 			pos = 0;
-		}
-		break;
-		case '.':
-			dot_pos = pos;
-		break;
-		default:
+		} else {
 			++pos;
-		break;
 		}
 	}
-
-	return dot_pos != 0 || _mkdir(_path) || errno == EEXIST;
+	return mkdir(path, S_IRWXU) == 0;
 }
 
 #ifdef VLT_USE_TINYDIR
@@ -240,10 +104,139 @@ out:
 }
 #endif // VLT_USE_TINYDIR
 
-char *imapppath(const char *path_relative_to_app)
+char *impathcat(char *imstr, const char *path)
 {
-	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), path_relative_to_app);
+	return imstrcatn(imstrcatn(imstr, g_file_path_separator), path);
 }
+
+char *imappdir(void)
+{
+	static thread_local char path[PATH_MAX] = {0};
+	if (path[0] != 0)
+		goto out;
+	CFBundleRef bundle = CFBundleGetMainBundle();
+	if (bundle == NULL)
+		goto out;
+	CFURLRef url = CFBundleCopyExecutableURL(bundle);
+	if (url == NULL)
+		goto out;
+	if (CFURLGetFileSystemRepresentation(url, true, (UInt8*)B2PC(path))) {
+		char *last = strrchr(path, '/');
+		if (last)
+			*last = 0;
+		else
+			path[0] = 0;
+	} else {
+		path[0] = 0;
+	}
+	CFRelease(url);
+out:
+	return imstrcpy(path);
+}
+
+char *imapppath(const char *resource)
+{
+	return impathcat(imappdir(), resource);
+}
+
+char *imrespath(const char *resource)
+{
+#ifdef MACOS_BUNDLE_ID
+	imstrcpy("");
+
+	CFBundleRef bundle = CFBundleGetMainBundle();
+	if (bundle == NULL)
+		goto out;
+
+	CFStringRef str = CFStringCreateWithCString(NULL, resource, kCFStringEncodingUTF8);
+	CFURLRef url = CFBundleCopyResourceURL(bundle, str, NULL, NULL);
+	if (url == NULL)
+		goto err;
+
+	if (!CFURLGetFileSystemRepresentation(url, true, (UInt8*)imstr(), IMPRINT_BUFFER_SIZE))
+		imstrcpy("");
+
+	CFRelease(url);
+err:
+	CFRelease(str);
+out:
+	return imstr();
+#else
+	return imapppath(resource);
+#endif
+}
+
+char *imhomedir();
+
+static
+char *imuserdir(const char *bundle_dir, const char *nbundle_dir)
+{
+#ifdef MACOS_BUNDLE_ID
+	return impathcat(impathcat(impathcat(imhomedir(), "Library"), bundle_dir), MACOS_BUNDLE_ID);
+#else
+	return imapppath(nbundle_dir);
+#endif
+}
+
+char *imlogdir(void)
+{
+	return imuserdir("Logs", ".logs");
+}
+
+char *imlogpath(const char *resource)
+{
+	return impathcat(imlogdir(), resource);
+}
+
+char *imcachedir(void)
+{
+	return imuserdir("Caches", ".cache");
+}
+
+char *imcachepath(const char *resource)
+{
+	return impathcat(imcachedir(), resource);
+}
+
+char *imdatadir(void)
+{
+	return imuserdir("Application Support", ".data");
+}
+
+char *imdatapath(const char *resource)
+{
+	return impathcat(imdatadir(), resource);
+}
+
+/* Dynamic library */
+
+#ifndef VIOLET_NO_LIB
+lib_handle lib_load(const char *_filename)
+{
+	const u32 sz = strlen(_filename);
+	char *filename = amalloc(sz + 4, g_temp_allocator);
+	strcpy(filename, _filename);
+	strcat(filename, ".so");
+	lib_handle hnd = dlopen(filename, RTLD_NOW | RTLD_LOCAL);
+	afree(filename, g_temp_allocator);
+	return hnd;
+}
+
+void *lib_func(lib_handle hnd, const char *name)
+{
+	return dlsym(hnd, name);
+}
+
+b32 lib_close(lib_handle hnd)
+{
+	return dlclose(hnd) == 0;
+}
+
+const char *lib_err()
+{
+	return dlerror();
+}
+#endif // VIOLET_NO_LIB
 
 /* IO */
 
@@ -316,4 +309,12 @@ int run(const char *command)
 	afree(log_buf, g_temp_allocator);
 	int status = pclose(fp);
 	return status != -1 && WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+}
+
+b32 open_file_external(const char *filename)
+{
+	char command[256] = "open ";
+	const size_t sz = strlen(command);
+	strncpy(command + sz, filename, 256 - sz - 1);
+	return run(command) == 0;
 }

@@ -12,12 +12,8 @@ typedef struct {
 	const char *pattern;
 } file_dialog_filter_t;
 
-b32  file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter);
-b32  file_save_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter);
-b32  file_open_dialog_ex(char *fname, u32 fname_sz,
-                         const file_dialog_filter_t filters[], u32 num_filters);
-b32  file_save_dialog_ex(char *fname, u32 fname_sz,
-                         const file_dialog_filter_t filters[], u32 num_filters);
+b32  file_open_dialog(char *fname, u32 fname_sz, const file_dialog_filter_t filters[], u32 num_filters);
+b32  file_save_dialog(char *fname, u32 fname_sz, const file_dialog_filter_t filters[], u32 num_filters);
 
 b32  file_exists(const char *path);
 b32  dir_exists(const char *path);
@@ -28,10 +24,16 @@ b32  mkpath(const char *path);
 b32  rmdir_f(const char *path);
 #endif
 
-const char *app_dir(void);
-char *app_data_dir(const char *app_name, allocator_t *a);
-
-char *imapppath(const char *path_relative_to_app);
+char *impathcat(char *imstr, const char *path);
+char *imappdir(void);
+char *imapppath(const char *resource);
+char *imrespath(const char *resource);
+char *imlogdir(void);
+char *imlogpath(const char *resource);
+char *imcachedir(void);
+char *imcachepath(const char *resource);
+char *imdatadir(void);
+char *imdatapath(const char *resource);
 
 /* Dynamic library */
 

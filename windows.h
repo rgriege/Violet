@@ -8,6 +8,8 @@
 #include <shobjidl.h>
 #include <Shellapi.h>
 
+const char *g_file_path_separator = "\\";
+
 static
 b32 file__dialog(char *filename, u32 fname_sz,
                  const file_dialog_filter_t filters[], u32 num_filters,
@@ -103,27 +105,15 @@ out:
 	return retval;
 }
 
-const char *g_file_path_separator = "\\";
-
-b32 file_open_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
-{
-	return file_open_dialog_ex(fname, fname_sz, &filter, 1);
-}
-
-b32 file_save_dialog(char *fname, u32 fname_sz, file_dialog_filter_t filter)
-{
-	return file_save_dialog_ex(fname, fname_sz, &filter, 1);
-}
-
-b32 file_open_dialog_ex(char *fname, u32 fname_sz,
-                        const file_dialog_filter_t filters[], u32 num_filters)
+b32 file_open_dialog(char *fname, u32 fname_sz,
+                     const file_dialog_filter_t filters[], u32 num_filters)
 {
 	return file__dialog(fname, fname_sz, filters, num_filters,
 	                    CLSID_FileOpenDialog, IID_IFileOpenDialog);
 }
 
-b32 file_save_dialog_ex(char *fname, u32 fname_sz,
-                        const file_dialog_filter_t filters[], u32 num_filters)
+b32 file_save_dialog(char *fname, u32 fname_sz,
+                     const file_dialog_filter_t filters[], u32 num_filters)
 {
 	return file__dialog(fname, fname_sz, filters, num_filters,
 	                    CLSID_FileSaveDialog, IID_IFileSaveDialog);
@@ -132,105 +122,15 @@ b32 file_save_dialog_ex(char *fname, u32 fname_sz,
 b32 file_exists(const char *path)
 {
 	const DWORD attrib = GetFileAttributes(path);
-	return    attrib != INVALID_FILE_ATTRIBUTES
-	       && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
+	return attrib != INVALID_FILE_ATTRIBUTES
+	    && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 b32 dir_exists(const char *path)
 {
 	const DWORD attrib = GetFileAttributes(path);
-	return    attrib != INVALID_FILE_ATTRIBUTES
-	       && (attrib & FILE_ATTRIBUTE_DIRECTORY);
-}
-
-static
-b32 _mkdir(const char *path)
-{
-	// catch drive creation
-	if (strlen(path) == 2 && path[1] == ':')
-		return true;
-
-	return CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
-}
-
-const char *app_dir(void)
-{
-	static char path[MAX_PATH] = {0};
-	if (path[0] != '\0') {
-	} else if (GetModuleFileName(NULL, B2PC(path)) != 0) {
-		char *last = strrchr(path, '\\');
-		if (last)
-			*last = '\0';
-	} else {
-		path[0] = '\0';
-	}
-	return path;
-}
-
-char *app_data_dir(const char *app_name, allocator_t *a)
-{
-#ifndef WINDOWS_LOCAL_PROGRAM_DATA
-	PWSTR psz_file_path;
-	if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &psz_file_path) == S_OK) {
-		const size_t n = wcslen(psz_file_path) * sizeof(wchar_t);
-		char *path = amalloc(n + 4 + strlen(app_name), a);
-		wcstombs(path, psz_file_path, n);
-		CoTaskMemFree(psz_file_path);
-		path_append(path, app_name);
-		return path;
-	}
-	return NULL;
-#else
-	char *path = amalloc(2, a);
-	path[0] = '.';
-	path[1] = '\0';
-	return path;
-#endif
-}
-
-/* Dynamic library */
-
-#ifndef VIOLET_NO_LIB
-lib_handle lib_load(const char *_filename)
-{
-	const size_t sz = strlen(_filename);
-	char *filename = amalloc(sz + 4, g_temp_allocator);
-	strcpy(filename, _filename);
-	strcat(filename, ".dll");
-	lib_handle hnd = LoadLibrary(filename);
-	afree(filename, g_temp_allocator);
-	return hnd;
-}
-
-void *lib_func(lib_handle hnd, const char *name)
-{
-	return GetProcAddress(hnd, name);
-}
-
-b32 lib_close(lib_handle hnd)
-{
-	return FreeLibrary(hnd);
-}
-
-const char *lib_err()
-{
-	static char buf[256];
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
-	              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
-	return buf;
-}
-#endif // VIOLET_NO_LIB
-
-b32 open_file_external(const char *filename)
-{
-	const INT_PTR ret = (INT_PTR)ShellExecute(NULL, "open", filename,
-	                                          NULL, NULL, SW_SHOWNORMAL);
-	if (ret <= 32) {
-		log_error("failed to open %s in an external program with error %d",
-		          filename, ret);
-		return false;
-	}
-	return true;
+	return attrib != INVALID_FILE_ATTRIBUTES
+	    && (attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 void path_append(char *lhs, const char *rhs)
@@ -245,47 +145,40 @@ void path_appendn(char *lhs, const char *rhs, u32 sz)
 	strncat(lhs, rhs, sz);
 }
 
-b32 mkpath(const char *path)
+b32 mkpath(const char *path_)
 {
-	char _path[256];
-	if (strlen(path) > sizeof(_path))
-		return false;
-
-	if (path[0] == '.' && (path[1] == '/' || path[1] == '\\'))
-		strcpy(_path, path + 2);
-	else
-		strcpy(_path, path);
-
-	if (strlen(_path) == 0)
+	if (dir_exists(path_))
 		return true;
 
-	errno = 0;
+	char path[MAX_PATH];
+	if (strlen(path_) > sizeof(path))
+		return false;
 
-	u32 pos = 0, dot_pos = 0;
+	if (path_[0] == '.' && path_[1] == '/')
+		strcpy(path, path_ + 2);
+	else if (strlen(path_) >= 2 && path_[1] == ':')
+		strcpy(path, path_ + 2);
+	else
+		strcpy(path, path_);
+
+	if (strlen(path) == 0)
+		return true;
+
+	u32 pos = 0;
+	char c = 0;
 	for (char *p = _path + 1; *p; ++p) {
-		switch (*p) {
-		case '/':
-		case '\\': {
-			char c = *p;
-			*p = '\0';
-
-			if (!_mkdir(_path) && errno != EEXIST)
+		if (*p == g_file_path_separator[0]) {
+			memswp(c, *p, char);
+			if (!(CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS))
 				return false;
-
-			*p = c;
+			memswp(c, *p, char);
 			pos = 0;
-		}
-		break;
-		case '.':
-			dot_pos = pos;
-		break;
-		default:
+		} else {
 			++pos;
-		break;
 		}
 	}
 
-	return dot_pos != 0 || _mkdir(_path) || errno == EEXIST;
+	return CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
 }
 
 #ifdef VLT_USE_TINYDIR
@@ -328,10 +221,122 @@ out:
 }
 #endif // VLT_USE_TINYDIR
 
-char *imapppath(const char *path_relative_to_app)
+char *impathcat(char *imstr, const char *path)
 {
-	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), path_relative_to_app);
+	return imstrcatn(imstrcatn(imstr, g_file_path_separator), path);
 }
+
+const char *imappdir(void)
+{
+	static thread_local char path[MAX_PATH] = {0};
+	if (path[0] != '\0') {
+	} else if (GetModuleFileName(NULL, B2PC(path)) != 0) {
+		char *last = strrchr(path, '\\');
+		if (last)
+			*last = '\0';
+	} else {
+		path[0] = '\0';
+	}
+	return imstrcpy(path);
+}
+
+char *imapppath(const char *resource)
+{
+	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), resource);
+}
+
+static
+char *improgdatadir()
+{
+#ifdef WINDOWS_PACKAGE_NAME
+	PWSTR wpath;
+	if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &wpath) == S_OK) {
+		if (wcstombs(imstr(), wpath, IMPRINT_BUFFER_SIZE) <= IMPRINT_BUFFER_SIZE)
+			impathcat(imstr(), WINDOWS_PACKAGE_NAME);
+		else
+			imstrcpy("");
+		CoTaskMemFree(wpath);
+		return imstr();
+	}
+	return NULL;
+#else
+	return imstrcpy(".");
+#endif
+}
+
+static
+char *improgdatapath(const char *resource)
+{
+	return impathcat(improgdatadir(), resource);
+}
+
+char *imrespath(const char *resource)
+{
+	return imapppath(resource);
+}
+
+char *imlogdir(void)
+{
+	return improgdatapath(".logs");
+}
+
+char *imlogpath(const char *resource)
+{
+	return impathcat(imlogdir(), resource);
+}
+
+char *imcachedir(void)
+{
+	return improgdatadir();
+}
+
+char *imcachepath(const char *resource)
+{
+	return impathcat(imcachedir(), resource);
+}
+
+char *imdatadir(void)
+{
+	return improgdatadir();
+}
+
+char *imdatapath(const char *resource)
+{
+	return impathcat(imdatadir(), resource);
+}
+
+/* Dynamic library */
+
+#ifndef VIOLET_NO_LIB
+lib_handle lib_load(const char *_filename)
+{
+	const size_t sz = strlen(_filename);
+	char *filename = amalloc(sz + 4, g_temp_allocator);
+	strcpy(filename, _filename);
+	strcat(filename, ".dll");
+	lib_handle hnd = LoadLibrary(filename);
+	afree(filename, g_temp_allocator);
+	return hnd;
+}
+
+void *lib_func(lib_handle hnd, const char *name)
+{
+	return GetProcAddress(hnd, name);
+}
+
+b32 lib_close(lib_handle hnd)
+{
+	return FreeLibrary(hnd);
+}
+
+const char *lib_err()
+{
+	static thread_local char buf[256];
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
+	              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), B2PC(buf), NULL);
+	return buf;
+}
+#endif // VIOLET_NO_LIB
 
 /* IO */
 
@@ -399,4 +404,16 @@ int run(const char *command)
 	afree(log_buf, g_temp_allocator);
 	int status = _pclose(fp);
 	return status != -1 ? status : -1;
+}
+
+b32 open_file_external(const char *filename)
+{
+	const INT_PTR ret = (INT_PTR)ShellExecute(NULL, "open", filename,
+	                                          NULL, NULL, SW_SHOWNORMAL);
+	if (ret <= 32) {
+		log_error("failed to open %s in an external program with error %d",
+		          filename, ret);
+		return false;
+	}
+	return true;
 }
