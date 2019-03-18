@@ -150,7 +150,7 @@ char *imappdir(void)
 
 char *imapppath(const char *resource)
 {
-	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), resource);
+	return imstrcatn(imstrcat2(imappdir(), g_file_path_separator), resource);
 }
 
 char *imrespath(const char *resource)
