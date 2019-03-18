@@ -3,6 +3,16 @@
 
 #include "violet/core.h"
 
+#if   defined(_WIN32)
+#define PLATFORM_NAME "Win32"
+#elif defined(__APPLE__)
+#define PLATFORM_NAME "MacOS"
+#elif defined(LINUX)
+#define PLATFORM_NAME "Linux"
+#else
+#error "Platform not supported!"
+#endif
+
 /* File system */
 
 extern const char *g_file_path_separator;
