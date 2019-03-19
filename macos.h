@@ -139,6 +139,30 @@ char *imapppath(const char *resource)
 	return impathcat(imappdir(), resource);
 }
 
+char *imresdir(void)
+{
+#ifdef MACOS_BUNDLE_ID
+	imstrcpy("");
+
+	CFBundleRef bundle = CFBundleGetMainBundle();
+	if (bundle == NULL)
+		goto out;
+
+	CFURLRef url = CFBundleCopyResourcesDirectoryURL(bundle);
+	if (url == NULL)
+		goto out;
+
+	if (!CFURLGetFileSystemRepresentation(url, true, (UInt8*)imstr(), IMPRINT_BUFFER_SIZE))
+		imstrcpy("");
+
+	CFRelease(url);
+out:
+	return imstr();
+#else
+	return imappdir();
+#endif
+}
+
 char *imrespath(const char *resource)
 {
 #ifdef MACOS_BUNDLE_ID

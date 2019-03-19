@@ -270,6 +270,11 @@ char *improgdatapath(const char *resource)
 	return impathcat(improgdatadir(), resource);
 }
 
+char *imresdir(void)
+{
+	return imappdir();
+}
+
 char *imrespath(const char *resource)
 {
 	return imapppath(resource);

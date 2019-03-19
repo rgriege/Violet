@@ -37,6 +37,7 @@ b32  rmdir_f(const char *path);
 char *impathcat(char *imstr, const char *path);
 char *imappdir(void);
 char *imapppath(const char *resource);
+char *imresdir(void);
 char *imrespath(const char *resource);
 char *imlogdir(void);
 char *imlogpath(const char *resource);
