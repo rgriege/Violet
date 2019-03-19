@@ -2014,8 +2014,8 @@ b32 gui__key_triggered(const gui_t *gui, u32 key)
 	return gui->key_repeat.triggered && gui->key_repeat.val == key;
 }
 
-static
-void gui__store_window_rect(gui_t *gui);
+static b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect);
+static void gui__store_window_rect(gui_t *gui);
 
 gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
                      gui_flags_t flags, const char *font_file_path)
@@ -2049,11 +2049,8 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 
 	SDL_Rect usable_bounds;
-	if (SDL_GetDisplayUsableBounds(0, &usable_bounds) != 0) {
-		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+	if (!gui__get_display_usable_bounds(0, &usable_bounds))
 		goto err_ctx;
-	}
-
 
 	u32 sdl_flags = SDL_WINDOW_OPENGL;
 	if (flags & WINDOW_BORDERLESS)
@@ -2078,6 +2075,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 	if (flags & WINDOW_FULLSCREEN)
 		sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
 	gui->window = SDL_CreateWindow(title, x, y, w, h, sdl_flags);
 	if (gui->window == NULL) {
 		log_error("SDL_CreateWindow failed: %s", SDL_GetError());
@@ -2277,6 +2275,37 @@ void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 }
 
 static
+b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect)
+{
+	if (SDL_GetDisplayUsableBounds(0, rect) != 0) {
+		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+		return false;
+	}
+
+#ifdef __APPLE__
+	static SDL_Rect usable_bounds = {0};
+	if (usable_bounds.w != 0) {
+		/* SDL_GetDisplayUsableBounds returns SDL_GetDisplayBounds in later calls...
+		 * I don't like caching this, because the usable region could change while
+		 * the app is running, but it's the only option on Mac. */
+		*rect = usable_bounds;
+	} else {
+		/* window origin is supposed to be in the top-left corner,
+		 * but for some reason SDL_GetDisplayUsableBounds
+		 * returns it in the bottom-left corner on Mac */
+		SDL_Rect bounds;
+		if (SDL_GetDisplayBounds(0, &bounds) != 0) {
+			log_error("SDL_GetDisplayBounds failed: %s", SDL_GetError());
+			return false;
+		}
+		rect->y = bounds.h - rect->h - rect->y;
+		usable_bounds = *rect;
+	}
+#endif
+	return true;
+}
+
+static
 b32 gui__maximum_window_rect(const gui_t *gui, SDL_Rect *rect)
 {
 	int display_idx;
@@ -2287,10 +2316,8 @@ b32 gui__maximum_window_rect(const gui_t *gui, SDL_Rect *rect)
 		return false;
 	}
 
-	if (SDL_GetDisplayUsableBounds(display_idx, rect) != 0) {
-		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+	if (!gui__get_display_usable_bounds(display_idx, rect))
 		return false;
-	}
 
 	return true;
 }
