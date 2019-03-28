@@ -61,6 +61,7 @@ typedef float r32;
 typedef union v2f
 {
 	struct { r32 x, y; };
+	struct { r32 u, v; };
 	struct { r32 d[2]; };
 } v2f;
 
