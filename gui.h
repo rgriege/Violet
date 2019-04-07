@@ -525,6 +525,7 @@ typedef struct gui_split
 } gui_split_t;
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits);
+b32  gui_create_root_split(gui_t *gui, gui_split_t **root);
 b32  gui_split2h(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
                  gui_split_t **sp2, gui_split_flags_t flags);
 b32  gui_split2v(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
@@ -5942,6 +5943,20 @@ void gui__split_init(gui_split_t *split, gui_split_flags_t flags,
 	split->panel      = NULL;
 }
 
+b32 gui_create_root_split(gui_t *gui, gui_split_t **root)
+{
+	gui_split_t *split = NULL;
+	if (gui->root_split)
+		assert(false);
+	if (!gui__get_free_splits(gui, 1, &split))
+		return false;
+	gui__split_init(split, 0, NULL);
+	gui->root_split = split;
+	if (root)
+		*root = split;
+	return true;
+}
+
 b32 gui__split2(gui_t *gui, gui_split_t *split_, b32 vertical,
                 gui_split_t **psp1, r32 sz, gui_split_t **psp2,
                 gui_split_flags_t flags)
@@ -5957,8 +5972,6 @@ b32 gui__split2(gui_t *gui, gui_split_t *split_, b32 vertical,
 	if (!gui->root_split) {
 		gui->root_split = splits[i++];
 		gui__split_init(gui->root_split, 0, NULL);
-	} else if (split_) {
-		assert(split_->parent);
 	}
 
 	split = split_ ? split_ : gui->root_split;
