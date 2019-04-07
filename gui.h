@@ -129,6 +129,8 @@ typedef enum gui_align
 #define GUI_ALIGN_VERTICAL   (GUI_ALIGN_TOP | GUI_ALIGN_MIDDLE | GUI_ALIGN_BOTTOM)
 #define GUI_ALIGN_HORIZONTAL (GUI_ALIGN_LEFT | GUI_ALIGN_CENTER | GUI_ALIGN_RIGHT)
 
+void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s32 *py);
+
 typedef struct font_t
 {
 	const char *filename;
@@ -1126,6 +1128,22 @@ void img_destroy(img_t *img)
 
 /* Font */
 
+void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s32 *py)
+{
+	if (align & GUI_ALIGN_CENTER)
+		*px = x + w / 2;
+	else if (align & GUI_ALIGN_RIGHT)
+		*px = x + w;
+	else
+		*px = x; /* default to GUI_ALIGN_LEFT */
+	if (align & GUI_ALIGN_MIDDLE)
+		*py = y + h / 2;
+	else if (align & GUI_ALIGN_TOP)
+		*py = y + h;
+	else
+		*py = y; /* default to GUI_ALIGN_BOTTOM */
+}
+
 /* NOTE(rgriege): based on a cursory glance at C:\Windoge\Fonts,
  * 1MB seems to be sufficient for most fonts */
 #define TTF_BUFFER_SZ (1 << 20)
@@ -1255,21 +1273,6 @@ void font_destroy(font_t *f)
 {
 	free(f->char_info);
 	texture_destroy(&f->texture);
-}
-
-static
-void font__align_anchor(s32 *x, s32 *y, s32 w, s32 h, gui_align_t align)
-{
-	if (align & GUI_ALIGN_CENTER)
-		*x += w / 2;
-	else if (align & GUI_ALIGN_RIGHT)
-		*x += w;
-	else {} /* default to GUI_ALIGN_LEFT */
-	if (align & GUI_ALIGN_MIDDLE)
-		*y += h / 2;
-	else if (align & GUI_ALIGN_TOP)
-		*y += h;
-	else {} /* default to GUI_ALIGN_BOTTOM */
 }
 
 static
@@ -3549,7 +3552,7 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 		txt = buf;
 	}
 
-	font__align_anchor(&ix_, &iy_, w, h, style->align);
+	gui_align_anchor(ix_, iy_, w, h, style->align, &ix_, &iy_);
 	x = ix_ + font__line_offset_x(font, txt, style);
 	y = iy_ + font__offset_y(font, txt, style);
 
@@ -3632,7 +3635,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	font = gui__get_font(gui, style->size);
 	assert(font);
 
-	font__align_anchor(&xi, &yi, w, h, style->align);
+	gui_align_anchor(xi, yi, w, h, style->align, &xi, &yi);
 	x = xi + font__line_offset_x(font, txt, style);
 	y = yi + font__offset_y(font, txt, style);
 
@@ -3810,7 +3813,7 @@ void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u32 len = (u32)strlen(txt);
 	array(char) buf;
 
-	font__align_anchor(&x, &y, w, h, style->align);
+	gui_align_anchor(x, y, w, h, style->align, &x, &y);
 
 	if (style->wrap) {
 		array_init_ex(buf, len + 1, g_temp_allocator);
