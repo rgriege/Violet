@@ -129,6 +129,8 @@ typedef enum gui_align
 #define GUI_ALIGN_VERTICAL   (GUI_ALIGN_TOP | GUI_ALIGN_MIDDLE | GUI_ALIGN_BOTTOM)
 #define GUI_ALIGN_HORIZONTAL (GUI_ALIGN_LEFT | GUI_ALIGN_CENTER | GUI_ALIGN_RIGHT)
 
+void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s32 *py);
+
 typedef struct font_t
 {
 	const char *filename;
@@ -554,6 +556,7 @@ typedef struct gui_split
 } gui_split_t;
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits);
+b32  gui_create_root_split(gui_t *gui, gui_split_t **root);
 b32  gui_split2h(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
                  gui_split_t **sp2, gui_split_flags_t flags);
 b32  gui_split2v(gui_t *gui, gui_split_t *split, gui_split_t **sp1, r32 sz,
@@ -1159,6 +1162,22 @@ void img_destroy(img_t *img)
 
 /* Font */
 
+void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s32 *py)
+{
+	if (align & GUI_ALIGN_CENTER)
+		*px = x + w / 2;
+	else if (align & GUI_ALIGN_RIGHT)
+		*px = x + w;
+	else
+		*px = x; /* default to GUI_ALIGN_LEFT */
+	if (align & GUI_ALIGN_MIDDLE)
+		*py = y + h / 2;
+	else if (align & GUI_ALIGN_TOP)
+		*py = y + h;
+	else
+		*py = y; /* default to GUI_ALIGN_BOTTOM */
+}
+
 static
 int rgtt_PackFontRanges(stbtt_pack_context *spc, stbtt_fontinfo *info,
                         stbtt_pack_range *ranges, int num_ranges)
@@ -1304,21 +1323,6 @@ void font_destroy(font_t *f)
 {
 	free(f->char_info);
 	texture_destroy(&f->texture);
-}
-
-static
-void font__align_anchor(s32 *x, s32 *y, s32 w, s32 h, gui_align_t align)
-{
-	if (align & GUI_ALIGN_CENTER)
-		*x += w / 2;
-	else if (align & GUI_ALIGN_RIGHT)
-		*x += w;
-	else {} /* default to GUI_ALIGN_LEFT */
-	if (align & GUI_ALIGN_MIDDLE)
-		*y += h / 2;
-	else if (align & GUI_ALIGN_TOP)
-		*y += h;
-	else {} /* default to GUI_ALIGN_BOTTOM */
 }
 
 static
@@ -2067,8 +2071,8 @@ b32 gui__key_triggered(const gui_t *gui, u32 key)
 	return gui->key_repeat.triggered && gui->key_repeat.val == key;
 }
 
-static
-void gui__store_window_rect(gui_t *gui);
+static b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect);
+static void gui__store_window_rect(gui_t *gui);
 
 gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
                      gui_flags_t flags, const char *font_file_path)
@@ -2102,11 +2106,8 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 
 	SDL_Rect usable_bounds;
-	if (SDL_GetDisplayUsableBounds(0, &usable_bounds) != 0) {
-		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+	if (!gui__get_display_usable_bounds(0, &usable_bounds))
 		goto err_ctx;
-	}
-
 
 	u32 sdl_flags = SDL_WINDOW_OPENGL;
 	if (flags & WINDOW_BORDERLESS)
@@ -2131,6 +2132,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 	if (flags & WINDOW_FULLSCREEN)
 		sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
 	gui->window = SDL_CreateWindow(title, x, y, w, h, sdl_flags);
 	if (gui->window == NULL) {
 		log_error("SDL_CreateWindow failed: %s", SDL_GetError());
@@ -2330,6 +2332,37 @@ void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 }
 
 static
+b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect)
+{
+	if (SDL_GetDisplayUsableBounds(0, rect) != 0) {
+		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+		return false;
+	}
+
+#ifdef __APPLE__
+	static SDL_Rect usable_bounds = {0};
+	if (usable_bounds.w != 0) {
+		/* SDL_GetDisplayUsableBounds returns SDL_GetDisplayBounds in later calls...
+		 * I don't like caching this, because the usable region could change while
+		 * the app is running, but it's the only option on Mac. */
+		*rect = usable_bounds;
+	} else {
+		/* window origin is supposed to be in the top-left corner,
+		 * but for some reason SDL_GetDisplayUsableBounds
+		 * returns it in the bottom-left corner on Mac */
+		SDL_Rect bounds;
+		if (SDL_GetDisplayBounds(0, &bounds) != 0) {
+			log_error("SDL_GetDisplayBounds failed: %s", SDL_GetError());
+			return false;
+		}
+		rect->y = bounds.h - rect->h - rect->y;
+		usable_bounds = *rect;
+	}
+#endif
+	return true;
+}
+
+static
 b32 gui__maximum_window_rect(const gui_t *gui, SDL_Rect *rect)
 {
 	int display_idx;
@@ -2340,10 +2373,8 @@ b32 gui__maximum_window_rect(const gui_t *gui, SDL_Rect *rect)
 		return false;
 	}
 
-	if (SDL_GetDisplayUsableBounds(display_idx, rect) != 0) {
-		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
+	if (!gui__get_display_usable_bounds(display_idx, rect))
 		return false;
-	}
 
 	return true;
 }
@@ -3551,7 +3582,7 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 		p = buf;
 	}
 
-	font__align_anchor(&ix_, &iy_, w, h, style->align);
+	gui_align_anchor(ix_, iy_, w, h, style->align, &ix_, &iy_);
 	x = ix_ + font__line_offset_x(font, txt, style);
 	y = iy_ + font__offset_y(font, txt, style);
 
@@ -3643,7 +3674,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	if (!font)
 		return 0;
 
-	font__align_anchor(&xi, &yi, w, h, style->align);
+	gui_align_anchor(xi, yi, w, h, style->align, &xi, &yi);
 	x = xi + font__line_offset_x(font, txt, style);
 	y = yi + font__offset_y(font, txt, style);
 
@@ -3831,7 +3862,7 @@ void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u32 len = (u32)strlen(txt);
 	array(char) buf;
 
-	font__align_anchor(&x, &y, w, h, style->align);
+	gui_align_anchor(x, y, w, h, style->align, &x, &y);
 
 	if (style->wrap) {
 		array_init_ex(buf, len + 1, g_temp_allocator);
@@ -6007,6 +6038,20 @@ void gui__split_init(gui_split_t *split, gui_split_flags_t flags,
 	split->panel      = NULL;
 }
 
+b32 gui_create_root_split(gui_t *gui, gui_split_t **root)
+{
+	gui_split_t *split = NULL;
+	if (gui->root_split)
+		assert(false);
+	if (!gui__get_free_splits(gui, 1, &split))
+		return false;
+	gui__split_init(split, 0, NULL);
+	gui->root_split = split;
+	if (root)
+		*root = split;
+	return true;
+}
+
 b32 gui__split2(gui_t *gui, gui_split_t *split_, b32 vertical,
                 gui_split_t **psp1, r32 sz, gui_split_t **psp2,
                 gui_split_flags_t flags)
@@ -6022,8 +6067,6 @@ b32 gui__split2(gui_t *gui, gui_split_t *split_, b32 vertical,
 	if (!gui->root_split) {
 		gui->root_split = splits[i++];
 		gui__split_init(gui->root_split, 0, NULL);
-	} else if (split_) {
-		assert(split_->parent);
 	}
 
 	split = split_ ? split_ : gui->root_split;

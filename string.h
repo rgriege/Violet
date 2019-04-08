@@ -24,6 +24,7 @@ char *imprintf(const char *fmt, ...);
 char *imstrcpy(const char *str);
 char *imstrcat(const char *src);
 char *imstrcatn(char *imstr, const char *src); /* for chaining imprint calls */
+char *imstrcatp(const char *src, char *imstr); /* for chaining imprint calls */
 char *imstrcat2(const char *src1, const char *src2); /* for 2 new strings */
 
 /* Dynamic strings - array(char) */
@@ -31,6 +32,8 @@ char *imstrcat2(const char *src1, const char *src2); /* for 2 new strings */
 
 #define str_create(allocator) array_create_ex(allocator)
 #define str_destroy(str)      array_destroy(str)
+
+str_t str_dup(const char *src, allocator_t *a);
 
 void str_cpy(str_t *dst, const char *src);
 void str_cat(str_t *dst, const char *src);
@@ -138,7 +141,7 @@ out:
 	return buf;
 }
 
-static char g_imprint_buf[IMPRINT_BUFFER_SIZE] = {0};
+static thread_local char g_imprint_buf[IMPRINT_BUFFER_SIZE] = {0};
 
 char *imstr(void)
 {
@@ -171,12 +174,14 @@ char *imprintf(const char *fmt, ...)
 
 char *imstrcpy(const char *str)
 {
+	assert(strlen(str) < IMPRINT_BUFFER_SIZE);
 	strncpy(g_imprint_buf, str, IMPRINT_BUFFER_SIZE);
 	return g_imprint_buf;
 }
 
 char *imstrcat(const char *src)
 {
+	assert(strlen(imstr()) + strlen(src) < IMPRINT_BUFFER_SIZE);
 	return strncat(imstr(), src, IMPRINT_BUFFER_SIZE-strlen(imstr())-1);
 }
 
@@ -186,11 +191,36 @@ char *imstrcatn(char *imstr, const char *src)
 	return imstrcat(src);
 }
 
+char *imstrcatp(const char *src, char *imstr)
+{
+	assert(imstr = g_imprint_buf);
+	const size_t srclen = strlen(src);
+	const size_t imlen  = strlen(imstr);
+
+	if (srclen + imlen < IMPRINT_BUFFER_SIZE) {
+		memmove(g_imprint_buf + srclen, g_imprint_buf, imlen+1);
+		memcpy(g_imprint_buf, src, srclen);
+		return g_imprint_buf;
+	} else {
+		assert(false);
+		return imstrcpy("");
+	}
+}
+
 char *imstrcat2(const char *src1, const char *src2)
 {
 	assert(strlen(src1) < IMPRINT_BUFFER_SIZE);
 	imstrcpy(src1);
 	return strncat(g_imprint_buf, src2, IMPRINT_BUFFER_SIZE-strlen(src1)-1);
+}
+
+str_t str_dup(const char *src, allocator_t *a)
+{
+	const size_t sz = strlen(src);
+	str_t str;
+	array_init_ex(str, sz+1, a);
+	str_cpy(&str, src);
+	return str;
 }
 
 void str_cpy(str_t *dst, const char *src)
