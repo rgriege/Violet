@@ -38,11 +38,16 @@ b32 localization_table_find_slot(localization_table_t *table, u32 id,
 u32 localization_table_num_strings(const localization_table_t *table);
 u32 localization_table_num_bytes(const localization_table_t *table);
 
+#else // NO_LOCALIZE
 
-#else
 #define LOCALIZE(str) str
 #define LOCALIZE_STATIC(str) str
-#endif
+b32  localize_is_language_default(void);
+void localize_set_language_default(const char *fname);
+b32  localize_set_language(const char *fname);
+b32  localize_save_language(const char *fname);
+
+#endif // NO_LOCALIZE
 
 #endif // VIOLET_LOCALIZE_H
 
@@ -238,6 +243,36 @@ u32 localization_table_num_bytes(const localization_table_t *table)
 	return num_bytes;
 }
 
+#else // NO_LOCALIZE
+
+u32 g_lang = 0;
+u32 g_lang_default = 0;
+
+b32 localize_is_language_default(void)
+{
+	return g_lang == g_lang_default;
+}
+
+void localize_set_language_default(const char *fname)
+{
+	g_lang_default = hash(fname);
+}
+
+b32  localize_set_language(const char *fname)
+{
+	if (hash(fname) != g_lang_default)
+		return false;
+
+	g_lang = g_lang_default;
+	return true;
+}
+
+b32  localize_save_language(const char *fname)
+{
+	return false;
+}
+
 #endif // NO_LOCALIZE
+
 #undef LOCALIZE_IMPLEMENTATION
 #endif // LOCALIZE_IMPLEMENTATION
