@@ -33,6 +33,8 @@ char *app_data_dir(const char *app_name, allocator_t *a);
 
 char *imapppath(const char *path_relative_to_app);
 
+void *file_read_all(const char *fname, const char *mode, allocator_t *a);
+
 /* Dynamic library */
 
 #ifndef VIOLET_NO_LIB
@@ -543,7 +545,40 @@ out:
 
 char *imapppath(const char *path_relative_to_app)
 {
-	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), path_relative_to_app);
+	static char buf[4096] = {0};
+	strncpy(buf, app_dir(), countof(buf));
+	strncat(buf, g_file_path_separator, countof(buf)-strlen(buf)-1);
+	strncat(buf, path_relative_to_app, countof(buf)-strlen(buf)-1);
+	return buf;
+}
+
+void *file_read_all(const char *fname, const char *mode, allocator_t *a)
+{
+	FILE *fp;
+	size_t file_size;
+	void *bytes = NULL;
+
+	fp = fopen(fname, mode);
+	if (!fp)
+		return NULL;
+
+	if (fseek(fp, 0, SEEK_END) == -1)
+		goto out;
+
+	file_size = ftell(fp);
+	bytes = amalloc(file_size, a);
+
+	fseek(fp, 0, SEEK_SET);
+
+	if (fread(bytes, 1, file_size, fp) != file_size) {
+		afree(bytes, a);
+		bytes = NULL;
+		goto out;
+	}
+
+out:
+	fclose(fp);
+	return bytes;
 }
 
 /* IO */
