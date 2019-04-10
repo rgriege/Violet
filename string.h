@@ -193,7 +193,7 @@ char *imstrcatn(char *imstr, const char *src)
 
 char *imstrcatp(const char *src, char *imstr)
 {
-	assert(imstr = g_imprint_buf);
+	assert(imstr == g_imprint_buf);
 	const size_t srclen = strlen(src);
 	const size_t imlen  = strlen(imstr);
 
