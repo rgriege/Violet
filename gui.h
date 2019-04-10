@@ -1292,7 +1292,7 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	// stbtt_PackSetOversampling(&context, 2, 2);
 
 	if (!rgtt_Pack(&info, sz, f->char_info, &bitmap, &w, &h))
-		goto err_ttf;
+		goto err_pack;
 
 	texture_init(&f->texture, w, h, GL_RED, bitmap);
 	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
@@ -1310,8 +1310,11 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	f->newline_dist = scale * (ascent - descent + line_gap);
 	retval = true;
 
-err_ttf:
+err_pack:
+	if (!retval)
+		free(f->char_info);
 	afree(bitmap, g_temp_allocator);
+err_ttf:
 	afree(ttf, g_temp_allocator);
 out:
 	if (!retval && f->char_info)
