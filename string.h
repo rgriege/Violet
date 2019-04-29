@@ -218,7 +218,7 @@ str_t str_dup(const char *src, allocator_t *a)
 {
 	const size_t sz = strlen(src);
 	str_t str;
-	array_init_ex(str, sz+1, a);
+	array_init_ex(str, (array_size_t)(sz+1), a);
 	str_cpy(&str, src);
 	return str;
 }

@@ -166,7 +166,7 @@ b32 mkpath(const char *path_)
 
 	u32 pos = 0;
 	char c = 0;
-	for (char *p = _path + 1; *p; ++p) {
+	for (char *p = path + 1; *p; ++p) {
 		if (*p == g_file_path_separator[0]) {
 			memswp(c, *p, char);
 			if (!(CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS))
@@ -226,7 +226,7 @@ char *impathcat(char *imstr, const char *path)
 	return imstrcatn(imstrcatn(imstr, g_file_path_separator), path);
 }
 
-const char *imappdir(void)
+char *imappdir(void)
 {
 	static thread_local char path[MAX_PATH] = {0};
 	if (path[0] != '\0') {
@@ -242,7 +242,7 @@ const char *imappdir(void)
 
 char *imapppath(const char *resource)
 {
-	return imstrcatn(imstrcat2(app_dir(), g_file_path_separator), resource);
+	return imstrcatn(imstrcat2(imappdir(), g_file_path_separator), resource);
 }
 
 static

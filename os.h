@@ -15,6 +15,10 @@
 
 /* File system */
 
+#ifdef _WIN32
+#define PATH_MAX MAX_PATH
+#endif
+
 extern const char *g_file_path_separator;
 
 typedef struct {
@@ -88,7 +92,7 @@ b32  open_file_external(const char *filename);
 #endif
 
 #if   defined(_WIN32)
-#include "violet/win32.h"
+#include "violet/windows.h"
 #elif defined(__APPLE__)
 #include "violet/macos.h"
 #elif defined(LINUX)

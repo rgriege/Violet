@@ -2852,7 +2852,7 @@ void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
 {
 	const u32 idx_local = gui->draw_call_vert_idx++;
 	const u32 idx       = gui->vert_cnt + idx_local;
-	assert(idx_local < gui->draw_calls[gui->draw_call_cnt].cnt);
+	assert(idx_local < (u32)gui->draw_calls[gui->draw_call_cnt].cnt);
 	gui->verts[idx].x           = x;
 	gui->verts[idx].y           = y;
 	gui->vert_colors[idx]       = c;
@@ -4285,7 +4285,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				gui__npt_prep_action(gui, flags, txt, &len);
 				if (   SDL_HasClipboardText()
 				    && (clipboard = SDL_GetClipboardText())
-				    && (sz = strlen(clipboard)) > 0
+				    && (sz = (u32)strlen(clipboard)) > 0
 				    && len + sz < n) {
 					memmove(&txt[gui->npt.cursor_pos + sz],
 					        &txt[gui->npt.cursor_pos],
