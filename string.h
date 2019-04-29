@@ -209,9 +209,7 @@ char *imstrcatp(const char *src, char *imstr)
 
 char *imstrcat2(const char *src1, const char *src2)
 {
-	assert(strlen(src1) < IMPRINT_BUFFER_SIZE);
-	imstrcpy(src1);
-	return strncat(g_imprint_buf, src2, IMPRINT_BUFFER_SIZE-strlen(src1)-1);
+	return imstrcatn(imstrcpy(src1), src2);
 }
 
 str_t str_dup(const char *src, allocator_t *a)

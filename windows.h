@@ -242,7 +242,7 @@ char *imappdir(void)
 
 char *imapppath(const char *resource)
 {
-	return imstrcatn(imstrcat2(imappdir(), g_file_path_separator), resource);
+	return impathcat(imappdir(), resource);
 }
 
 static
