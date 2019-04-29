@@ -382,7 +382,7 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 					page = page->prev;
 				error_if(!page, "could not find page for allocation");
 				new_ptr = pgb_malloc(size, pgb  MEMCALL_VARS);
-				memcpy(new_ptr, ptr, pgb__alloc_get_sz(ptr, page));
+				memcpy(new_ptr, ptr, min(pgb__alloc_get_sz(ptr, page), size));
 				return new_ptr;
 			}
 		} else {
