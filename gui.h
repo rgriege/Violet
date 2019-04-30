@@ -802,6 +802,8 @@ void gui_style_pop(gui_t *gui);
 #define stbtt_int16 s16
 #define stbtt_uint32 u32
 #define stbtt_int32 s32
+#define STBTT_malloc(x, u) ((allocator_t*)(u))->malloc_(x, u  MEMCALL_LOCATION)
+#define STBTT_free(x, u)   ((allocator_t*)(u))->free_(x, u  MEMCALL_LOCATION)
 #include "stb_truetype.h"
 
 #include "violet/array.h"
@@ -1228,53 +1230,61 @@ int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
 }
 
 static
-int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info,
-              unsigned char **bitmap, s32 *bmp_w, s32 *bmp_h)
+int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, texture_t *tex)
 {
+	temp_memory_mark_t mark = temp_memory_save(g_temp_allocator);
+	unsigned char *bitmap;
+	s32 w = 512, h = 512;
 	stbtt_pack_context context;
-	int ret = 0;
+	b32 packed = false, failed = false;
 
-	while (1) {
-		if (!stbtt_PackBegin(&context, *bitmap, *bmp_w, *bmp_h,
-		                     *bmp_w, 1, NULL))
-			goto out;
+	/* TODO(rgriege): oversample with smaller fonts */
+	// stbtt_PackSetOversampling(&context, 2, 2);
 
-		if (rgtt_PackFontRange(&context, info, font_size, 0,
-		                       info->numGlyphs, char_info)) {
-			break;
-		} else if (*bmp_w < 1024) {
-			*bmp_w *= 2;
-			*bitmap = arealloc(*bitmap, *bmp_w * *bmp_h, g_temp_allocator);
-			memset(*bitmap, 0, *bmp_w * *bmp_h);
-		} else if (*bmp_h < 1024) {
-			*bmp_h *= 2;
-			*bitmap = arealloc(*bitmap, *bmp_w * *bmp_h, g_temp_allocator);
-			memset(*bitmap, 0, *bmp_w * *bmp_h);
+	while (!packed && !failed) {
+		temp_memory_restore(mark);
+		bitmap = amalloc(w*h, g_temp_allocator);
+		/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
+		memset(bitmap, 0, w * h);
+
+		if (!stbtt_PackBegin(&context, bitmap, w, h, w, 1, g_temp_allocator)) {
+			failed = true;
+		} else if (rgtt_PackFontRange(&context, info, font_size, 0,
+		                              info->numGlyphs, char_info)) {
+			stbtt_PackEnd(&context); // not really necessary, handled by memory mark
+			packed = true;
+		} else if (w < 1024) {
+			w *= 2;
+		} else if (h < 1024) {
+			h *= 2;
 		} else {
-			goto out;
+			failed = true; // fail on fonts needing too large a texture
 		}
 	}
 
-	stbtt_PackEnd(&context);
-	ret = 1;
+	if (packed) {
+		texture_init(tex, w, h, GL_RED, bitmap);
+		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+	}
 
-out:
-	return ret;
+	temp_memory_restore(mark);
+	return packed;
 }
 
 b32 font_load(font_t *f, const char *filename, u32 sz)
 {
-	s32 w = 512, h = 512;
 	b32 retval = false;
-	unsigned char *bitmap;
-	stbtt_fontinfo info;
+	stbtt_fontinfo info = { .userdata = g_temp_allocator };
 	int ascent, descent, line_gap;
 	r32 scale;
+	void *ttf;
 
 	f->char_info = NULL;
 
-	void *ttf = file_read_all(filename, "rb", g_temp_allocator);
-	if (!ttf)
+	if (!(ttf = file_read_all(filename, "rb", g_temp_allocator)))
 		goto out;
 
 	if (!stbtt_InitFont(&info, ttf, stbtt_GetFontOffsetForIndex(ttf, 0)))
@@ -1284,21 +1294,8 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 	log_debug("packing %d glyphs for %s:%u", f->num_glyphs, filename, sz);
 	f->char_info = malloc(f->num_glyphs * sizeof(stbtt_packedchar));
 
-	bitmap = amalloc(w*h, g_temp_allocator);
-	/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
-	memset(bitmap, 0, w*h);
-
-	/* TODO(rgriege): oversample with smaller fonts */
-	// stbtt_PackSetOversampling(&context, 2, 2);
-
-	if (!rgtt_Pack(&info, sz, f->char_info, &bitmap, &w, &h))
+	if (!rgtt_Pack(&info, sz, f->char_info, &f->texture))
 		goto err_pack;
-
-	texture_init(&f->texture, w, h, GL_RED, bitmap);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
 
 	f->filename = filename;
 	f->sz = sz;
@@ -1313,12 +1310,9 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 err_pack:
 	if (!retval)
 		free(f->char_info);
-	afree(bitmap, g_temp_allocator);
 err_ttf:
 	afree(ttf, g_temp_allocator);
 out:
-	if (!retval && f->char_info)
-		free(f->char_info);
 	return retval;
 }
 
