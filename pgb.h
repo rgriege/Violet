@@ -377,13 +377,16 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 				return ptr;
 			} else {
 				const pgb_page_t *page = pgb->current_page;
-				pgb_byte *new_ptr;
 				while (page && !pgb__ptr_in_page(ptr, page))
 					page = page->prev;
 				error_if(!page, "could not find page for allocation");
-				new_ptr = pgb_malloc(size, pgb  MEMCALL_VARS);
-				memcpy(new_ptr, ptr, min(pgb__alloc_get_sz(ptr, page), size));
-				return new_ptr;
+				if (pgb__alloc_get_sz(ptr, page) >= size) {
+					return ptr;
+				} else {
+					pgb_byte *new_ptr = pgb_malloc(size, pgb  MEMCALL_VARS);
+					memcpy(new_ptr, ptr, pgb__alloc_get_sz(ptr, page));
+					return new_ptr;
+				}
 			}
 		} else {
 			pgb_free(ptr, pgb  MEMCALL_VARS);
