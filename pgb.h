@@ -265,22 +265,28 @@ struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t size)
 
 void pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page)
 {
-	if (heap->first_page) {
-		pgb_page_t *prev = heap->first_page;
-		pgb_page_t *next = heap->first_page->next;
+	if (!heap->first_page) {
+		heap->first_page = page;
+		page->prev = NULL;
+		page->next = NULL;
+	} else if (page->size <= heap->first_page->size) {
+		page->prev = NULL;
+		page->next = heap->first_page;
+		heap->first_page->prev = page;
+		heap->first_page = page;
+	} else {
+		pgb_page_t *prev = NULL;
+		pgb_page_t *next = heap->first_page;
 		while (next && page->size > next->size) {
 			prev = next;
 			next = next->next;
 		}
+		if (prev)
+			prev->next = page;
 		if (next)
 			next->prev = page;
-		prev->next = page;
 		page->prev = prev;
 		page->next = next;
-	} else {
-		heap->first_page = page;
-		page->prev = NULL;
-		page->next = NULL;
 	}
 }
 
