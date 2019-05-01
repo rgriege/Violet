@@ -21,7 +21,7 @@ typedef struct pgb_heap
 void pgb_heap_init(pgb_heap_t *heap);
 void pgb_heap_destroy(pgb_heap_t *heap);
 
-struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t size);
+struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t max_size);
 void             pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page);
 
 
@@ -201,6 +201,16 @@ size_t pgb__page_min_size_for_alloc(size_t alloc_size)
 }
 
 static
+size_t pgb__page_max_size_for_alloc(size_t alloc_size)
+{
+	/* Ensure maximum waste of 25% per slot.
+	 * This is unlikely to occur as the smallest page that fits will be used. */
+	const size_t max_alignment = pgb__round_up_power_of_two(alloc_size) << 1;
+	const size_t max_page_size = max_alignment * PGB__PAGE_SLOTS;
+	return max(max_page_size, PGB_MIN_PAGE_SIZE);
+}
+
+static
 void pgb__page_clear(pgb_page_t *page)
 {
 	const size_t header_size = pgb__header_size(page->size);
@@ -247,19 +257,20 @@ void pgb_heap_destroy(pgb_heap_t *heap)
 	heap->first_page = NULL;
 }
 
-struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t size)
+struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t max_size)
 {
+	assert(min_size <= max_size);
 	pgb_page_t *page = heap->first_page;
-	while (page && page->size < size)
+	while (page && page->size < min_size)
 		page = page->next;
-	if (page) {
+	if (!page || page->size > max_size) {
+		return pgb__page_create(min_size);
+	} else {
 		if (page == heap->first_page)
 			heap->first_page = page->next;
 		pgb__page_remove(page);
 		pgb__page_clear(page);
 		return page;
-	} else {
-		return pgb__page_create(size);
 	}
 }
 
@@ -315,8 +326,9 @@ void pgb_destroy(pgb_t *pgb)
 static
 void pgb__add_page_for_alloc(pgb_t *pgb, size_t alloc_size, size_t *aligned_size)
 {
-	const size_t page_size = pgb__page_min_size_for_alloc(alloc_size);
-	pgb_page_t *page = pgb_heap_borrow_page(pgb->heap, page_size);
+	const size_t min_page_size = pgb__page_min_size_for_alloc(alloc_size);
+	const size_t max_page_size = pgb__page_max_size_for_alloc(alloc_size);
+	pgb_page_t *page = pgb_heap_borrow_page(pgb->heap, min_page_size, max_page_size);
 	if (pgb->current_page)
 		pgb->current_page->next = page;
 	page->prev = pgb->current_page;
