@@ -170,7 +170,7 @@ b32 localization_table_load(localization_table_t *table, const char *fname)
 			goto out;
 		}
 
-		const u32 len = strlen(&table->chars[next_index]);
+		const u32 len = (u32)strlen(&table->chars[next_index]);
 		slot->id = id;
 		slot->index = next_index;
 		table->chars[slot->index+len] = 0;
