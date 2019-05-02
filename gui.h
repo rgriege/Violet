@@ -1233,7 +1233,7 @@ static
 int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, texture_t *tex)
 {
 	temp_memory_mark_t mark = temp_memory_save(g_temp_allocator);
-	unsigned char *bitmap;
+	unsigned char *bitmap = NULL;
 	s32 w = 512, h = 512;
 	stbtt_pack_context context;
 	b32 packed = false, failed = false;
