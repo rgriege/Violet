@@ -51,8 +51,11 @@ typedef struct pg_watermark
 pgb_watermark_t pgb_save(pgb_t *pgb);
 void            pgb_restore(pgb_watermark_t watermark);
 
+b32  pgb_owns_ptr(const pgb_t *pgb, const void *ptr);
 void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
                size_t *bytes_available, size_t *pages_available);
+void pgb_log(const pgb_t *pgb, const char *name);
+void pgb_log_heap(const pgb_t *pgb);
 
 #endif // PGB_H
 
@@ -470,6 +473,14 @@ void pgb_restore(pgb_watermark_t watermark)
 	}
 }
 
+b32 pgb_owns_ptr(const pgb_t *pgb, const void *ptr)
+{
+	const pgb_page_t *page = pgb->current_page;
+	while (page && !pgb__ptr_in_page(ptr, page))
+		page = page->prev;
+	return page != NULL;
+}
+
 void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
                size_t *bytes_available, size_t *pages_available)
 {
@@ -495,6 +506,40 @@ void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
 	while (page) {
 		*bytes_available += page->size;
 		++*pages_available;
+		page = page->next;
+	}
+}
+
+void pgb_log(const pgb_t *pgb, const char *name)
+{
+	pgb_page_t *current_page = pgb->current_page;
+	pgb_page_t *page = current_page;
+
+	if (name)
+		log_debug("%s pgb", name);
+
+	if (!page) {
+		log_debug("empty");
+		return;
+	}
+
+	while (page->prev)
+		page = page->prev;
+	while (page != current_page) {
+		log_debug("%p: %lu", page, page->size);
+		page = page->next;
+	}
+
+	log_debug("%p: %lu/%lu", current_page, pgb->current_ptr - (pgb_byte*)current_page, current_page->size);
+}
+
+void pgb_log_heap(const pgb_t *pgb)
+{
+	pgb_heap_t *heap = pgb->heap;
+	pgb_page_t *page = heap->first_page;
+	log_debug("pgb heap");
+	while (page) {
+		log_debug("%p: %lu", page, page->size);
 		page = page->next;
 	}
 }
