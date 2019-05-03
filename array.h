@@ -37,6 +37,7 @@ typedef struct array__head
 
 #define array_copy(dst, src)       ((dst)=array__copy(dst, src, array__esz(src) \
                                                       MEMCALL_LOCATION))
+#define array_memcpy(dst, src)     memcpy((dst), (src), array_sz(src) * array__esz(src))
 
 #define array_from_end(a, i)       ((a)[array_sz(a)-i])
 #define array_first(a)             ((a)[0])
