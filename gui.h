@@ -210,6 +210,7 @@ void mouse_pos(const gui_t *gui, s32 *x, s32 *y);
 void mouse_pos_last(const gui_t *gui, s32 *x, s32 *y);
 void mouse_pos_press(const gui_t *gui, s32 *x, s32 *y);
 void mouse_pos_global(const gui_t *gui, s32 *x, s32 *y);
+b32  mouse_pos_changed(const gui_t *gui);
 b32  mouse_pressed(const gui_t *gui, u32 mask);
 b32  mouse_pressed_bg(const gui_t *gui, u32 mask);
 b32  mouse_down(const gui_t *gui, u32 mask);
@@ -3169,6 +3170,11 @@ void mouse_pos_press(const gui_t *gui, s32 *x, s32 *y)
 void mouse_pos_global(const gui_t *gui, s32 *x, s32 *y)
 {
 	SDL_GetGlobalMouseState(x, y);
+}
+
+b32 mouse_pos_changed(const gui_t *gui)
+{
+	return !v2i_equal(gui->mouse_pos, gui->mouse_pos_last);
 }
 
 b32 mouse_pressed(const gui_t *gui, u32 mask)
