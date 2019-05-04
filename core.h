@@ -236,7 +236,7 @@ typedef struct alloc_tracker
 	alloc_node_t *head, *tail;
 	size_t generation;
 	size_t current_bytes, peak_bytes, total_bytes;
-	size_t total_chunks;
+	size_t total_chunks, total_allocs;
 } alloc_tracker_t;
 
 void alloc_tracker_advance_gen(alloc_tracker_t *tracker);
@@ -526,6 +526,14 @@ void log_alloc(const char *prefix, size_t sz  MEMCALL_ARGS)
 #endif
 }
 
+static
+void log_realloc(const char *prefix, size_t sz  MEMCALL_ARGS)
+{
+#ifdef VLT_TRACK_MEMORY_VERBOSE
+	log_debug("%s_realloc: %lu @ %s", prefix, sz, loc);
+#endif
+}
+
 #define PGB_IMPLEMENTATION
 #include "violet/pgb.h"
 
@@ -598,18 +606,32 @@ void temp_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
 /* Tracking allocator */
 
 static
-void alloc_tracker__record_alloc(alloc_tracker_t *tracker, size_t sz)
+void alloc_tracker__record_alloc_(alloc_tracker_t *tracker, size_t sz)
 {
 	tracker->current_bytes += sz;
 	if (tracker->peak_bytes < tracker->current_bytes)
 		tracker->peak_bytes = tracker->current_bytes;
 	tracker->total_bytes += sz;
+	++tracker->total_allocs;
+}
+
+static
+void alloc_tracker__record_alloc(alloc_tracker_t *tracker, size_t sz)
+{
+	alloc_tracker__record_alloc_(tracker, sz);
 	++tracker->total_chunks;
+}
+
+static
+void alloc_tracker__record_realloc(alloc_tracker_t *tracker, size_t sz)
+{
+	alloc_tracker__record_alloc_(tracker, sz);
 }
 
 static
 void alloc_tracker__record_free(alloc_tracker_t *tracker, size_t sz)
 {
+	assert(tracker->current_bytes >= sz);
 	tracker->current_bytes -= sz;
 }
 
@@ -661,8 +683,8 @@ void alloc_tracker_log_usage(alloc_tracker_t *tracker, b32 warn_active_allocatio
 	}
 
 	log_info("peak:  %10lu bytes", tracker->peak_bytes);
- 	log_info("total: %10lu bytes in %lu chunks",
-	         tracker->total_bytes, tracker->total_chunks);
+	log_info("total: %10lu bytes in %lu chunks, %lu (re)allocs",
+	         tracker->total_bytes, tracker->total_chunks, tracker->total_allocs);
 }
 
 void alloc_tracker_log_current_gen(alloc_tracker_t *tracker, size_t gen)
@@ -697,11 +719,18 @@ void *tracked_realloc(void *ptr, size_t sz, allocator_t *a  MEMCALL_ARGS)
 	alloc_tracker_t *tracker = a->udata;
 	if (ptr) {
 		alloc_node_t *old_node = (alloc_node_t*)ptr - 1;
-		alloc_tracker__record_free(tracker, old_node->sz);
+		const size_t old_sz = old_node->sz;
 		if (sz) {
 			alloc_node_t *node = std_realloc(old_node, sizeof(alloc_node_t) + sz);
-			alloc_tracker__record_alloc(tracker, sz);
-			log_alloc("std", sz  MEMCALL_VARS);
+			if (node != old_node) {
+				alloc_tracker__record_free(tracker, old_sz);
+				alloc_tracker__record_alloc(tracker, sz);
+			} else if (sz > old_sz) {
+				alloc_tracker__record_realloc(tracker, sz - old_sz);
+			} else if (sz < old_sz) {
+				alloc_tracker__record_free(tracker, old_sz - sz);
+			}
+			log_realloc("std", sz  MEMCALL_VARS);
 			node->sz = sz;
 			node->generation = tracker->generation;
 #ifdef VLT_TRACK_MEMORY

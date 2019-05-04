@@ -395,6 +395,7 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 				pgb__alloc_set_sz(ptr, pgb->current_page, aligned_size);
 				pgb->current_ptr = ptr + aligned_size;
 				assert(pgb->current_ptr <= pgb__page_end(pgb->current_page));
+				log_realloc("pgb", aligned_size  MEMCALL_VARS);
 				return ptr;
 			} else {
 				const pgb_page_t *page = pgb->current_page;
