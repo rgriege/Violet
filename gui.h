@@ -1449,9 +1449,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 				array_append(*triangles, v[a]);
 				array_append(*triangles, v[b]);
 				array_append(*triangles, v[c]);
-				/* remove b from remaining polygon */
-				for (u32 j = b + 1; j < n; ++j)
-					(*triangles)[out_vtx_cnt + j - 1] = (*triangles)[out_vtx_cnt + j];
+				buf_remove(v, b, n);
 				--n;
 				break;
 			}
