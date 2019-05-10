@@ -1424,15 +1424,16 @@ u32 gui_triangulate_out_sz(u32 n)
 
 b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 {
+	const u32 prev_triangle_cnt = array_sz(*triangles);
 	const u32 out_vtx_cnt = gui_triangulate_out_sz(n_);
 	v2f *v;
 	u32 n;
 
-	array_reserve(*triangles, out_vtx_cnt + n_);
+	array_reserve(*triangles, prev_triangle_cnt + out_vtx_cnt + n_);
 
 	/* Copy the original poly into the last verts of triangle buffer
 	 * so we can remove the vertices later. */
-	v = &(*triangles)[out_vtx_cnt];
+	v = &(*triangles)[prev_triangle_cnt + out_vtx_cnt];
 	memcpy(v, v_, n_ * sizeof(*v_));
 	n = n_;
 
@@ -1456,7 +1457,7 @@ b32 gui_triangulate(const v2f *v_, u32 n_, v2f **triangles)
 			}
 		}
 		if (old_n == n) {
-			array_clear(*triangles);
+			array_set_sz(*triangles, prev_triangle_cnt);
 			return false;
 		}
 	}
