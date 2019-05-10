@@ -7,6 +7,7 @@
 #define CORE_IMPLEMENTATION
 #define DMATH_IMPLEMENTATION
 #define FMATH_IMPLEMENTATION
+#define GEOM_IMPLEMENTATION
 #define GRAPHICS_IMPLEMENTATION
 #define GUI_IMPLEMENTATION
 #define IMATH_IMPLEMENTATION
@@ -29,6 +30,7 @@
 #include "violet/dmath.h"
 #include "violet/fmath.h"
 #include "violet/imath.h"
+#include "violet/geom.h"
 /* Serialization */
 #include "violet/vson.h"
 /* String */
