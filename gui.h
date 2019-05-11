@@ -265,7 +265,7 @@ void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke);
-void gui_polylinef(gui_t *gui, const v2f *v, u32 n, color_t stroke);
+void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke);
 void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity);
@@ -3271,6 +3271,20 @@ void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 	}
 }
 
+void gui__polyline_corner_offset(v2f a, v2f b, v2f c, r32 d, v2f *p)
+{
+	const v2f dir1 = v2f_dir(a, b);
+	const v2f dir2 = v2f_dir(b, c);
+	const v2f perp1 = v2f_scale(v2f_lperp(dir1), d);
+	const v2f perp2 = v2f_scale(v2f_lperp(dir2), d);
+	const v2f ax1 = v2f_add(a, perp1);
+	const v2f bx1 = v2f_add(b, perp1);
+	const v2f bx2 = v2f_add(b, perp2);
+	const v2f cx2 = v2f_add(c, perp2);
+	if (!fmath_line_intersect(ax1, bx1, bx2, cx2, p))
+		*p = v2f_add(b, perp1);
+}
+
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke)
 {
 	array_set_sz(gui->vert_buf, n);
@@ -3278,13 +3292,42 @@ void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke)
 		gui->vert_buf[i].x = v[i].x;
 		gui->vert_buf[i].y = v[i].y;
 	}
-	gui_polylinef(gui, gui->vert_buf, n, stroke);
+	gui__poly(gui, A2PN(gui->vert_buf), g_nocolor, stroke, false);
 	array_clear(gui->vert_buf);
 }
 
-void gui_polylinef(gui_t *gui, const v2f *v, u32 n, color_t stroke)
+void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
 {
-	gui__poly(gui, v, n, g_nocolor, stroke, false);
+	assert(n >= 2 && w >= 1.f);
+	if (w == 1.f) {
+		gui__poly(gui, v, n, g_nocolor, stroke, false);
+	} else {
+		const r32 w2    = w / 2.f;
+		const v2f dir0  = v2f_scale(v2f_dir(v[0], v[1]), w2);
+		const v2f perp0 = v2f_lperp(dir0);
+		const v2f dirn  = v2f_scale(v2f_dir(v[n-2], v[n-1]), w2);
+		const v2f perpn = v2f_lperp(dirn);
+
+		array_set_sz(gui->vert_buf, 2*n);
+
+		gui->vert_buf[0] = v2f_sub(v2f_sub(v[0], dir0), perp0);
+		gui->vert_buf[1] = v2f_add(v2f_sub(v[0], dir0), perp0);
+
+		for (u32 i = 1; i < n-1; ++i) {
+			gui__polyline_corner_offset(v[i-1], v[i], v[i+1], w2, &gui->vert_buf[2*i]);
+			gui->vert_buf[2*i+1] = v2f_add(v[i], v2f_sub(v[i], gui->vert_buf[2*i]));
+		}
+
+		gui->vert_buf[2*n-2] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
+		gui->vert_buf[2*n-1] = v2f_add(v2f_add(v[n-1], dirn), perpn);
+
+		gui_begin(gui, array_sz(gui->vert_buf), GUI_DRAW_TRIANGLE_STRIP);
+		array_foreach(gui->vert_buf, const v2f, p)
+			gui_vertf(gui, p->x, p->y, stroke, 0.f, 0.f);
+		gui_end(gui);
+
+		array_clear(gui->vert_buf);
+	}
 }
 
 static
