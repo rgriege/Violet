@@ -3,8 +3,13 @@
 
 #include "violet/core.h"
 
-#define VSON_LABEL_SZ 32
+#ifndef VSON_LABEL_SZ
+#define VSON_LABEL_SZ 64
+#endif
+
+#ifndef VSON_VALUE_SZ
 #define VSON_VALUE_SZ 64
+#endif
 
 b32  vson_read_header(FILE *fp, const char *label);
 b32  vson_read_b8(FILE *fp, const char *label, b8 *val);
