@@ -369,7 +369,7 @@ s32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                  const char *hint, npt_flags_t flags);
 s32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                     const char *hint, npt_flags_t flags, npt_filter_p filter);
-s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n,
                  npt_flags_t flags, npt_filter_p filter);
 s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
@@ -501,7 +501,7 @@ s32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
                   npt_flags_t flags);
 s32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
                      npt_flags_t flags, npt_filter_p filter);
-s32  pgui_npt_val(gui_t *gui, const char *txt,
+s32  pgui_npt_val(gui_t *gui, const char *txt, u32 n,
                   npt_flags_t flags, npt_filter_p filter);
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
@@ -4336,23 +4336,24 @@ const char *gui_npt_val_buf(const gui_t *gui)
 	return gui->npt.val_buf;
 }
 
-s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt,
+s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n_,
                 npt_flags_t flags, npt_filter_p filter)
 {
 	const u64 id = gui_widget_id(gui, x, y);
+	const u32 n  = min(n_, sizeof(gui->npt.val_buf));
 	if (gui_widget_focused(gui, id)) {
-		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt.val_buf),
+		return gui_npt_txt_ex(gui, x, y, w, h, gui->npt.val_buf, n,
 		                      "", flags, filter);
 	} else if (gui_any_widget_has_focus(gui)) {
 		char buf[GUI_TXT_MAX_LENGTH];
-		strncpy(buf, txt, countof(buf));
-		gui_npt_txt_ex(gui, x, y, w, h, B2PC(buf), "", flags, filter);
+		strbcpy(buf, txt);
+		gui_npt_txt_ex(gui, x, y, w, h, buf, n, "", flags, filter);
 		if (gui_widget_focused(gui, id))
-			strncpy(gui->npt.val_buf, txt, countof(gui->npt.val_buf));
+			strbcpy(gui->npt.val_buf, txt);
 		return 0;
 	} else {
-		strncpy(gui->npt.val_buf, txt, countof(gui->npt.val_buf));
-		return gui_npt_txt_ex(gui, x, y, w, h, B2PC(gui->npt.val_buf),
+		strbcpy(gui->npt.val_buf, txt);
+		return gui_npt_txt_ex(gui, x, y, w, h, gui->npt.val_buf, n,
 		                      "", flags, filter);
 	}
 }
@@ -5248,7 +5249,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "r");
-		if (pgui_npt_val(gui, imprintf("%u", color.r), flags, filter)) {
+		if (pgui_npt_val(gui, imprintf("%u", color.r), 4, flags, filter)) {
 			changed_npt = true;
 			color.r = strtoul(gui_npt_val_buf(gui), NULL, 0);
 		}
@@ -5256,7 +5257,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "g");
-		if (pgui_npt_val(gui, imprintf("%u", color.g), flags, filter)) {
+		if (pgui_npt_val(gui, imprintf("%u", color.g), 4, flags, filter)) {
 			changed_npt = true;
 			color.g = strtoul(gui_npt_val_buf(gui), NULL, 0);
 		}
@@ -5264,7 +5265,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "b");
-		if (pgui_npt_val(gui, imprintf("%u", color.b), flags, filter)) {
+		if (pgui_npt_val(gui, imprintf("%u", color.b), 4, flags, filter)) {
 			changed_npt = true;
 			color.b = strtoul(gui_npt_val_buf(gui), NULL, 0);
 		}
@@ -5273,7 +5274,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		color_to_hsv8(color, &ch, &cs, &cv);
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "h");
-		if (pgui_npt_val(gui, imprintf("%u", ch), flags, filter)) {
+		if (pgui_npt_val(gui, imprintf("%u", ch), 4, flags, filter)) {
 			changed_npt = true;
 			ch = strtoul(gui_npt_val_buf(gui), NULL, 0);
 			hsv_to_color8(ch, cs, cv, &color);
@@ -5282,7 +5283,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "s");
-		if (pgui_npt_val(gui, imprintf("%u", cs), flags, filter)) {
+		if (pgui_npt_val(gui, imprintf("%u", cs), 4, flags, filter)) {
 			changed_npt = true;
 			cs = strtoul(gui_npt_val_buf(gui), NULL, 0);
 			hsv_to_color8(ch, cs, cv, &color);
@@ -5291,7 +5292,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "v");
-		if (pgui_npt_val(gui, imprintf("%u", cv), flags, filter)) {
+		if (pgui_npt_val(gui, imprintf("%u", cv), 4, flags, filter)) {
 			changed_npt = true;
 			cv = strtoul(gui_npt_val_buf(gui), NULL, 0);
 			hsv_to_color8(ch, cs, cv, &color);
@@ -5300,7 +5301,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_row_cellsv(gui, 0, cols_npt);
 		pgui_txt(gui, "#");
-		if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x", color.r, color.g, color.b), flags, filter)) {
+		if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x", color.r, color.g, color.b), 8, flags, filter)) {
 			const color_t c_orig = color;
 			if (color_from_hex(gui_npt_val_buf(gui), &color))
 				changed_npt = true;
@@ -5815,12 +5816,12 @@ s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
 	return gui_npt_txt_ex(gui, x, y, w, h, lbl, n, hint, flags, filter);
 }
 
-s32 pgui_npt_val(gui_t *gui, const char *txt,
+s32 pgui_npt_val(gui_t *gui, const char *txt, u32 n,
                  npt_flags_t flags, npt_filter_p filter)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	return gui_npt_val(gui, x, y, w, h, txt, flags, filter);
+	return gui_npt_val(gui, x, y, w, h, txt, n, flags, filter);
 }
 
 b32 pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
