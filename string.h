@@ -7,6 +7,8 @@ char *sprint_u32(char *buf, u32 n, u32 val);
 char *sprint_s32(char *buf, u32 n, s32 val);
 char *sprint_r32(char *buf, u32 n, r32 val, u32 dec);
 
+#define strbcpy(dst, src) strncpy(dst, src, sizeof(dst))
+
 /* Immediate strings - single string buffer for immediate use.
  * Be very careful when writing functions that take a string as a parameter
  * and use this string - assert(str != imstr()) is recommended.
