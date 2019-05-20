@@ -236,8 +236,8 @@ typedef enum gui_draw_call_type
 	GUI_DRAW_COUNT
 } gui_draw_call_type_e;
 
-void gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type);
-void gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
+b32  gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type);
+b32  gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
                    u32 tex, texture_blend_e blend);
 void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v);
 void gui_end(gui_t *gui);
@@ -2658,10 +2658,11 @@ void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
 
 	assert(n % 3 == 0);
 
-	gui_begin(gui, n, GUI_DRAW_TRIANGLES);
-	for (u32 i = 0; i < n; ++i)
-		gui_vertf(gui, v[i].x, v[i].y, fill, 0.f, 0.f);
-	gui_end(gui);
+	if (gui_begin(gui, n, GUI_DRAW_TRIANGLES)) {
+		for (u32 i = 0; i < n; ++i)
+			gui_vertf(gui, v[i].x, v[i].y, fill, 0.f, 0.f);
+		gui_end(gui);
+	}
 }
 
 static
@@ -2709,24 +2710,29 @@ b32 gui__box_half_visible(const gui_t *gui, box2i box)
 	       && clipped.max.y - clipped.min.y >= (box.max.y - box.min.y) / 2;
 }
 
-void gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type)
+b32 gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type)
 {
-	gui_begin_tex(gui, num_verts, type, 0, TEXTURE_BLEND_NRM);
+	return gui_begin_tex(gui, num_verts, type, 0, TEXTURE_BLEND_NRM);
 }
 
-void gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
-                   u32 tex, texture_blend_e blend)
+b32 gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
+                  u32 tex, texture_blend_e blend)
 {
-	draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
 	assert(num_verts > 0);
-	assert(gui->vert_cnt + num_verts <= GUI_MAX_VERTS);
-	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
-	draw_call->idx   = gui->vert_cnt;
-	draw_call->cnt   = num_verts;
-	draw_call->type  = type;
-	draw_call->tex   = tex != 0 ? tex : gui->texture_white.handle;
-	draw_call->blend = blend;
-	gui->draw_call_vert_idx = 0;
+	if (   gui->vert_cnt + num_verts <= GUI_MAX_VERTS
+	    && gui->draw_call_cnt < GUI_MAX_DRAW_CALLS) {
+		draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
+		draw_call->idx   = gui->vert_cnt;
+		draw_call->cnt   = num_verts;
+		draw_call->type  = type;
+		draw_call->tex   = tex != 0 ? tex : gui->texture_white.handle;
+		draw_call->blend = blend;
+		gui->draw_call_vert_idx = 0;
+		return true;
+	} else {
+		assert(false);
+		return false;
+	}
 }
 
 void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
@@ -2759,8 +2765,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke, b3
 	if (!box2f_overlaps(mask, bbox))
 		return;
 
-	if (!color_equal(fill, g_nocolor)) {
-		gui_begin(gui, n, GUI_DRAW_TRIANGLE_FAN);
+	if (!color_equal(fill, g_nocolor) && gui_begin(gui, n, GUI_DRAW_TRIANGLE_FAN)) {
 		for (u32 i = 0; i < n; ++i)
 			gui_vertf(gui, v[i].x, v[i].y, fill, 0.f, 0.f);
 		gui_end(gui);
@@ -2769,23 +2774,25 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke, b3
 	if (!color_equal(stroke, g_nocolor)) {
 		const r32 dash_len = gui->style.line.dash_len;
 		if (dash_len != 0.f) {
-			gui_begin_tex(gui, closed ? n + 1 : n, GUI_DRAW_LINE_STRIP,
-			              gui->texture_white_dotted.handle, TEXTURE_BLEND_NRM);
-			r32 dist = 0.f;
-			for (u32 i = 0; i < n; ++i) {
-				gui_vertf(gui, v[i].x, v[i].y, stroke, dist / dash_len, 0.f);
-				dist += v2f_dist(v[i], v[(i+1)%n]);
+			if (gui_begin_tex(gui, closed ? n + 1 : n, GUI_DRAW_LINE_STRIP,
+			                  gui->texture_white_dotted.handle, TEXTURE_BLEND_NRM)) {
+				r32 dist = 0.f;
+				for (u32 i = 0; i < n; ++i) {
+					gui_vertf(gui, v[i].x, v[i].y, stroke, dist / dash_len, 0.f);
+					dist += v2f_dist(v[i], v[(i+1)%n]);
+				}
+				if (closed)
+					gui_vertf(gui, v[0].x, v[0].y, stroke, dist / dash_len, 0.f);
+				gui_end(gui);
 			}
-			if (closed)
-				gui_vertf(gui, v[0].x, v[0].y, stroke, dist / dash_len, 0.f);
-			gui_end(gui);
 		} else {
 			const gui_draw_call_type_e type
 				= closed ? GUI_DRAW_LINE_LOOP : GUI_DRAW_LINE_STRIP;
-			gui_begin(gui, n, type);
-			for (u32 i = 0; i < n; ++i)
-				gui_vertf(gui, v[i].x, v[i].y, stroke, 0.f, 0.f);
-			gui_end(gui);
+			if (gui_begin(gui, n, type)) {
+				for (u32 i = 0; i < n; ++i)
+					gui_vertf(gui, v[i].x, v[i].y, stroke, 0.f, 0.f);
+				gui_end(gui);
+			}
 		}
 	}
 }
@@ -2829,9 +2836,6 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 
 	box2f mask, bbox;
 
-	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
-	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
-
 	const m3f transform = texture_get_transform(texture, x, y, sx, sy, rotation);
 
 	for (u32 i = 0; i < countof(points); ++i)
@@ -2851,11 +2855,12 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		color.b *= brightness;
 	}
 
-	gui_begin_tex(gui, countof(points), GUI_DRAW_TRIANGLE_FAN,
-	              texture->handle, texture->blend);
-	for (u32 i = 0; i < countof(points); ++i)
-		gui_vertf(gui, points[i].x, points[i].y, color, corners[i].u, corners[i].v);
-	gui_end(gui);
+	if (gui_begin_tex(gui, countof(points), GUI_DRAW_TRIANGLE_FAN,
+	                  texture->handle, texture->blend)) {
+		for (u32 i = 0; i < countof(points); ++i)
+			gui_vertf(gui, points[i].x, points[i].y, color, corners[i].u, corners[i].v);
+		gui_end(gui);
+	}
 }
 
 static
@@ -2864,20 +2869,18 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 {
 	box2f mask, bbox;
 
-	assert(gui->vert_cnt + 4 < GUI_MAX_VERTS);
-	assert(gui->draw_call_cnt < GUI_MAX_DRAW_CALLS);
-
 	gui__current_maskf(gui, &mask);
 	box2f_from_dims(&bbox, x0, y1, x1, y0);
 	if (!box2f_overlaps(mask, bbox))
 		return;
 
-	gui_begin_tex(gui, 4, GUI_DRAW_TRIANGLE_FAN, texture->handle, texture->blend);
-	gui_vertf(gui, x0, y1, color, s0, 1.f - t0);
-	gui_vertf(gui, x0, y0, color, s0, 1.f - t1);
-	gui_vertf(gui, x1, y0, color, s1, 1.f - t1);
-	gui_vertf(gui, x1, y1, color, s1, 1.f - t0);
-	gui_end(gui);
+	if (gui_begin_tex(gui, 4, GUI_DRAW_TRIANGLE_FAN, texture->handle, texture->blend)) {
+		gui_vertf(gui, x0, y1, color, s0, 1.f - t0);
+		gui_vertf(gui, x0, y0, color, s0, 1.f - t1);
+		gui_vertf(gui, x1, y0, color, s1, 1.f - t1);
+		gui_vertf(gui, x1, y1, color, s1, 1.f - t0);
+		gui_end(gui);
+	}
 }
 
 static void gui__complete_scissor(gui_t *gui);
@@ -3321,10 +3324,11 @@ void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
 		gui->vert_buf[2*n-2] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
 		gui->vert_buf[2*n-1] = v2f_add(v2f_add(v[n-1], dirn), perpn);
 
-		gui_begin(gui, array_sz(gui->vert_buf), GUI_DRAW_TRIANGLE_STRIP);
-		array_foreach(gui->vert_buf, const v2f, p)
-			gui_vertf(gui, p->x, p->y, stroke, 0.f, 0.f);
-		gui_end(gui);
+		if (gui_begin(gui, array_sz(gui->vert_buf), GUI_DRAW_TRIANGLE_STRIP)) {
+			array_foreach(gui->vert_buf, const v2f, p)
+				gui_vertf(gui, p->x, p->y, stroke, 0.f, 0.f);
+			gui_end(gui);
+		}
 
 		array_clear(gui->vert_buf);
 	}
