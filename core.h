@@ -380,7 +380,7 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 typedef struct profile_block
 {
 	const char *lbl;
-	u32 ms;
+	u32 us;
 	u32 n;
 } profile_block_t;
 
@@ -397,8 +397,8 @@ extern thread_local profile_block_t g_profiler_blocks[PROFILE_BLOCK_COUNT];
 	do { \
 		const timepoint_t name##_begin = g_profiler_stack[--g_profiler_depth]; \
 		const timepoint_t name##_end   = time_current(); \
-		const u32 name##_ms = time_diff_micro(name##_begin, name##_end); \
-		log_info("PROFILE: %*s%s=%uus", g_profiler_depth, "", name_str, name##_ms); \
+		const u32 name##_us = time_diff_micro(name##_begin, name##_end); \
+		log_info("PROFILE: %*s%s=%sus", g_profiler_depth, "", name_str, imprint_u32(name##_us)); \
 	} while (0)
 #define PROFILE_BLOCK_END(name) PROFILE_BLOCK_END_(name, #name)
 
@@ -407,10 +407,10 @@ extern thread_local profile_block_t g_profiler_blocks[PROFILE_BLOCK_COUNT];
 		assert(g_profiler_depth > 0); \
 		const timepoint_t name##_begin = g_profiler_stack[--g_profiler_depth]; \
 		const timepoint_t name##_end   = time_current(); \
-		const u32 name##_ms = time_diff_micro(name##_begin, name##_end); \
+		const u32 name##_us = time_diff_micro(name##_begin, name##_end); \
 		const u32 name##_id = hash(name_str)%countof(g_profiler_blocks); \
 		g_profiler_blocks[name##_id].lbl = name_str; \
-		g_profiler_blocks[name##_id].ms += name##_ms; \
+		g_profiler_blocks[name##_id].us += name##_us; \
 		g_profiler_blocks[name##_id].n  += 1; \
 	} while (0)
 #define PROFILE_BLOCK_END_AGGREGATE(name) PROFILE_BLOCK_END_AGGREGATE_(name, #name)
@@ -422,9 +422,9 @@ extern thread_local profile_block_t g_profiler_blocks[PROFILE_BLOCK_COUNT];
 	do { \
 		for (u32 i = 0; i < countof(g_profiler_blocks); ++i) \
 			if (g_profiler_blocks[i].n > 0) \
-				log_info("PROFILE: %*s%s=%uus (%u)", \
+				log_info("PROFILE: %*s%s=%sus (%u)", \
 				         g_profiler_depth, "", g_profiler_blocks[i].lbl, \
-				         g_profiler_blocks[i].ms, g_profiler_blocks[i].n); \
+				         imprint_u32(g_profiler_blocks[i].us), g_profiler_blocks[i].n); \
 	} while(0)
 #define PROFILE_CLEAR_AGGREGATES() memclr(g_profiler_blocks)
 #define PROFILE_RESET() \
