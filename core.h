@@ -376,20 +376,20 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 /* Profile */
 
 #ifdef PROFILE
+#define PROFILE_STACK_SIZE 32
 extern thread_local u32 g_profiler_depth;
+extern thread_local timepoint_t g_profiler_stack[PROFILE_STACK_SIZE];
+
 #define PROFILE_BLOCK_BEGIN(name) \
-	{ \
-		timepoint_t name##begin = time_current(); \
-		++g_profiler_depth;
+	g_profiler_stack[g_profiler_depth++] = time_current();
 
 #define PROFILE_BLOCK_END_(name, name_str) \
-		{ \
-			timepoint_t name##end = time_current(); \
-			--g_profiler_depth; \
-			log_info("PROFILE: %*s%s=%uus", g_profiler_depth, "", name_str, \
-			         time_diff_micro(name##begin, name##end)); \
-		} \
-	}
+	do { \
+		const timepoint_t name##_begin = g_profiler_stack[--g_profiler_depth]; \
+		const timepoint_t name##_end   = time_current(); \
+		const u32 name##_ms = time_diff_micro(name##_begin, name##_end); \
+		log_info("PROFILE: %*s%s=%uus", g_profiler_depth, "", name_str, name##_ms); \
+	} while (0)
 #define PROFILE_BLOCK_END(name) PROFILE_BLOCK_END_(name, #name)
 
 #define PROFILE_FUNCTION_BEGIN() PROFILE_BLOCK_BEGIN(__FUNCTION__)
@@ -1054,7 +1054,10 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 
 /* Profile */
 
+#ifdef PROFILE
 thread_local u32 g_profiler_depth = 0;
+thread_local timepoint_t g_profiler_stack[PROFILE_STACK_SIZE] = {0};
+#endif
 
 /* Runtime */
 
