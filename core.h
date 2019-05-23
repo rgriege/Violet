@@ -376,9 +376,19 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 /* Profile */
 
 #ifdef PROFILE
+
+typedef struct profile_block
+{
+	const char *lbl;
+	u32 ms;
+	u32 n;
+} profile_block_t;
+
 #define PROFILE_STACK_SIZE 32
+#define PROFILE_BLOCK_COUNT 32
 extern thread_local u32 g_profiler_depth;
 extern thread_local timepoint_t g_profiler_stack[PROFILE_STACK_SIZE];
+extern thread_local profile_block_t g_profiler_blocks[PROFILE_BLOCK_COUNT];
 
 #define PROFILE_BLOCK_BEGIN(name) \
 	g_profiler_stack[g_profiler_depth++] = time_current();
@@ -392,15 +402,46 @@ extern thread_local timepoint_t g_profiler_stack[PROFILE_STACK_SIZE];
 	} while (0)
 #define PROFILE_BLOCK_END(name) PROFILE_BLOCK_END_(name, #name)
 
+#define PROFILE_BLOCK_END_AGGREGATE_(name, name_str) \
+	do { \
+		assert(g_profiler_depth > 0); \
+		const timepoint_t name##_begin = g_profiler_stack[--g_profiler_depth]; \
+		const timepoint_t name##_end   = time_current(); \
+		const u32 name##_ms = time_diff_micro(name##_begin, name##_end); \
+		const u32 name##_id = hash(name_str)%countof(g_profiler_blocks); \
+		g_profiler_blocks[name##_id].lbl = name_str; \
+		g_profiler_blocks[name##_id].ms += name##_ms; \
+		g_profiler_blocks[name##_id].n  += 1; \
+	} while (0)
+#define PROFILE_BLOCK_END_AGGREGATE(name) PROFILE_BLOCK_END_AGGREGATE_(name, #name)
+
 #define PROFILE_FUNCTION_BEGIN() PROFILE_BLOCK_BEGIN(__FUNCTION__)
 #define PROFILE_FUNCTION_END() PROFILE_BLOCK_END_(__FUNCTION__, __FUNCTION__)
-#define PROFILE_RESET() g_profiler_depth = 0
+#define PROFILE_FUNCTION_END_AGGREGATE() PROFILE_BLOCK_END_AGGREGATE_(__FUNCTION__, __FUNCTION__)
+#define PROFILE_LOG_AGGREGATES() \
+	do { \
+		for (u32 i = 0; i < countof(g_profiler_blocks); ++i) \
+			if (g_profiler_blocks[i].n > 0) \
+				log_info("PROFILE: %*s%s=%uus (%u)", \
+				         g_profiler_depth, "", g_profiler_blocks[i].lbl, \
+				         g_profiler_blocks[i].ms, g_profiler_blocks[i].n); \
+	} while(0)
+#define PROFILE_CLEAR_AGGREGATES() memclr(g_profiler_blocks)
+#define PROFILE_RESET() \
+	do { \
+		g_profiler_depth = 0; \
+		PROFILE_CLEAR_AGGREGATES(); \
+	} while (0)
 #else
-#define PROFILE_BLOCK_BEGIN(name) NOOP
-#define PROFILE_BLOCK_END(name)   NOOP
-#define PROFILE_FUNCTION_BEGIN()  NOOP
-#define PROFILE_FUNCTION_END()    NOOP
-#define PROFILE_RESET()           NOOP
+#define PROFILE_BLOCK_BEGIN(name)         NOOP
+#define PROFILE_BLOCK_END(name)           NOOP
+#define PROFILE_BLOCK_END_AGGREGATE(name) NOOP
+#define PROFILE_FUNCTION_BEGIN()          NOOP
+#define PROFILE_FUNCTION_END()            NOOP
+#define PROFILE_FUNCTION_END_AGGREGATE()  NOOP
+#define PROFILE_LOG_AGGREGATES()          NOOP
+#define PROFILE_CLEAR_AGGREGATES()        NOOP
+#define PROFILE_RESET()                   NOOP
 #endif
 
 #endif // VIOLET_CORE_H
@@ -1057,6 +1098,7 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 #ifdef PROFILE
 thread_local u32 g_profiler_depth = 0;
 thread_local timepoint_t g_profiler_stack[PROFILE_STACK_SIZE] = {0};
+thread_local profile_block_t g_profiler_blocks[PROFILE_BLOCK_COUNT] = {0};
 #endif
 
 /* Runtime */
