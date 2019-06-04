@@ -1740,8 +1740,8 @@ typedef enum gui_vbo_type
 #define GUI_MAX_DRAW_CALLS 1024
 #endif
 
-#ifndef GUI_MAX_SCISSORS
-#define GUI_MAX_SCISSORS 32
+#ifndef GUI_MAX_LAYERS
+#define GUI_MAX_LAYERS 32
 #endif
 
 typedef struct draw_call
@@ -1753,15 +1753,15 @@ typedef struct draw_call
 	texture_blend_e blend;
 } draw_call_t;
 
-#define GUI__SCISSOR_PRIORITY_HINT  2
-#define GUI__SCISSOR_PRIORITY_POPUP 1
+#define GUI__LAYER_PRIORITY_HINT  2
+#define GUI__LAYER_PRIORITY_POPUP 1
 
-typedef struct gui__scissor
+typedef struct gui__layer
 {
 	u32 draw_call_idx, draw_call_cnt;
 	s32 x, y, w, h;
 	s32 pri;
-} gui__scissor_t;
+} gui__layer_t;
 
 typedef struct cached_img
 {
@@ -1819,8 +1819,8 @@ typedef struct gui
 	draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
 	u32 draw_call_cnt;
 	u32 draw_call_vert_idx;
-	gui__scissor_t scissors[GUI_MAX_SCISSORS];
-	gui__scissor_t *scissor;
+	gui__layer_t layers[GUI_MAX_LAYERS];
+	gui__layer_t *layer;
 
 	v2i window_dim;
 	v2i window_restore_pos;
@@ -2600,8 +2600,8 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->vert_cnt = 0;
 	gui->draw_call_cnt = 0;
 	gui->draw_call_vert_idx = 0;
-	memclr(gui->scissors);
-	gui->scissor = &gui->scissors[0];
+	memclr(gui->layers);
+	gui->layer = &gui->layers[0];
 	gui_unmask(gui);
 
 	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
@@ -2667,9 +2667,9 @@ static const GLenum g_draw_call_types[GUI_DRAW_COUNT] = {
 static
 box2i gui__current_mask(const gui_t *gui)
 {
-	const gui__scissor_t *curr = gui->scissor;
+	const gui__layer_t *layer = gui->layer;
 	box2i box;
-	box2i_from_xywh(&box, curr->x, curr->y, curr->w, curr->h);
+	box2i_from_xywh(&box, layer->x, layer->y, layer->w, layer->h);
 	return box;
 }
 
@@ -2945,8 +2945,8 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 	}
 }
 
-static void gui__complete_scissor(gui_t *gui);
-static int gui__scissor_sort(const void *lhs, const void *rhs);
+static void gui__complete_layer(gui_t *gui);
+static int gui__layer_sort(const void *lhs, const void *rhs);
 
 void gui_end_frame(gui_t *gui)
 {
@@ -2964,14 +2964,14 @@ void gui_end_frame(gui_t *gui)
 	if (gui->root_split && !gui->splits_rendered_this_frame)
 		gui_splits_render(gui);
 
-	gui__complete_scissor(gui);
+	gui__complete_layer(gui);
 
-	const u32 n_scissors = gui->scissor - &gui->scissors[0] + 1;
+	const u32 n_layers = gui->layer - &gui->layers[0] + 1;
 	/* move hints/popups to the back of the array
 	 * can't use qsort - not guaranteed to be stable */
-	isort(gui->scissors, n_scissors, sizeof(gui->scissors[0]), gui__scissor_sort);
+	isort(gui->layers, n_layers, sizeof(gui->layers[0]), gui__layer_sort);
 	/* front-to-back -> back-to-front */
-	reverse(gui->scissors, sizeof(gui->scissors[0]), n_scissors);
+	reverse(gui->layers, sizeof(gui->layers[0]), n_layers);
 
 
 	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -3010,11 +3010,11 @@ void gui_end_frame(gui_t *gui)
 	 * if overlapping widges are in the same panel/layer, but that doesn't seem
 	 * like a use case to design for other than dragging icons on a desktop,
 	 * which could be 'solved' by placing the dragged icon on a separate layer. */
-	for (u32 i = 0; i < n_scissors; ++i) {
-		const gui__scissor_t *scissor = &gui->scissors[i];
-		GL_CHECK(glScissor, scissor->x, scissor->y, scissor->w, scissor->h);
-		for (u32 j = 0; j < scissor->draw_call_cnt; ++j) {
-			draw_call_t *draw_call = &gui->draw_calls[scissor->draw_call_idx+j];
+	for (u32 i = 0; i < n_layers; ++i) {
+		const gui__layer_t *layer = &gui->layers[i];
+		GL_CHECK(glScissor, layer->x, layer->y, layer->w, layer->h);
+		for (u32 j = 0; j < layer->draw_call_cnt; ++j) {
+			draw_call_t *draw_call = &gui->draw_calls[layer->draw_call_idx+j];
 			if (draw_call->tex != current_texture) {
 				GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
 				current_texture = draw_call->tex;
@@ -3788,36 +3788,36 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 }
 
 static
-void gui__create_scissor(gui_t *gui)
+void gui__create_layer(gui_t *gui)
 {
-	if (gui->scissor->draw_call_cnt == 0)
+	if (gui->layer->draw_call_cnt == 0)
 		{}
-	else if (gui->scissor+1 < gui->scissors+countof(gui->scissors))
-		++gui->scissor;
+	else if (gui->layer+1 < gui->layers+countof(gui->layers))
+		++gui->layer;
 	else
 		assert(0);
 }
 
 static
-void gui__complete_scissor(gui_t *gui)
+void gui__complete_layer(gui_t *gui)
 {
-	const u32 draw_call_cnt = gui->draw_call_cnt - gui->scissor->draw_call_idx;
+	const u32 draw_call_cnt = gui->draw_call_cnt - gui->layer->draw_call_idx;
 	if (draw_call_cnt > 0)
-		gui->scissor->draw_call_cnt = draw_call_cnt;
-	else if (gui->scissor > &gui->scissors[0])
-		--gui->scissor;
+		gui->layer->draw_call_cnt = draw_call_cnt;
+	else if (gui->layer > &gui->layers[0])
+		--gui->layer;
 }
 
 void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
-	gui__complete_scissor(gui);
-	gui__create_scissor(gui);
-	gui->scissor->draw_call_idx = gui->draw_call_cnt;
-	gui->scissor->x = x;
-	gui->scissor->y = y;
-	gui->scissor->w = w;
-	gui->scissor->h = h;
-	gui->scissor->pri = 0;
+	gui__complete_layer(gui);
+	gui__create_layer(gui);
+	gui->layer->draw_call_idx = gui->draw_call_cnt;
+	gui->layer->x = x;
+	gui->layer->y = y;
+	gui->layer->w = w;
+	gui->layer->h = h;
+	gui->layer->pri = 0;
 }
 
 void gui_unmask(gui_t *gui)
@@ -3828,8 +3828,8 @@ void gui_unmask(gui_t *gui)
 static
 void gui__mask_pop(gui_t *gui)
 {
-	if (gui->scissor > &gui->scissors[0]) {
-		const gui__scissor_t *prev = gui->scissor-1;
+	if (gui->layer > &gui->layers[0]) {
+		const gui__layer_t *prev = gui->layer-1;
 		gui_mask(gui, prev->x, prev->y, prev->w, prev->h);
 	} else {
 		gui_unmask(gui);
@@ -3837,9 +3837,9 @@ void gui__mask_pop(gui_t *gui)
 }
 
 static
-int gui__scissor_sort(const void *lhs_, const void *rhs_)
+int gui__layer_sort(const void *lhs_, const void *rhs_)
 {
-	const gui__scissor_t *lhs = lhs_, *rhs = rhs_;
+	const gui__layer_t *lhs = lhs_, *rhs = rhs_;
 	return rhs->pri - lhs->pri;
 }
 
@@ -4178,7 +4178,7 @@ void gui__hint_render(gui_t *gui, u64 id, const char *hint)
 		rw += 2 * style->text.padding;
 		rh += 2 * style->text.padding;
 		gui_mask(gui, rx, ry, rw, rh);
-		gui->scissor->pri = GUI__SCISSOR_PRIORITY_HINT;
+		gui->layer->pri = GUI__LAYER_PRIORITY_HINT;
 		gui_rect(gui, rx, ry, rw, rh, style->bg_color, style->outline_color);
 		gui_txt_styled(gui, rx, ry, rw, rh, hint, &style->text);
 		gui__mask_pop(gui);
@@ -4763,13 +4763,13 @@ void gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 	/* only 1 active popup allowed */
 	assert(gui->popup.id == 0 || gui->popup.id == id);
 
-	gui->popup.prev_mask.x = gui->scissor->x;
-	gui->popup.prev_mask.y = gui->scissor->y;
-	gui->popup.prev_mask.w = gui->scissor->w;
-	gui->popup.prev_mask.h = gui->scissor->h;
+	gui->popup.prev_mask.x = gui->layer->x;
+	gui->popup.prev_mask.y = gui->layer->y;
+	gui->popup.prev_mask.w = gui->layer->w;
+	gui->popup.prev_mask.h = gui->layer->h;
 
 	gui_mask(gui, x, y, w, h);
-	gui->scissor->pri = GUI__SCISSOR_PRIORITY_POPUP;
+	gui->layer->pri = GUI__LAYER_PRIORITY_POPUP;
 
 	gui->popup.id = id;
 	gui->popup.mask.x = x;
@@ -4783,7 +4783,7 @@ void gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 static
 void gui__popup_end(gui_t *gui)
 {
-	/* switch to new scissor (mirroring interrupted scissor) after last item */
+	/* switch to new layer (mirroring interrupted layer) after last item */
 	gui_mask(gui, gui->popup.prev_mask.x, gui->popup.prev_mask.y,
 	         gui->popup.prev_mask.w, gui->popup.prev_mask.h);
 
@@ -5281,7 +5281,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		gui__popup_begin(gui, id, px, py, pw, ph);
 		pgui_grid_begin(gui, &gui->grid_popup, gx, gy, gw, gh);
-		/* NOTE(rgriege): shrink required to pass entire rect through scissor */
+		/* NOTE(rgriege): shrink required to pass entire rect through layer */
 		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color,
 		         style->panel.border_color);
 
