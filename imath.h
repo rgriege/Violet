@@ -76,6 +76,7 @@ IMDEF ivali ivali_range(s32 center, s32 radius);
 IMDEF s32   ivali_center(ivali i);
 IMDEF void  ivali_slide(ivali *i, s32 d);
 IMDEF s32   ivali_length(ivali i);
+IMDEF b32   ivali_overlaps(ivali lhs, ivali rhs);
 
 /* 2D Anti-aliased bounding box */
 
@@ -92,7 +93,10 @@ IMDEF void  box2i_to_xywh(box2i box, s32 *x, s32 *y, s32 *w, s32 *h);
 IMDEF box2i box2i_intersection(box2i lhs, box2i rhs);
 IMDEF b32   box2i_contains_point(box2i b, v2i p);
 IMDEF void  box2i_clamp_point(box2i b, v2i *p);
+IMDEF b32   box2i_overlaps(box2i lhs, box2i rhs);
 IMDEF b32   box2i_eq(box2i lhs, box2i rhs);
+IMDEF void  box2i_extend_point(box2i *box, v2i point);
+IMDEF void  box2i_extend_box(box2i *b, box2i other);
 IMDEF v2i   box2i_get_center(box2i b);
 IMDEF v2i   box2i_get_extent(box2i b);
 IMDEF v2i   box2i_get_half_dim(box2i b);
@@ -260,6 +264,11 @@ IMDEF s32 ivali_length(ivali i)
 	return i.r - i.l;
 }
 
+IMDEF b32 ivali_overlaps(ivali lhs, ivali rhs)
+{
+	return lhs.l <= rhs.r && rhs.l <= lhs.r;
+}
+
 /* 2D Anti-aliased bounding box */
 
 IMDEF void box2i_from_center(box2i *box, v2i center, v2i half_dim)
@@ -322,12 +331,37 @@ IMDEF void box2i_clamp_point(box2i b, v2i *p)
 	p->y = clamp(b.min.y, p->y, b.max.y);
 }
 
+IMDEF b32 box2i_overlaps(box2i lhs, box2i rhs)
+{
+	ivali lhs_x = { lhs.min.x, lhs.max.x };
+	ivali rhs_x = { rhs.min.x, rhs.max.x };
+	ivali lhs_y = { lhs.min.y, lhs.max.y };
+	ivali rhs_y = { rhs.min.y, rhs.max.y };
+	return    ivali_overlaps(lhs_x, rhs_x)
+	       && ivali_overlaps(lhs_y, rhs_y);
+}
+
 IMDEF b32 box2i_eq(box2i lhs, box2i rhs)
 {
 	return    lhs.min.x == rhs.min.x
 	       && lhs.min.y == rhs.min.y
 	       && lhs.max.x == rhs.max.x
 	       && lhs.max.y == rhs.max.y;
+}
+
+IMDEF void box2i_extend_point(box2i *box, v2i point)
+{
+	const s32 left   = min(box->min.x, point.x);
+	const s32 top    = max(box->max.y, point.y);
+	const s32 right  = max(box->max.x, point.x);
+	const s32 bottom = min(box->min.y, point.y);
+	box2i_from_dims(box, left, top, right, bottom);
+}
+
+IMDEF void box2i_extend_box(box2i *b, box2i other)
+{
+	box2i_extend_point(b, other.min);
+	box2i_extend_point(b, other.max);
 }
 
 IMDEF v2i box2i_get_center(box2i box)

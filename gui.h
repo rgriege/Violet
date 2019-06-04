@@ -363,6 +363,12 @@ const npt_filter_t g_gui_npt_filter_hex;
 b32 gui_npt_filter(npt_filter_p filter, s32 codepoint);
 const char *gui_npt_val_buf(const gui_t *gui);
 
+typedef struct gui_widget_bounds
+{
+	box2i bbox;
+	struct gui_widget_bounds *prev;
+} gui_widget_bounds_t;
+
 /* returns NPT_COMPLETE_ON_XXX if completed using an enabled completion method
  * or 0 otherwise */
 s32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
@@ -466,7 +472,8 @@ typedef struct gui_grid
 	s32 cells[GUI_GRID_MAX_CELLS];
 	gui_grid_strip_t strips[GUI_GRID_MAX_DEPTH];
 	u32 depth;
-	v2i start, dim, max_dim, pos;
+	v2i start, dim, pos;
+	gui_widget_bounds_t widget_bounds;
 	struct gui_grid *prev;
 } gui_grid_t;
 
@@ -1863,6 +1870,8 @@ typedef struct gui
 	u64 focus_prev_widget_id;
 	u64 prev_widget_id;
 	u64 hot_id_last_frame;
+	gui_widget_bounds_t *widget_bounds;
+	gui_widget_bounds_t default_widget_bounds;
 
 	/* specific widget state */
 	struct {
@@ -2116,6 +2125,8 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->focus_prev_widget_id = 0;
 	gui->prev_widget_id = 0;
 	gui->hot_id_last_frame = 0;
+	gui->widget_bounds = &gui->default_widget_bounds;
+	memclr(gui->default_widget_bounds);
 
 
 	gui->npt.cursor_pos = 0;
@@ -2583,6 +2594,9 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->hot_id_last_frame = gui->hot_id;
 
+	gui->widget_bounds = &gui->default_widget_bounds;
+	memclr(gui->default_widget_bounds);
+
 	gui->vert_cnt = 0;
 	gui->draw_call_cnt = 0;
 	gui->draw_call_vert_idx = 0;
@@ -2651,43 +2665,18 @@ static const GLenum g_draw_call_types[GUI_DRAW_COUNT] = {
 };
 
 static
-void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
-{
-	if (color_equal(fill, g_nocolor))
-		return;
-
-	assert(n % 3 == 0);
-
-	if (gui_begin(gui, n, GUI_DRAW_TRIANGLES)) {
-		for (u32 i = 0; i < n; ++i)
-			gui_vertf(gui, v[i].x, v[i].y, fill, 0.f, 0.f);
-		gui_end(gui);
-	}
-}
-
-static
-void gui__current_mask(const gui_t *gui, box2i *box)
+box2i gui__current_mask(const gui_t *gui)
 {
 	const gui__scissor_t *curr = gui->scissor;
-	box2i_from_xywh(box, curr->x, curr->y, curr->w, curr->h);
-}
-
-static
-void gui__current_maskf(const gui_t *gui, box2f *box)
-{
-	box2i mask;
-	gui__current_mask(gui, &mask);
-	box->min.x = mask.min.x;
-	box->min.y = mask.min.y;
-	box->max.x = mask.max.x;
-	box->max.y = mask.max.y;
+	box2i box;
+	box2i_from_xywh(&box, curr->x, curr->y, curr->w, curr->h);
+	return box;
 }
 
 static
 void gui__mask_box(const gui_t *gui, box2i *box)
 {
-	box2i mask;
-	gui__current_mask(gui, &mask);
+	const box2i mask = gui__current_mask(gui);
 	box2i_clamp_point(mask, &box->min);
 	box2i_clamp_point(mask, &box->max);
 }
@@ -2695,19 +2684,53 @@ void gui__mask_box(const gui_t *gui, box2i *box)
 b32 gui_point_visible(const gui_t *gui, s32 x, s32 y)
 {
 	const v2i pt = { .x = x, .y = y };
-	box2i mask;
-	gui__current_mask(gui, &mask);
+	const box2i mask = gui__current_mask(gui);
 	return box2i_contains_point(mask, pt);
+}
+
+static
+b32 gui__box_visible(const gui_t *gui, box2i box)
+{
+	const box2i mask = gui__current_mask(gui);
+	return box2i_overlaps(mask, box);
 }
 
 static
 b32 gui__box_half_visible(const gui_t *gui, box2i box)
 {
-	box2i mask, clipped;
-	gui__current_mask(gui, &mask);
-	clipped = box2i_intersection(mask, box);
+	const box2i mask = gui__current_mask(gui);
+	const box2i clipped = box2i_intersection(mask, box);
 	return    clipped.max.x - clipped.min.x >= (box.max.x - box.min.x) / 2
 	       && clipped.max.y - clipped.min.y >= (box.max.y - box.min.y) / 2;
+}
+
+static
+void gui__widget_bounds_push(gui_t *gui, gui_widget_bounds_t *widget_bounds)
+{
+	box2i_extend_box(&gui->widget_bounds->bbox, widget_bounds->bbox);
+	widget_bounds->prev = gui->widget_bounds;
+	gui->widget_bounds = widget_bounds;
+}
+
+static
+void gui__widget_bounds_pop(gui_t *gui, b32 apply_to_prev)
+{
+	if (gui->widget_bounds->prev) {
+		if (apply_to_prev)
+			box2i_extend_box(&gui->widget_bounds->prev->bbox, gui->widget_bounds->bbox);
+		gui->widget_bounds = gui->widget_bounds->prev;
+	} else {
+		assert(false);
+		gui->widget_bounds = &gui->default_widget_bounds;
+	}
+}
+
+static
+void gui__widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	box2i box;
+	box2i_from_xywh(&box, x, y, w, h);
+	box2i_extend_box(&gui->widget_bounds->bbox, box);
 }
 
 b32 gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type)
@@ -2735,7 +2758,8 @@ b32 gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
 	}
 }
 
-void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
+static
+void gui__vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
 {
 	const u32 idx_local = gui->draw_call_vert_idx++;
 	const u32 idx       = gui->vert_cnt + idx_local;
@@ -2747,6 +2771,12 @@ void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
 	gui->vert_tex_coords[idx].y = v;
 }
 
+void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
+{
+	box2i_extend_point(&gui->widget_bounds->bbox, (v2i){ (s32)x, (s32)y });
+	gui__vertf(gui, x, y, c, u, v);
+}
+
 void gui_end(gui_t *gui)
 {
 	assert(gui->draw_call_vert_idx == gui->draw_calls[gui->draw_call_cnt].cnt);
@@ -2756,18 +2786,52 @@ void gui_end(gui_t *gui)
 }
 
 static
-void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke, b32 closed)
+box2i gui__vert_bounds(const v2f *v, u32 n)
 {
-	box2f mask, bbox;
+	box2f bbox_f;
+	polyf_bounding_box(v, n, &bbox_f);
+	return (box2i) {
+		.min = { .x = (s32)bbox_f.min.x, .y = (s32)bbox_f.min.y },
+		.max = { .x = (s32)bbox_f.max.x, .y = (s32)bbox_f.max.y },
+	};
+}
 
-	gui__current_maskf(gui, &mask);
-	polyf_bounding_box(v, n, &bbox);
-	if (!box2f_overlaps(mask, bbox))
+static
+void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
+{
+	const box2i bbox = gui__vert_bounds(v, n);
+
+	box2i_extend_box(&gui->widget_bounds->bbox, bbox);
+
+	if (!gui__box_visible(gui, bbox))
 		return;
 
-	if (!color_equal(fill, g_nocolor) && gui_begin(gui, n, GUI_DRAW_TRIANGLE_FAN)) {
+	if (color_equal(fill, g_nocolor))
+		return;
+
+	assert(n % 3 == 0);
+
+	if (gui_begin(gui, n, GUI_DRAW_TRIANGLES)) {
 		for (u32 i = 0; i < n; ++i)
-			gui_vertf(gui, v[i].x, v[i].y, fill, 0.f, 0.f);
+			gui__vertf(gui, v[i].x, v[i].y, fill, 0.f, 0.f);
+		gui_end(gui);
+	}
+}
+
+static
+void gui__poly(gui_t *gui, const v2f *v, u32 n, gui_draw_call_type_e type,
+               color_t fill, color_t stroke, b32 closed)
+{
+	const box2i bbox = gui__vert_bounds(v, n);
+
+	box2i_extend_box(&gui->widget_bounds->bbox, bbox);
+
+	if (!gui__box_visible(gui, bbox))
+		return;
+
+	if (!color_equal(fill, g_nocolor) && gui_begin(gui, n, type)) {
+		for (u32 i = 0; i < n; ++i)
+			gui__vertf(gui, v[i].x, v[i].y, fill, 0.f, 0.f);
 		gui_end(gui);
 	}
 
@@ -2778,19 +2842,19 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke, b3
 			                  gui->texture_white_dotted.handle, TEXTURE_BLEND_NRM)) {
 				r32 dist = 0.f;
 				for (u32 i = 0; i < n; ++i) {
-					gui_vertf(gui, v[i].x, v[i].y, stroke, dist / dash_len, 0.f);
+					gui__vertf(gui, v[i].x, v[i].y, stroke, dist / dash_len, 0.f);
 					dist += v2f_dist(v[i], v[(i+1)%n]);
 				}
 				if (closed)
-					gui_vertf(gui, v[0].x, v[0].y, stroke, dist / dash_len, 0.f);
+					gui__vertf(gui, v[0].x, v[0].y, stroke, dist / dash_len, 0.f);
 				gui_end(gui);
 			}
 		} else {
-			const gui_draw_call_type_e type
+			const gui_draw_call_type_e line_type
 				= closed ? GUI_DRAW_LINE_LOOP : GUI_DRAW_LINE_STRIP;
-			if (gui_begin(gui, n, type)) {
+			if (gui_begin(gui, n, line_type)) {
 				for (u32 i = 0; i < n; ++i)
-					gui_vertf(gui, v[i].x, v[i].y, stroke, 0.f, 0.f);
+					gui__vertf(gui, v[i].x, v[i].y, stroke, 0.f, 0.f);
 				gui_end(gui);
 			}
 		}
@@ -2832,20 +2896,18 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		{ 1.f, 1.f },
 		{ 1.f, 0.f }
 	};
-	v2f points[4];
-
-	box2f mask, bbox;
-
 	const m3f transform = texture_get_transform(texture, x, y, sx, sy, rotation);
+	v2f points[4];
+	box2i bbox;
 
 	for (u32 i = 0; i < countof(points); ++i)
 		points[i] = m3f_mul_v2(transform, corners[i]);
 
-	gui__current_maskf(gui, &mask);
+	bbox = gui__vert_bounds(B2PC(points));
 
-	polyf_bounding_box(points, countof(points), &bbox);
+	box2i_extend_box(&gui->widget_bounds->bbox, bbox);
 
-	if (!box2f_overlaps(mask, bbox))
+	if (!gui__box_visible(gui, bbox))
 		return;
 
 	if (texture->blend == TEXTURE_BLEND_MUL) {
@@ -2858,7 +2920,7 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 	if (gui_begin_tex(gui, countof(points), GUI_DRAW_TRIANGLE_FAN,
 	                  texture->handle, texture->blend)) {
 		for (u32 i = 0; i < countof(points); ++i)
-			gui_vertf(gui, points[i].x, points[i].y, color, corners[i].u, corners[i].v);
+			gui__vertf(gui, points[i].x, points[i].y, color, corners[i].u, corners[i].v);
 		gui_end(gui);
 	}
 }
@@ -2867,18 +2929,18 @@ static
 void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
                   r32 x1, r32 y1, r32 s0, r32 t0, r32 s1, r32 t1, color_t color)
 {
-	box2f mask, bbox;
+	const box2i bbox = { .min = { (s32)x0, (s32)y0 }, .max = { (s32)x1, (s32)y1 } };
 
-	gui__current_maskf(gui, &mask);
-	box2f_from_dims(&bbox, x0, y1, x1, y0);
-	if (!box2f_overlaps(mask, bbox))
+	box2i_extend_box(&gui->widget_bounds->bbox, bbox);
+
+	if (!gui__box_visible(gui, bbox))
 		return;
 
 	if (gui_begin_tex(gui, 4, GUI_DRAW_TRIANGLE_FAN, texture->handle, texture->blend)) {
-		gui_vertf(gui, x0, y1, color, s0, 1.f - t0);
-		gui_vertf(gui, x0, y0, color, s0, 1.f - t1);
-		gui_vertf(gui, x1, y0, color, s1, 1.f - t1);
-		gui_vertf(gui, x1, y1, color, s1, 1.f - t0);
+		gui__vertf(gui, x0, y1, color, s0, 1.f - t0);
+		gui__vertf(gui, x0, y0, color, s0, 1.f - t1);
+		gui__vertf(gui, x1, y0, color, s1, 1.f - t1);
+		gui__vertf(gui, x1, y1, color, s1, 1.f - t0);
 		gui_end(gui);
 	}
 }
@@ -3182,7 +3244,7 @@ void gui__line_wide(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1,
 	poly[2] = v2f_add(v2f_add(poly[2], dir), perp);
 	poly[3] = v2f_sub(v2f_add(poly[3], dir), perp);
 
-	gui__poly(gui, poly, 4, c, g_nocolor, false);
+	gui__poly(gui, poly, 4, GUI_DRAW_TRIANGLE_FAN, c, g_nocolor, false);
 }
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
@@ -3194,7 +3256,7 @@ void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c)
 			{ x0 + 0.5f, y0 + 0.5f },
 			{ x1 + 0.5f, y1 + 0.5f }
 		};
-		gui__poly(gui, poly, 2, g_nocolor, c, false);
+		gui__poly(gui, poly, 2, GUI_DRAW_TRIANGLE_FAN, g_nocolor, c, false);
 	} else {
 		gui__line_wide(gui, x0, y0, x1, y1, w, c);
 	}
@@ -3205,7 +3267,7 @@ void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c)
 	assert(w >= 1);
 	if (fabsf(w - 1) < 0.01f) {
 		const v2f poly[2] = { { x0, y0 }, { x1, y1 } };
-		gui__poly(gui, poly, 2, g_nocolor, c, false);
+		gui__poly(gui, poly, 2, GUI_DRAW_TRIANGLE_FAN, g_nocolor, c, false);
 	} else {
 		gui__line_wide(gui, x0, y0, x1, y1, w, c);
 	}
@@ -3219,7 +3281,7 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stro
 		{ x + w, y + h },
 		{ x,     y + h },
 	};
-	gui__poly(gui, poly, 4, fill, stroke, true);
+	gui__poly(gui, poly, 4, GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
 }
 
 void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -3237,7 +3299,7 @@ void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
 {
 	array_set_sz(gui->vert_buf, arc_poly_sz(r, angle_start, angle_end));
 	arc_to_poly(x, y, r, angle_start, angle_end, A2PN(gui->vert_buf), false);
-	gui__poly(gui, A2PN(gui->vert_buf), fill, stroke, false);
+	gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, false);
 	array_clear(gui->vert_buf);
 }
 
@@ -3245,7 +3307,7 @@ void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
 	array_set_sz(gui->vert_buf, arc_poly_sz(r, 0, fPI * 2.f));
 	arc_to_poly(x, y, r, 0, fPI * 2.f, A2PN(gui->vert_buf), true);
-	gui__poly(gui, A2PN(gui->vert_buf), fill, stroke, true);
+	gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
 	array_clear(gui->vert_buf);
 }
 
@@ -3263,17 +3325,18 @@ void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 {
 	if (n == 3 || fill.a == 0 || polyf_is_convex(v, n)) {
-		gui__poly(gui, v, n, fill, stroke, true);
+		gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
 	} else {
 		if (triangulate(v, n, &gui->vert_buf)) {
 			gui__triangles(gui, A2PN(gui->vert_buf), fill);
 			array_clear(gui->vert_buf);
 		}
 		if (stroke.a != 0)
-			gui__poly(gui, v, n, g_nocolor, stroke, true);
+			gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, true);
 	}
 }
 
+static
 void gui__polyline_corner_offset(v2f a, v2f b, v2f c, r32 d, v2f *p)
 {
 	const v2f dir1 = v2f_dir(a, b);
@@ -3295,7 +3358,7 @@ void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke)
 		gui->vert_buf[i].x = v[i].x;
 		gui->vert_buf[i].y = v[i].y;
 	}
-	gui__poly(gui, A2PN(gui->vert_buf), g_nocolor, stroke, false);
+	gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, false);
 	array_clear(gui->vert_buf);
 }
 
@@ -3303,7 +3366,7 @@ void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
 {
 	assert(n >= 2 && w >= 1.f);
 	if (w == 1.f) {
-		gui__poly(gui, v, n, g_nocolor, stroke, false);
+		gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, false);
 	} else {
 		const r32 w2    = w / 2.f;
 		const v2f dir0  = v2f_scale(v2f_dir(v[0], v[1]), w2);
@@ -3324,12 +3387,7 @@ void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
 		gui->vert_buf[2*n-2] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
 		gui->vert_buf[2*n-1] = v2f_add(v2f_add(v[n-1], dirn), perpn);
 
-		if (gui_begin(gui, array_sz(gui->vert_buf), GUI_DRAW_TRIANGLE_STRIP)) {
-			array_foreach(gui->vert_buf, const v2f, p)
-				gui_vertf(gui, p->x, p->y, stroke, 0.f, 0.f);
-			gui_end(gui);
-		}
-
+		gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_STRIP, stroke, g_nocolor, true);
 		array_clear(gui->vert_buf);
 	}
 }
@@ -5469,10 +5527,10 @@ void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h)
 	grid->start.y = y + h; /* widgets are drawn from high to low */
 	grid->dim.x = w;
 	grid->dim.y = h;
-	grid->max_dim.x = w;
-	grid->max_dim.y = h;
 	grid->pos = grid->start;
 	gui->grid = grid;
+	box2i_from_xywh(&grid->widget_bounds.bbox, x, y, w, h);
+	gui__widget_bounds_push(gui, &grid->widget_bounds);
 }
 
 void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
@@ -5481,6 +5539,7 @@ void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
 	assert(gui->grid == grid);
 	assert(gui->grid->depth == 0);
 	gui->grid = gui->grid->prev;
+	gui__widget_bounds_pop(gui, true);
 }
 
 static
@@ -5589,15 +5648,6 @@ void pgui__strip(gui_t *gui, b32 vertical, s32 minor_dim,
 		cell_total_major_dim += total;
 	}
 
-	if (grid->depth == 0) {
-		const v2i dim = {
-			.x = strip->dim.x + (grid->pos.x - grid->start.x),
-			.y = strip->dim.y - (grid->pos.y - grid->start.y),
-		};
-		grid->max_dim.x = max(grid->max_dim.x, dim.x);
-		grid->max_dim.y = max(grid->max_dim.y, dim.y);
-	}
-
 	++grid->depth;
 }
 
@@ -5652,7 +5702,7 @@ void pgui_row_cells(gui_t *gui, s32 height, const r32 *cells, u32 num_cells)
 void pgui_row_empty(gui_t *gui, s32 height)
 {
 	pgui_row(gui, height, 1);
-	pgui__grid_advance(gui->grid);
+	pgui_spacer_blank(gui);
 }
 
 void pgui_row_centered(gui_t *gui, s32 height, r32 width)
@@ -5679,7 +5729,7 @@ void pgui_col_cells(gui_t *gui, s32 width, const r32 *cells, u32 num_cells)
 void pgui_col_empty(gui_t *gui, s32 width)
 {
 	pgui_col(gui, width, 1);
-	pgui__grid_advance(gui->grid);
+	pgui_spacer_blank(gui);
 }
 
 void pgui_col_centered(gui_t *gui, s32 width, r32 height)
@@ -5747,7 +5797,9 @@ void pgui_spacer(gui_t *gui)
 
 void pgui_spacer_blank(gui_t *gui)
 {
-	pgui__grid_advance(gui->grid);
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui__widget_bounds_extend(gui, x, y, w, h);
 }
 
 void pgui_txt(gui_t *gui, const char *str)
@@ -7033,13 +7085,14 @@ void pgui_panel_grid_end(gui_t *gui)
 {
 	gui_panel_t *panel = gui->panel;
 	gui_grid_t *grid = gui->grid;
-	v2i required_dim;
+	v2i grid_max_dim, required_dim;
 
 	assert(panel);
 	assert(grid);
 	assert(grid == &gui->grid_panel);
 
-	required_dim = v2i_add(grid->max_dim, v2i_scale(panel->padding, 2));
+	grid_max_dim = box2i_get_extent(grid->widget_bounds.bbox);
+	required_dim = v2i_add(grid_max_dim, v2i_scale(panel->padding, 2));
 	panel->required_dim.x = max(panel->required_dim.x, required_dim.x);
 	panel->required_dim.y = max(panel->required_dim.y, required_dim.y);
 	pgui_grid_end(gui, grid);
