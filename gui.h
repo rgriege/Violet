@@ -1839,8 +1839,7 @@ typedef struct gui
 	v2i mouse_pos_press;
 	u32 mouse_btn;
 	u32 mouse_btn_diff;
-	b32 mouse_covered_by_panel;
-	b32 mouse_covered_by_popup;
+	u64 mouse_covered_by_widget_id;
 	b32 mouse_debug;
 	gui__repeat_t mouse_repeat;
 
@@ -2545,8 +2544,7 @@ b32 gui_begin_frame(gui_t *gui)
 	if (mouse_down(gui, ~0))
 		gui->last_input_time = now;
 
-	gui->mouse_covered_by_panel = false;
-	gui->mouse_covered_by_popup = false;
+	gui->mouse_covered_by_widget_id = ~0;
 
 	gui->keys = SDL_GetKeyboardState(&key_cnt);
 	{
@@ -2638,7 +2636,7 @@ b32 gui_begin_frame(gui_t *gui)
 
 		/* catch mouse_covered_by_panel */
 		if (box2i_contains_point(box, gui->mouse_pos))
-			gui->mouse_covered_by_popup = true;
+			gui->mouse_covered_by_widget_id = gui->popup.id;
 	}
 
 	/* ensure this is set every frame by a gui_window_drag() call (perf) */
@@ -3173,8 +3171,8 @@ b32 mouse_released_bg(const gui_t *gui, u32 mask)
 static
 b32 gui__mouse_covered(const gui_t *gui)
 {
-	return gui->mouse_covered_by_panel
-	    || (gui->mouse_covered_by_popup && !gui->popup.inside);
+	return gui->mouse_covered_by_widget_id != ~0
+	    && !(gui->mouse_covered_by_widget_id == gui->popup.id && gui->popup.inside);
 }
 
 b32 mouse_over_bg(const gui_t *gui)
@@ -7038,8 +7036,8 @@ out:
 	else
 		panel->body_height = panel->height;
 
-	if (contains_mouse)
-		gui->mouse_covered_by_panel = true;
+	if (contains_mouse && gui->mouse_covered_by_widget_id == ~0)
+		gui->mouse_covered_by_widget_id = gui_widget_id(gui, ~0, ~0);
 
 	gui->panel = NULL;
 }
