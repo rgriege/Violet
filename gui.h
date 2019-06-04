@@ -277,8 +277,9 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
 void gui_txt_dim(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
                  gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph);
 s32  gui_txt_width(gui_t *gui, const char *txt, u32 sz);
-void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
-void gui_unmask(gui_t *gui);
+
+void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
+void gui_mask_pop(gui_t *gui);
 
 
 typedef struct gui_line_style gui_line_style_t;
@@ -1744,6 +1745,10 @@ typedef enum gui_vbo_type
 #define GUI_MAX_LAYERS 32
 #endif
 
+#ifndef GUI_MASK_STACK_LIMIT
+#define GUI_MASK_STACK_LIMIT 8
+#endif
+
 typedef struct draw_call
 {
 	GLint idx;
@@ -1821,6 +1826,8 @@ typedef struct gui
 	u32 draw_call_vert_idx;
 	gui__layer_t layers[GUI_MAX_LAYERS];
 	gui__layer_t *layer;
+	box2i masks[GUI_MASK_STACK_LIMIT];
+	box2i *mask;
 
 	v2i window_dim;
 	v2i window_restore_pos;
@@ -1899,7 +1906,7 @@ typedef struct gui
 		u64 id;
 		struct {
 			s32 x, y, w, h;
-		} prev_mask, mask;
+		} mask;
 		b32 inside;
 		b32 close_at_end;
 	} popup; /* TODO(rgriege): support nested popups */
@@ -1966,6 +1973,8 @@ b32 gui__key_triggered(const gui_t *gui, u32 key)
 
 static b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect);
 static void gui__store_window_rect(gui_t *gui);
+static void gui__layer_init(gui_t *gui, gui__layer_t *layer, s32 x, s32 y, s32 w, s32 h);
+static void gui__layer_new(gui_t *gui);
 
 gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
                      gui_flags_t flags, const char *font_file_path)
@@ -2602,7 +2611,10 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->draw_call_vert_idx = 0;
 	memclr(gui->layers);
 	gui->layer = &gui->layers[0];
-	gui_unmask(gui);
+	gui__layer_init(gui, gui->layer, 0, 0, gui->window_dim.x, gui->window_dim.y);
+	memclr(gui->masks);
+	gui->mask = &gui->masks[0];
+	box2i_from_xywh(gui->mask, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
 	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
@@ -2646,7 +2658,7 @@ b32 gui_begin_frame(gui_t *gui)
 		gui_circ(gui, gui->mouse_pos.x, gui->mouse_pos.y, 10, g_yellow, g_nocolor);
 
 	/* kinda wasteful, but ensures split resizers & mouse debug are drawn on top */
-	gui_unmask(gui);
+	gui__layer_new(gui);
 
 	return !quit;
 }
@@ -2945,7 +2957,7 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 	}
 }
 
-static void gui__complete_layer(gui_t *gui);
+static void gui__layer_complete_current(gui_t *gui);
 static int gui__layer_sort(const void *lhs, const void *rhs);
 
 void gui_end_frame(gui_t *gui)
@@ -2964,7 +2976,7 @@ void gui_end_frame(gui_t *gui)
 	if (gui->root_split && !gui->splits_rendered_this_frame)
 		gui_splits_render(gui);
 
-	gui__complete_layer(gui);
+	gui__layer_complete_current(gui);
 
 	const u32 n_layers = gui->layer - &gui->layers[0] + 1;
 	/* move hints/popups to the back of the array
@@ -3788,52 +3800,65 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 }
 
 static
-void gui__create_layer(gui_t *gui)
+void gui__layer_init(gui_t *gui, gui__layer_t *layer, s32 x, s32 y, s32 w, s32 h)
 {
-	if (gui->layer->draw_call_cnt == 0)
-		{}
-	else if (gui->layer+1 < gui->layers+countof(gui->layers))
+	layer->draw_call_idx = gui->draw_call_cnt;
+	layer->x = x;
+	layer->y = y;
+	layer->w = w;
+	layer->h = h;
+	layer->pri = 0;
+}
+
+static
+void gui__layer_complete_current(gui_t *gui)
+{
+	gui->layer->draw_call_cnt = gui->draw_call_cnt - gui->layer->draw_call_idx;
+}
+
+static
+void gui__layer_new(gui_t *gui)
+{
+	const v2i pos = gui->mask->min;
+	const v2i dim = box2i_get_extent(*gui->mask);
+
+	gui__layer_complete_current(gui);
+
+	if (gui->layer + 1 < gui->layers + countof(gui->layers)) {
 		++gui->layer;
-	else
-		assert(0);
-}
-
-static
-void gui__complete_layer(gui_t *gui)
-{
-	const u32 draw_call_cnt = gui->draw_call_cnt - gui->layer->draw_call_idx;
-	if (draw_call_cnt > 0)
-		gui->layer->draw_call_cnt = draw_call_cnt;
-	else if (gui->layer > &gui->layers[0])
-		--gui->layer;
-}
-
-void gui_mask(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
-{
-	gui__complete_layer(gui);
-	gui__create_layer(gui);
-	gui->layer->draw_call_idx = gui->draw_call_cnt;
-	gui->layer->x = x;
-	gui->layer->y = y;
-	gui->layer->w = w;
-	gui->layer->h = h;
-	gui->layer->pri = 0;
-}
-
-void gui_unmask(gui_t *gui)
-{
-	gui_mask(gui, 0, 0, gui->window_dim.x, gui->window_dim.y);
-}
-
-static
-void gui__mask_pop(gui_t *gui)
-{
-	if (gui->layer > &gui->layers[0]) {
-		const gui__layer_t *prev = gui->layer-1;
-		gui_mask(gui, prev->x, prev->y, prev->w, prev->h);
+		gui__layer_init(gui, gui->layer, pos.x, pos.y, dim.x, dim.y);
 	} else {
-		gui_unmask(gui);
+		assert(0);
 	}
+}
+
+void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+{
+	if (gui->mask + 1 < gui->masks + countof(gui->masks)) {
+		++gui->mask;
+		box2i_from_xywh(gui->mask, x, y, w, h);
+	} else {
+		assert(0);
+	}
+	gui__layer_new(gui);
+}
+
+static
+void gui_mask_push_box(gui_t *gui, box2i b)
+{
+	gui_mask_push(gui, b.min.x, b.min.y, b.max.x - b.min.x, b.max.y - b.min.y);
+}
+
+void gui_mask_pop(gui_t *gui)
+{
+	if (gui->mask > gui->masks) {
+		--gui->mask;
+	} else {
+		assert(0);
+		box2i_from_xywh(gui->mask, 0, 0, gui->window_dim.x, gui->window_dim.y);
+	}
+
+	gui__layer_new(gui);
 }
 
 static
@@ -4177,11 +4202,11 @@ void gui__hint_render(gui_t *gui, u64 id, const char *hint)
 		ry = (y + rh < gui->window_dim.y) ? y : y - rh;
 		rw += 2 * style->text.padding;
 		rh += 2 * style->text.padding;
-		gui_mask(gui, rx, ry, rw, rh);
+		gui_mask_push(gui, rx, ry, rw, rh);
 		gui->layer->pri = GUI__LAYER_PRIORITY_HINT;
 		gui_rect(gui, rx, ry, rw, rh, style->bg_color, style->outline_color);
 		gui_txt_styled(gui, rx, ry, rw, rh, hint, &style->text);
-		gui__mask_pop(gui);
+		gui_mask_pop(gui);
 	}
 }
 
@@ -4763,12 +4788,7 @@ void gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 	/* only 1 active popup allowed */
 	assert(gui->popup.id == 0 || gui->popup.id == id);
 
-	gui->popup.prev_mask.x = gui->layer->x;
-	gui->popup.prev_mask.y = gui->layer->y;
-	gui->popup.prev_mask.w = gui->layer->w;
-	gui->popup.prev_mask.h = gui->layer->h;
-
-	gui_mask(gui, x, y, w, h);
+	gui_mask_push(gui, x, y, w, h);
 	gui->layer->pri = GUI__LAYER_PRIORITY_POPUP;
 
 	gui->popup.id = id;
@@ -4784,8 +4804,7 @@ static
 void gui__popup_end(gui_t *gui)
 {
 	/* switch to new layer (mirroring interrupted layer) after last item */
-	gui_mask(gui, gui->popup.prev_mask.x, gui->popup.prev_mask.y,
-	         gui->popup.prev_mask.w, gui->popup.prev_mask.h);
+	gui_mask_pop(gui);
 
 	gui->popup.inside = false;
 
@@ -6901,7 +6920,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		                panel->width - panel->padding.x * 2,
 		                panel->body_height - panel->padding.y * 2);
 		gui__mask_box(gui, &box);
-		gui_mask(gui, box.min.x, box.min.y, box.max.x - box.min.x, box.max.y - box.min.y);
+		gui_mask_push_box(gui, box);
 	}
 	return true;
 }
@@ -6946,8 +6965,8 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		goto out;
 	}
 
-	/* NOTE(rgriege): would be great to avoid the additional mask here */
-	gui_unmask(gui);
+	/* NOTE(rgriege): would be great to avoid the additional layer here */
+	gui_mask_pop(gui);
 
 	/* background display */
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
@@ -7011,7 +7030,7 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		panel->scroll.x = 0;
 	}
 
-	gui_unmask(gui);
+	gui__layer_new(gui);
 
 out:
 	if (panel->flags & GUI_PANEL_TITLEBAR)
