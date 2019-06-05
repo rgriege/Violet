@@ -410,6 +410,8 @@ b32  gui_dropdown_item(gui_t *gui, const char *txt);
 void gui_dropdown_end(gui_t *gui);
 typedef void(*gui_drag_callback_t)(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                                    s32 offset_x, s32 offset_y, void *udata);
+void gui_drag_callback_default(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                               s32 offset_x, s32 offset_y, void *udata);
 b32  gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb);
 b32  gui_drag_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h, mouse_button_t mb);
 b32  gui_drag_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h, mouse_button_t mb);
@@ -5025,9 +5027,8 @@ void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id,
 	gui__hint_render(gui, id, widget_style->hint);
 }
 
-static
-void gui__drag_default_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                                s32 offset_x, s32 offset_y, void *udata)
+void gui_drag_callback_default(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                               s32 offset_x, s32 offset_y, void *udata)
 {
 	*x = mouse_x + offset_x;
 	*y = mouse_y + offset_y;
@@ -5035,7 +5036,7 @@ void gui__drag_default_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 
 b32 gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb)
 {
-	return gui_dragx(gui, x, y, w, h, mb, gui__drag_default_callback, NULL);
+	return gui_dragx(gui, x, y, w, h, mb, gui_drag_callback_default, NULL);
 }
 
 b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, s32 w, s32 h,
@@ -5112,7 +5113,7 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 
 b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb)
 {
-	return gui_cdragx(gui, x, y, r, mb, gui__drag_default_callback, NULL);
+	return gui_cdragx(gui, x, y, r, mb, gui_drag_callback_default, NULL);
 }
 
 b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
@@ -6845,7 +6846,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 
 	if (panel->flags & GUI_PANEL_DRAGGABLE) {
 		*dragging = gui__drag_logic(gui, &drag_id, &panel->x, &y, dim, dim,
-		                            MB_LEFT, gui__drag_default_callback, NULL);
+		                            MB_LEFT, gui_drag_callback_default, NULL);
 		if (*dragging) {
 			panel->y = y - panel->height + dim;
 			if (panel->split) {
