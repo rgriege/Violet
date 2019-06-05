@@ -5527,6 +5527,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 
 	if (dim.x < last_max_dim.x) {
 		const s32 needed = last_max_dim.x - dim.x;
+		scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
 		if (key_mod(gui, KBM_SHIFT) && !gui__mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
@@ -5553,6 +5554,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 
 	if (dim.y < last_max_dim.y) {
 		const s32 needed = last_max_dim.y - dim.y;
+		scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
 		if (!key_mod(gui, KBM_SHIFT) && !gui__mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
