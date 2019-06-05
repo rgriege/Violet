@@ -262,6 +262,7 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke);
 void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke);
+void gui_trisf(gui_t *gui, const v2f *v, u32 n, color_t fill);
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke);
@@ -3353,6 +3354,11 @@ void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 	arc_to_poly(x, y, r, 0, fPI * 2.f, A2PN(gui->vert_buf), true);
 	gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
 	array_clear(gui->vert_buf);
+}
+
+void gui_trisf(gui_t *gui, const v2f *v, u32 n, color_t fill)
+{
+	gui__triangles(gui, v, n, fill);
 }
 
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
