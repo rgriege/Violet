@@ -370,6 +370,16 @@ typedef struct gui_widget_bounds
 	struct gui_widget_bounds *prev;
 } gui_widget_bounds_t;
 
+typedef struct gui_scroll_area
+{
+	v2i pos;
+	v2i dim;
+	v2i scroll;
+	gui_widget_bounds_t widget_bounds;
+	v2i last_max_dim;
+	struct gui_scroll_area *prev;
+} gui_scroll_area_t;
+
 /* returns NPT_COMPLETE_ON_XXX if completed using an enabled completion method
  * or 0 otherwise */
 s32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
@@ -417,6 +427,9 @@ b32  gui_color_picker(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
                       s32 pw, s32 ph, colorf_t *c);
 b32  gui_color_picker8(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
                        s32 pw, s32 ph, color_t *c);
+void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                           gui_scroll_area_t *scroll_area);
+void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area);
 
 u64  gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void gui_widget_focus_next(gui_t *gui);
@@ -526,6 +539,8 @@ b32  pgui_color_picker_sv(gui_t *gui, colorf_t *color);
 b32  pgui_color_picker_h(gui_t *gui, colorf_t *color);
 b32  pgui_color_picker(gui_t *gui, s32 pw, s32 ph, colorf_t *c);
 b32  pgui_color_picker8(gui_t *gui, s32 pw, s32 ph, color_t *c);
+void pgui_scroll_area_begin(gui_t *gui, gui_scroll_area_t *scroll_area);
+void pgui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area);
 
 
 /* Splits */
@@ -652,6 +667,8 @@ void gui_pen_panel_restore(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_pen_panel_close(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          const gui_element_style_t *style);
 
+void pgui_scroll_area_grid_begin(gui_t *gui, gui_grid_t *grid, gui_grid_flex_e flex);
+void pgui_scroll_area_grid_end(gui_t *gui, gui_grid_t *grid);
 
 /* Style */
 
@@ -696,6 +713,12 @@ typedef struct gui_slider_style
 	b32 track_narrow;
 } gui_slider_style_t;
 
+typedef struct gui_scroll_area_style
+{
+	s32 scrollbar_track_width;
+	gui_slider_style_t scrollbar;
+} gui_scroll_area_style_t;
+
 typedef struct gui_panel_style
 {
 	color_t bg_color;
@@ -714,19 +737,20 @@ typedef struct gui_panel_style
 
 typedef struct gui_style
 {
-	color_t bg_color;
-	gui_line_style_t    line;
-	gui_text_style_t    txt;
-	gui_widget_style_t  npt;
-	gui_widget_style_t  btn;
-	gui_widget_style_t  chk;
-	gui_slider_style_t  slider;
-	gui_widget_style_t  select;
-	gui_widget_style_t  dropdown;
-	gui_widget_style_t  drag;
-	gui_element_style_t hint;
-	gui_panel_style_t   panel;
-	gui_line_style_t    split;
+	color_t                 bg_color;
+	gui_line_style_t        line;
+	gui_text_style_t        txt;
+	gui_widget_style_t      npt;
+	gui_widget_style_t      btn;
+	gui_widget_style_t      chk;
+	gui_slider_style_t      slider;
+	gui_widget_style_t      select;
+	gui_widget_style_t      dropdown;
+	gui_widget_style_t      drag;
+	gui_element_style_t     hint;
+	gui_scroll_area_style_t scroll_area;
+	gui_panel_style_t       panel;
+	gui_line_style_t        split;
 } gui_style_t;
 
 const gui_style_t g_gui_style_default;
@@ -1510,6 +1534,11 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 	.outline_color = gi_white, \
 }
 
+#define gi__gui_scroll_area_style_default { \
+	.scrollbar_track_width = 5, \
+	.scrollbar = gi__gui_slider_style_default, \
+}
+
 const gui_style_t g_gui_style_default = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
 	.line = gi__gui_line_style_default,
@@ -1522,6 +1551,7 @@ const gui_style_t g_gui_style_default = {
 	.dropdown = gi__gui_btn_style_default,
 	.drag = gi__gui_chk_style_default,
 	.hint = gi__gui_hint_style_default,
+	.scroll_area = gi__gui_scroll_area_style_default,
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
 		.border_color = gi_grey128,
@@ -1911,6 +1941,7 @@ typedef struct gui
 	} popup; /* TODO(rgriege): support nested popups */
 	b32 dragging_window;
 	colorf_t color_picker8_color;
+	gui_scroll_area_t *scroll_area;
 	s32 hint_timer;
 
 	/* grid */
@@ -2148,6 +2179,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->popup.id = 0;
 	gui->dragging_window = false;
 	gui->color_picker8_color = (colorf_t){0};
+	gui->scroll_area = NULL;
 	gui->hint_timer = GUI_HINT_TIMER;
 
 	gui->grid = NULL;
@@ -5421,6 +5453,149 @@ b32 gui_color_picker8(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	return false;
 }
 
+void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                           gui_scroll_area_t *scroll_area)
+{
+	box2i mask;
+
+	scroll_area->pos.x = x;
+	scroll_area->pos.y = y;
+	scroll_area->dim.x = w;
+	scroll_area->dim.y = h;
+
+	if (gui->style.scroll_area.scrollbar_track_width > 0) {
+		if (scroll_area->dim.x < scroll_area->last_max_dim.x) {
+			y += gui->style.scroll_area.scrollbar_track_width;
+			h -= gui->style.scroll_area.scrollbar_track_width;
+		}
+		if (scroll_area->dim.y < scroll_area->last_max_dim.y)
+			w -= gui->style.scroll_area.scrollbar_track_width;
+	}
+
+	box2i_from_xywh(&mask, x, y, w, h);
+	gui__mask_box(gui, &mask);
+	gui_mask_push_box(gui, mask);
+
+	box2i_from_xywh(&scroll_area->widget_bounds.bbox, x, y, w, h);
+	gui__widget_bounds_push(gui, &scroll_area->widget_bounds);
+
+	scroll_area->prev = gui->scroll_area;
+	gui->scroll_area = scroll_area;
+}
+
+void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
+{
+	const v2i pos = scroll_area->pos;
+	const v2i dim = scroll_area->dim;
+	const v2i last_max_dim = scroll_area->last_max_dim;
+	const b32 contains_mouse
+		= gui__widget_contains_mouse(gui, pos.x, pos.y, dim.x, dim.y);
+
+	assert(gui->scroll_area == scroll_area);
+
+	gui->scroll_area = gui->scroll_area->prev;
+
+	gui__widget_bounds_pop(gui, false);
+
+	gui_mask_pop(gui);
+
+	if (dim.x < last_max_dim.x) {
+		const s32 needed = last_max_dim.x - dim.x;
+		if (key_mod(gui, KBM_SHIFT) && !gui__mouse_covered(gui) && contains_mouse) {
+			s32 scroll;
+			mouse_scroll(gui, &scroll);
+			scroll_area->scroll.x -= scroll * GUI_SCROLL_RATE;
+			scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
+		}
+		if (gui->style.scroll_area.scrollbar_track_width > 0) {
+			const s32 scrollbar_track_width = gui->style.scroll_area.scrollbar_track_width;
+			const s32 x = pos.x;
+			const s32 y = pos.y;
+			const s32 w = dim.x;
+			const s32 h = scrollbar_track_width;
+			const s32 handle_size = max(scrollbar_track_width, w * dim.x / last_max_dim.x);
+			r32 slider_val = (r32)-scroll_area->scroll.x / (r32)needed;
+			gui_style_push(gui, slider, gui->style.scroll_area.scrollbar);
+			gui__slider(gui, x, y, w, h, &slider_val, handle_size, GUI__SLIDER_X);
+			gui_style_pop(gui);
+			scroll_area->scroll.x = (s32)(-slider_val * (r32)needed);
+			scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
+		}
+	} else {
+		scroll_area->scroll.x = 0;
+	}
+
+	if (dim.y < last_max_dim.y) {
+		const s32 needed = last_max_dim.y - dim.y;
+		if (!key_mod(gui, KBM_SHIFT) && !gui__mouse_covered(gui) && contains_mouse) {
+			s32 scroll;
+			mouse_scroll(gui, &scroll);
+			scroll_area->scroll.y -= scroll * GUI_SCROLL_RATE;
+			scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
+		}
+		if (gui->style.scroll_area.scrollbar_track_width > 0) {
+			const s32 scrollbar_track_width = gui->style.scroll_area.scrollbar_track_width;
+			const s32 x = pos.x + dim.x - scrollbar_track_width;
+			const s32 y = pos.y;
+			const s32 w = scrollbar_track_width;
+			const s32 h = dim.y;
+			const s32 handle_size = max(scrollbar_track_width, h * dim.y / last_max_dim.y);
+			r32 slider_val = 1.f - ((r32)scroll_area->scroll.y / (r32)needed);
+			gui_style_push(gui, slider, gui->style.scroll_area.scrollbar);
+			gui__slider(gui, x, y, w, h, &slider_val, handle_size, GUI__SLIDER_Y);
+			gui_style_pop(gui);
+			scroll_area->scroll.y = (s32)(-(slider_val - 1.f) * (r32)needed);
+			scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
+		}
+	} else {
+		scroll_area->scroll.y = 0;
+	}
+
+	scroll_area->last_max_dim = box2i_get_extent(scroll_area->widget_bounds.bbox);
+
+	if (contains_mouse && gui->mouse_covered_by_widget_id == ~0)
+		gui->mouse_covered_by_widget_id = gui_widget_id(gui, pos.x, pos.y);
+}
+
+void pgui_scroll_area_grid_begin(gui_t *gui, gui_grid_t *grid, gui_grid_flex_e flex)
+{
+	s32 gx, gy, gw, gh;
+
+	gui_scroll_area_t *scroll_area = gui->scroll_area;
+
+	assert(scroll_area);
+
+	if (flex & GUI_GRID_FLEX_HORIZONTAL) {
+		gx = scroll_area->pos.x + scroll_area->scroll.x;
+		gw = 0;
+	} else {
+		gx = scroll_area->pos.x + scroll_area->scroll.x;
+		gw = scroll_area->dim.x;
+	}
+
+	if (flex & GUI_GRID_FLEX_VERTICAL) {
+		gy = scroll_area->pos.y + scroll_area->dim.y + scroll_area->scroll.y;
+		gh = 0;
+	} else {
+		gy = scroll_area->pos.y + scroll_area->scroll.y;
+		gh = scroll_area->dim.y;
+	}
+
+	if (gui->style.scroll_area.scrollbar_track_width > 0) {
+		if (scroll_area->dim.x < scroll_area->last_max_dim.x)
+			gh = max(gh - gui->style.scroll_area.scrollbar_track_width, 0);
+		if (scroll_area->dim.y < scroll_area->last_max_dim.y)
+			gw = max(gw - gui->style.scroll_area.scrollbar_track_width, 0);
+	}
+
+	pgui_grid_begin(gui, grid, gx, gy, gw, gh);
+}
+
+void pgui_scroll_area_grid_end(gui_t *gui, gui_grid_t *grid)
+{
+	pgui_grid_end(gui, grid);
+}
+
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
 #define GUI__POPUP_PANEL_ID  (UINT_MAX-1)
 #define GUI__MAX_PANEL_ID    (UINT_MAX-2)
@@ -5996,6 +6171,18 @@ b32 pgui_color_picker8(gui_t *gui, s32 pw, s32 ph, color_t *color)
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	return gui_color_picker8(gui, x, y, w, h, pw, ph, color);
+}
+
+void pgui_scroll_area_begin(gui_t *gui, gui_scroll_area_t *scroll_area)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	gui_scroll_area_begin(gui, x, y, w, h, scroll_area);
+}
+
+void pgui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
+{
+	gui_scroll_area_end(gui, scroll_area);
 }
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits)
