@@ -615,11 +615,7 @@ typedef struct gui_panel
 	gui_panel_flags_t flags;
 	u32 id;
 	intptr userdata;
-	v2i scroll;
-	v2i scroll_rate;
-	v2i padding;
-	v2i required_dim;
-	s32 body_height;
+	gui_scroll_area_t scroll_area;
 	s32 pri;
 	struct gui_panel *prev, *next;
 	gui_split_t *split;
@@ -715,6 +711,8 @@ typedef struct gui_slider_style
 
 typedef struct gui_scroll_area_style
 {
+	color_t bg_color;
+	s32 padding;
 	s32 scrollbar_track_width;
 	gui_slider_style_t scrollbar;
 } gui_scroll_area_style_t;
@@ -732,7 +730,7 @@ typedef struct gui_panel_style
 	gui_slider_style_t  scrollbar;
 	color_t cell_bg_color;
 	color_t cell_border_color;
-	r32 padding;
+	s32 padding;
 } gui_panel_style_t;
 
 typedef struct gui_style
@@ -1535,6 +1533,8 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 }
 
 #define gi__gui_scroll_area_style_default { \
+	.bg_color = gi_nocolor, \
+	.padding = 0, \
 	.scrollbar_track_width = 5, \
 	.scrollbar = gi__gui_slider_style_default, \
 }
@@ -1679,7 +1679,7 @@ const gui_style_t g_gui_style_default = {
 		.scrollbar = gi__gui_slider_style_default,
 		.cell_bg_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
-		.padding = 10.f,
+		.padding = 10,
 	},
 	.split = {
 		.thickness = 1.f,
@@ -1748,7 +1748,7 @@ const gui_style_t g_gui_style_invis = {
 		.scrollbar         = gi__gui_slider_style_invis,
 		.cell_bg_color     = gi_nocolor,
 		.cell_border_color = gi_nocolor,
-		.padding           = 10.f,
+		.padding           = 10,
 	},
 	.split    = gi__gui_line_style_invis,
 };
@@ -5453,9 +5453,39 @@ b32 gui_color_picker8(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	return false;
 }
 
+static
+void gui__scroll_area_usable_rect(const gui_t *gui,
+                                  const gui_scroll_area_t *scroll_area,
+                                  s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	const s32 padding = gui->style.scroll_area.padding;
+	const s32 scrollbar_track_width
+		= max(gui->style.scroll_area.scrollbar_track_width - padding, 0);
+
+	*x = scroll_area->pos.x;
+	*y = scroll_area->pos.y;
+	*w = scroll_area->dim.x;
+	*h = scroll_area->dim.y;
+
+	*x += padding;
+	*y += padding;
+	*w -= padding*2;
+	*h -= padding*2;
+
+	if (scrollbar_track_width > 0) {
+		if (scroll_area->dim.x < scroll_area->last_max_dim.x) {
+			*y += scrollbar_track_width;
+			*h -= scrollbar_track_width;
+		}
+		if (scroll_area->dim.y < scroll_area->last_max_dim.y)
+			*w -= scrollbar_track_width;
+	}
+}
+
 void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                            gui_scroll_area_t *scroll_area)
 {
+	s32 rx, ry, rw, rh;
 	box2i mask;
 
 	scroll_area->pos.x = x;
@@ -5463,20 +5493,13 @@ void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	scroll_area->dim.x = w;
 	scroll_area->dim.y = h;
 
-	if (gui->style.scroll_area.scrollbar_track_width > 0) {
-		if (scroll_area->dim.x < scroll_area->last_max_dim.x) {
-			y += gui->style.scroll_area.scrollbar_track_width;
-			h -= gui->style.scroll_area.scrollbar_track_width;
-		}
-		if (scroll_area->dim.y < scroll_area->last_max_dim.y)
-			w -= gui->style.scroll_area.scrollbar_track_width;
-	}
+	gui__scroll_area_usable_rect(gui, scroll_area, &rx, &ry, &rw, &rh);
 
-	box2i_from_xywh(&mask, x, y, w, h);
+	box2i_from_xywh(&mask, rx, ry, rw, rh);
 	gui__mask_box(gui, &mask);
 	gui_mask_push_box(gui, mask);
 
-	box2i_from_xywh(&scroll_area->widget_bounds.bbox, x, y, w, h);
+	box2i_from_xywh(&scroll_area->widget_bounds.bbox, rx, ry, rw, rh);
 	gui__widget_bounds_push(gui, &scroll_area->widget_bounds);
 
 	scroll_area->prev = gui->scroll_area;
@@ -5490,6 +5513,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 	const v2i last_max_dim = scroll_area->last_max_dim;
 	const b32 contains_mouse
 		= gui__widget_contains_mouse(gui, pos.x, pos.y, dim.x, dim.y);
+	const color_t bg_color = gui->style.scroll_area.bg_color;
 
 	assert(gui->scroll_area == scroll_area);
 
@@ -5498,6 +5522,8 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 	gui__widget_bounds_pop(gui, false);
 
 	gui_mask_pop(gui);
+
+	gui_rect(gui, pos.x, pos.y, dim.x, dim.y, bg_color, g_nocolor);
 
 	if (dim.x < last_max_dim.x) {
 		const s32 needed = last_max_dim.x - dim.x;
@@ -5559,33 +5585,21 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 
 void pgui_scroll_area_grid_begin(gui_t *gui, gui_grid_t *grid, gui_grid_flex_e flex)
 {
+	const gui_scroll_area_t *scroll_area = gui->scroll_area;
 	s32 gx, gy, gw, gh;
-
-	gui_scroll_area_t *scroll_area = gui->scroll_area;
 
 	assert(scroll_area);
 
-	if (flex & GUI_GRID_FLEX_HORIZONTAL) {
-		gx = scroll_area->pos.x + scroll_area->scroll.x;
+	gui__scroll_area_usable_rect(gui, scroll_area, &gx, &gy, &gw, &gh);
+
+	gx += scroll_area->scroll.x;
+	if (flex & GUI_GRID_FLEX_HORIZONTAL)
 		gw = 0;
-	} else {
-		gx = scroll_area->pos.x + scroll_area->scroll.x;
-		gw = scroll_area->dim.x;
-	}
 
+	gy += scroll_area->scroll.y;
 	if (flex & GUI_GRID_FLEX_VERTICAL) {
-		gy = scroll_area->pos.y + scroll_area->dim.y + scroll_area->scroll.y;
+		gy += gh;
 		gh = 0;
-	} else {
-		gy = scroll_area->pos.y + scroll_area->scroll.y;
-		gh = scroll_area->dim.y;
-	}
-
-	if (gui->style.scroll_area.scrollbar_track_width > 0) {
-		if (scroll_area->dim.x < scroll_area->last_max_dim.x)
-			gh = max(gh - gui->style.scroll_area.scrollbar_track_width, 0);
-		if (scroll_area->dim.y < scroll_area->last_max_dim.y)
-			gw = max(gw - gui->style.scroll_area.scrollbar_track_width, 0);
 	}
 
 	pgui_grid_begin(gui, grid, gx, gy, gw, gh);
@@ -6556,10 +6570,7 @@ void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
 	panel->title = title;
 	panel->flags = flags;
 
-	panel->scroll = g_v2i_zero;
-	panel->scroll_rate.x = GUI_SCROLL_RATE;
-	panel->scroll_rate.y = GUI_SCROLL_RATE;
-	panel->required_dim = g_v2i_zero;
+	memclr(panel->scroll_area);
 
 	panel->prev   = NULL;
 	panel->next   = NULL;
@@ -7007,6 +7018,33 @@ void pgui__panel_stop_dragging(gui_t *gui, gui_panel_t *panel)
 	}
 }
 
+static
+s32 pgui__panel_body_height(const gui_panel_t *panel)
+{
+	return (panel->flags & GUI_PANEL_TITLEBAR)
+	     ? panel->height - GUI_PANEL_TITLEBAR_HEIGHT
+	     : panel->height;
+}
+
+static
+void pgui__style_push_panel_scroll_area(gui_t *gui)
+{
+	const s32 scrollbar_track_width = gui->style.panel.padding/2;
+	gui_style_push(gui, scroll_area.bg_color, gui->style.panel.bg_color);
+	gui_style_push(gui, scroll_area.padding, gui->style.panel.padding);
+	gui_style_push_s32(gui, scroll_area.scrollbar_track_width, scrollbar_track_width);
+	gui_style_push(gui, scroll_area.scrollbar, gui->style.panel.scrollbar);
+}
+
+static
+void pgui__style_pop_panel_scroll_area(gui_t *gui)
+{
+	gui_style_pop(gui);
+	gui_style_pop(gui);
+	gui_style_pop(gui);
+	gui_style_pop(gui);
+}
+
 b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 {
 	b32 dragging = false;
@@ -7029,8 +7067,6 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->y           = first->y;
 		panel->width       = first->width;
 		panel->height      = first->height;
-		panel->padding     = first->padding;
-		panel->body_height = first->body_height;
 		panel->split       = first->split;
 		panel->closed      = first->closed;
 		panel->collapsed   = first->collapsed;
@@ -7046,20 +7082,9 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 			box2i_to_xywh(panel->split->box, &panel->x, &panel->y,
 			              &panel->width, &panel->height);
 
-		if (gui->style.panel.padding >= 1.f) {
-			panel->padding.x = gui->style.panel.padding;
-			panel->padding.y = gui->style.panel.padding;
-		} else {
-			panel->padding.x = panel->width  * gui->style.panel.padding;
-			panel->padding.y = panel->height * gui->style.panel.padding;
-		}
-
 		pgui__panel_resize(gui, panel);
-		panel->body_height = panel->height;
-		if (panel->flags & GUI_PANEL_TITLEBAR) {
+		if (panel->flags & GUI_PANEL_TITLEBAR)
 			pgui__panel_titlebar(gui, panel, &dragging);
-			panel->body_height -= GUI_PANEL_TITLEBAR_HEIGHT;
-		}
 
 		if (dragging) {
 			if (panel->flags & GUI_PANEL_DOCKABLE)
@@ -7096,16 +7121,17 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
 	         g_nocolor, gui->style.panel.border_color);
 
-	panel->required_dim = v2i_scale(panel->padding, 2);
-
 	{
+		const s32 body_height = pgui__panel_body_height(panel);
 		box2i box;
-		box2i_from_xywh(&box, panel->x + panel->padding.x,
-		                panel->y + panel->padding.y,
-		                panel->width - panel->padding.x * 2,
-		                panel->body_height - panel->padding.y * 2);
-		gui__mask_box(gui, &box);
-		gui_mask_push_box(gui, box);
+		v2i pos, dim;
+		box2i_from_xywh(&box, panel->x, panel->y, panel->width, body_height);
+		pos = box.min;
+		dim = box2i_get_extent(box);
+
+		pgui__style_push_panel_scroll_area(gui);
+		gui_scroll_area_begin(gui, pos.x, pos.y, dim.x, dim.y, &panel->scroll_area);
+		pgui__style_pop_panel_scroll_area(gui);
 	}
 	return true;
 }
@@ -7141,88 +7167,22 @@ void pgui_panel_close(gui_t *gui, gui_panel_t *panel)
 
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 {
-	b32 contains_mouse;
+	const b32 contains_mouse = gui__current_panel_contains_mouse(gui);
 
 	assert(gui->panel == panel);
 
-	if (panel->collapsed || panel->closed) {
-		contains_mouse = gui__current_panel_contains_mouse(gui);
+	if (panel->collapsed || panel->closed)
 		goto out;
-	}
 
-	/* NOTE(rgriege): would be great to avoid the additional layer here */
-	gui_mask_pop(gui);
+	pgui__style_push_panel_scroll_area(gui);
+	gui_scroll_area_end(gui, &panel->scroll_area);
+	pgui__style_pop_panel_scroll_area(gui);
 
-	/* background display */
-	gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
-	         gui->style.panel.bg_color, g_nocolor);
-
-	/* scrolling */
-	contains_mouse = gui__current_panel_contains_mouse(gui);
-	if (panel->body_height < panel->required_dim.y) {
-		const s32 needed = panel->required_dim.y - panel->body_height;
-		if (   !key_mod(gui, KBM_SHIFT)
-		    && !gui__mouse_covered(gui)
-		    && contains_mouse) {
-			s32 scroll;
-			mouse_scroll(gui, &scroll);
-			scroll *= -panel->scroll_rate.y;
-			panel->scroll.y = clamp(0, panel->scroll.y + scroll, needed);
-		} else {
-			panel->scroll.y = clamp(0, panel->scroll.y, needed);
-		}
-		if (panel->flags & GUI_PANEL_SCROLLBARS) {
-			const s32 scroll_handle_sz
-				= max(panel->padding.x / 2,   panel->body_height * panel->body_height
-				                            / panel->required_dim.y);
-			r32 slider_val = 1.f - ((r32)panel->scroll.y / needed);
-			gui_style_push(gui, slider, gui->style.panel.scrollbar);
-			gui__slider(gui, panel->x, panel->y + panel->padding.y / 2, panel->padding.x / 2,
-			            panel->body_height - panel->padding.y / 2, &slider_val,
-			            scroll_handle_sz, GUI__SLIDER_Y);
-			gui_style_pop(gui);
-			panel->scroll.y = -(slider_val - 1.f) * needed;
-		}
-	} else {
-		panel->scroll.y = 0;
-	}
-
-	if (panel->width < panel->required_dim.x) {
-		const s32 needed = panel->required_dim.x - panel->width;
-		if (   key_mod(gui, KBM_SHIFT)
-		    && !gui__mouse_covered(gui)
-		    && contains_mouse) {
-			s32 scroll;
-			mouse_scroll(gui, &scroll);
-			scroll *= -panel->scroll_rate.x;
-			panel->scroll.x = -clamp(0, -panel->scroll.x + scroll, needed);
-		} else {
-			panel->scroll.x = -clamp(0, -panel->scroll.x, needed);
-		}
-		if (panel->flags & GUI_PANEL_SCROLLBARS) {
-			const s32 scroll_handle_sz
-				= max(panel->padding.y / 2,   panel->width * panel->width
-				                            / panel->required_dim.x);
-			r32 slider_val = -(r32)panel->scroll.x / needed;
-			gui_style_push(gui, slider, gui->style.panel.scrollbar);
-			gui__slider(gui, panel->x + panel->padding.x / 2, panel->y,
-									panel->width - panel->padding.x / 2, panel->padding.y / 2, &slider_val,
-									scroll_handle_sz, GUI__SLIDER_X);
-			gui_style_pop(gui);
-			panel->scroll.x = -slider_val * needed;
-		}
-	} else {
-		panel->scroll.x = 0;
-	}
-
+	/* NOTE(rgriege): would be great to avoid the additional layer here,
+	 * but otherwise the next widgets are on top of the panel bg & scrollbars */
 	gui__layer_new(gui);
 
 out:
-	if (panel->flags & GUI_PANEL_TITLEBAR)
-		panel->body_height = panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
-	else
-		panel->body_height = panel->height;
-
 	if (contains_mouse && gui->mouse_covered_by_widget_id == ~0)
 		gui->mouse_covered_by_widget_id = gui_widget_id(gui, ~0, ~0);
 
@@ -7263,43 +7223,19 @@ int pgui_panel_sortp(const void *lhs_, const void *rhs_)
 
 void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex)
 {
-	const gui_panel_t *panel = gui->panel;
-	v2i padding;
-	s32 x, y, w, h;
+	assert(gui->panel);
 
-	assert(panel);
-	assert(!gui->grid);
-
-	padding = panel->padding;
-	x = panel->x                      + panel->scroll.x + padding.x;
-	y = panel->y + panel->body_height + panel->scroll.y - padding.y;
-	w = (flex & GUI_GRID_FLEX_HORIZONTAL) ? 0 : panel->width - 2*padding.x;
-
-	if (flex & GUI_GRID_FLEX_VERTICAL) {
-		h = 0;
-	} else {
-		h = panel->body_height - 2*padding.y;
-		y -= h;
-	}
-
-	pgui_grid_begin(gui, &gui->grid_panel, x, y, w, h);
+	pgui__style_push_panel_scroll_area(gui);
+	pgui_scroll_area_grid_begin(gui, &gui->grid_panel, flex);
+	pgui__style_pop_panel_scroll_area(gui);
 }
 
 void pgui_panel_grid_end(gui_t *gui)
 {
-	gui_panel_t *panel = gui->panel;
-	gui_grid_t *grid = gui->grid;
-	v2i grid_max_dim, required_dim;
-
-	assert(panel);
-	assert(grid);
-	assert(grid == &gui->grid_panel);
-
-	grid_max_dim = box2i_get_extent(grid->widget_bounds.bbox);
-	required_dim = v2i_add(grid_max_dim, v2i_scale(panel->padding, 2));
-	panel->required_dim.x = max(panel->required_dim.x, required_dim.x);
-	panel->required_dim.y = max(panel->required_dim.y, required_dim.y);
-	pgui_grid_end(gui, grid);
+	assert(gui->panel);
+	assert(gui->grid);
+	assert(gui->grid == &gui->grid_panel);
+	pgui_grid_end(gui, gui->grid);
 }
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
