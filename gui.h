@@ -5521,6 +5521,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 	const b32 contains_mouse
 		= gui__widget_contains_mouse(gui, pos.x, pos.y, dim.x, dim.y);
 	const color_t bg_color = gui->style.scroll_area.bg_color;
+	s32 rx, ry, rw, rh;
 
 	assert(gui->scroll_area == scroll_area);
 
@@ -5532,8 +5533,10 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 
 	gui_rect(gui, pos.x, pos.y, dim.x, dim.y, bg_color, g_nocolor);
 
-	if (dim.x < last_max_dim.x) {
-		const s32 needed = last_max_dim.x - dim.x;
+	gui__scroll_area_usable_rect(gui, scroll_area, &rx, &ry, &rw, &rh);
+
+	if (rw < last_max_dim.x) {
+		const s32 needed = last_max_dim.x - rw;
 		scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
 		if (key_mod(gui, KBM_SHIFT) && !gui__mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
@@ -5547,7 +5550,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 			const s32 y = pos.y;
 			const s32 w = dim.x;
 			const s32 h = scrollbar_track_width;
-			const s32 handle_size = max(scrollbar_track_width, w * dim.x / last_max_dim.x);
+			const s32 handle_size = max(scrollbar_track_width, w * rw / last_max_dim.x);
 			r32 slider_val = (r32)-scroll_area->scroll.x / (r32)needed;
 			gui_style_push(gui, slider, gui->style.scroll_area.scrollbar);
 			gui__slider(gui, x, y, w, h, &slider_val, handle_size, GUI__SLIDER_X);
@@ -5559,8 +5562,8 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 		scroll_area->scroll.x = 0;
 	}
 
-	if (dim.y < last_max_dim.y) {
-		const s32 needed = last_max_dim.y - dim.y;
+	if (rh < last_max_dim.y) {
+		const s32 needed = last_max_dim.y - rh;
 		scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
 		if (!key_mod(gui, KBM_SHIFT) && !gui__mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
@@ -5574,7 +5577,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 			const s32 y = pos.y;
 			const s32 w = scrollbar_track_width;
 			const s32 h = dim.y;
-			const s32 handle_size = max(scrollbar_track_width, h * dim.y / last_max_dim.y);
+			const s32 handle_size = max(scrollbar_track_width, h * rh / last_max_dim.y);
 			r32 slider_val = 1.f - ((r32)scroll_area->scroll.y / (r32)needed);
 			gui_style_push(gui, slider, gui->style.scroll_area.scrollbar);
 			gui__slider(gui, x, y, w, h, &slider_val, handle_size, GUI__SLIDER_Y);
