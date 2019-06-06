@@ -77,6 +77,7 @@ IMDEF s32   ivali_center(ivali i);
 IMDEF void  ivali_slide(ivali *i, s32 d);
 IMDEF s32   ivali_length(ivali i);
 IMDEF b32   ivali_overlaps(ivali lhs, ivali rhs);
+IMDEF b32   ivali_overlaps_within(ivali lhs, ivali rhs, s32 error);
 
 /* 2D Anti-aliased bounding box */
 
@@ -94,6 +95,7 @@ IMDEF box2i box2i_intersection(box2i lhs, box2i rhs);
 IMDEF b32   box2i_contains_point(box2i b, v2i p);
 IMDEF void  box2i_clamp_point(box2i b, v2i *p);
 IMDEF b32   box2i_overlaps(box2i lhs, box2i rhs);
+IMDEF b32   box2i_overlaps_within(box2i lhs, box2i rhs, s32 error);
 IMDEF b32   box2i_eq(box2i lhs, box2i rhs);
 IMDEF void  box2i_extend_point(box2i *box, v2i point);
 IMDEF void  box2i_extend_box(box2i *b, box2i other);
@@ -269,6 +271,11 @@ IMDEF b32 ivali_overlaps(ivali lhs, ivali rhs)
 	return lhs.l <= rhs.r && rhs.l <= lhs.r;
 }
 
+IMDEF b32 ivali_overlaps_within(ivali lhs, ivali rhs, s32 error)
+{
+	return rhs.r - lhs.l > -error && lhs.r - rhs.l > -error;
+}
+
 /* 2D Anti-aliased bounding box */
 
 IMDEF void box2i_from_center(box2i *box, v2i center, v2i half_dim)
@@ -339,6 +346,16 @@ IMDEF b32 box2i_overlaps(box2i lhs, box2i rhs)
 	ivali rhs_y = { rhs.min.y, rhs.max.y };
 	return    ivali_overlaps(lhs_x, rhs_x)
 	       && ivali_overlaps(lhs_y, rhs_y);
+}
+
+IMDEF b32 box2i_overlaps_within(box2i lhs, box2i rhs, s32 error)
+{
+	ivali lhs_x = { lhs.min.x, lhs.max.x };
+	ivali rhs_x = { rhs.min.x, rhs.max.x };
+	ivali lhs_y = { lhs.min.y, lhs.max.y };
+	ivali rhs_y = { rhs.min.y, rhs.max.y };
+	return    ivali_overlaps_within(lhs_x, rhs_x, error)
+	       && ivali_overlaps_within(lhs_y, rhs_y, error);
 }
 
 IMDEF b32 box2i_eq(box2i lhs, box2i rhs)
