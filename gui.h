@@ -406,7 +406,7 @@ b32  gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                 const char *txt, u32 *val, u32 opt);
 void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                  const char *txt, u32 *val, u32 opt);
-void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+b32  gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                         u32 *val, u32 num_items);
 b32  gui_dropdown_item(gui_t *gui, const char *txt);
 void gui_dropdown_end(gui_t *gui);
@@ -530,7 +530,7 @@ s32  pgui_npt_val(gui_t *gui, const char *txt, u32 n,
                   npt_flags_t flags, npt_filter_p filter);
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
-void pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
+b32  pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
 b32  pgui_dropdown_item(gui_t *gui, const char *txt);
 void pgui_dropdown_end(gui_t *gui);
 b32  pgui_slider_x(gui_t *gui, r32 *val);
@@ -4908,12 +4908,12 @@ void gui__popup_end(gui_t *gui)
 	}
 }
 
-void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                        u32 *val, u32 num_items)
+b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                       u32 *val, u32 num_items)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui__widget_bounds_extend(gui, x, y, w, h);
-		return;
+		return false;
 	}
 
 	const u64 id = gui_widget_id(gui, x, y);
@@ -4960,6 +4960,8 @@ void gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		pgui_grid_begin(gui, &gui->grid_popup, px, py, pw, ph);
 		pgui_col(gui, 0, num_items);
 	}
+
+	return true;
 }
 
 static
@@ -6196,11 +6198,11 @@ void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
 	gui_mselect(gui, x, y, w, h, txt, val, opt);
 }
 
-void pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items)
+b32 pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_dropdown_begin(gui, x, y, w, h, val, num_items);
+	return gui_dropdown_begin(gui, x, y, w, h, val, num_items);
 }
 
 b32 pgui_dropdown_item(gui_t *gui, const char *txt)
