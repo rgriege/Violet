@@ -5568,6 +5568,9 @@ void gui__scroll_area_usable_rect(const gui_t *gui,
 		if (scroll_area->dim.y < scroll_area->last_max_dim.y)
 			*w -= scrollbar_track_width;
 	}
+
+	*w = max(*w, 0);
+	*h = max(*h, 0);
 }
 
 void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
