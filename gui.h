@@ -369,6 +369,7 @@ const char *gui_npt_val_buf(const gui_t *gui);
 typedef struct gui_widget_bounds
 {
 	box2i bbox;
+	box2i children;
 	struct gui_widget_bounds *prev;
 } gui_widget_bounds_t;
 
@@ -2639,6 +2640,8 @@ b32 gui_begin_frame(gui_t *gui)
 
 	gui->widget_bounds = &gui->default_widget_bounds;
 	memclr(gui->default_widget_bounds);
+	box2i_from_xywh(&gui->default_widget_bounds.bbox, 0, 0,
+	                gui->window_dim.x, gui->window_dim.y);
 
 	gui->vert_cnt = 0;
 	gui->draw_call_cnt = 0;
@@ -2761,17 +2764,16 @@ b32 gui__box_half_visible(const gui_t *gui, box2i box)
 static
 void gui__widget_bounds_push(gui_t *gui, gui_widget_bounds_t *widget_bounds)
 {
-	box2i_extend_box(&gui->widget_bounds->bbox, widget_bounds->bbox);
+	box2i_extend_box(&gui->widget_bounds->children, widget_bounds->bbox);
 	widget_bounds->prev = gui->widget_bounds;
 	gui->widget_bounds = widget_bounds;
 }
 
 static
-void gui__widget_bounds_pop(gui_t *gui, b32 apply_to_prev)
+void gui__widget_bounds_pop(gui_t *gui)
 {
 	if (gui->widget_bounds->prev) {
-		if (apply_to_prev)
-			box2i_extend_box(&gui->widget_bounds->prev->bbox, gui->widget_bounds->bbox);
+		box2i_extend_box(&gui->widget_bounds->prev->children, gui->widget_bounds->bbox);
 		gui->widget_bounds = gui->widget_bounds->prev;
 	} else {
 		assert(false);
@@ -2784,7 +2786,7 @@ void gui__widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
 	box2i box;
 	box2i_from_xywh(&box, x, y, w, h);
-	box2i_extend_box(&gui->widget_bounds->bbox, box);
+	box2i_extend_box(&gui->widget_bounds->children, box);
 }
 
 b32 gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type)
@@ -5593,6 +5595,9 @@ void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui_mask_push_box(gui, mask);
 
 	box2i_from_xywh(&scroll_area->widget_bounds.bbox, rx, ry, rw, rh);
+	/* NOTE(rgriege): the center of the scroll area may not actually be used
+	 * by a widget, but it's the best candidate. */
+	box2i_from_xywh(&scroll_area->widget_bounds.children, rx+rw/2, ry+rh/2, 0, 0);
 	gui__widget_bounds_push(gui, &scroll_area->widget_bounds);
 
 	scroll_area->prev = gui->scroll_area;
@@ -5613,7 +5618,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 
 	gui->scroll_area = gui->scroll_area->prev;
 
-	gui__widget_bounds_pop(gui, false);
+	gui__widget_bounds_pop(gui);
 
 	gui_mask_pop(gui);
 
@@ -5675,7 +5680,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 		scroll_area->scroll.y = 0;
 	}
 
-	scroll_area->last_max_dim = box2i_get_extent(scroll_area->widget_bounds.bbox);
+	scroll_area->last_max_dim = box2i_get_extent(scroll_area->widget_bounds.children);
 
 	if (contains_mouse && gui->mouse_covered_by_widget_id == ~0)
 		gui->mouse_covered_by_widget_id = gui_widget_id(gui, pos.x, pos.y);
@@ -5834,6 +5839,7 @@ void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h)
 	grid->pos = grid->start;
 	gui->grid = grid;
 	box2i_from_xywh(&grid->widget_bounds.bbox, x, y, w, h);
+	box2i_from_center(&grid->widget_bounds.children, grid->start, g_v2i_zero);
 	gui__widget_bounds_push(gui, &grid->widget_bounds);
 }
 
@@ -5843,7 +5849,8 @@ void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
 	assert(gui->grid == grid);
 	assert(gui->grid->depth == 0);
 	gui->grid = gui->grid->prev;
-	gui__widget_bounds_pop(gui, true);
+	box2i_extend_box(&gui->widget_bounds->bbox, gui->widget_bounds->children);
+	gui__widget_bounds_pop(gui);
 }
 
 static
