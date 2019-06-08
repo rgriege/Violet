@@ -1159,7 +1159,7 @@ s32 shader_program_attrib(const shader_prog_t *p, const char *name)
 
 s32 shader_program_uniform(const shader_prog_t *p, const char *name)
 {
-	s32 uniform = glGetAttribLocation(p->handle, name);
+	s32 uniform = glGetUniformLocation(p->handle, name);
 	GL_ERR_CHECK("glGetUniformLocation");
 	return uniform;
 }
