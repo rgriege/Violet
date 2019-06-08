@@ -9,6 +9,8 @@
 #define PLATFORM_NAME "MacOS"
 #elif defined(LINUX)
 #define PLATFORM_NAME "Linux"
+#elif defined(__EMSCRIPTEN__)
+#define PLATFORM_NAME "Web"
 #else
 #error "Platform not supported!"
 #endif
@@ -97,6 +99,8 @@ b32  open_file_external(const char *filename);
 #include "violet/macos.h"
 #elif defined(LINUX)
 #include "violet/linux.h"
+#elif defined(__EMSCRIPTEN__)
+#include "violet/emscripten.h"
 #else
 #error "Platform not supported!"
 #endif
