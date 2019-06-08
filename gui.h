@@ -1258,6 +1258,11 @@ int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
 static
 int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, texture_t *tex)
 {
+#ifdef __EMSCRIPTEN__
+	const s32 bpp = 4;
+#else
+	const s32 bpp = 1;
+#endif
 	temp_memory_mark_t mark = temp_memory_save(g_temp_allocator);
 	unsigned char *bitmap = NULL;
 	s32 w = 512, h = 512;
@@ -1269,11 +1274,11 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, texture_t *t
 
 	while (!packed && !failed) {
 		temp_memory_restore(mark);
-		bitmap = amalloc(w*h, g_temp_allocator);
+		bitmap = amalloc(w * h * bpp, g_temp_allocator);
 		/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
-		memset(bitmap, 0, w * h);
+		memset(bitmap, 0, w * h * bpp);
 
-		if (!stbtt_PackBegin(&context, bitmap, w, h, w, 1, g_temp_allocator)) {
+		if (!stbtt_PackBegin(&context, bitmap, w, h, w * bpp, 1, g_temp_allocator)) {
 			failed = true;
 		} else if (rgtt_PackFontRange(&context, info, font_size, 0,
 		                              info->numGlyphs, char_info)) {
@@ -1289,11 +1294,22 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, texture_t *t
 	}
 
 	if (packed) {
+#ifdef __EMSCRIPTEN__
+		unsigned char *row = amalloc(w * bpp, g_temp_allocator);
+		for (s32 r = 0; r < h; ++r) {
+			memset(row, ~0, w * bpp);
+			for (s32 c = 0; c < w; ++c)
+				row[c * bpp + bpp - 1] = bitmap[r * w * bpp + c];
+			memcpy(&bitmap[r * w * bpp], row, w * bpp);
+		}
+		texture_init(tex, w, h, GL_RGBA, bitmap);
+#else
 		texture_init(tex, w, h, GL_RED, bitmap);
 		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
 		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
 		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
 		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+#endif
 	}
 
 	temp_memory_restore(mark);
