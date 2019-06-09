@@ -39,12 +39,12 @@ str_t  str_create(allocator_t *a);
 str_t  str_dup(const char *src, allocator_t *a);
 void   str_destroy(str_t *str);
 
-void   str_cpy(str_t *dst, const char *src);
-void   str_cat(str_t *dst, const char *src);
-void   str_cat2(str_t *dst, const char *src1, const char *src2);
+str_t *str_cpy(str_t *dst, const char *src);
+str_t *str_cat(str_t *dst, const char *src);
+str_t *str_cat2(str_t *dst, const char *src1, const char *src2);
 
-void   str_clear(str_t *str);
-void   str_remove_to_end(str_t *str, const char *p);
+str_t *str_clear(str_t *str);
+str_t *str_remove_to_end(str_t *str, const char *p);
 
 char  *str_beg(str_t *str);
 char  *str_end(str_t *str); // pointer to null terminator
@@ -242,37 +242,42 @@ void str_destroy(str_t *str)
 	*str = NULL;
 }
 
-void str_cpy(str_t *dst, const char *src)
+str_t *str_cpy(str_t *dst, const char *src)
 {
 	const size_t sz = strlen(src) + 1;
 	array_clear(*dst);
 	array_appendn(*dst, src, (array_size_t)sz);
+	return dst;
 }
 
-void str_cat(str_t *dst, const char *src)
+str_t *str_cat(str_t *dst, const char *src)
 {
 	const size_t sz = strlen(src) + 1;
 	array_pop(*dst);
 	array_appendn(*dst, src, (array_size_t)sz);
+	return dst;
 }
 
-void str_cat2(str_t *dst, const char *src1, const char *src2)
+str_t *str_cat2(str_t *dst, const char *src1, const char *src2)
 {
 	str_cpy(dst, src1);
 	str_cat(dst, src2);
+	return dst;
 }
 
-void str_clear(str_t *str)
+str_t *str_clear(str_t *str)
 {
 	array_set_sz(*str, 1);
 	array_last(*str) = 0;
+	return str;
 }
 
-void str_remove_to_end(str_t *str, const char *p)
+str_t *str_remove_to_end(str_t *str, const char *p)
 {
 	const size_t sz = p - str_beg(str) + 1;
 	array_set_sz(*str, (array_size_t)sz);
 	array_last(*str) = 0;
+	return str;
 }
 
 char *str_beg(str_t *str)
