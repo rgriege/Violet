@@ -1754,6 +1754,13 @@ const gui_style_t g_gui_style_default = {
 	}, \
 }
 
+#define gi__gui_scroll_area_style_invis { \
+	.bg_color = gi_nocolor, \
+	.padding = 0, \
+	.scrollbar_track_width = 0, \
+	.scrollbar = gi__gui_slider_style_invis, \
+}
+
 const gui_style_t g_gui_style_invis = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
 	.line     = gi__gui_line_style_invis,
@@ -1766,6 +1773,7 @@ const gui_style_t g_gui_style_invis = {
 	.dropdown = gi__gui_dropdown_style_invis,
 	.drag     = gi__gui_widget_style_invis,
 	.hint     = gi__gui_element_style_invis,
+	.scroll_area = gi__gui_scroll_area_style_invis,
 	.panel    = {
 		.bg_color          = gi_nocolor,
 		.border_color      = gi_nocolor,
