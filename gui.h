@@ -722,6 +722,15 @@ typedef struct gui_scroll_area_style
 	gui_slider_style_t scrollbar;
 } gui_scroll_area_style_t;
 
+typedef struct gui_dropdown_style
+{
+	gui_widget_style_t btn;
+	struct {
+		color_t color;
+		s32 width;
+	} shadow;
+} gui_dropdown_style_t;
+
 typedef struct gui_panel_style
 {
 	color_t bg_color;
@@ -748,7 +757,7 @@ typedef struct gui_style
 	gui_widget_style_t      chk;
 	gui_slider_style_t      slider;
 	gui_widget_style_t      select;
-	gui_widget_style_t      dropdown;
+	gui_dropdown_style_t    dropdown;
 	gui_widget_style_t      drag;
 	gui_element_style_t     hint;
 	gui_scroll_area_style_t scroll_area;
@@ -1537,6 +1546,14 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 	.outline_color = gi_white, \
 }
 
+#define gi__gui_dropdown_style_default { \
+	.btn = gi__gui_btn_style_default, \
+	.shadow = { \
+		.color = { .r=0x20, .g=0x20, .b=0x20, .a=0x20 }, \
+		.width = 10, \
+	}, \
+}
+
 #define gi__gui_scroll_area_style_default { \
 	.bg_color = gi_nocolor, \
 	.padding = 0, \
@@ -1553,7 +1570,7 @@ const gui_style_t g_gui_style_default = {
 	.chk = gi__gui_chk_style_default,
 	.slider = gi__gui_slider_style_default,
 	.select = gi__gui_btn_style_default,
-	.dropdown = gi__gui_btn_style_default,
+	.dropdown = gi__gui_dropdown_style_default,
 	.drag = gi__gui_chk_style_default,
 	.hint = gi__gui_hint_style_default,
 	.scroll_area = gi__gui_scroll_area_style_default,
@@ -1729,6 +1746,14 @@ const gui_style_t g_gui_style_default = {
 	.track_narrow = false, \
 }
 
+#define gi__gui_dropdown_style_invis { \
+	.btn = gi__gui_widget_style_invis, \
+	.shadow = { \
+		.color = gi_nocolor, \
+		.width = 0, \
+	}, \
+}
+
 const gui_style_t g_gui_style_invis = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
 	.line     = gi__gui_line_style_invis,
@@ -1738,7 +1763,7 @@ const gui_style_t g_gui_style_invis = {
 	.chk      = gi__gui_widget_style_invis,
 	.slider   = gi__gui_slider_style_invis,
 	.select   = gi__gui_widget_style_invis,
-	.dropdown = gi__gui_widget_style_invis,
+	.dropdown = gi__gui_dropdown_style_invis,
 	.drag     = gi__gui_widget_style_invis,
 	.hint     = gi__gui_element_style_invis,
 	.panel    = {
@@ -4910,6 +4935,32 @@ void gui__popup_end(gui_t *gui)
 	}
 }
 
+static
+void gui__shadow_box(gui_t *gui, s32 px, s32 py, s32 pw, s32 ph, s32 sw, color_t color)
+{
+	const v2f verts[8] = {
+		{ px,           py + ph },
+		{ px,           py },
+		{ px + pw,      py },
+		{ px + pw,      py + ph },
+		{ px + pw + sw, py + ph },
+		{ px + pw + sw, py - sw },
+		{ px - sw,      py - sw },
+		{ px - sw,      py + ph },
+	};
+	if (gui_begin(gui, countof(verts), GUI_DRAW_TRIANGLE_STRIP)) {
+		gui_vertf(gui, verts[0].x, verts[0].y, color,     0.f, 0.f);
+		gui_vertf(gui, verts[7].x, verts[7].y, g_nocolor, 0.f, 0.f);
+		gui_vertf(gui, verts[1].x, verts[1].y, color,     0.f, 0.f);
+		gui_vertf(gui, verts[6].x, verts[6].y, g_nocolor, 0.f, 0.f);
+		gui_vertf(gui, verts[2].x, verts[2].y, color,     0.f, 0.f);
+		gui_vertf(gui, verts[5].x, verts[5].y, g_nocolor, 0.f, 0.f);
+		gui_vertf(gui, verts[3].x, verts[3].y, color,     0.f, 0.f);
+		gui_vertf(gui, verts[4].x, verts[4].y, g_nocolor, 0.f, 0.f);
+		gui_end(gui);
+	}
+}
+
 b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                        u32 *val, u32 num_items)
 {
@@ -4958,7 +5009,15 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	strcpy(gui->dropdown.selected_item_txt, "");
 
 	if (gui_widget_focused(gui, id)) {
-		gui__popup_begin(gui, id, px, py, pw, ph);
+		const s32 sw = gui->style.dropdown.shadow.width;
+
+		gui__popup_begin(gui, id, px - sw, py - sw, pw + 2 * sw, ph + sw);
+
+		if (sw > 0) {
+			const color_t color = gui->style.dropdown.shadow.color;
+			gui__shadow_box(gui, px, py, pw, ph, sw, color);
+		}
+
 		pgui_grid_begin(gui, &gui->grid_popup, px, py, pw, ph);
 		pgui_col(gui, 0, num_items);
 	}
@@ -4980,7 +5039,7 @@ b32 gui_dropdown_item(gui_t *gui, const char *txt)
 	assert(gui->dropdown.item_idx < gui->dropdown.num_items);
 
 	if (gui_widget_focused(gui, gui->dropdown.id)) {
-		gui_style_push(gui, btn, gui_style(gui)->dropdown);
+		gui_style_push(gui, btn, gui_style(gui)->dropdown.btn);
 		if (pgui_btn_txt(gui, txt) == BTN_PRESS) {
 			*gui->dropdown.val = gui->dropdown.item_idx;
 			chosen = true;
@@ -5016,13 +5075,13 @@ void gui_dropdown_end(gui_t *gui)
 		pgui_grid_end(gui, &gui->grid_popup);
 		gui__popup_end(gui);
 	} else {
-		gui__hint_render(gui, gui->dropdown.id, gui->style.dropdown.hint);
+		gui__hint_render(gui, gui->dropdown.id, gui->style.dropdown.btn.hint);
 	}
 
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown.btn);
 
 	const gui_element_style_t style
-		= gui__element_style(gui, render_state, &gui->style.dropdown);
+		= gui__element_style(gui, render_state, &gui->style.dropdown.btn);
 	const gui_element_style_t style_pen = {
 		.line = {
 			.thickness = 1.f,
@@ -5223,15 +5282,23 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
 
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown.btn);
 
 	if (gui_widget_focused(gui, id)) {
-		gui__popup_begin(gui, id, px, py, pw, ph);
+		const s32 sw = gui->style.dropdown.shadow.width;
+
+		gui__popup_begin(gui, id, px - sw, py - sw, pw + 2 * sw, ph + sw);
+
+		if (sw > 0) {
+			const color_t color = gui->style.dropdown.shadow.color;
+			gui__shadow_box(gui, px, py, pw, ph, sw, color);
+		}
+
 		pgui_grid_begin(gui, &gui->grid_popup, px, py, pw, ph);
 		pgui_col(gui, 0, num_items);
 		return true;
 	} else {
-		gui__hint_render(gui, id, gui->style.dropdown.hint);
+		gui__hint_render(gui, id, gui->style.dropdown.btn.hint);
 		return false;
 	}
 }
