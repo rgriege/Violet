@@ -448,8 +448,8 @@ b32  gui_locked(const gui_t *gui);
 void gui_lock(gui_t *gui);
 void gui_unlock(gui_t *gui);
 /* NOTE: I usually hate 'conditional' methods, but this cleans up usage code */
-void gui_lock_if(gui_t *gui, b32 cond, u32 *restore_val);
-void gui_lock_restore(gui_t *gui, u32 val);
+void gui_lock_if(gui_t *gui, b32 cond, u32 *lock);
+void gui_unlock_if(gui_t *gui, u32 lock);
 
 
 /* Window */
@@ -2616,6 +2616,8 @@ b32 gui_begin_frame(gui_t *gui)
 	gui__toggle_key(gui, KBT_SCROLL, KB_SCROLLLOCK);
 	gui__toggle_key(gui, KBT_NUM, KB_NUMLOCK_OR_CLEAR);
 
+	gui->lock = 0;
+
 	/* Should rarely hit these */
 	if (gui->hot_id != 0 && !gui->hot_id_found_this_frame) {
 		log_warn("hot widget %" PRIu64 " was not drawn", gui->hot_id);
@@ -3032,6 +3034,7 @@ void gui_end_frame(gui_t *gui)
 	texture_blend_e current_blend = TEXTURE_BLEND_NRM;
 
 	assert(gui->grid == NULL);
+	assert(gui->lock == 0);
 
 	if (gui->root_split && !gui->splits_rendered_this_frame)
 		gui_splits_render(gui);
@@ -5805,16 +5808,22 @@ void gui_unlock(gui_t *gui)
 	--gui->lock;
 }
 
-void gui_lock_if(gui_t *gui, b32 cond, u32 *restore_val)
+void gui_lock_if(gui_t *gui, b32 cond, u32 *lock)
 {
-	*restore_val = gui->lock;
-	if (cond)
+	if (cond) {
 		gui_lock(gui);
+		*lock = gui->lock;
+	} else {
+		*lock = 0;
+	}
 }
 
-void gui_lock_restore(gui_t *gui, u32 val)
+void gui_unlock_if(gui_t *gui, u32 lock)
 {
-	gui->lock = val;
+	if (lock) {
+		assert(gui->lock == lock);
+		gui_unlock(gui);
+	}
 }
 
 
