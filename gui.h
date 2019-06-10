@@ -523,6 +523,7 @@ s32  pgui_btn_txt(gui_t *gui, const char *lbl);
 s32  pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale);
 s32  pgui_btn_pen(gui_t *gui, gui_pen_t pen);
 b32  pgui_chk(gui_t *gui, const char *lbl, b32 *val);
+b32  pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val);
 s32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
                   npt_flags_t flags);
 s32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
@@ -6242,6 +6243,13 @@ b32 pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	return gui_chk(gui, x, y, w, h, lbl, val);
+}
+
+b32 pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val)
+{
+	s32 x, y, w, h;
+	pgui__cell_consume(gui, &x, &y, &w, &h);
+	return gui_chk_pen(gui, x, y, w, h, pen, val);
 }
 
 s32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
