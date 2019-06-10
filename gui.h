@@ -549,6 +549,24 @@ void pgui_scroll_area_begin(gui_t *gui, gui_scroll_area_t *scroll_area);
 void pgui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area);
 
 
+typedef struct gui_tree_node
+{
+	u8 depth;
+	b8 expanded;
+} gui_tree_node_t;
+
+void pgui_tree_begin(gui_t *gui, gui_tree_node_t *nodes, u32 max_nodes,
+                     s32 row_height, s32 indent);
+void pgui_tree_end(gui_t *gui);
+b32  pgui_tree_node_begin(gui_t *gui);
+void pgui_tree_node_end(gui_t *gui);
+void pgui_tree_leaf(gui_t *gui);
+void gui_pen_tree_collapse(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                           const gui_element_style_t *style);
+void gui_pen_tree_restore(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                          const gui_element_style_t *style);
+
+
 /* Splits */
 
 #ifndef GUI_SPLIT_RESIZE_BORDER
@@ -762,6 +780,7 @@ typedef struct gui_style
 	gui_widget_style_t      drag;
 	gui_element_style_t     hint;
 	gui_scroll_area_style_t scroll_area;
+	gui_widget_style_t      tree;
 	gui_panel_style_t       panel;
 	gui_line_style_t        split;
 } gui_style_t;
@@ -1438,6 +1457,24 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 	.color = gi_black, \
 }
 
+#define gi__gui_line_style_lightblue { \
+	.thickness = 1.f, \
+	.dash_len = 0.f, \
+	.color = gi_lightblue, \
+}
+
+#define gi__gui_line_style_medblue { \
+	.thickness = 1.f, \
+	.dash_len = 0.f, \
+	.color = gi_medblue, \
+}
+
+#define gi__gui_line_style_orange { \
+	.thickness = 1.f, \
+	.dash_len = 0.f, \
+	.color = gi_orange, \
+}
+
 #define gi__gui_text_style_default { \
 	.size = 14, \
 	.color = gi_white, \
@@ -1562,6 +1599,35 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 	.scrollbar = gi__gui_slider_style_default, \
 }
 
+#define gi__gui_tree_style_default { \
+	.pen = gui_pen_rect, \
+	.inactive = { \
+		.line = gi__gui_line_style_lightblue, \
+		.text = gi__gui_btn_text_style_default, \
+		.bg_color = gi_nocolor, \
+		.outline_color = gi_nocolor, \
+	}, \
+	.hot = { \
+		.line = gi__gui_line_style_medblue, \
+		.text = gi__gui_btn_text_style_default, \
+		.bg_color = gi_nocolor, \
+		.outline_color = gi_nocolor, \
+	}, \
+	.active = { \
+		.line = gi__gui_line_style_orange, \
+		.text = gi__gui_btn_text_style_default, \
+		.bg_color = gi_nocolor, \
+		.outline_color = gi_nocolor, \
+	}, \
+	.disabled = { \
+		.line = gi__gui_line_style_disabled, \
+		.text = gi__gui_btn_text_style_disabled, \
+		.bg_color = gi_nocolor, \
+		.outline_color = gi_nocolor, \
+	}, \
+	.hint = NULL, \
+}
+
 const gui_style_t g_gui_style_default = {
 	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
 	.line = gi__gui_line_style_default,
@@ -1575,6 +1641,7 @@ const gui_style_t g_gui_style_default = {
 	.drag = gi__gui_chk_style_default,
 	.hint = gi__gui_hint_style_default,
 	.scroll_area = gi__gui_scroll_area_style_default,
+	.tree = gi__gui_tree_style_default,
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
 		.border_color = gi_grey128,
@@ -1775,6 +1842,7 @@ const gui_style_t g_gui_style_invis = {
 	.drag     = gi__gui_widget_style_invis,
 	.hint     = gi__gui_element_style_invis,
 	.scroll_area = gi__gui_scroll_area_style_invis,
+	.tree     = gi__gui_widget_style_invis,
 	.panel    = {
 		.bg_color          = gi_nocolor,
 		.border_color      = gi_nocolor,
@@ -1866,6 +1934,16 @@ typedef struct gui__repeat
 	u32 timer;
 	b32 triggered;
 } gui__repeat_t;
+
+typedef struct gui_tree {
+	gui_tree_node_t *nodes;
+	u32 max_nodes;
+	s32 row_height;
+	s32 indent;
+	u32 node_iter;
+	u32 depth;
+	u32 insert_nodes_at_depth;
+} gui_tree_t;
 
 typedef struct gui
 {
@@ -1981,6 +2059,7 @@ typedef struct gui
 	b32 dragging_window;
 	colorf_t color_picker8_color;
 	gui_scroll_area_t *scroll_area;
+	gui_tree_t tree;
 	s32 hint_timer;
 
 	/* grid */
@@ -2219,6 +2298,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->dragging_window = false;
 	gui->color_picker8_color = (colorf_t){0};
 	gui->scroll_area = NULL;
+	memclr(gui->tree);
 	gui->hint_timer = GUI_HINT_TIMER;
 
 	gui->grid = NULL;
@@ -6385,6 +6465,147 @@ void pgui_scroll_area_begin(gui_t *gui, gui_scroll_area_t *scroll_area)
 void pgui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 {
 	gui_scroll_area_end(gui, scroll_area);
+}
+
+void pgui_tree_begin(gui_t *gui, gui_tree_node_t *nodes, u32 max_nodes,
+                     s32 row_height, s32 indent)
+{
+	assert(!gui->tree.nodes);
+	gui->tree.nodes = nodes;
+	gui->tree.max_nodes = max_nodes;
+	gui->tree.row_height = row_height;
+	gui->tree.indent = indent;
+	gui->tree.node_iter = 0;
+	gui->tree.depth = 0;
+	gui->tree.insert_nodes_at_depth = ~0;
+}
+
+void pgui_tree_end(gui_t *gui)
+{
+	assert(gui->tree.depth == 0);
+	gui->tree.nodes = NULL;
+}
+
+static
+b32 pgui__tree_node_empty(const gui_tree_node_t *node)
+{
+	return node->depth == 0 && node->expanded == 0;
+}
+
+static
+u32 pgui__tree_num_nodes_remaining(const gui_tree_t *tree)
+{
+	u32 i = tree->node_iter;
+	while (i < tree->max_nodes && !pgui__tree_node_empty(&tree->nodes[i]))
+		++i;
+	return i - tree->node_iter;
+}
+
+static
+gui_tree_node_t *pgui__tree_get_node(gui_tree_t *tree, gui_tree_node_t *empty_node)
+{
+	assert(tree->depth < sizeof(empty_node->depth) << 8);
+	if (tree->depth == tree->insert_nodes_at_depth) {
+		const u32 num_nodes = tree->node_iter + pgui__tree_num_nodes_remaining(tree);
+		if (num_nodes > 0)
+			for (u32 i = num_nodes - 1; i > tree->node_iter; --i)
+				tree->nodes[i] = tree->nodes[i-1];
+		tree->nodes[tree->node_iter].depth = tree->depth;
+		tree->nodes[tree->node_iter].expanded = false;
+		return &tree->nodes[tree->node_iter++];
+	} else if (tree->node_iter == tree->max_nodes) {
+		return empty_node;
+	} else {
+#ifdef DEBUG
+		static b32 s_warned = false;
+		if (   tree->nodes[tree->node_iter].depth != 0
+		    && tree->nodes[tree->node_iter].depth != tree->depth
+		    && !s_warned) {
+			log_warn("too few gui tree nodes");
+			s_warned = true;
+		}
+#endif
+		return &tree->nodes[tree->node_iter++];
+	}
+}
+
+b32 pgui_tree_node_begin(gui_t *gui)
+{
+	gui_tree_t *tree = &gui->tree;
+	gui_tree_node_t empty_node = {0};
+	gui_tree_node_t *node = pgui__tree_get_node(tree, &empty_node);
+	b32 expanded = node->expanded;
+	gui_pen_t pen = expanded ? gui_pen_tree_collapse : gui_pen_tree_restore;
+	u32 lock;
+
+	if (tree->depth > 0) {
+		const r32 cols[3] = { tree->depth * tree->indent, tree->indent, 0 };
+		pgui_row_cellsv(gui, tree->row_height, cols);
+		pgui_spacer_blank(gui);
+	} else {
+		const r32 cols[2] = { tree->indent, 0 };
+		pgui_row_cellsv(gui, tree->row_height, cols);
+	}
+
+	gui_style_push(gui, chk, gui_style(gui)->tree);
+	gui_lock_if(gui, node == &empty_node, &lock);
+	if (pgui_chk_pen(gui, pen, &expanded)) {
+		if (expanded) {
+			++tree->depth;
+			tree->insert_nodes_at_depth = tree->depth;
+		} else {
+			const u32 num_nodes = tree->node_iter + pgui__tree_num_nodes_remaining(tree);
+			u32 num_to_remove = 0;
+			for (u32 i = tree->node_iter; i < tree->max_nodes && tree->nodes[i].depth > tree->depth; ++i)
+				++num_to_remove;
+			buf_remove_n(tree->nodes, tree->node_iter, num_to_remove, num_nodes);
+			memset(&tree->nodes[num_nodes-num_to_remove], 0, num_to_remove * sizeof(gui_tree_node_t));
+		}
+		node->expanded = expanded;
+	} else if (expanded) {
+		++tree->depth;
+	}
+	gui_lock_restore(gui, lock);
+	gui_style_pop(gui);
+
+	pgui_col(gui, 0, 1);
+
+	return expanded;
+}
+
+void pgui_tree_node_end(gui_t *gui)
+{
+	gui_tree_t *tree = &gui->tree;
+	if (tree->insert_nodes_at_depth == tree->depth)
+		tree->insert_nodes_at_depth = ~0;
+	--tree->depth;
+}
+
+void pgui_tree_leaf(gui_t *gui)
+{
+	const gui_tree_t *tree = &gui->tree;
+	const r32 cols[2] = { (tree->depth + 1) * tree->indent, 0 };
+	pgui_row_cellsv(gui, tree->row_height, cols);
+	pgui_spacer_blank(gui);
+	pgui_col(gui, 0, 1);
+}
+
+void gui_pen_tree_collapse(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                           const gui_element_style_t *style)
+{
+	gui_pen_panel_collapse(gui, x, y, w, h, style);
+}
+
+void gui_pen_tree_restore(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                          const gui_element_style_t *style)
+{
+	const v2f tri[3] = {
+		{ x + 2 * w / 5, y +     h / 3 },
+		{ x + 2 * w / 5, y + 2 * h / 3 },
+		{ x + 3 * w / 5, y +     h / 2 },
+	};
+	gui_pen_rect(gui, x, y, w, h, style);
+	gui_polyf(gui, tri, 3, style->line.color, g_nocolor);
 }
 
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits)
