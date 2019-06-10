@@ -50,6 +50,8 @@ char  *str_beg(str_t *str);
 char  *str_end(str_t *str); // pointer to null terminator
 size_t str_len(str_t *str); // like strlen, doesn't include null terminator
 
+#define cstr(str) str_beg(str)
+
 #endif // VIOLET_STRING_H
 
 #ifdef STRING_IMPLEMENTATION
