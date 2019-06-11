@@ -5062,7 +5062,7 @@ static
 b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
               u64 *pid, gui_drag_callback_t cb, void *udata)
 {
-	b32 changed = false;
+	b32 triggered_by_key = false;
 	u64 id = gui_widget_id(gui, *x, *y);
 	const b32 was_hot = (gui->hot_id == id);
 
@@ -5079,7 +5079,6 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 			   gui->drag_offset.x, gui->drag_offset.y, udata);
 			id = gui_widget_id(gui, *x, *y);
 			gui->active_id = id;
-			changed = true;
 		}
 	} else if (gui_widget_focused(gui, id)) {
 	  if (!gui->lock && gui->key_repeat.triggered) {
@@ -5096,13 +5095,13 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 				gui__defocus_widget(gui, id);
 				id = gui_widget_id(gui, *x, *y);
 				gui__focus_widget(gui, id);
-				changed = true;
+				triggered_by_key = true;
 			}
 		}
 	}
 
 	*pid = id;
-	return changed;
+	return gui->active_id == id || triggered_by_key;
 }
 
 static
