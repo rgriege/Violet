@@ -411,18 +411,23 @@ b32  gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                         u32 *val, u32 num_items);
 b32  gui_dropdown_item(gui_t *gui, const char *txt);
 void gui_dropdown_end(gui_t *gui);
-typedef void(*gui_drag_callback_t)(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                                   s32 offset_x, s32 offset_y, void *udata);
-void gui_drag_callback_default(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                               s32 offset_x, s32 offset_y, void *udata);
-b32  gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb);
-b32  gui_drag_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h, mouse_button_t mb);
-b32  gui_drag_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h, mouse_button_t mb);
-b32  gui_dragx(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
-               gui_drag_callback_t cb, void *udata);
-b32  gui_cdrag(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb);
-b32  gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
-                gui_drag_callback_t cb, void *udata);
+typedef void(*gui_drag_f)(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                          s32 offset_x, s32 offset_y, void *udata);
+void gui_drag_func_default(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                           s32 offset_x, s32 offset_y, void *udata);
+void gui_drag_func_horizontal(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                              s32 offset_x, s32 offset_y, void *udata);
+void gui_drag_func_vertical(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                            s32 offset_x, s32 offset_y, void *udata);
+b32  gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb);
+b32  gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
+               gui_drag_f cb, void *udata);
+b32  gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb);
+b32  gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
+                    gui_drag_f cb, void *udata);
+b32  gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb);
+b32  gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
+                    gui_drag_f cb, void *udata);
 b32  gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, s32 item_w, u32 num_items);
 void gui_menu_end(gui_t *gui);
@@ -5058,9 +5063,32 @@ void gui_dropdown_end(gui_t *gui)
 	memclr(gui->dropdown);
 }
 
-static
-b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
-              u64 *pid, gui_drag_callback_t cb, void *udata)
+void gui_drag_func_default(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                           s32 offset_x, s32 offset_y, void *udata)
+{
+	*x = mouse_x + offset_x;
+	*y = mouse_y + offset_y;
+}
+
+void gui_drag_func_horizontal(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                              s32 offset_x, s32 offset_y, void *udata)
+{
+	*x = mouse_x + offset_x;
+}
+
+void gui_drag_func_vertical(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
+                            s32 offset_x, s32 offset_y, void *udata)
+{
+	*y = mouse_y + offset_y;
+}
+
+b32 gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb)
+{
+	return gui_dragf(gui, x, y, contains_mouse, mb, gui_drag_func_default, NULL);
+}
+
+b32 gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
+              gui_drag_f cb, void *udata)
 {
 	b32 triggered_by_key = false;
 	u64 id = gui_widget_id(gui, *x, *y);
@@ -5100,60 +5128,58 @@ b32 gui__drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
 		}
 	}
 
-	*pid = id;
 	return gui->active_id == id || triggered_by_key;
 }
 
 static
-void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id,
-                      b32 moved, const gui_widget_style_t *widget_style)
+void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id, b32 dragging)
 {
-	const gui__widget_render_state_t render_state
-		= gui__widget_render_state(gui, id, moved, false, true);
-	const gui_element_style_t style
-		= gui__element_style(gui, render_state, widget_style);
+	const gui_widget_style_t *widget_style = &gui->style.drag;
+	const s32 state = gui__widget_render_state(gui, id, dragging, false, true);
+	const gui_element_style_t style = gui__element_style(gui, state, widget_style);
 	widget_style->pen(gui, x, y, w, h, &style);
 	gui__hint_render(gui, id, widget_style->hint);
 }
 
-void gui_drag_callback_default(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                               s32 offset_x, s32 offset_y, void *udata)
+static
+void gui__drag_rect_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, b32 dragging)
 {
-	*x = mouse_x + offset_x;
-	*y = mouse_y + offset_y;
+	gui__drag_render(gui, x, y, w, h, gui_widget_id(gui, x, y), dragging);
 }
 
-b32 gui_drag(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb)
+b32 gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb)
 {
-	return gui_dragx(gui, x, y, w, h, mb, gui_drag_callback_default, NULL);
+	return gui_drag_rectf(gui, x, y, w, h, mb, gui_drag_func_default, NULL);
 }
 
-b32 gui__drag_logic(gui_t *gui, u64 *id, s32 *x, s32 *y, s32 w, s32 h,
-                    mouse_button_t mb, gui_drag_callback_t cb, void *udata)
+b32 gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
+                   gui_drag_f cb, void *udata)
 {
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, *x, *y, w, h);
-	return gui__drag(gui, x, y, contains_mouse, mb, id, cb, udata);
-}
-
-b32 gui_dragx(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
-              gui_drag_callback_t cb, void *udata)
-{
-	u64 id;
-	const b32 ret = gui__drag_logic(gui, &id, x, y, w, h, mb, cb, udata);
-	gui__drag_render(gui, *x, *y, w, h, id, ret, &gui->style.drag);
+	const b32 ret = gui_dragf(gui, x, y, contains_mouse, mb, cb, udata);
+	gui__drag_rect_render(gui, *x, *y, w, h, ret);
 	return ret;
 }
 
-static
-void gui__drag_horiz_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                              s32 offset_x, s32 offset_y, void *udata)
+b32 gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb)
 {
-	*x = mouse_x + offset_x;
+	return gui_drag_circf(gui, x, y, r, mb, gui_drag_func_default, NULL);
 }
 
-b32 gui_drag_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h, mouse_button_t mb)
+b32 gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
+                   gui_drag_f cb, void *udata)
 {
-	return gui_dragx(gui, x, &y, w, h, mb, gui__drag_horiz_callback, NULL);
+	const v2i pos = { *x, *y };
+	box2i box;
+	box2i_from_center(&box, pos, (v2i){r, r});
+	const b32 contains_mouse = v2i_dist_sq(pos, gui->mouse_pos) < r * r
+	                        && gui__box_half_visible(gui, box)
+	                        && !gui->lock;
+	const b32 ret = gui_dragf(gui, x, y, contains_mouse, mb, cb, udata);
+	gui_style_push_pen(gui, drag.pen, gui_pen_circ);
+	gui__drag_render(gui, *x - r, *y - r, 2 * r, 2 * r, gui_widget_id(gui, *x, *y), ret);
+	gui_style_pop(gui);
+	return ret;
 }
 
 static
@@ -5165,23 +5191,11 @@ b32 gui__resize_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h)
 		SDL_SetCursor(gui->cursors[GUI__CURSOR_RESIZE_EW]);
 		gui->use_default_cursor = false;
 	}
-	if (gui_drag_horiz(gui, x, y, w, h, MB_LEFT)) {
+	if (gui_drag_rectf(gui, x, &y, w, h, MB_LEFT, gui_drag_func_horizontal, NULL)) {
 		gui->use_default_cursor = false;
 		return true;
 	}
 	return false;
-}
-
-static
-void gui__drag_vert_callback(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                             s32 offset_x, s32 offset_y, void *udata)
-{
-	*y = mouse_y + offset_y;
-}
-
-b32 gui_drag_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h, mouse_button_t mb)
-{
-	return gui_dragx(gui, &x, y, w, h, mb, gui__drag_vert_callback, NULL);
 }
 
 static
@@ -5193,33 +5207,11 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 		SDL_SetCursor(gui->cursors[GUI__CURSOR_RESIZE_NS]);
 		gui->use_default_cursor = false;
 	}
-	if (gui_drag_vert(gui, x, y, w, h, MB_LEFT)) {
+	if (gui_drag_rectf(gui, &x, y, w, h, MB_LEFT, gui_drag_func_vertical, NULL)) {
 		gui->use_default_cursor = false;
 		return true;
 	}
 	return false;
-}
-
-b32 gui_cdrag(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb)
-{
-	return gui_cdragx(gui, x, y, r, mb, gui_drag_callback_default, NULL);
-}
-
-b32 gui_cdragx(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
-              gui_drag_callback_t cb, void *udata)
-{
-	const v2i pos = { *x, *y };
-	u64 id;
-	box2i box;
-	box2i_from_center(&box, pos, (v2i){r, r});
-	const b32 contains_mouse =    v2i_dist_sq(pos, gui->mouse_pos) < r * r
-	                           && gui__box_half_visible(gui, box)
-	                           && !gui->lock;
-	const b32 ret = gui__drag(gui, x, y, contains_mouse, mb, &id, cb, udata);
-	gui_style_push_pen(gui, drag.pen, gui_pen_circ);
-	gui__drag_render(gui, *x - r, *y - r, 2 * r, 2 * r, id, ret, &gui->style.drag);
-	gui_style_pop(gui);
-	return ret;
 }
 
 b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -5285,7 +5277,7 @@ b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 	gui_rect_mcolor(gui, x, y, w, h, g_black, g_black, g_nocolor, g_nocolor);
 
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
-	if (gui_drag(gui, &nx, &ny, w, h, MB_LEFT)) {
+	if (gui_drag_rect(gui, &nx, &ny, w, h, MB_LEFT)) {
 		const u64 old_id = gui_widget_id(gui,  x,  y);
 		const u64 new_id = gui_widget_id(gui, nx, ny);
 		if (gui__is_most_focused_widget(gui, new_id)) {
@@ -5353,7 +5345,7 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 	color_to_hsv(*c, &hue, &sat, &val);
 
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
-	if (gui_drag(gui, &nx, &ny, w, h, MB_LEFT)) {
+	if (gui_drag_rect(gui, &nx, &ny, w, h, MB_LEFT)) {
 		const u64 old_id = gui_widget_id(gui,  x,  y);
 		const u64 new_id = gui_widget_id(gui, nx, ny);
 		if (gui__is_most_focused_widget(gui, new_id)) {
@@ -5835,7 +5827,7 @@ void gui__window_drag_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
-	if (gui_dragx(gui, &x, &y, w, h, MB_LEFT, gui__window_drag_cb, NULL)) {
+	if (gui_drag_rectf(gui, &x, &y, w, h, MB_LEFT, gui__window_drag_cb, NULL)) {
 		gui->dragging_window = true;
 	  if (!v2i_equal(gui->mouse_pos, gui->mouse_pos_last)) {
 			const v2i delta = v2i_sub(gui->mouse_pos, gui->mouse_pos_last);
@@ -6963,7 +6955,6 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 {
 	const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
 	s32 y;
-	u64 drag_id = ~0;
 	s32 rw, rx;
 	s32 tab_count;
 	gui_panel_t *panel_to_remove_from_tabs = NULL;
@@ -6971,8 +6962,8 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	y = panel->y + panel->height - dim;
 
 	if (panel->flags & GUI_PANEL_DRAGGABLE) {
-		*dragging = gui__drag_logic(gui, &drag_id, &panel->x, &y, dim, dim,
-		                            MB_LEFT, gui_drag_callback_default, NULL);
+		const b32 contains_mouse = gui__widget_contains_mouse(gui, panel->x, y, dim, dim);
+		*dragging = gui_drag(gui, &panel->x, &y, contains_mouse, MB_LEFT);
 		if (*dragging) {
 			panel->y = y - panel->height + dim;
 			if (panel->split) {
@@ -6990,8 +6981,9 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	         dim, gui->style.panel.titlebar.bg_color,
 	         gui->style.panel.titlebar.outline_color);
 
-	gui__drag_render(gui, panel->x, y, dim, dim, drag_id,
-	                 *dragging, &gui->style.panel.drag);
+	gui_style_push(gui, drag, gui->style.panel.drag);
+	gui__drag_rect_render(gui, panel->x, y, dim, dim, *dragging);
+	gui_style_pop(gui);
 
 	rw = 0;
 	if (panel->flags & GUI_PANEL_COLLAPSABLE)
