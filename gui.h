@@ -443,6 +443,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area);
 
 u64  gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void gui_widget_focus_next(gui_t *gui);
+void gui_widget_deactivate(gui_t *gui, u64 id);
 b32  gui_widget_hot(const gui_t *gui, u64 id);
 b32  gui_widget_active(const gui_t *gui, u64 id);
 b32  gui_widget_focused(const gui_t *gui, u64 id);
@@ -5748,6 +5749,12 @@ void gui_widget_focus_next(gui_t *gui)
 	    && !gui->focus_next_widget
 	    && gui->focus_prev_widget_id == 0)
 		gui->focus_next_widget = true;
+}
+
+void gui_widget_deactivate(gui_t *gui, u64 id)
+{
+	if (gui->active_id == id)
+		gui->active_id = 0;
 }
 
 b32 gui_widget_hot(const gui_t *gui, u64 id)
