@@ -6588,7 +6588,7 @@ b32 pgui_tree_node_begin(gui_t *gui)
 	} else if (expanded) {
 		++tree->depth;
 	}
-	gui_lock_restore(gui, lock);
+	gui_unlock_if(gui, lock);
 	gui_style_pop(gui);
 
 	pgui_col(gui, 0, 1);
