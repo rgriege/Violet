@@ -29,18 +29,28 @@ char *imstrcatn(char *imstr, const char *src); /* for chaining imprint calls */
 char *imstrcatp(const char *src, char *imstr); /* for chaining imprint calls */
 char *imstrcat2(const char *src1, const char *src2); /* for 2 new strings */
 
-/* Dynamic strings - array(char) */
+/*
+ * Dynamic string
+ * Always stores the null terminating character.
+ */
 #define str_t array(char)
 
-#define str_create(allocator) array_create_ex(allocator)
-#define str_destroy(str)      array_destroy(str)
+str_t  str_create(allocator_t *a);
+str_t  str_dup(const char *src, allocator_t *a);
+void   str_destroy(str_t *str);
 
-str_t str_dup(const char *src, allocator_t *a);
+str_t *str_cpy(str_t *dst, const char *src);
+str_t *str_cat(str_t *dst, const char *src);
+str_t *str_cat2(str_t *dst, const char *src1, const char *src2);
 
-void str_cpy(str_t *dst, const char *src);
-void str_cat(str_t *dst, const char *src);
-void str_cat2(str_t *dst, const char *src1, const char *src2);
-void str_catw(str_t *dst, const char *src);
+str_t *str_clear(str_t *str);
+str_t *str_remove_to_end(str_t *str, const char *p);
+
+char  *str_beg(str_t *str);
+char  *str_end(str_t *str); // pointer to null terminator
+size_t str_len(str_t *str); // like strlen, doesn't include null terminator
+
+#define cstr(str) str_beg(str)
 
 #endif // VIOLET_STRING_H
 
@@ -214,41 +224,77 @@ char *imstrcat2(const char *src1, const char *src2)
 	return imstrcatn(imstrcpy(src1), src2);
 }
 
+str_t str_create(allocator_t *a)
+{
+	return str_dup("", a);
+}
+
 str_t str_dup(const char *src, allocator_t *a)
 {
-	const size_t sz = strlen(src);
+	const size_t sz = strlen(src) + 1;
 	str_t str;
-	array_init_ex(str, (array_size_t)(sz+1), a);
+	array_init_ex(str, (array_size_t)sz, a);
 	str_cpy(&str, src);
 	return str;
 }
 
-void str_cpy(str_t *dst, const char *src)
+void str_destroy(str_t *str)
 {
-	array_set_sz(*dst, (array_size_t)(strlen(src) + 1));
-	strcpy(*dst, src);
+	array_destroy(*str);
+	*str = NULL;
 }
 
-void str_cat(str_t *dst, const char *src)
+str_t *str_cpy(str_t *dst, const char *src)
 {
-	const size_t sz = strlen(*dst);
-	array_set_sz(*dst, (array_size_t)(sz + strlen(src) + 1));
-	strcat(&(*dst)[sz], src);
+	const size_t sz = strlen(src) + 1;
+	array_clear(*dst);
+	array_appendn(*dst, src, (array_size_t)sz);
+	return dst;
 }
 
-void str_cat2(str_t *dst, const char *src1, const char *src2)
+str_t *str_cat(str_t *dst, const char *src)
 {
-	const size_t dsz = strlen(*dst);
-	const size_t sz1 = strlen(src1);
-	const size_t sz2 = strlen(src2);
-	array_set_sz(*dst, (array_size_t)(dsz + sz1 + sz2 + 1));
-	strcat(&(*dst)[dsz], src1);
-	strcat(&(*dst)[dsz+sz1], src2);
+	const size_t sz = strlen(src) + 1;
+	array_pop(*dst);
+	array_appendn(*dst, src, (array_size_t)sz);
+	return dst;
 }
 
-void str_catw(str_t *dst, const char *src)
+str_t *str_cat2(str_t *dst, const char *src1, const char *src2)
 {
-	str_cat2(dst, " ", src);
+	str_cpy(dst, src1);
+	str_cat(dst, src2);
+	return dst;
+}
+
+str_t *str_clear(str_t *str)
+{
+	array_set_sz(*str, 1);
+	array_last(*str) = 0;
+	return str;
+}
+
+str_t *str_remove_to_end(str_t *str, const char *p)
+{
+	const size_t sz = p - str_beg(str) + 1;
+	array_set_sz(*str, (array_size_t)sz);
+	array_last(*str) = 0;
+	return str;
+}
+
+char *str_beg(str_t *str)
+{
+	return (char*)*str;
+}
+
+char *str_end(str_t *str)
+{
+	return (char*)&array_last(*str);
+}
+
+size_t str_len(str_t *str)
+{
+	return array_sz(*str) - 1;
 }
 
 #undef STRING_IMPLEMENTATION
