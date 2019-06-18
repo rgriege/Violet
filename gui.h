@@ -3482,11 +3482,21 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stro
 void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      color_t bl, color_t br, color_t tr, color_t tl)
 {
-	gui_rect(gui, x, y, w, h, g_white, g_nocolor);
-	gui->vert_colors[gui->vert_cnt-4] = bl;
-	gui->vert_colors[gui->vert_cnt-3] = br;
-	gui->vert_colors[gui->vert_cnt-2] = tr;
-	gui->vert_colors[gui->vert_cnt-1] = tl;
+	const v2i vbl = { x,     y };
+	const v2i vbr = { x + w, y };
+	const v2i vtr = { x + w, y + h };
+	const v2i vtl = { x,     y + h };
+	const box2i rect = { .min = vbl, .max = vtr };
+
+	box2i_extend_box(&gui->widget_bounds->bbox, rect);
+
+	if (gui__box_visible(gui, rect) && gui_begin(gui, 4, GUI_DRAW_TRIANGLE_FAN)) {
+		gui__vertf(gui, vbl.x, vbl.y, bl, 0.f, 0.f);
+		gui__vertf(gui, vbr.x, vbr.y, br, 0.f, 0.f);
+		gui__vertf(gui, vtr.x, vtr.y, tr, 0.f, 0.f);
+		gui__vertf(gui, vtl.x, vtl.y, tl, 0.f, 0.f);
+		gui_end(gui);
+	}
 }
 
 void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
