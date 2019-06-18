@@ -450,6 +450,7 @@ b32  gui_widget_focused(const gui_t *gui, u64 id);
 b32  gui_any_widget_hot(const gui_t *gui);
 b32  gui_any_widget_active(const gui_t *gui);
 b32  gui_any_widget_has_focus(const gui_t *gui);
+b32  gui_any_widget_had_focus(const gui_t *gui);
 b32  gui_locked(const gui_t *gui);
 void gui_lock(gui_t *gui);
 void gui_unlock(gui_t *gui);
@@ -2038,6 +2039,7 @@ typedef struct gui
 	u64 active_id;
 	u64 focus_ids[GUI_FOCUS_STACK_SIZE];
 	u64 active_id_at_frame_start;
+	u64 focus_id_at_frame_start;
 	b32 hot_id_found_this_frame;
 	b32 active_id_found_this_frame;
 	b32 focus_id_found_this_frame;
@@ -2300,6 +2302,7 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->active_id = 0;
 	arrclr(gui->focus_ids);
 	gui->active_id_at_frame_start = 0;
+	gui->focus_id_at_frame_start = 0;
 	gui->focus_next_widget = false;
 	gui->focus_prev_widget_id = 0;
 	gui->prev_widget_id = 0;
@@ -2764,6 +2767,7 @@ b32 gui_begin_frame(gui_t *gui)
 		gui__tab_focus_adjacent_widget(gui);
 
 	gui->active_id_at_frame_start = gui->active_id;
+	gui->focus_id_at_frame_start = gui->focus_ids[0];
 
 	if (gui->active_id != 0)
 		gui->hint_timer = GUI_HINT_TIMER;
@@ -5954,6 +5958,11 @@ b32 gui_any_widget_active(const gui_t *gui)
 b32 gui_any_widget_has_focus(const gui_t *gui)
 {
 	return gui->focus_ids[0] != 0;
+}
+
+b32 gui_any_widget_had_focus(const gui_t *gui)
+{
+	return gui->focus_id_at_frame_start != 0;
 }
 
 b32 gui_locked(const gui_t *gui)
