@@ -225,16 +225,6 @@ char *imdatapath(const char *resource)
 	return impathcat(imdatadir(), resource);
 }
 
-char *file_path_to_utf8(const path_t path)
-{
-	return path;
-}
-
-path_t file_path_from_utf8(const char *path)
-{
-	return path;
-}
-
 FILE *file_open(const char *fname, const char *mode)
 {
 	return fopen(fname, mode);
