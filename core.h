@@ -1160,11 +1160,29 @@ void vlt_destroy(vlt_thread_type_e thread_type)
 
 #ifndef VIOLET_NO_MAIN
 int app_entry(int argc, char *const argv[]);
+#if defined(_WIN32) && defined(UNICODE)
+const char *os_imstr_to_utf8(const wchar_t *str);
+int wmain(int argc, wchar_t *const wargv[], wchar_t *const envp[])
+#else
 int main(int argc, char *const argv[])
+#endif
 {
 	int ret;
 	vlt_init(VLT_THREAD_MAIN);
+#if defined(_WIN32) && defined(UNICODE)
+	char **argv = malloc(argc * sizeof(char*));
+	for (int i = 0; i < argc; ++i) {
+		const char *arg = os_imstr_to_utf8(wargv[i]);
+		argv[i] = malloc(strlen(arg)+1);
+		strcpy(argv[i], arg);
+	}
+#endif
 	ret = app_entry(argc, argv);
+#if defined(_WIN32) && defined(UNICODE)
+	for (int i = 0; i < argc; ++i)
+		free(argv[i]);
+	free(argv);
+#endif
 #ifndef __EMSCRIPTEN__
 	vlt_destroy(VLT_THREAD_MAIN);
 #endif

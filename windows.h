@@ -10,16 +10,64 @@
 
 const char *g_file_path_separator = "\\";
 
+b32 os_string_to_utf8(char *dst, size_t dstlen, const wchar_t* src)
+{
+	return WideCharToMultiByte(CP_UTF8, 0, src, -1, dst, (int)dstlen, NULL, NULL) != 0;
+}
+
+size_t os_string_to_utf8_size(const wchar_t* src)
+{
+	return (size_t)WideCharToMultiByte(CP_UTF8, 0, src, -1, NULL, 0, NULL, NULL);
+}
+
+b32 os_string_from_utf8(wchar_t *dst, size_t dstlen, const char *src)
+{
+	return MultiByteToWideChar(CP_UTF8, 0, src, -1, dst, (int)dstlen) != 0;
+}
+
+size_t os_string_from_utf8_size(const char *src)
+{
+	return (size_t)MultiByteToWideChar(CP_UTF8, 0, src, -1, NULL, 0);
+}
+
+const wchar_t *os_imstr_from_utf8(const char *str)
+{
+	static thread_local wchar_t str_w[IMPRINT_BUFFER_SIZE];
+	if (!os_string_from_utf8(B2PC(str_w), str))
+		str_w[0] = 0;
+	return str_w;
+}
+
+const char *os_imstr_to_utf8(const wchar_t *str)
+{
+	static thread_local char str_utf8[IMPRINT_BUFFER_SIZE];
+	if (!os_string_to_utf8(B2PC(str_utf8), str))
+		str_utf8[0] = 0;
+	return str_utf8;
+}
+
+static
+b32 file_dialog__os_from_utf8(const char *src, const wchar_t **pdst)
+{
+	const size_t sz = os_string_from_utf8_size(src);
+	wchar_t *dst = amalloc(sz * sizeof(wchar_t), g_temp_allocator);
+	const b32 ret = os_string_from_utf8(dst, sz, src);
+	*pdst = dst;
+	return ret;
+}
 static
 b32 file__dialog(char *filename, u32 fname_sz,
                  const file_dialog_filter_t filters[], u32 num_filters,
                  CLSID clsid, IID iid)
 {
+	temp_memory_mark_t mark = temp_memory_save(g_temp_allocator);
 	b32 retval = false;
-	PWSTR ext_buf = NULL;
+	const wchar_t *ext;
+	wchar_t *filename_w;
+	void *vp = NULL;
+	IFileDialog *dialog;
 	COMDLG_FILTERSPEC *filterspec = NULL;
-	size_t ttl_sz;
-	PWSTR p;
+	IShellItem *item;
 
 	assert(num_filters > 0);
 
@@ -27,81 +75,53 @@ b32 file__dialog(char *filename, u32 fname_sz,
 	                                    | COINIT_DISABLE_OLE1DDE)))
 		goto out;
 
-	void *vp = NULL;
 	if (!SUCCEEDED(CoCreateInstance(&clsid, NULL, CLSCTX_ALL, &iid, &vp)))
 		goto err_init;
-	IFileDialog *dialog = vp;
+	dialog = vp;
 
-	ttl_sz = strlen(filters[0].pattern) - 1;
 	for (u32 i = 0; i < num_filters; ++i) {
-		ttl_sz += strlen(filters[i].name) + 1;
-		ttl_sz += strlen(filters[i].pattern) + 1;
-	}
-	ext_buf = amalloc(ttl_sz * sizeof(wchar_t), g_temp_allocator);
-
-	p = ext_buf;
-	{
-		const size_t pattern_sz = strlen(filters[0].pattern) - 1;
-		assert(   strlen(filters[0].pattern) > 2
-		       && filters[0].pattern[0] == '*'
-		       && filters[0].pattern[1] == '.');
-		mbstowcs(p, filters[0].pattern + 2, pattern_sz);
-		p += pattern_sz;
-	}
-	for (u32 i = 0; i < num_filters; ++i) {
-		const size_t name_sz = strlen(filters[i].name) + 1;
-		const size_t pattern_sz = strlen(filters[i].pattern) + 1;
-		assert(   pattern_sz > 2
-		       && filters[i].pattern[0] == '*'
-		       && filters[i].pattern[1] == '.');
-		mbstowcs(p, filters[i].name, name_sz);
-		p += name_sz;
-		mbstowcs(p, filters[i].pattern, pattern_sz);
-		p += pattern_sz;
+		if (!(   strlen(filters[i].pattern) > 2
+		      && filters[i].pattern[0] == '*'
+		      && filters[i].pattern[1] == '.')) {
+			assert(false);
+			goto err_fltr;
+		}
 	}
 
-	p = ext_buf;
-	if (!SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, p)))
-		goto err_ext;
-	p += strlen(filters[0].pattern) - 1;
+	if (   !file_dialog__os_from_utf8(filters[0].pattern+2, &ext)
+	    || !SUCCEEDED(dialog->lpVtbl->SetDefaultExtension(dialog, ext)))
+		goto err_fltr;
 
 	filterspec = amalloc(num_filters * sizeof(COMDLG_FILTERSPEC), g_temp_allocator);
 	for (u32 i = 0; i < num_filters; ++i) {
-		filterspec[i].pszName = p;
-		p += strlen(filters[i].name) + 1;
-		filterspec[i].pszSpec = p;
-		p += strlen(filters[i].pattern) + 1;
+		if (   !file_dialog__os_from_utf8(filters[i].name, &filterspec[i].pszName)
+		    || !file_dialog__os_from_utf8(filters[i].pattern, &filterspec[i].pszSpec))
+			goto err_fltr;
 	}
 	if (!SUCCEEDED(dialog->lpVtbl->SetFileTypes(dialog, num_filters, filterspec)))
-		goto err_exts;
+		goto err_fltr;
 
 	if (!SUCCEEDED(dialog->lpVtbl->Show(dialog, NULL)))
 		goto err_dlg;
 
-	IShellItem *item;
 	if (!SUCCEEDED(dialog->lpVtbl->GetResult(dialog, &item)))
 		goto err_dlg;
 
-	PWSTR psz_file_path;
-	if (!SUCCEEDED(item->lpVtbl->GetDisplayName(item, SIGDN_FILESYSPATH,
-	                                            &psz_file_path)))
+	if (!SUCCEEDED(item->lpVtbl->GetDisplayName(item, SIGDN_FILESYSPATH, &filename_w)))
 		goto err_itm;
 
-	wcstombs(filename, psz_file_path, fname_sz);
-	CoTaskMemFree(psz_file_path);
-	retval = true;
+	retval = os_string_to_utf8(filename, fname_sz, filename_w);
+	CoTaskMemFree(filename_w);
 
 err_itm:
 	item->lpVtbl->Release(item);
 err_dlg:
 	dialog->lpVtbl->Release(dialog);
-err_exts:
-	afree(filterspec, g_temp_allocator);
-err_ext:
-	afree(ext_buf, g_temp_allocator);
+err_fltr:
 err_init:
 	CoUninitialize();
 out:
+	temp_memory_restore(mark);
 	return retval;
 }
 
@@ -121,14 +141,26 @@ b32 file_save_dialog(char *fname, u32 fname_sz,
 
 b32 file_exists(const char *path)
 {
-	const DWORD attrib = GetFileAttributes(path);
+	wchar_t path_w[PATH_MAX];
+	DWORD attrib;
+
+	if (!os_string_from_utf8(B2PC(path_w), path))
+		return false;
+
+	attrib = GetFileAttributesW(path_w);
 	return attrib != INVALID_FILE_ATTRIBUTES
 	    && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 b32 dir_exists(const char *path)
 {
-	const DWORD attrib = GetFileAttributes(path);
+	wchar_t path_w[PATH_MAX];
+	DWORD attrib;
+
+	if (!os_string_from_utf8(B2PC(path_w), path))
+		return false;
+
+	attrib = GetFileAttributesW(path_w);
 	return attrib != INVALID_FILE_ATTRIBUTES
 	    && (attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
@@ -145,60 +177,72 @@ void path_appendn(char *lhs, const char *rhs, u32 sz)
 	strncat(lhs, rhs, sz);
 }
 
-b32 mkpath(const char *path_)
+static
+b32 CreateOrReuseDirectory(const wchar_t *path)
 {
-	if (dir_exists(path_))
+	return CreateDirectoryW(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
+}
+
+b32 mkpath(const char *path)
+{
+	char path_mod[PATH_MAX];
+	wchar_t path_w[PATH_MAX];
+	char swap;
+
+	if (dir_exists(path))
 		return true;
 
-	char path[MAX_PATH];
-	if (strlen(path_) > sizeof(path))
-		return false;
-
-	if (path_[0] == '.' && path_[1] == '/')
-		strcpy(path, path_ + 2);
-	else if (strlen(path_) >= 2 && path_[1] == ':')
-		strcpy(path, path_ + 2);
+	if (path[0] == '.' && path[1] == '/')
+		strbcpy(path_mod, path + 2);
+	else if (path[0] != 0 && path[1] == ':')
+		strbcpy(path_mod, path + 2);
 	else
-		strcpy(path, path_);
+		strbcpy(path_mod, path);
 
-	if (strlen(path) == 0)
+	if (path_mod[0] == 0)
 		return true;
 
-	u32 pos = 0;
-	char c = 0;
-	for (char *p = path + 1; *p; ++p) {
+	swap = 0;
+	for (char *p = path_mod + 1; *p; ++p) {
 		if (*p == g_file_path_separator[0]) {
-			memswp(c, *p, char);
-			if (!(CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS))
+			memswp(swap, *p, char);
+			if (   !os_string_from_utf8(B2PC(path_w), path_mod)
+			    || !CreateOrReuseDirectory(path_w))
 				return false;
-			memswp(c, *p, char);
-			pos = 0;
-		} else {
-			++pos;
+			memswp(swap, *p, char);
 		}
 	}
 
-	return CreateDirectory(path, NULL) || GetLastError() == ERROR_ALREADY_EXISTS;
+	return os_string_from_utf8(B2PC(path_w), path_mod)
+	    && CreateOrReuseDirectory(path_w);
 }
 
 #ifdef VLT_USE_TINYDIR
-b32 rmdir_f(const char *path)
+static
+b32 rmdir_fw(const wchar_t *path_w)
 {
+	char path[PATH_MAX];
 	b32 success = false;
 	tinydir_dir dir;
-	if (tinydir_open(&dir, path) == -1) {
+
+	if (tinydir_open(&dir, path_w) == -1) {
+		if (!os_string_to_utf8(B2PS(path), path_w))
+			strbcpy(path, "<unprintable>");
 		log_error("rmdir: error reading directory '%s'", path);
 		goto out;
 	}
+
 	while (dir.has_next) {
 		tinydir_file file;
 		if (tinydir_readfile(&dir, &file) != -1) {
-			if (   strcmp(file.name, ".") != 0
-			    && strcmp(file.name, "..") != 0) {
+			if (   wcscmp(file.name, L".") != 0
+			    && wcscmp(file.name, L"..") != 0) {
 				if (file.is_dir) {
-					rmdir_f(file.path);
-				} else if (remove(file.path)) {
-					log_error("rmdir: error removing '%s'", file.path);
+					rmdir_fw(file.path);
+				} else if (_wremove(file.path)) {
+					if (!os_string_to_utf8(B2PS(path), file.path))
+						strbcpy(path, "<unprintable>");
+					log_error("rmdir: error removing '%s'", path);
 					goto out;
 				}
 			}
@@ -211,13 +255,23 @@ b32 rmdir_f(const char *path)
 			goto out;
 		}
 	}
-	if (!RemoveDirectory(path))
-		log_error("error removing '%s'", path);
-	else
+	if (RemoveDirectoryW(path_w)) {
 		success = true;
+	} else {
+		if (!os_string_to_utf8(B2PS(path), path_w))
+			strbcpy(path, "<unprintable>");
+		log_error("error removing '%s'", path);
+	}
 out:
 	tinydir_close(&dir);
 	return success;
+}
+
+b32 rmdir_f(const char *path)
+{
+	wchar_t path_w[PATH_MAX];
+	return os_string_from_utf8(B2PC(path_w), path)
+	    && rmdir_fw(path_w);
 }
 #endif // VLT_USE_TINYDIR
 
@@ -228,15 +282,22 @@ char *impathcat(char *imstr, const char *path)
 
 char *imappdir(void)
 {
-	static thread_local char path[MAX_PATH] = {0};
-	if (path[0] != '\0') {
-	} else if (GetModuleFileName(NULL, B2PC(path)) != 0) {
-		char *last = strrchr(path, '\\');
-		if (last)
-			*last = '\0';
-	} else {
-		path[0] = '\0';
-	}
+	static thread_local char path[PATH_MAX] = {0};
+	wchar_t path_w[PATH_MAX];
+	char *last;
+
+	if (path[0] != 0)
+		goto out;
+
+	if (GetModuleFileNameW(NULL, B2PC(path_w)) == 0)
+		goto out;
+
+	if (!os_string_to_utf8(B2PC(path), path_w))
+		goto out;
+
+	if ((last = strrchr(path, '\\')) != NULL)
+		*last = 0;
+out:
 	return imstrcpy(path);
 }
 
@@ -251,7 +312,7 @@ char *improgdatadir()
 #ifdef WINDOWS_PACKAGE_NAME
 	PWSTR wpath;
 	if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &wpath) == S_OK) {
-		if (wcstombs(imstr(), wpath, IMPRINT_BUFFER_SIZE) <= IMPRINT_BUFFER_SIZE)
+		if (os_string_to_utf8(imstr(), IMPRINT_BUFFER_SIZE, wpath))
 			impathcat(imstr(), WINDOWS_PACKAGE_NAME);
 		else
 			imstrcpy("");
@@ -310,13 +371,23 @@ char *imdatapath(const char *resource)
 	return impathcat(imdatadir(), resource);
 }
 
+FILE *file_open(const char *fname, const char *mode)
+{
+	wchar_t fname_w[PATH_MAX];
+	wchar_t mode_w[PATH_MAX];
+	return os_string_from_utf8(B2PS(fname_w), fname)
+	    && os_string_from_utf8(B2PS(mode_w), mode)
+	     ? _wfopen(fname_w, mode_w)
+	     : NULL;
+}
+
 void *file_read_all(const char *fname, const char *mode, allocator_t *a)
 {
 	FILE *fp;
 	size_t file_size;
 	void *bytes = NULL;
 
-	fp = fopen(fname, mode);
+	fp = file_open(fname, mode);
 	if (!fp)
 		return NULL;
 
@@ -342,14 +413,18 @@ out:
 /* Dynamic library */
 
 #ifndef VIOLET_NO_LIB
-lib_handle lib_load(const char *_filename)
+lib_handle lib_load(const char *filename)
 {
-	const size_t sz = strlen(_filename);
-	char *filename = amalloc(sz + 4, g_temp_allocator);
-	strcpy(filename, _filename);
-	strcat(filename, ".dll");
-	lib_handle hnd = LoadLibrary(filename);
-	afree(filename, g_temp_allocator);
+	static const wchar_t *ext = L".dll";
+	lib_handle hnd = NULL;
+	const size_t sz = os_string_from_utf8_size(filename);
+	wchar_t *filename_w = amalloc(sz + wcslen(ext), g_temp_allocator);
+	if (!os_string_from_utf8(filename_w, sz, filename))
+		goto out;
+	wcscat(filename_w, ext);
+	hnd = LoadLibraryW(filename_w);
+out:
+	afree(filename_w, g_temp_allocator);
 	return hnd;
 }
 
@@ -366,8 +441,11 @@ b32 lib_close(lib_handle hnd)
 const char *lib_err()
 {
 	static thread_local char buf[256];
+	wchar_t buf_w[256];
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
-	              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), B2PC(buf), NULL);
+	              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), B2PC(buf_w), NULL);
+	if (!os_string_to_utf8(B2PC(buf), buf_w))
+		buf[0] = 0;
 	return buf;
 }
 #endif // VIOLET_NO_LIB
@@ -442,8 +520,14 @@ int run(const char *command)
 
 b32 open_file_external(const char *filename)
 {
-	const INT_PTR ret = (INT_PTR)ShellExecute(NULL, "open", filename,
-	                                          NULL, NULL, SW_SHOWNORMAL);
+	wchar_t filename_w[PATH_MAX];
+	INT_PTR ret;
+
+	if (!os_string_from_utf8(B2PC(filename_w), filename))
+		return false;
+
+	ret = (INT_PTR)ShellExecuteW(NULL, L"open", filename_w,
+	                             NULL, NULL, SW_SHOWNORMAL);
 	if (ret <= 32) {
 		log_error("failed to open %s in an external program with error %d",
 		          filename, ret);

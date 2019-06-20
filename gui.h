@@ -1043,7 +1043,7 @@ b32 shader_init_from_file(shader_t *shader, const char *fname,
 	char *file_buf;
 	size_t fsize;
 
-	file = fopen(fname, "r");
+	file = file_open(fname, "rb");
 	if (!file) {
 		log_error("Could not open shader file '%s'", fname);
 		return retval;

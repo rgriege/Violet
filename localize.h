@@ -132,7 +132,7 @@ b32 localize_save_language(const char *fname)
 b32 localization_table_load(localization_table_t *table, const char *fname)
 {
 	b32 success = false;
-	FILE *fp = fopen(fname, "r");
+	FILE *fp = file_open(fname, "rb");
 	if (!fp) {
 		log_error("failed to open language file '%s'", fname);
 		return false;
@@ -185,7 +185,7 @@ out:
 
 b32 localization_table_save(const localization_table_t *table, const char *fname)
 {
-	FILE *fp = fopen(fname, "w");
+	FILE *fp = file_open(fname, "wb");
 	if (!fp)
 		return false;
 

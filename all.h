@@ -37,6 +37,8 @@
 #include "violet/string.h"
 #include "violet/localize.h"
 #include "violet/utf8.h"
+/* OS */
+#include "violet/os.h"
 /* Gui */
 #include "violet/color.h"
 #ifndef VIOLET_NO_GUI
@@ -45,8 +47,6 @@
 #else
 #include "violet/stbi.h"
 #endif
-/* OS */
-#include "violet/os.h"
 
 /* Additional utilities useful when using the entire library */
 

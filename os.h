@@ -15,6 +15,22 @@
 #error "Platform not supported!"
 #endif
 
+/* Strings */
+#ifdef _WIN32
+#define osstr_t wchar_t*
+#else
+#define osstr_t char*
+#endif
+
+b32    os_string_from_utf8(osstr_t dst, size_t dstlen, const char *src);
+size_t os_string_from_utf8_size(const char *src);
+b32    os_string_to_utf8(char *dst, size_t dstlen, const osstr_t src);
+size_t os_string_to_utf8_size(const osstr_t src);
+
+/* these immediate strings are independent from the main imstr() */
+const osstr_t os_imstr_from_utf8(const char *str);
+const char   *os_imstr_to_utf8(const osstr_t str);
+
 /* File system */
 
 #ifdef _WIN32
@@ -52,7 +68,8 @@ char *imcachepath(const char *resource);
 char *imdatadir(void);
 char *imdatapath(const char *resource);
 
-void *file_read_all(const char *fname, const char *mode, allocator_t *a);
+FILE  *file_open(const char *fname, const char *mode);
+void  *file_read_all(const char *fname, const char *mode, allocator_t *a);
 
 /* Dynamic library */
 

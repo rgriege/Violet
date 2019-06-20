@@ -8,6 +8,38 @@
 
 const char *g_file_path_separator = "/";
 
+b32 os_string_from_utf8(char *dst, size_t dstlen, const char *src)
+{
+	strncpy(dst, src, dstlen);
+	return true;
+}
+
+size_t os_string_from_utf8_size(const char *src)
+{
+	return strlen(src) + 1;
+}
+
+b32 os_string_to_utf8(char *dst, size_t dstlen, const char *src)
+{
+	strncpy(dst, src, dstlen);
+	return true;
+}
+
+size_t os_string_to_utf8_size(const char *src)
+{
+	return strlen(src) + 1;
+}
+
+const char *os_imstr_from_utf8(const char *str)
+{
+	return str;
+}
+
+const char *os_imstr_to_utf8(const char *str)
+{
+	return str;
+}
+
 b32 file__dialog(char *filename, u32 n, const char *cmd)
 {
 	b32 retval = false;
@@ -193,13 +225,28 @@ char *imdatapath(const char *resource)
 	return impathcat(imdatadir(), resource);
 }
 
+char *file_path_to_utf8(const path_t path)
+{
+	return path;
+}
+
+path_t file_path_from_utf8(const char *path)
+{
+	return path;
+}
+
+FILE *file_open(const char *fname, const char *mode)
+{
+	return fopen(fname, mode);
+}
+
 void *file_read_all(const char *fname, const char *mode, allocator_t *a)
 {
 	FILE *fp;
 	size_t file_size;
 	void *bytes = NULL;
 
-	fp = fopen(fname, mode);
+	fp = file_open(fname, mode);
 	if (!fp)
 		return NULL;
 
