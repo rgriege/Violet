@@ -101,6 +101,8 @@ FMDEF v2f  v2f_proj(v2f v, v2f axis);
 FMDEF v2f  v2f_reflect(v2f v, v2f axis);
 FMDEF v2f  v2f_lperp(v2f v);
 FMDEF v2f  v2f_rperp(v2f v);
+FMDEF v2f  v2f_perp_cw(v2f v);
+FMDEF v2f  v2f_perp_ccw(v2f v);
 FMDEF v2f  v2f_inverse(v2f v);
 FMDEF void v2f_inverse_eq(v2f *v);
 FMDEF v2f  v2f_round(v2f v, r32 unit);
@@ -476,6 +478,16 @@ FMDEF v2f v2f_lperp(v2f v)
 FMDEF v2f v2f_rperp(v2f v)
 {
 	return (v2f){ .x = v.y, .y = -v.x };
+}
+
+FMDEF v2f v2f_perp_cw(v2f v)
+{
+	return (v2f){ .x = v.y, .y = -v.x };
+}
+
+FMDEF v2f v2f_perp_ccw(v2f v)
+{
+	return (v2f){ .x = -v.y, .y = v.x };
 }
 
 FMDEF v2f v2f_inverse(v2f v)
