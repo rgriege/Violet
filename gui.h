@@ -654,14 +654,14 @@ typedef enum gui_panel_flags
 typedef struct gui_panel
 {
 	s32 x, y, width, height;
-	const char *title;
+	const char *title; /* un-owned, can be NULL */
 	gui_panel_flags_t flags;
 	u32 id;
 	intptr userdata;
 	gui_scroll_area_t scroll_area;
 	s32 pri;
-	struct gui_panel *prev, *next;
-	gui_split_t *split;
+	struct gui_panel *prev, *next; /* un-owned, can be NULL */
+	gui_split_t *split; /* un-owned, can be NULL */
 	b32 closed;
 	b32 collapsed;
 	b32 tabbed_out;
