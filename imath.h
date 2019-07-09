@@ -102,6 +102,8 @@ IMDEF void  box2i_extend_box(box2i *b, box2i other);
 IMDEF v2i   box2i_get_center(box2i b);
 IMDEF v2i   box2i_get_extent(box2i b);
 IMDEF v2i   box2i_get_half_dim(box2i b);
+IMDEF s32   box2i_width(box2i b);
+IMDEF s32   box2i_height(box2i b);
 
 /* Polygon */
 
@@ -394,6 +396,16 @@ IMDEF v2i box2i_get_extent(box2i b)
 IMDEF v2i box2i_get_half_dim(box2i box)
 {
 	return v2i_div(v2i_sub(box.max, box.min), (v2i){2,2});
+}
+
+IMDEF s32 box2i_width(box2i box)
+{
+	return box.max.x - box.min.x;
+}
+
+IMDEF s32 box2i_height(box2i box)
+{
+	return box.max.y - box.min.y;
 }
 
 /* Polygon */
