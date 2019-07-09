@@ -648,7 +648,7 @@ typedef enum gui_panel_flags
 	GUI_PANEL_COLLAPSABLE = 0x10,
 	GUI_PANEL_SCROLLBARS  = 0x20,
 	GUI_PANEL_DOCKABLE    = 0x40,
-	GUI_PANEL_FULL        = 0x4f,
+	GUI_PANEL_FULL        = 0x7f,
 } gui_panel_flags_t;
 
 typedef struct gui_panel
