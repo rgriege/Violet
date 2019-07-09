@@ -6264,7 +6264,7 @@ void pgui_col_centered(gui_t *gui, s32 width, r32 height)
 	const r32 cells[3] = { 0, height, 0 };
 	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
 	assert(countof(cells) < GUI_GRID_MAX_CELLS);
-	pgui_row_cells(gui, width, B2PC(cells));
+	pgui_col_cells(gui, width, B2PC(cells));
 }
 
 void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
