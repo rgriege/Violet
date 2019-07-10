@@ -2987,7 +2987,7 @@ void gui__vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
 
 void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
 {
-	box2i_extend_point(&gui->widget_bounds->bbox, (v2i){ (s32)x, (s32)y });
+	box2i_extend_point(&gui->widget_bounds->children, (v2i){ (s32)x, (s32)y });
 	gui__vertf(gui, x, y, c, u, v);
 }
 
@@ -3015,7 +3015,7 @@ void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
 {
 	const box2i bbox = gui__vert_bounds(v, n);
 
-	box2i_extend_box(&gui->widget_bounds->bbox, bbox);
+	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
 	if (!gui__box_visible(gui, bbox))
 		return;
@@ -3038,7 +3038,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, gui_draw_call_type_e type,
 {
 	const box2i bbox = gui__vert_bounds(v, n);
 
-	box2i_extend_box(&gui->widget_bounds->bbox, bbox);
+	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
 	if (!gui__box_visible(gui, bbox))
 		return;
@@ -3119,7 +3119,7 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 
 	bbox = gui__vert_bounds(B2PC(points));
 
-	box2i_extend_box(&gui->widget_bounds->bbox, bbox);
+	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
 	if (!gui__box_visible(gui, bbox))
 		return;
@@ -3145,7 +3145,7 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 {
 	const box2i bbox = { .min = { (s32)x0, (s32)y0 }, .max = { (s32)x1, (s32)y1 } };
 
-	box2i_extend_box(&gui->widget_bounds->bbox, bbox);
+	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
 	if (!gui__box_visible(gui, bbox))
 		return;
@@ -3521,7 +3521,7 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const v2i vtl = { x,     y + h };
 	const box2i rect = { .min = vbl, .max = vtr };
 
-	box2i_extend_box(&gui->widget_bounds->bbox, rect);
+	box2i_extend_box(&gui->widget_bounds->children, rect);
 
 	if (gui__box_visible(gui, rect) && gui_begin(gui, 4, GUI_DRAW_TRIANGLE_FAN)) {
 		gui__vertf(gui, vbl.x, vbl.y, bl, 0.f, 0.f);
