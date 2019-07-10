@@ -206,6 +206,8 @@ b32  mouse_down(const gui_t *gui, u32 mask);
 b32  mouse_down_bg(const gui_t *gui, u32 mask);
 b32  mouse_released(const gui_t *gui, u32 mask);
 b32  mouse_released_bg(const gui_t *gui, u32 mask);
+b32  mouse_covered(const gui_t *gui);
+void mouse_cover(gui_t *gui, u64 widget_id);
 b32  mouse_over_bg(const gui_t *gui);
 b32  mouse_scroll(const gui_t *gui, s32 *dir);
 b32  mouse_scroll_bg(const gui_t *gui, s32 *dir);
@@ -2829,7 +2831,7 @@ b32 gui_begin_frame(gui_t *gui)
 
 		/* catch mouse_covered_by_panel */
 		if (box2i_contains_point(box, gui->mouse_pos))
-			gui->mouse_covered_by_widget_id = gui->popup.id;
+			mouse_cover(gui, gui->popup.id);
 	}
 
 	/* ensure this is set every frame by a gui_window_drag() call (perf) */
@@ -3371,18 +3373,23 @@ b32 mouse_released_bg(const gui_t *gui, u32 mask)
 	return mouse_released(gui, mask) && mouse_over_bg(gui);
 }
 
-static
-b32 gui__mouse_covered(const gui_t *gui)
+b32 mouse_covered(const gui_t *gui)
 {
 	return gui->mouse_covered_by_widget_id != ~0
 	    && !(gui->mouse_covered_by_widget_id == gui->popup.id && gui->popup.inside);
+}
+
+void mouse_cover(gui_t *gui, u64 widget_id)
+{
+	assert(!mouse_covered(gui));
+	gui->mouse_covered_by_widget_id = widget_id;
 }
 
 b32 mouse_over_bg(const gui_t *gui)
 {
 	return gui->active_id == 0
 	    && gui->active_id_at_frame_start == 0
-	    && !gui__mouse_covered(gui);
+	    && !mouse_covered(gui);
 }
 
 b32 mouse_scroll(const gui_t *gui, s32 *dir)
@@ -4125,7 +4132,7 @@ b32 gui__allow_new_panel_interaction(const gui_t *gui)
 {
 	return (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
 	    && gui->active_id == 0
-	    && !gui__mouse_covered(gui);
+	    && !mouse_covered(gui);
 }
 
 static
@@ -4133,7 +4140,7 @@ b32 gui__allow_new_interaction(const gui_t *gui)
 {
 	return (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
 	    && gui->active_id == 0
-	    && !gui__mouse_covered(gui)
+	    && !mouse_covered(gui)
 	    && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
 }
 
@@ -4702,7 +4709,7 @@ btn_val_t gui__btn_logic(gui_t *gui, u64 id, b32 contains_mouse, mouse_button_t 
 			retval = BTN_HOLD;
 		}
 	} else if (gui->hot_id == id) {
-		if (!contains_mouse || gui__mouse_covered(gui)) {
+		if (!contains_mouse || mouse_covered(gui)) {
 			gui->hot_id = 0;
 		} else if (mouse_pressed(gui, mb)) {
 			gui->hot_id = 0;
@@ -5836,7 +5843,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 	if (rw < last_max_dim.x) {
 		const s32 needed = last_max_dim.x - rw;
 		scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
-		if (key_mod(gui, KBM_SHIFT) && !gui__mouse_covered(gui) && contains_mouse) {
+		if (key_mod(gui, KBM_SHIFT) && !mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
 			scroll_area->scroll.x -= scroll * GUI_SCROLL_RATE;
@@ -5863,7 +5870,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 	if (rh < last_max_dim.y) {
 		const s32 needed = last_max_dim.y - rh;
 		scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
-		if (!key_mod(gui, KBM_SHIFT) && !gui__mouse_covered(gui) && contains_mouse) {
+		if (!key_mod(gui, KBM_SHIFT) && !mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
 			scroll_area->scroll.y -= scroll * GUI_SCROLL_RATE;
@@ -5889,8 +5896,8 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 
 	scroll_area->last_max_dim = box2i_get_extent(scroll_area->widget_bounds.children);
 
-	if (contains_mouse && gui->mouse_covered_by_widget_id == ~0)
-		gui->mouse_covered_by_widget_id = gui_widget_id(gui, pos.x, pos.y);
+	if (contains_mouse && !mouse_covered(gui))
+		mouse_cover(gui, gui_widget_id(gui, pos.x, pos.y));
 }
 
 void pgui_scroll_area_grid_begin(gui_t *gui, gui_grid_t *grid, gui_grid_flex_e flex)
@@ -6971,7 +6978,7 @@ void gui__split_render_branch(gui_t *gui, gui_split_t *split, b32 *changed)
 	    && (split->children.first->flags & GUI_SPLIT_RESIZABLE)
 	    && (split->children.last->flags & GUI_SPLIT_RESIZABLE)
 	    && !*changed
-	    && !gui__mouse_covered(gui)) {
+	    && !mouse_covered(gui)) {
 		child = split->children.first;
 		box2i_to_xywh(child->box, &cx, &cy, &cw, &ch);
 		if (split->children.vertical) {
@@ -7863,8 +7870,8 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	gui__layer_new(gui);
 
 out:
-	if (contains_mouse && gui->mouse_covered_by_widget_id == ~0)
-		gui->mouse_covered_by_widget_id = gui_widget_id(gui, ~0, ~0);
+	if (contains_mouse && !mouse_covered(gui))
+		mouse_cover(gui, gui_widget_id(gui, ~0, ~0));
 
 	gui->panel = NULL;
 }
