@@ -375,6 +375,10 @@ typedef struct gui_widget_bounds
 	struct gui_widget_bounds *prev;
 } gui_widget_bounds_t;
 
+void gui_widget_bounds_push(gui_t *gui, gui_widget_bounds_t *bounds, b32 propogate);
+void gui_widget_bounds_pop(gui_t *gui, gui_widget_bounds_t *bounds, b32 propogate);
+void gui_widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
+
 typedef struct gui_scroll_area
 {
 	v2i pos;
@@ -2917,18 +2921,17 @@ b32 gui__box_half_visible(const gui_t *gui, box2i box)
 	       && clipped.max.y - clipped.min.y >= (box.max.y - box.min.y) / 2;
 }
 
-static
-void gui__widget_bounds_push(gui_t *gui, gui_widget_bounds_t *widget_bounds, b32 propogate)
+void gui_widget_bounds_push(gui_t *gui, gui_widget_bounds_t *bounds, b32 propogate)
 {
 	if (propogate)
-		box2i_extend_box(&gui->widget_bounds->children, widget_bounds->bbox);
-	widget_bounds->prev = gui->widget_bounds;
-	gui->widget_bounds = widget_bounds;
+		box2i_extend_box(&gui->widget_bounds->children, bounds->bbox);
+	bounds->prev = gui->widget_bounds;
+	gui->widget_bounds = bounds;
 }
 
-static
-void gui__widget_bounds_pop(gui_t *gui, b32 propogate)
+void gui_widget_bounds_pop(gui_t *gui, gui_widget_bounds_t *bounds, b32 propogate)
 {
+	assert(gui->widget_bounds == bounds);
 	if (gui->widget_bounds->prev) {
 		if (propogate)
 			box2i_extend_box(&gui->widget_bounds->prev->children, gui->widget_bounds->bbox);
@@ -2939,8 +2942,7 @@ void gui__widget_bounds_pop(gui_t *gui, b32 propogate)
 	}
 }
 
-static
-void gui__widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
+void gui_widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 {
 	box2i box;
 	box2i_from_xywh(&box, x, y, w, h);
@@ -4436,11 +4438,11 @@ void gui__hint_render(gui_t *gui, u64 id, const char *hint)
 		rh += 2 * style->text.padding;
 		gui_mask_push(gui, rx, ry, rw, rh);
 		box2i_from_xywh(&bounds.bbox, rx, ry, rw, rh);
-		gui__widget_bounds_push(gui, &bounds, false);
+		gui_widget_bounds_push(gui, &bounds, false);
 		gui->layer->pri = GUI__LAYER_PRIORITY_HINT;
 		gui_rect(gui, rx, ry, rw, rh, style->bg_color, style->outline_color);
 		gui_txt_styled(gui, rx, ry, rw, rh, hint, &style->text);
-		gui__widget_bounds_pop(gui, false);
+		gui_widget_bounds_pop(gui, &bounds, false);
 		gui_mask_pop(gui);
 	}
 }
@@ -4481,7 +4483,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	const char *txt_to_display;
 
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -4739,7 +4741,7 @@ void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return 0;
 	}
 
@@ -4759,7 +4761,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
                 img_scale_t scale)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return 0;
 	}
 
@@ -4779,7 +4781,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return 0;
 	}
 
@@ -4799,7 +4801,7 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -4822,7 +4824,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -4875,7 +4877,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
                 gui__slider_orientation_t orientation)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -4989,7 +4991,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                const char *txt, u32 *val, u32 opt)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -5016,7 +5018,7 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                  const char *txt, u32 *val, u32 opt)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return;
 	}
 
@@ -5126,7 +5128,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                        u32 *val, u32 num_items)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -5414,7 +5416,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                    const char *txt, s32 item_w, u32 num_items)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -5461,7 +5463,7 @@ void gui_menu_end(gui_t *gui)
 b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -5513,7 +5515,7 @@ b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -5591,7 +5593,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      s32 pw, s32 ph, colorf_t *c)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
-		gui__widget_bounds_extend(gui, x, y, w, h);
+		gui_widget_bounds_extend(gui, x, y, w, h);
 		return false;
 	}
 
@@ -5812,7 +5814,7 @@ void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	/* NOTE(rgriege): the center of the scroll area may not actually be used
 	 * by a widget, but it's the best candidate. */
 	box2i_from_xywh(&scroll_area->widget_bounds.children, rx+rw/2, ry+rh/2, 0, 0);
-	gui__widget_bounds_push(gui, &scroll_area->widget_bounds, true);
+	gui_widget_bounds_push(gui, &scroll_area->widget_bounds, true);
 
 	scroll_area->prev = gui->scroll_area;
 	gui->scroll_area = scroll_area;
@@ -5832,7 +5834,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 
 	gui->scroll_area = gui->scroll_area->prev;
 
-	gui__widget_bounds_pop(gui, true);
+	gui_widget_bounds_pop(gui, &scroll_area->widget_bounds, true);
 
 	gui_mask_pop(gui);
 
@@ -6071,7 +6073,7 @@ void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h)
 	gui->grid = grid;
 	box2i_from_xywh(&grid->widget_bounds.bbox, x, y, w, h);
 	box2i_from_center(&grid->widget_bounds.children, grid->start, g_v2i_zero);
-	gui__widget_bounds_push(gui, &grid->widget_bounds, true);
+	gui_widget_bounds_push(gui, &grid->widget_bounds, true);
 }
 
 void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
@@ -6081,7 +6083,7 @@ void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
 	assert(gui->grid->depth == 0);
 	gui->grid = gui->grid->prev;
 	box2i_extend_box(&gui->widget_bounds->bbox, gui->widget_bounds->children);
-	gui__widget_bounds_pop(gui, true);
+	gui_widget_bounds_pop(gui, &grid->widget_bounds, true);
 }
 
 static
@@ -6341,7 +6343,7 @@ void pgui_spacer_blank(gui_t *gui)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui__widget_bounds_extend(gui, x, y, w, h);
+	gui_widget_bounds_extend(gui, x, y, w, h);
 }
 
 void pgui_txt(gui_t *gui, const char *str)
