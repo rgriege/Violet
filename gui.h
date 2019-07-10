@@ -207,8 +207,8 @@ b32  mouse_down_bg(const gui_t *gui, u32 mask);
 b32  mouse_released(const gui_t *gui, u32 mask);
 b32  mouse_released_bg(const gui_t *gui, u32 mask);
 b32  mouse_over_bg(const gui_t *gui);
-void mouse_scroll(const gui_t *gui, s32 *dir);
-void mouse_scroll_bg(const gui_t *gui, s32 *dir);
+b32  mouse_scroll(const gui_t *gui, s32 *dir);
+b32  mouse_scroll_bg(const gui_t *gui, s32 *dir);
 void mouse_press_debug(gui_t *gui, b32 enabled);
 
 b32 key_down(const gui_t *gui, gui_key_t key);
@@ -3385,20 +3385,28 @@ b32 mouse_over_bg(const gui_t *gui)
 	    && !gui__mouse_covered(gui);
 }
 
-void mouse_scroll(const gui_t *gui, s32 *dir)
+b32 mouse_scroll(const gui_t *gui, s32 *dir)
 {
-	if (gui->mouse_btn & MB_WHEELUP)
+	if (gui->mouse_btn & MB_WHEELUP) {
 		*dir = 1;
-	else if (gui->mouse_btn & MB_WHEELDOWN)
+		return true;
+	} else if (gui->mouse_btn & MB_WHEELDOWN) {
 		*dir = -1;
-	else
+		return true;
+	} else {
 		*dir = 0;
+		return false;
+	}
 }
 
-void mouse_scroll_bg(const gui_t *gui, s32 *dir)
+b32 mouse_scroll_bg(const gui_t *gui, s32 *dir)
 {
-	if (mouse_over_bg(gui))
-		mouse_scroll(gui, dir);
+	if (mouse_over_bg(gui)) {
+		return mouse_scroll(gui, dir);
+	} else {
+		*dir = 0;
+		return false;
+	}
 }
 
 void mouse_press_debug(gui_t *gui, b32 enabled)
