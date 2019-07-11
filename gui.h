@@ -258,6 +258,8 @@ typedef enum img_scale
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
 void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c);
+void gui_tri(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 x2, s32 y2,
+             color_t fill, color_t stroke);
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke);
 void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      color_t bl, color_t br, color_t tr, color_t tl);
@@ -3501,6 +3503,17 @@ void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c)
 	} else {
 		gui__line_wide(gui, x0, y0, x1, y1, w, c);
 	}
+}
+
+void gui_tri(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 x2, s32 y2,
+             color_t fill, color_t stroke)
+{
+	const v2f poly[3] = {
+		{ x0, y0 },
+		{ x1, y1 },
+		{ x2, y2 },
+	};
+	gui__poly(gui, poly, 3, GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
 }
 
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke)
