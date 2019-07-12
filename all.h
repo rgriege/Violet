@@ -3,6 +3,7 @@
 
 #ifdef VIOLET_IMPLEMENTATION
 #define ARRAY_IMPLEMENTATION
+#define BASE64_IMPLEMENTATION
 #define COLOR_IMPLEMENTATION
 #define CORE_IMPLEMENTATION
 #define DMATH_IMPLEMENTATION
@@ -33,6 +34,7 @@
 #include "violet/geom.h"
 /* Serialization */
 #include "violet/vson.h"
+#include "violet/base64.h"
 /* String */
 #include "violet/string.h"
 #include "violet/localize.h"
