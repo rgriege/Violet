@@ -423,7 +423,8 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 
 void pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS)
 {
-	if (pgb__ptr_is_last_alloc(ptr, pgb)) {
+	if (!ptr) {
+	} else if (pgb__ptr_is_last_alloc(ptr, pgb)) {
 		pgb__alloc_set_sz(ptr, pgb->current_page, 0);
 		pgb->current_ptr = ptr;
 		if (ptr == pgb__page_first_usable_slot(pgb->current_page)) {
