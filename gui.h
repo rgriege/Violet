@@ -8096,12 +8096,12 @@ void gui_style_push_##name##_(gui_t *gui, size_t offset, type val) \
 	gui_style_push_(gui, &val, offset, sizeof(val)); \
 }
 
-GUI_STYLE_STACK_PUSH_LITERAL(color, color_t);
-GUI_STYLE_STACK_PUSH_LITERAL(b32, b32);
-GUI_STYLE_STACK_PUSH_LITERAL(u32, u32);
-GUI_STYLE_STACK_PUSH_LITERAL(s32, s32);
-GUI_STYLE_STACK_PUSH_LITERAL(r32, r32);
-GUI_STYLE_STACK_PUSH_LITERAL(ptr, const void*);
+GUI_STYLE_STACK_PUSH_LITERAL(color, color_t)
+GUI_STYLE_STACK_PUSH_LITERAL(b32, b32)
+GUI_STYLE_STACK_PUSH_LITERAL(u32, u32)
+GUI_STYLE_STACK_PUSH_LITERAL(s32, s32)
+GUI_STYLE_STACK_PUSH_LITERAL(r32, r32)
+GUI_STYLE_STACK_PUSH_LITERAL(ptr, const void*)
 
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
 {
