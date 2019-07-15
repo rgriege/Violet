@@ -17,7 +17,7 @@ void mesh_init(mesh_t *m, const v2f *poly, u32 n);
 void mesh_destroy(mesh_t *m);
 void mesh_poly(const mesh_t *m, v2f *poly);
 void mesh_bind(const mesh_t *m);
-void mesh_unbind();
+void mesh_unbind(void);
 void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n);
 
 
@@ -46,7 +46,7 @@ m3f  texture_get_transform(const texture_t *texture, s32 x, s32 y,
 void texture_destroy(texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
 void texture_bind(const texture_t *tex);
-void texture_unbind();
+void texture_unbind(void);
 
 
 /* Shader */
@@ -87,7 +87,7 @@ b32  shader_program_create(shader_prog_t *prog, shader_t vertex_shader,
                            shader_t frag_shader);
 void shader_program_destroy(shader_prog_t *p);
 void shader_program_bind(const shader_prog_t *p);
-void shader_program_unbind();
+void shader_program_unbind(void);
 s32  shader_program_attrib(const shader_prog_t *p, const char *name);
 s32  shader_program_uniform(const shader_prog_t *p, const char *name);
 
@@ -944,7 +944,7 @@ void mesh_bind(const mesh_t *m)
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, m->vbo);
 }
 
-void mesh_unbind()
+void mesh_unbind(void)
 {
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, 0);
 }
@@ -1018,7 +1018,7 @@ void texture_bind(const texture_t *tex)
 	GL_CHECK(glBindTexture, GL_TEXTURE_2D, tex->handle);
 }
 
-void texture_unbind()
+void texture_unbind(void)
 {
 	GL_CHECK(glBindTexture, GL_TEXTURE_2D, 0);
 }
@@ -1191,7 +1191,7 @@ void shader_program_bind(const shader_prog_t *p)
 	GL_CHECK(glUseProgram, p->handle);
 }
 
-void shader_program_unbind()
+void shader_program_unbind(void)
 {
 	GL_CHECK(glUseProgram, 0);
 }
@@ -3185,7 +3185,7 @@ void gui_end_frame(gui_t *gui)
 
 	gui__layer_complete_current(gui);
 
-	const u32 n_layers = gui->layer - &gui->layers[0] + 1;
+	const u32 n_layers = (u32)(gui->layer - &gui->layers[0] + 1);
 	/* move hints/popups to the back of the array
 	 * can't use qsort - not guaranteed to be stable */
 	isort(gui->layers, n_layers, sizeof(gui->layers[0]), gui__layer_sort);
@@ -3949,7 +3949,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 		dist = v2i_dist_sq(p, mouse);
 		if (dist < closest_dist) {
 			closest_dist = dist;
-			closest_pos = ptxt - txt;
+			closest_pos = (u32)(ptxt - txt);
 		}
 	}
 	if (buf)
@@ -4519,7 +4519,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			s32 cp;
 			u32 cp_sz;
 			while (   (cp = utf8_next_codepoint(p, &pnext)) != 0
-			       && (cp_sz = pnext - p)
+			       && (cp_sz = (u32)(pnext - p))
 			       && len + cp_sz < n) {
 				if (gui_npt_filter(filter, cp)) {
 					/* move all bytes after the cursor (inc NUL) forward by cp_sz */
@@ -8096,12 +8096,12 @@ void gui_style_push_##name##_(gui_t *gui, size_t offset, type val) \
 	gui_style_push_(gui, &val, offset, sizeof(val)); \
 }
 
-GUI_STYLE_STACK_PUSH_LITERAL(color, color_t);
-GUI_STYLE_STACK_PUSH_LITERAL(b32, b32);
-GUI_STYLE_STACK_PUSH_LITERAL(u32, u32);
-GUI_STYLE_STACK_PUSH_LITERAL(s32, s32);
-GUI_STYLE_STACK_PUSH_LITERAL(r32, r32);
-GUI_STYLE_STACK_PUSH_LITERAL(ptr, const void*);
+GUI_STYLE_STACK_PUSH_LITERAL(color, color_t)
+GUI_STYLE_STACK_PUSH_LITERAL(b32, b32)
+GUI_STYLE_STACK_PUSH_LITERAL(u32, u32)
+GUI_STYLE_STACK_PUSH_LITERAL(s32, s32)
+GUI_STYLE_STACK_PUSH_LITERAL(r32, r32)
+GUI_STYLE_STACK_PUSH_LITERAL(ptr, const void*)
 
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
 {

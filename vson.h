@@ -86,7 +86,8 @@ static b32 vson__skip_rest_of_line(FILE *fp)
 
 static u32 vson__read_rest_of_line(FILE *fp, char *str, u32 n)
 {
-	char c, *p = str;
+	char *p = str;
+	char c = 0;
 	while ((u32)(p - str) < n && (c = fgetc(fp)) != EOF && c != '\n')
 		*(p++) = c;
 	if (c != '\n') {
@@ -97,7 +98,7 @@ static u32 vson__read_rest_of_line(FILE *fp, char *str, u32 n)
 		p[-1] = '\0';
 	else
 		*p = '\0';
-	return p - str;
+	return (u32)(p - str);
 }
 
 #define VSON_READ_VAL(expr) \
@@ -182,12 +183,12 @@ b32 vson_read_b32(FILE *fp, const char *label, b32 *val)
 
 b32 vson_read_s32(FILE *fp, const char *label, s32 *val)
 {
-	VSON_READ_VAL(strtol(buf, NULL, 10));
+	VSON_READ_VAL((u32)strtol(buf, NULL, 10));
 }
 
 b32 vson_read_u32(FILE *fp, const char *label, u32 *val)
 {
-	VSON_READ_VAL(strtoul(buf, NULL, 10));
+	VSON_READ_VAL((u32)strtoul(buf, NULL, 10));
 }
 
 b32 vson_read_r32(FILE *fp, const char *label, r32 *val)

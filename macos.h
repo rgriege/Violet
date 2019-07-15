@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <sys/errno.h>
+#include <sys/stat.h>
 #include <sys/syslimits.h>
 #include <CoreFoundation/CFBundle.h>
 #include <CoreFoundation/CFURL.h>
@@ -222,7 +224,7 @@ out:
 #endif
 }
 
-char *imhomedir();
+char *imhomedir(void);
 
 static
 char *imuserdir(const char *bundle_dir, const char *nbundle_dir)
@@ -322,7 +324,7 @@ b32 lib_close(lib_handle hnd)
 	return dlclose(hnd) == 0;
 }
 
-const char *lib_err()
+const char *lib_err(void)
 {
 	return dlerror();
 }

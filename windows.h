@@ -307,7 +307,7 @@ char *imapppath(const char *resource)
 }
 
 static
-char *improgdatadir()
+char *improgdatadir(void)
 {
 #ifdef WINDOWS_PACKAGE_NAME
 	PWSTR wpath;
@@ -438,7 +438,7 @@ b32 lib_close(lib_handle hnd)
 	return FreeLibrary(hnd);
 }
 
-const char *lib_err()
+const char *lib_err(void)
 {
 	static thread_local char buf[256];
 	wchar_t buf_w[256];

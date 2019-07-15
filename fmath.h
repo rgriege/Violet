@@ -1425,7 +1425,7 @@ FMDEF b32 polyf_is_convex(const v2f *v, u32 n)
 {
 	assert(n >= 3);
 
-	b32 cc_determined = false, cc;
+	b32 cc_determined = false, cc = false;
 	for (u32 i=0, last=n-1; i<=last; ++i)
 	{
 		v2f a = v[(i>0 ? i-1 : last)];

@@ -83,7 +83,7 @@ typedef void* lib_handle;
 lib_handle  lib_load(const char *filename);
 void       *lib_func(lib_handle hnd, const char *name);
 b32         lib_close(lib_handle hnd);
-const char *lib_err();
+const char *lib_err(void);
 #endif // VIOLET_NO_LIB
 
 /* IO */
