@@ -33,7 +33,7 @@ b32 file_save_dialog(char *fname, u32 fname_sz, const file_dialog_filter_t filte
 	    && [[panel URL] getFileSystemRepresentation:fname maxLength:fname_sz] == YES;
 }
 
-char *imhomedir()
+char *imhomedir(void)
 {
 	return imstrcpy([NSHomeDirectory() UTF8String]);
 }

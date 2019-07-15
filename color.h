@@ -105,7 +105,7 @@ b32 color_from_hex(const char *hex, color_t *c)
 	if (*hex == '#')
 		++hex;
 
-	val = strtoul(hex, NULL, 16);
+	val = (u32)strtoul(hex, NULL, 16);
 	switch (strlen(hex)) {
 	case 6:
 		// no alpha

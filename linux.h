@@ -283,7 +283,7 @@ b32 lib_close(lib_handle hnd)
 	return dlclose(hnd) == 0;
 }
 
-const char *lib_err()
+const char *lib_err(void)
 {
 	return dlerror();
 }

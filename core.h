@@ -327,7 +327,7 @@ void buf_remove_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
 
 /* Time */
 
-timepoint_t time_current();
+timepoint_t time_current(void);
 u32         time_diff_milli(timepoint_t start, timepoint_t end);
 u32         time_diff_micro(timepoint_t start, timepoint_t end);
 u32         time_diff_nano(timepoint_t start, timepoint_t end);
@@ -946,7 +946,7 @@ void buf_remove_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
 
 #ifndef _WIN32
 
-timepoint_t time_current()
+timepoint_t time_current(void)
 {
 	timepoint_t t;
 	clock_gettime(CLOCK_MONOTONIC, &t);
@@ -976,19 +976,19 @@ timepoint_t time__diff(timepoint_t start, timepoint_t end)
 u32 time_diff_milli(timepoint_t start, timepoint_t end)
 {
 	timepoint_t res = time__diff(start, end);
-	return res.tv_sec * 1000 + res.tv_nsec / 1000000;
+	return (u32)(res.tv_sec * 1000 + res.tv_nsec / 1000000);
 }
 
 u32 time_diff_micro(timepoint_t start, timepoint_t end)
 {
 	timepoint_t res = time__diff(start, end);
-	return res.tv_sec * 1000000 + res.tv_nsec / 1000;
+	return (u32)(res.tv_sec * 1000000 + res.tv_nsec / 1000);
 }
 
 u32 time_diff_nano(timepoint_t start, timepoint_t end)
 {
 	timepoint_t res = time__diff(start, end);
-	return res.tv_sec * 1000000000 + res.tv_nsec;
+	return (u32)(res.tv_sec * 1000000000 + res.tv_nsec);
 }
 
 void time_sleep_milli(u32 milli)
@@ -999,7 +999,7 @@ void time_sleep_milli(u32 milli)
 
 #else
 
-timepoint_t time_current()
+timepoint_t time_current(void)
 {
 	timepoint_t t;
 	QueryPerformanceCounter(&t);
