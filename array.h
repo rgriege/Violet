@@ -168,8 +168,8 @@ ARRDEF void *array__appendn(void *a, const void *p, array_size_t n, size_t sz
 ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz
                                 MEMCALL_ARGS)
 {
-	a = array__append_null(a, sz  MEMCALL_VARS);
 	assert(idx <= array_sz(a));
+	a = array__append_null(a, sz  MEMCALL_VARS);
 	for (arr_bytep p = (arr_bytep)a+(array_sz(a)-1)*sz,
 	               end = (arr_bytep)a+idx*sz;
 	     p != end; p -= sz)
