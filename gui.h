@@ -315,7 +315,11 @@ b32  gui_box_visible(const gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 /* Render buffer */
 
 v2f *gui_verts_mut(gui_t *gui);
-u32  gui_verts_cnt(const gui_t *gui);
+u32  gui_vert_cnt(const gui_t *gui);
+u32  gui_draw_call_cnt(const gui_t *gui);
+u32  gui_culled_vert_cnt(const gui_t *gui);
+u32  gui_culled_draw_call_cnt(const gui_t *gui);
+u32  gui_culled_widget_cnt(const gui_t *gui);
 
 
 
@@ -2018,6 +2022,9 @@ typedef struct gui
 	gui__layer_t *layer;
 	box2i masks[GUI_MASK_STACK_LIMIT];
 	box2i *mask;
+	u32 culled_draw_calls;
+	u32 culled_vertices;
+	u32 culled_widgets;
 
 	v2i window_dim;
 	v2i window_restore_pos;
@@ -2815,6 +2822,10 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->mask = &gui->masks[0];
 	box2i_from_xywh(gui->mask, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
+	gui->culled_draw_calls = 0;
+	gui->culled_vertices   = 0;
+	gui->culled_widgets    = 0;
+
 	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
 	/* NOTE(rgriege): reset the scissor for glClear */
@@ -2971,7 +2982,6 @@ b32 gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
 		gui->draw_call_vert_idx = 0;
 		return true;
 	} else {
-		assert(false);
 		return false;
 	}
 }
@@ -2981,12 +2991,15 @@ void gui__vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
 {
 	const u32 idx_local = gui->draw_call_vert_idx++;
 	const u32 idx       = gui->vert_cnt + idx_local;
-	assert(idx_local < (u32)gui->draw_calls[gui->draw_call_cnt].cnt);
-	gui->verts[idx].x           = x;
-	gui->verts[idx].y           = y;
-	gui->vert_colors[idx]       = c;
-	gui->vert_tex_coords[idx].x = u;
-	gui->vert_tex_coords[idx].y = v;
+	if (idx_local < (u32)gui->draw_calls[gui->draw_call_cnt].cnt) {
+		gui->verts[idx].x           = x;
+		gui->verts[idx].y           = y;
+		gui->vert_colors[idx]       = c;
+		gui->vert_tex_coords[idx].x = u;
+		gui->vert_tex_coords[idx].y = v;
+	} else {
+		assert(false);
+	}
 }
 
 void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
@@ -3021,8 +3034,11 @@ void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
 
 	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
-	if (!gui__box_visible(gui, bbox))
+	if (!gui__box_visible(gui, bbox)) {
+		gui->culled_draw_calls += 1;
+		gui->culled_vertices   += n;
 		return;
+	}
 
 	if (color_equal(fill, g_nocolor))
 		return;
@@ -3044,8 +3060,12 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, gui_draw_call_type_e type,
 
 	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
-	if (!gui__box_visible(gui, bbox))
+	if (!gui__box_visible(gui, bbox)) {
+		const u32 s = color_equal(stroke, g_nocolor) + color_equal(fill, g_nocolor);
+		gui->culled_draw_calls += s;
+		gui->culled_vertices   += s * n;
 		return;
+	}
 
 	if (!color_equal(fill, g_nocolor) && gui_begin(gui, n, type)) {
 		for (u32 i = 0; i < n; ++i)
@@ -3125,8 +3145,11 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 
 	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
-	if (!gui__box_visible(gui, bbox))
+	if (!gui__box_visible(gui, bbox)) {
+		gui->culled_draw_calls += 1;
+		gui->culled_vertices   += countof(points);
 		return;
+	}
 
 	if (texture->blend == TEXTURE_BLEND_MUL) {
 		const r32 brightness = ((r32)color.a) / 255.f;
@@ -3151,8 +3174,11 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 
 	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
-	if (!gui__box_visible(gui, bbox))
+	if (!gui__box_visible(gui, bbox)) {
+		gui->culled_draw_calls += 1;
+		gui->culled_vertices   += 4;
 		return;
+	}
 
 	if (gui_begin_tex(gui, 4, GUI_DRAW_TRIANGLE_FAN, texture->handle, texture->blend)) {
 		gui__vertf(gui, x0, y1, color, s0, 1.f - t0);
@@ -3538,7 +3564,13 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	box2i_extend_box(&gui->widget_bounds->children, rect);
 
-	if (gui__box_visible(gui, rect) && gui_begin(gui, 4, GUI_DRAW_TRIANGLE_FAN)) {
+	if (!gui__box_visible(gui, rect)) {
+		gui->culled_draw_calls += 1;
+		gui->culled_vertices   += 4;
+		return;
+	}
+
+	if (gui_begin(gui, 4, GUI_DRAW_TRIANGLE_FAN)) {
 		gui__vertf(gui, vbl.x, vbl.y, bl, 0.f, 0.f);
 		gui__vertf(gui, vbr.x, vbr.y, br, 0.f, 0.f);
 		gui__vertf(gui, vtr.x, vtr.y, tr, 0.f, 0.f);
@@ -4245,9 +4277,29 @@ v2f *gui_verts_mut(gui_t *gui)
 	return gui->verts;
 }
 
-u32 gui_verts_cnt(const gui_t *gui)
+u32 gui_vert_cnt(const gui_t *gui)
 {
 	return gui->vert_cnt;
+}
+
+u32 gui_draw_call_cnt(const gui_t *gui)
+{
+	return gui->draw_call_cnt;
+}
+
+u32 gui_culled_vert_cnt(const gui_t *gui)
+{
+	return gui->culled_vertices;
+}
+
+u32 gui_culled_draw_call_cnt(const gui_t *gui)
+{
+	return gui->culled_draw_calls;
+}
+
+u32 gui_culled_widget_cnt(const gui_t *gui)
+{
+	return gui->culled_widgets;
 }
 
 const npt_filter_t g_gui_npt_filter_print = {
@@ -4497,6 +4549,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -4755,6 +4808,7 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return 0;
 	}
 
@@ -4775,6 +4829,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return 0;
 	}
 
@@ -4795,6 +4850,7 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return 0;
 	}
 
@@ -4815,6 +4871,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -4838,6 +4895,7 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -4891,6 +4949,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -5005,6 +5064,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -5032,6 +5092,7 @@ void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return;
 	}
 
@@ -5142,6 +5203,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -5430,6 +5492,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -5477,6 +5540,7 @@ b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -5529,6 +5593,7 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
@@ -5607,6 +5672,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
+		++gui->culled_widgets;
 		return false;
 	}
 
