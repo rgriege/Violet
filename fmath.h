@@ -55,6 +55,7 @@ typedef float r32;
 #define fmath_deg2rad(deg) ((deg) * fDEG2RAD)
 #define fmath_rad2deg(rad) ((rad) / fDEG2RAD)
 #define fmath_eq(a, b, err) (fabs((a)-(b)) <= (err))
+#define froundto(x, step) (roundf((x) / (step)) * (step))
 
 /* 2D Vector */
 
