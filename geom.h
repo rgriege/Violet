@@ -93,7 +93,7 @@ b32 triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	memcpy(v, v_, n_ * sizeof(*v_));
 	n = n_;
 
-	if (!polyf_is_cc(v_, n_))
+	if (polyf_is_cw(v_, n_))
 		reverse(v, sizeof(*v_), n);
 
 	while (n > 2) {
