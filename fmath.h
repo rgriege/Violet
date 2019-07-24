@@ -285,6 +285,7 @@ FMDEF ivalf linef_project(v2f a, v2f b, v2f axis);
 FMDEF void  polyf_from_box(v2f *v, box2f box);
 FMDEF b32   polyf_is_simple(const v2f *v, u32 n);
 FMDEF b32   polyf_is_convex(const v2f *v, u32 n);
+FMDEF b32   polyf_is_concave(const v2f *v, u32 n);
 FMDEF b32   polyf_contains(const v2f *v, u32 n, v2f point);
 FMDEF void  polyf_bounding_box(const v2f *v, u32 n, box2f *box);
 FMDEF void  polyf_translate(v2f *v, u32 n, v2f delta);
@@ -1447,6 +1448,11 @@ FMDEF b32 polyf_is_convex(const v2f *v, u32 n)
 		}
 	}
 	return true;
+}
+
+FMDEF b32 polyf_is_concave(const v2f *v, u32 n)
+{
+	return !polyf_is_convex(v, n);
 }
 
 FMDEF b32 polyf_contains(const v2f *v, u32 n, v2f point)
