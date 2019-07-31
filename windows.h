@@ -144,8 +144,11 @@ b32 file_exists(const char *path)
 	wchar_t path_w[PATH_MAX];
 	DWORD attrib;
 
-	if (!os_string_from_utf8(B2PC(path_w), path))
+	if (!os_string_from_utf8(B2PC(path_w), path)) {
+		log_error("%s(%s): os_string_from_utf8(%s) error %d",
+		          __FUNCTION__, path, path, GetLastError());
 		return false;
+	}
 
 	attrib = GetFileAttributesW(path_w);
 	return attrib != INVALID_FILE_ATTRIBUTES
@@ -157,8 +160,11 @@ b32 dir_exists(const char *path)
 	wchar_t path_w[PATH_MAX];
 	DWORD attrib;
 
-	if (!os_string_from_utf8(B2PC(path_w), path))
+	if (!os_string_from_utf8(B2PC(path_w), path)) {
+		log_error("%s(%s): os_string_from_utf8(%s) error %d",
+		          __FUNCTION__, path, path, GetLastError());
 		return false;
+	}
 
 	attrib = GetFileAttributesW(path_w);
 	return attrib != INVALID_FILE_ATTRIBUTES
@@ -187,34 +193,58 @@ b32 mkpath(const char *path)
 {
 	char path_mod[PATH_MAX];
 	wchar_t path_w[PATH_MAX];
+	char *p;
 	char swap;
 
 	if (dir_exists(path))
 		return true;
 
-	if (path[0] == '.' && path[1] == '/')
-		strbcpy(path_mod, path + 2);
-	else if (path[0] != 0 && path[1] == ':')
-		strbcpy(path_mod, path + 2);
-	else
+	if (path[0] == '.' && path[1] == g_file_path_separator[0]) {
 		strbcpy(path_mod, path);
+		p = path_mod + 2;
+	} else if (path[0] == g_file_path_separator[0] && path[1] == g_file_path_separator[0]) {
+		strbcpy(path_mod, path);
+		p = path_mod + 2;
+	} else if (path[0] != 0 && path[1] == ':') {
+		strbcpy(path_mod, path);
+		p = path_mod + 2;
+	} else {
+		strbcpy(path_mod, path);
+		p = path_mod;
+	}
 
-	if (path_mod[0] == 0)
+	if (p[0] == 0)
 		return true;
 
 	swap = 0;
-	for (char *p = path_mod + 1; *p; ++p) {
+	for (p = p + 1; *p; ++p) {
 		if (*p == g_file_path_separator[0]) {
 			memswp(swap, *p, char);
-			if (   !os_string_from_utf8(B2PC(path_w), path_mod)
-			    || !CreateOrReuseDirectory(path_w))
+			if (!os_string_from_utf8(B2PC(path_w), path_mod)) {
+				log_error("%s(%s): os_string_from_utf8(%s) error %d",
+				          __FUNCTION__, path, path_mod, GetLastError());
 				return false;
+			}
+			if (!CreateOrReuseDirectory(path_w)) {
+				log_error("%s(%s): CreateDirectory(%s) error %d",
+				          __FUNCTION__, path, path_mod, GetLastError());
+				return false;
+			}
 			memswp(swap, *p, char);
 		}
 	}
 
-	return os_string_from_utf8(B2PC(path_w), path_mod)
-	    && CreateOrReuseDirectory(path_w);
+	if (!os_string_from_utf8(B2PC(path_w), path_mod)) {
+		log_error("%s(%s): os_string_from_utf8(%s) error %d",
+		          __FUNCTION__, path, path_mod, GetLastError());
+		return false;
+	}
+	if (!CreateOrReuseDirectory(path_w)) {
+		log_error("%s(%s): CreateDirectory(%s) error %d",
+		          __FUNCTION__, path, path_mod, GetLastError());
+		return false;
+	}
+	return true;
 }
 
 #ifdef VLT_USE_TINYDIR
@@ -309,19 +339,27 @@ char *imapppath(const char *resource)
 static
 char *improgdatadir(void)
 {
+	static const char *default_dir = ".ProgramData";
 #ifdef WINDOWS_PACKAGE_NAME
+	HRESULT result;
 	PWSTR wpath;
-	if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &wpath) == S_OK) {
-		if (os_string_to_utf8(imstr(), IMPRINT_BUFFER_SIZE, wpath))
-			impathcat(imstr(), WINDOWS_PACKAGE_NAME);
-		else
-			imstrcpy("");
-		CoTaskMemFree(wpath);
-		return imstr();
+	if ((result = SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &wpath)) != S_OK) {
+		log_error("%s() SHGetKnownFolderPath error %d", __FUNCTION__, result);
+		imstrcpy(default_dir);
+		goto out;
 	}
-	return NULL;
+	if (!os_string_to_utf8(imstr(), IMPRINT_BUFFER_SIZE, wpath)) {
+		log_error("%s() os_string_to_utf8 error %d", __FUNCTION__, GetLastError());
+		imstrcpy(default_dir);
+		goto err;
+	}
+	impathcat(imstr(), WINDOWS_PACKAGE_NAME);
+err:
+	CoTaskMemFree(wpath);
+out:
+	return imstr();
 #else
-	return imstrcpy(".");
+	return imstrcpy(default_dir);
 #endif
 }
 
@@ -375,10 +413,22 @@ FILE *file_open(const char *fname, const char *mode)
 {
 	wchar_t fname_w[PATH_MAX];
 	wchar_t mode_w[PATH_MAX];
-	return os_string_from_utf8(B2PS(fname_w), fname)
-	    && os_string_from_utf8(B2PS(mode_w), mode)
-	     ? _wfopen(fname_w, mode_w)
-	     : NULL;
+	FILE *fp;
+	if (!os_string_from_utf8(B2PS(fname_w), fname)) {
+		log_error("%s(%s): os_string_from_utf8(%s) error %d",
+		          __FUNCTION__, fname, fname, GetLastError());
+		return NULL;
+	}
+	if (!os_string_from_utf8(B2PS(mode_w), mode)) {
+		log_error("%s(%s): os_string_from_utf8(%s) error %d",
+		          __FUNCTION__, fname, mode, GetLastError());
+		return NULL;
+	}
+	if (!(fp = _wfopen(fname_w, mode_w))) {
+		log_error("%s(%s): _wfopen() error %d", __FUNCTION__, fname, errno);
+		return NULL;
+	}
+	return fp;
 }
 
 void *file_read_all(const char *fname, const char *mode, allocator_t *a)
