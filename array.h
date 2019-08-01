@@ -94,7 +94,6 @@ ARRDEF void *array__insert_null(void *a, array_size_t idx, size_t sz
                                 MEMCALL_ARGS);
 ARRDEF void array__remove(void *a, array_size_t idx, array_size_t n, size_t sz);
 ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz);
-ARRDEF void array__reverse(void *a, size_t sz);
 ARRDEF void *array__find(void *a, const void *userp, size_t sz,
                          int(*cmp)(const void *, const void *));
 ARRDEF array_size_t array__index(void *a, const void *userp, size_t sz,
@@ -194,10 +193,6 @@ ARRDEF void array__remove_fast(void *a, array_size_t idx, size_t sz)
 	if (idx != array_sz(a) - 1)
 		memcpy((arr_bytep)a + idx * sz, (arr_bytep)a + (array_sz(a) - 1) * sz, sz);
 	--array_sz(a);
-}
-
-ARRDEF void array__reverse(void *a, size_t sz)
-{
 }
 
 ARRDEF void *array__find(void *a, const void *userp, size_t sz,
