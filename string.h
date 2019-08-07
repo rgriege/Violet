@@ -24,10 +24,10 @@ char *imprint_s32(s32 val);
 char *imprint_r32(r32 val, u32 dec);
 char *imprintf(const char *fmt, ...);
 char *imstrcpy(const char *str);
+char *imstrcpy2(const char *src1, const char *src2);
 char *imstrcat(const char *src);
 char *imstrcatn(char *imstr, const char *src); /* for chaining imprint calls */
 char *imstrcatp(const char *src, char *imstr); /* for chaining imprint calls */
-char *imstrcat2(const char *src1, const char *src2); /* for 2 new strings */
 
 /*
  * Dynamic string
@@ -40,8 +40,8 @@ str_t  str_dup(const char *src, allocator_t *a);
 void   str_destroy(str_t *str);
 
 str_t *str_cpy(str_t *dst, const char *src);
+str_t *str_cpy2(str_t *dst, const char *src1, const char *src2);
 str_t *str_cat(str_t *dst, const char *src);
-str_t *str_cat2(str_t *dst, const char *src1, const char *src2);
 
 str_t *str_clear(str_t *str);
 str_t *str_remove_to_end(str_t *str, const char *p);
@@ -191,6 +191,11 @@ char *imstrcpy(const char *str)
 	return g_imprint_buf;
 }
 
+char *imstrcpy2(const char *src1, const char *src2)
+{
+	return imstrcatn(imstrcpy(src1), src2);
+}
+
 char *imstrcat(const char *src)
 {
 	assert(strlen(imstr()) + strlen(src) < IMPRINT_BUFFER_SIZE);
@@ -217,11 +222,6 @@ char *imstrcatp(const char *src, char *imstr)
 		assert(false);
 		return imstrcpy("");
 	}
-}
-
-char *imstrcat2(const char *src1, const char *src2)
-{
-	return imstrcatn(imstrcpy(src1), src2);
 }
 
 str_t str_create(allocator_t *a)
@@ -252,18 +252,18 @@ str_t *str_cpy(str_t *dst, const char *src)
 	return dst;
 }
 
+str_t *str_cpy2(str_t *dst, const char *src1, const char *src2)
+{
+	str_cpy(dst, src1);
+	str_cat(dst, src2);
+	return dst;
+}
+
 str_t *str_cat(str_t *dst, const char *src)
 {
 	const size_t sz = strlen(src) + 1;
 	array_pop(*dst);
 	array_appendn(*dst, src, (array_size_t)sz);
-	return dst;
-}
-
-str_t *str_cat2(str_t *dst, const char *src1, const char *src2)
-{
-	str_cpy(dst, src1);
-	str_cat(dst, src2);
 	return dst;
 }
 
