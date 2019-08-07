@@ -25,8 +25,11 @@ char *imprint_r32(r32 val, u32 dec);
 char *imprintf(const char *fmt, ...);
 char *imstrcpy(const char *str);
 char *imstrcpy2(const char *src1, const char *src2);
+char *imstrcpyv(const char *src1, ...); /* final parameter must be NULL */
 char *imstrcat(const char *src);
+char *imstrcatv(const char *src1, ...); /* final parameter must be NULL */
 char *imstrcatn(char *imstr, const char *src); /* for chaining imprint calls */
+char *imstrcatnv(char *imstr, ...); /* final parameter must be NULL */
 char *imstrcatp(const char *src, char *imstr); /* for chaining imprint calls */
 
 /*
@@ -196,16 +199,55 @@ char *imstrcpy2(const char *src1, const char *src2)
 	return imstrcatn(imstrcpy(src1), src2);
 }
 
+static
+void imstrcatv_(va_list args)
+{
+	const char *str = va_arg(args, const char*);
+	while (str) {
+		imstrcat(str);
+		str = va_arg(args, const char*);
+	}
+}
+
+char *imstrcpyv(const char *src1, ...)
+{
+	va_list args;
+	va_start(args, src1);
+	imstrcpy(src1);
+	imstrcatv_(args);
+	va_end(args);
+	return imstr();
+}
+
 char *imstrcat(const char *src)
 {
 	assert(strlen(imstr()) + strlen(src) < IMPRINT_BUFFER_SIZE);
 	return strncat(imstr(), src, IMPRINT_BUFFER_SIZE-strlen(imstr())-1);
 }
 
+char *imstrcatv(const char *src1, ...)
+{
+	va_list args;
+	va_start(args, src1);
+	imstrcat(src1);
+	imstrcatv_(args);
+	va_end(args);
+	return imstr();
+}
+
 char *imstrcatn(char *imstr, const char *src)
 {
 	assert(imstr == g_imprint_buf);
 	return imstrcat(src);
+}
+
+char *imstrcatnv(char *imstr, ...)
+{
+	va_list args;
+	va_start(args, imstr);
+	imstrcatv_(args);
+	va_end(args);
+	return imstr;
 }
 
 char *imstrcatp(const char *src, char *imstr)
