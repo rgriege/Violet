@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stdbool.h>
