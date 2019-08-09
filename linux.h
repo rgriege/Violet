@@ -175,6 +175,15 @@ char *impathcat(char *imstr, const char *path)
 	return imstrcatn(imstrcatn(imstr, g_file_path_separator), path);
 }
 
+char *impathcatprintf(char *imstr, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	imstrcatprintfv(imstrcatn(imstr, g_file_path_separator), fmt, args);
+	va_end(args);
+	return imstr;
+}
+
 char *imappdir(void)
 {
 	return imstrcpy(".");

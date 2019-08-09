@@ -31,6 +31,8 @@ char *imstrcatv(const char *src1, ...); /* final parameter must be NULL */
 char *imstrcatn(char *imstr, const char *src); /* for chaining imprint calls */
 char *imstrcatnv(char *imstr, ...); /* final parameter must be NULL */
 char *imstrcatp(const char *src, char *imstr); /* for chaining imprint calls */
+char *imstrcatprintf(char *imstr, const char *fmt, ...);
+char *imstrcatprintfv(char *imstr, const char *fmt, va_list args);
 
 /*
  * Dynamic string
@@ -264,6 +266,22 @@ char *imstrcatp(const char *src, char *imstr)
 		assert(false);
 		return imstrcpy("");
 	}
+}
+
+char *imstrcatprintf(char *imstr, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	imstrcatprintfv(imstr, fmt, args);
+	va_end(args);
+	return imstr;
+}
+
+char *imstrcatprintfv(char *imstr, const char *fmt, va_list args)
+{
+	const size_t sz = strlen(imstr);
+	vsnprintf(g_imprint_buf + sz, IMPRINT_BUFFER_SIZE - sz, fmt, args);
+	return imstr;
 }
 
 str_t str_create(allocator_t *a)
