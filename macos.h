@@ -280,7 +280,7 @@ FILE *file_open(const char *fname, const char *mode)
 	return fopen(fname, mode);
 }
 
-void *file_read_all(const char *fname, const char *mode, allocator_t *a)
+void *file_read_all(const char *fname, const char *mode, size_t *sz, allocator_t *a)
 {
 	FILE *fp;
 	size_t file_size;
@@ -303,6 +303,9 @@ void *file_read_all(const char *fname, const char *mode, allocator_t *a)
 		bytes = NULL;
 		goto out;
 	}
+
+	if (sz)
+		*sz = file_size;
 
 out:
 	fclose(fp);

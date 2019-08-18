@@ -1388,7 +1388,7 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 
 	f->char_info = NULL;
 
-	if (!(ttf = file_read_all(filename, "rb", g_temp_allocator)))
+	if (!(ttf = file_read_all(filename, "rb", NULL, g_temp_allocator)))
 		goto out;
 
 	if (!stbtt_InitFont(&info, ttf, stbtt_GetFontOffsetForIndex(ttf, 0)))

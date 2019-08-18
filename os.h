@@ -70,7 +70,7 @@ char *imdatadir(void);
 char *imdatapath(const char *resource);
 
 FILE  *file_open(const char *fname, const char *mode);
-void  *file_read_all(const char *fname, const char *mode, allocator_t *a);
+void  *file_read_all(const char *fname, const char *mode, size_t *sz, allocator_t *a);
 
 /* Dynamic library */
 
