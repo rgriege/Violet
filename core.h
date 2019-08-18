@@ -366,6 +366,7 @@ void log_remove_stream(logger_t logger, void *udata);
 		log_remove_file(stderr); \
 	} while (0);
 void log_level_write(log_level_t level, const char *format, ...);
+void log_level_writev(log_level_t level, const char *format, va_list ap);
 #define log_debug(fmt, ...) log_level_write(LOG_DEBUG,   fmt, ##__VA_ARGS__)
 #define log_info(fmt, ...)  log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
 #define log_warn(fmt, ...)  log_level_write(LOG_WARNING, fmt, ##__VA_ARGS__)
@@ -1076,6 +1077,18 @@ void log_level_write(log_level_t level, const char *format, ...)
 			va_start(ap, format);
 			g_log_streams[i].logger(g_log_streams[i].udata, level, format, ap);
 			va_end(ap);
+		}
+	}
+}
+
+void log_level_writev(log_level_t level, const char *format, va_list ap)
+{
+	for (u32 i = 0; i < g_log_stream_cnt; ++i) {
+		if (level & g_log_streams[i].level) {
+			va_list cpy;
+			va_copy(cpy, ap);
+			g_log_streams[i].logger(g_log_streams[i].udata, level, format, cpy);
+			va_end(cpy);
 		}
 	}
 }
