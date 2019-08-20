@@ -295,7 +295,7 @@ void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
                      const gui_line_style_t *style);
 void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, const gui_text_style_t *style);
-u32  gui_wrap_txt(gui_t *gui, char *txt, u32 padding, u32 size, r32 max_width);
+u32  gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width);
 
 typedef void(*gui_pen_t)(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          const gui_element_style_t *style);
@@ -3833,7 +3833,7 @@ void gui__add_codepoint_to_line_width(font_t *font, s32 cp, r32 *line_width)
 		                    cp, line_width, &y, &q, 1);
 }
 
-u32 gui_wrap_txt(gui_t *gui, char *txt, u32 padding, u32 size, r32 max_width)
+u32 gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
 {
 	char *p = txt;
 	char *pnext;
