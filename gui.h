@@ -3762,8 +3762,8 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
 {
 	switch (scale) {
 	case IMG_CENTERED:;
-		const s32 x_off = (w - img->texture.width) / 2;
-		const s32 y_off = (h - img->texture.height) / 2;
+		const s32 x_off = (w - (s32)img->texture.width) / 2;
+		const s32 y_off = (h - (s32)img->texture.height) / 2;
 		if (x_off >= 0 && y_off >= 0) {
 			gui_img_ex(gui, x + x_off, y + y_off, img, 1.f, 1.f, 0.f, 1.f);
 			break;
