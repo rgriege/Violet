@@ -295,6 +295,7 @@ void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
                      const gui_line_style_t *style);
 void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, const gui_text_style_t *style);
+u32  gui_wrap_txt(gui_t *gui, char *txt, u32 padding, u32 size, r32 max_width);
 
 typedef void(*gui_pen_t)(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          const gui_element_style_t *style);
@@ -3832,17 +3833,17 @@ void gui__add_codepoint_to_line_width(font_t *font, s32 cp, r32 *line_width)
 		                    cp, line_width, &y, &q, 1);
 }
 
-static
-void gui__wrap_txt(gui_t *gui, char *txt, const gui_text_style_t *style, r32 max_width)
+u32 gui_wrap_txt(gui_t *gui, char *txt, u32 padding, u32 size, r32 max_width)
 {
 	char *p = txt;
 	char *pnext;
 	s32 cp = utf8_next_codepoint(p, &pnext);
-	r32 line_width = style->padding;
+	r32 line_width = padding;
+	u32 num_lines = 1;
 
-	font_t *font = gui__get_font(gui, style->size);
+	font_t *font = gui__get_font(gui, size);
 	if (!font)
-		return;
+		return 0;
 
 	while (cp != 0) {
 		char *p_space_before_word = NULL;
@@ -3856,7 +3857,7 @@ void gui__wrap_txt(gui_t *gui, char *txt, const gui_text_style_t *style, r32 max
 		} else if (cp == '\n') {
 			p = pnext;
 			cp = utf8_next_codepoint(p, &pnext);
-			line_width = style->padding;
+			line_width = padding;
 		}
 		line_width_before_word = line_width;
 
@@ -3865,13 +3866,18 @@ void gui__wrap_txt(gui_t *gui, char *txt, const gui_text_style_t *style, r32 max
 			p = pnext;
 			cp = utf8_next_codepoint(p, &pnext);
 		}
+		if (cp == '\n')
+			num_lines++;
 
 		if (line_width >= max_width) {
-			if (p_space_before_word)
+			if (p_space_before_word) {
 				*p_space_before_word = '\n';
-			line_width = style->padding + line_width - line_width_before_word;
+				num_lines++;
+			}
+			line_width = padding + line_width - line_width_before_word;
 		}
 	}
+	return num_lines;
 }
 
 static
@@ -3897,7 +3903,7 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 		const u32 len = (u32)strlen(txt);
 		array_init_ex(buf, len + 1, g_temp_allocator);
 		memcpy(buf, txt, len + 1);
-		gui__wrap_txt(gui, buf, style, w);
+		gui_wrap_txt(gui, buf, style->padding, style->size, w);
 		txt = buf;
 		p = buf;
 	}
@@ -3985,7 +3991,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 		const u32 len = (u32)strlen(txt);
 		array_init_ex(buf, len + 1, g_temp_allocator);
 		memcpy(buf, txt, len + 1);
-		gui__wrap_txt(gui, buf, style, w);
+		gui_wrap_txt(gui, buf, style->padding, style->size, w);
 		txt  = buf;
 		ptxt = buf;
 	}
@@ -4200,7 +4206,7 @@ void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	if (style->wrap) {
 		array_init_ex(buf, len + 1, g_temp_allocator);
 		memcpy(buf, txt, len + 1);
-		gui__wrap_txt(gui, buf, style, w);
+		gui_wrap_txt(gui, buf, style->padding, style->size, w);
 		gui__txt(gui, &x, &y, buf, style);
 		array_destroy(buf);
 	} else {
