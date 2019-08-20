@@ -250,7 +250,7 @@ typedef enum img_scale
 {
 	IMG_SCALED,
 	IMG_CENTERED,
-} img_scale_t;
+} img_scale_e;
 
 #ifndef GUI_FONT_FILE_PATH
 #define GUI_FONT_FILE_PATH "Roboto.ttf"
@@ -271,12 +271,12 @@ void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke);
 void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke);
-void gui_img(gui_t *gui, s32 x, s32 y, const char *img);
+const img_t *gui_get_img(gui_t *gui, const char *fname);
+void gui_img(gui_t *gui, s32 x, s32 y, const img_t *img);
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity);
-void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
-                   img_scale_t scale);
-img_t *gui_init_cached_img(gui_t *gui, const char *name);
+void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
+                   img_scale_e scale);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_t align);
 void gui_txt_dim(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
@@ -407,8 +407,8 @@ s32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n,
                  npt_flags_t flags, npt_filter_p filter);
 s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
-s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
-                 img_scale_t scale);
+s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
+                 img_scale_e scale);
 s32  gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen);
 b32  gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val);
 b32  gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val);
@@ -540,9 +540,9 @@ u64  pgui_next_widget_id(const gui_t *gui);
 void pgui_spacer(gui_t *gui);
 void pgui_spacer_blank(gui_t *gui);
 void pgui_txt(gui_t *gui, const char *str);
-void pgui_img(gui_t *gui, const char *fname, img_scale_t scale);
+void pgui_img(gui_t *gui, const img_t *img, img_scale_e scale);
 s32  pgui_btn_txt(gui_t *gui, const char *lbl);
-s32  pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale);
+s32  pgui_btn_img(gui_t *gui, const img_t *img, img_scale_e scale);
 s32  pgui_btn_pen(gui_t *gui, gui_pen_t pen);
 b32  pgui_chk(gui_t *gui, const char *lbl, b32 *val);
 b32  pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val);
@@ -3728,18 +3728,7 @@ cached_img_t *gui__find_img(gui_t *gui, u32 id)
 	return NULL;
 }
 
-img_t *gui_init_cached_img(gui_t *gui, const char *name)
-{
-	const u32 id = hash(name);
-	cached_img_t *cached_img;
-
-	cached_img = array_append_null(gui->imgs);
-	cached_img->id = id;
-	return &cached_img->img;
-}
-
-static
-const img_t *gui__find_or_load_img(gui_t *gui, const char *fname)
+const img_t *gui_get_img(gui_t *gui, const char *fname)
 {
 	const u32 id = hash(fname);
 	cached_img_t *cached_img = gui__find_img(gui, id);
@@ -3755,11 +3744,9 @@ const img_t *gui__find_or_load_img(gui_t *gui, const char *fname)
 	return NULL;
 }
 
-void gui_img(gui_t *gui, s32 x, s32 y, const char *fname)
+void gui_img(gui_t *gui, s32 x, s32 y, const img_t *img)
 {
-	const img_t *img = gui__find_or_load_img(gui, fname);
-	if (img)
-		gui_img_ex(gui, x, y, img, 1.f, 1.f, 0.f, 1.f);
+	gui_img_ex(gui, x, y, img, 1.f, 1.f, 0.f, 1.f);
 }
 
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
@@ -3770,13 +3757,9 @@ void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
 	texture__render(gui, &img->texture, x, y, sx, sy, rotation, color);
 }
 
-void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
-                   img_scale_t scale)
+void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
+                   img_scale_e scale)
 {
-	const img_t *img = gui__find_or_load_img(gui, fname);
-	if (!img)
-		return;
-
 	switch (scale) {
 	case IMG_CENTERED:;
 		const s32 x_off = (w - img->texture.width) / 2;
@@ -4865,8 +4848,8 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 	return ret;
 }
 
-s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
-                img_scale_t scale)
+s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
+                img_scale_e scale)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
@@ -4882,7 +4865,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *fname,
 	const gui_element_style_t style
 		= gui__element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
-	gui_img_boxed(gui, x, y, w, h, fname, scale);
+	gui_img_boxed(gui, x, y, w, h, img, scale);
 	gui__hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
@@ -6495,11 +6478,11 @@ void pgui_txt(gui_t *gui, const char *str)
 	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
 }
 
-void pgui_img(gui_t *gui, const char *fname, img_scale_t scale)
+void pgui_img(gui_t *gui, const img_t *img, img_scale_e scale)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_img_boxed(gui, x, y, w, h, fname, scale);
+	gui_img_boxed(gui, x, y, w, h, img, scale);
 }
 
 s32 pgui_btn_txt(gui_t *gui, const char *lbl)
@@ -6513,12 +6496,12 @@ s32 pgui_btn_txt(gui_t *gui, const char *lbl)
 	return result;
 }
 
-s32 pgui_btn_img(gui_t *gui, const char *fname, img_scale_t scale)
+s32 pgui_btn_img(gui_t *gui, const img_t *img, img_scale_e scale)
 {
 	btn_val_t result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	result = gui_btn_img(gui, x, y, w, h, fname, scale);
+	result = gui_btn_img(gui, x, y, w, h, img, scale);
 	if (result == BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
 	return result;
