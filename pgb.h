@@ -439,7 +439,6 @@ void pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS)
 		}
 	} else if (pgb__ptr_in_page(ptr, pgb->current_page)) {
 		assert(pgb__alloc_get_sz(ptr, pgb->current_page) != 0);
-		pgb__alloc_set_sz(ptr, pgb->current_page, 0);
 #ifdef VLT_ANALYZE_TEMP_MEMORY
 		log_warn("pgb_free: cannot recapture memory @ %s", loc);
 #endif
