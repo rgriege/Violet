@@ -435,6 +435,8 @@ void pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS)
 			if (pgb->current_page) {
 				pgb__restore_current_page_ptr(pgb);
 				pgb->current_page->next = NULL;
+			} else {
+				pgb->current_ptr = NULL;
 			}
 		}
 	} else if (pgb__ptr_in_page(ptr, pgb->current_page)) {
