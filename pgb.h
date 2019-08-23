@@ -79,7 +79,8 @@ typedef struct pg_watermark
 pgb_watermark_t pgb_save(pgb_t *pgb);
 void            pgb_restore(pgb_watermark_t watermark);
 
-bool pgb_owns_ptr(const pgb_t *pgb, const void *ptr);
+size_t pgb_alloc_size(const pgb_t *pgb, const void *ptr);
+
 void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
                size_t *bytes_available, size_t *pages_available);
 
@@ -368,16 +369,22 @@ void pgb_destroy(pgb_t *pgb)
 }
 
 static
-void pgb__add_page_for_alloc(pgb_t *pgb, size_t alloc_size, size_t *aligned_size)
+void pgb__add_page(pgb_t *pgb, pgb_page_t *page)
 {
-	const size_t min_page_size = pgb__page_min_size_for_alloc(alloc_size);
-	const size_t max_page_size = pgb__page_max_size_for_alloc(alloc_size);
-	pgb_page_t *page = pgb_heap_borrow_page(pgb->heap, min_page_size, max_page_size);
 	if (pgb->current_page)
 		pgb->current_page->next = page;
 	page->prev = pgb->current_page;
 	pgb->current_page = page;
 	pgb->current_ptr = pgb__page_first_usable_slot(page);
+}
+
+static
+void pgb__add_page_for_alloc(pgb_t *pgb, size_t alloc_size, size_t *aligned_size)
+{
+	const size_t min_page_size = pgb__page_min_size_for_alloc(alloc_size);
+	const size_t max_page_size = pgb__page_max_size_for_alloc(alloc_size);
+	pgb_page_t *page = pgb_heap_borrow_page(pgb->heap, min_page_size, max_page_size);
+	pgb__add_page(pgb, page);
 	*aligned_size = pgb__page_align(alloc_size, page);
 }
 
@@ -543,12 +550,12 @@ void pgb_restore(pgb_watermark_t watermark)
 	}
 }
 
-bool pgb_owns_ptr(const pgb_t *pgb, const void *ptr)
+size_t pgb_alloc_size(const pgb_t *pgb, const void *ptr)
 {
 	const pgb_page_t *page = pgb->current_page;
 	while (page && !pgb__ptr_in_page(ptr, page))
 		page = page->prev;
-	return page != NULL;
+	return (page != NULL ? pgb__alloc_get_sz(ptr, page) : 0);
 }
 
 void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
