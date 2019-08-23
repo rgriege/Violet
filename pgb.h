@@ -356,6 +356,8 @@ void pgb__pop_page(pgb_t *pgb)
 	pgb_page_t *prev = pgb->current_page->prev;
 	pgb_heap_return_page(pgb->heap, pgb->current_page);
 	pgb->current_page = prev;
+	if (prev)
+		prev->next = NULL;
 }
 
 void pgb_destroy(pgb_t *pgb)
