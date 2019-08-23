@@ -449,6 +449,7 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 				} else if ((old_size = pgb__alloc_get_sz(ptr, page)) >= size) {
 					return ptr;
 				} else {
+					pgb__alloc_set_sz(ptr, page, 0);
 					pgb_byte *new_ptr = pgb_malloc(size, pgb  MEMCALL_VARS);
 					memcpy(new_ptr, ptr, old_size);
 					return new_ptr;
