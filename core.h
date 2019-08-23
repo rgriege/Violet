@@ -161,7 +161,7 @@ void error_catch(const char *msg, void *udata);
  * Defining VLT_TRACK_MEMORY_VERBOSE will log ALL allocations,
  * which is occasionally useful but is quite verbose.
  *
- * Defining VLT_ANALYZE_TEMP_MEMORY will help track down inefficient use
+ * Defining PGB_ANALYZE will help track down inefficient use
  * of the temporary allocator.
  * */
 
@@ -210,6 +210,14 @@ void  default_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
 /* Temporary memory allocator */
 extern thread_local allocator_t *g_temp_allocator;
 
+#define PGB_MALLOC std_malloc
+#define PGB_FREE   std_free
+#ifdef VLT_TRACK_MEMORY
+#define PGB_TRACK_MEMORY
+#endif
+#define PGB_LOG log_warn
+#define PGB_LOG_ALLOC log_alloc
+#define PGB_LOG_REALLOC log_realloc
 #include "violet/pgb.h"
 
 typedef pgb_watermark_t temp_memory_mark_t;

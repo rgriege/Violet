@@ -11,7 +11,35 @@
  * allocations at once.
  */
 
-#define PGB_MIN_PAGE_SIZE 4096
+#ifndef PGB_MALLOC
+#define PGB_MALLOC malloc
+#endif
+
+#ifndef PGB_FREE
+#define PGB_FREE free
+#endif
+
+#ifdef PGB_TRACK_MEMORY
+#define MEMCALL_LOCATION , LOCATION
+#define MEMCALL_ARGS , const char *loc
+#define MEMCALL_VARS , loc
+#else
+#define MEMCALL_LOCATION
+#define MEMCALL_ARGS
+#define MEMCALL_VARS
+#endif
+
+#ifndef PGB_LOG
+#define PGB_LOG(...)
+#endif
+
+#ifndef PGB_LOG_ALLOC
+#define PGB_LOG_ALLOC(...)
+#endif
+
+#ifndef PGB_LOG_REALLOC
+#define PGB_LOG_REALLOC(...)
+#endif
 
 typedef struct pgb_heap
 {
@@ -51,11 +79,9 @@ typedef struct pg_watermark
 pgb_watermark_t pgb_save(pgb_t *pgb);
 void            pgb_restore(pgb_watermark_t watermark);
 
-b32  pgb_owns_ptr(const pgb_t *pgb, const void *ptr);
+bool pgb_owns_ptr(const pgb_t *pgb, const void *ptr);
 void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
                size_t *bytes_available, size_t *pages_available);
-void pgb_log(const pgb_t *pgb, const char *name);
-void pgb_log_heap(const pgb_t *pgb);
 
 #endif // PGB_H
 
@@ -79,6 +105,7 @@ void pgb_log_heap(const pgb_t *pgb);
 
 /* Page */
 
+#define PGB_MIN_PAGE_SIZE          4096
 #define PGB__PAGE_SLOTS            256
 #define pgb__alignment(page_size)  ((page_size) / PGB__PAGE_SLOTS)
 
@@ -113,8 +140,12 @@ typedef union pgb__max_align
 	void (*f)(void);
 } pgb__max_align_t;
 
-static_assert(sizeof(pgb__max_align_t) <= pgb__alignment(PGB_MIN_PAGE_SIZE),
-              invalid_word_size_for_pgb_allocator);
+#define pgb_offsetof(s, m) ((size_t)&((s*)(NULL))->m)
+
+#define pgb_static_assert(cnd, msg) typedef int msg[(cnd) ? 1 : -1]
+
+pgb_static_assert(sizeof(pgb__max_align_t) <= pgb__alignment(PGB_MIN_PAGE_SIZE),
+                  invalid_word_size_for_pgb_allocator);
 
 #define pgb__page_alignment(page)   (pgb__alignment((page)->size))
 #define pgb__page_end(page)         (&(page)->start + (page)->size)
@@ -168,13 +199,13 @@ void pgb__alloc_set_sz(const pgb_byte *ptr, pgb_page_t *page, size_t sz)
 }
 
 static
-b32 pgb__ptr_in_page(const pgb_byte *ptr, const pgb_page_t *page)
+bool pgb__ptr_in_page(const pgb_byte *ptr, const pgb_page_t *page)
 {
 	return ptr > &page->start && ptr < pgb__page_end(page);
 }
 
 static
-b32 pgb__ptr_is_last_alloc(const pgb_byte *ptr, const pgb_t *pgb)
+bool pgb__ptr_is_last_alloc(const pgb_byte *ptr, const pgb_t *pgb)
 {
 	return   pgb__ptr_in_page(ptr, pgb->current_page)
 	      && ptr + pgb__alloc_get_sz(ptr, pgb->current_page) == pgb->current_ptr;
@@ -217,7 +248,7 @@ size_t pgb__page_max_size_for_alloc(size_t alloc_size)
 	 * This is unlikely to occur as the smallest page that fits will be used. */
 	const size_t max_alignment = pgb__round_up_power_of_two(alloc_size) << 1;
 	const size_t max_page_size = max_alignment * PGB__PAGE_SLOTS;
-	return max(max_page_size, PGB_MIN_PAGE_SIZE);
+	return max_page_size > PGB_MIN_PAGE_SIZE ? max_page_size : PGB_MIN_PAGE_SIZE;
 }
 
 static
@@ -233,7 +264,7 @@ void pgb__page_clear(pgb_page_t *page)
 static
 pgb_page_t *pgb__page_create(size_t page_size)
 {
-	pgb_page_t *page = std_malloc(page_size);
+	pgb_page_t *page = PGB_MALLOC(page_size);
 	page->size = page_size;
 	pgb__page_clear(page);
 	return page;
@@ -261,7 +292,7 @@ void pgb_heap_destroy(pgb_heap_t *heap)
 	pgb_page_t *page = heap->first_page;
 	while (page) {
 		pgb_page_t *next = page->next;
-		std_free(page);
+		PGB_FREE(page);
 		page = next;
 	}
 	heap->first_page = NULL;
@@ -367,7 +398,7 @@ void *pgb_malloc(size_t size, pgb_t *pgb  MEMCALL_ARGS)
 	ptr = pgb->current_ptr;
 	pgb__alloc_set_sz(ptr, pgb->current_page, aligned_size);
 	pgb->current_ptr += aligned_size;
-	log_alloc("pgb", aligned_size  MEMCALL_VARS);
+	PGB_LOG_ALLOC("pgb", aligned_size  MEMCALL_VARS);
 	return ptr;
 }
 
@@ -404,19 +435,21 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 				const size_t aligned_size = pgb__page_align(size, pgb->current_page);
 				pgb__alloc_set_sz(ptr, pgb->current_page, aligned_size);
 				pgb->current_ptr = ptr + aligned_size;
-				assert(pgb->current_ptr <= pgb__page_end(pgb->current_page));
-				log_realloc("pgb", aligned_size  MEMCALL_VARS);
+				PGB_LOG_REALLOC("pgb", aligned_size  MEMCALL_VARS);
 				return ptr;
 			} else {
-				const pgb_page_t *page = pgb->current_page;
+				pgb_page_t *page = pgb->current_page;
+				size_t old_size;
 				while (page && !pgb__ptr_in_page(ptr, page))
 					page = page->prev;
-				error_if(!page, "could not find page for allocation");
-				if (pgb__alloc_get_sz(ptr, page) >= size) {
+				if (!page) {
+					assert(false);
+					return NULL;
+				} else if ((old_size = pgb__alloc_get_sz(ptr, page)) >= size) {
 					return ptr;
 				} else {
 					pgb_byte *new_ptr = pgb_malloc(size, pgb  MEMCALL_VARS);
-					memcpy(new_ptr, ptr, pgb__alloc_get_sz(ptr, page));
+					memcpy(new_ptr, ptr, old_size);
 					return new_ptr;
 				}
 			}
@@ -432,7 +465,7 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 }
 
 static
-b32 pgb__find_page_for_ptr(pgb_t *pgb, const void *ptr, pgb_page_t **ppage)
+bool pgb__find_page_for_ptr(pgb_t *pgb, const void *ptr, pgb_page_t **ppage)
 {
 	pgb_page_t *page = pgb->current_page;
 	while (page && !pgb__ptr_in_page(ptr, page))
@@ -453,8 +486,8 @@ void pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS)
 
 	if (!pgb__find_page_for_ptr(pgb, ptr, &page)) {
 		assert(false);
-#ifdef VLT_TRACK_MEMORY
-		log_warn("pgb_free: memory leak @ %s", loc);
+#ifdef PGB_TRACK_MEMORY
+		PGB_LOG("pgb_free: memory leak @ %s", loc);
 #endif
 		return;
 	}
@@ -475,12 +508,12 @@ void pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS)
 				pgb->current_ptr = NULL;
 		}
 	} else if (page == pgb->current_page) {
-#ifdef VLT_ANALYZE_TEMP_MEMORY
-		log_warn("pgb_free: %u bytes out of order @ %s", size, loc);
+#ifdef PGB_ANALYZE
+		PGB_LOG("pgb_free: %u bytes out of order @ %s", size, loc);
 #endif
 	} else {
-#ifdef VLT_ANALYZE_TEMP_MEMORY
-		log_warn("pgb_free: %u bytes out of page @ %s", size, loc);
+#ifdef PGB_ANALYZE
+		PGB_LOG("pgb_free: %u bytes out of page @ %s", size, loc);
 #endif
 	}
 }
@@ -508,7 +541,7 @@ void pgb_restore(pgb_watermark_t watermark)
 	}
 }
 
-b32 pgb_owns_ptr(const pgb_t *pgb, const void *ptr)
+bool pgb_owns_ptr(const pgb_t *pgb, const void *ptr)
 {
 	const pgb_page_t *page = pgb->current_page;
 	while (page && !pgb__ptr_in_page(ptr, page))
@@ -541,40 +574,6 @@ void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
 	while (page) {
 		*bytes_available += page->size;
 		++*pages_available;
-		page = page->next;
-	}
-}
-
-void pgb_log(const pgb_t *pgb, const char *name)
-{
-	pgb_page_t *current_page = pgb->current_page;
-	pgb_page_t *page = current_page;
-
-	if (name)
-		log_debug("%s pgb", name);
-
-	if (!page) {
-		log_debug("empty");
-		return;
-	}
-
-	while (page->prev)
-		page = page->prev;
-	while (page != current_page) {
-		log_debug("%p: %lu", page, page->size);
-		page = page->next;
-	}
-
-	log_debug("%p: %lu/%lu", current_page, pgb->current_ptr - (pgb_byte*)current_page, current_page->size);
-}
-
-void pgb_log_heap(const pgb_t *pgb)
-{
-	pgb_heap_t *heap = pgb->heap;
-	pgb_page_t *page = heap->first_page;
-	log_debug("pgb heap");
-	while (page) {
-		log_debug("%p: %lu", page, page->size);
 		page = page->next;
 	}
 }
