@@ -91,15 +91,23 @@ void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
 #ifdef PGB_IMPLEMENTATION
 
 /*
- * Always have 254-255 (256 - ceil(sizeof(header) / alignment)) slots:
- *   header size is constant -> more efficent at larger page sizes
- *   less efficient to allocate small objects into large pages (complex)
+ * Divides pages into 256 equal-sized slots.
+ * An allocated can occupy more than 1 slot, but is aligned to a whole number of slots.
+ * The sizes are stored in a single byte representing the number of slots.
+ * This causes the header size to be constant, which is more efficent for larger pages.
  *
- *   reserved slots = max(1, 256 / alignment) - max(1, sizeof(header) / alignment)
+ * Perhaps the biggest drawback is the loss of efficiency when allocating
+ * small objects into large pages.
  *
- *   4K   ->   16 byte alignment -> 238 usable slots -> 93% efficient
- *   8K   ->   32 byte alignment -> 247 usable slots -> 96% efficient
- *   64K  ->  256 byte alignment -> 254 usable slots -> 99% efficient
+ * Not all slots will be available, since some are required to store the page header.
+ * Num slots = max(1, sizeof(header) / alignment)
+ *     4K  ->   16 byte alignment -> 238 usable slots -> 93% efficient
+ *     8K  ->   32 byte alignment -> 247 usable slots -> 96% efficient
+ *    64K  ->  256 byte alignment -> 254 usable slots -> 99% efficient
+ *   128K  ->  512 byte alignment -> 255 usable slots -> 99% efficient
+ *
+ * Unused pages are stored in a heap that can be shared across multiple allocators.
+ * This heap is not thread-safe.
  */
 
 
@@ -111,21 +119,12 @@ void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
 
 typedef struct pgb_page
 {
-	union
-	{
-		pgb_byte start;
+	struct {
 		pgb_byte alloc_sizes[PGB__PAGE_SLOTS];
-	};
-	union
-	{
-		pgb_byte header_begin;
-		struct
-		{
-			struct pgb_page *prev, *next;
-			size_t size;
-			pgb_byte header_end;
-		};
-		pgb_byte first_slot;
+		struct pgb_page *prev;
+		struct pgb_page *next;
+		size_t size;
+		pgb_byte header_end;
 	};
 } pgb_page_t;
 
@@ -148,11 +147,9 @@ pgb_static_assert(sizeof(pgb__max_align_t) <= pgb__alignment(PGB_MIN_PAGE_SIZE),
                   invalid_word_size_for_pgb_allocator);
 
 #define pgb__page_alignment(page)   (pgb__alignment((page)->size))
-#define pgb__page_end(page)         (&(page)->start + (page)->size)
-#define pgb__header_size_()         (  offsetof(pgb_page_t, header_end) \
-                                     - offsetof(pgb_page_t, header_begin))
-#define pgb__header_size(page_size) (pgb__align(pgb__header_size_(), \
-                                                pgb__alignment(page_size)))
+#define pgb__page_beg(page)         ((pgb_byte*)page)
+#define pgb__page_end(page)         ((pgb_byte*)page + (page)->size)
+#define pgb__header_size()          (pgb_offsetof(pgb_page_t, header_end))
 
 static
 size_t pgb__align(size_t size, size_t alignment)
@@ -169,39 +166,39 @@ size_t pgb__page_align(size_t size, const pgb_page_t *page)
 static
 pgb_byte *pgb__page_first_usable_slot(pgb_page_t *page)
 {
-	return &page->first_slot + pgb__header_size(page->size);
+	return pgb__page_beg(page) + pgb__align(pgb__header_size(), pgb__page_alignment(page));
 }
 
 static
 size_t pgb__alloc_get_slot_idx(const pgb_byte* ptr, const pgb_page_t *page)
 {
-	return (ptr - &page->start) / pgb__page_alignment(page);
+	return (ptr - pgb__page_beg(page)) / pgb__page_alignment(page);
 }
 
 static
-pgb_byte *pgb__alloc_get_sz_slot(const pgb_byte* ptr, pgb_page_t *page)
+pgb_byte *pgb__slot_get_alloc(pgb_page_t *page, size_t slot)
 {
-	return &page->alloc_sizes[(ptr - &page->start) / pgb__page_alignment(page)];
+	return pgb__page_beg(page) + slot * pgb__page_alignment(page);
 }
 
 static
 size_t pgb__alloc_get_sz(const pgb_byte* ptr, const pgb_page_t *page)
 {
 	const size_t alignment = pgb__page_alignment(page);
-	return page->alloc_sizes[(ptr - &page->start) / alignment] * alignment;
+	return page->alloc_sizes[(ptr - pgb__page_beg(page)) / alignment] * alignment;
 }
 
 static
 void pgb__alloc_set_sz(const pgb_byte *ptr, pgb_page_t *page, size_t sz)
 {
 	const size_t alignment = pgb__page_alignment(page);
-	page->alloc_sizes[(ptr - &page->start) / alignment] = (pgb_byte)(sz / alignment);
+	page->alloc_sizes[(ptr - pgb__page_beg(page)) / alignment] = (pgb_byte)(sz / alignment);
 }
 
 static
 bool pgb__ptr_in_page(const pgb_byte *ptr, const pgb_page_t *page)
 {
-	return ptr > &page->start && ptr < pgb__page_end(page);
+	return ptr > pgb__page_beg(page) && ptr < pgb__page_end(page);
 }
 
 static
@@ -234,7 +231,8 @@ size_t pgb__page_min_size_for_alloc(size_t alloc_size)
 	const size_t page_size = pgb__round_up_power_of_two(alloc_size);
 	if (page_size < PGB_MIN_PAGE_SIZE)
 		return PGB_MIN_PAGE_SIZE;
-	else if (  page_size - PGB__PAGE_SLOTS - pgb__header_size(page_size)
+	else if (  page_size
+	         - pgb__align(pgb__header_size(), pgb__alignment(page_size))
 	         < pgb__align(alloc_size, pgb__alignment(page_size)))
 		return page_size << 1;
 	else
@@ -254,9 +252,9 @@ size_t pgb__page_max_size_for_alloc(size_t alloc_size)
 static
 void pgb__page_clear(pgb_page_t *page)
 {
-	const size_t header_size = pgb__header_size(page->size);
-	memset(page, 0, PGB__PAGE_SLOTS);
-	pgb__alloc_set_sz(&page->header_begin, page, header_size);
+	const size_t header_size = pgb__page_align(pgb__header_size(), page);
+	memset(page->alloc_sizes, 0, PGB__PAGE_SLOTS);
+	pgb__alloc_set_sz(pgb__page_beg(page), page, header_size);
 	page->prev = NULL;
 	page->next = NULL;
 }
@@ -415,11 +413,12 @@ void pgb__restore_current_page_ptr(pgb_t *pgb, size_t slot)
 	pgb_page_t *page = pgb->current_page;
 	for (size_t i = slot; i > 0; --i) {
 		if (page->alloc_sizes[i-1] != 0) {
-			pgb->current_ptr = &page->start +   (page->alloc_sizes[i-1] + i - 1)
-			                                  * pgb__page_alignment(page);
+			pgb_byte *ptr = pgb__slot_get_alloc(page, i-1);
+			pgb->current_ptr = ptr + pgb__alloc_get_sz(ptr, page);
 			return;
 		}
 	}
+	assert(false); /* should have encountered header */
 	pgb->current_ptr = pgb__page_first_usable_slot(page);
 }
 
@@ -535,8 +534,8 @@ void pgb_restore(pgb_watermark_t watermark)
 	pgb->current_page = watermark.page;
 	pgb->current_ptr  = watermark.ptr;
 	if (pgb->current_page) {
-		pgb_byte *sz_slot = pgb__alloc_get_sz_slot(pgb->current_ptr, pgb->current_page);
-		memset(sz_slot, 0, &pgb->current_page->header_begin - sz_slot);
+		const size_t slot = pgb__alloc_get_slot_idx(pgb->current_ptr, pgb->current_page);
+		memset(&pgb->current_page->alloc_sizes[slot], 0, PGB__PAGE_SLOTS - slot);
 		pgb->current_page->next = NULL;
 	}
 }
