@@ -142,6 +142,12 @@ pgb_byte *pgb__page_first_usable_slot(pgb_page_t *page)
 }
 
 static
+size_t pgb__alloc_get_slot_idx(const pgb_byte* ptr, const pgb_page_t *page)
+{
+	return (ptr - &page->start) / pgb__page_alignment(page);
+}
+
+static
 pgb_byte *pgb__alloc_get_sz_slot(const pgb_byte* ptr, pgb_page_t *page)
 {
 	return &page->alloc_sizes[(ptr - &page->start) / pgb__page_alignment(page)];
@@ -314,17 +320,20 @@ void pgb_init(pgb_t *pgb, pgb_heap_t *heap)
 	pgb->current_ptr  = NULL;
 }
 
+static
+void pgb__pop_page(pgb_t *pgb)
+{
+	assert(pgb->current_page);
+	pgb_page_t *prev = pgb->current_page->prev;
+	pgb_heap_return_page(pgb->heap, pgb->current_page);
+	pgb->current_page = prev;
+}
+
 void pgb_destroy(pgb_t *pgb)
 {
-	if (pgb->current_page) {
-		pgb_page_t *tail = pgb->current_page;
-		assert(!tail->next);
-		while (tail) {
-			pgb_page_t *prev = tail->prev;
-			pgb_heap_return_page(pgb->heap, tail);
-			tail = prev;
-		}
-	}
+	assert(!(pgb->current_page && pgb->current_page->next));
+	while (pgb->current_page)
+		pgb__pop_page(pgb);
 }
 
 static
@@ -370,10 +379,10 @@ void *pgb_calloc(size_t nmemb, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 }
 
 static
-void pgb__restore_current_page_ptr(pgb_t *pgb)
+void pgb__restore_current_page_ptr(pgb_t *pgb, size_t slot)
 {
 	pgb_page_t *page = pgb->current_page;
-	for (size_t i = PGB__PAGE_SLOTS; i > 0; --i) {
+	for (size_t i = slot; i > 0; --i) {
 		if (page->alloc_sizes[i-1] != 0) {
 			pgb->current_ptr = &page->start +   (page->alloc_sizes[i-1] + i - 1)
 			                                  * pgb__page_alignment(page);
@@ -422,32 +431,58 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 	}
 }
 
+static
+b32 pgb__find_page_for_ptr(pgb_t *pgb, const void *ptr, pgb_page_t **ppage)
+{
+	pgb_page_t *page = pgb->current_page;
+	while (page && !pgb__ptr_in_page(ptr, page))
+		page = page->prev;
+	if (page)
+		*ppage = page;
+	return page != NULL;
+}
+
 void pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS)
 {
-	if (!ptr) {
-	} else if (pgb__ptr_is_last_alloc(ptr, pgb)) {
-		pgb__alloc_set_sz(ptr, pgb->current_page, 0);
-		pgb->current_ptr = ptr;
-		if (ptr == pgb__page_first_usable_slot(pgb->current_page)) {
-			pgb_page_t *prev = pgb->current_page->prev;
-			pgb_heap_return_page(pgb->heap, pgb->current_page);
-			pgb->current_page = prev;
-			if (pgb->current_page) {
-				pgb__restore_current_page_ptr(pgb);
-				pgb->current_page->next = NULL;
-			}
+	pgb_page_t *page;
+	size_t slot;
+	size_t size;
+
+	if (!ptr)
+		return;
+
+	if (!pgb__find_page_for_ptr(pgb, ptr, &page)) {
+		assert(false);
+#ifdef VLT_TRACK_MEMORY
+		log_warn("pgb_free: memory leak @ %s", loc);
+#endif
+		return;
+	}
+
+	slot = pgb__alloc_get_slot_idx(ptr, page);
+	size = pgb__alloc_get_sz(ptr, page);
+	assert(size != 0);
+	pgb__alloc_set_sz(ptr, page, 0);
+
+	if (ptr + size == pgb->current_ptr) {
+		pgb__restore_current_page_ptr(pgb, slot);
+		while (   pgb->current_page
+		       && pgb->current_ptr == pgb__page_first_usable_slot(pgb->current_page)) {
+			pgb__pop_page(pgb);
+			if (pgb->current_page)
+				pgb__restore_current_page_ptr(pgb, PGB__PAGE_SLOTS);
+			else
+				pgb->current_ptr = NULL;
 		}
-	} else if (pgb__ptr_in_page(ptr, pgb->current_page)) {
-		assert(pgb__alloc_get_sz(ptr, pgb->current_page) != 0);
-		pgb__alloc_set_sz(ptr, pgb->current_page, 0);
+	} else if (page == pgb->current_page) {
 #ifdef VLT_ANALYZE_TEMP_MEMORY
-		log_warn("pgb_free: cannot recapture memory @ %s", loc);
+		log_warn("pgb_free: %u bytes out of order @ %s", size, loc);
+#endif
+	} else {
+#ifdef VLT_ANALYZE_TEMP_MEMORY
+		log_warn("pgb_free: %u bytes out of page @ %s", size, loc);
 #endif
 	}
-#ifdef VLT_ANALYZE_TEMP_MEMORY
-	else
-		log_warn("pgb_free: cannot recapture memory @ %s", loc);
-#endif
 }
 
 pgb_watermark_t pgb_save(pgb_t *pgb)
@@ -462,12 +497,8 @@ pgb_watermark_t pgb_save(pgb_t *pgb)
 void pgb_restore(pgb_watermark_t watermark)
 {
 	pgb_t *pgb = watermark.pgb;
-	pgb_page_t *page = pgb->current_page;
-	while (page != watermark.page) {
-		pgb_page_t *prev = page->prev;
-		pgb_heap_return_page(pgb->heap, page);
-		page = prev;
-	}
+	while (pgb->current_page != watermark.page)
+		pgb__pop_page(pgb);
 	pgb->current_page = watermark.page;
 	pgb->current_ptr  = watermark.ptr;
 	if (pgb->current_page) {
