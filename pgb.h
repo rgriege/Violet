@@ -203,13 +203,6 @@ bool pgb__ptr_in_page(const pgb_byte *ptr, const pgb_page_t *page)
 }
 
 static
-bool pgb__ptr_is_last_alloc(const pgb_byte *ptr, const pgb_t *pgb)
-{
-	return   pgb__ptr_in_page(ptr, pgb->current_page)
-	      && ptr + pgb__alloc_get_sz(ptr, pgb->current_page) == pgb->current_ptr;
-}
-
-static
 size_t pgb__round_up_power_of_two(size_t x_)
 {
 	size_t x = x_ - 1;
@@ -417,6 +410,17 @@ void *pgb_calloc(size_t nmemb, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 }
 
 static
+bool pgb__find_page_for_ptr(pgb_t *pgb, const void *ptr, pgb_page_t **ppage)
+{
+	pgb_page_t *page = pgb->current_page;
+	while (page && !pgb__ptr_in_page(ptr, page))
+		page = page->prev;
+	if (page)
+		*ppage = page;
+	return page != NULL;
+}
+
+static
 void pgb__restore_current_page_ptr(pgb_t *pgb, size_t slot)
 {
 	pgb_page_t *page = pgb->current_page;
@@ -431,37 +435,46 @@ void pgb__restore_current_page_ptr(pgb_t *pgb, size_t slot)
 	pgb->current_ptr = pgb__page_first_usable_slot(page);
 }
 
-void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
+static
+void *pgb__realloc(pgb_byte *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 {
-	pgb_byte *ptr = ptr_;
+	pgb_page_t *page;
+	size_t old_size;
+
+	if (!pgb__find_page_for_ptr(pgb, ptr, &page)) {
+		assert(false);
+#ifdef PGB_TRACK_MEMORY
+		PGB_LOG("pgb_realloc: memory leak @ %s", loc);
+#endif
+		return NULL;
+	}
+
+	old_size = pgb__alloc_get_sz(ptr, page);
+
+	if ((old_size = pgb__alloc_get_sz(ptr, page)) >= size) {
+		return ptr;
+	} else if (   page == pgb->current_page
+	           && ptr + old_size == pgb->current_ptr
+	           &&    ptr + pgb__page_align(size, pgb->current_page)
+	              <= pgb__page_end(pgb->current_page)) {
+		const size_t aligned_size = pgb__page_align(size, pgb->current_page);
+		pgb__alloc_set_sz(ptr, pgb->current_page, aligned_size);
+		pgb->current_ptr = ptr + aligned_size;
+		PGB_LOG_REALLOC("pgb", aligned_size  MEMCALL_VARS);
+		return ptr;
+	} else {
+		pgb__alloc_set_sz(ptr, page, 0);
+		pgb_byte *new_ptr = pgb_malloc(size, pgb  MEMCALL_VARS);
+		memcpy(new_ptr, ptr, old_size);
+		return new_ptr;
+	}
+}
+
+void *pgb_realloc(void *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)
+{
 	if (ptr) {
 		if (size) {
-			if (   pgb->current_page
-			    && pgb__ptr_is_last_alloc(ptr, pgb)
-			    &&    ptr + pgb__page_align(size, pgb->current_page)
-			       <= pgb__page_end(pgb->current_page)) {
-				const size_t aligned_size = pgb__page_align(size, pgb->current_page);
-				pgb__alloc_set_sz(ptr, pgb->current_page, aligned_size);
-				pgb->current_ptr = ptr + aligned_size;
-				PGB_LOG_REALLOC("pgb", aligned_size  MEMCALL_VARS);
-				return ptr;
-			} else {
-				pgb_page_t *page = pgb->current_page;
-				size_t old_size;
-				while (page && !pgb__ptr_in_page(ptr, page))
-					page = page->prev;
-				if (!page) {
-					assert(false);
-					return NULL;
-				} else if ((old_size = pgb__alloc_get_sz(ptr, page)) >= size) {
-					return ptr;
-				} else {
-					pgb__alloc_set_sz(ptr, page, 0);
-					pgb_byte *new_ptr = pgb_malloc(size, pgb  MEMCALL_VARS);
-					memcpy(new_ptr, ptr, old_size);
-					return new_ptr;
-				}
-			}
+			return pgb__realloc(ptr, size, pgb  MEMCALL_VARS);
 		} else {
 			pgb_free(ptr, pgb  MEMCALL_VARS);
 			return NULL;
@@ -471,17 +484,6 @@ void *pgb_realloc(void *ptr_, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 	} else {
 		return NULL;
 	}
-}
-
-static
-bool pgb__find_page_for_ptr(pgb_t *pgb, const void *ptr, pgb_page_t **ppage)
-{
-	pgb_page_t *page = pgb->current_page;
-	while (page && !pgb__ptr_in_page(ptr, page))
-		page = page->prev;
-	if (page)
-		*ppage = page;
-	return page != NULL;
 }
 
 void pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS)
@@ -552,10 +554,9 @@ void pgb_restore(pgb_watermark_t watermark)
 
 size_t pgb_alloc_size(const pgb_t *pgb, const void *ptr)
 {
-	const pgb_page_t *page = pgb->current_page;
-	while (page && !pgb__ptr_in_page(ptr, page))
-		page = page->prev;
-	return (page != NULL ? pgb__alloc_get_sz(ptr, page) : 0);
+	pgb_page_t *page;
+	return pgb__find_page_for_ptr((pgb_t*)pgb, ptr, &page)
+	     ? pgb__alloc_get_sz(ptr, page) : 0;
 }
 
 void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
