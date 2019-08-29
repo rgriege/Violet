@@ -488,7 +488,7 @@ void *pgb_realloc(void *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 
 void pgb_free(void *ptr_, pgb_t *pgb  MEMCALL_ARGS)
 {
-	pgb_byte_t *ptr = ptr_;
+	pgb_byte *ptr = ptr_;
 	pgb_page_t *page;
 	size_t slot;
 	size_t size;
