@@ -420,7 +420,7 @@ b32  gui_range_y(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val,
                  r32 min, r32 max);
 b32  gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                 const char *txt, u32 *val, u32 opt);
-void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+b32  gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                  const char *txt, u32 *val, u32 opt);
 b32  gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                         u32 *val, u32 num_items);
@@ -553,7 +553,7 @@ s32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
 s32  pgui_npt_val(gui_t *gui, const char *txt, u32 n,
                   npt_flags_t flags, npt_filter_p filter);
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
-void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
+b32  pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 b32  pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
 b32  pgui_dropdown_item(gui_t *gui, const char *txt);
 void pgui_dropdown_end(gui_t *gui);
@@ -5111,34 +5111,35 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	return selected;
 }
 
-void gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                 const char *txt, u32 *val, u32 opt)
+b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                const char *txt, u32 *val, u32 opt)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
 		++gui->culled_widgets;
-		return;
+		return false;
 	}
 
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	b32 selected = false;
+	b32 changed = false;
 	gui__widget_render_state_t render_state;
 
 	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS) {
-	  if (!(*val & opt)) {
-			*val |= opt;
-			selected = true;
-		} else if (*val & ~opt) {
+		if (*val & opt) {
 			*val &= ~opt;
-			selected = true;
+			changed = true;
+		} else {
+			*val |= opt;
+			changed = true;
 		}
 	}
 
-	render_state = gui__widget_render_state(gui, id, selected, *val & opt,
+	render_state = gui__widget_render_state(gui, id, changed, *val & opt,
 	                                        contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
 	gui__hint_render(gui, id, gui->style.select.hint);
+	return changed;
 }
 
 static
@@ -6561,11 +6562,11 @@ b32 pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
 	return gui_select(gui, x, y, w, h, lbl, val, opt);
 }
 
-void pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
+b32 pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
-	gui_mselect(gui, x, y, w, h, txt, val, opt);
+	return gui_mselect(gui, x, y, w, h, txt, val, opt);
 }
 
 b32 pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items)
