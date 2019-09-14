@@ -3752,6 +3752,11 @@ void gui_img(gui_t *gui, s32 x, s32 y, const img_t *img)
 void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity)
 {
+	if (!img) {
+		assert(false);
+		return;
+	}
+
 	color_t color = g_white;
 	color.a = opacity * 255;
 	texture__render(gui, &img->texture, x, y, sx, sy, rotation, color);
@@ -3760,6 +3765,11 @@ void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
 void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
                    img_scale_e scale)
 {
+	if (!img) {
+		assert(false);
+		return;
+	}
+
 	switch (scale) {
 	case IMG_CENTERED:;
 		const s32 x_off = (w - (s32)img->texture.width) / 2;
