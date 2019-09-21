@@ -3432,10 +3432,23 @@ b32 mouse__covered_by_current_popup(const gui_t *gui)
 }
 
 static
-b32 mouse__covered_by_any_popup(const gui_t *gui)
+b32 gui__popup_in_current_stack(const gui_t *gui, const gui_popup_t *popup)
+{
+	const gui_popup_t *p = gui->popup;
+	while (p) {
+		if (p == popup)
+			return true;
+		p = p->prev;
+	}
+	return false;
+}
+
+static
+b32 mouse__covered_by_popup(const gui_t *gui)
 {
 	for (u32 i = 0; i < countof(gui->popups); ++i)
-		if (gui->popups[i].id == gui->mouse_covered_by_widget_id)
+		if (   gui->popups[i].id == gui->mouse_covered_by_widget_id
+		    && !gui__popup_in_current_stack(gui, &gui->popups[i]))
 			return true;
 	return false;
 }
@@ -5157,7 +5170,7 @@ void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse,
                           s32 px, s32 py, s32 pw, s32 ph)
 {
 	const b32 mouse_pos_can_defocus = !contains_mouse
-	                               && !mouse__covered_by_any_popup(gui);
+	                               && !mouse__covered_by_popup(gui);
 
 	if (gui__btn_logic_ex(gui, id, MB_LEFT, contains_mouse,
 	                      mouse_pos_can_defocus) == BTN_PRESS) {
