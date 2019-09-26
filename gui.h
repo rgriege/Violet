@@ -424,7 +424,7 @@ b32  gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                  const char *txt, u32 *val, u32 opt);
 b32  gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                         u32 *val, u32 num_items);
-b32  gui_dropdown_item(gui_t *gui, const char *txt);
+b32  gui_dropdown_item(gui_t *gui, u32 id, const char *txt);
 void gui_dropdown_end(gui_t *gui);
 typedef void(*gui_drag_f)(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                           s32 offset_x, s32 offset_y, void *udata);
@@ -555,7 +555,7 @@ s32  pgui_npt_val(gui_t *gui, const char *txt, u32 n,
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 b32  pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 b32  pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
-b32  pgui_dropdown_item(gui_t *gui, const char *txt);
+b32  pgui_dropdown_item(gui_t *gui, u32 id, const char *txt);
 void pgui_dropdown_end(gui_t *gui);
 b32  pgui_slider_x(gui_t *gui, r32 *val);
 b32  pgui_slider_y(gui_t *gui, r32 *val);
@@ -5320,13 +5320,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	return true;
 }
 
-static
-b32 gui__dropdown_item_selected(const gui_t *gui)
-{
-	return *gui->dropdown.val == gui->dropdown.item_idx;
-}
-
-b32 gui_dropdown_item(gui_t *gui, const char *txt)
+b32 gui_dropdown_item(gui_t *gui, u32 id, const char *txt)
 {
 	b32 chosen = false;
 
@@ -5336,16 +5330,16 @@ b32 gui_dropdown_item(gui_t *gui, const char *txt)
 	if (gui_widget_focused(gui, gui->dropdown.id)) {
 		gui_style_push(gui, btn, gui_style(gui)->dropdown.btn);
 		if (pgui_btn_txt(gui, txt) == BTN_PRESS) {
-			*gui->dropdown.val = gui->dropdown.item_idx;
+			*gui->dropdown.val = id;
 			chosen = true;
 		} else if (   gui->dropdown.triggered_by_key
-		           && gui__dropdown_item_selected(gui)) {
+		           && *gui->dropdown.val == id) {
 			chosen = true;
 		}
 		gui_style_pop(gui);
 	}
 
-	if (gui__dropdown_item_selected(gui)) {
+	if (*gui->dropdown.val == id) {
 		const size_t n = countof(gui->dropdown.selected_item_txt);
 		strncpy(gui->dropdown.selected_item_txt, txt, n);
 		gui->dropdown.selected_item_txt[n-1] = '\0';
@@ -6599,9 +6593,9 @@ b32 pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items)
 	return gui_dropdown_begin(gui, x, y, w, h, val, num_items);
 }
 
-b32 pgui_dropdown_item(gui_t *gui, const char *txt)
+b32 pgui_dropdown_item(gui_t *gui, u32 id, const char *txt)
 {
-	return gui_dropdown_item(gui, txt);
+	return gui_dropdown_item(gui, id, txt);
 }
 
 void pgui_dropdown_end(gui_t *gui)
