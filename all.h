@@ -3,6 +3,7 @@
 
 #ifdef VIOLET_IMPLEMENTATION
 #define ARRAY_IMPLEMENTATION
+#define AUDIO_IMPLEMENTATION
 #define BASE64_IMPLEMENTATION
 #define COLOR_IMPLEMENTATION
 #define CORE_IMPLEMENTATION
@@ -49,6 +50,8 @@
 #else
 #include "violet/stbi.h"
 #endif
+/* Audio */
+#include "violet/audio.h"
 
 /* Additional utilities useful when using the entire library */
 
