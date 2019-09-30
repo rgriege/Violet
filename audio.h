@@ -52,12 +52,12 @@ static music_t g_music = { .handle = NULL };
 b32 audio_init(void)
 {
 	if (Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 1024) == -1) {
-		log_error("Unable to open audio: %s\n", SDL_GetError());
+		log_error("Unable to open audio: %s", SDL_GetError());
 		return false;
 	}
 
 	if (Mix_AllocateChannels(16) != 16) {
-		log_error("Unable to allocate channels: %s\n", SDL_GetError());
+		log_error("Unable to allocate channels: %s", SDL_GetError());
 		return false;
 	}
 
