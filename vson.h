@@ -183,7 +183,7 @@ b32 vson_read_b32(FILE *fp, const char *label, b32 *val)
 
 b32 vson_read_s32(FILE *fp, const char *label, s32 *val)
 {
-	VSON_READ_VAL((u32)strtol(buf, NULL, 10));
+	VSON_READ_VAL((s32)strtol(buf, NULL, 10));
 }
 
 b32 vson_read_u32(FILE *fp, const char *label, u32 *val)
