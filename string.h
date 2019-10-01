@@ -5,6 +5,7 @@
 char *strtrim(char *str);
 char *sprint_u32(char *buf, u32 n, u32 val);
 char *sprint_s32(char *buf, u32 n, s32 val);
+char *sprint_s64(char *buf, u32 n, s64 val);
 char *sprint_r32(char *buf, u32 n, r32 val, u32 dec);
 
 #define strbcpy(dst, src) strncpy(dst, src, sizeof(dst))
@@ -118,6 +119,24 @@ char *sprint_s32(char *buf, u32 n, s32 val)
 	size_t off, len, sep_cnt, sep_off;
 
 	snprintf(buf, n, "%d", val);
+	sprint__stats(buf, 0, &off, &len, &sep_cnt, &sep_off);
+
+	if (len >= n) {
+		assert(false);
+		goto out;
+	}
+
+	if (sep_cnt > 0)
+		sprint__separators(buf, sep_off, sep_cnt, len);
+out:
+	return buf;
+}
+
+char *sprint_s64(char *buf, u32 n, s64 val)
+{
+	size_t off, len, sep_cnt, sep_off;
+
+	snprintf(buf, n, "%jd", val);
 	sprint__stats(buf, 0, &off, &len, &sep_cnt, &sep_off);
 
 	if (len >= n) {
