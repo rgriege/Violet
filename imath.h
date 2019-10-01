@@ -74,7 +74,7 @@ IMGDECL const ivali g_ivali_0_to_1;
 
 IMDEF ivali ivali_range(s32 center, s32 radius);
 IMDEF s32   ivali_center(ivali i);
-IMDEF void  ivali_slide(ivali *i, s32 d);
+IMDEF ivali ivali_slide(ivali i, s32 d);
 IMDEF s32   ivali_length(ivali i);
 IMDEF b32   ivali_overlaps(ivali lhs, ivali rhs);
 IMDEF b32   ivali_overlaps_within(ivali lhs, ivali rhs, s32 error);
@@ -257,10 +257,12 @@ IMDEF s32 ivali_center(ivali i)
 	return (i.l + i.r) / 2;
 }
 
-IMDEF void ivali_slide(ivali *i, s32 d)
+IMDEF ivali ivali_slide(ivali i, s32 d)
 {
-	i->l += d;
-	i->r += d;
+	return (ivali){
+		.l = i.l + d,
+		.r = i.r + d,
+	};
 }
 
 IMDEF s32 ivali_length(ivali i)
