@@ -59,6 +59,7 @@ color_t  color_blend(color_t src, color_t dst);
 colorf_t colorf_mix(colorf_t lhs, colorf_t rhs, r32 t);
 colorf_t colorf_darken(colorf_t c, r32 factor);
 r32      colorf_brightness(colorf_t c);
+color_t  color_fade(color_t c, u8 alpha);
 
 void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v);
 void hsv_to_rgb(r32 h, r32 s, r32 v, r32 *r, r32 *g, r32 *b);
@@ -177,6 +178,11 @@ colorf_t colorf_darken(colorf_t c, r32 factor)
 r32 colorf_brightness(colorf_t c)
 {
 	return (c.r + c.g + c.b) / 3.f;
+}
+
+color_t color_fade(color_t c, u8 alpha)
+{
+	return (color_t){ .r = c.r, .g = c.g, .b = c.b, .a = alpha };
 }
 
 void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v)
