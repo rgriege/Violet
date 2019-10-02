@@ -767,10 +767,18 @@ typedef struct gui_slider_style
 	b32 track_narrow;
 } gui_slider_style_t;
 
+typedef struct gui_padding_style
+{
+	s32 top;
+	s32 right;
+	s32 bottom;
+	s32 left;
+} gui_padding_style_t;
+
 typedef struct gui_scroll_area_style
 {
 	color_t bg_color;
-	s32 padding;
+	gui_padding_style_t padding;
 	s32 scrollbar_track_width;
 	gui_slider_style_t scrollbar;
 } gui_scroll_area_style_t;
@@ -797,7 +805,7 @@ typedef struct gui_panel_style
 	gui_slider_style_t  scrollbar;
 	color_t cell_bg_color;
 	color_t cell_border_color;
-	s32 padding;
+	gui_padding_style_t padding;
 } gui_panel_style_t;
 
 typedef struct gui_style
@@ -1644,7 +1652,7 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 
 #define gi__gui_scroll_area_style_default { \
 	.bg_color = gi_nocolor, \
-	.padding = 0, \
+	.padding = {0}, \
 	.scrollbar_track_width = 5, \
 	.scrollbar = gi__gui_slider_style_default, \
 }
@@ -1819,7 +1827,7 @@ const gui_style_t g_gui_style_default = {
 		.scrollbar = gi__gui_slider_style_default,
 		.cell_bg_color = gi_nocolor,
 		.cell_border_color = gi_nocolor,
-		.padding = 10,
+		.padding = { 10, 10, 10, 10 },
 	},
 	.split = {
 		.thickness = 1.f,
@@ -1874,7 +1882,7 @@ const gui_style_t g_gui_style_default = {
 
 #define gi__gui_scroll_area_style_invis { \
 	.bg_color = gi_nocolor, \
-	.padding = 0, \
+	.padding = {0}, \
 	.scrollbar_track_width = 0, \
 	.scrollbar = gi__gui_slider_style_invis, \
 }
@@ -1905,7 +1913,7 @@ const gui_style_t g_gui_style_invis = {
 		.scrollbar         = gi__gui_slider_style_invis,
 		.cell_bg_color     = gi_nocolor,
 		.cell_border_color = gi_nocolor,
-		.padding           = 10,
+		.padding           = { 10, 10, 10, 10 },
 	},
 	.split    = gi__gui_line_style_invis,
 };
@@ -5764,10 +5772,10 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		static const r32 rows_npt[] = {
 			20, 5, 20, 5, 20, 10, 20, 5, 20, 5, 20, 10, 20
 		};
-		const s32 gx = px + style->panel.padding;
-		const s32 gy = py + style->panel.padding;
-		const s32 gw = pw - style->panel.padding*2;
-		const s32 gh = ph - style->panel.padding*2;
+		const s32 gx = px + style->panel.padding.left;
+		const s32 gy = py + style->panel.padding.bottom;
+		const s32 gw = pw - style->panel.padding.left - style->panel.padding.right;
+		const s32 gh = ph - style->panel.padding.bottom - style->panel.padding.top;
 		const npt_flags_t flags = NPT_CLEAR_ON_FOCUS
 		                        | NPT_COMPLETE_ON_TAB
 		                        | NPT_COMPLETE_ON_CLICK_OUT;
@@ -5907,27 +5915,29 @@ void gui__scroll_area_usable_rect(const gui_t *gui,
                                   const gui_scroll_area_t *scroll_area,
                                   s32 *x, s32 *y, s32 *w, s32 *h)
 {
-	const s32 padding = gui->style.scroll_area.padding;
-	const s32 scrollbar_track_width
-		= max(gui->style.scroll_area.scrollbar_track_width - padding, 0);
+	const gui_scroll_area_style_t *style = &gui->style.scroll_area;
 
 	*x = scroll_area->pos.x;
 	*y = scroll_area->pos.y;
 	*w = scroll_area->dim.x;
 	*h = scroll_area->dim.y;
 
-	*x += padding;
-	*y += padding;
-	*w -= padding*2;
-	*h -= padding*2;
+	*x += style->padding.left;
+	*y += style->padding.bottom;
+	*w -= style->padding.left + style->padding.right;
+	*h -= style->padding.bottom + style->padding.top;
 
-	if (scrollbar_track_width > 0) {
-		if (scroll_area->dim.x < scroll_area->last_max_dim.x) {
-			*y += scrollbar_track_width;
-			*h -= scrollbar_track_width;
-		}
-		if (scroll_area->dim.y < scroll_area->last_max_dim.y)
-			*w -= scrollbar_track_width;
+	if (   scroll_area->dim.x < scroll_area->last_max_dim.x
+	    && style->scrollbar_track_width > style->padding.bottom) {
+		const s32 extra_track_width = style->scrollbar_track_width - style->padding.bottom;
+		*y += extra_track_width;
+		*h -= extra_track_width;
+	}
+
+	if (   scroll_area->dim.y < scroll_area->last_max_dim.y
+	    && style->scrollbar_track_width > style->padding.right) {
+		const s32 extra_track_width = style->scrollbar_track_width - style->padding.right;
+		*w -= extra_track_width;
 	}
 
 	*w = max(*w, 0);
@@ -7854,7 +7864,8 @@ s32 pgui__panel_body_height(const gui_panel_t *panel)
 static
 void pgui__style_push_panel_scroll_area(gui_t *gui)
 {
-	const s32 scrollbar_track_width = gui->style.panel.padding/2;
+	const s32 scrollbar_track_width = min(gui->style.panel.padding.right/2,
+	                                      gui->style.panel.padding.bottom/2);
 	gui_style_push(gui, scroll_area.bg_color, gui->style.panel.bg_color);
 	gui_style_push(gui, scroll_area.padding, gui->style.panel.padding);
 	gui_style_push_s32(gui, scroll_area.scrollbar_track_width, scrollbar_track_width);
