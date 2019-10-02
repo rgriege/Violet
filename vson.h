@@ -258,12 +258,12 @@ void vson_write_u32(FILE *fp, const char *label, u32 val)
 
 void vson_write_s64(FILE *fp, const char *label, s64 val)
 {
-	fprintf(fp, "%s: %jd\n", label, val);
+	fprintf(fp, "%s: %lld\n", label, val);
 }
 
 void vson_write_u64(FILE *fp, const char *label, u64 val)
 {
-	fprintf(fp, "%s: %ju\n", label, val);
+	fprintf(fp, "%s: %llu\n", label, val);
 }
 
 void vson_write_r32(FILE *fp, const char *label, r32 val)
