@@ -939,6 +939,8 @@ int sort_s32_desc(const void *lhs_, const void *rhs_)
 
 void buf_insert_(void *p_, size_t idx, size_t nmemb, size_t size)
 {
+	assert(nmemb > 0);
+	assert(idx < nmemb);
 	char *p = p_;
 	for (char *pi = p+(nmemb-1)*size, *pn = p+idx*size; pi != pn; pi -= size)
 		memcpy(pi, pi-size, size);
@@ -946,6 +948,7 @@ void buf_insert_(void *p_, size_t idx, size_t nmemb, size_t size)
 
 void buf_remove_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
 {
+	assert(idx + n <= nmemb);
 	char *p = p_;
 	for (char *pi = p+(idx+n)*size, *pn = p+nmemb*size; pi != pn; pi += size)
 		memcpy(pi-n*size, pi, size);
