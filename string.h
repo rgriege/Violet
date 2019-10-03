@@ -136,7 +136,7 @@ char *sprint_s64(char *buf, u32 n, s64 val)
 {
 	size_t off, len, sep_cnt, sep_off;
 
-	snprintf(buf, n, "%lld", val);
+	snprintf(buf, n, "%" PRId64, val);
 	sprint__stats(buf, 0, &off, &len, &sep_cnt, &sep_off);
 
 	if (len >= n) {
