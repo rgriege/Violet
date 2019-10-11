@@ -14,6 +14,10 @@ typedef union
 	struct { r32 d[4]; };
 } colorf_t;
 
+/* Unfortunately, for MSVC compliance, we need 2 variants for color constants.
+ * 'gi_' stands for global initializer, and should only be used when
+ * statically initializing a color_t struct member at compile time. */
+
 #define gi_black        { .r=0,    .g=0,    .b=0,    .a=0xff }
 #define gi_grey77       { .r=0x4d, .g=0x4d, .b=0x4d, .a=0xff }
 #define gi_grey128      { .r=0x80, .g=0x80, .b=0x80, .a=0xff }
