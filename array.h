@@ -50,7 +50,9 @@ typedef struct array__head
 
 #define array_reserve(a, n)        ((a)=array__reserve(a, n, array__esz(a) \
                                                        MEMCALL_LOCATION))
+#define array_reserve_addl(a, n)   array_reserve(a, array_sz(a) + n)
 #define array_set_sz(a, n)         (array_reserve(a, n), array_sz(a) = n)
+#define array_extend_sz(a, n)      (array_reserve_addl(a, n), array_sz(a) += n)
 #define array_append_null(a)       ((a)=array__append_null(a, array__esz(a) \
                                                            MEMCALL_LOCATION), \
                                     (a)+array_sz(a) - 1)
