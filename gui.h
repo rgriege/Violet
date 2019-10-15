@@ -5174,6 +5174,19 @@ b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 }
 
 static
+void gui__popup_position(const gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         s32 pw, s32 ph, s32 *px, s32 *py)
+{
+	const s32 bot = y - ph;
+	const s32 top = y + h + ph;
+	*px = x;
+	if (bot >= 0 || -bot <= -(gui->window_dim.y - top))
+		*py = y - ph;
+	else
+		*py = y + h;
+}
+
+static
 void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse,
                           s32 px, s32 py, s32 pw, s32 ph)
 {
@@ -5275,13 +5288,13 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const s32 pw = w;
 	const s32 ph = h * num_items;
-	const s32 px = x;
-	const s32 py = y - ph;
+	s32 px, py;
 	b32 triggered_by_key = false;
 	gui__widget_render_state_t render_state;
 
 	assert(gui->dropdown.id == 0); /* cannot nest dropdowns */
 
+	gui__popup_position(gui, x, y, w, h, pw, ph, &px, &py);
 	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
 
 	if (gui_widget_focused(gui, id) && !gui->lock && gui->key_repeat.triggered) {
@@ -5746,12 +5759,12 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const s32 px = x;
-	const s32 py = y - ph;
+	s32 px, py;
 	gui__widget_render_state_t render_state;
 	gui_style_t *style = gui_style(gui);
 	color_t color = colorf_to_color(*c);
 
+	gui__popup_position(gui, x, y, w, h, pw, ph, &px, &py);
 	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
 
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
