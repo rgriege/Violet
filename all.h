@@ -16,6 +16,7 @@
 #define LIST_IMPLEMENTATION
 #define LOCALIZE_IMPLEMENTATION
 #define OS_IMPLEMENTATION
+#define PROFILER_IMPLEMENTATION
 #define STRING_IMPLEMENTATION
 #define UTF8_IMPLEMENTATION
 #define VSON_IMPLEMENTATION
@@ -42,6 +43,8 @@
 #include "violet/utf8.h"
 /* OS */
 #include "violet/os.h"
+/* Profiler */
+#include "violet/profiler.h"
 /* Gui */
 #include "violet/color.h"
 #ifndef VIOLET_NO_GUI
