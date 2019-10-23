@@ -43,10 +43,13 @@ typedef struct timespec timepoint_t;
 
 #define polarity(x) (((x) > 0) - ((x) < 0))
 
-#ifdef static_assert
-#undef static_assert
+#if !defined(__cplusplus) && !defined(static_assert)
+#if __GNUC__ >= 5
+#define static_assert _Static_assert
+#else
+#define static_assert(cnd, msg) typedef int static_assertion[(cnd) ? 1 : -1]
 #endif
-#define static_assert(cnd, msg) typedef int msg[(cnd) ? 1 : -1]
+#endif
 
 #define UNUSED(x) ((void)(x))
 #define NOOP UNUSED(0)
@@ -100,8 +103,8 @@ typedef union intptr
 	void *p;
 } intptr;
 
-static_assert(sizeof(r32) == 4, invalid_floating_point_size);
-static_assert(sizeof(r64) == 8, invalid_double_size);
+static_assert(sizeof(r32) == 4, "invalid floating point size");
+static_assert(sizeof(r64) == 8, "invalid double size");
 
 /* Initialization */
 
@@ -140,6 +143,7 @@ void error_handler_pop(error_f func, void *udata);
 
 void error_catch(const char *msg, void *udata);
 
+#ifndef __cplusplus
 #define try \
 	do { \
 		jmp_buf jmpbuf_try; \
@@ -150,6 +154,7 @@ void error_catch(const char *msg, void *udata);
 #define finally \
 		error_handler_pop(error_catch, &jmpbuf_try); \
 	} while (0)
+#endif
 
 
 /* Memory allocation */

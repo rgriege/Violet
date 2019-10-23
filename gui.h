@@ -6397,7 +6397,7 @@ void pgui__grid_advance(gui_grid_t *grid)
 void pgui_row(gui_t *gui, s32 height, u32 num_cells)
 {
 	const r32 cells[GUI_GRID_MAX_CELLS] = { 0 };
-	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	static_assert(GUI_GRID_FLEX == 0, "invalid initialization");
 	assert(num_cells < GUI_GRID_MAX_CELLS);
 	pgui_row_cells(gui, height, cells, num_cells);
 }
@@ -6416,7 +6416,7 @@ void pgui_row_empty(gui_t *gui, s32 height)
 void pgui_row_centered(gui_t *gui, s32 height, r32 width)
 {
 	const r32 cells[3] = { 0, width, 0 };
-	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	static_assert(GUI_GRID_FLEX == 0, "invalid initialization");
 	assert(countof(cells) < GUI_GRID_MAX_CELLS);
 	pgui_row_cells(gui, height, B2PC(cells));
 }
@@ -6424,7 +6424,7 @@ void pgui_row_centered(gui_t *gui, s32 height, r32 width)
 void pgui_col(gui_t *gui, s32 width, u32 num_cells)
 {
 	const r32 cells[GUI_GRID_MAX_CELLS] = { 0 };
-	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	static_assert(GUI_GRID_FLEX == 0, "invalid initialization");
 	assert(num_cells < GUI_GRID_MAX_CELLS);
 	pgui_col_cells(gui, width, cells, num_cells);
 }
@@ -6443,7 +6443,7 @@ void pgui_col_empty(gui_t *gui, s32 width)
 void pgui_col_centered(gui_t *gui, s32 width, r32 height)
 {
 	const r32 cells[3] = { 0, height, 0 };
-	static_assert(GUI_GRID_FLEX == 0, invalid_initialization);
+	static_assert(GUI_GRID_FLEX == 0, "invalid initialization");
 	assert(countof(cells) < GUI_GRID_MAX_CELLS);
 	pgui_col_cells(gui, width, B2PC(cells));
 }
