@@ -68,6 +68,8 @@ char *imcachedir(void);
 char *imcachepath(const char *resource);
 char *imdatadir(void);
 char *imdatapath(const char *resource);
+char *imuserdatadir(void);
+char *imuserdatapath(const char *resource);
 
 FILE  *file_open(const char *fname, const char *mode);
 void  *file_read_all(const char *fname, const char *mode, size_t *sz, allocator_t *a);

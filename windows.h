@@ -346,13 +346,12 @@ char *imapppath(const char *resource)
 }
 
 static
-char *improgdatadir(void)
+char *imknownfolderdir(KNOWNFOLDERID id, const char *default_dir)
 {
-	static const char *default_dir = ".ProgramData";
 #ifdef WINDOWS_PACKAGE_NAME
 	HRESULT result;
 	PWSTR wpath;
-	if ((result = SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &wpath)) != S_OK) {
+	if ((result = SHGetKnownFolderPath(&id, 0, NULL, &wpath)) != S_OK) {
 		log_error("%s() SHGetKnownFolderPath error %d", __FUNCTION__, result);
 		imstrcpy(default_dir);
 		goto out;
@@ -370,6 +369,12 @@ out:
 #else
 	return imstrcpy(default_dir);
 #endif
+}
+
+static
+char *improgdatadir(void)
+{
+	return imknownfolderdir(FOLDERID_ProgramData, ".ProgramData");
 }
 
 static
@@ -416,6 +421,16 @@ char *imdatadir(void)
 char *imdatapath(const char *resource)
 {
 	return impathcat(imdatadir(), resource);
+}
+
+char *imuserdatadir(void)
+{
+	return imknownfolderdir(FOLDERID_LocalAppData, ".UserData");
+}
+
+char *imuserdatapath(const char *resource)
+{
+	return impathcat(imuserdatadir(), resource);
 }
 
 FILE *file_open(const char *fname, const char *mode)

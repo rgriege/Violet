@@ -234,6 +234,16 @@ char *imdatapath(const char *resource)
 	return impathcat(imdatadir(), resource);
 }
 
+char *imuserdatadir(void)
+{
+	return imapppath(".userdata");
+}
+
+char *imuserdatapath(const char *resource)
+{
+	return impathcat(imuserdatadir(), resource);
+}
+
 FILE *file_open(const char *fname, const char *mode)
 {
 	return fopen(fname, mode);
