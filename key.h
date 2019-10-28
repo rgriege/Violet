@@ -124,9 +124,11 @@ typedef enum gui_key
     KB_LCTRL = 224,
     KB_LSHIFT = 225,
     KB_LALT = 226, /* alt, option */
+    KB_LGUI = 227, /* windows, command (apple), meta */
     KB_RCTRL = 228,
     KB_RSHIFT = 229,
     KB_RALT = 230, /* alt gr, option */
+    KB_RGUI = 231, /* windows, command (apple), meta */
 
     KB_COUNT = 256 /* not a key - marks the number of codes for array bounds */
 } gui_key_t;
@@ -135,7 +137,8 @@ typedef enum gui_key_mod
 {
 	KBM_CTRL,
 	KBM_SHIFT,
-	KBM_ALT
+	KBM_ALT,
+	KBM_GUI,
 } gui_key_mod_t;
 
 typedef enum gui_key_toggle
