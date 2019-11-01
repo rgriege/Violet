@@ -2564,9 +2564,11 @@ b32 gui__key_is_mod(gui_key_t key)
 	case KB_LCTRL:
 	case KB_LSHIFT:
 	case KB_LALT:
+	case KB_LGUI:
 	case KB_RCTRL:
 	case KB_RSHIFT:
 	case KB_RALT:
+	case KB_RGUI:
 		return true;
 	default:
 		return false;
@@ -4613,7 +4615,11 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (gui_widget_focused(gui, id)) {
 		u32 len = (u32)strlen(txt);
 		gui->npt.cursor_pos = clamp(0, gui->npt.cursor_pos, len);
+#ifdef __APPLE__
+		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_GUI)) {
+#else
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
+#endif
 			gui__npt_prep_action(gui, flags, txt, &len);
 			const char *p = gui->text_npt;
 			char *pnext;
@@ -4651,7 +4657,11 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				gui__npt_prep_action(gui, flags, txt, &len);
 				gui__defocus_widget(gui, id);
 				complete = NPT_COMPLETE_ON_ENTER;
+#ifdef __APPLE__
+			} else if (key_idx == KB_V && key_mod(gui, KBM_GUI)) {
+#else
 			} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
+#endif
 				char *clipboard;
 				u32 sz;
 				gui__npt_prep_action(gui, flags, txt, &len);
