@@ -389,6 +389,40 @@ void log_level_writev(log_level_t level, const char *format, va_list ap);
 
 void file_logger(void *udata, log_level_t level, const char *format, va_list ap);
 
+#ifdef VIOLET_MAIN
+int app_entry(int argc, char *const argv[]);
+#if defined(_WIN32) && defined(UNICODE)
+const char *os_imstr_to_utf8(const wchar_t *str);
+int wmain(int argc, wchar_t *const wargv[], wchar_t *const envp[])
+#else
+int main(int argc, char *const argv[])
+#endif
+{
+	int ret;
+	vlt_init(VLT_THREAD_MAIN);
+#if defined(_WIN32) && defined(UNICODE)
+	char **argv = malloc(argc * sizeof(char*));
+	for (int i = 0; i < argc; ++i) {
+		const char *arg = os_imstr_to_utf8(wargv[i]);
+		argv[i] = malloc(strlen(arg)+1);
+		strcpy(argv[i], arg);
+	}
+#endif
+	ret = app_entry(argc, argv);
+#if defined(_WIN32) && defined(UNICODE)
+	for (int i = 0; i < argc; ++i)
+		free(argv[i]);
+	free(argv);
+#endif
+#ifndef __EMSCRIPTEN__
+	vlt_destroy(VLT_THREAD_MAIN);
+#endif
+	return ret;
+}
+
+#define main app_entry
+#endif // VIOLET_MAIN
+
 #endif // VIOLET_CORE_H
 
 
@@ -1108,40 +1142,6 @@ void vlt_destroy(vlt_thread_type_e thread_type)
 #endif
 	g_error_handler  = NULL;
 }
-
-#ifndef VIOLET_NO_MAIN
-int app_entry(int argc, char *const argv[]);
-#if defined(_WIN32) && defined(UNICODE)
-const char *os_imstr_to_utf8(const wchar_t *str);
-int wmain(int argc, wchar_t *const wargv[], wchar_t *const envp[])
-#else
-int main(int argc, char *const argv[])
-#endif
-{
-	int ret;
-	vlt_init(VLT_THREAD_MAIN);
-#if defined(_WIN32) && defined(UNICODE)
-	char **argv = malloc(argc * sizeof(char*));
-	for (int i = 0; i < argc; ++i) {
-		const char *arg = os_imstr_to_utf8(wargv[i]);
-		argv[i] = malloc(strlen(arg)+1);
-		strcpy(argv[i], arg);
-	}
-#endif
-	ret = app_entry(argc, argv);
-#if defined(_WIN32) && defined(UNICODE)
-	for (int i = 0; i < argc; ++i)
-		free(argv[i]);
-	free(argv);
-#endif
-#ifndef __EMSCRIPTEN__
-	vlt_destroy(VLT_THREAD_MAIN);
-#endif
-	return ret;
-}
-
-#define main app_entry
-#endif // VIOLET_NO_MAIN
 
 #undef CORE_IMPLEMENTATION
 #endif // CORE_IMPLEMENTATION
