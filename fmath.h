@@ -269,6 +269,7 @@ FMDEF void  polyf_transform(v2f *v, u32 n, const m3f mat);
 FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis);
 FMDEF v2f   polyf_center(const v2f *v, u32 n);
 FMDEF r32   polyf_area(const v2f *v, u32 n);
+FMDEF r32   polyf_area_signed(const v2f *v, u32 n);
 FMDEF r32   polyf_perimeter(const v2f *v, u32 n);
 FMDEF v2f   polyf_centroid(const v2f *v, u32 n);
 FMDEF b32   polyf_is_cw(const v2f *v, u32 n);
@@ -1499,8 +1500,13 @@ FMDEF v2f polyf_center(const v2f *v, u32 n)
 	return v2f_scale(center, 1.f/n);
 }
 
+FMDEF r32 polyf_area(const v2f *v, u32 n)
+{
+	return fabsf(polyf_area_signed(v, n));
+}
+
 // NOTE(rgriege): Green's theorem
-static r32 polyf__area(const v2f *v, u32 n)
+FMDEF r32 polyf_area_signed(const v2f *v, u32 n)
 {
 	r32 area = 0;
 	v2f prev = v[n-1];
@@ -1515,11 +1521,6 @@ static r32 polyf__area(const v2f *v, u32 n)
 	return area/2;
 }
 
-FMDEF r32 polyf_area(const v2f *v, u32 n)
-{
-	return fabsf(polyf__area(v, n));
-}
-
 FMDEF r32 polyf_perimeter(const v2f *v, u32 n)
 {
 	r32 perimeter = 0.f;
@@ -1530,7 +1531,7 @@ FMDEF r32 polyf_perimeter(const v2f *v, u32 n)
 
 FMDEF v2f polyf_centroid(const v2f *v, u32 n)
 {
-	const r32 denom = 6 * polyf__area(v, n);
+	const r32 denom = 6 * polyf_area_signed(v, n);
 	v2f centroid = { .x=0, .y=0 };
 	v2f prev = v[n-1];
 	for (const v2f *vn = v+n; v != vn; ++v)
