@@ -1,5 +1,5 @@
-#ifndef DMATH_H
-#define DMATH_H
+#ifndef VIOLET_DMATH_H
+#define VIOLET_DMATH_H
 
 #include <float.h>
 #include <math.h>
@@ -14,33 +14,9 @@
 #endif
 #endif
 
-#ifdef DMATH_STANDALONE
-typedef unsigned b32;
-typedef unsigned u32;
-typedef double r64;
-#define false 0
-#define true 1
-#endif
-
-#ifndef DMATH_NO_INLINE
-#define DMDEF static inline
-#define DMGDECL static
-#define DMGDEF static
-#undef DMATH_STATIC
-#define DMATH_STATIC
-#elif DMATH_STATIC
-#define DMDEF static
-#define DMGDECL static
-#define DMGDEF static
-#else
 #define DMDEF
 #define DMGDECL extern
 #define DMGDEF
-#endif
-
-#if defined DMATH_STATIC && !defined DMATH_IMPLEMENTATION
-#define DMATH_IMPLEMENTATION
-#endif
 
 /* General utilities */
 
@@ -122,7 +98,7 @@ DMDEF void box2d_extend_point(box2d *b, v2d p);
 
 DMDEF b32 polyd_is_cc(const v2d *v, u32 n);
 
-#endif // DMATH_H
+#endif // VIOLET_DMATH_H
 
 
 /* Implementation */

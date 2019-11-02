@@ -1,32 +1,9 @@
-#ifndef IMATH_H
-#define IMATH_H
+#ifndef VIOLET_IMATH_H
+#define VIOLET_IMATH_H
 
-#ifdef IMATH_STANDALONE
-typedef unsigned b32;
-typedef int s32;
-#define false 0
-#define true 1
-#endif
-
-#ifndef IMATH_NO_INLINE
-#define IMDEF static inline
-#define IMGDECL static
-#define IMGDEF static
-#undef IMATH_STATIC
-#define IMATH_STATIC
-#elif IMATH_STATIC
-#define IMDEF static
-#define IMGDECL static
-#define IMGDEF static
-#else
 #define IMDEF
 #define IMGDECL extern
 #define IMGDEF
-#endif
-
-#if defined IMATH_STATIC && !defined IMATH_IMPLEMENTATION
-#define IMATH_IMPLEMENTATION
-#endif
 
 /* 2D Vector */
 
@@ -112,7 +89,7 @@ IMDEF s32  polyi_area(const v2i *v, u32 n);
 IMDEF v2i  polyi_center(const v2i *v, u32 n);
 IMDEF v2i  polyi_centroid(const v2i *v, u32 n);
 
-#endif // IMATH_H
+#endif // VIOLET_IMATH_H
 
 
 /* Implementation */

@@ -1,5 +1,5 @@
-#ifndef FMATH_H
-#define FMATH_H
+#ifndef VIOLET_FMATH_H
+#define VIOLET_FMATH_H
 
 #include <assert.h>
 #include <float.h>
@@ -15,33 +15,9 @@
 #endif
 #endif
 
-#ifdef FMATH_STANDALONE
-typedef unsigned b32;
-typedef unsigned u32;
-typedef float r32;
-#define false 0
-#define true 1
-#endif
-
-#ifndef FMATH_NO_INLINE
-#define FMDEF static inline
-#define FMGDECL static
-#define FMGDEF static
-#undef FMATH_STATIC
-#define FMATH_STATIC
-#elif FMATH_STATIC
-#define FMDEF static
-#define FMGDECL static
-#define FMGDEF static
-#else
 #define FMDEF
 #define FMGDECL extern
 #define FMGDEF
-#endif
-
-#if defined FMATH_STATIC && !defined FMATH_IMPLEMENTATION
-#define FMATH_IMPLEMENTATION
-#endif
 
 /* General utilities */
 
@@ -312,7 +288,7 @@ FMDEF b32   polyf_intersect(const v2f *p1, u32 n1, const v2f *p2, u32 n2,
 FMDEF r32   polyf_pt_dist(const v2f *v, u32 n, v2f p);
 FMDEF r32   polyf_pt_dist_sq(const v2f *v, u32 n, v2f p);
 
-#endif // FMATH_H
+#endif // VIOLET_FMATH_H
 
 
 /* Implementation */
