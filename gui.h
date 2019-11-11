@@ -4591,7 +4591,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	const b32 was_focused = gui_widget_focused(gui, id);
 	const gui_widget_style_t *style = &gui->style.npt;
 	b32 contains_mouse;
-	b32 complete = 0;
+	s32 complete = 0;
 	gui__widget_render_state_t render_state;
 	gui_element_style_t elem_style;
 	const char *displayed_txt;
@@ -4600,7 +4600,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
 		++gui->culled_widgets;
-		return false;
+		return 0;
 	}
 
 	contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
