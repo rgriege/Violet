@@ -254,6 +254,7 @@ FMDEF r32 fmath_point_to_segment_dist(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_segment_dist_sq(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_line_dist(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_line_dist_sq(v2f a, v2f b, v2f p);
+FMDEF r32 fmath_point_to_ray_dist(v2f a0, v2f dir, v2f p);
 
 FMDEF ivalf linef_project(v2f a, v2f b, v2f axis);
 
@@ -1354,6 +1355,12 @@ FMDEF r32 fmath_point_to_line_dist(v2f a, v2f b, v2f p)
 FMDEF r32 fmath_point_to_line_dist_sq(v2f a, v2f b, v2f p)
 {
 	return v2f_dist_sq(p, fmath_nearest_point_on_line(a, b, p));
+}
+
+FMDEF r32 fmath_point_to_ray_dist(v2f a0, v2f dir, v2f p)
+{
+	const v2f a1 = v2f_add(a0, dir);
+	return fmath_point_to_line_dist(a0, a1, p);
 }
 
 FMDEF ivalf linef_project(v2f a, v2f b, v2f axis)
