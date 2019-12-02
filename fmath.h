@@ -88,6 +88,7 @@ FMDEF b32  v2f_is_zero(v2f v);
 FMDEF b32  v2f_equal(v2f lhs, v2f rhs);
 FMDEF b32  v2f_share_quadrant(v2f lhs, v2f rhs);
 FMDEF v2f  v2f_midpoint(v2f v0, v2f v1);
+FMDEF v2f  v2f_bisect(v2f v0, v2f v1);
 
 /* 3D Vector */
 
@@ -512,6 +513,11 @@ FMDEF b32 v2f_share_quadrant(v2f lhs, v2f rhs)
 FMDEF v2f v2f_midpoint(v2f v0, v2f v1)
 {
 	return v2f_scale(v2f_add(v0, v1), 0.5f);
+}
+
+FMDEF v2f v2f_bisect(v2f v0, v2f v1)
+{
+	return v2f_normalize(v2f_add(v0, v1));
 }
 
 /* 3D Vector */
