@@ -3699,6 +3699,10 @@ void gui__polyline_corner_offset(v2f a, v2f b, v2f c, r32 d, v2f *p)
 	const v2f cx2 = v2f_add(c, perp2);
 	if (!fmath_line_intersect(ax1, bx1, bx2, cx2, p))
 		*p = v2f_add(b, perp1);
+	/* hacky fix for spikes created by very small angles.
+	 * clamps to the corner offset of a ~10 degree angle. */
+	else if (v2f_dist(*p, b) > d * 6.f)
+		*p = v2f_fmadd(b, v2f_bisect(perp1, perp2), d * 6.f);
 }
 
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke)
