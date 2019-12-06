@@ -52,6 +52,8 @@ void pgb_heap_destroy(pgb_heap_t *heap);
 struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t max_size);
 void             pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page);
 
+void pgb_heap_move_all_pages(pgb_heap_t *dst, pgb_heap_t *src);
+
 
 typedef uint8_t pgb_byte;
 typedef struct pgb
@@ -333,6 +335,18 @@ void pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page)
 		page->next = next;
 	}
 }
+
+void pgb_heap_move_all_pages(pgb_heap_t *dst, pgb_heap_t *src)
+{
+	pgb_page_t *page = src->first_page;
+	while (page) {
+		pgb_page_t *next = page->next;
+		pgb_heap_return_page(dst, page);
+		page = next;
+	}
+	src->first_page = NULL;
+}
+
 
 /* Allocator */
 
