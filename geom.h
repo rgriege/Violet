@@ -7,6 +7,7 @@ void arc_to_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
                  v2f *v, u32 segments, b32 closed);
 
 u32 triangulate_out_sz(u32 n);
+u32 triangulate_reserve_sz(u32 n);
 b32 triangulate(const v2f *v, u32 n, array(v2f) *triangles);
 
 
@@ -78,6 +79,11 @@ u32 triangulate_out_sz(u32 n)
 	return 3 * (n - 2);
 }
 
+u32 triangulate_reserve_sz(u32 n)
+{
+	return triangulate_out_sz(n) + n;
+}
+
 b32 triangulate(const v2f *v_, u32 n_, v2f **triangles)
 {
 	const u32 prev_triangle_cnt = array_sz(*triangles);
@@ -85,7 +91,7 @@ b32 triangulate(const v2f *v_, u32 n_, v2f **triangles)
 	v2f *v;
 	u32 n;
 
-	array_reserve(*triangles, prev_triangle_cnt + out_vtx_cnt + n_);
+	array_reserve(*triangles, prev_triangle_cnt + triangulate_reserve_sz(n_));
 
 	/* Copy the original poly into the last verts of triangle buffer
 	 * so we can remove the vertices later. */
