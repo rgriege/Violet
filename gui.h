@@ -214,8 +214,11 @@ b32  mouse_scroll_bg(const gui_t *gui, s32 *dir);
 void mouse_press_debug(gui_t *gui, b32 enabled);
 
 b32 key_down(const gui_t *gui, gui_key_t key);
+b32 key_down_any(const gui_t *gui);
 b32 key_pressed(const gui_t *gui, gui_key_t key);
+b32 key_pressed_any(const gui_t *gui);
 b32 key_released(const gui_t *gui, gui_key_t key);
+b32 key_released_any(const gui_t *gui);
 b32 key_mod(const gui_t *gui, gui_key_mod_t mod);
 b32 key_toggled(const gui_t *gui, gui_key_toggle_t toggle);
 const u8 *keyboard_state(const gui_t *gui);
@@ -3516,14 +3519,38 @@ b32 key_down(const gui_t *gui, gui_key_t key)
 	return gui->keys[key];
 }
 
+b32 key_down_any(const gui_t *gui)
+{
+	for (u32 i = 0; i < KB_COUNT; ++i)
+		if (gui->keys[i])
+			return true;
+	return false;
+}
+
 b32 key_pressed(const gui_t *gui, gui_key_t key)
 {
 	return gui->keys[key] && !gui->prev_keys[key];
 }
 
+b32 key_pressed_any(const gui_t *gui)
+{
+	for (u32 i = 0; i < KB_COUNT; ++i)
+		if (gui->keys[i] && !gui->prev_keys[i])
+			return true;
+	return false;
+}
+
 b32 key_released(const gui_t *gui, gui_key_t key)
 {
 	return !gui->keys[key] && gui->prev_keys[key];
+}
+
+b32 key_released_any(const gui_t *gui)
+{
+	for (u32 i = 0; i < KB_COUNT; ++i)
+		if (!gui->keys[i] && gui->prev_keys[i])
+			return true;
+	return false;
 }
 
 b32 key_mod(const gui_t *gui, gui_key_mod_t mod)
