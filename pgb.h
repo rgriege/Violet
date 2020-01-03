@@ -11,6 +11,10 @@
  * allocations at once.
  */
 
+#ifndef PGB_MIN_PAGE_SIZE
+#define PGB_MIN_PAGE_SIZE 4096
+#endif
+
 #ifndef PGB_MALLOC
 #define PGB_MALLOC malloc
 #endif
@@ -51,6 +55,7 @@ void pgb_heap_destroy(pgb_heap_t *heap);
 
 struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t max_size);
 void             pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page);
+void             pgb_heap_create_page(pgb_heap_t *heap, size_t size);
 
 void pgb_heap_move_all_pages(pgb_heap_t *dst, pgb_heap_t *src);
 
@@ -117,7 +122,6 @@ void pgb_watermark_stats(pgb_watermark_t mark, size_t *bytes_used, size_t *pages
 
 /* Page */
 
-#define PGB_MIN_PAGE_SIZE          4096
 #define PGB__PAGE_SLOTS            256
 #define pgb__alignment(page_size)  ((page_size) / PGB__PAGE_SLOTS)
 
@@ -335,6 +339,11 @@ void pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page)
 		page->prev = prev;
 		page->next = next;
 	}
+}
+
+void pgb_heap_create_page(pgb_heap_t *heap, size_t size)
+{
+	pgb_heap_return_page(heap, pgb__page_create(size));
 }
 
 void pgb_heap_move_all_pages(pgb_heap_t *dst, pgb_heap_t *src)
