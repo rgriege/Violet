@@ -85,6 +85,7 @@ size_t pgb_alloc_size(const pgb_t *pgb, const void *ptr);
 
 void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
                size_t *bytes_available, size_t *pages_available);
+void pgb_watermark_stats(pgb_watermark_t mark, size_t *bytes_used, size_t *pages_used);
 
 #endif // PGB_H
 
@@ -600,6 +601,36 @@ void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
 		*bytes_available += page->size;
 		++*pages_available;
 		page = page->next;
+	}
+}
+
+void pgb_watermark_stats(pgb_watermark_t mark, size_t *bytes_used, size_t *pages_used)
+{
+	pgb_t *pgb = mark.pgb;
+	pgb_page_t *page = pgb->current_page;
+
+	*bytes_used = 0;
+	*pages_used = 0;
+
+	if (page && page != mark.page) {
+		*bytes_used += pgb->current_ptr - pgb__page_first_usable_slot(page);
+		*pages_used += 1;
+		page = page->prev;
+	}
+
+	while (page && page != mark.page) {
+		*bytes_used += page->size;
+		*pages_used += 1;
+		page = page->prev;
+	}
+
+	if (page != mark.page) {
+		*bytes_used = 0;
+		*pages_used = 0;
+		assert(false);
+	} else if (page) {
+		*bytes_used += pgb__page_end(page) - mark.ptr;
+		*pages_used += 1;
 	}
 }
 
