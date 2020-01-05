@@ -3873,6 +3873,8 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	} else if (txt[0] == 0 && hint) {
 		gui_txt_styled(gui, x, y, w, h, hint, &elem_style.text);
 	}
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_TEXT_INPUT;
 	gui__hint_render(gui, id, gui->style.npt.hint);
 	gui->prev_widget_id = id;
 	return complete;
