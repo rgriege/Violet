@@ -1474,7 +1474,6 @@ typedef struct gui
 	v2i mouse_pos_press;
 	u32 mouse_btn;
 	u32 mouse_btn_last;
-	u32 mouse_btn_diff;
 	u64 mouse_covered_by_widget_id;
 	b32 mouse_debug;
 	gui__repeat_t mouse_repeat;
@@ -1940,15 +1939,10 @@ void gui_event_set_window_dim(gui_t *gui, s32 w, s32 h)
 
 void gui_events_end(gui_t *gui)
 {
-	if (gui->dragging_window) {
-		gui->mouse_btn_diff = gui->mouse_btn ^ gui->mouse_btn_last;
-	} else if (gui->left_window) {
+	if (gui->left_window && !gui->dragging_window) {
 		gui->mouse_btn = 0;
-		gui->mouse_btn_diff = 0;
 		gui->hot_id = 0;
 		gui->active_id = 0;
-	} else {
-		gui->mouse_btn_diff = gui->mouse_btn ^ gui->mouse_btn_last;
 	}
 
 	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
@@ -2508,7 +2502,7 @@ void mouse_pos_delta(const gui_t *gui, s32 *x, s32 *y)
 
 b32 mouse_pressed(const gui_t *gui, u32 mask)
 {
-	return (gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
+	return (gui->mouse_btn & mask) && !(gui->mouse_btn_last & mask);
 }
 
 b32 mouse_pressed_bg(const gui_t *gui, u32 mask)
@@ -2528,7 +2522,7 @@ b32 mouse_down_bg(const gui_t *gui, u32 mask)
 
 b32 mouse_released(const gui_t *gui, u32 mask)
 {
-	return !(gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
+	return !(gui->mouse_btn & mask) && !(gui->mouse_btn_last & mask);
 }
 
 b32 mouse_released_bg(const gui_t *gui, u32 mask)
