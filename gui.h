@@ -868,12 +868,8 @@ void gui_style_pop(gui_t *gui);
 #include "violet/utf8.h"
 #include "violet/os.h"
 
-#if defined(_MSC_VER) && !defined(__clang__)
-#ifdef _M_X64
-#include <intrin.h>
-#define __builtin_popcount __popcnt
-#else
-int __builtin_popcount(u32 x)
+static
+int gui__popcount(u32 x)
 {
 	x =  x               - ((x >> 1)  & 0x55555555);
 	x = (x & 0x33333333) + ((x >> 2)  & 0x33333333);
@@ -881,8 +877,6 @@ int __builtin_popcount(u32 x)
 	x = (x * 0x01010101) >> 24;
 	return (int)x;
 }
-#endif // _M_X64
-#endif // _MSC_VER
 
 /* Font */
 
@@ -1960,7 +1954,7 @@ void gui_events_end(gui_t *gui)
 	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
 		gui->mouse_pos_press = gui->mouse_pos;
 	gui__repeat_update(&gui->mouse_repeat, gui->mouse_btn,
-	                   __builtin_popcount(gui->mouse_btn),
+	                   gui__popcount(gui->mouse_btn),
 	                   gui->frame_time_milli);
 	if (mouse_down(gui, ~0))
 		gui_event_add_update(gui);
