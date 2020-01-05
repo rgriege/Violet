@@ -735,9 +735,11 @@ b32 window__maximum_window_rect(const window_t *window, SDL_Rect *rect)
 b32 window_is_maximized(const window_t *window)
 {
 	SDL_Rect rect;
+	v2i dim;
+	gui_dim(window->gui, &dim.x, &dim.y);
 	return window__maximum_window_rect(window, &rect)
-	    && window->gui->window_dim.x == rect.w
-	    && window->gui->window_dim.y == rect.h;
+	    && dim.x == rect.w
+	    && dim.y == rect.h;
 }
 
 void window_minimize(window_t *window)
@@ -1090,7 +1092,7 @@ void window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h)
 			window_move(window, delta.x, -delta.y);
 		}
 		gui_window_drag(gui);
-	} else if (gui->dragging_window) {
+	} else if (gui_window_dragging(gui)) {
 		gui_window_drag_end(gui);
 	}
 	gui_style_pop(gui);
@@ -1104,7 +1106,7 @@ void mouse_pos_global(const window_t *window, s32 *x, s32 *y)
 b32 window_begin_frame(window_t *window)
 {
 	gui_t *gui = window->gui;
-	const colorf_t bg_color = color_to_colorf(gui->style.bg_color);
+	const colorf_t bg_color = color_to_colorf(gui_style_c(gui)->bg_color);
 	b32 quit = false;
 	SDL_Event evt;
 	v2i dim;
@@ -1167,7 +1169,7 @@ b32 window_begin_frame(window_t *window)
 	SDL_GetWindowSize(window->window, &dim.x, &dim.y);
 	gui_event_set_window_dim(gui, dim.x, dim.y);
 
-	if (gui->dragging_window) {
+	if (gui_window_dragging(gui)) {
 		v2i pos;
 		SDL_GetWindowPosition(window->window, &pos.x, &pos.y);
 		mouse_btn = SDL_GetGlobalMouseState(&mouse_pos.x, &mouse_pos.y);
