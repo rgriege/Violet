@@ -6202,7 +6202,7 @@ void gui__split_render_branch(gui_t *gui, gui_split_t *split, b32 *changed)
 	    && !mouse_covered(gui)) {
 		child = split->children.first;
 		box2i_to_xywh(child->box, &cx, &cy, &cw, &ch);
-		if (split->children.vertical) {
+		if (!split->children.vertical) {
 			const s32 orig_drag_x = cx + cw - GUI_SPLIT_RESIZE_BORDER / 2;
 			s32 drag_x = orig_drag_x;
 			if (gui__resize_horiz(gui, &drag_x, cy, GUI_SPLIT_RESIZE_BORDER, ch)) {
