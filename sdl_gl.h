@@ -18,11 +18,11 @@ void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n);
 
 /* Texture */
 
-b32  texture_load(texture_t *tex, const char *filename);
-void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
-void texture_destroy(texture_t *tex);
+b32  texture_load(gui_texture_t *tex, const char *filename);
+void texture_init(gui_texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
+void texture_destroy(gui_texture_t *tex);
 void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
-void texture_bind(const texture_t *tex);
+void texture_bind(const gui_texture_t *tex);
 void texture_unbind(void);
 
 /* Shader */
@@ -69,9 +69,9 @@ s32  shader_program_uniform(const shader_prog_t *p, const char *name);
 
 /* Image */
 
-b32  img_load(img_t *img, const char *filename);
-void img_init(img_t *img, u32 w, u32 h, u32 fmt, void *data);
-void img_destroy(img_t *img);
+b32  img_load(gui_img_t *img, const char *filename);
+void img_init(gui_img_t *img, u32 w, u32 h, u32 fmt, void *data);
+void img_destroy(gui_img_t *img);
 
 /* Font */
 
@@ -86,7 +86,7 @@ typedef struct font_t
 	s32 num_glyphs;
 	gui_font_metrics_t metrics;
 	void *char_info;
-	texture_t texture;
+	gui_texture_t texture;
 } font_t;
 
 b32  font_load(font_t *f, const char *filename, u32 sz);
@@ -116,7 +116,7 @@ void   window_restore(window_t *window);
 void   window_fullscreen(window_t *window);
 void   window_run(window_t *window, u32 fps, b32(*ufunc)(window_t*, void*), void *udata);
 
-const img_t *window_get_img(window_t *window, const char *fname);
+const gui_img_t *window_get_img(window_t *window, const char *fname);
 
 void   window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h);
 
@@ -192,7 +192,7 @@ void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n)
 
 /* Texture */
 
-b32 texture_load(texture_t *tex, const char *filename)
+b32 texture_load(gui_texture_t *tex, const char *filename)
 {
 	b32 ret = false;
 	int w, h;
@@ -205,11 +205,11 @@ b32 texture_load(texture_t *tex, const char *filename)
 	return ret;
 }
 
-void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
+void texture_init(gui_texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 {
 	tex->width = w;
 	tex->height = h;
-	tex->blend = TEXTURE_BLEND_NRM;
+	tex->blend = GUI_BLEND_NRM;
 
 	GL_CHECK(glGenTextures, 1, &tex->handle);
 	texture_bind(tex);
@@ -223,7 +223,7 @@ void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
 	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void texture_destroy(texture_t *tex)
+void texture_destroy(gui_texture_t *tex)
 {
 	if (tex->handle != 0) {
 		GL_CHECK(glDeleteTextures, 1, &tex->handle);
@@ -247,7 +247,7 @@ void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n)
 	array_destroy(coords);
 }
 
-void texture_bind(const texture_t *tex)
+void texture_bind(const gui_texture_t *tex)
 {
 	GL_CHECK(glBindTexture, GL_TEXTURE_2D, tex->handle);
 }
@@ -457,23 +457,23 @@ s32 shader_program_uniform(const shader_prog_t *p, const char *name)
 
 /* Image */
 
-b32 img_load(img_t *img, const char *filename)
+b32 img_load(gui_img_t *img, const char *filename)
 {
-	if (!texture_load(&img->texture, filename)) {
+	if (!texture_load(img, filename)) {
 		log_error("img_load(%s) error", filename);
 		return false;
 	}
 	return true;
 }
 
-void img_init(img_t *img, u32 w, u32 h, u32 fmt, void *data)
+void img_init(gui_img_t *img, u32 w, u32 h, u32 fmt, void *data)
 {
-	texture_init(&img->texture, w, h, fmt, data);
+	texture_init(img, w, h, fmt, data);
 }
 
-void img_destroy(img_t *img)
+void img_destroy(gui_img_t *img)
 {
-	texture_destroy(&img->texture);
+	texture_destroy(img);
 }
 
 static
@@ -526,7 +526,7 @@ int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
 }
 
 static
-int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, texture_t *tex)
+int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_t *tex)
 {
 #ifdef __EMSCRIPTEN__
 	const s32 bpp = 4;
@@ -644,7 +644,7 @@ typedef enum gui_vbo_type
 
 typedef struct cached_img
 {
-	img_t img;
+	gui_img_t img;
 	u32 id;
 } cached_img_t;
 
@@ -660,14 +660,14 @@ typedef struct window
 #ifdef __EMSCRIPTEN__
 	s32 shader_attrib_loc[VBO_COUNT];
 #endif
-	texture_t texture_white;
-	texture_t texture_white_dotted;
+	gui_texture_t texture_white;
+	gui_texture_t texture_white_dotted;
 
 	v2i restore_pos;
 	v2i restore_dim;
 
 	/* style */
-	SDL_Cursor *cursors[GUI__CURSOR_COUNT];
+	SDL_Cursor *cursors[GUI_CURSOR_COUNT];
 	char font_file_path[256];
 	array(font_t) fonts;
 	cached_img_t *imgs;
@@ -855,7 +855,7 @@ cached_img_t *window__find_img(window_t *window, u32 id)
 	return NULL;
 }
 
-const img_t *window_get_img(window_t *window, const char *fname)
+const gui_img_t *window_get_img(window_t *window, const char *fname)
 {
 	const u32 id = hash(fname);
 	cached_img_t *cached_img = window__find_img(window, id);
@@ -990,10 +990,10 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	window->shader_attrib_loc[VBO_TEX]   = shader_program_attrib(&window->shader, "tex_coord");
 #endif
 
-	window->cursors[GUI__CURSOR_DEFAULT] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-	window->cursors[GUI__CURSOR_RESIZE_NS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-	window->cursors[GUI__CURSOR_RESIZE_EW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
+	window->cursors[GUI_CURSOR_DEFAULT] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+	window->cursors[GUI_CURSOR_RESIZE_NS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+	window->cursors[GUI_CURSOR_RESIZE_EW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+	for (u32 i = 0; i < GUI_CURSOR_COUNT; ++i)
 		if (!window->cursors[i])
 			goto err_cursor;
 	strncpy(window->font_file_path, font_file_path, sizeof(window->font_file_path)-1);
@@ -1026,7 +1026,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	goto out;
 
 err_cursor:
-	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
+	for (u32 i = 0; i < GUI_CURSOR_COUNT; ++i)
 		if (window->cursors[i])
 			SDL_FreeCursor(window->cursors[i]);
 err_white:
@@ -1051,7 +1051,7 @@ out:
 
 void window_destroy(window_t *window)
 {
-	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
+	for (u32 i = 0; i < GUI_CURSOR_COUNT; ++i)
 		SDL_FreeCursor(window->cursors[i]);
 	array_foreach(window->fonts, font_t, f)
 		font_destroy(f);
@@ -1219,7 +1219,7 @@ void window_end_frame(window_t *window)
 	gui_t *gui = window->gui;
 	GLuint current_texture = 0;
 
-	texture_blend_e current_blend = TEXTURE_BLEND_NRM;
+	u32 current_blend = GUI_BLEND_NRM;
 
 	gui_end_frame(gui);
 
@@ -1271,13 +1271,13 @@ void window_end_frame(window_t *window)
 			}
 			if (draw_call->blend != current_blend) {
 				switch (draw_call->blend) {
-					case TEXTURE_BLEND_NRM:
+					case GUI_BLEND_NRM:
 						GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 						break;
-					case TEXTURE_BLEND_ADD:
+					case GUI_BLEND_ADD:
 						GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE);
 						break;
-					case TEXTURE_BLEND_MUL:
+					case GUI_BLEND_MUL:
 						GL_CHECK(glBlendFunc, GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
 						break;
 				}

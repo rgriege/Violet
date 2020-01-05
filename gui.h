@@ -7,31 +7,28 @@
 
 /* Texture */
 
-typedef enum texture_blend
+typedef enum gui_blend
 {
-	TEXTURE_BLEND_NRM,
-	TEXTURE_BLEND_ADD,
-	TEXTURE_BLEND_MUL,
-	TEXTURE_BLEND_MAX = TEXTURE_BLEND_MUL,
-} texture_blend_e;
+	GUI_BLEND_NRM,
+	GUI_BLEND_ADD,
+	GUI_BLEND_MUL,
+	GUI_BLEND_MAX = GUI_BLEND_MUL,
+} gui_blend_e;
 
-typedef struct texture_t
+typedef struct gui_texture
 {
 	u32 handle;
 	u32 width;
 	u32 height;
 	u32 blend;
-} texture_t;
+} gui_texture_t;
 
-m3f  texture_get_transform(const texture_t *texture, s32 x, s32 y,
-                           r32 sx, r32 sy, r32 rotation);
+m3f gui_texture_get_transform(const gui_texture_t *texture, s32 x, s32 y,
+                              r32 sx, r32 sy, r32 rotation);
 
 /* Image */
 
-typedef struct img_t
-{
-	texture_t texture;
-} img_t;
+typedef struct gui_texture gui_img_t;
 
 /* Font */
 
@@ -67,7 +64,7 @@ typedef struct gui_font_metrics
 
 typedef struct gui_char_quad
 {
-	texture_t texture;
+	gui_texture_t texture;
 	r32 x0, y0, s0, t0;
 	r32 x1, y1, s1, t1;
 	r32 advance;
@@ -109,7 +106,7 @@ u32         gui_frame_time_milli(const gui_t *gui);
 timepoint_t gui_last_input_time(const gui_t *gui);
 
 
-typedef enum mouse_button_t
+typedef enum gui_mouse_button
 {
 	MB_LEFT      = 1 << 0,
 	MB_MIDDLE    = 1 << 1,
@@ -119,14 +116,14 @@ typedef enum mouse_button_t
 	MB_WHEELUP   = 1 << 5,
 	MB_WHEELDOWN = 1 << 6,
 	MB_WHEEL     = MB_WHEELUP | MB_WHEELDOWN,
-} mouse_button_t;
+} gui_mouse_button_e;
 
 /* Input */
 
 void gui_events_begin(gui_t *gui);
 void gui_event_add_update(gui_t *gui);
 void gui_event_set_mouse_pos(gui_t *gui, s32 x, s32 y);
-void gui_event_set_mouse_btn(gui_t *gui, mouse_button_t button);
+void gui_event_set_mouse_btn(gui_t *gui, gui_mouse_button_e button);
 void gui_event_add_text_input(gui_t *gui, const char *text);
 void gui_event_set_keyboard(gui_t *gui, const u8 *keys, u32 key_cnt);
 void gui_event_add_clipboard(gui_t *gui, const char *text);
@@ -188,17 +185,17 @@ typedef enum gui_draw_call_type
 
 b32  gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type);
 b32  gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
-                   u32 tex, texture_blend_e blend);
+                   u32 tex, gui_blend_e blend);
 void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v);
 void gui_end(gui_t *gui);
 
 /* Primitives */
 
-typedef enum img_scale
+typedef enum gui_img_scale
 {
-	IMG_SCALED,
-	IMG_CENTERED,
-} img_scale_e;
+	GUI_IMG_SCALED,
+	GUI_IMG_CENTERED,
+} gui_img_scale_e;
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
 void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c);
@@ -215,16 +212,16 @@ void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke);
 void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke);
-void gui_img(gui_t *gui, s32 x, s32 y, const img_t *img);
-void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
+void gui_img(gui_t *gui, s32 x, s32 y, const gui_img_t *img);
+void gui_img_ex(gui_t *gui, s32 x, s32 y, const gui_img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity);
-void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
-                   img_scale_e scale);
+void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
+                   gui_img_scale_e scale);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_t align);
 void gui_txt_dim(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
                  gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph);
-s32  gui_txt_width(gui_t *gui, const char *txt, u32 sz);
+s32  gui_txt_width(const gui_t *gui, const char *txt, u32 sz);
 
 void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_mask_pop(gui_t *gui);
@@ -238,7 +235,7 @@ void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
                      const gui_line_style_t *style);
 void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, const gui_text_style_t *style);
-u32  gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width);
+u32  gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width);
 
 typedef void(*gui_pen_t)(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          const gui_element_style_t *style);
@@ -284,40 +281,40 @@ u32  gui_culled_widget_cnt(const gui_t *gui);
 #define GUI_HINT_TIMER 1000
 #endif
 
-typedef enum npt_flags_t
+typedef enum gui_npt_flags
 {
-	NPT_PASSWORD              = 1 << 0,
-	NPT_CLEAR_ON_FOCUS        = 1 << 1,
-	NPT_COMPLETE_ON_ENTER     = 1 << 2, /* always enabled */
-	NPT_COMPLETE_ON_TAB       = 1 << 3,
-	NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
-	NPT_COMPLETE_ON_ESCAPE    = 1 << 5,
-	NPT_COMPLETE_ON_UNCHANGED = 1 << 6,
-	NPT_COMPLETE_ON_DEFOCUS   = NPT_COMPLETE_ON_TAB
-	                          | NPT_COMPLETE_ON_CLICK_OUT
-	                          | NPT_COMPLETE_ON_ESCAPE
-	                          | NPT_COMPLETE_ON_UNCHANGED,
-} npt_flags_t;
+	GUI_NPT_PASSWORD              = 1 << 0,
+	GUI_NPT_CLEAR_ON_FOCUS        = 1 << 1,
+	GUI_NPT_COMPLETE_ON_ENTER     = 1 << 2, /* always enabled */
+	GUI_NPT_COMPLETE_ON_TAB       = 1 << 3,
+	GUI_NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
+	GUI_NPT_COMPLETE_ON_ESCAPE    = 1 << 5,
+	GUI_NPT_COMPLETE_ON_UNCHANGED = 1 << 6,
+	GUI_NPT_COMPLETE_ON_DEFOCUS   = GUI_NPT_COMPLETE_ON_TAB
+	                              | GUI_NPT_COMPLETE_ON_CLICK_OUT
+	                              | GUI_NPT_COMPLETE_ON_ESCAPE
+	                              | GUI_NPT_COMPLETE_ON_UNCHANGED,
+} gui_npt_flags_e;
 
-typedef struct npt_filter
+typedef struct gui_npt_filter
 {
 	b8 ascii[127];
 	b8 non_ascii;
-} npt_filter_t;
-typedef const npt_filter_t* npt_filter_p;
+} gui_npt_filter_t;
+typedef const gui_npt_filter_t* gui_npt_filter_p;
 
-typedef enum btn_val_t
+typedef enum gui_btn_val
 {
-	BTN_NONE,
-	BTN_PRESS,
-	BTN_HOLD,
-} btn_val_t;
+	GUI_BTN_NONE,
+	GUI_BTN_PRESS,
+	GUI_BTN_HOLD,
+} gui_btn_e;
 
-const npt_filter_t g_gui_npt_filter_print;
-const npt_filter_t g_gui_npt_filter_numeric;
-const npt_filter_t g_gui_npt_filter_hex;
+const gui_npt_filter_t g_gui_gui_npt_filter_print;
+const gui_npt_filter_t g_gui_npt_filter_numeric;
+const gui_npt_filter_t g_gui_npt_filter_hex;
 
-b32 gui_npt_filter(npt_filter_p filter, s32 codepoint);
+b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint);
 const char *gui_npt_val_buf(const gui_t *gui);
 
 typedef struct gui_widget_bounds
@@ -341,17 +338,17 @@ typedef struct gui_scroll_area
 	struct gui_scroll_area *prev;
 } gui_scroll_area_t;
 
-/* returns NPT_COMPLETE_ON_XXX if completed using an enabled completion method
+/* returns GUI_NPT_COMPLETE_ON_XXX if completed using an enabled completion method
  * or 0 otherwise */
 s32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                 const char *hint, npt_flags_t flags);
+                 const char *hint, gui_npt_flags_e flags);
 s32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                    const char *hint, npt_flags_t flags, npt_filter_p filter);
+                    const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter);
 s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n,
-                 npt_flags_t flags, npt_filter_p filter);
+                 gui_npt_flags_e flags, gui_npt_filter_p filter);
 s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
-s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
-                 img_scale_e scale);
+s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
+                 gui_img_scale_e scale);
 s32  gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen);
 b32  gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val);
 b32  gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val);
@@ -377,14 +374,14 @@ void gui_drag_func_horizontal(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                               s32 offset_x, s32 offset_y, void *udata);
 void gui_drag_func_vertical(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                             s32 offset_x, s32 offset_y, void *udata);
-b32  gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb);
-b32  gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
+b32  gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, gui_mouse_button_e mb);
+b32  gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, gui_mouse_button_e mb,
                gui_drag_f cb, void *udata);
-b32  gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb);
-b32  gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
+b32  gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, gui_mouse_button_e mb);
+b32  gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, gui_mouse_button_e mb,
                     gui_drag_f cb, void *udata);
-b32  gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb);
-b32  gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
+b32  gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb);
+b32  gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb,
                     gui_drag_f cb, void *udata);
 b32  gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, s32 item_w, u32 num_items);
@@ -478,18 +475,18 @@ u64  pgui_next_widget_id(const gui_t *gui);
 void pgui_spacer(gui_t *gui);
 void pgui_spacer_blank(gui_t *gui);
 void pgui_txt(gui_t *gui, const char *str);
-void pgui_img(gui_t *gui, const img_t *img, img_scale_e scale);
+void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
 s32  pgui_btn_txt(gui_t *gui, const char *lbl);
-s32  pgui_btn_img(gui_t *gui, const img_t *img, img_scale_e scale);
+s32  pgui_btn_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
 s32  pgui_btn_pen(gui_t *gui, gui_pen_t pen);
 b32  pgui_chk(gui_t *gui, const char *lbl, b32 *val);
 b32  pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val);
 s32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
-                  npt_flags_t flags);
+                  gui_npt_flags_e flags);
 s32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
-                     npt_flags_t flags, npt_filter_p filter);
+                     gui_npt_flags_e flags, gui_npt_filter_p filter);
 s32  pgui_npt_val(gui_t *gui, const char *txt, u32 n,
-                  npt_flags_t flags, npt_filter_p filter);
+                  gui_npt_flags_e flags, gui_npt_filter_p filter);
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 b32  pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 b32  pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
@@ -602,13 +599,13 @@ typedef enum gui_panel_flags
 	GUI_PANEL_SCROLLBARS  = 0x20,
 	GUI_PANEL_DOCKABLE    = 0x40,
 	GUI_PANEL_FULL        = 0x7f,
-} gui_panel_flags_t;
+} gui_panel_flags_e;
 
 typedef struct gui_panel
 {
 	s32 x, y, width, height;
 	const char *title; /* un-owned, can be NULL */
-	gui_panel_flags_t flags;
+	gui_panel_flags_e flags;
 	u32 id;
 	intptr userdata;
 	gui_scroll_area_t scroll_area;
@@ -622,13 +619,13 @@ typedef struct gui_panel
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                      s32 x, s32 y, s32 w, s32 h,
-                     const char *title, gui_panel_flags_t flags);
+                     const char *title, gui_panel_flags_e flags);
 void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
                               s32 w, s32 h,
-                              const char *title, gui_panel_flags_t flags);
+                              const char *title, gui_panel_flags_e flags);
 void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
                               gui_split_t *split,
-                              const char *title, gui_panel_flags_t flags);
+                              const char *title, gui_panel_flags_e flags);
 void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
 void pgui_panel_select_tab(gui_panel_t *panel);
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
@@ -1365,14 +1362,14 @@ const gui_style_t g_gui_style_invis = {
 #define GUI_MASK_STACK_LIMIT 8
 #endif
 
-typedef struct draw_call
+typedef struct gui_draw_call
 {
 	u32 idx;
 	u32 cnt;
 	u32 type;
 	u32 tex;
-	texture_blend_e blend;
-} draw_call_t;
+	u32 blend;
+} gui_draw_call_t;
 
 #define GUI__LAYER_PRIORITY_HINT  2
 #define GUI__LAYER_PRIORITY_POPUP 1
@@ -1386,11 +1383,11 @@ typedef struct gui__layer
 
 typedef enum gui_cursor
 {
-	GUI__CURSOR_DEFAULT,
-	GUI__CURSOR_RESIZE_NS,
-	GUI__CURSOR_RESIZE_EW,
-	GUI__CURSOR_COUNT
-} gui__cursor_t;
+	GUI_CURSOR_DEFAULT,
+	GUI_CURSOR_RESIZE_NS,
+	GUI_CURSOR_RESIZE_EW,
+	GUI_CURSOR_COUNT
+} gui_cursor_e;
 
 typedef enum gui__key_toggle_state
 {
@@ -1664,7 +1661,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->mouse_debug = false;
 	gui__repeat_init(&gui->mouse_repeat);
 	gui->left_window = false;
-	gui->cursor = GUI__CURSOR_DEFAULT;
+	gui->cursor = GUI_CURSOR_DEFAULT;
 
 	gui->lock = 0;
 	gui->hot_id = 0;
@@ -1891,7 +1888,7 @@ void gui_event_set_mouse_pos(gui_t *gui, s32 x, s32 y)
 	gui->mouse_pos.y = y;
 }
 
-void gui_event_set_mouse_btn(gui_t *gui, mouse_button_t button)
+void gui_event_set_mouse_btn(gui_t *gui, gui_mouse_button_e button)
 {
 	gui->mouse_btn = button;
 }
@@ -2059,7 +2056,7 @@ void gui_events_end(gui_t *gui)
 	/* ensure this is set every frame when dragging the window (perf) */
 	gui->dragging_window = false;
 
-	gui->cursor = GUI__CURSOR_DEFAULT;
+	gui->cursor = GUI_CURSOR_DEFAULT;
 	if (gui->root_split) {
 		gui_splits_compute(gui);
 		gui->splits_rendered_this_frame = false;
@@ -2170,11 +2167,11 @@ void gui_widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 
 b32 gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type)
 {
-	return gui_begin_tex(gui, num_verts, type, 0, TEXTURE_BLEND_NRM);
+	return gui_begin_tex(gui, num_verts, type, 0, GUI_BLEND_NRM);
 }
 
 b32 gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
-                  u32 tex, texture_blend_e blend)
+                  u32 tex, gui_blend_e blend)
 {
 	assert(num_verts > 0);
 	if (   gui->vert_cnt + num_verts <= GUI_MAX_VERTS
@@ -2283,7 +2280,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, gui_draw_call_type_e type,
 		const r32 dash_len = gui->style.line.dash_len;
 		if (dash_len != 0.f) {
 			if (gui_begin_tex(gui, closed ? n + 1 : n, GUI_DRAW_LINE_STRIP,
-			                  gui->texture_white_dotted, TEXTURE_BLEND_NRM)) {
+			                  gui->texture_white_dotted, GUI_BLEND_NRM)) {
 				r32 dist = 0.f;
 				for (u32 i = 0; i < n; ++i) {
 					gui__vertf(gui, v[i].x, v[i].y, stroke, dist / dash_len, 0.f);
@@ -2305,10 +2302,10 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, gui_draw_call_type_e type,
 	}
 }
 
-m3f texture_get_transform(const texture_t *texture, s32 x, s32 y,
-                          r32 sx, r32 sy, r32 rotation)
+m3f gui_texture_get_transform(const gui_texture_t *texture, s32 x, s32 y,
+                              r32 sx, r32 sy, r32 rotation)
 {
-	const v2f scale = {
+	const v2f dim = {
 		((r32)texture->width) * sx,
 		((r32)texture->height) * sy 
 	};
@@ -2316,22 +2313,17 @@ m3f texture_get_transform(const texture_t *texture, s32 x, s32 y,
 	m3f transform = m3f_init_translation((v2f){ x, y });
 
 	if (rotation != 0.f) {
-
-		transform = m3f_mul_m3(transform,
-		                       m3f_init_translation((v2f){scale.x / 2.f, scale.y / 2.f}));
-
-		transform = m3f_mul_m3(transform,
-		                       m3f_init_rotation(rotation));
-
-		transform = m3f_mul_m3(transform,
-		                       m3f_init_translation((v2f){-scale.x / 2.f, -scale.y / 2.f}));
+		const v2f center = v2f_scale(dim, 0.5f);
+		transform = m3f_mul_m3(transform, m3f_init_translation(center));
+		transform = m3f_mul_m3(transform, m3f_init_rotation(rotation));
+		transform = m3f_mul_m3(transform, m3f_init_translation(v2f_inverse(center)));
 	}
 
-	return m3f_mul_m3(transform, m3f_init_scale(scale));
+	return m3f_mul_m3(transform, m3f_init_scale(dim));
 }
 
 static
-void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
+void texture__render(gui_t *gui, const gui_texture_t *texture, s32 x, s32 y,
                      r32 sx, r32 sy, r32 rotation, color_t color)
 {
 	static const v2f corners[] = {
@@ -2340,7 +2332,7 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		{ 1.f, 1.f },
 		{ 1.f, 0.f }
 	};
-	const m3f transform = texture_get_transform(texture, x, y, sx, sy, rotation);
+	const m3f transform = gui_texture_get_transform(texture, x, y, sx, sy, rotation);
 	v2f points[4];
 	box2i bbox;
 
@@ -2357,7 +2349,7 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		return;
 	}
 
-	if (texture->blend == TEXTURE_BLEND_MUL) {
+	if (texture->blend == GUI_BLEND_MUL) {
 		const r32 brightness = ((r32)color.a) / 255.f;
 		color.r *= brightness;
 		color.g *= brightness;
@@ -2868,12 +2860,12 @@ void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
 	}
 }
 
-void gui_img(gui_t *gui, s32 x, s32 y, const img_t *img)
+void gui_img(gui_t *gui, s32 x, s32 y, const gui_img_t *img)
 {
 	gui_img_ex(gui, x, y, img, 1.f, 1.f, 0.f, 1.f);
 }
 
-void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
+void gui_img_ex(gui_t *gui, s32 x, s32 y, const gui_img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity)
 {
 	if (!img) {
@@ -2883,11 +2875,11 @@ void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
 
 	color_t color = g_white;
 	color.a = opacity * 255;
-	texture__render(gui, &img->texture, x, y, sx, sy, rotation, color);
+	texture__render(gui, img, x, y, sx, sy, rotation, color);
 }
 
-void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
-                   img_scale_e scale)
+void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
+                   gui_img_scale_e scale)
 {
 	if (!img) {
 		assert(false);
@@ -2895,16 +2887,16 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
 	}
 
 	switch (scale) {
-	case IMG_CENTERED:;
-		const s32 x_off = (w - (s32)img->texture.width) / 2;
-		const s32 y_off = (h - (s32)img->texture.height) / 2;
+	case GUI_IMG_CENTERED:;
+		const s32 x_off = (w - (s32)img->width) / 2;
+		const s32 y_off = (h - (s32)img->height) / 2;
 		if (x_off >= 0 && y_off >= 0) {
 			gui_img_ex(gui, x + x_off, y + y_off, img, 1.f, 1.f, 0.f, 1.f);
 			break;
 		}
-	case IMG_SCALED:;
-		const r32 sx = (r32)w / img->texture.width;
-		const r32 sy = (r32)h / img->texture.height;
+	case GUI_IMG_SCALED:;
+		const r32 sx = (r32)w / img->width;
+		const r32 sy = (r32)h / img->height;
 		gui_img_ex(gui, x, y, img, sx, sy, 0.f, 1.f);
 	break;
 	}
@@ -2918,7 +2910,7 @@ void gui__add_codepoint_to_line_width(const gui_t *gui, void *font, s32 cp, r32 
 		*line_width += q.advance;
 }
 
-u32 gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
+u32 gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
 {
 	char *p = txt;
 	char *pnext;
@@ -3188,7 +3180,7 @@ void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 	*ph = ivalf_length(y_range);
 }
 
-s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
+s32 gui_txt_width(const gui_t *gui, const char *txt, u32 sz)
 {
 	s32 width = 0;
 	const char *line = txt;
@@ -3344,9 +3336,9 @@ gui__widget_render_state_t gui__widget_render_state(const gui_t *gui, u64 id,
 
 static
 gui__widget_render_state_t gui__btn_render_state(const gui_t *gui, u64 id,
-                                                 btn_val_t val, b32 contains_mouse)
+                                                 gui_btn_e val, b32 contains_mouse)
 {
-	return gui__widget_render_state(gui, id, val != BTN_NONE, false, contains_mouse);
+	return gui__widget_render_state(gui, id, val != GUI_BTN_NONE, false, contains_mouse);
 }
 
 static
@@ -3430,7 +3422,7 @@ u32 gui_culled_widget_cnt(const gui_t *gui)
 	return gui->culled_widgets;
 }
 
-const npt_filter_t g_gui_npt_filter_print = {
+const gui_npt_filter_t g_gui_gui_npt_filter_print = {
 	.ascii = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -3444,7 +3436,7 @@ const npt_filter_t g_gui_npt_filter_print = {
 	.non_ascii = 1,
 };
 
-const npt_filter_t g_gui_npt_filter_numeric = {
+const gui_npt_filter_t g_gui_npt_filter_numeric = {
 	.ascii = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -3458,7 +3450,7 @@ const npt_filter_t g_gui_npt_filter_numeric = {
 	.non_ascii = 0,
 };
 
-const npt_filter_t g_gui_npt_filter_hex = {
+const gui_npt_filter_t g_gui_npt_filter_hex = {
 	.ascii = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -3596,9 +3588,9 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 mouse_pos_can_defocus)
 }
 
 static
-void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
+void gui__npt_prep_action(gui_t *gui, gui_npt_flags_e flags, char *txt, u32 *len)
 {
-	if (!gui->npt.performed_action && (flags & NPT_CLEAR_ON_FOCUS)) {
+	if (!gui->npt.performed_action && (flags & GUI_NPT_CLEAR_ON_FOCUS)) {
 		txt[0] = '\0';
 		*len = 0;
 		gui->npt.cursor_pos = 0;
@@ -3632,7 +3624,7 @@ void gui__hint_render(gui_t *gui, u64 id, const char *hint)
 	}
 }
 
-b32 gui_npt_filter(npt_filter_p filter, s32 codepoint)
+b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint)
 {
 	if (codepoint < 0)
 		return false;
@@ -3645,10 +3637,10 @@ b32 gui_npt_filter(npt_filter_p filter, s32 codepoint)
 }
 
 s32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                const char *hint, npt_flags_t flags)
+                const char *hint, gui_npt_flags_e flags)
 {
 	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags,
-	                      &g_gui_npt_filter_print);
+	                      &g_gui_gui_npt_filter_print);
 }
 
 static
@@ -3664,10 +3656,10 @@ s32 gui__font_newline_dist(const gui_t *gui, void *font)
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, u64 id, mouse_button_t mb, b32 contains_mouse);
+gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse);
 
 s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                   const char *hint, npt_flags_t flags, npt_filter_p filter)
+                   const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_focused = gui_widget_focused(gui, id);
@@ -3686,7 +3678,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	}
 
 	contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS && !was_focused)
+	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS && !was_focused)
 		gui__focus_widget(gui, id);
 
 	if (gui->active_id == id && contains_mouse) {
@@ -3739,7 +3731,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
 				gui__npt_prep_action(gui, flags, txt, &len);
 				gui__defocus_widget(gui, id);
-				complete = NPT_COMPLETE_ON_ENTER;
+				complete = GUI_NPT_COMPLETE_ON_ENTER;
 #ifdef __APPLE__
 			} else if (key_idx == KB_V && key_mod(gui, KBM_GUI)) {
 #else
@@ -3782,23 +3774,23 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		if (was_focused) {
 			gui->npt.active = false;
 			if (complete || gui->lock) {
-			} else if (   (flags & NPT_COMPLETE_ON_TAB)
+			} else if (   (flags & GUI_NPT_COMPLETE_ON_TAB)
 			           && gui__key_triggered(gui, KB_TAB)) {
-				complete = NPT_COMPLETE_ON_TAB;
-			} else if (   (flags & NPT_COMPLETE_ON_CLICK_OUT)
+				complete = GUI_NPT_COMPLETE_ON_TAB;
+			} else if (   (flags & GUI_NPT_COMPLETE_ON_CLICK_OUT)
 			           && mouse_pressed(gui, ~0)
 			           && !contains_mouse) {
-				complete = NPT_COMPLETE_ON_CLICK_OUT;
-			} else if (   (flags & NPT_COMPLETE_ON_ESCAPE)
+				complete = GUI_NPT_COMPLETE_ON_CLICK_OUT;
+			} else if (   (flags & GUI_NPT_COMPLETE_ON_ESCAPE)
 			           && gui__key_triggered(gui, KB_ESCAPE)) {
-				complete = NPT_COMPLETE_ON_ESCAPE;
-			} else if (   (flags & NPT_COMPLETE_ON_UNCHANGED)
+				complete = GUI_NPT_COMPLETE_ON_ESCAPE;
+			} else if (   (flags & GUI_NPT_COMPLETE_ON_UNCHANGED)
 			           || gui->npt.initial_txt_hash != hashn(txt, n)) {
-				complete = NPT_COMPLETE_ON_UNCHANGED;
+				complete = GUI_NPT_COMPLETE_ON_UNCHANGED;
 			}
 		} else {
 			gui->npt.active = true;
-			if (flags & NPT_CLEAR_ON_FOCUS) {
+			if (flags & GUI_NPT_CLEAR_ON_FOCUS) {
 				gui->npt.cursor_pos = 0;
 			} else {
 				const gui_text_style_t *txt_style = &style->active.text;
@@ -3816,10 +3808,10 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	style->pen(gui, x, y, w, h, &elem_style);
 	txt_to_display = !gui_widget_focused(gui, id)
 	              || gui->npt.performed_action
-	              || !(flags & NPT_CLEAR_ON_FOCUS)
+	              || !(flags & GUI_NPT_CLEAR_ON_FOCUS)
 	               ? txt : "";
 
-	if (flags & NPT_PASSWORD) {
+	if (flags & GUI_NPT_PASSWORD) {
 		assert(strlen(txt_to_display) < GUI_TXT_MAX_LENGTH);
 		const char *p = txt_to_display;
 		char *pnext;
@@ -3862,7 +3854,7 @@ const char *gui_npt_val_buf(const gui_t *gui)
 }
 
 s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n_,
-                npt_flags_t flags, npt_filter_p filter)
+                gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const u32 n  = min(n_, sizeof(gui->npt.val_buf));
@@ -3884,10 +3876,10 @@ s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n_,
 }
 
 static
-btn_val_t gui__btn_logic_ex(gui_t *gui, u64 id, mouse_button_t mb,
+gui_btn_e gui__btn_logic_ex(gui_t *gui, u64 id, gui_mouse_button_e mb,
                             b32 mouse_pos_can_focus, b32 mouse_pos_can_defocus)
 {
-	btn_val_t retval = BTN_NONE;
+	gui_btn_e retval = GUI_BTN_NONE;
 
 	gui__widget_handle_focus(gui, id, mouse_pos_can_defocus);
 
@@ -3896,16 +3888,16 @@ btn_val_t gui__btn_logic_ex(gui_t *gui, u64 id, mouse_button_t mb,
 	    && gui->key_repeat.triggered
 	    && (   gui->key_repeat.val == KB_RETURN
 	        || gui->key_repeat.val == KB_KP_ENTER))
-		retval = key_pressed(gui, gui->key_repeat.val) ? BTN_PRESS : BTN_HOLD;
+		retval = key_pressed(gui, gui->key_repeat.val) ? GUI_BTN_PRESS : GUI_BTN_HOLD;
 
 	if (gui->active_id == id) {
 		gui->active_id_found_this_frame = true;
 		if (mouse_released(gui, mb)) {
 			if (mouse_pos_can_focus)
-				retval = BTN_PRESS;
+				retval = GUI_BTN_PRESS;
 			gui->active_id = 0;
 		} else if (mouse_pos_can_focus && gui->mouse_repeat.triggered) {
-			retval = BTN_HOLD;
+			retval = GUI_BTN_HOLD;
 		}
 	} else if (gui->hot_id == id) {
 		if (mouse_pos_can_defocus || mouse_covered(gui)) {
@@ -3926,7 +3918,7 @@ btn_val_t gui__btn_logic_ex(gui_t *gui, u64 id, mouse_button_t mb,
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, u64 id, mouse_button_t mb, b32 contains_mouse)
+gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse)
 {
 	return gui__btn_logic_ex(gui, id, mb, contains_mouse, !contains_mouse);
 }
@@ -3951,7 +3943,7 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
+	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
 
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
@@ -3961,8 +3953,8 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 	return ret;
 }
 
-s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
-                img_scale_e scale)
+s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
+                gui_img_scale_e scale)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
@@ -3972,7 +3964,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
 
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
+	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
@@ -3993,7 +3985,7 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
+	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
@@ -4017,7 +4009,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	b32 toggled = false;
 	gui__widget_render_state_t render_state;
 
-	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		*val = !*val;
 		toggled = true;
 	}
@@ -4042,7 +4034,7 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	gui__widget_render_state_t render_state;
 	gui_element_style_t style;
 
-	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		*val = !*val;
 		toggled = true;
 	}
@@ -4211,7 +4203,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__widget_render_state_t render_state;
 	b32 selected = false;
 
-	if (   gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS
+	if (   gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS
 	    && !was_selected) {
 		*val = opt;
 		selected = true;
@@ -4238,7 +4230,7 @@ b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	b32 changed = false;
 	gui__widget_render_state_t render_state;
 
-	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		if (*val & opt) {
 			*val &= ~opt;
 			changed = true;
@@ -4276,7 +4268,7 @@ void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse,
 	                               && !mouse__covered_by_popup(gui);
 
 	if (gui__btn_logic_ex(gui, id, MB_LEFT, contains_mouse,
-	                      mouse_pos_can_defocus) == BTN_PRESS) {
+	                      mouse_pos_can_defocus) == GUI_BTN_PRESS) {
 		if (gui_widget_focused(gui, id))
 			gui__defocus_widget(gui, id);
 		else
@@ -4432,7 +4424,7 @@ b32 gui_dropdown_item(gui_t *gui, u32 id, const char *txt)
 
 	if (gui_widget_focused(gui, gui->dropdown.id)) {
 		gui_style_push(gui, btn, gui_style(gui)->dropdown.btn);
-		if (pgui_btn_txt(gui, txt) == BTN_PRESS) {
+		if (pgui_btn_txt(gui, txt) == GUI_BTN_PRESS) {
 			*gui->dropdown.val = id;
 			chosen = true;
 		} else if (   gui->dropdown.triggered_by_key
@@ -4509,12 +4501,12 @@ void gui_drag_func_vertical(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 	*y = mouse_y + offset_y;
 }
 
-b32 gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb)
+b32 gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, gui_mouse_button_e mb)
 {
 	return gui_dragf(gui, x, y, contains_mouse, mb, gui_drag_func_default, NULL);
 }
 
-b32 gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
+b32 gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, gui_mouse_button_e mb,
               gui_drag_f cb, void *udata)
 {
 	b32 triggered_by_key = false;
@@ -4574,12 +4566,12 @@ void gui__drag_rect_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, b32 dragging)
 	gui__drag_render(gui, x, y, w, h, gui_widget_id(gui, x, y), dragging);
 }
 
-b32 gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb)
+b32 gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, gui_mouse_button_e mb)
 {
 	return gui_drag_rectf(gui, x, y, w, h, mb, gui_drag_func_default, NULL);
 }
 
-b32 gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
+b32 gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, gui_mouse_button_e mb,
                    gui_drag_f cb, void *udata)
 {
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, *x, *y, w, h);
@@ -4588,12 +4580,12 @@ b32 gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
 	return ret;
 }
 
-b32 gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb)
+b32 gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb)
 {
 	return gui_drag_circf(gui, x, y, r, mb, gui_drag_func_default, NULL);
 }
 
-b32 gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
+b32 gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb,
                    gui_drag_f cb, void *udata)
 {
 	const v2i pos = { *x, *y };
@@ -4615,10 +4607,10 @@ b32 gui__resize_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h)
 	box2i box;
 	box2i_from_xywh(&box, *x, y, w, h);
 	if (gui_drag_rectf(gui, x, &y, w, h, MB_LEFT, gui_drag_func_horizontal, NULL)) {
-		gui->cursor = GUI__CURSOR_RESIZE_EW;
+		gui->cursor = GUI_CURSOR_RESIZE_EW;
 		return true;
 	} else if (box2i_contains_point(box, gui->mouse_pos)) {
-		gui->cursor = GUI__CURSOR_RESIZE_EW;
+		gui->cursor = GUI_CURSOR_RESIZE_EW;
 	}
 	return false;
 }
@@ -4629,10 +4621,10 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 	box2i box;
 	box2i_from_xywh(&box, x, *y, w, h);
 	if (gui_drag_rectf(gui, &x, y, w, h, MB_LEFT, gui_drag_func_vertical, NULL)) {
-		gui->cursor = GUI__CURSOR_RESIZE_NS;
+		gui->cursor = GUI_CURSOR_RESIZE_NS;
 		return true;
 	} else if (box2i_contains_point(box, gui->mouse_pos)) {
-		gui->cursor = GUI__CURSOR_RESIZE_NS;
+		gui->cursor = GUI_CURSOR_RESIZE_NS;
 	}
 	return false;
 }
@@ -4867,10 +4859,10 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		const s32 gy = py + style->panel.padding.bottom;
 		const s32 gw = pw - style->panel.padding.left - style->panel.padding.right;
 		const s32 gh = ph - style->panel.padding.bottom - style->panel.padding.top;
-		const npt_flags_t flags = NPT_CLEAR_ON_FOCUS
-		                        | NPT_COMPLETE_ON_TAB
-		                        | NPT_COMPLETE_ON_CLICK_OUT;
-		npt_filter_p filter = &g_gui_npt_filter_hex;
+		const gui_npt_flags_e flags = GUI_NPT_CLEAR_ON_FOCUS
+		                        | GUI_NPT_COMPLETE_ON_TAB
+		                        | GUI_NPT_COMPLETE_ON_CLICK_OUT;
+		gui_npt_filter_p filter = &g_gui_npt_filter_hex;
 		b32 changed = false, changed_npt = false;
 		u8 ch, cs, cv;
 
@@ -5574,7 +5566,7 @@ void pgui_txt(gui_t *gui, const char *str)
 	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
 }
 
-void pgui_img(gui_t *gui, const img_t *img, img_scale_e scale)
+void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
@@ -5583,33 +5575,33 @@ void pgui_img(gui_t *gui, const img_t *img, img_scale_e scale)
 
 s32 pgui_btn_txt(gui_t *gui, const char *lbl)
 {
-	btn_val_t result;
+	gui_btn_e result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_txt(gui, x, y, w, h, lbl);
-	if (result == BTN_PRESS && gui->popup)
+	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
 	return result;
 }
 
-s32 pgui_btn_img(gui_t *gui, const img_t *img, img_scale_e scale)
+s32 pgui_btn_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
 {
-	btn_val_t result;
+	gui_btn_e result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_img(gui, x, y, w, h, img, scale);
-	if (result == BTN_PRESS && gui->popup)
+	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
 	return result;
 }
 
 s32 pgui_btn_pen(gui_t *gui, gui_pen_t pen)
 {
-	btn_val_t result;
+	gui_btn_e result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_pen(gui, x, y, w, h, pen);
-	if (result == BTN_PRESS && gui->popup)
+	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
 	return result;
 }
@@ -5629,13 +5621,13 @@ b32 pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val)
 }
 
 s32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
-                 npt_flags_t flags)
+                 gui_npt_flags_e flags)
 {
-	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, &g_gui_npt_filter_print);
+	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, &g_gui_gui_npt_filter_print);
 }
 
 s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
-                    npt_flags_t flags, npt_filter_p filter)
+                    gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
@@ -5643,7 +5635,7 @@ s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
 }
 
 s32 pgui_npt_val(gui_t *gui, const char *txt, u32 n,
-                 npt_flags_t flags, npt_filter_p filter)
+                 gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
@@ -6457,7 +6449,7 @@ void gui_splits_compute(gui_t *gui)
 
 void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                       s32 x, s32 y, s32 w, s32 h,
-                      const char *title, gui_panel_flags_t flags)
+                      const char *title, gui_panel_flags_e flags)
 {
 	assert(id <= GUI__MAX_PANEL_ID);
 	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
@@ -6484,7 +6476,7 @@ void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                      s32 x, s32 y, s32 w, s32 h,
-                     const char *title, gui_panel_flags_t flags)
+                     const char *title, gui_panel_flags_e flags)
 {
 	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
 	pgui_panel_to_front(gui, panel);
@@ -6492,7 +6484,7 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
 
 void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
                               s32 w, s32 h,
-                              const char *title, gui_panel_flags_t flags)
+                              const char *title, gui_panel_flags_e flags)
 {
 	const s32 x = (gui->window_dim.x - w)/2;
 	const s32 y = (gui->window_dim.y - h)/2;
@@ -6501,7 +6493,7 @@ void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
 
 void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
                               gui_split_t *split,
-                              const char *title, gui_panel_flags_t flags)
+                              const char *title, gui_panel_flags_e flags)
 {
 	s32 x, y, w, h;
 
@@ -6515,7 +6507,7 @@ void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
 }
 
 static
-void pgui__validate_tab_flags(gui_panel_flags_t flags0, gui_panel_flags_t flags1)
+void pgui__validate_tab_flags(gui_panel_flags_e flags0, gui_panel_flags_e flags1)
 {
 	assert(flags0 & GUI_PANEL_TITLEBAR);
 	assert(flags1 & GUI_PANEL_TITLEBAR);
@@ -6648,7 +6640,7 @@ void pgui__panel_resize(gui_t *gui, gui_panel_t *panel)
 	if (   (panel->flags & GUI_PANEL_RESIZABLE)
 	    && !panel->split
 	    && !panel->collapsed
-	    && gui->cursor == GUI__CURSOR_DEFAULT) {
+	    && gui->cursor == GUI_CURSOR_DEFAULT) {
 		gui_style_push(gui, drag, g_gui_style_invis.drag);
 
 		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
@@ -6825,7 +6817,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 			gui_style_push(gui, btn, gui->style.panel.restore);
 		else
 			gui_style_push(gui, btn, gui->style.panel.collapse);
-		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == GUI_BTN_PRESS)
 			panel->collapsed = !panel->collapsed;
 		gui_style_pop(gui);
 		rx += dim;
@@ -6833,7 +6825,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 
 	if (panel->flags & GUI_PANEL_CLOSABLE) {
 		gui_style_push(gui, btn, gui->style.panel.close);
-		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == GUI_BTN_PRESS)
 			pgui_panel_close(gui, panel);
 		gui_style_pop(gui);
 		rx += dim;
