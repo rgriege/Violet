@@ -1902,10 +1902,12 @@ void gui_event_set_mouse_btn(gui_t *gui, gui_mouse_button_e button)
 
 void gui_event_add_text_input(gui_t *gui, const char *text)
 {
-	if (strlen(gui->text_npt) + strlen(text) + 1 <= countof(gui->text_npt)) {
+	if (strlen(gui->text_npt) + strlen(text) + 1 <= countof(gui->text_npt))
 		strcat(gui->text_npt, text);
+	else
+		log_warn("text input exceeds buffer size");
+	if (text[0] != 0)
 		gui_event_add_update(gui);
-	}
 }
 
 void gui_event_set_keyboard(gui_t *gui, const u8 *keys, u32 key_cnt)
@@ -1918,6 +1920,8 @@ void gui_event_add_clipboard(gui_t *gui, const char *text)
 {
 	if (strlen(gui->clipboard) + strlen(text) + 1 <= countof(gui->clipboard))
 		strcat(gui->clipboard, text);
+	else
+		log_warn("clipboard input exceeds buffer size");
 }
 
 void gui_event_add_window_leave(gui_t *gui)
