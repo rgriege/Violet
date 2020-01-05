@@ -1217,11 +1217,17 @@ void window_end_frame(window_t *window)
 	const s32 loc[VBO_COUNT] = { VBO_VERT, VBO_COLOR, VBO_TEX };
 #endif
 	gui_t *gui = window->gui;
+	gui_render_output_t output;
 	GLuint current_texture = 0;
+	v2i dim;
+
+	gui_get_render_output(gui, &output);
 
 	u32 current_blend = GUI_BLEND_NRM;
 
 	gui_end_frame(gui);
+
+	gui_dim(gui, &dim.x, &dim.y);
 
 	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1229,26 +1235,26 @@ void window_end_frame(window_t *window)
 	GL_CHECK(glBindVertexArray, window->vao);
 
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, window->vbo[VBO_VERT]);
-	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
-	         gui->verts, GL_STREAM_DRAW);
+	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, output.num_verts * sizeof(v2f),
+	         output.verts.pos, GL_STREAM_DRAW);
 	GL_CHECK(glVertexAttribPointer, loc[VBO_VERT], 2, GL_FLOAT, GL_FALSE, 0, 0);
 	GL_CHECK(glEnableVertexAttribArray, loc[VBO_VERT]);
 
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, window->vbo[VBO_COLOR]);
-	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(color_t),
-	         gui->vert_colors, GL_STREAM_DRAW);
+	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, output.num_verts * sizeof(color_t),
+	         output.verts.color, GL_STREAM_DRAW);
 	GL_CHECK(glVertexAttribPointer, loc[VBO_COLOR], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
 	GL_CHECK(glEnableVertexAttribArray, loc[VBO_COLOR]);
 
 	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, window->vbo[VBO_TEX]);
-	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
-	         gui->vert_tex_coords, GL_STREAM_DRAW);
+	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, output.num_verts * sizeof(v2f),
+	         output.verts.tex_coord, GL_STREAM_DRAW);
 	GL_CHECK(glVertexAttribPointer, loc[VBO_TEX], 2, GL_FLOAT, GL_FALSE, 0, 0);
 	GL_CHECK(glEnableVertexAttribArray, loc[VBO_TEX]);
 
 	GL_CHECK(glUseProgram, window->shader.handle);
 	GL_CHECK(glUniform2f, glGetUniformLocation(window->shader.handle, "window_halfdim"),
-	         gui->window_dim.x/2, gui->window_dim.y/2);
+	         dim.x/2, dim.y/2);
 
 	/* NOTE(rgriege): This method of ordering creates an inconsistency:
 	 * panels/layers must be called from top-to-bottom, but widgets/primitives
@@ -1259,12 +1265,11 @@ void window_end_frame(window_t *window)
 	 * if overlapping widges are in the same panel/layer, but that doesn't seem
 	 * like a use case to design for other than dragging icons on a desktop,
 	 * which could be 'solved' by placing the dragged icon on a separate layer. */
-	const u32 n_layers = (u32)(gui->layer - &gui->layers[0] + 1);
-	for (u32 i = 0; i < n_layers; ++i) {
-		const gui__layer_t *layer = &gui->layers[i];
+	for (u32 i = 0; i < output.num_layers; ++i) {
+		const gui_layer_t *layer = &output.layers[i];
 		GL_CHECK(glScissor, layer->x, layer->y, layer->w, layer->h);
 		for (u32 j = 0; j < layer->draw_call_cnt; ++j) {
-			draw_call_t *draw_call = &gui->draw_calls[layer->draw_call_idx+j];
+			const gui_draw_call_t *draw_call = &output.draw_calls[layer->draw_call_idx+j];
 			if (draw_call->tex != current_texture) {
 				GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
 				current_texture = draw_call->tex;

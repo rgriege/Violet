@@ -255,12 +255,53 @@ b32  gui_box_visible(const gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 
 /* Render buffer */
 
-v2f *gui_verts_mut(gui_t *gui);
+typedef struct gui_draw_call
+{
+	u32 idx;
+	u32 cnt;
+	u32 type;
+	u32 tex;
+	u32 blend;
+} gui_draw_call_t;
+
+typedef struct gui_layer
+{
+	u32 draw_call_idx, draw_call_cnt;
+	s32 x, y, w, h;
+	s32 pri;
+} gui_layer_t;
+
+typedef enum gui_cursor
+{
+	GUI_CURSOR_DEFAULT,
+	GUI_CURSOR_RESIZE_NS,
+	GUI_CURSOR_RESIZE_EW,
+	GUI_CURSOR_TEXT_INPUT,
+	GUI_CURSOR_BUTTON,
+	GUI_CURSOR_COUNT
+} gui_cursor_e;
+
+typedef struct gui_render_output
+{
+	u32 num_layers;
+	const gui_layer_t *layers;
+	u32 num_verts;
+	struct {
+		const v2f *pos;
+		const color_t *color;
+		const v2f *tex_coord;
+	} verts;
+	u32 num_draw_calls;
+	const gui_draw_call_t *draw_calls;
+} gui_render_output_t;
+
+u32  gui_num_layers(const gui_t *gui);
 u32  gui_vert_cnt(const gui_t *gui);
 u32  gui_draw_call_cnt(const gui_t *gui);
 u32  gui_culled_vert_cnt(const gui_t *gui);
 u32  gui_culled_draw_call_cnt(const gui_t *gui);
 u32  gui_culled_widget_cnt(const gui_t *gui);
+void gui_get_render_output(const gui_t *gui, gui_render_output_t *output);
 
 
 
@@ -1362,32 +1403,8 @@ const gui_style_t g_gui_style_invis = {
 #define GUI_MASK_STACK_LIMIT 8
 #endif
 
-typedef struct gui_draw_call
-{
-	u32 idx;
-	u32 cnt;
-	u32 type;
-	u32 tex;
-	u32 blend;
-} gui_draw_call_t;
-
 #define GUI__LAYER_PRIORITY_HINT  2
 #define GUI__LAYER_PRIORITY_POPUP 1
-
-typedef struct gui__layer
-{
-	u32 draw_call_idx, draw_call_cnt;
-	s32 x, y, w, h;
-	s32 pri;
-} gui__layer_t;
-
-typedef enum gui_cursor
-{
-	GUI_CURSOR_DEFAULT,
-	GUI_CURSOR_RESIZE_NS,
-	GUI_CURSOR_RESIZE_EW,
-	GUI_CURSOR_COUNT
-} gui_cursor_e;
 
 typedef enum gui__key_toggle_state
 {
@@ -1443,11 +1460,11 @@ typedef struct gui
 	color_t vert_colors[GUI_MAX_VERTS];
 	v2f vert_tex_coords[GUI_MAX_VERTS];
 	u32 vert_cnt;
-	draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
+	gui_draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
 	u32 draw_call_cnt;
 	u32 draw_call_vert_idx;
-	gui__layer_t layers[GUI_MAX_LAYERS];
-	gui__layer_t *layer;
+	gui_layer_t layers[GUI_MAX_LAYERS];
+	gui_layer_t *layer;
 	box2i masks[GUI_MASK_STACK_LIMIT];
 	box2i *mask;
 	u32 culled_draw_calls;
@@ -1622,7 +1639,7 @@ b32 gui__key_triggered(const gui_t *gui, u32 key)
 	return gui->key_repeat.triggered && gui->key_repeat.val == key;
 }
 
-static void gui__layer_init(gui_t *gui, gui__layer_t *layer, s32 x, s32 y, s32 w, s32 h);
+static void gui__layer_init(gui_t *gui, gui_layer_t *layer, s32 x, s32 y, s32 w, s32 h);
 static void gui__layer_new(gui_t *gui);
 
 gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
@@ -2092,7 +2109,7 @@ void gui_window_drag_end(gui_t *gui)
 static
 box2i gui__current_mask(const gui_t *gui)
 {
-	const gui__layer_t *layer = gui->layer;
+	const gui_layer_t *layer = gui->layer;
 	box2i box;
 	box2i_from_xywh(&box, layer->x, layer->y, layer->w, layer->h);
 	return box;
@@ -2176,7 +2193,7 @@ b32 gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
 	assert(num_verts > 0);
 	if (   gui->vert_cnt + num_verts <= GUI_MAX_VERTS
 	    && gui->draw_call_cnt < GUI_MAX_DRAW_CALLS) {
-		draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
+		gui_draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
 		draw_call->idx   = gui->vert_cnt;
 		draw_call->cnt   = num_verts;
 		draw_call->type  = type;
@@ -2403,7 +2420,7 @@ void gui_end_frame(gui_t *gui)
 
 	gui__layer_complete_current(gui);
 
-	const u32 n_layers = (u32)(gui->layer - &gui->layers[0] + 1);
+	const u32 n_layers = gui_num_layers(gui);
 	/* move hints/popups to the back of the array
 	 * can't use qsort - not guaranteed to be stable */
 	isort(gui->layers, n_layers, sizeof(gui->layers[0]), gui__layer_sort);
@@ -3198,7 +3215,7 @@ s32 gui_txt_width(const gui_t *gui, const char *txt, u32 sz)
 }
 
 static
-void gui__layer_init(gui_t *gui, gui__layer_t *layer, s32 x, s32 y, s32 w, s32 h)
+void gui__layer_init(gui_t *gui, gui_layer_t *layer, s32 x, s32 y, s32 w, s32 h)
 {
 	layer->draw_call_idx = gui->draw_call_cnt;
 	layer->x = x;
@@ -3262,7 +3279,7 @@ void gui_mask_pop(gui_t *gui)
 static
 int gui__layer_sort(const void *lhs_, const void *rhs_)
 {
-	const gui__layer_t *lhs = lhs_, *rhs = rhs_;
+	const gui_layer_t *lhs = lhs_, *rhs = rhs_;
 	return rhs->pri - lhs->pri;
 }
 
@@ -3392,9 +3409,9 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	         style->outline_color);
 }
 
-v2f *gui_verts_mut(gui_t *gui)
+u32 gui_num_layers(const gui_t *gui)
 {
-	return gui->verts;
+	return (u32)(gui->layer - &gui->layers[0] + 1);
 }
 
 u32 gui_vert_cnt(const gui_t *gui)
@@ -3420,6 +3437,20 @@ u32 gui_culled_draw_call_cnt(const gui_t *gui)
 u32 gui_culled_widget_cnt(const gui_t *gui)
 {
 	return gui->culled_widgets;
+}
+
+void gui_get_render_output(const gui_t *gui, gui_render_output_t *output)
+{
+	output->num_layers = gui_num_layers(gui);
+	output->layers = gui->layers;
+
+	output->num_verts = gui->vert_cnt;
+	output->verts.pos = gui->verts;
+	output->verts.color = gui->vert_colors;
+	output->verts.tex_coord = gui->vert_tex_coords;
+
+	output->num_draw_calls = gui->draw_call_cnt;
+	output->draw_calls = gui->draw_calls;
 }
 
 const gui_npt_filter_t g_gui_gui_npt_filter_print = {
