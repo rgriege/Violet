@@ -290,7 +290,9 @@ static inline void  std_free(void *ptr) { return free(ptr); }
 /* Hash */
 
 u32 hash(const char *str);
+u32 hash_seeded(const char *str, u32 seed);
 u32 hashn(const char *str, u32 n);
+u32 hashn_seeded(const char *str, u32 n, u32 seed);
 
 /* Utility */
 
@@ -846,7 +848,12 @@ void vlt_mem_log_usage(void)
 
 u32 hash(const char *str)
 {
-	u32 hash = 5381;
+	return hash_seeded(str, 5381);
+}
+
+u32 hash_seeded(const char *str, u32 seed)
+{
+	u32 hash = seed;
 	int c;
 	while ((c = *str++))
 		hash = ((hash << 5) + hash) + c;
@@ -855,7 +862,12 @@ u32 hash(const char *str)
 
 u32 hashn(const char *str, u32 n)
 {
-	u32 hash = 5381;
+	return hashn_seeded(str, n, 5381);
+}
+
+u32 hashn_seeded(const char *str, u32 n, u32 seed)
+{
+	u32 hash = seed;
 	for (u32 i = 0; i < n; ++i)
 		hash = ((hash << 5) + hash) + (int)str[i];
 	return hash;
