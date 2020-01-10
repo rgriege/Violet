@@ -702,7 +702,7 @@ void pgui_panel_restore(gui_panel_t *panel);
 void pgui_panel_open(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_close(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
-b32  pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel);
+b32  pgui_panel_content_visible(const gui_panel_t *panel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 int  pgui_panel_sortp(const void *lhs, const void *rhs);
@@ -2934,8 +2934,8 @@ static
 void gui__mask_box(const gui_t *gui, box2i *box)
 {
 	const box2i mask = gui__current_mask(gui);
-	box2i_clamp_point(mask, &box->min);
-	box2i_clamp_point(mask, &box->max);
+	box->min = box2i_clamp_point(mask, box->min);
+	box->max = box2i_clamp_point(mask, box->max);
 }
 
 b32 gui_point_visible(const gui_t *gui, s32 x, s32 y)
@@ -7310,58 +7310,36 @@ s32 gui__split_dim(r32 size, r32 parent_dimension,
                    r32 total_sized_child_dimension,
                    u32 num_siblings_without_size)
 {
-	if (size > 1.f)
+	if (size > 1.f) {
 		return size;
-	else if (size > 0.f)
+	} else if (size > 0.f) {
 		return parent_dimension * size;
-	else
+	} else {
+		assert(parent_dimension >= total_sized_child_dimension);
+		assert(num_siblings_without_size > 0);
 		return (parent_dimension - total_sized_child_dimension) / num_siblings_without_size;
+	}
 }
 
 static
 void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
 {
 	const b32 vertical = split->children.vertical;
-	v2i pos;
-	v2i dim;
-	v2i cstart;
-	v2i cdim;
-	v2i cdelta;
-	v2i cdim_collapsed;
-	v2i cdelta_collapsed;
+	const s32 collapsed_dimension = GUI_PANEL_TITLEBAR_HEIGHT;
+	const v2i start = { split->box.min.x, split->box.max.y };
+	const v2i end = { split->box.max.x, split->box.min.y };
+	const v2i dir = { 1, -1 };
+	const v2i dim = box2i_get_extent(split->box);
+	v2i cpos;
 	gui_split_t *child;
 	u32 num_children;
 	u32 num_children_collapsed;
 	u32 num_children_without_size;
 	s32 total_sized_child_dimension;
+	u32 num_children_remaining;
+	u32 num_children_collapsed_remaining;
 
 	assert(!gui__split_is_leaf(split));
-
-	box2i_to_xywh(split->box, &pos.x, &pos.y, &dim.x, &dim.y);
-
-	if (vertical) {
-		cstart.x = pos.x;
-		cstart.y = pos.y + dim.y;
-		cdim.x = dim.x;
-		cdim.y = 0;
-		cdelta.x = 0;
-		cdelta.y = 0;
-		cdim_collapsed.x = dim.x;
-		cdim_collapsed.y = GUI_PANEL_TITLEBAR_HEIGHT;
-		cdelta_collapsed.x = 0;
-		cdelta_collapsed.y = GUI_PANEL_TITLEBAR_HEIGHT;
-	} else {
-		cstart.x = pos.x;
-		cstart.y = pos.y;
-		cdim.x = 0;
-		cdim.y = dim.y;
-		cdelta.x = 0;
-		cdelta.y = 0;
-		cdim_collapsed.x = GUI_PANEL_TITLEBAR_HEIGHT;
-		cdim_collapsed.y = dim.y;
-		cdelta_collapsed.x = GUI_PANEL_TITLEBAR_HEIGHT;
-		cdelta_collapsed.y = 0;
-	}
 
 	num_children = 0;
 	num_children_collapsed = 0;
@@ -7371,7 +7349,7 @@ void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
 	while (child) {
 		if (gui__split_collapsed(child)) {
 			++num_children_collapsed;
-			total_sized_child_dimension += cdim_collapsed.d[vertical];
+			total_sized_child_dimension += collapsed_dimension;
 		} else if (child->size > 0.f) {
 			total_sized_child_dimension += gui__split_dim(child->size, dim.d[vertical], 0.f, 0);
 		} else {
@@ -7380,48 +7358,44 @@ void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
 		++num_children;
 		child = child->siblings.next;
 	}
+	total_sized_child_dimension = min(total_sized_child_dimension, dim.d[vertical]);
 
-	if (num_children == num_children_collapsed) {
-		v2i cpos = cstart;
-		child = split->children.first;
-		while (child) {
-			cpos.y -= cdelta_collapsed.y;
-			box2i_from_xywh(&child->box, cpos.x, cpos.y, cdim_collapsed.x, cdim_collapsed.y);
-			cpos.x += cdelta_collapsed.x;
-			child = child->siblings.next;
+	cpos = start;
+	num_children_remaining = num_children;
+	num_children_collapsed_remaining = num_children_collapsed;
+	child = split->children.first;
+	while (child) {
+		v2i cdim = dim;
+		v2i cend;
+
+		if (gui__split_collapsed(child)) {
+			cdim.d[vertical] = collapsed_dimension;
+			--num_children_collapsed_remaining;
+		} else if (num_children_remaining == num_children_collapsed_remaining + 1) {
+			/* expand to fill available space */
+			const s32 remaining = v2i_mul(v2i_sub(end, cpos), dir).d[vertical]
+			                    - num_children_collapsed_remaining * collapsed_dimension;
+			cdim.d[vertical] = gui__split_dim(child->size, dim.d[vertical],
+			                                  total_sized_child_dimension,
+			                                  num_children_without_size);
+			cdim.d[vertical] = max(cdim.d[vertical], remaining);
+		} else {
+			cdim.d[vertical] = gui__split_dim(child->size, dim.d[vertical],
+			                                  total_sized_child_dimension,
+			                                  num_children_without_size);
 		}
-	} else {
-		v2i cpos = cstart;
-		u32 num_children_remaining = num_children;
-		u32 num_children_collapsed_remaining = num_children_collapsed;
-		child = split->children.first;
-		while (child) {
-			if (gui__split_collapsed(child)) {
-				cpos.y -= cdelta_collapsed.y;
-				box2i_from_xywh(&child->box, cpos.x, cpos.y, cdim_collapsed.x, cdim_collapsed.y);
-				cpos.x += cdelta_collapsed.x;
-				--num_children_collapsed_remaining;
-			} else if (num_children_remaining == num_children_collapsed_remaining + 1) {
-				const s32 size = (vertical ? cpos.y - pos.y : pos.x + dim.x - cpos.x)
-				               - num_children_collapsed_remaining * cdim_collapsed.d[vertical];
-				cdim.d[vertical]   = size;
-				cdelta.d[vertical] = size;
-				cpos.y -= cdelta.y;
-				box2i_from_xywh(&child->box, cpos.x, cpos.y, cdim.x, cdim.y);
-				cpos.x += cdelta.x;
-			} else {
-				const s32 size = gui__split_dim(child->size, dim.d[vertical],
-				                                total_sized_child_dimension,
-				                                num_children_without_size);
-				cdim.d[vertical]   = size;
-				cdelta.d[vertical] = size;
-				cpos.y -= cdelta.y;
-				box2i_from_xywh(&child->box, cpos.x, cpos.y, cdim.x, cdim.y);
-				cpos.x += cdelta.x;
-			}
-			--num_children_remaining;
-			child = child->siblings.next;
-		}
+
+		cend = box2i_clamp_point(split->box, v2i_add(cpos, v2i_mul(cdim, dir)));
+		box2i_from_point(&child->box, cpos);
+		box2i_extend_point(&child->box, cend);
+		assert(child->box.max.x >= child->box.min.x);
+		assert(child->box.max.y >= child->box.min.y);
+
+		cdim.d[!vertical] = 0;
+		cpos = box2i_clamp_point(split->box, v2i_add(cpos, v2i_mul(cdim, dir)));
+
+		--num_children_remaining;
+		child = child->siblings.next;
 	}
 
 	child = split->children.first;
@@ -7434,9 +7408,8 @@ void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
 
 void gui_splits_compute(gui_t *gui)
 {
-	const v2i halfdim = v2i_scale_inv(gui->window_dim, 2);
 	assert(gui->root_split);
-	box2i_from_center(&gui->root_split->box, halfdim, halfdim);
+	box2i_from_xywh(&gui->root_split->box, 0, 0, gui->window_dim.x, gui->window_dim.y);
 	if (!gui__split_is_leaf(gui->root_split))
 		gui__splits_compute_from(gui, gui->root_split);
 }
@@ -7937,6 +7910,8 @@ void pgui__style_pop_panel_scroll_area(gui_t *gui)
 
 b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 {
+	const b32 content_visible = pgui_panel_content_visible(panel);
+
 	assert(!gui->panel);
 
 	if (panel->split && !gui->splits_rendered_this_frame) {
@@ -7963,20 +7938,21 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	} else if (panel->closed) {
 		return false;
 	} else {
-		const s32 drag_y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
-		u64 drag_id;
-		b32 was_dragging;
+		b32 was_dragging = false;
 		b32 dragging = false;
-
-		gui->panel = panel;
-
-		/* must run after gui->panel is assigned so id is correct */
-		drag_id = gui_widget_id(gui, panel->x, drag_y);
-		was_dragging = gui_widget_active(gui, drag_id);
 
 		if (panel->split)
 			box2i_to_xywh(panel->split->box, &panel->x, &panel->y,
 			              &panel->width, &panel->height);
+
+		gui->panel = panel;
+
+		/* must run after gui->panel is assigned so drag id is correct */
+		if (panel->flags & GUI_PANEL_TITLEBAR) {
+			const s32 drag_y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
+			const u64 drag_id = gui_widget_id(gui, panel->x, drag_y);
+			was_dragging = gui_widget_active(gui, drag_id);
+		}
 
 		pgui__panel_resize(gui, panel);
 		if (panel->flags & GUI_PANEL_TITLEBAR)
@@ -8006,7 +7982,10 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		}
 	}
 
-	if (!pgui_panel_content_visible(gui, panel)) {
+	if (   !content_visible
+	    || !pgui_panel_content_visible(panel)
+	    || panel->width <= 0
+	    || panel->height <= 0) {
 		gui->panel = NULL;
 		return false;
 	}
@@ -8066,9 +8045,6 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 
 	assert(gui->panel == panel);
 
-	if (panel->collapsed || panel->closed)
-		goto out;
-
 	pgui__style_push_panel_scroll_area(gui);
 	gui_scroll_area_end(gui, &panel->scroll_area);
 	pgui__style_pop_panel_scroll_area(gui);
@@ -8077,14 +8053,13 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	 * but otherwise the next widgets are on top of the panel bg & scrollbars */
 	gui__layer_new(gui);
 
-out:
 	if (contains_mouse && !mouse_covered(gui))
 		mouse_cover(gui, gui_widget_id(gui, ~0, ~0));
 
 	gui->panel = NULL;
 }
 
-b32 pgui_panel_content_visible(const gui_t *gui, const gui_panel_t *panel)
+b32 pgui_panel_content_visible(const gui_panel_t *panel)
 {
 	return !(panel->closed || panel->collapsed || panel->tabbed_out);
 }
