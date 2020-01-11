@@ -1,6 +1,8 @@
 #ifndef VIOLET_SDL_GL_H
 #define VIOLET_SDL_GL_H
 
+#define GUI_USE_CURSOR_BUTTON
+
 /* Mesh */
 
 typedef struct mesh_t
@@ -996,6 +998,11 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	window->cursors[GUI_CURSOR_RESIZE_NS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
 	window->cursors[GUI_CURSOR_RESIZE_EW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
 	window->cursors[GUI_CURSOR_TEXT_INPUT] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+#ifdef GUI_USE_CURSOR_BUTTON
+	window->cursors[GUI_CURSOR_BUTTON] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+#else
+	window->cursors[GUI_CURSOR_BUTTON] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+#endif
 	for (u32 i = 0; i < GUI_CURSOR_COUNT; ++i)
 		if (!window->cursors[i])
 			goto err_cursor;

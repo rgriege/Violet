@@ -1532,6 +1532,7 @@ typedef struct gui
 		u32 item_idx;
 		b32 triggered_by_key;
 		s32 render_state;
+		b32 contains_mouse;
 		char selected_item_txt[GUI_TXT_MAX_LENGTH];
 	} dropdown;
 	gui_popup_t popups[GUI_POPUP_STACK_SIZE];
@@ -3962,11 +3963,14 @@ gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains
 static
 void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      const char *txt, gui__widget_render_state_t render_state,
+                     b32 contains_mouse,
                      const gui_widget_style_t *widget_style)
 {
 	const gui_element_style_t style = gui__element_style(gui, render_state, widget_style);
 	widget_style->pen(gui, x, y, w, h, &style);
 	gui_txt_styled(gui, x, y, w, h, txt, &style.text);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 }
 
 s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
@@ -3983,7 +3987,7 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 
 	const gui__widget_render_state_t render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.btn);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.btn);
 	gui__hint_render(gui, id, gui->style.btn.hint);
 
 	return ret;
@@ -4007,6 +4011,8 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
 		= gui__element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
 	gui_img_boxed(gui, x, y, w, h, img, scale);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 	gui__hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
@@ -4028,6 +4034,8 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 		= gui__element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 	gui__hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
@@ -4051,7 +4059,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	}
 
 	render_state = gui__widget_render_state(gui, id, toggled, *val, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.chk);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.chk);
 	gui__hint_render(gui, id, gui->style.chk.hint);
 	return toggled;
 }
@@ -4079,6 +4087,8 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	style = gui__element_style(gui, render_state, &gui->style.chk);
 	gui->style.chk.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 	gui__hint_render(gui, id, gui->style.chk.hint);
 	return toggled;
 }
@@ -4192,6 +4202,8 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 		gui->style.slider.track.pen(gui, x, y + dy/2, w, h - dy, &style_track);
 	}
 	gui->style.slider.handle.pen(gui, hx, hy, hw, hh, &style_handle);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 	gui__hint_render(gui, id, gui->style.slider.handle.hint);
 	return gui->active_id == id || triggered_by_key;
 }
@@ -4247,7 +4259,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	render_state = gui__widget_render_state(gui, id, selected, *val == opt,
 	                                        contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.select);
 	gui__hint_render(gui, id, gui->style.select.hint);
 	return selected;
 }
@@ -4278,7 +4290,7 @@ b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	render_state = gui__widget_render_state(gui, id, changed, *val & opt,
 	                                        contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.select);
 	gui__hint_render(gui, id, gui->style.select.hint);
 	return changed;
 }
@@ -4431,6 +4443,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui->dropdown.item_idx         = 0;
 	gui->dropdown.triggered_by_key = triggered_by_key;
 	gui->dropdown.render_state     = render_state;
+	gui->dropdown.contains_mouse   = contains_mouse;
 	strcpy(gui->dropdown.selected_item_txt, "");
 
 	if (gui_widget_focused(gui, id)) {
@@ -4488,6 +4501,7 @@ void gui_dropdown_end(gui_t *gui)
 	const s32 h     = gui->dropdown.h;
 	const char *txt = gui->dropdown.selected_item_txt;
 	const s32 render_state = gui->dropdown.render_state;
+	const b32 contains_mouse = gui->dropdown.contains_mouse;
 
 	assert(strlen(txt) > 0);
 
@@ -4498,7 +4512,7 @@ void gui_dropdown_end(gui_t *gui)
 		gui__hint_render(gui, gui->dropdown.id, gui->style.dropdown.btn.hint);
 	}
 
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown.btn);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.dropdown.btn);
 
 	const gui_element_style_t style
 		= gui__element_style(gui, render_state, &gui->style.dropdown.btn);
@@ -4692,7 +4706,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
 
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown.btn);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.dropdown.btn);
 
 	if (gui_widget_focused(gui, id)) {
 		const s32 sw = gui->style.dropdown.shadow.width;
@@ -4772,6 +4786,8 @@ b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 	cursor.y = y+val*h;
 	gui_circ(gui, cursor.x, cursor.y, 6, g_nocolor, g_white);
 	gui_circ(gui, cursor.x, cursor.y, 7, g_nocolor, g_black);
+	if (gui__widget_contains_mouse(gui, x, y, w, h))
+		gui->cursor = GUI_CURSOR_BUTTON;
 
 	return changed;
 }
@@ -4850,6 +4866,8 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 		gui_rect(gui, x, cursor-1, w, 2, g_nocolor, g_white);
 		gui_rect(gui, x, cursor-2, w, 4, g_nocolor, g_black);
 	}
+	if (gui__widget_contains_mouse(gui, x, y, w, h))
+		gui->cursor = GUI_CURSOR_BUTTON;
 
 	return changed;
 }
@@ -4880,7 +4898,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	style->btn.inactive.bg_color = color;
 	style->btn.hot.bg_color      = color;
 	style->btn.active.bg_color   = color;
-	gui__btn_render(gui, x, y, w, h, "", render_state, &gui->style.btn);
+	gui__btn_render(gui, x, y, w, h, "", render_state, contains_mouse, &gui->style.btn);
 	gui_style_pop(gui);
 
 	if (gui_widget_focused(gui, id)) {
