@@ -2458,7 +2458,7 @@ void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 static
 b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect)
 {
-	if (SDL_GetDisplayUsableBounds(0, rect) != 0) {
+	if (SDL_GetDisplayUsableBounds(display_idx, rect) != 0) {
 		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
 		return false;
 	}
@@ -2475,7 +2475,7 @@ b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect)
 		 * but for some reason SDL_GetDisplayUsableBounds
 		 * returns it in the bottom-left corner on Mac */
 		SDL_Rect bounds;
-		if (SDL_GetDisplayBounds(0, &bounds) != 0) {
+		if (SDL_GetDisplayBounds(display_idx, &bounds) != 0) {
 			log_error("SDL_GetDisplayBounds failed: %s", SDL_GetError());
 			return false;
 		}
