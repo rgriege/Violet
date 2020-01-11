@@ -3587,7 +3587,8 @@ b32 gui__widget_contains_mouse(const gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	return box2i_contains_point(box, gui->mouse_pos)
 	    && gui__box_half_visible(gui, box)
-	    && !gui->lock;
+	    && !gui->lock
+	    && !mouse_covered(gui);
 }
 
 static
