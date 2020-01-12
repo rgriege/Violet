@@ -475,6 +475,10 @@ void gui_unlock(gui_t *gui);
 /* NOTE: I usually hate 'conditional' methods, but this cleans up usage code */
 void gui_lock_if(gui_t *gui, b32 cond, u32 *lock);
 void gui_unlock_if(gui_t *gui, u32 lock);
+/* Scales splits, fonts, and grids.  A value of 100 means unscaled.
+ * Be careful calling this between frame_begin & frame_end. */
+void gui_set_scale(gui_t *gui, s32 scale);
+s32  gui_scale_val(s32 val, s32 scale);
 
 
 /* Window */
@@ -677,6 +681,10 @@ void gui_splits_render(gui_t *gui);
 
 #ifndef GUI_PANEL_TITLEBAR_HEIGHT
 #define GUI_PANEL_TITLEBAR_HEIGHT 20
+#endif
+
+#ifndef GUI_PANEL_MAX_TAB_WIDTH
+#define GUI_PANEL_MAX_TAB_WIDTH 100
 #endif
 
 #ifndef GUI_PANEL_MIN_DIM
@@ -2076,6 +2084,7 @@ typedef struct gui
 	u32 culled_draw_calls;
 	u32 culled_vertices;
 	u32 culled_widgets;
+	s32 scale;
 
 	v2i window_dim;
 	v2i window_restore_pos;
@@ -2360,6 +2369,8 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui_style_set(gui, &g_gui_style_default);
 
 	gui->style_stack_sz = 0;
+
+	gui->scale = 100;
 
 	gui->mouse_btn = SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
 	gui->mouse_pos_last = gui->mouse_pos;
@@ -3869,14 +3880,15 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
 static inline
 font_t *gui__get_font(gui_t *gui, u32 sz)
 {
+	const u32 sz_scaled = (u32)gui_scale_val((s32)sz, gui->scale);
 	font_t *font = gui->fonts, *font_end = array_end(gui->fonts);
-	while (font != font_end && font->sz != sz)
+	while (font != font_end && font->sz != sz_scaled)
 		++font;
 	if (font != font_end)
 		return font;
 
 	font = array_append_null(gui->fonts);
-	if (font_load(font, gui->font_file_path, sz)) {
+	if (font_load(font, gui->font_file_path, sz_scaled)) {
 		return font;
 	} else {
 		array_pop(gui->fonts);
@@ -6265,6 +6277,16 @@ void gui_unlock_if(gui_t *gui, u32 lock)
 	}
 }
 
+void gui_set_scale(gui_t *gui, s32 scale)
+{
+	gui->scale = scale;
+}
+
+s32 gui_scale_val(s32 val, s32 scale)
+{
+	return val * scale / 100;
+}
+
 
 /* Window */
 
@@ -6389,7 +6411,7 @@ s32 *gui__grid_cells_end(gui_grid_t *grid)
 
 static
 void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
-                         const s32 *cells, u32 num_cells)
+                         const s32 *cells, u32 num_cells, s32 scale)
 {
 	const s32 parent_dim = gui__grid_strip_parent_dimension(grid, vertical);
 	s32 fixed_dim;
@@ -6417,7 +6439,7 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	flex_cell_cnt = 0;
 	for (u32 i = 0; i < num_cells; ++i) {
 		if (cells[i] > 0)
-			fixed_dim += cells[i];
+			fixed_dim += gui_scale_val(cells[i], scale);
 		else if (cells[i] < 0)
 			pcnt_total += -cells[i];
 		else if (cells[i] == 0)
@@ -6429,7 +6451,7 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	                        ? fixed_dim : parent_dim;
 	strip->dim.d[!vertical] = (minor_dim == GUI_GRID_FLEX)
 	                        ? gui__grid_strip_parent_dimension(grid, !vertical)
-	                        : minor_dim;
+	                        : gui_scale_val(minor_dim, scale);
 
 	/* compute flex/percent cell info */
 	remaining_dim = strip->dim.d[vertical] - fixed_dim;
@@ -6442,7 +6464,7 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	/* compute cell dimensions */
 	for (u32 i = 0; i < num_cells; ++i) {
 		if (cells[i] > 0)
-			strip->current_cell[i] = cells[i];
+			strip->current_cell[i] = gui_scale_val(cells[i], scale);
 		else if (cells[i] < 0)
 			strip->current_cell[i] = -cells[i] * remaining_dim / pcnt_total;
 		else if (cells[i] == 0)
@@ -6497,7 +6519,7 @@ void pgui_row(gui_t *gui, s32 height, u32 num_cells)
 void pgui_row_cells(gui_t *gui, s32 height, const s32 *cells, u32 num_cells)
 {
 	assert(gui->grid);
-	gui__grid_add_strip(gui->grid, false, height, cells, num_cells);
+	gui__grid_add_strip(gui->grid, false, height, cells, num_cells, gui->scale);
 }
 
 void pgui_row_empty(gui_t *gui, s32 height)
@@ -6525,7 +6547,7 @@ void pgui_col(gui_t *gui, s32 width, u32 num_cells)
 void pgui_col_cells(gui_t *gui, s32 width, const s32 *cells, u32 num_cells)
 {
 	assert(gui->grid);
-	gui__grid_add_strip(gui->grid, true, width, cells, num_cells);
+	gui__grid_add_strip(gui->grid, true, width, cells, num_cells, gui->scale);
 }
 
 void pgui_col_empty(gui_t *gui, s32 width)
@@ -7335,12 +7357,12 @@ void gui_splits_render(gui_t *gui)
 }
 
 static
-s32 gui__split_dim(r32 size, r32 parent_dimension,
+s32 gui__split_dim(r32 size, r32 parent_dimension, s32 scale,
                    r32 total_sized_child_dimension,
                    u32 num_siblings_without_size)
 {
 	if (size > 1.f) {
-		return size;
+		return min(gui_scale_val(size, scale), parent_dimension);
 	} else if (size > 0.f) {
 		return parent_dimension * size;
 	} else {
@@ -7351,10 +7373,10 @@ s32 gui__split_dim(r32 size, r32 parent_dimension,
 }
 
 static
-void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
+void gui__splits_compute_from(gui_split_t *split, s32 scale)
 {
 	const b32 vertical = split->children.vertical;
-	const s32 collapsed_dimension = GUI_PANEL_TITLEBAR_HEIGHT;
+	const s32 collapsed_dimension = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, scale);
 	const v2i start = { split->box.min.x, split->box.max.y };
 	const v2i end = { split->box.max.x, split->box.min.y };
 	const v2i dir = { 1, -1 };
@@ -7380,7 +7402,8 @@ void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
 			++num_children_collapsed;
 			total_sized_child_dimension += collapsed_dimension;
 		} else if (child->size > 0.f) {
-			total_sized_child_dimension += gui__split_dim(child->size, dim.d[vertical], 0.f, 0);
+			total_sized_child_dimension += gui__split_dim(child->size, dim.d[vertical],
+			                                              scale, 0.f, 0);
 		} else {
 			++num_children_without_size;
 		}
@@ -7404,12 +7427,12 @@ void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
 			/* expand to fill available space */
 			const s32 remaining = v2i_mul(v2i_sub(end, cpos), dir).d[vertical]
 			                    - num_children_collapsed_remaining * collapsed_dimension;
-			cdim.d[vertical] = gui__split_dim(child->size, dim.d[vertical],
+			cdim.d[vertical] = gui__split_dim(child->size, dim.d[vertical], scale,
 			                                  total_sized_child_dimension,
 			                                  num_children_without_size);
 			cdim.d[vertical] = max(cdim.d[vertical], remaining);
 		} else {
-			cdim.d[vertical] = gui__split_dim(child->size, dim.d[vertical],
+			cdim.d[vertical] = gui__split_dim(child->size, dim.d[vertical], scale,
 			                                  total_sized_child_dimension,
 			                                  num_children_without_size);
 		}
@@ -7417,8 +7440,6 @@ void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
 		cend = box2i_clamp_point(split->box, v2i_add(cpos, v2i_mul(cdim, dir)));
 		box2i_from_point(&child->box, cpos);
 		box2i_extend_point(&child->box, cend);
-		assert(child->box.max.x >= child->box.min.x);
-		assert(child->box.max.y >= child->box.min.y);
 
 		cdim.d[!vertical] = 0;
 		cpos = box2i_clamp_point(split->box, v2i_add(cpos, v2i_mul(cdim, dir)));
@@ -7430,7 +7451,7 @@ void gui__splits_compute_from(gui_t *gui, gui_split_t *split)
 	child = split->children.first;
 	while (child) {
 		if (!gui__split_is_leaf(child))
-			gui__splits_compute_from(gui, child);
+			gui__splits_compute_from(child, scale);
 		child = child->siblings.next;
 	}
 }
@@ -7440,7 +7461,7 @@ void gui_splits_compute(gui_t *gui)
 	assert(gui->root_split);
 	box2i_from_xywh(&gui->root_split->box, 0, 0, gui->window_dim.x, gui->window_dim.y);
 	if (!gui__split_is_leaf(gui->root_split))
-		gui__splits_compute_from(gui, gui->root_split);
+		gui__splits_compute_from(gui->root_split, gui->scale);
 }
 
 void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
@@ -7615,8 +7636,9 @@ b32 gui__current_panel_contains_mouse(const gui_t *gui)
 		return false;
 
 	if (panel->collapsed) {
-		y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
-		height = GUI_PANEL_TITLEBAR_HEIGHT;
+		const s32 titlebar_height = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, gui->scale);
+		y = panel->y + panel->height - titlebar_height;
+		height = titlebar_height;
 	} else {
 		y = panel->y;
 		height = panel->height;
@@ -7723,7 +7745,7 @@ s32 box2i_to_point_dist_sq(box2i box, v2i point)
 static
 void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 {
-	const s32 dim = GUI_PANEL_TITLEBAR_HEIGHT;
+	const s32 dim = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, gui->scale);
 	s32 y;
 	s32 rw, rx;
 	s32 tab_count;
@@ -7765,10 +7787,11 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	for (gui_panel_t *p = panel; p; p = p->next)
 		++tab_count;
 	if (tab_count > 1) {
+		const s32 max_tab_dim = gui_scale_val(GUI_PANEL_MAX_TAB_WIDTH, gui->scale);
 		s32 tab_dim, tab_idx;
 		u32 selected_tab_idx;
 		tab_dim = (panel->width - dim - rw) / tab_count;
-		tab_dim = min(tab_dim, 100);
+		tab_dim = min(tab_dim, max_tab_dim);
 		tab_idx = 0;
 		selected_tab_idx = 0;
 		for (gui_panel_t *p = panel; p; p = p->next) {
@@ -7867,7 +7890,7 @@ void pgui__panel_stop_dragging(gui_t *gui, gui_panel_t *panel)
 			if (split->panel)
 				split->panel->split = child2;
 			split->panel = NULL;
-			gui__splits_compute_from(gui, split);
+			gui__splits_compute_from(split, gui->scale);
 		}
 	break;
 	case GUI__SPLIT_DIVISION_RIGHT:
@@ -7879,7 +7902,7 @@ void pgui__panel_stop_dragging(gui_t *gui, gui_panel_t *panel)
 			child2->panel = panel;
 			panel->split = child2;
 			split->panel = NULL;
-			gui__splits_compute_from(gui, split);
+			gui__splits_compute_from(split, gui->scale);
 		}
 	break;
 	case GUI__SPLIT_DIVISION_TOP:
@@ -7891,7 +7914,7 @@ void pgui__panel_stop_dragging(gui_t *gui, gui_panel_t *panel)
 			if (split->panel)
 				split->panel->split = child2;
 			split->panel = NULL;
-			gui__splits_compute_from(gui, split);
+			gui__splits_compute_from(split, gui->scale);
 		}
 	break;
 	case GUI__SPLIT_DIVISION_BOTTOM:
@@ -7903,17 +7926,17 @@ void pgui__panel_stop_dragging(gui_t *gui, gui_panel_t *panel)
 			child2->panel = panel;
 			panel->split = child2;
 			split->panel = NULL;
-			gui__splits_compute_from(gui, split);
+			gui__splits_compute_from(split, gui->scale);
 		}
 	break;
 	}
 }
 
 static
-s32 pgui__panel_body_height(const gui_panel_t *panel)
+s32 pgui__panel_body_height(const gui_panel_t *panel, r32 scale)
 {
 	return (panel->flags & GUI_PANEL_TITLEBAR)
-	     ? panel->height - GUI_PANEL_TITLEBAR_HEIGHT
+	     ? panel->height - gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, scale)
 	     : panel->height;
 }
 
@@ -7978,7 +8001,8 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 		/* must run after gui->panel is assigned so drag id is correct */
 		if (panel->flags & GUI_PANEL_TITLEBAR) {
-			const s32 drag_y = panel->y + panel->height - GUI_PANEL_TITLEBAR_HEIGHT;
+			const s32 titlebar_height = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, gui->scale);
+			const s32 drag_y = panel->y + panel->height - titlebar_height;
 			const u64 drag_id = gui_widget_id(gui, panel->x, drag_y);
 			was_dragging = gui_widget_active(gui, drag_id);
 		}
@@ -7994,7 +8018,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 		if (panel->collapsed && !panel->split) {
 			/* background outline display */
-			const s32 h = GUI_PANEL_TITLEBAR_HEIGHT;
+			const s32 h = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, gui->scale);
 			gui_rect(gui, panel->x, panel->y + panel->height - h, panel->width, h,
 			         g_nocolor, gui->style.panel.border_color);
 		}
@@ -8025,7 +8049,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		         g_nocolor, gui->style.panel.border_color);
 
 	{
-		const s32 body_height = pgui__panel_body_height(panel);
+		const s32 body_height = pgui__panel_body_height(panel, gui->scale);
 		box2i box;
 		v2i pos, dim;
 		box2i_from_xywh(&box, panel->x, panel->y, panel->width, body_height);
