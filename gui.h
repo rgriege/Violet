@@ -485,6 +485,7 @@ void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 /* Grid layout */
 
 #define GUI_GRID_FLEX 0
+#define GUI_GRID_PCNT(x) (-x)
 
 #ifndef GUI_GRID_MAX_DEPTH
 #define GUI_GRID_MAX_DEPTH 8
@@ -527,18 +528,18 @@ void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h);
 void pgui_grid_end(gui_t *gui, gui_grid_t *grid);
 
 void pgui_row(gui_t *gui, s32 height, u32 num_cells);
-void pgui_row_cells(gui_t *gui, s32 height, const r32 *cells, u32 num_cells);
+void pgui_row_cells(gui_t *gui, s32 height, const s32 *cells, u32 num_cells);
 #define pgui_row_cellsv(gui, height, cells) \
 	pgui_row_cells(gui, height, cells, countof(cells))
 void pgui_row_empty(gui_t *gui, s32 height);
-void pgui_row_centered(gui_t *gui, s32 height, r32 width);
+void pgui_row_centered(gui_t *gui, s32 height, s32 width);
 
 void pgui_col(gui_t *gui, s32 width, u32 num_cells);
-void pgui_col_cells(gui_t *gui, s32 width, const r32 *cells, u32 num_cells);
+void pgui_col_cells(gui_t *gui, s32 width, const s32 *cells, u32 num_cells);
 #define pgui_col_cellsv(gui, width, cells) \
 	pgui_col_cells(gui, width, cells, countof(cells))
 void pgui_col_empty(gui_t *gui, s32 width);
-void pgui_col_centered(gui_t *gui, s32 width, r32 height);
+void pgui_col_centered(gui_t *gui, s32 width, s32 height);
 
 void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 u64  pgui_next_widget_id(const gui_t *gui);
@@ -5822,11 +5823,11 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui_style_pop(gui);
 
 	if (gui_widget_focused(gui, id)) {
-		static const r32 cols_major[] = { 0, 80 };
-		static const r32 rows[] = { 0, 2, 0.1f };
-		static const r32 cols[] = { 0, 2, 0.1f };
-		static const r32 cols_npt[] = { 20, 0 };
-		static const r32 rows_npt[] = {
+		static const s32 cols_major[] = { 0, 80 };
+		static const s32 rows[] = { 0, 2, 20 };
+		static const s32 cols[] = { 0, 2, 20 };
+		static const s32 cols_npt[] = { 20, 0 };
+		static const s32 rows_npt[] = {
 			20, 5, 20, 5, 20, 10, 20, 5, 20, 5, 20, 10, 20
 		};
 		const s32 gx = px + style->panel.padding.left;
@@ -6368,7 +6369,7 @@ void gui__grid_set_strip_dim(const gui_grid_t *grid,
 
 static
 void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
-                         const r32 *cells, u32 num_cells)
+                         const s32 *cells, u32 num_cells)
 {
 	s32 major_dim;
 	b32 major_dim_inherited;
@@ -6400,7 +6401,7 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	major_dim = 0;
 	major_dim_inherited = false;
 	for (u32 i = 0; i < num_cells; ++i) {
-		if (cells[i] > 1.f)
+		if (cells[i] > 0)
 			major_dim += cells[i];
 		else
 			major_dim_inherited = true;
@@ -6417,16 +6418,15 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	cell_total_major_dim = 0;
 	unspecified_cell_cnt = 0;
 	for (u32 i = 0; i < num_cells; ++i) {
-		if (cells[i] > 1.f) {
+		if (cells[i] > 0) {
 			strip->current_cell[i] = cells[i];
 			cell_total_major_dim += cells[i];
-		} else if (cells[i] > 0.f) {
-			const s32 dim = cells[i] * strip->dim.d[vertical];
+		} else if (cells[i] < 0) {
+			const s32 dim = -cells[i] * strip->dim.d[vertical] / 100;
 			strip->current_cell[i] = dim;
 			cell_total_major_dim += dim;
 		} else {
-			assert(cells[i] == 0.f);
-			strip->current_cell[i] = 0.f;
+			strip->current_cell[i] = 0;
 			++unspecified_cell_cnt;
 		}
 	}
@@ -6471,13 +6471,13 @@ void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
 
 void pgui_row(gui_t *gui, s32 height, u32 num_cells)
 {
-	const r32 cells[GUI_GRID_MAX_CELLS] = { 0 };
+	const s32 cells[GUI_GRID_MAX_CELLS] = { 0 };
 	static_assert(GUI_GRID_FLEX == 0, "invalid initialization");
 	assert(num_cells < GUI_GRID_MAX_CELLS);
 	pgui_row_cells(gui, height, cells, num_cells);
 }
 
-void pgui_row_cells(gui_t *gui, s32 height, const r32 *cells, u32 num_cells)
+void pgui_row_cells(gui_t *gui, s32 height, const s32 *cells, u32 num_cells)
 {
 	assert(gui->grid);
 	gui__grid_add_strip(gui->grid, false, height, cells, num_cells);
@@ -6489,9 +6489,9 @@ void pgui_row_empty(gui_t *gui, s32 height)
 	pgui_spacer_blank(gui);
 }
 
-void pgui_row_centered(gui_t *gui, s32 height, r32 width)
+void pgui_row_centered(gui_t *gui, s32 height, s32 width)
 {
-	const r32 cells[3] = { 0, width, 0 };
+	const s32 cells[3] = { 0, width, 0 };
 	static_assert(GUI_GRID_FLEX == 0, "invalid initialization");
 	assert(countof(cells) < GUI_GRID_MAX_CELLS);
 	pgui_row_cells(gui, height, B2PC(cells));
@@ -6499,13 +6499,13 @@ void pgui_row_centered(gui_t *gui, s32 height, r32 width)
 
 void pgui_col(gui_t *gui, s32 width, u32 num_cells)
 {
-	const r32 cells[GUI_GRID_MAX_CELLS] = { 0 };
+	const s32 cells[GUI_GRID_MAX_CELLS] = { 0 };
 	static_assert(GUI_GRID_FLEX == 0, "invalid initialization");
 	assert(num_cells < GUI_GRID_MAX_CELLS);
 	pgui_col_cells(gui, width, cells, num_cells);
 }
 
-void pgui_col_cells(gui_t *gui, s32 width, const r32 *cells, u32 num_cells)
+void pgui_col_cells(gui_t *gui, s32 width, const s32 *cells, u32 num_cells)
 {
 	assert(gui->grid);
 	gui__grid_add_strip(gui->grid, true, width, cells, num_cells);
@@ -6517,9 +6517,9 @@ void pgui_col_empty(gui_t *gui, s32 width)
 	pgui_spacer_blank(gui);
 }
 
-void pgui_col_centered(gui_t *gui, s32 width, r32 height)
+void pgui_col_centered(gui_t *gui, s32 width, s32 height)
 {
-	const r32 cells[3] = { 0, height, 0 };
+	const s32 cells[3] = { 0, height, 0 };
 	static_assert(GUI_GRID_FLEX == 0, "invalid initialization");
 	assert(countof(cells) < GUI_GRID_MAX_CELLS);
 	pgui_col_cells(gui, width, B2PC(cells));
@@ -6833,11 +6833,11 @@ b32 pgui_tree_node_begin(gui_t *gui)
 	u32 lock;
 
 	if (tree->depth > 0) {
-		const r32 cols[3] = { tree->depth * tree->indent, tree->indent, 0 };
+		const s32 cols[3] = { tree->depth * tree->indent, tree->indent, 0 };
 		pgui_row_cellsv(gui, tree->row_height, cols);
 		pgui_spacer_blank(gui);
 	} else {
-		const r32 cols[2] = { tree->indent, 0 };
+		const s32 cols[2] = { tree->indent, 0 };
 		pgui_row_cellsv(gui, tree->row_height, cols);
 	}
 
@@ -6878,7 +6878,7 @@ void pgui_tree_node_end(gui_t *gui)
 void pgui_tree_leaf(gui_t *gui)
 {
 	const gui_tree_t *tree = &gui->tree;
-	const r32 cols[2] = { (tree->depth + 1) * tree->indent, 0 };
+	const s32 cols[2] = { (tree->depth + 1) * tree->indent, 0 };
 	pgui_row_cellsv(gui, tree->row_height, cols);
 	pgui_spacer_blank(gui);
 	pgui_col(gui, 0, 1);
