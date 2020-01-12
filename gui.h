@@ -519,9 +519,9 @@ typedef struct gui_grid
 	s32 cells[GUI_GRID_MAX_CELLS];
 	gui_grid_strip_t strips[GUI_GRID_MAX_DEPTH];
 	u32 depth;
-	v2i pos;
+	v2i pos; /* top left */
 	v2i dim;
-	v2i start;
+	v2i start; /* top left */
 	gui_widget_bounds_t widget_bounds;
 	struct gui_grid *prev;
 } gui_grid_t;
@@ -6382,6 +6382,12 @@ s32 gui__grid_strip_parent_dimension(const gui_grid_t *grid, b32 vertical)
 }
 
 static
+s32 *gui__grid_cells_end(gui_grid_t *grid)
+{
+	return grid->depth > 0 ? grid->strips[grid->depth-1].max_cell : grid->cells;
+}
+
+static
 void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
                          const s32 *cells, u32 num_cells)
 {
@@ -6396,21 +6402,14 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	assert(num_cells > 0);
 	assert(grid->depth < GUI_GRID_MAX_DEPTH);
 	assert(num_cells < GUI_GRID_MAX_CELLS);
-	if (grid->depth != 0)
-		assert(  (grid->strips[grid->depth-1].max_cell - grid->cells) + num_cells
-		       < GUI_GRID_MAX_CELLS);
-	/* TODO(rgriege): allow row within row & same for colums */
-	if (grid->depth != 0)
-		assert(grid->strips[grid->depth-1].vertical != vertical);
+	assert((gui__grid_cells_end(grid) - grid->cells) + num_cells < GUI_GRID_MAX_CELLS);
 
 	/* setup strip */
 	strip = &grid->strips[grid->depth];
 	strip->vertical     = vertical;
 	strip->num_cells    = num_cells;
 	strip->dim          = g_v2i_zero;
-	strip->current_cell =   grid->depth > 0
-	                      ? grid->strips[grid->depth-1].max_cell
-	                      : grid->cells;
+	strip->current_cell = gui__grid_cells_end(grid);
 	strip->max_cell     = strip->current_cell + num_cells;
 
 	fixed_dim = 0;
