@@ -484,7 +484,9 @@ void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 
 /* Grid layout */
 
+/* equally distribute remaining space */
 #define GUI_GRID_FLEX 0
+/* consume percentage (usually out of 100 - see below) of remaining space */
 #define GUI_GRID_PCNT(x) (-x)
 
 #ifndef GUI_GRID_MAX_DEPTH
@@ -527,6 +529,26 @@ typedef struct gui_grid
 void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h);
 void pgui_grid_end(gui_t *gui, gui_grid_t *grid);
 
+/* Cell values are evaluated roughly as follows:
+ * 1. Subtract pixel values from the total row/column dimension.
+ * 2. Evaluate GUI_GRID_PCNT values on the remaining dimension.
+ * 3. Split the remaining dimension evenly amongst GUI_GRID_FLEX cells.
+ *
+ * Most of the time, it is not advisable to mix GUI_GRID_PCNT and GUI_GRID_FLEX values,
+ * and GUI_GRID_PCNT values should total 100 when used.  However, the following rules
+ * apply in the cases where these aren't observed:
+ *
+ * If the GUI_GRID_PCNT's total 100, any GUI_GRID_FLEX cells will have 0 dimension.
+ *
+ * If the GUI_GRID_PCNT's exceed 100, then they will be used as relative weights
+ * instead of actual percentages, and any GUI_GRID_FLEX cells will have 0 dimension.
+ *
+ * If the GUI_GRID_PCNT's are less than 100 and any GUI_GRID_FLEX cells are present,
+ * then GUI_GRID_PCNT's will be used as percentages, and the remaining percentage
+ * will be distributed evenly amongst GUI_GRID_FLEX cells.
+ *
+ * If the GUI_GRID_PCNT's are less than 100 and no GUI_GRID_FLEX cells are present,
+ * then the GUI_GRID_PCNT's will be used as relative weights instead of percentages. */
 void pgui_row(gui_t *gui, s32 height, u32 num_cells);
 void pgui_row_cells(gui_t *gui, s32 height, const s32 *cells, u32 num_cells);
 #define pgui_row_cellsv(gui, height, cells) \
@@ -6346,24 +6368,16 @@ void gui__grid_advance_cell(gui_grid_t *grid)
 }
 
 static
-void gui__grid_set_strip_dim(const gui_grid_t *grid,
-                             gui_grid_strip_t *strip,
-                             s32 dim, b32 vertical)
+s32 gui__grid_strip_parent_dimension(const gui_grid_t *grid, b32 vertical)
 {
-	if (dim == GUI_GRID_FLEX) {
-		if (grid->depth == 0) {
-			assert(grid->dim.d[vertical] != GUI_GRID_FLEX);
-			if (vertical)
-				strip->dim.y = grid->pos.y - (grid->start.y - grid->dim.y);
-			else
-				strip->dim.x = grid->start.x + grid->dim.x - grid->pos.x;
-		} else {
-			v2i dim_;
-			gui__grid_get_next_cell(grid, NULL, NULL, &dim_.x, &dim_.y);
-			strip->dim.d[vertical] = dim_.d[vertical];
-		}
+	if (grid->depth == 0) {
+		return vertical
+		     ? grid->pos.y - (grid->start.y - grid->dim.y)
+		     : grid->start.x + grid->dim.x - grid->pos.x;
 	} else {
-		strip->dim.d[vertical] = dim;
+		v2i cell;
+		gui__grid_get_next_cell(grid, NULL, NULL, &cell.x, &cell.y);
+		return cell.d[vertical];
 	}
 }
 
@@ -6371,10 +6385,12 @@ static
 void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
                          const s32 *cells, u32 num_cells)
 {
-	s32 major_dim;
-	b32 major_dim_inherited;
-	s32 unspecified_cell_cnt;
-	s32 cell_total_major_dim;
+	const s32 parent_dim = gui__grid_strip_parent_dimension(grid, vertical);
+	s32 fixed_dim;
+	s32 remaining_dim;
+	s32 pcnt_total;
+	s32 flex_cell_cnt;
+	s32 flex_cell_dim;
 	gui_grid_strip_t *strip;
 
 	assert(num_cells > 0);
@@ -6387,6 +6403,7 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	if (grid->depth != 0)
 		assert(grid->strips[grid->depth-1].vertical != vertical);
 
+	/* setup strip */
 	strip = &grid->strips[grid->depth];
 	strip->vertical     = vertical;
 	strip->num_cells    = num_cells;
@@ -6396,56 +6413,57 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	                      : grid->cells;
 	strip->max_cell     = strip->current_cell + num_cells;
 
-
-	/* compute strip dimensions */
-	major_dim = 0;
-	major_dim_inherited = false;
+	fixed_dim = 0;
+	pcnt_total = 0;
+	flex_cell_cnt = 0;
 	for (u32 i = 0; i < num_cells; ++i) {
 		if (cells[i] > 0)
-			major_dim += cells[i];
-		else
-			major_dim_inherited = true;
+			fixed_dim += cells[i];
+		else if (cells[i] < 0)
+			pcnt_total += -cells[i];
+		else if (cells[i] == 0)
+			++flex_cell_cnt;
 	}
-	if (major_dim_inherited) {
-		gui__grid_set_strip_dim(grid, strip, 0, vertical);
-		assert(strip->dim.d[vertical] >= major_dim);
-	} else {
-		gui__grid_set_strip_dim(grid, strip, major_dim, vertical);
+
+	/* compute strip dimensions */
+	strip->dim.d[vertical]  = fixed_dim > parent_dim || pcnt_total + flex_cell_cnt == 0
+	                        ? fixed_dim : parent_dim;
+	strip->dim.d[!vertical] = (minor_dim == GUI_GRID_FLEX)
+	                        ? gui__grid_strip_parent_dimension(grid, !vertical)
+	                        : minor_dim;
+
+	/* compute flex/percent cell info */
+	remaining_dim = strip->dim.d[vertical] - fixed_dim;
+	flex_cell_dim = 0;
+	if (pcnt_total < 100 && flex_cell_cnt > 0) {
+		flex_cell_dim = (100 - pcnt_total) * remaining_dim / (100 * flex_cell_cnt);
+		pcnt_total = 100;
 	}
-	gui__grid_set_strip_dim(grid, strip, minor_dim, !vertical);
 
 	/* compute cell dimensions */
-	cell_total_major_dim = 0;
-	unspecified_cell_cnt = 0;
 	for (u32 i = 0; i < num_cells; ++i) {
-		if (cells[i] > 0) {
+		if (cells[i] > 0)
 			strip->current_cell[i] = cells[i];
-			cell_total_major_dim += cells[i];
-		} else if (cells[i] < 0) {
-			const s32 dim = -cells[i] * strip->dim.d[vertical] / 100;
-			strip->current_cell[i] = dim;
-			cell_total_major_dim += dim;
-		} else {
-			strip->current_cell[i] = 0;
-			++unspecified_cell_cnt;
-		}
+		else if (cells[i] < 0)
+			strip->current_cell[i] = -cells[i] * remaining_dim / pcnt_total;
+		else if (cells[i] == 0)
+			strip->current_cell[i] = flex_cell_dim;
 	}
-	if (unspecified_cell_cnt) {
-		const s32 total = max((strip->dim.d[vertical] - cell_total_major_dim), 0);
-		const s32 dim = total / unspecified_cell_cnt;
-		const s32 leftover = total % unspecified_cell_cnt;
-		s32 leftover_aggregate = 0, leftover_distributions = 1;
-		for (u32 i = 0; i < num_cells; ++i) {
-			if (strip->current_cell[i] != 0.f)
-				continue;
-			strip->current_cell[i] = dim;
-			leftover_aggregate += leftover;
-			if (leftover_aggregate >= leftover_distributions * unspecified_cell_cnt) {
+
+	/* distribute leftover dimension (due to pixel rounding) in a round-robin fashion */
+	remaining_dim = strip->dim.d[vertical];
+	for (u32 i = 0; i < num_cells; ++i)
+		remaining_dim -= strip->current_cell[i];
+
+	if (remaining_dim > 0 && (pcnt_total > 0 || flex_cell_cnt > 0)) {
+		u32 i = 0;
+		while (remaining_dim > 0) {
+			if (cells[i] <= 0) {
 				++strip->current_cell[i];
-				++leftover_distributions;
+				--remaining_dim;
 			}
+			i = (i + 1) % num_cells;
 		}
-		cell_total_major_dim += total;
 	}
 
 	++grid->depth;
