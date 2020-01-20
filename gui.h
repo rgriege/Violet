@@ -3253,6 +3253,7 @@ void gui_end_frame(gui_t *gui)
 	/* front-to-back -> back-to-front */
 	reverse(gui->layers, sizeof(gui->layers[0]), n_layers);
 
+	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
 
 	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
