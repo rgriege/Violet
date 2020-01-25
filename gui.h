@@ -866,7 +866,6 @@ void gui_style_pop(gui_t *gui);
 #include "violet/imath.h"
 #include "violet/string.h"
 #include "violet/utf8.h"
-#include "violet/os.h"
 
 static
 int gui__popcount(u32 x)
