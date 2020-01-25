@@ -868,13 +868,14 @@ void gui_style_pop(gui_t *gui);
 #include "violet/utf8.h"
 
 static
-int gui__popcount(u32 x)
+u32 gui__popcount(u32 x)
 {
-	x =  x               - ((x >> 1)  & 0x55555555);
-	x = (x & 0x33333333) + ((x >> 2)  & 0x33333333);
-	x = (x               +  (x >> 4)) & 0x0f0f0f0f;
-	x = (x * 0x01010101) >> 24;
-	return (int)x;
+	u32 c = x;
+	c =  c               - ((c >> 1)  & 0x55555555);
+	c = (c & 0x33333333) + ((c >> 2)  & 0x33333333);
+	c = (c               +  (c >> 4)) & 0x0f0f0f0f;
+	c = (c * 0x01010101) >> 24;
+	return c;
 }
 
 /* Font */
