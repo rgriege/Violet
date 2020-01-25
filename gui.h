@@ -50,12 +50,12 @@ typedef enum gui_align
 	GUI_ALIGN_TOPRIGHT  = GUI_ALIGN_TOP    | GUI_ALIGN_RIGHT,
 	GUI_ALIGN_MIDRIGHT  = GUI_ALIGN_MIDDLE | GUI_ALIGN_RIGHT,
 	GUI_ALIGN_BOTRIGHT  = GUI_ALIGN_BOTTOM | GUI_ALIGN_RIGHT,
-} gui_align_t;
+} gui_align_e;
 
 #define GUI_ALIGN_VERTICAL   (GUI_ALIGN_TOP | GUI_ALIGN_MIDDLE | GUI_ALIGN_BOTTOM)
 #define GUI_ALIGN_HORIZONTAL (GUI_ALIGN_LEFT | GUI_ALIGN_CENTER | GUI_ALIGN_RIGHT)
 
-void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s32 *py);
+void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_e align, s32 *px, s32 *py);
 
 typedef struct gui_font_metrics
 {
@@ -218,9 +218,9 @@ void gui_img_ex(gui_t *gui, s32 x, s32 y, const gui_img_t *img, r32 sx, r32 sy,
 void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
                    gui_img_scale_e scale);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
-             gui_align_t align);
+             gui_align_e align);
 void gui_txt_dim(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
-                 gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph);
+                 gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph);
 s32  gui_txt_width(const gui_t *gui, const char *txt, u32 sz);
 
 void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
@@ -577,7 +577,7 @@ typedef enum gui_split_flags
 	GUI_SPLIT_TEMPORARY = 0x2,
 	GUI_SPLIT_DIVISIBLE = 0x4,
 	GUI_SPLIT_FULL      = 0x7,
-} gui_split_flags_t;
+} gui_split_flags_e;
 
 typedef struct gui_split
 {
@@ -601,13 +601,13 @@ typedef struct gui_split
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits);
 b32  gui_create_root_split(gui_t *gui, gui_split_t **root);
 b32  gui_split2h(gui_t *gui, gui_split_t *parent, gui_split_t **left, r32 size,
-                 gui_split_t **right, gui_split_flags_t flags);
+                 gui_split_t **right, gui_split_flags_e flags);
 b32  gui_split2v(gui_t *gui, gui_split_t *parent, gui_split_t **top, r32 size,
-                 gui_split_t **bottom, gui_split_flags_t flags);
+                 gui_split_t **bottom, gui_split_flags_e flags);
 b32  gui_splitNh(gui_t *gui, gui_split_t *parent, gui_split_t **child,
-                 r32 size, gui_split_flags_t flags);
+                 r32 size, gui_split_flags_e flags);
 b32  gui_splitNv(gui_t *gui, gui_split_t *parent, gui_split_t **child,
-                 r32 size, gui_split_flags_t flags);
+                 r32 size, gui_split_flags_e flags);
 void gui_splits_compute(gui_t *gui);
 void gui_splits_render(gui_t *gui);
 
@@ -713,7 +713,7 @@ typedef struct gui_text_style
 {
 	u32 size;
 	color_t color;
-	gui_align_t align;
+	gui_align_e align;
 	s32 padding;
 	b32 wrap;
 } gui_text_style_t;
@@ -880,7 +880,7 @@ int gui__popcount(u32 x)
 
 /* Font */
 
-void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s32 *py)
+void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_e align, s32 *px, s32 *py)
 {
 	if (align & GUI_ALIGN_CENTER)
 		*px = x + w / 2;
@@ -1405,7 +1405,7 @@ typedef enum gui__key_toggle_state
 	GUI__KBT_OFF,
 	GUI__KBT_PRESSED_ON,
 	GUI__KBT_RELEASED_ON,
-} gui__key_toggle_state_t;
+} gui__key_toggle_state_e;
 
 typedef struct gui__repeat
 {
@@ -1483,7 +1483,7 @@ typedef struct gui
 	/* keyboard */
 	u8 prev_keys[KB_COUNT];
 	u8 keys[KB_COUNT];
-	gui__key_toggle_state_t key_toggles[KBT_COUNT];
+	s32 key_toggles[KBT_COUNT]; /* gui__key_toggle_state_e */
 	gui__repeat_t key_repeat;
 	char text_npt[32];
 	char clipboard[32];
@@ -1651,7 +1651,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 
 	memset(gui->prev_keys, 0, KB_COUNT);
 	memset(gui->keys, 0, KB_COUNT);
-	memset(gui->key_toggles, 0, KBT_COUNT * sizeof(gui__key_toggle_state_t));
+	memset(gui->key_toggles, 0, sizeof(gui->key_toggles));
 	gui__repeat_init(&gui->key_repeat);
 	memset(gui->text_npt, 0, sizeof(gui->text_npt));
 	memset(gui->clipboard, 0, sizeof(gui->clipboard));
@@ -3134,7 +3134,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 }
 
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
-             color_t c, gui_align_t align)
+             color_t c, gui_align_e align)
 {
 	const gui_text_style_t style = {
 		.size = sz,
@@ -3147,7 +3147,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 }
 
 void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
-                 gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph)
+                 gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph)
 {
 	const char *p = txt;
 	char *pnext;
@@ -3337,10 +3337,10 @@ typedef enum gui__widget_render_state
 	GUI__WIDGET_RENDER_INACTIVE,
 	GUI__WIDGET_RENDER_HOT,
 	GUI__WIDGET_RENDER_ACTIVE,
-} gui__widget_render_state_t;
+} gui__widget_render_state_e;
 
 static
-gui__widget_render_state_t gui__widget_render_state(const gui_t *gui, u64 id,
+gui__widget_render_state_e gui__widget_render_state(const gui_t *gui, u64 id,
                                                     b32 triggered,
                                                     b32 checked,
                                                     b32 contains_mouse)
@@ -3356,7 +3356,7 @@ gui__widget_render_state_t gui__widget_render_state(const gui_t *gui, u64 id,
 }
 
 static
-gui__widget_render_state_t gui__btn_render_state(const gui_t *gui, u64 id,
+gui__widget_render_state_e gui__btn_render_state(const gui_t *gui, u64 id,
                                                  gui_btn_e val, b32 contains_mouse)
 {
 	return gui__widget_render_state(gui, id, val != GUI_BTN_NONE, false, contains_mouse);
@@ -3364,7 +3364,7 @@ gui__widget_render_state_t gui__btn_render_state(const gui_t *gui, u64 id,
 
 static
 gui_element_style_t gui__element_style(const gui_t *gui,
-                                       gui__widget_render_state_t render_state,
+                                       gui__widget_render_state_e render_state,
                                        const gui_widget_style_t *widget_style)
 {
 	gui_element_style_t style;
@@ -3702,7 +3702,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	const gui_widget_style_t *style = &gui->style.npt;
 	b32 contains_mouse;
 	s32 complete = 0;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 	gui_element_style_t elem_style;
 	const char *displayed_txt;
 	const char *txt_to_display;
@@ -3963,7 +3963,7 @@ gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains
 
 static
 void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                     const char *txt, gui__widget_render_state_t render_state,
+                     const char *txt, gui__widget_render_state_e render_state,
                      b32 contains_mouse,
                      const gui_widget_style_t *widget_style)
 {
@@ -3986,7 +3986,7 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
 
-	const gui__widget_render_state_t render_state
+	const gui__widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.btn);
 	gui__hint_render(gui, id, gui->style.btn.hint);
@@ -4006,7 +4006,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
-	const gui__widget_render_state_t render_state
+	const gui__widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
 		= gui__element_style(gui, render_state, &gui->style.btn);
@@ -4029,7 +4029,7 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
-	const gui__widget_render_state_t render_state
+	const gui__widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
 		= gui__element_style(gui, render_state, &gui->style.btn);
@@ -4052,7 +4052,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 toggled = false;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 
 	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		*val = !*val;
@@ -4076,7 +4076,7 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 toggled = false;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 	gui_element_style_t style;
 
 	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
@@ -4098,7 +4098,7 @@ typedef enum gui__slider_orientation
 {
 	GUI__SLIDER_X,
 	GUI__SLIDER_Y,
-} gui__slider_orientation_t;
+} gui__slider_orientation_e;
 
 static
 void gui__slider_move_x(s32 x, s32 w, s32 *hx, s32 hw, s32 dx, r32 *val)
@@ -4121,7 +4121,7 @@ void gui__slider_move_y(s32 y, s32 h, s32 *hy, s32 hh, s32 dy, r32 *val)
 }
 
 b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
-                gui__slider_orientation_t orientation)
+                gui__slider_orientation_e orientation)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
@@ -4189,7 +4189,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	}
 
 
-	const gui__widget_render_state_t render_state
+	const gui__widget_render_state_e render_state
 		= gui__widget_render_state(gui, id, triggered_by_key, false, true);
 	const gui_element_style_t style_track =
 		gui__element_style(gui, render_state, &gui->style.slider.track);
@@ -4249,7 +4249,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_selected = *val == opt;
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 	b32 selected = false;
 
 	if (   gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS
@@ -4277,7 +4277,7 @@ b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 changed = false;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 
 	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		if (*val & opt) {
@@ -4413,7 +4413,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const s32 ph = h * num_items;
 	s32 px, py;
 	b32 triggered_by_key = false;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 
 	assert(gui->dropdown.id == 0); /* cannot nest dropdowns */
 
@@ -4694,7 +4694,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const s32 pw = item_w;
 	const s32 ph = h * num_items;
 	s32 px, py;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 
 	if (gui->popup) {
 		px = x + w;
@@ -4885,7 +4885,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	s32 px, py;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 	gui_style_t *style = gui_style(gui);
 	color_t color = colorf_to_color(*c);
 
@@ -5984,7 +5984,7 @@ b32 gui__has_free_splits(gui_t *gui, u32 n)
 }
 
 static
-void gui__split_init(gui_split_t *split, gui_split_flags_t flags,
+void gui__split_init(gui_split_t *split, gui_split_flags_e flags,
                      gui_split_t *parent, r32 size)
 {
 	split->in_use            = true;
@@ -6046,7 +6046,7 @@ b32 gui_create_root_split(gui_t *gui, gui_split_t **root)
 }
 
 b32 gui_split2h(gui_t *gui, gui_split_t *parent, gui_split_t **left, r32 size,
-                gui_split_t **right, gui_split_flags_t flags)
+                gui_split_t **right, gui_split_flags_e flags)
 {
 	const r32 size0 = max(size,  0.f);
 	const r32 size1 = max(-size, 0.f);
@@ -6071,7 +6071,7 @@ out:
 }
 
 b32 gui_split2v(gui_t *gui, gui_split_t *parent, gui_split_t **top, r32 size,
-                gui_split_t **bottom, gui_split_flags_t flags)
+                gui_split_t **bottom, gui_split_flags_e flags)
 {
 	const r32 size0 = max(size,  0.f);
 	const r32 size1 = max(-size, 0.f);
@@ -6096,7 +6096,7 @@ out:
 }
 
 b32 gui_splitNh(gui_t *gui, gui_split_t *parent, gui_split_t **pchild,
-                r32 size, gui_split_flags_t flags)
+                r32 size, gui_split_flags_e flags)
 {
 	gui_split_t *child = NULL;
 	b32 success = false;
@@ -6116,7 +6116,7 @@ out:
 }
 
 b32 gui_splitNv(gui_t *gui, gui_split_t *parent, gui_split_t **pchild,
-                r32 size, gui_split_flags_t flags)
+                r32 size, gui_split_flags_e flags)
 {
 	gui_split_t *child = NULL;
 	b32 success = false;
@@ -6186,7 +6186,7 @@ b32 gui__find_split(gui_t *gui, v2i point, gui_split_t **split)
 	return gui__find_split_from(gui->root_split, point, split);
 }
 
-enum gui__split_division_type
+typedef enum gui__split_division_type
 {
 	GUI__SPLIT_DIVISION_NONE,
 	GUI__SPLIT_DIVISION_CENTER,
@@ -6194,7 +6194,7 @@ enum gui__split_division_type
 	GUI__SPLIT_DIVISION_RIGHT,
 	GUI__SPLIT_DIVISION_TOP,
 	GUI__SPLIT_DIVISION_BOTTOM,
-};
+} gui__split_division_type_e;
 
 static
 s32 gui__split_division(const gui_split_t *split, v2i point)
