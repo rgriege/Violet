@@ -1,8 +1,6 @@
 #ifndef VIOLET_GRAPHICS_H
 #define VIOLET_GRAPHICS_H
 
-#include <GL/glew.h>
-
 const char *gl_get_err_str(GLenum err);
 
 #if defined(DEBUG) || defined(CHECK_GL)
