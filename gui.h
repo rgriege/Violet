@@ -5,104 +5,30 @@
 #include "violet/color.h"
 #include "violet/key.h"
 
-/* Mesh */
-
-typedef struct mesh_t
-{
-	u32 vbo;
-	u32 sz;
-} mesh_t;
-
-void mesh_init(mesh_t *m, const v2f *poly, u32 n);
-void mesh_destroy(mesh_t *m);
-void mesh_poly(const mesh_t *m, v2f *poly);
-void mesh_bind(const mesh_t *m);
-void mesh_unbind(void);
-void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n);
-
-
 /* Texture */
 
-typedef enum texture_blend
+typedef enum gui_blend
 {
-	TEXTURE_BLEND_NRM,
-	TEXTURE_BLEND_ADD,
-	TEXTURE_BLEND_MUL,
-	TEXTURE_BLEND_MAX = TEXTURE_BLEND_MUL,
-} texture_blend_e;
+	GUI_BLEND_NRM,
+	GUI_BLEND_ADD,
+	GUI_BLEND_MUL,
+	GUI_BLEND_MAX = GUI_BLEND_MUL,
+} gui_blend_e;
 
-typedef struct texture_t
+typedef struct gui_texture
 {
 	u32 handle;
 	u32 width;
 	u32 height;
 	u32 blend;
-} texture_t;
+} gui_texture_t;
 
-b32  texture_load(texture_t *tex, const char *filename);
-void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data);
-m3f  texture_get_transform(const texture_t *texture, s32 x, s32 y,
-                           r32 sx, r32 sy, r32 rotation);
-void texture_destroy(texture_t *tex);
-void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n);
-void texture_bind(const texture_t *tex);
-void texture_unbind(void);
-
-
-/* Shader */
-
-typedef enum shader_type_t
-{
-	VERTEX_SHADER,
-	FRAGMENT_SHADER
-} shader_type_t;
-
-typedef struct shader_t
-{
-	const char *filename;
-	u32 handle;
-} shader_t;
-
-
-b32  shader_init_from_string(shader_t *shader, const char *str,
-                             shader_type_t type, const char *id);
-b32  shader_init_from_file(shader_t *shader, const char *fname,
-                           shader_type_t type);
-void shader_destroy(shader_t *shader);
-
-typedef struct shader_prog_t
-{
-	u32 handle;
-	shader_t vertex_shader;
-	shader_t frag_shader;
-} shader_prog_t;
-
-b32  shader_program_load_from_files(shader_prog_t *prog,
-                                    const char *vert_fname,
-                                    const char *frag_fname);
-b32  shader_program_load_from_strings(shader_prog_t *prog,
-                                      const char *vert_str,
-                                      const char *frag_str);
-b32  shader_program_create(shader_prog_t *prog, shader_t vertex_shader,
-                           shader_t frag_shader);
-void shader_program_destroy(shader_prog_t *p);
-void shader_program_bind(const shader_prog_t *p);
-void shader_program_unbind(void);
-s32  shader_program_attrib(const shader_prog_t *p, const char *name);
-s32  shader_program_uniform(const shader_prog_t *p, const char *name);
-
+m3f gui_texture_get_transform(const gui_texture_t *texture, s32 x, s32 y,
+                              r32 sx, r32 sy, r32 rotation);
 
 /* Image */
 
-typedef struct img_t
-{
-	texture_t texture;
-} img_t;
-
-b32  img_load(img_t *img, const char *filename);
-void img_init(img_t *img, u32 w, u32 h, u32 fmt, void *data);
-void img_destroy(img_t *img);
-
+typedef struct gui_texture gui_img_t;
 
 /* Font */
 
@@ -124,64 +50,63 @@ typedef enum gui_align
 	GUI_ALIGN_TOPRIGHT  = GUI_ALIGN_TOP    | GUI_ALIGN_RIGHT,
 	GUI_ALIGN_MIDRIGHT  = GUI_ALIGN_MIDDLE | GUI_ALIGN_RIGHT,
 	GUI_ALIGN_BOTRIGHT  = GUI_ALIGN_BOTTOM | GUI_ALIGN_RIGHT,
-} gui_align_t;
+} gui_align_e;
 
 #define GUI_ALIGN_VERTICAL   (GUI_ALIGN_TOP | GUI_ALIGN_MIDDLE | GUI_ALIGN_BOTTOM)
 #define GUI_ALIGN_HORIZONTAL (GUI_ALIGN_LEFT | GUI_ALIGN_CENTER | GUI_ALIGN_RIGHT)
 
-void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s32 *py);
+void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_e align, s32 *px, s32 *py);
 
-typedef struct font_t
+typedef struct gui_font_metrics
 {
-	const char *filename;
-	u32 sz;
-	s32 num_glyphs;
 	s32 ascent, descent, line_gap, newline_dist;
-	void *char_info;
-	texture_t texture;
-} font_t;
+} gui_font_metrics_t;
 
-b32  font_load(font_t *f, const char *filename, u32 sz);
-void font_destroy(font_t *f);
+typedef struct gui_char_quad
+{
+	gui_texture_t texture;
+	r32 x0, y0, s0, t0;
+	r32 x1, y1, s1, t1;
+	r32 advance;
+} gui_char_quad_t;
+
+typedef void*(*gui_font_f)(void *handle, u32 size);
+typedef b32(*gui_font_metrics_f)(void *font, gui_font_metrics_t *metrics);
+typedef b32(*gui_char_quad_f)(void *font, s32 codepoint, r32 x, r32 y, gui_char_quad_t *quad);
+
+typedef struct gui_fonts
+{
+	void *handle;
+	gui_font_f get_font;
+	gui_font_metrics_f get_metrics;
+	gui_char_quad_f get_char_quad;
+} gui_fonts_t;
 
 
 /* General Gui */
 
 typedef struct gui gui_t;
 
-typedef enum gui_flags_t
-{
-	WINDOW_BORDERLESS = 1 << 0,
-	WINDOW_RESIZABLE  = 1 << 1,
-	WINDOW_MAXIMIZED  = 1 << 2,
-	WINDOW_FULLSCREEN = 1 << 3,
-	WINDOW_CENTERED   = 1 << 4,
-} gui_flags_t;
-
-gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
-                  gui_flags_t flags);
-gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
-                     gui_flags_t flags, const char *font_file_path);
+gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
+                  gui_fonts_t fonts);
 void   gui_destroy(gui_t *gui);
-void   gui_move(const gui_t *gui, s32 dx, s32 dy);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
-b32    gui_is_maximized(const gui_t *gui);
-void   gui_minimize(gui_t *gui);
-void   gui_maximize(gui_t *gui);
-void   gui_restore(gui_t *gui);
-void   gui_fullscreen(gui_t *gui);
-b32    gui_begin_frame(gui_t *gui);
+void   gui_begin_frame(gui_t *gui);
 void   gui_end_frame(gui_t *gui);
 void   gui_end_frame_ex(gui_t *gui, u32 target_frame_milli,
                         u32 idle_frame_milli, u32 idle_start_milli);
-void   gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t*, void*), void *udata);
+
+b32   gui_text_input_active(const gui_t *gui);
+u32   gui_cursor(const gui_t *gui);
+void *gui_window(gui_t *gui);
+void  gui_set_window(gui_t *gui, void *window);
 
 timepoint_t gui_frame_start(const gui_t *gui);
 u32         gui_frame_time_milli(const gui_t *gui);
 timepoint_t gui_last_input_time(const gui_t *gui);
 
 
-typedef enum mouse_button_t
+typedef enum gui_mouse_button
 {
 	MB_LEFT      = 1 << 0,
 	MB_MIDDLE    = 1 << 1,
@@ -191,15 +116,32 @@ typedef enum mouse_button_t
 	MB_WHEELUP   = 1 << 5,
 	MB_WHEELDOWN = 1 << 6,
 	MB_WHEEL     = MB_WHEELUP | MB_WHEELDOWN,
-} mouse_button_t;
+} gui_mouse_button_e;
 
 /* Input */
+
+void gui_events_begin(gui_t *gui);
+void gui_event_add_update(gui_t *gui);
+void gui_event_set_mouse_pos(gui_t *gui, s32 x, s32 y);
+void gui_event_set_mouse_btn(gui_t *gui, gui_mouse_button_e button);
+void gui_event_add_text_input(gui_t *gui, const char *text);
+void gui_event_set_keyboard(gui_t *gui, const u8 *keys, u32 key_cnt);
+void gui_event_add_clipboard(gui_t *gui, const char *text);
+void gui_event_add_window_leave(gui_t *gui);
+void gui_event_set_window_dim(gui_t *gui, s32 w, s32 h);
+void gui_events_end(gui_t *gui);
+
+/* done after regular events since it uses a gui drag widget */
+void gui_window_drag(gui_t *gui);
+b32  gui_window_dragging(const gui_t *gui);
+void gui_window_drag_end(gui_t *gui);
+
 
 void mouse_pos(const gui_t *gui, s32 *x, s32 *y);
 void mouse_pos_last(const gui_t *gui, s32 *x, s32 *y);
 void mouse_pos_press(const gui_t *gui, s32 *x, s32 *y);
-void mouse_pos_global(const gui_t *gui, s32 *x, s32 *y);
 b32  mouse_pos_changed(const gui_t *gui);
+void mouse_pos_delta(const gui_t *gui, s32 *x, s32 *y);
 b32  mouse_pressed(const gui_t *gui, u32 mask);
 b32  mouse_pressed_bg(const gui_t *gui, u32 mask);
 b32  mouse_down(const gui_t *gui, u32 mask);
@@ -243,21 +185,17 @@ typedef enum gui_draw_call_type
 
 b32  gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type);
 b32  gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
-                   u32 tex, texture_blend_e blend);
+                   u32 tex, gui_blend_e blend);
 void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v);
 void gui_end(gui_t *gui);
 
 /* Primitives */
 
-typedef enum img_scale
+typedef enum gui_img_scale
 {
-	IMG_SCALED,
-	IMG_CENTERED,
-} img_scale_e;
-
-#ifndef GUI_FONT_FILE_PATH
-#define GUI_FONT_FILE_PATH "Roboto.ttf"
-#endif
+	GUI_IMG_SCALED,
+	GUI_IMG_CENTERED,
+} gui_img_scale_e;
 
 void gui_line(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 w, color_t c);
 void gui_linef(gui_t *gui, r32 x0, r32 y0, r32 x1, r32 y1, r32 w, color_t c);
@@ -274,17 +212,16 @@ void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke);
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke);
 void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke);
-const img_t *gui_get_img(gui_t *gui, const char *fname);
-void gui_img(gui_t *gui, s32 x, s32 y, const img_t *img);
-void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
+void gui_img(gui_t *gui, s32 x, s32 y, const gui_img_t *img);
+void gui_img_ex(gui_t *gui, s32 x, s32 y, const gui_img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity);
-void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
-                   img_scale_e scale);
+void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
+                   gui_img_scale_e scale);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
-             gui_align_t align);
+             gui_align_e align);
 void gui_txt_dim(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
-                 gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph);
-s32  gui_txt_width(gui_t *gui, const char *txt, u32 sz);
+                 gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph);
+s32  gui_txt_width(const gui_t *gui, const char *txt, u32 sz);
 
 void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_mask_pop(gui_t *gui);
@@ -298,7 +235,7 @@ void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
                      const gui_line_style_t *style);
 void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, const gui_text_style_t *style);
-u32  gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width);
+u32  gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width);
 
 typedef void(*gui_pen_t)(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          const gui_element_style_t *style);
@@ -318,12 +255,53 @@ b32  gui_box_visible(const gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 
 /* Render buffer */
 
-v2f *gui_verts_mut(gui_t *gui);
+typedef struct gui_draw_call
+{
+	u32 idx;
+	u32 cnt;
+	u32 type;
+	u32 tex;
+	u32 blend;
+} gui_draw_call_t;
+
+typedef struct gui_layer
+{
+	u32 draw_call_idx, draw_call_cnt;
+	s32 x, y, w, h;
+	s32 pri;
+} gui_layer_t;
+
+typedef enum gui_cursor
+{
+	GUI_CURSOR_DEFAULT,
+	GUI_CURSOR_RESIZE_NS,
+	GUI_CURSOR_RESIZE_EW,
+	GUI_CURSOR_TEXT_INPUT,
+	GUI_CURSOR_BUTTON,
+	GUI_CURSOR_COUNT
+} gui_cursor_e;
+
+typedef struct gui_render_output
+{
+	u32 num_layers;
+	const gui_layer_t *layers;
+	u32 num_verts;
+	struct {
+		const v2f *pos;
+		const color_t *color;
+		const v2f *tex_coord;
+	} verts;
+	u32 num_draw_calls;
+	const gui_draw_call_t *draw_calls;
+} gui_render_output_t;
+
+u32  gui_num_layers(const gui_t *gui);
 u32  gui_vert_cnt(const gui_t *gui);
 u32  gui_draw_call_cnt(const gui_t *gui);
 u32  gui_culled_vert_cnt(const gui_t *gui);
 u32  gui_culled_draw_call_cnt(const gui_t *gui);
 u32  gui_culled_widget_cnt(const gui_t *gui);
+void gui_get_render_output(const gui_t *gui, gui_render_output_t *output);
 
 
 
@@ -344,40 +322,40 @@ u32  gui_culled_widget_cnt(const gui_t *gui);
 #define GUI_HINT_TIMER 1000
 #endif
 
-typedef enum npt_flags_t
+typedef enum gui_npt_flags
 {
-	NPT_PASSWORD              = 1 << 0,
-	NPT_CLEAR_ON_FOCUS        = 1 << 1,
-	NPT_COMPLETE_ON_ENTER     = 1 << 2, /* always enabled */
-	NPT_COMPLETE_ON_TAB       = 1 << 3,
-	NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
-	NPT_COMPLETE_ON_ESCAPE    = 1 << 5,
-	NPT_COMPLETE_ON_UNCHANGED = 1 << 6,
-	NPT_COMPLETE_ON_DEFOCUS   = NPT_COMPLETE_ON_TAB
-	                          | NPT_COMPLETE_ON_CLICK_OUT
-	                          | NPT_COMPLETE_ON_ESCAPE
-	                          | NPT_COMPLETE_ON_UNCHANGED,
-} npt_flags_t;
+	GUI_NPT_PASSWORD              = 1 << 0,
+	GUI_NPT_CLEAR_ON_FOCUS        = 1 << 1,
+	GUI_NPT_COMPLETE_ON_ENTER     = 1 << 2, /* always enabled */
+	GUI_NPT_COMPLETE_ON_TAB       = 1 << 3,
+	GUI_NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
+	GUI_NPT_COMPLETE_ON_ESCAPE    = 1 << 5,
+	GUI_NPT_COMPLETE_ON_UNCHANGED = 1 << 6,
+	GUI_NPT_COMPLETE_ON_DEFOCUS   = GUI_NPT_COMPLETE_ON_TAB
+	                              | GUI_NPT_COMPLETE_ON_CLICK_OUT
+	                              | GUI_NPT_COMPLETE_ON_ESCAPE
+	                              | GUI_NPT_COMPLETE_ON_UNCHANGED,
+} gui_npt_flags_e;
 
-typedef struct npt_filter
+typedef struct gui_npt_filter
 {
 	b8 ascii[127];
 	b8 non_ascii;
-} npt_filter_t;
-typedef const npt_filter_t* npt_filter_p;
+} gui_npt_filter_t;
+typedef const gui_npt_filter_t* gui_npt_filter_p;
 
-typedef enum btn_val_t
+typedef enum gui_btn_val
 {
-	BTN_NONE,
-	BTN_PRESS,
-	BTN_HOLD,
-} btn_val_t;
+	GUI_BTN_NONE,
+	GUI_BTN_PRESS,
+	GUI_BTN_HOLD,
+} gui_btn_e;
 
-const npt_filter_t g_gui_npt_filter_print;
-const npt_filter_t g_gui_npt_filter_numeric;
-const npt_filter_t g_gui_npt_filter_hex;
+const gui_npt_filter_t g_gui_gui_npt_filter_print;
+const gui_npt_filter_t g_gui_npt_filter_numeric;
+const gui_npt_filter_t g_gui_npt_filter_hex;
 
-b32 gui_npt_filter(npt_filter_p filter, s32 codepoint);
+b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint);
 const char *gui_npt_val_buf(const gui_t *gui);
 
 typedef struct gui_widget_bounds
@@ -401,17 +379,17 @@ typedef struct gui_scroll_area
 	struct gui_scroll_area *prev;
 } gui_scroll_area_t;
 
-/* returns NPT_COMPLETE_ON_XXX if completed using an enabled completion method
+/* returns GUI_NPT_COMPLETE_ON_XXX if completed using an enabled completion method
  * or 0 otherwise */
 s32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                 const char *hint, npt_flags_t flags);
+                 const char *hint, gui_npt_flags_e flags);
 s32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                    const char *hint, npt_flags_t flags, npt_filter_p filter);
+                    const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter);
 s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n,
-                 npt_flags_t flags, npt_filter_p filter);
+                 gui_npt_flags_e flags, gui_npt_filter_p filter);
 s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
-s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
-                 img_scale_e scale);
+s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
+                 gui_img_scale_e scale);
 s32  gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen);
 b32  gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val);
 b32  gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val);
@@ -437,14 +415,14 @@ void gui_drag_func_horizontal(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                               s32 offset_x, s32 offset_y, void *udata);
 void gui_drag_func_vertical(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
                             s32 offset_x, s32 offset_y, void *udata);
-b32  gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb);
-b32  gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
+b32  gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, gui_mouse_button_e mb);
+b32  gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, gui_mouse_button_e mb,
                gui_drag_f cb, void *udata);
-b32  gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb);
-b32  gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
+b32  gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, gui_mouse_button_e mb);
+b32  gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, gui_mouse_button_e mb,
                     gui_drag_f cb, void *udata);
-b32  gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb);
-b32  gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
+b32  gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb);
+b32  gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb,
                     gui_drag_f cb, void *udata);
 b32  gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, s32 item_w, u32 num_items);
@@ -479,11 +457,6 @@ void gui_unlock_if(gui_t *gui, u32 lock);
  * Be careful calling this between frame_begin & frame_end. */
 void gui_set_scale(gui_t *gui, s32 scale);
 s32  gui_scale_val(s32 val, s32 scale);
-
-
-/* Window */
-
-void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 
 
 /* Grid layout */
@@ -574,18 +547,18 @@ u64  pgui_next_widget_id(const gui_t *gui);
 void pgui_spacer(gui_t *gui);
 void pgui_spacer_blank(gui_t *gui);
 void pgui_txt(gui_t *gui, const char *str);
-void pgui_img(gui_t *gui, const img_t *img, img_scale_e scale);
+void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
 s32  pgui_btn_txt(gui_t *gui, const char *lbl);
-s32  pgui_btn_img(gui_t *gui, const img_t *img, img_scale_e scale);
+s32  pgui_btn_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
 s32  pgui_btn_pen(gui_t *gui, gui_pen_t pen);
 b32  pgui_chk(gui_t *gui, const char *lbl, b32 *val);
 b32  pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val);
 s32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
-                  npt_flags_t flags);
+                  gui_npt_flags_e flags);
 s32  pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
-                     npt_flags_t flags, npt_filter_p filter);
+                     gui_npt_flags_e flags, gui_npt_filter_p filter);
 s32  pgui_npt_val(gui_t *gui, const char *txt, u32 n,
-                  npt_flags_t flags, npt_filter_p filter);
+                  gui_npt_flags_e flags, gui_npt_filter_p filter);
 b32  pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt);
 b32  pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt);
 b32  pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items);
@@ -635,7 +608,7 @@ typedef enum gui_split_flags
 	GUI_SPLIT_TEMPORARY = 0x2,
 	GUI_SPLIT_DIVISIBLE = 0x4,
 	GUI_SPLIT_FULL      = 0x7,
-} gui_split_flags_t;
+} gui_split_flags_e;
 
 typedef struct gui_split
 {
@@ -659,13 +632,13 @@ typedef struct gui_split
 void gui_set_splits(gui_t *gui, gui_split_t splits[], u32 num_splits);
 b32  gui_create_root_split(gui_t *gui, gui_split_t **root);
 b32  gui_split2h(gui_t *gui, gui_split_t *parent, gui_split_t **left, r32 size,
-                 gui_split_t **right, gui_split_flags_t flags);
+                 gui_split_t **right, gui_split_flags_e flags);
 b32  gui_split2v(gui_t *gui, gui_split_t *parent, gui_split_t **top, r32 size,
-                 gui_split_t **bottom, gui_split_flags_t flags);
+                 gui_split_t **bottom, gui_split_flags_e flags);
 b32  gui_splitNh(gui_t *gui, gui_split_t *parent, gui_split_t **child,
-                 r32 size, gui_split_flags_t flags);
+                 r32 size, gui_split_flags_e flags);
 b32  gui_splitNv(gui_t *gui, gui_split_t *parent, gui_split_t **child,
-                 r32 size, gui_split_flags_t flags);
+                 r32 size, gui_split_flags_e flags);
 void gui_splits_compute(gui_t *gui);
 void gui_splits_render(gui_t *gui);
 
@@ -702,13 +675,13 @@ typedef enum gui_panel_flags
 	GUI_PANEL_SCROLLBARS  = 0x20,
 	GUI_PANEL_DOCKABLE    = 0x40,
 	GUI_PANEL_FULL        = 0x7f,
-} gui_panel_flags_t;
+} gui_panel_flags_e;
 
 typedef struct gui_panel
 {
 	s32 x, y, width, height;
 	const char *title; /* un-owned, can be NULL */
-	gui_panel_flags_t flags;
+	gui_panel_flags_e flags;
 	u32 id;
 	intptr userdata;
 	gui_scroll_area_t scroll_area;
@@ -722,13 +695,13 @@ typedef struct gui_panel
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                      s32 x, s32 y, s32 w, s32 h,
-                     const char *title, gui_panel_flags_t flags);
+                     const char *title, gui_panel_flags_e flags);
 void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
                               s32 w, s32 h,
-                              const char *title, gui_panel_flags_t flags);
+                              const char *title, gui_panel_flags_e flags);
 void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
                               gui_split_t *split,
-                              const char *title, gui_panel_flags_t flags);
+                              const char *title, gui_panel_flags_e flags);
 void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
 void pgui_panel_select_tab(gui_panel_t *panel);
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
@@ -775,7 +748,7 @@ typedef struct gui_text_style
 {
 	u32 size;
 	color_t color;
-	gui_align_t align;
+	gui_align_e align;
 	s32 padding;
 	b32 wrap;
 } gui_text_style_t;
@@ -869,6 +842,7 @@ const gui_style_t g_gui_style_default;
 const gui_style_t g_gui_style_invis;
 
 gui_style_t *gui_style(gui_t *gui);
+const gui_style_t *gui_style_c(const gui_t *gui);
 void         gui_style_set(gui_t *gui, const gui_style_t *style);
 
 void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size);
@@ -916,29 +890,9 @@ void gui_style_pop(gui_t *gui);
 #include <ctype.h>
 #include <limits.h>
 #include <math.h>
-#define SDL_MAIN_HANDLED
-#include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define STB_IMAGE_IMPLEMENTATION
-// #define STB_IMAGE_STATIC
-#include "stbi.h"
-#define STB_RECT_PACK_IMPLEMENTATION
-// #define STBRP_STATIC
-#include "stb_rect_pack.h"
-#define STB_TRUETYPE_IMPLEMENTATION
-// #define STBTT_STATIC
-#define stbtt_uint8 u8
-#define stbtt_int8 s8
-#define stbtt_uint16 u16
-#define stbtt_int16 s16
-#define stbtt_uint32 u32
-#define stbtt_int32 s32
-#define STBTT_malloc(x, u) ((allocator_t*)(u))->malloc_(x, u  MEMCALL_LOCATION)
-#define STBTT_free(x, u)   ((allocator_t*)(u))->free_(x, u  MEMCALL_LOCATION)
-#include "stb_truetype.h"
 
 #include "violet/array.h"
 #include "violet/fmath.h"
@@ -947,359 +901,21 @@ void gui_style_pop(gui_t *gui);
 #include "violet/imath.h"
 #include "violet/string.h"
 #include "violet/utf8.h"
-#include "violet/os.h"
 
-#if defined(_MSC_VER) && !defined(__clang__)
-#ifdef _M_X64
-#include <intrin.h>
-#define __builtin_popcount __popcnt
-#else
-int __builtin_popcount(u32 x)
+static
+u32 gui__popcount(u32 x)
 {
-	x =  x               - ((x >> 1)  & 0x55555555);
-	x = (x & 0x33333333) + ((x >> 2)  & 0x33333333);
-	x = (x               +  (x >> 4)) & 0x0f0f0f0f;
-	x = (x * 0x01010101) >> 24;
-	return (int)x;
+	u32 c = x;
+	c =  c               - ((c >> 1)  & 0x55555555);
+	c = (c & 0x33333333) + ((c >> 2)  & 0x33333333);
+	c = (c               +  (c >> 4)) & 0x0f0f0f0f;
+	c = (c * 0x01010101) >> 24;
+	return c;
 }
-#endif // _M_X64
-#endif // _MSC_VER
-
-static const char *g_vertex_shader;
-static const char *g_fragment_shader;
-
-
-/* Mesh */
-
-void mesh_init(mesh_t *m, const v2f *poly, u32 n)
-{
-	GL_CHECK(glGenBuffers, 1, &m->vbo);
-	mesh_set_vertices(m, poly, n);
-}
-
-void mesh_destroy(mesh_t *m)
-{
-	if (m->vbo != 0)
-		GL_CHECK(glDeleteBuffers, 1, &m->vbo);
-}
-
-void mesh_poly(const mesh_t *m, v2f *poly)
-{
-	array_clear(poly);
-	array_reserve(poly, m->sz);
-	array_sz(poly) = m->sz;
-	mesh_bind(m);
-	GL_CHECK(glGetBufferSubData, GL_ARRAY_BUFFER, 0, m->sz * 2 * sizeof(GL_FLOAT), poly);
-}
-
-void mesh_bind(const mesh_t *m)
-{
-	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, m->vbo);
-}
-
-void mesh_unbind(void)
-{
-	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, 0);
-}
-
-void mesh_set_vertices(mesh_t *m, const v2f *v, u32 n)
-{
-	mesh_bind(m);
-	m->sz = n;
-	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, m->sz * 2 * sizeof(GL_FLOAT), v, GL_STATIC_DRAW);
-}
-
-/* Texture */
-
-b32 texture_load(texture_t *tex, const char *filename)
-{
-	b32 ret = false;
-	int w, h;
-	u8 *image = stbi_load(filename, &w, &h, NULL, 4);
-	if (image) {
-		texture_init(tex, w, h, GL_RGBA, image);
-		stbi_image_free(image);
-		ret = true;
-	}
-	return ret;
-}
-
-void texture_init(texture_t *tex, u32 w, u32 h, u32 fmt, const void *data)
-{
-	tex->width = w;
-	tex->height = h;
-	tex->blend = TEXTURE_BLEND_NRM;
-
-	GL_CHECK(glGenTextures, 1, &tex->handle);
-	texture_bind(tex);
-
-	GL_CHECK(glTexImage2D, GL_TEXTURE_2D, 0, fmt, w, h, 0, fmt,
-			GL_UNSIGNED_BYTE, data);
-
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-}
-
-void texture_destroy(texture_t *tex)
-{
-	if (tex->handle != 0) {
-		GL_CHECK(glDeleteTextures, 1, &tex->handle);
-		tex->handle = 0;
-	}
-}
-
-void texture_coords_from_poly(mesh_t *tex_coords, const v2f *v, u32 n)
-{
-	box2f extent;
-	v2f dimension;
-	v2f *coords;
-
-	polyf_bounding_box(v, n, &extent);
-	dimension = v2f_sub(extent.max, extent.min);
-
-	array_init_ex(coords, n, g_temp_allocator);
-	for (const v2f *vi = v, *vn = v + n; vi != vn; ++vi)
-		array_append(coords, v2f_div(v2f_sub(*vi, extent.min), dimension));
-	mesh_init(tex_coords, coords, n);
-	array_destroy(coords);
-}
-
-void texture_bind(const texture_t *tex)
-{
-	GL_CHECK(glBindTexture, GL_TEXTURE_2D, tex->handle);
-}
-
-void texture_unbind(void)
-{
-	GL_CHECK(glBindTexture, GL_TEXTURE_2D, 0);
-}
-
-
-/* Shader */
-
-b32 shader_init_from_string(shader_t *shader, const char *str,
-                            shader_type_t type, const char *id)
-{
-	b32 retval = false;
-	char *log_buf;
-	GLint compiled, log_len;
-
-	shader->handle = glCreateShader(  type == VERTEX_SHADER
-	                                ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
-	GL_ERR_CHECK("glCreateShader");
-	GL_CHECK(glShaderSource, shader->handle, 1, (const GLchar **)&str, 0);
-
-	GL_CHECK(glCompileShader, shader->handle);
-	GL_CHECK(glGetShaderiv, shader->handle, GL_COMPILE_STATUS, &compiled);
-	if (compiled == GL_FALSE) {
-		GL_CHECK(glGetShaderiv, shader->handle, GL_INFO_LOG_LENGTH, &log_len);
-		log_buf = malloc(log_len);
-		GL_CHECK(glGetShaderInfoLog, shader->handle, log_len, NULL, log_buf);
-		log_error("Compilation error in shader '%s': %s", id, log_buf);
-		free(log_buf);
-		shader->handle = 0;
-		goto err;
-	}
-
-	retval = true;
-err:
-	return retval;
-}
-
-b32 shader_init_from_file(shader_t *shader, const char *fname,
-                          shader_type_t type)
-{
-	b32 retval = false;
-	FILE *file;
-	char *file_buf;
-	size_t fsize;
-
-	file = file_open(fname, "rb");
-	if (!file) {
-		log_error("Could not open shader file '%s'", fname);
-		return retval;
-	}
-
-	fseek(file, 0, SEEK_END);
-	fsize = ftell(file);
-	rewind(file);
-	file_buf = malloc(fsize + 1);
-	if (fread(file_buf, 1, fsize, file) != fsize) {
-		log_error("Failed to read shader file '%s'", fname);
-		goto err;
-	}
-	file_buf[fsize] = 0;
-
-	retval = shader_init_from_string(shader, file_buf, type, fname);
-
-err:
-	free(file_buf);
-	fclose(file);
-	return retval;
-}
-
-void shader_destroy(shader_t *shader)
-{
-	GL_CHECK(glDeleteShader, shader->handle);
-	shader->handle = 0;
-}
-
-b32 shader_program_load_from_strings(shader_prog_t *prog,
-                                     const char *vert_str,
-                                     const char *frag_str)
-{
-	b32 retval = false;
-
-	if (!shader_init_from_string(&prog->vertex_shader, vert_str,
-	                             VERTEX_SHADER, "vertex ubershader"))
-		goto out;
-
-	if (!shader_init_from_string(&prog->frag_shader, frag_str,
-	                             FRAGMENT_SHADER, "fragment ubershader"))
-		goto err_frag;
-	
-	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader)) {
-		retval = true;
-		goto out;
-	}
-
-	shader_destroy(&prog->frag_shader);
-err_frag:
-	shader_destroy(&prog->vertex_shader);
-out:
-	return retval;
-}
-
-b32 shader_program_load_from_files(shader_prog_t *prog,
-                                   const char *vert_fname,
-                                   const char *frag_fname)
-{
-	b32 retval = false;
-
-	if (!shader_init_from_file(&prog->vertex_shader, vert_fname, VERTEX_SHADER))
-		goto out;
-
-	if (!shader_init_from_file(&prog->frag_shader, frag_fname, FRAGMENT_SHADER))
-		goto err_frag;
-	
-	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader)) {
-		retval = true;
-		goto out;
-	}
-
-	shader_destroy(&prog->frag_shader);
-err_frag:
-	shader_destroy(&prog->vertex_shader);
-out:
-	return retval;
-}
-
-b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
-                          shader_t frag_shader)
-{
-	GLint status, length;
-	char *log_buf;
-
-	p->handle = glCreateProgram();
-	GL_ERR_CHECK("glCreateProgram");
-
-	GL_CHECK(glAttachShader, p->handle, vertex_shader.handle);
-	p->vertex_shader = vertex_shader;
-	GL_CHECK(glAttachShader, p->handle, frag_shader.handle);
-	p->frag_shader = frag_shader;
-
-	GL_CHECK(glLinkProgram, p->handle);
-	GL_CHECK(glGetProgramiv, p->handle, GL_LINK_STATUS, &status);
-	if (status == GL_FALSE) {
-		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
-		log_buf = malloc(length);
-		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
-		log_error("Shader link error using '%s' & '%s': %s",
-		          vertex_shader.filename, frag_shader.filename, log_buf);
-		free(log_buf);
-		return false;
-	}
-
-#ifdef GUI_VALIDATE_SHADER
-	GL_CHECK(glValidateProgram, p->handle);
-	GL_CHECK(glGetProgramiv, p->handle, GL_VALIDATE_STATUS, &status);
-	if (status == GL_FALSE) {
-		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
-		log_buf = malloc(length);
-		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
-		log_error("Shader validation error using '%s' & '%s': %s",
-		          vertex_shader.filename, frag_shader.filename, log_buf);
-		free(log_buf);
-		return false;
-	}
-#endif
-
-	return true;
-}
-
-void shader_program_bind(const shader_prog_t *p)
-{
-	GL_CHECK(glUseProgram, p->handle);
-}
-
-void shader_program_unbind(void)
-{
-	GL_CHECK(glUseProgram, 0);
-}
-
-void shader_program_destroy(shader_prog_t *p)
-{
-	GL_CHECK(glDetachShader, p->handle, p->vertex_shader.handle);
-	shader_destroy(&p->vertex_shader);
-	GL_CHECK(glDetachShader, p->handle, p->frag_shader.handle);
-	shader_destroy(&p->frag_shader);
-	GL_CHECK(glDeleteProgram, p->handle);
-	p->handle = 0;
-}
-
-s32 shader_program_attrib(const shader_prog_t *p, const char *name)
-{
-	s32 attrib = glGetAttribLocation(p->handle, name);
-	GL_ERR_CHECK("glGetAttribLocation");
-	return attrib;
-}
-
-s32 shader_program_uniform(const shader_prog_t *p, const char *name)
-{
-	s32 uniform = glGetUniformLocation(p->handle, name);
-	GL_ERR_CHECK("glGetUniformLocation");
-	return uniform;
-}
-
-
-/* Image */
-
-b32 img_load(img_t *img, const char *filename)
-{
-	if (!texture_load(&img->texture, filename)) {
-		log_error("img_load(%s) error", filename);
-		return false;
-	}
-	return true;
-}
-
-void img_init(img_t *img, u32 w, u32 h, u32 fmt, void *data)
-{
-	texture_init(&img->texture, w, h, fmt, data);
-}
-
-void img_destroy(img_t *img)
-{
-	texture_destroy(&img->texture);
-}
-
-
 
 /* Font */
 
-void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s32 *py)
+void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_e align, s32 *px, s32 *py)
 {
 	if (align & GUI_ALIGN_CENTER)
 		*px = x + w / 2;
@@ -1316,189 +932,31 @@ void gui_align_anchor(s32 x, s32 y, s32 w, s32 h, gui_align_t align, s32 *px, s3
 }
 
 static
-int rgtt_PackFontRanges(stbtt_pack_context *spc, stbtt_fontinfo *info,
-                        stbtt_pack_range *ranges, int num_ranges)
-{
-	int i, j, n, return_value = 1;
-	stbrp_rect *rects;
-
-	// flag all characters as NOT packed
-	for (i=0; i < num_ranges; ++i)
-		for (j=0; j < ranges[i].num_chars; ++j)
-			ranges[i].chardata_for_range[j].x0 =
-				ranges[i].chardata_for_range[j].y0 =
-				ranges[i].chardata_for_range[j].x1 =
-				ranges[i].chardata_for_range[j].y1 = 0;
-
-	n = 0;
-	for (i = 0; i < num_ranges; ++i)
-		n += ranges[i].num_chars;
-
-	rects = STBTT_malloc(sizeof(*rects) * n, spc->user_allocator_context);
-	if (!rects)
-		return 0;
-
-	n = stbtt_PackFontRangesGatherRects(spc, info, ranges, num_ranges, rects);
-
-	stbtt_PackFontRangesPackRects(spc, rects, n);
-
-	return_value = stbtt_PackFontRangesRenderIntoRects(spc, info, ranges,
-	                                                   num_ranges, rects);
-
-	STBTT_free(rects, spc->user_allocator_context);
-	return return_value;
-}
-
-static
-int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
-                       float font_size, int first_unicode_codepoint_in_range,
-                       int num_chars_in_range,
-                       stbtt_packedchar *chardata_for_range)
-{
-	stbtt_pack_range range;
-	range.first_unicode_codepoint_in_range = first_unicode_codepoint_in_range;
-	range.array_of_unicode_codepoints = NULL;
-	range.num_chars                   = num_chars_in_range;
-	range.chardata_for_range          = chardata_for_range;
-	range.font_size                   = font_size;
-	return rgtt_PackFontRanges(spc, info, &range, 1);
-}
-
-static
-int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, texture_t *tex)
-{
-#ifdef __EMSCRIPTEN__
-	const s32 bpp = 4;
-#else
-	const s32 bpp = 1;
-#endif
-	temp_memory_mark_t mark = temp_memory_save(g_temp_allocator);
-	unsigned char *bitmap = NULL;
-	s32 w = 512, h = 512;
-	stbtt_pack_context context;
-	b32 packed = false, failed = false;
-
-	/* TODO(rgriege): oversample with smaller fonts */
-	// stbtt_PackSetOversampling(&context, 2, 2);
-
-	while (!packed && !failed) {
-		temp_memory_restore(mark);
-		bitmap = amalloc(w * h * bpp, g_temp_allocator);
-		/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
-		memset(bitmap, 0, w * h * bpp);
-
-		if (!stbtt_PackBegin(&context, bitmap, w, h, w * bpp, 1, g_temp_allocator)) {
-			failed = true;
-		} else if (rgtt_PackFontRange(&context, info, font_size, 0,
-		                              info->numGlyphs, char_info)) {
-			stbtt_PackEnd(&context); // not really necessary, handled by memory mark
-			packed = true;
-		} else if (w < 1024) {
-			w *= 2;
-		} else if (h < 1024) {
-			h *= 2;
-		} else {
-			failed = true; // fail on fonts needing too large a texture
-		}
-	}
-
-	if (packed) {
-#ifdef __EMSCRIPTEN__
-		unsigned char *row = amalloc(w * bpp, g_temp_allocator);
-		for (s32 r = 0; r < h; ++r) {
-			memset(row, ~0, w * bpp);
-			for (s32 c = 0; c < w; ++c)
-				row[c * bpp + bpp - 1] = bitmap[r * w * bpp + c];
-			memcpy(&bitmap[r * w * bpp], row, w * bpp);
-		}
-		texture_init(tex, w, h, GL_RGBA, bitmap);
-#else
-		texture_init(tex, w, h, GL_RED, bitmap);
-		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
-#endif
-	}
-
-	temp_memory_restore(mark);
-	return packed;
-}
-
-b32 font_load(font_t *f, const char *filename, u32 sz)
-{
-	b32 retval = false;
-	stbtt_fontinfo info = { .userdata = g_temp_allocator };
-	int ascent, descent, line_gap;
-	r32 scale;
-	void *ttf;
-
-	f->char_info = NULL;
-
-	if (!(ttf = file_read_all(filename, "rb", NULL, g_temp_allocator)))
-		goto out;
-
-	if (!stbtt_InitFont(&info, ttf, stbtt_GetFontOffsetForIndex(ttf, 0)))
-		goto err_ttf;
-
-	f->num_glyphs = info.numGlyphs;
-	log_debug("packing %d glyphs for %s:%u", f->num_glyphs, filename, sz);
-	f->char_info = malloc(f->num_glyphs * sizeof(stbtt_packedchar));
-
-	if (!rgtt_Pack(&info, sz, f->char_info, &f->texture))
-		goto err_pack;
-
-	f->filename = filename;
-	f->sz = sz;
-	stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
-	scale = stbtt_ScaleForPixelHeight(&info, sz);
-	f->ascent = scale * ascent;
-	f->descent = scale * descent;
-	f->line_gap = scale * line_gap;
-	f->newline_dist = scale * (ascent - descent + line_gap);
-	retval = true;
-
-err_pack:
-	if (!retval)
-		free(f->char_info);
-err_ttf:
-	afree(ttf, g_temp_allocator);
-out:
-	return retval;
-}
-
-void font_destroy(font_t *f)
-{
-	free(f->char_info);
-	texture_destroy(&f->texture);
-}
-
-static
-s32 font__line_width(font_t *f, const char *txt)
+s32 font__line_width(void *font, const char *txt, gui_char_quad_f get_char_quad)
 {
 	const char *p = txt;
 	char *pnext;
 	s32 cp;
-	stbtt_aligned_quad q;
-	r32 width = 0, y = 0;
+	gui_char_quad_t q;
+	r32 width = 0;
 
 	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		p = pnext;
 		if (cp == '\n')
 			goto out;
-		else if (cp < f->num_glyphs)
-			stbtt_GetPackedQuad(f->char_info, f->texture.width, f->texture.height,
-			                    cp, &width, &y, &q, 1);
+		else if (get_char_quad(font, cp, width, 0, &q))
+			width += q.advance;
 	}
 out:
 	return width;
 }
 
 static
-s32 font__line_offset_x(font_t *f, const char *txt,
-                        const gui_text_style_t *style)
+s32 font__line_offset_x(void *font, const char *txt,
+                        const gui_text_style_t *style,
+                        gui_char_quad_f get_char_quad)
 {
-	const s32 width = font__line_width(f, txt);
+	const s32 width = font__line_width(font, txt, get_char_quad);
 	if (style->align & GUI_ALIGN_CENTER)
 		return -width / 2;
 	else if (style->align & GUI_ALIGN_RIGHT)
@@ -1508,7 +966,8 @@ s32 font__line_offset_x(font_t *f, const char *txt,
 }
 
 static
-s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
+s32 font__offset_y(void *font, const char *txt, const gui_text_style_t *style,
+                   const gui_font_metrics_t *m)
 {
 	s32 height;
 	if (style->align & GUI_ALIGN_MIDDLE) {
@@ -1517,16 +976,16 @@ s32 font__offset_y(font_t *f, const char *txt, const gui_text_style_t *style)
 			if (*c == '\n')
 				++height;
 		return   height % 2 == 0
-		       ? -f->descent + f->line_gap + f->newline_dist * (height / 2 - 1)
-		       :   -f->descent - (f->ascent - f->descent) / 2
-		         + f->newline_dist * (height / 2);
+		       ? -m->descent + m->line_gap + m->newline_dist * (height / 2 - 1)
+		       :   -m->descent - (m->ascent - m->descent) / 2
+		         + m->newline_dist * (height / 2);
 	} else if (style->align & GUI_ALIGN_TOP) {
-		return -f->ascent - f->line_gap / 2 - style->padding;
+		return -m->ascent - m->line_gap / 2 - style->padding;
 	} else /* default to GUI_ALIGN_BOTTOM */ {
-		height = -f->descent + f->line_gap / 2 + style->padding;
+		height = -m->descent + m->line_gap / 2 + style->padding;
 		for (const char *c = txt; *c != '\0'; ++c)
 			if (*c == '\n')
-				height += f->newline_dist;
+				height += m->newline_dist;
 		return height;
 	}
 }
@@ -1957,15 +1416,6 @@ const gui_style_t g_gui_style_invis = {
 };
 
 
-typedef enum gui_vbo_type
-{
-	VBO_VERT,
-	VBO_COLOR,
-	VBO_TEX,
-	VBO_COUNT
-} gui_vbo_type_t;
-
-
 #ifndef GUI_MAX_VERTS
 #define GUI_MAX_VERTS 4096
 #endif
@@ -1982,45 +1432,15 @@ typedef enum gui_vbo_type
 #define GUI_MASK_STACK_LIMIT 8
 #endif
 
-typedef struct draw_call
-{
-	GLint idx;
-	GLsizei cnt;
-	u32 type;
-	GLuint tex;
-	texture_blend_e blend;
-} draw_call_t;
-
 #define GUI__LAYER_PRIORITY_HINT  2
 #define GUI__LAYER_PRIORITY_POPUP 1
-
-typedef struct gui__layer
-{
-	u32 draw_call_idx, draw_call_cnt;
-	s32 x, y, w, h;
-	s32 pri;
-} gui__layer_t;
-
-typedef struct cached_img
-{
-	img_t img;
-	u32 id;
-} cached_img_t;
-
-typedef enum gui_cursor
-{
-	GUI__CURSOR_DEFAULT,
-	GUI__CURSOR_RESIZE_NS,
-	GUI__CURSOR_RESIZE_EW,
-	GUI__CURSOR_COUNT
-} gui__cursor_t;
 
 typedef enum gui__key_toggle_state
 {
 	GUI__KBT_OFF,
 	GUI__KBT_PRESSED_ON,
 	GUI__KBT_RELEASED_ON,
-} gui__key_toggle_state_t;
+} gui__key_toggle_state_e;
 
 typedef struct gui__repeat
 {
@@ -2058,28 +1478,22 @@ typedef struct gui
 	timepoint_t frame_start_time;
 	timepoint_t last_input_time;
 	u32 frame_time_milli;
-	SDL_Window *window;
-	SDL_GLContext gl_context;
-	SDL_Window *parent_window;
-	SDL_GLContext parent_gl_context;
+
+	/* external */
+	u32 texture_white;
+	u32 texture_white_dotted;
+	gui_fonts_t fonts;
 
 	/* rendering */
-	u32 vao, vbo[VBO_COUNT];
-	shader_prog_t shader;
-#ifdef __EMSCRIPTEN__
-	s32 shader_attrib_loc[VBO_COUNT];
-#endif
-	texture_t texture_white;
-	texture_t texture_white_dotted;
 	v2f verts[GUI_MAX_VERTS];
 	color_t vert_colors[GUI_MAX_VERTS];
 	v2f vert_tex_coords[GUI_MAX_VERTS];
 	u32 vert_cnt;
-	draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
+	gui_draw_call_t draw_calls[GUI_MAX_DRAW_CALLS];
 	u32 draw_call_cnt;
 	u32 draw_call_vert_idx;
-	gui__layer_t layers[GUI_MAX_LAYERS];
-	gui__layer_t *layer;
+	gui_layer_t layers[GUI_MAX_LAYERS];
+	gui_layer_t *layer;
 	box2i masks[GUI_MASK_STACK_LIMIT];
 	box2i *mask;
 	u32 culled_draw_calls;
@@ -2087,33 +1501,30 @@ typedef struct gui
 	u32 culled_widgets;
 	s32 scale;
 
+	void *window;
 	v2i window_dim;
-	v2i window_restore_pos;
-	v2i window_restore_dim;
 
 	/* mouse */
 	v2i mouse_pos;
 	v2i mouse_pos_last;
 	v2i mouse_pos_press;
 	u32 mouse_btn;
-	u32 mouse_btn_diff;
+	u32 mouse_btn_last;
 	u64 mouse_covered_by_widget_id;
 	b32 mouse_debug;
 	gui__repeat_t mouse_repeat;
+	b32 left_window;
+	u32 cursor;
 
 	/* keyboard */
 	u8 prev_keys[KB_COUNT];
-	const u8 *keys;
-	gui__key_toggle_state_t key_toggles[KBT_COUNT];
+	u8 keys[KB_COUNT];
+	s32 key_toggles[KBT_COUNT]; /* gui__key_toggle_state_e */
 	gui__repeat_t key_repeat;
 	char text_npt[32];
+	char clipboard[32];
 
 	/* style */
-	SDL_Cursor *cursors[GUI__CURSOR_COUNT];
-	b32 use_default_cursor;
-	char font_file_path[256];
-	array(font_t) fonts;
-	cached_img_t *imgs;
 	gui_style_t style;
 	u8 style_stack[GUI_STYLE_STACK_LIMIT];
 	u32 style_stack_sz;
@@ -2140,6 +1551,7 @@ typedef struct gui
 
 	/* specific widget state */
 	struct {
+		b32 active;
 		u32 cursor_pos; /* byte, NOT GLYPH, offset */
 		b32 performed_action;
 		u32 initial_txt_hash;
@@ -2147,7 +1559,6 @@ typedef struct gui
 		char pw_buf[GUI_TXT_MAX_LENGTH];
 	} npt;
 	v2i drag_offset;
-	v2f *vert_buf;
 	struct
 	{
 		u64 id;
@@ -2157,6 +1568,7 @@ typedef struct gui
 		u32 item_idx;
 		b32 triggered_by_key;
 		s32 render_state;
+		b32 contains_mouse;
 		char selected_item_txt[GUI_TXT_MAX_LENGTH];
 	} dropdown;
 	gui_popup_t popups[GUI_POPUP_STACK_SIZE];
@@ -2183,7 +1595,40 @@ typedef struct gui
 	s32 next_panel_pri, min_panel_pri;
 } gui_t;
 
-static u32 g_gui_cnt = 0;
+
+/* Font */
+
+static
+s32 gui__txt_line_width(const gui_t *gui, const char *txt,
+                        gui_char_quad_f get_char_quad)
+{
+	const gui_text_style_t *style = &gui->style.txt;
+	void *font = gui->fonts.get_font(gui->fonts.handle, style->size);
+	return font ? font__line_width(font, txt, get_char_quad) : 0;
+}
+
+static
+s32 gui__txt_line_offset_x(const gui_t *gui, const char *txt,
+                           const gui_text_style_t *style,
+                           gui_char_quad_f get_char_quad)
+{
+	void *font = gui->fonts.get_font(gui->fonts.handle, style->size);
+	return font ? font__line_offset_x(font, txt, style, get_char_quad) : 0;
+}
+
+static
+s32 gui__txt_offset_y(const gui_t *gui, const char *txt, const gui_text_style_t *style)
+{
+	void *font = gui->fonts.get_font(gui->fonts.handle, style->size);
+	gui_font_metrics_t metrics;
+
+	if (!font)
+		return 0;
+
+	gui->fonts.get_metrics(font, &metrics);
+	return font__offset_y(font, txt, style, &metrics);
+}
+
 
 static
 void gui__repeat_init(gui__repeat_t *repeat)
@@ -2223,149 +1668,29 @@ b32 gui__key_triggered(const gui_t *gui, u32 key)
 	return gui->key_repeat.triggered && gui->key_repeat.val == key;
 }
 
-static b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect);
-static void gui__store_window_rect(gui_t *gui);
-static void gui__layer_init(gui_t *gui, gui__layer_t *layer, s32 x, s32 y, s32 w, s32 h);
+static void gui__layer_init(gui_t *gui, gui_layer_t *layer, s32 x, s32 y, s32 w, s32 h);
 static void gui__layer_new(gui_t *gui);
 
-gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
-                     gui_flags_t flags, const char *font_file_path)
+gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
+                  gui_fonts_t fonts)
 {
 	gui_t *gui = calloc(1, sizeof(gui_t));
-	if (g_gui_cnt == 0) {
-		SDL_SetMainReady();
-		if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-			log_error("SDL_Init(VIDEO) failed: %s", SDL_GetError());
-			goto err_sdl;
-		}
-		gui->parent_window = NULL;
-	} else {
-		gui->parent_window = SDL_GL_GetCurrentWindow();
-		gui->parent_gl_context = SDL_GL_GetCurrentContext();
-	}
-
-#ifndef __EMSCRIPTEN__
-	// Use OpenGL 3.3 core
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-#endif
-	// SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-	if (SDL_GetNumVideoDisplays() < 1) {
-		log_error("could not create window: no video displays found");
-		goto err_win;
-	}
-
-	SDL_Rect usable_bounds;
-	if (!gui__get_display_usable_bounds(0, &usable_bounds))
-		goto err_ctx;
-
-	u32 sdl_flags = SDL_WINDOW_OPENGL;
-	if (flags & WINDOW_BORDERLESS)
-		sdl_flags |= SDL_WINDOW_BORDERLESS;
-	if (flags & WINDOW_RESIZABLE)
-		sdl_flags |= SDL_WINDOW_RESIZABLE;
-	if (flags & WINDOW_MAXIMIZED) {
-		x = usable_bounds.x;
-		y = usable_bounds.y;
-		w = usable_bounds.w;
-		h = usable_bounds.h;
-	} else if (flags & WINDOW_CENTERED) {
-		w = min(w, usable_bounds.w);
-		h = min(h, usable_bounds.h);
-		x = (usable_bounds.w - w) / 2 + usable_bounds.x;
-		y = (usable_bounds.h - h) / 2 + usable_bounds.y;
-	} else {
-		x = max(x, usable_bounds.x);
-		y = max(y, usable_bounds.y);
-		w = min(w, usable_bounds.w - x);
-		h = min(h, usable_bounds.h - y);
-	}
-	if (flags & WINDOW_FULLSCREEN)
-		sdl_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-
-	gui->window = SDL_CreateWindow(title, x, y, w, h, sdl_flags);
-	if (gui->window == NULL) {
-		log_error("SDL_CreateWindow failed: %s", SDL_GetError());
-		goto err_win;
-	}
-
-	gui->gl_context = SDL_GL_CreateContext(gui->window);
-	if (gui->gl_context == NULL) {
-		log_error("SDL_CreateContext failed: %s", SDL_GetError());
-		goto err_ctx;
-	}
-
-	if (SDL_GL_SetSwapInterval(0) != 0)
-		log_warn("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
-
-	glewExperimental = GL_TRUE;
-	GLenum glew_err = glewInit();
-	if (glew_err != GLEW_OK) {
-		log_error("glewInit error: %s", glewGetErrorString(glew_err));
-		goto err_glew;
-	}
-	GL_ERR_CHECK("glewInit");
-
-	log_info("GL version: %s", glGetString(GL_VERSION));
-	GL_ERR_CHECK("glGetString");
-
-	GL_CHECK(glEnable, GL_MULTISAMPLE);
-	GL_CHECK(glEnable, GL_BLEND);
-	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	GL_CHECK(glEnable, GL_SCISSOR_TEST);
-
-	GL_CHECK(glGenVertexArrays, 1, &gui->vao);
-	GL_CHECK(glGenBuffers, VBO_COUNT, gui->vbo);
-
-	static const color_t texture_white_data[1] = { gi_white };
-	texture_init(&gui->texture_white, 1, 1, GL_RGBA, texture_white_data);
-
-	static const u32 texture_white_dotted_data[] = { 0x00ffffff, 0xffffffff };
-	texture_init(&gui->texture_white_dotted, 2, 1, GL_RGBA, texture_white_dotted_data);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	if (!shader_program_load_from_strings(&gui->shader, g_vertex_shader,
-	                                      g_fragment_shader))
-		goto err_white;
-
-#ifdef __EMSCRIPTEN__
-	gui->shader_attrib_loc[VBO_VERT]  = shader_program_attrib(&gui->shader, "position");
-	gui->shader_attrib_loc[VBO_COLOR] = shader_program_attrib(&gui->shader, "color");
-	gui->shader_attrib_loc[VBO_TEX]   = shader_program_attrib(&gui->shader, "tex_coord");
-#endif
-
-	gui->cursors[GUI__CURSOR_DEFAULT] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-	gui->cursors[GUI__CURSOR_RESIZE_NS] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-	gui->cursors[GUI__CURSOR_RESIZE_EW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
-		if (!gui->cursors[i])
-			goto err_cursor;
-	strncpy(gui->font_file_path, font_file_path, sizeof(gui->font_file_path)-1);
-	gui->fonts = array_create();
-	gui->imgs = array_create();
-
-	{
-		SDL_Event evt;
-		while (SDL_PollEvent(&evt) == 1); /* must be run before SDL_GetWindowSize */
-	}
-	SDL_GetWindowSize(gui->window, &gui->window_dim.x, &gui->window_dim.y);
-	gui__store_window_rect(gui);
 
 	gui->creation_time = time_current();
 	gui->frame_start_time = gui->creation_time;
 	gui->last_input_time = gui->creation_time;
 	gui->frame_time_milli = 0;
 
+	gui->texture_white = texture_white;
+	gui->texture_white_dotted = texture_white_dotted;
+	gui->fonts = fonts;
+
 	memset(gui->prev_keys, 0, KB_COUNT);
-	memset(gui->key_toggles, 0, KBT_COUNT * sizeof(gui__key_toggle_state_t));
+	memset(gui->keys, 0, KB_COUNT);
+	memset(gui->key_toggles, 0, sizeof(gui->key_toggles));
 	gui__repeat_init(&gui->key_repeat);
+	memset(gui->text_npt, 0, sizeof(gui->text_npt));
+	memset(gui->clipboard, 0, sizeof(gui->clipboard));
 
 	gui_style_set(gui, &g_gui_style_default);
 
@@ -2373,11 +1698,18 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	gui->scale = 100;
 
-	gui->mouse_btn = SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
-	gui->mouse_pos_last = gui->mouse_pos;
-	gui->mouse_pos_press = gui->mouse_pos;
+	gui->window_dim.x = w;
+	gui->window_dim.y = h;
+
+	gui->mouse_pos = g_v2i_zero;
+	gui->mouse_btn = 0;
+	gui->mouse_btn_last = 0;
+	gui->mouse_pos_last = g_v2i_zero;
+	gui->mouse_pos_press = g_v2i_zero;
 	gui->mouse_debug = false;
 	gui__repeat_init(&gui->mouse_repeat);
+	gui->left_window = false;
+	gui->cursor = GUI_CURSOR_DEFAULT;
 
 	gui->lock = 0;
 	gui->hot_id = 0;
@@ -2393,13 +1725,13 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	memclr(gui->default_widget_bounds);
 
 
+	gui->npt.active = false;
 	gui->npt.cursor_pos = 0;
 	gui->npt.performed_action = false;
 	gui->npt.initial_txt_hash = 0;
 	gui->npt.pw_buf[0] = 0;
 	gui->npt.val_buf[0] = 0;
 	gui->drag_offset = g_v2i_zero;
-	gui->vert_buf = array_create();
 	gui->dropdown.id = 0;
 	arrclr(gui->popups);
 	gui->popup = NULL;
@@ -2421,180 +1753,18 @@ gui_t *gui_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	gui->next_panel_pri = 0;
 	gui->min_panel_pri = 0;
 
-	++g_gui_cnt;
-
-	goto out;
-
-err_cursor:
-	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
-		if (gui->cursors[i])
-			SDL_FreeCursor(gui->cursors[i]);
-err_white:
-	texture_destroy(&gui->texture_white);
-	texture_destroy(&gui->texture_white_dotted);
-	GL_CHECK(glDeleteBuffers, 3, gui->vbo);
-	GL_CHECK(glDeleteVertexArrays, 1, &gui->vao);
-err_glew:
-	SDL_GL_DeleteContext(gui->gl_context);
-	if (gui->parent_window)
-		SDL_GL_MakeCurrent(gui->parent_window, gui->parent_gl_context);
-err_ctx:
-	SDL_DestroyWindow(gui->window);
-err_win:
-	SDL_Quit();
-err_sdl:
-	free(gui);
-	gui = NULL;
-out:
 	return gui;
-}
-
-gui_t *gui_create(s32 x, s32 y, s32 w, s32 h, const char *title,
-                  gui_flags_t flags)
-{
-	return gui_create_ex(x, y, w, h, title, flags, GUI_FONT_FILE_PATH);
 }
 
 void gui_destroy(gui_t *gui)
 {
-	array_destroy(gui->vert_buf);
-	for (u32 i = 0; i < GUI__CURSOR_COUNT; ++i)
-		SDL_FreeCursor(gui->cursors[i]);
-	array_foreach(gui->fonts, font_t, f)
-		font_destroy(f);
-	array_destroy(gui->fonts);
-	array_foreach(gui->imgs, cached_img_t, ci)
-		img_destroy(&ci->img);
-	array_destroy(gui->imgs);
-	shader_program_destroy(&gui->shader);
-	texture_destroy(&gui->texture_white);
-	texture_destroy(&gui->texture_white_dotted);
-	GL_CHECK(glDeleteBuffers, 3, gui->vbo);
-	GL_CHECK(glDeleteVertexArrays, 1, &gui->vao);
-	SDL_GL_DeleteContext(gui->gl_context);
-	SDL_DestroyWindow(gui->window);
-	if (--g_gui_cnt == 0)
-		SDL_Quit();
-	else if (gui->parent_window)
-		SDL_GL_MakeCurrent(gui->parent_window, gui->parent_gl_context);
 	free(gui);
-}
-
-void gui_move(const gui_t *gui, s32 dx, s32 dy)
-{
-	s32 x, y;
-	SDL_GetWindowPosition(gui->window, &x, &y);
-	SDL_SetWindowPosition(gui->window, x + dx, y + dy);
 }
 
 void gui_dim(const gui_t *gui, s32 *x, s32 *y)
 {
 	*x = gui->window_dim.x;
 	*y = gui->window_dim.y;
-}
-
-static
-b32 gui__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect)
-{
-	if (SDL_GetDisplayUsableBounds(display_idx, rect) != 0) {
-		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
-		return false;
-	}
-
-#ifdef __APPLE__
-	static SDL_Rect usable_bounds = {0};
-	if (usable_bounds.w != 0) {
-		/* SDL_GetDisplayUsableBounds returns SDL_GetDisplayBounds in later calls...
-		 * I don't like caching this, because the usable region could change while
-		 * the app is running, but it's the only option on Mac. */
-		*rect = usable_bounds;
-	} else {
-		/* window origin is supposed to be in the top-left corner,
-		 * but for some reason SDL_GetDisplayUsableBounds
-		 * returns it in the bottom-left corner on Mac */
-		SDL_Rect bounds;
-		if (SDL_GetDisplayBounds(display_idx, &bounds) != 0) {
-			log_error("SDL_GetDisplayBounds failed: %s", SDL_GetError());
-			return false;
-		}
-		rect->y = bounds.h - rect->h - rect->y;
-		usable_bounds = *rect;
-	}
-#endif
-	return true;
-}
-
-static
-b32 gui__maximum_window_rect(const gui_t *gui, SDL_Rect *rect)
-{
-	int display_idx;
-
-	display_idx = SDL_GetWindowDisplayIndex(gui->window);
-	if (display_idx < 0) {
-		log_error("SDL_GetWindowDisplayIndex failed: %s", SDL_GetError());
-		return false;
-	}
-
-	if (!gui__get_display_usable_bounds(display_idx, rect))
-		return false;
-
-	return true;
-}
-
-b32 gui_is_maximized(const gui_t *gui)
-{
-	SDL_Rect rect;
-	return gui__maximum_window_rect(gui, &rect)
-	    && gui->window_dim.x == rect.w
-	    && gui->window_dim.y == rect.h;
-}
-
-void gui_minimize(gui_t *gui)
-{
-	SDL_MinimizeWindow(gui->window);
-}
-
-static
-void gui__store_window_rect(gui_t *gui)
-{
-	v2i pos;
-	SDL_GetWindowPosition(gui->window, &pos.x, &pos.y);
-	gui->window_restore_pos.x = pos.x;
-	gui->window_restore_pos.y = pos.y;
-	gui->window_restore_dim.x = gui->window_dim.x;
-	gui->window_restore_dim.y = gui->window_dim.y;
-}
-
-void gui_maximize(gui_t *gui)
-{
-	/* NOTE(rgriege): needs a workaround because
-	 * SDL_MaximizeWindow consumes the menu bar on windoge */
-	SDL_Rect rect;
-	gui__store_window_rect(gui);
-	if (gui__maximum_window_rect(gui, &rect)) {
-		SDL_SetWindowPosition(gui->window, rect.x, rect.y);
-		SDL_SetWindowSize(gui->window, rect.w, rect.h);
-	} else {
-		/* fallback */
-		SDL_MaximizeWindow(gui->window);
-	}
-}
-
-void gui_restore(gui_t *gui)
-{
-	const v2i pos = gui->window_restore_pos;
-	const v2i dim = gui->window_restore_dim;
-	/* NOTE(rgriege): order is important here */
-	SDL_SetWindowSize(gui->window, dim.x, dim.y);
-	SDL_SetWindowPosition(gui->window, pos.x, pos.y);
-}
-
-void gui_fullscreen(gui_t *gui)
-{
-	SDL_Rect rect;
-		gui__store_window_rect(gui);
-	if (gui__maximum_window_rect(gui, &rect))
-		SDL_MaximizeWindow(gui->window);
 }
 
 static
@@ -2732,92 +1902,101 @@ void gui__on_widget_tab_focused(gui_t *gui, u64 id)
 	gui->focus_id_found_this_frame = true;
 }
 
-b32 gui_begin_frame(gui_t *gui)
+void gui_begin_frame(gui_t *gui)
 {
-	s32 key_cnt;
-	b32 quit = false, left_window = false;
-	const colorf_t bg_color = color_to_colorf(gui->style.bg_color);
-	SDL_Event evt;
-	const u32 last_mouse_btn = gui->mouse_btn;
-	timepoint_t now = time_current();
+	const timepoint_t now = time_current();
 
 	gui->frame_time_milli = time_diff_milli(gui->frame_start_time, now);
 	gui->frame_start_time = now;
+}
 
-	SDL_GL_MakeCurrent(gui->window, gui->gl_context);
+void gui_events_begin(gui_t *gui)
+{
+	gui->mouse_pos_last = gui->mouse_pos;
+	gui->mouse_btn_last = gui->mouse_btn;
+	memcpy(gui->prev_keys, gui->keys, KB_COUNT);
+	memset(gui->keys, 0, KB_COUNT);
 
 	gui->mouse_btn = 0;
 	gui->text_npt[0] = '\0';
-	while (SDL_PollEvent(&evt) == 1) {
-		switch (evt.type) {
-		case SDL_QUIT:
-			quit = true;
-		break;
-		case SDL_MOUSEWHEEL:
-			if (evt.wheel.y != 0) {
-				gui->mouse_btn |= (evt.wheel.y > 0 ? MB_WHEELUP : MB_WHEELDOWN);
-				gui->last_input_time = now;
-			}
-		break;
-		case SDL_WINDOWEVENT:
-			switch (evt.window.event) {
-			case SDL_WINDOWEVENT_CLOSE:
-				quit = true;
-			break;
-			case SDL_WINDOWEVENT_LEAVE:
-				left_window = true;
-			break;
-			default:
-				gui->last_input_time = now;
-			break;
-			}
-		break;
-		case SDL_KEYDOWN:
-		case SDL_KEYUP:
-		case SDL_MOUSEMOTION:
-		case SDL_MOUSEBUTTONDOWN:
-		case SDL_MOUSEBUTTONUP:
-			gui->last_input_time = now;
-		break;
-		case SDL_TEXTINPUT:
-			if (   strlen(gui->text_npt) + strlen(evt.text.text) + 1
-			    <= countof(gui->text_npt))
-				strcat(gui->text_npt, evt.text.text);
-		break;
-		}
-	}
+	gui->clipboard[0] = '\0';
+	gui->left_window = false;
+}
 
-	SDL_GetWindowSize(gui->window, &gui->window_dim.x, &gui->window_dim.y);
+void gui_event_add_update(gui_t *gui)
+{
+	gui->last_input_time = gui->frame_start_time;
+}
 
-	gui->mouse_pos_last = gui->mouse_pos;
-	if (gui->dragging_window) {
-		v2i w, gm;
-		SDL_GetWindowPosition(gui->window, &w.x, &w.y);
-		gui->mouse_btn |= SDL_GetGlobalMouseState(&gm.x, &gm.y);
-		gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
-		gui->mouse_pos = v2i_sub(gm, w);
-	} else if (left_window) {
+void gui_event_set_mouse_pos(gui_t *gui, s32 x, s32 y)
+{
+	gui->mouse_pos.x = x;
+	gui->mouse_pos.y = y;
+}
+
+void gui_event_set_mouse_btn(gui_t *gui, gui_mouse_button_e button)
+{
+	gui->mouse_btn = button;
+}
+
+void gui_event_add_text_input(gui_t *gui, const char *text)
+{
+	if (strlen(gui->text_npt) + strlen(text) + 1 <= countof(gui->text_npt))
+		strcat(gui->text_npt, text);
+	else
+		log_warn("text input exceeds buffer size");
+	if (text[0] != 0)
+		gui_event_add_update(gui);
+}
+
+void gui_event_set_keyboard(gui_t *gui, const u8 *keys, u32 key_cnt)
+{
+	assert(key_cnt >= KB_COUNT);
+	memcpy(gui->keys, keys, KB_COUNT);
+}
+
+void gui_event_add_clipboard(gui_t *gui, const char *text)
+{
+	if (strlen(gui->clipboard) + strlen(text) + 1 <= countof(gui->clipboard))
+		strcat(gui->clipboard, text);
+	else
+		log_warn("clipboard input exceeds buffer size");
+}
+
+void gui_event_add_window_leave(gui_t *gui)
+{
+	gui->left_window = true;
+	gui_event_add_update(gui);
+}
+
+void gui_event_set_window_dim(gui_t *gui, s32 w, s32 h)
+{
+	if (gui->window_dim.x != w || gui->window_dim.y != h)
+		gui_event_add_update(gui);
+	gui->window_dim.x = w;
+	gui->window_dim.y = h;
+}
+
+void gui_events_end(gui_t *gui)
+{
+	if (gui->left_window && !gui->dragging_window) {
 		gui->mouse_btn = 0;
-		gui->mouse_btn_diff = 0;
 		gui->hot_id = 0;
 		gui->active_id = 0;
-	} else {
-		gui->mouse_btn |= SDL_GetMouseState(&gui->mouse_pos.x, &gui->mouse_pos.y);
-		gui->mouse_btn_diff = gui->mouse_btn ^ last_mouse_btn;
 	}
-	gui->mouse_pos.y = gui->window_dim.y - gui->mouse_pos.y;
 
 	if (mouse_pressed(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT))
 		gui->mouse_pos_press = gui->mouse_pos;
 	gui__repeat_update(&gui->mouse_repeat, gui->mouse_btn,
-	                   __builtin_popcount(gui->mouse_btn),
+	                   gui__popcount(gui->mouse_btn),
 	                   gui->frame_time_milli);
 	if (mouse_down(gui, ~0))
-		gui->last_input_time = now;
+		gui_event_add_update(gui);
+	if (gui->mouse_btn != gui->mouse_btn_last)
+		gui_event_add_update(gui);
+	if (!v2i_equal(gui->mouse_pos_last, gui->mouse_pos))
+		gui_event_add_update(gui);
 
-	gui->mouse_covered_by_widget_id = ~0;
-
-	gui->keys = SDL_GetKeyboardState(&key_cnt);
 	{
 		u32 key = 0;
 		u32 cnt = 0;
@@ -2829,10 +2008,14 @@ b32 gui_begin_frame(gui_t *gui)
 		}
 		gui__repeat_update(&gui->key_repeat, key, cnt, gui->frame_time_milli);
 	}
-	assert(key_cnt > KB_COUNT);
+
 	gui__toggle_key(gui, KBT_CAPS, KB_CAPSLOCK);
 	gui__toggle_key(gui, KBT_SCROLL, KB_SCROLLLOCK);
 	gui__toggle_key(gui, KBT_NUM, KB_NUMLOCK_OR_CLEAR);
+
+	/* events are done; finish initializing frame */
+
+	gui->mouse_covered_by_widget_id = ~0;
 
 	gui->lock = 0;
 
@@ -2853,8 +2036,7 @@ b32 gui_begin_frame(gui_t *gui)
 				log_warn("focus widget %" PRIu64 " was not drawn", gui->focus_ids[i]);
 		arrclr(gui->focus_ids);
 		arrclr(gui->popups);
-		if (SDL_IsTextInputActive())
-			SDL_StopTextInput();
+		gui->npt.active = false;
 	}
 	gui->focus_id_found_this_frame = false;
 
@@ -2894,14 +2076,6 @@ b32 gui_begin_frame(gui_t *gui)
 	gui->culled_vertices   = 0;
 	gui->culled_widgets    = 0;
 
-	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
-
-	/* NOTE(rgriege): reset the scissor for glClear */
-	GL_CHECK(glScissor, 0, 0, gui->window_dim.x, gui->window_dim.y);
-
-	GL_CHECK(glClearColor, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
-	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	/* popup */
 	for (u32 i = countof(gui->popups); i > 0; --i) {
 		const u32 j = i - 1;
@@ -2924,10 +2098,10 @@ b32 gui_begin_frame(gui_t *gui)
 	}
 	gui->popup = NULL;
 
-	/* ensure this is set every frame by a gui_window_drag() call (perf) */
+	/* ensure this is set every frame when dragging the window (perf) */
 	gui->dragging_window = false;
 
-	gui->use_default_cursor = true;
+	gui->cursor = GUI_CURSOR_DEFAULT;
 	if (gui->root_split) {
 		gui_splits_compute(gui);
 		gui->splits_rendered_this_frame = false;
@@ -2942,27 +2116,28 @@ b32 gui_begin_frame(gui_t *gui)
 
 	/* kinda wasteful, but ensures split resizers & mouse debug are drawn on top */
 	gui__layer_new(gui);
-
-	return !quit;
 }
 
-static const GLenum g_draw_call_types[GUI_DRAW_COUNT] = {
-	GL_POINTS,
-	GL_LINE_STRIP,
-	GL_LINE_LOOP,
-	GL_LINES,
-	GL_TRIANGLE_STRIP,
-	GL_TRIANGLE_FAN,
-	GL_TRIANGLES,
-	GL_QUAD_STRIP,
-	GL_QUADS,
-	GL_POLYGON,
-};
+void gui_window_drag(gui_t *gui)
+{
+	gui->dragging_window = true;
+	gui->mouse_pos = gui->mouse_pos_last;
+}
+
+b32 gui_window_dragging(const gui_t *gui)
+{
+	return gui->dragging_window;
+}
+
+void gui_window_drag_end(gui_t *gui)
+{
+	gui->dragging_window = false;
+}
 
 static
 box2i gui__current_mask(const gui_t *gui)
 {
-	const gui__layer_t *layer = gui->layer;
+	const gui_layer_t *layer = gui->layer;
 	box2i box;
 	box2i_from_xywh(&box, layer->x, layer->y, layer->w, layer->h);
 	return box;
@@ -3037,20 +2212,20 @@ void gui_widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 
 b32 gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type)
 {
-	return gui_begin_tex(gui, num_verts, type, 0, TEXTURE_BLEND_NRM);
+	return gui_begin_tex(gui, num_verts, type, 0, GUI_BLEND_NRM);
 }
 
 b32 gui_begin_tex(gui_t *gui, u32 num_verts, gui_draw_call_type_e type,
-                  u32 tex, texture_blend_e blend)
+                  u32 tex, gui_blend_e blend)
 {
 	assert(num_verts > 0);
 	if (   gui->vert_cnt + num_verts <= GUI_MAX_VERTS
 	    && gui->draw_call_cnt < GUI_MAX_DRAW_CALLS) {
-		draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
+		gui_draw_call_t *draw_call = &gui->draw_calls[gui->draw_call_cnt];
 		draw_call->idx   = gui->vert_cnt;
 		draw_call->cnt   = num_verts;
 		draw_call->type  = type;
-		draw_call->tex   = tex != 0 ? tex : gui->texture_white.handle;
+		draw_call->tex   = tex != 0 ? tex : gui->texture_white;
 		draw_call->blend = blend;
 		gui->draw_call_vert_idx = 0;
 		return true;
@@ -3150,7 +2325,7 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, gui_draw_call_type_e type,
 		const r32 dash_len = gui->style.line.dash_len;
 		if (dash_len != 0.f) {
 			if (gui_begin_tex(gui, closed ? n + 1 : n, GUI_DRAW_LINE_STRIP,
-			                  gui->texture_white_dotted.handle, TEXTURE_BLEND_NRM)) {
+			                  gui->texture_white_dotted, GUI_BLEND_NRM)) {
 				r32 dist = 0.f;
 				for (u32 i = 0; i < n; ++i) {
 					gui__vertf(gui, v[i].x, v[i].y, stroke, dist / dash_len, 0.f);
@@ -3172,10 +2347,10 @@ void gui__poly(gui_t *gui, const v2f *v, u32 n, gui_draw_call_type_e type,
 	}
 }
 
-m3f texture_get_transform(const texture_t *texture, s32 x, s32 y,
-                          r32 sx, r32 sy, r32 rotation)
+m3f gui_texture_get_transform(const gui_texture_t *texture, s32 x, s32 y,
+                              r32 sx, r32 sy, r32 rotation)
 {
-	const v2f scale = {
+	const v2f dim = {
 		((r32)texture->width) * sx,
 		((r32)texture->height) * sy 
 	};
@@ -3183,22 +2358,17 @@ m3f texture_get_transform(const texture_t *texture, s32 x, s32 y,
 	m3f transform = m3f_init_translation((v2f){ x, y });
 
 	if (rotation != 0.f) {
-
-		transform = m3f_mul_m3(transform,
-		                       m3f_init_translation((v2f){scale.x / 2.f, scale.y / 2.f}));
-
-		transform = m3f_mul_m3(transform,
-		                       m3f_init_rotation(rotation));
-
-		transform = m3f_mul_m3(transform,
-		                       m3f_init_translation((v2f){-scale.x / 2.f, -scale.y / 2.f}));
+		const v2f center = v2f_scale(dim, 0.5f);
+		transform = m3f_mul_m3(transform, m3f_init_translation(center));
+		transform = m3f_mul_m3(transform, m3f_init_rotation(rotation));
+		transform = m3f_mul_m3(transform, m3f_init_translation(v2f_inverse(center)));
 	}
 
-	return m3f_mul_m3(transform, m3f_init_scale(scale));
+	return m3f_mul_m3(transform, m3f_init_scale(dim));
 }
 
 static
-void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
+void texture__render(gui_t *gui, const gui_texture_t *texture, s32 x, s32 y,
                      r32 sx, r32 sy, r32 rotation, color_t color)
 {
 	static const v2f corners[] = {
@@ -3207,7 +2377,7 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		{ 1.f, 1.f },
 		{ 1.f, 0.f }
 	};
-	const m3f transform = texture_get_transform(texture, x, y, sx, sy, rotation);
+	const m3f transform = gui_texture_get_transform(texture, x, y, sx, sy, rotation);
 	v2f points[4];
 	box2i bbox;
 
@@ -3224,7 +2394,7 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 		return;
 	}
 
-	if (texture->blend == TEXTURE_BLEND_MUL) {
+	if (texture->blend == GUI_BLEND_MUL) {
 		const r32 brightness = ((r32)color.a) / 255.f;
 		color.r *= brightness;
 		color.g *= brightness;
@@ -3240,10 +2410,12 @@ void texture__render(gui_t *gui, const texture_t *texture, s32 x, s32 y,
 }
 
 static
-void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
-                  r32 x1, r32 y1, r32 s0, r32 t0, r32 s1, r32 t1, color_t color)
+void text__render(gui_t *gui, const gui_char_quad_t *q, color_t color)
 {
-	const box2i bbox = { .min = { (s32)x0, (s32)y0 }, .max = { (s32)x1, (s32)y1 } };
+	const box2i bbox = {
+		.min = { (s32)q->x0, (s32)q->y0 },
+		.max = { (s32)q->x1, (s32)q->y1 }
+	};
 
 	box2i_extend_box(&gui->widget_bounds->children, bbox);
 
@@ -3253,11 +2425,12 @@ void text__render(gui_t *gui, const texture_t *texture, r32 x0, r32 y0,
 		return;
 	}
 
-	if (gui_begin_tex(gui, 4, GUI_DRAW_TRIANGLE_FAN, texture->handle, texture->blend)) {
-		gui__vertf(gui, x0, y1, color, s0, 1.f - t0);
-		gui__vertf(gui, x0, y0, color, s0, 1.f - t1);
-		gui__vertf(gui, x1, y0, color, s1, 1.f - t1);
-		gui__vertf(gui, x1, y1, color, s1, 1.f - t0);
+	if (gui_begin_tex(gui, 4, GUI_DRAW_TRIANGLE_FAN,
+	                  q->texture.handle, q->texture.blend)) {
+		gui__vertf(gui, q->x0, q->y1, color, q->s0, q->t0);
+		gui__vertf(gui, q->x0, q->y0, color, q->s0, q->t1);
+		gui__vertf(gui, q->x1, q->y0, color, q->s1, q->t1);
+		gui__vertf(gui, q->x1, q->y1, color, q->s1, q->t0);
 		gui_end(gui);
 	}
 }
@@ -3267,15 +2440,6 @@ static int gui__layer_sort(const void *lhs, const void *rhs);
 
 void gui_end_frame(gui_t *gui)
 {
-#ifdef __EMSCRIPTEN__
-	const s32 *loc = gui->shader_attrib_loc;
-#else
-	const s32 loc[VBO_COUNT] = { VBO_VERT, VBO_COLOR, VBO_TEX };
-#endif
-	GLuint current_texture = 0;
-
-	texture_blend_e current_blend = TEXTURE_BLEND_NRM;
-
 	assert(gui->grid == NULL);
 	assert(gui->lock == 0);
 
@@ -3284,87 +2448,12 @@ void gui_end_frame(gui_t *gui)
 
 	gui__layer_complete_current(gui);
 
-	const u32 n_layers = (u32)(gui->layer - &gui->layers[0] + 1);
+	const u32 n_layers = gui_num_layers(gui);
 	/* move hints/popups to the back of the array
 	 * can't use qsort - not guaranteed to be stable */
 	isort(gui->layers, n_layers, sizeof(gui->layers[0]), gui__layer_sort);
 	/* front-to-back -> back-to-front */
 	reverse(gui->layers, sizeof(gui->layers[0]), n_layers);
-
-	GL_CHECK(glViewport, 0, 0, gui->window_dim.x, gui->window_dim.y);
-
-	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	GL_CHECK(glDisable, GL_DEPTH_TEST);
-	GL_CHECK(glBindVertexArray, gui->vao);
-
-	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_VERT]);
-	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
-	         gui->verts, GL_STREAM_DRAW);
-	GL_CHECK(glVertexAttribPointer, loc[VBO_VERT], 2, GL_FLOAT, GL_FALSE, 0, 0);
-	GL_CHECK(glEnableVertexAttribArray, loc[VBO_VERT]);
-
-	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_COLOR]);
-	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(color_t),
-	         gui->vert_colors, GL_STREAM_DRAW);
-	GL_CHECK(glVertexAttribPointer, loc[VBO_COLOR], 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
-	GL_CHECK(glEnableVertexAttribArray, loc[VBO_COLOR]);
-
-	GL_CHECK(glBindBuffer, GL_ARRAY_BUFFER, gui->vbo[VBO_TEX]);
-	GL_CHECK(glBufferData, GL_ARRAY_BUFFER, gui->vert_cnt * sizeof(v2f),
-	         gui->vert_tex_coords, GL_STREAM_DRAW);
-	GL_CHECK(glVertexAttribPointer, loc[VBO_TEX], 2, GL_FLOAT, GL_FALSE, 0, 0);
-	GL_CHECK(glEnableVertexAttribArray, loc[VBO_TEX]);
-
-	GL_CHECK(glUseProgram, gui->shader.handle);
-	GL_CHECK(glUniform2f, glGetUniformLocation(gui->shader.handle, "window_halfdim"),
-	         gui->window_dim.x/2, gui->window_dim.y/2);
-
-	/* NOTE(rgriege): This method of ordering creates an inconsistency:
-	 * panels/layers must be called from top-to-bottom, but widgets/primitives
-	 * within a layer must be called from bottom-to-top.  Without introducing a
-	 * frame of delay, top-to-bottom panels are unavoidable to ensure that
-	 * the top panels receive the input events.  Bottom-to-top widget rendering
-	 * is nice for overlaying text on top of a movable widget. Will be a problem
-	 * if overlapping widges are in the same panel/layer, but that doesn't seem
-	 * like a use case to design for other than dragging icons on a desktop,
-	 * which could be 'solved' by placing the dragged icon on a separate layer. */
-	for (u32 i = 0; i < n_layers; ++i) {
-		const gui__layer_t *layer = &gui->layers[i];
-		GL_CHECK(glScissor, layer->x, layer->y, layer->w, layer->h);
-		for (u32 j = 0; j < layer->draw_call_cnt; ++j) {
-			draw_call_t *draw_call = &gui->draw_calls[layer->draw_call_idx+j];
-			if (draw_call->tex != current_texture) {
-				GL_CHECK(glBindTexture, GL_TEXTURE_2D, draw_call->tex);
-				current_texture = draw_call->tex;
-			}
-			if (draw_call->blend != current_blend) {
-				switch (draw_call->blend) {
-					case TEXTURE_BLEND_NRM:
-						GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-						break;
-					case TEXTURE_BLEND_ADD:
-						GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE);
-						break;
-					case TEXTURE_BLEND_MUL:
-						GL_CHECK(glBlendFunc, GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
-						break;
-				}
-				current_blend = draw_call->blend;
-			}
-
-			GL_CHECK(glDrawArrays, g_draw_call_types[draw_call->type],
-			         draw_call->idx, draw_call->cnt);
-		}
-	}
-
-	if (gui->use_default_cursor)
-		SDL_SetCursor(gui->cursors[GUI__CURSOR_DEFAULT]);
-
-	GL_CHECK(glFlush);
-	SDL_GL_SwapWindow(gui->window);
-
-	memcpy(gui->prev_keys, gui->keys, KB_COUNT);
 }
 
 void gui_end_frame_ex(gui_t *gui, u32 target_frame_milli,
@@ -3384,22 +2473,24 @@ void gui_end_frame_ex(gui_t *gui, u32 target_frame_milli,
 		time_sleep_milli(target_frame_milli - frame_milli);
 }
 
-void gui_run(gui_t *gui, u32 fps, b32(*ufunc)(gui_t *gui, void *udata),
-             void *udata)
+b32 gui_text_input_active(const gui_t *gui)
 {
-	const u32 target_frame_milli = 1000/fps;
-	u32 frame_milli;
-	b32 quit = false;
-	while(gui_begin_frame(gui) && !quit) {
-		vlt_mem_advance_gen();
-		quit = ufunc(gui, udata);
-		gui_end_frame(gui);
-		frame_milli = time_diff_milli(gui_frame_start(gui), time_current());
-		if (frame_milli < target_frame_milli)
-			time_sleep_milli(target_frame_milli - frame_milli);
-		else
-			log_warn("long frame: %ums", frame_milli);
-	}
+	return gui->npt.active;
+}
+
+u32 gui_cursor(const gui_t *gui)
+{
+	return gui->cursor;
+}
+
+void *gui_window(gui_t *gui)
+{
+	return gui->window;
+}
+
+void gui_set_window(gui_t *gui, void *window)
+{
+	gui->window = window;
 }
 
 timepoint_t gui_frame_start(const gui_t *gui)
@@ -3437,19 +2528,21 @@ void mouse_pos_press(const gui_t *gui, s32 *x, s32 *y)
 	*y = gui->mouse_pos_press.y;
 }
 
-void mouse_pos_global(const gui_t *gui, s32 *x, s32 *y)
-{
-	SDL_GetGlobalMouseState(x, y);
-}
-
 b32 mouse_pos_changed(const gui_t *gui)
 {
 	return !v2i_equal(gui->mouse_pos, gui->mouse_pos_last);
 }
 
+void mouse_pos_delta(const gui_t *gui, s32 *x, s32 *y)
+{
+	const v2i delta = v2i_sub(gui->mouse_pos, gui->mouse_pos_last);
+	*x = delta.x;
+	*y = delta.y;
+}
+
 b32 mouse_pressed(const gui_t *gui, u32 mask)
 {
-	return (gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
+	return (gui->mouse_btn & mask) && !(gui->mouse_btn_last & mask);
 }
 
 b32 mouse_pressed_bg(const gui_t *gui, u32 mask)
@@ -3469,7 +2562,7 @@ b32 mouse_down_bg(const gui_t *gui, u32 mask)
 
 b32 mouse_released(const gui_t *gui, u32 mask)
 {
-	return !(gui->mouse_btn & mask) && (gui->mouse_btn_diff & mask);
+	return !(gui->mouse_btn & mask) && !(gui->mouse_btn_last & mask);
 }
 
 b32 mouse_released_bg(const gui_t *gui, u32 mask)
@@ -3708,18 +2801,24 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke)
 {
-	array_set_sz(gui->vert_buf, arc_poly_sz(r, angle_start, angle_end));
-	arc_to_poly(x, y, r, angle_start, angle_end, A2PN(gui->vert_buf), false);
-	gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, false);
-	array_clear(gui->vert_buf);
+	const u32 num_verts = arc_poly_sz(r, angle_start, angle_end);
+	array(v2f) vert_buf;
+	array_init_ex(vert_buf, num_verts, g_temp_allocator);
+	array_set_sz(vert_buf, num_verts);
+	arc_to_poly(x, y, r, angle_start, angle_end, A2PN(vert_buf), false);
+	gui__poly(gui, A2PN(vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, false);
+	array_destroy(vert_buf);
 }
 
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
-	array_set_sz(gui->vert_buf, arc_poly_sz(r, 0, fPI * 2.f));
-	arc_to_poly(x, y, r, 0, fPI * 2.f, A2PN(gui->vert_buf), true);
-	gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
-	array_clear(gui->vert_buf);
+	const u32 num_verts = arc_poly_sz(r, 0, fPI * 2.f);
+	array(v2f) vert_buf;
+	array_init_ex(vert_buf, num_verts, g_temp_allocator);
+	array_set_sz(vert_buf, num_verts);
+	arc_to_poly(x, y, r, 0, fPI * 2.f, A2PN(vert_buf), true);
+	gui__poly(gui, A2PN(vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
+	array_destroy(vert_buf);
 }
 
 void gui_trisf(gui_t *gui, const v2f *v, u32 n, color_t fill)
@@ -3729,13 +2828,15 @@ void gui_trisf(gui_t *gui, const v2f *v, u32 n, color_t fill)
 
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
 {
-	array_set_sz(gui->vert_buf, n);
+	array(v2f) vert_buf;
+	array_init_ex(vert_buf, n, g_temp_allocator);
+	array_set_sz(vert_buf, n);
 	for (u32 i = 0; i < n; ++i) {
-		gui->vert_buf[i].x = v[i].x;
-		gui->vert_buf[i].y = v[i].y;
+		vert_buf[i].x = v[i].x;
+		vert_buf[i].y = v[i].y;
 	}
-	gui_polyf(gui, gui->vert_buf, n, fill, stroke);
-	array_clear(gui->vert_buf);
+	gui_polyf(gui, vert_buf, n, fill, stroke);
+	array_destroy(vert_buf);
 }
 
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
@@ -3743,12 +2844,14 @@ void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 	if (n == 3 || fill.a == 0 || polyf_is_convex(v, n)) {
 		gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
 	} else {
-		if (triangulate(v, n, &gui->vert_buf)) {
-			gui__triangles(gui, A2PN(gui->vert_buf), fill);
-			array_clear(gui->vert_buf);
-		}
+		const u32 n_vert_buf = triangulate_reserve_sz(n);
+		array(v2f) vert_buf;
+		array_init_ex(vert_buf, n_vert_buf, g_temp_allocator);
+		if (triangulate(v, n, &vert_buf))
+			gui__triangles(gui, A2PN(vert_buf), fill);
 		if (stroke.a != 0)
 			gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, true);
+		array_destroy(vert_buf);
 	}
 }
 
@@ -3773,13 +2876,15 @@ void gui__polyline_corner_offset(v2f a, v2f b, v2f c, r32 d, v2f *p)
 
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke)
 {
-	array_set_sz(gui->vert_buf, n);
+	array(v2f) vert_buf;
+	array_init_ex(vert_buf, n, g_temp_allocator);
+	array_set_sz(vert_buf, n);
 	for (u32 i = 0; i < n; ++i) {
-		gui->vert_buf[i].x = v[i].x;
-		gui->vert_buf[i].y = v[i].y;
+		vert_buf[i].x = v[i].x;
+		vert_buf[i].y = v[i].y;
 	}
-	gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, false);
-	array_clear(gui->vert_buf);
+	gui__poly(gui, A2PN(vert_buf), GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, false);
+	array_destroy(vert_buf);
 }
 
 void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
@@ -3794,55 +2899,32 @@ void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
 		const v2f dirn  = v2f_scale(v2f_dir(v[n-2], v[n-1]), w2);
 		const v2f perpn = v2f_lperp(dirn);
 
-		array_set_sz(gui->vert_buf, 2*n);
+		array(v2f) vert_buf;
+		array_init_ex(vert_buf, 2*n, g_temp_allocator);
+		array_set_sz(vert_buf, 2*n);
 
-		gui->vert_buf[0] = v2f_sub(v2f_sub(v[0], dir0), perp0);
-		gui->vert_buf[1] = v2f_add(v2f_sub(v[0], dir0), perp0);
+		vert_buf[0] = v2f_sub(v2f_sub(v[0], dir0), perp0);
+		vert_buf[1] = v2f_add(v2f_sub(v[0], dir0), perp0);
 
 		for (u32 i = 1; i < n-1; ++i) {
-			gui__polyline_corner_offset(v[i-1], v[i], v[i+1], w2, &gui->vert_buf[2*i]);
-			gui->vert_buf[2*i+1] = v2f_add(v[i], v2f_sub(v[i], gui->vert_buf[2*i]));
+			gui__polyline_corner_offset(v[i-1], v[i], v[i+1], w2, &vert_buf[2*i]);
+			vert_buf[2*i+1] = v2f_add(v[i], v2f_sub(v[i], vert_buf[2*i]));
 		}
 
-		gui->vert_buf[2*n-2] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
-		gui->vert_buf[2*n-1] = v2f_add(v2f_add(v[n-1], dirn), perpn);
+		vert_buf[2*n-2] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
+		vert_buf[2*n-1] = v2f_add(v2f_add(v[n-1], dirn), perpn);
 
-		gui__poly(gui, A2PN(gui->vert_buf), GUI_DRAW_TRIANGLE_STRIP, stroke, g_nocolor, true);
-		array_clear(gui->vert_buf);
+		gui__poly(gui, A2PN(vert_buf), GUI_DRAW_TRIANGLE_STRIP, stroke, g_nocolor, true);
+		array_destroy(vert_buf);
 	}
 }
 
-static
-cached_img_t *gui__find_img(gui_t *gui, u32 id)
-{
-	array_foreach(gui->imgs, cached_img_t, ci)
-		if (ci->id == id)
-			return ci;
-	return NULL;
-}
-
-const img_t *gui_get_img(gui_t *gui, const char *fname)
-{
-	const u32 id = hash(fname);
-	cached_img_t *cached_img = gui__find_img(gui, id);
-	if (cached_img)
-		return &cached_img->img;
-
-	cached_img = array_append_null(gui->imgs);
-	cached_img->id = id;
-	if (img_load(&cached_img->img, fname))
-		return &cached_img->img;
-
-	array_pop(gui->imgs);
-	return NULL;
-}
-
-void gui_img(gui_t *gui, s32 x, s32 y, const img_t *img)
+void gui_img(gui_t *gui, s32 x, s32 y, const gui_img_t *img)
 {
 	gui_img_ex(gui, x, y, img, 1.f, 1.f, 0.f, 1.f);
 }
 
-void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
+void gui_img_ex(gui_t *gui, s32 x, s32 y, const gui_img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity)
 {
 	if (!img) {
@@ -3852,11 +2934,11 @@ void gui_img_ex(gui_t *gui, s32 x, s32 y, const img_t *img, r32 sx, r32 sy,
 
 	color_t color = g_white;
 	color.a = opacity * 255;
-	texture__render(gui, &img->texture, x, y, sx, sy, rotation, color);
+	texture__render(gui, img, x, y, sx, sy, rotation, color);
 }
 
-void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
-                   img_scale_e scale)
+void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
+                   gui_img_scale_e scale)
 {
 	if (!img) {
 		assert(false);
@@ -3864,63 +2946,30 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
 	}
 
 	switch (scale) {
-	case IMG_CENTERED:;
-		const s32 x_off = (w - (s32)img->texture.width) / 2;
-		const s32 y_off = (h - (s32)img->texture.height) / 2;
+	case GUI_IMG_CENTERED:;
+		const s32 x_off = (w - (s32)img->width) / 2;
+		const s32 y_off = (h - (s32)img->height) / 2;
 		if (x_off >= 0 && y_off >= 0) {
 			gui_img_ex(gui, x + x_off, y + y_off, img, 1.f, 1.f, 0.f, 1.f);
 			break;
 		}
-	case IMG_SCALED:;
-		const r32 sx = (r32)w / img->texture.width;
-		const r32 sy = (r32)h / img->texture.height;
+	case GUI_IMG_SCALED:;
+		const r32 sx = (r32)w / img->width;
+		const r32 sy = (r32)h / img->height;
 		gui_img_ex(gui, x, y, img, sx, sy, 0.f, 1.f);
 	break;
 	}
 }
 
-static inline
-font_t *gui__get_font(gui_t *gui, u32 sz)
-{
-	const u32 sz_scaled = (u32)gui_scale_val((s32)sz, gui->scale);
-	font_t *font = gui->fonts, *font_end = array_end(gui->fonts);
-	while (font != font_end && font->sz != sz_scaled)
-		++font;
-	if (font != font_end)
-		return font;
-
-	font = array_append_null(gui->fonts);
-	if (font_load(font, gui->font_file_path, sz_scaled)) {
-		return font;
-	} else {
-		array_pop(gui->fonts);
-		assert(false);
-		return NULL;
-	}
-}
-
 static
-void gui__fixup_stbtt_aligned_quad(stbtt_aligned_quad *q, r32 yb)
+void gui__add_codepoint_to_line_width(const gui_t *gui, void *font, s32 cp, r32 *line_width)
 {
-	/* NOTE(rgriege): stbtt assumes y=0 at top, but for violet y=0 is at bottom */
-	const r32 dy = q->y1 - q->y0;
-	q->y0 = yb + (yb - q->y1);
-	q->y1 = q->y0 + dy;
+	gui_char_quad_t q;
+	if (gui->fonts.get_char_quad(font, cp, *line_width, 0, &q))
+		*line_width += q.advance;
 }
 
-static
-void gui__add_codepoint_to_line_width(font_t *font, s32 cp, r32 *line_width)
-{
-	const texture_t *texture = &font->texture;
-	r32 y = 0;
-	stbtt_aligned_quad q;
-
-	if (cp < font->num_glyphs)
-		stbtt_GetPackedQuad(font->char_info, texture->width, texture->height,
-		                    cp, line_width, &y, &q, 1);
-}
-
-u32 gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
+u32 gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
 {
 	char *p = txt;
 	char *pnext;
@@ -3928,7 +2977,7 @@ u32 gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
 	r32 line_width = padding;
 	u32 num_lines = 1;
 
-	font_t *font = gui__get_font(gui, size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, size);
 	if (!font)
 		return 0;
 
@@ -3938,7 +2987,7 @@ u32 gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
 
 		if (cp == ' ') {
 			p_space_before_word = p;
-			gui__add_codepoint_to_line_width(font, cp, &line_width);
+			gui__add_codepoint_to_line_width(gui, font, cp, &line_width);
 			p = pnext;
 			cp = utf8_next_codepoint(p, &pnext);
 		} else if (cp == '\n') {
@@ -3949,7 +2998,7 @@ u32 gui_wrap_txt(gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
 		line_width_before_word = line_width;
 
 		while (cp != ' ' && cp != '\n' && cp != 0) {
-			gui__add_codepoint_to_line_width(font, cp, &line_width);
+			gui__add_codepoint_to_line_width(gui, font, cp, &line_width);
 			p = pnext;
 			cp = utf8_next_codepoint(p, &pnext);
 		}
@@ -3971,10 +3020,11 @@ static
 void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
                        const char *txt_, u32 pos, const gui_text_style_t *style)
 {
-	font_t *font;
+	void *font;
+	gui_font_metrics_t font_metrics;
 	s32 ix_ = *ix, iy_ = *iy;
 	r32 x, y;
-	stbtt_aligned_quad q;
+	gui_char_quad_t q;
 	array(char) buf = NULL;
 	const char *txt = txt_;
 	const char *p = txt;
@@ -3982,9 +3032,11 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	s32 cp;
 	u32 i;
 
-	font = gui__get_font(gui, style->size);
+	font = gui->fonts.get_font(gui->fonts.handle, style->size);
 	if (!font)
 		return;
+
+	gui->fonts.get_metrics(font, &font_metrics);
 
 	if (style->wrap) {
 		const u32 len = (u32)strlen(txt);
@@ -3996,8 +3048,8 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	}
 
 	gui_align_anchor(ix_, iy_, w, h, style->align, &ix_, &iy_);
-	x = ix_ + font__line_offset_x(font, txt, style);
-	y = iy_ + font__offset_y(font, txt, style);
+	x = ix_ + gui__txt_line_offset_x(gui, txt, style, gui->fonts.get_char_quad);
+	y = iy_ + gui__txt_offset_y(gui, txt, style);
 
 	if (pos == 0)
 		goto out;
@@ -4005,11 +3057,10 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	i = 0;
 	while (i < pos && (cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
-			y -= font->newline_dist;
-			x = ix_ + font__line_offset_x(font, pnext, style);
-		} else if (cp < font->num_glyphs) {
-			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, cp, &x, &y, &q, 1);
+			y -= font_metrics.newline_dist;
+			x = ix_ + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
+			x += q.advance;
 		}
 		i += (pnext - p);
 		p = pnext;
@@ -4026,30 +3077,30 @@ static
 void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
               const gui_text_style_t *style)
 {
-	font_t *font;
+	void *font;
+	gui_font_metrics_t font_metrics;
 	r32 x = *ix, y = *iy;
-	stbtt_aligned_quad q;
+	gui_char_quad_t q;
 	const char *p = txt;
 	char *pnext;
 	s32 cp;
 
-	font = gui__get_font(gui, style->size);
+	font = gui->fonts.get_font(gui->fonts.handle, style->size);
 	if (!font)
 		return;
 
-	x += font__line_offset_x(font, txt, style);
-	y += font__offset_y(font, txt, style);
+	gui->fonts.get_metrics(font, &font_metrics);
+
+	x += gui__txt_line_offset_x(gui, txt, style, gui->fonts.get_char_quad);
+	y += gui__txt_offset_y(gui, txt, style);
 
 	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
-			y -= font->newline_dist;
-			x = *ix + font__line_offset_x(font, pnext, style);
-		} else if (cp < font->num_glyphs) {
-			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, cp, &x, &y, &q, 1);
-			gui__fixup_stbtt_aligned_quad(&q, y);
-			text__render(gui, &font->texture, q.x0, q.y0, q.x1, q.y1, q.s0, q.t0,
-			             q.s1, q.t1, style->color);
+			y -= font_metrics.newline_dist;
+			x = *ix + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
+			text__render(gui, &q, style->color);
+			x += q.advance;
 		}
 		p = pnext;
 	}
@@ -4061,10 +3112,11 @@ static
 u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
                        const char *txt_, v2i mouse, const gui_text_style_t *style)
 {
-	font_t *font;
+	void *font;
+	gui_font_metrics_t font_metrics;
 	s32 xi = xi_, yi = yi_;
 	r32 x, y;
-	stbtt_aligned_quad q;
+	gui_char_quad_t q;
 	u32 closest_pos;
 	s32 closest_dist, dist;
 	v2i p;
@@ -4083,30 +3135,31 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 		ptxt = buf;
 	}
 
-	font = gui__get_font(gui, style->size);
+	font = gui->fonts.get_font(gui->fonts.handle, style->size);
 	if (!font)
 		return 0;
 
-	gui_align_anchor(xi, yi, w, h, style->align, &xi, &yi);
-	x = xi + font__line_offset_x(font, txt, style);
-	y = yi + font__offset_y(font, txt, style);
+	gui->fonts.get_metrics(font, &font_metrics);
 
-	v2i_set(&p, x, y + font->ascent / 2);
+	gui_align_anchor(xi, yi, w, h, style->align, &xi, &yi);
+	x = xi + gui__txt_line_offset_x(gui, txt, style, gui->fonts.get_char_quad);
+	y = yi + gui__txt_offset_y(gui, txt, style);
+
+	v2i_set(&p, x, y + font_metrics.ascent / 2);
 	closest_pos = 0;
 	closest_dist = v2i_dist_sq(p, mouse);
 
 	while ((cp = utf8_next_codepoint(ptxt, &pnext)) != 0) {
 		ptxt = pnext;
 		if (cp == '\n') {
-			y -= font->newline_dist;
-			x = xi + font__line_offset_x(font, ptxt, style);
-		} else if (cp < font->num_glyphs) {
-			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, cp, &x, &y, &q, 1);
+			y -= font_metrics.newline_dist;
+			x = xi + gui__txt_line_offset_x(gui, ptxt, style, gui->fonts.get_char_quad);
+		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
+			x += q.advance;
 		} else {
 			continue;
 		}
-		v2i_set(&p, roundf(x), roundf(y + font->ascent / 2));
+		v2i_set(&p, roundf(x), roundf(y + font_metrics.ascent / 2));
 		dist = v2i_dist_sq(p, mouse);
 		if (dist < closest_dist) {
 			closest_dist = dist;
@@ -4119,7 +3172,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 }
 
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
-             color_t c, gui_align_t align)
+             color_t c, gui_align_e align)
 {
 	const gui_text_style_t style = {
 		.size = sz,
@@ -4132,15 +3185,15 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 }
 
 void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
-                 gui_align_t align, s32 *px, s32 *py, s32 *pw, s32 *ph)
+                 gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph)
 {
 	const char *p = txt;
 	char *pnext;
 	s32 cp;
-	font_t *font;
+	void *font;
 	r32 x = x_, y = y_;
 	ivalf x_range, y_range;
-	stbtt_aligned_quad q;
+	gui_char_quad_t q;
 	const gui_text_style_t style = {
 		.size = sz,
 		.color = g_nocolor,
@@ -4148,8 +3201,9 @@ void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 		.padding = 0,
 		.wrap = false,
 	};
+	gui_font_metrics_t font_metrics;
 
-	font = gui__get_font(gui, style.size);
+	font = gui->fonts.get_font(gui->fonts.handle, style.size);
 	if (!font) {
 		*px = 0;
 		*py = 0;
@@ -4158,25 +3212,24 @@ void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 		return;
 	}
 
-	x += font__line_offset_x(font, txt, &style);
-	y += font__offset_y(font, txt, &style);
+	gui->fonts.get_metrics(font, &font_metrics);
+
+	x += gui__txt_line_offset_x(gui, txt, &style, gui->fonts.get_char_quad);
+	y += gui__txt_offset_y(gui, txt, &style);
 
 	x_range.l = x_range.r = x;
 	y_range.l = y_range.r = y;
 
 	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
-			y -= font->newline_dist;
-			x = x_ + font__line_offset_x(font, pnext, &style);
-		} else if (cp < font->num_glyphs) {
-			stbtt_GetPackedQuad(font->char_info, font->texture.width,
-			                    font->texture.height, cp, &x, &y, &q, 1);
-			gui__fixup_stbtt_aligned_quad(&q, y);
-
+			y -= font_metrics.newline_dist;
+			x = x_ + gui__txt_line_offset_x(gui, pnext, &style, gui->fonts.get_char_quad);
+		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
 			x_range.l = min(x_range.l, q.x0);
 			x_range.r = max(x_range.r, q.x1);
 			y_range.l = min(y_range.l, q.y0);
 			y_range.r = max(y_range.r, q.y1);
+			x += q.advance;
 		}
 		p = pnext;
 	}
@@ -4186,17 +3239,14 @@ void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 	*ph = ivalf_length(y_range);
 }
 
-s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
+s32 gui_txt_width(const gui_t *gui, const char *txt, u32 sz)
 {
 	s32 width = 0;
 	const char *line = txt;
 
-	font_t *font = gui__get_font(gui, sz);
-	if (!font)
-		return 0;
 
 	while (*line != '\0') {
-		const s32 line_width = font__line_width(font, line);
+		const s32 line_width = gui__txt_line_width(gui, line, gui->fonts.get_char_quad);
 		width = max(width, line_width);
 		while (*line != '\0' && *line != '\n')
 			++line;
@@ -4207,7 +3257,7 @@ s32 gui_txt_width(gui_t *gui, const char *txt, u32 sz)
 }
 
 static
-void gui__layer_init(gui_t *gui, gui__layer_t *layer, s32 x, s32 y, s32 w, s32 h)
+void gui__layer_init(gui_t *gui, gui_layer_t *layer, s32 x, s32 y, s32 w, s32 h)
 {
 	layer->draw_call_idx = gui->draw_call_cnt;
 	layer->x = x;
@@ -4271,7 +3321,7 @@ void gui_mask_pop(gui_t *gui)
 static
 int gui__layer_sort(const void *lhs_, const void *rhs_)
 {
-	const gui__layer_t *lhs = lhs_, *rhs = rhs_;
+	const gui_layer_t *lhs = lhs_, *rhs = rhs_;
 	return rhs->pri - lhs->pri;
 }
 
@@ -4325,10 +3375,10 @@ typedef enum gui__widget_render_state
 	GUI__WIDGET_RENDER_INACTIVE,
 	GUI__WIDGET_RENDER_HOT,
 	GUI__WIDGET_RENDER_ACTIVE,
-} gui__widget_render_state_t;
+} gui__widget_render_state_e;
 
 static
-gui__widget_render_state_t gui__widget_render_state(const gui_t *gui, u64 id,
+gui__widget_render_state_e gui__widget_render_state(const gui_t *gui, u64 id,
                                                     b32 triggered,
                                                     b32 checked,
                                                     b32 contains_mouse)
@@ -4344,15 +3394,15 @@ gui__widget_render_state_t gui__widget_render_state(const gui_t *gui, u64 id,
 }
 
 static
-gui__widget_render_state_t gui__btn_render_state(const gui_t *gui, u64 id,
-                                                 btn_val_t val, b32 contains_mouse)
+gui__widget_render_state_e gui__btn_render_state(const gui_t *gui, u64 id,
+                                                 gui_btn_e val, b32 contains_mouse)
 {
-	return gui__widget_render_state(gui, id, val != BTN_NONE, false, contains_mouse);
+	return gui__widget_render_state(gui, id, val != GUI_BTN_NONE, false, contains_mouse);
 }
 
 static
 gui_element_style_t gui__element_style(const gui_t *gui,
-                                       gui__widget_render_state_t render_state,
+                                       gui__widget_render_state_e render_state,
                                        const gui_widget_style_t *widget_style)
 {
 	gui_element_style_t style;
@@ -4401,9 +3451,9 @@ void gui_pen_circ(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	         style->outline_color);
 }
 
-v2f *gui_verts_mut(gui_t *gui)
+u32 gui_num_layers(const gui_t *gui)
 {
-	return gui->verts;
+	return (u32)(gui->layer - &gui->layers[0] + 1);
 }
 
 u32 gui_vert_cnt(const gui_t *gui)
@@ -4431,7 +3481,21 @@ u32 gui_culled_widget_cnt(const gui_t *gui)
 	return gui->culled_widgets;
 }
 
-const npt_filter_t g_gui_npt_filter_print = {
+void gui_get_render_output(const gui_t *gui, gui_render_output_t *output)
+{
+	output->num_layers = gui_num_layers(gui);
+	output->layers = gui->layers;
+
+	output->num_verts = gui->vert_cnt;
+	output->verts.pos = gui->verts;
+	output->verts.color = gui->vert_colors;
+	output->verts.tex_coord = gui->vert_tex_coords;
+
+	output->num_draw_calls = gui->draw_call_cnt;
+	output->draw_calls = gui->draw_calls;
+}
+
+const gui_npt_filter_t g_gui_gui_npt_filter_print = {
 	.ascii = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -4445,7 +3509,7 @@ const npt_filter_t g_gui_npt_filter_print = {
 	.non_ascii = 1,
 };
 
-const npt_filter_t g_gui_npt_filter_numeric = {
+const gui_npt_filter_t g_gui_npt_filter_numeric = {
 	.ascii = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -4459,7 +3523,7 @@ const npt_filter_t g_gui_npt_filter_numeric = {
 	.non_ascii = 0,
 };
 
-const npt_filter_t g_gui_npt_filter_hex = {
+const gui_npt_filter_t g_gui_npt_filter_hex = {
 	.ascii = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -4561,7 +3625,8 @@ b32 gui__widget_contains_mouse(const gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 	box2i_from_dims(&box, x, y+h, x+w, y);
 	return box2i_contains_point(box, gui->mouse_pos)
 	    && gui__box_half_visible(gui, box)
-	    && !gui->lock;
+	    && !gui->lock
+	    && !mouse_covered(gui);
 }
 
 static
@@ -4597,9 +3662,9 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 mouse_pos_can_defocus)
 }
 
 static
-void gui__npt_prep_action(gui_t *gui, npt_flags_t flags, char *txt, u32 *len)
+void gui__npt_prep_action(gui_t *gui, gui_npt_flags_e flags, char *txt, u32 *len)
 {
-	if (!gui->npt.performed_action && (flags & NPT_CLEAR_ON_FOCUS)) {
+	if (!gui->npt.performed_action && (flags & GUI_NPT_CLEAR_ON_FOCUS)) {
 		txt[0] = '\0';
 		*len = 0;
 		gui->npt.cursor_pos = 0;
@@ -4633,7 +3698,7 @@ void gui__hint_render(gui_t *gui, u64 id, const char *hint)
 	}
 }
 
-b32 gui_npt_filter(npt_filter_p filter, s32 codepoint)
+b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint)
 {
 	if (codepoint < 0)
 		return false;
@@ -4646,24 +3711,36 @@ b32 gui_npt_filter(npt_filter_p filter, s32 codepoint)
 }
 
 s32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                const char *hint, npt_flags_t flags)
+                const char *hint, gui_npt_flags_e flags)
 {
 	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags,
-	                      &g_gui_npt_filter_print);
+	                      &g_gui_gui_npt_filter_print);
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, u64 id, mouse_button_t mb, b32 contains_mouse);
+s32 gui__font_newline_dist(const gui_t *gui, void *font)
+{
+	if (font) {
+		gui_font_metrics_t metrics;
+		gui->fonts.get_metrics(font, &metrics);
+		return metrics.newline_dist;
+	} else {
+		return 0;
+	}
+}
+
+static
+gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse);
 
 s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
-                   const char *hint, npt_flags_t flags, npt_filter_p filter)
+                   const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_focused = gui_widget_focused(gui, id);
 	const gui_widget_style_t *style = &gui->style.npt;
 	b32 contains_mouse;
 	s32 complete = 0;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 	gui_element_style_t elem_style;
 	const char *displayed_txt;
 	const char *txt_to_display;
@@ -4675,7 +3752,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	}
 
 	contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS && !was_focused)
+	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS && !was_focused)
 		gui__focus_widget(gui, id);
 
 	if (gui->active_id == id && contains_mouse) {
@@ -4684,6 +3761,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		                                         gui->mouse_pos, txt_style);
 	}
 	if (gui_widget_focused(gui, id)) {
+		void *font = gui->fonts.get_font(gui->fonts.handle, style->active.text.size);
 		u32 len = (u32)strlen(txt);
 		gui->npt.cursor_pos = clamp(0, gui->npt.cursor_pos, len);
 #ifdef __APPLE__
@@ -4727,40 +3805,27 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
 				gui__npt_prep_action(gui, flags, txt, &len);
 				gui__defocus_widget(gui, id);
-				complete = NPT_COMPLETE_ON_ENTER;
+				complete = GUI_NPT_COMPLETE_ON_ENTER;
 #ifdef __APPLE__
 			} else if (key_idx == KB_V && key_mod(gui, KBM_GUI)) {
 #else
 			} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
 #endif
-				char *clipboard;
 				u32 sz;
 				gui__npt_prep_action(gui, flags, txt, &len);
-				if (   SDL_HasClipboardText()
-				    && (clipboard = SDL_GetClipboardText())
-				    && (sz = (u32)strlen(clipboard)) > 0
-				    && len + sz < n) {
+				if ((sz = (u32)strlen(gui->clipboard)) > 0 && len + sz < n) {
 					memmove(&txt[gui->npt.cursor_pos + sz],
 					        &txt[gui->npt.cursor_pos],
 					        len - gui->npt.cursor_pos + 1);
-					memcpy(&txt[gui->npt.cursor_pos], clipboard, sz);
+					memcpy(&txt[gui->npt.cursor_pos], gui->clipboard, sz);
 					gui->npt.cursor_pos += sz;
-					SDL_free(clipboard);
 				}
 			} else if (gui__key_up(gui)) {
-				const gui_text_style_t *txt_style = &style->active.text;
-				const font_t *font = gui__get_font(gui, txt_style->size);
-				if (font) {
-					const s32 dy = font->newline_dist;
-					gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
-				}
+				const s32 dy = gui__font_newline_dist(gui, font);
+				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
 			} else if (gui__key_down(gui)) {
-				const gui_text_style_t *txt_style = &style->active.text;
-				const font_t *font = gui__get_font(gui, txt_style->size);
-				if (font) {
-					const s32 dy = -font->newline_dist;
-					gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
-				}
+				const s32 dy = -gui__font_newline_dist(gui, font);
+				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
 			} else if (gui__key_left(gui)) {
 				if (gui->npt.cursor_pos > 0) {
 					char *cursor = &txt[gui->npt.cursor_pos], *prev;
@@ -4781,25 +3846,25 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 
 	if (was_focused != gui_widget_focused(gui, id)) {
 		if (was_focused) {
-			SDL_StopTextInput();
+			gui->npt.active = false;
 			if (complete || gui->lock) {
-			} else if (   (flags & NPT_COMPLETE_ON_TAB)
+			} else if (   (flags & GUI_NPT_COMPLETE_ON_TAB)
 			           && gui__key_triggered(gui, KB_TAB)) {
-				complete = NPT_COMPLETE_ON_TAB;
-			} else if (   (flags & NPT_COMPLETE_ON_CLICK_OUT)
+				complete = GUI_NPT_COMPLETE_ON_TAB;
+			} else if (   (flags & GUI_NPT_COMPLETE_ON_CLICK_OUT)
 			           && mouse_pressed(gui, ~0)
 			           && !contains_mouse) {
-				complete = NPT_COMPLETE_ON_CLICK_OUT;
-			} else if (   (flags & NPT_COMPLETE_ON_ESCAPE)
+				complete = GUI_NPT_COMPLETE_ON_CLICK_OUT;
+			} else if (   (flags & GUI_NPT_COMPLETE_ON_ESCAPE)
 			           && gui__key_triggered(gui, KB_ESCAPE)) {
-				complete = NPT_COMPLETE_ON_ESCAPE;
-			} else if (   (flags & NPT_COMPLETE_ON_UNCHANGED)
+				complete = GUI_NPT_COMPLETE_ON_ESCAPE;
+			} else if (   (flags & GUI_NPT_COMPLETE_ON_UNCHANGED)
 			           || gui->npt.initial_txt_hash != hashn(txt, n)) {
-				complete = NPT_COMPLETE_ON_UNCHANGED;
+				complete = GUI_NPT_COMPLETE_ON_UNCHANGED;
 			}
 		} else {
-			SDL_StartTextInput();
-			if (flags & NPT_CLEAR_ON_FOCUS) {
+			gui->npt.active = true;
+			if (flags & GUI_NPT_CLEAR_ON_FOCUS) {
 				gui->npt.cursor_pos = 0;
 			} else {
 				const gui_text_style_t *txt_style = &style->active.text;
@@ -4817,10 +3882,10 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	style->pen(gui, x, y, w, h, &elem_style);
 	txt_to_display = !gui_widget_focused(gui, id)
 	              || gui->npt.performed_action
-	              || !(flags & NPT_CLEAR_ON_FOCUS)
+	              || !(flags & GUI_NPT_CLEAR_ON_FOCUS)
 	               ? txt : "";
 
-	if (flags & NPT_PASSWORD) {
+	if (flags & GUI_NPT_PASSWORD) {
 		assert(strlen(txt_to_display) < GUI_TXT_MAX_LENGTH);
 		const char *p = txt_to_display;
 		char *pnext;
@@ -4839,17 +3904,21 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (gui_widget_focused(gui, id)) {
 		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
 			const color_t color = elem_style.text.color;
-			const font_t *font = gui__get_font(gui, elem_style.text.size);
+			void *font = gui->fonts.get_font(gui->fonts.handle, elem_style.text.size);
 			if (font) {
+				gui_font_metrics_t metrics;
+				gui->fonts.get_metrics(font, &metrics);
 				gui__txt_char_pos(gui, &x, &y, w, h, displayed_txt,
 				                  gui->npt.cursor_pos, &elem_style.text);
 				x += 1;
-				gui_line(gui, x, y + font->descent, x, y + font->ascent, 1, color);
+				gui_line(gui, x, y + metrics.descent, x, y + metrics.ascent, 1, color);
 			}
 		}
 	} else if (txt[0] == 0 && hint) {
 		gui_txt_styled(gui, x, y, w, h, hint, &elem_style.text);
 	}
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_TEXT_INPUT;
 	gui__hint_render(gui, id, gui->style.npt.hint);
 	gui->prev_widget_id = id;
 	return complete;
@@ -4861,7 +3930,7 @@ const char *gui_npt_val_buf(const gui_t *gui)
 }
 
 s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n_,
-                npt_flags_t flags, npt_filter_p filter)
+                gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	const u32 n  = min(n_, sizeof(gui->npt.val_buf));
@@ -4883,10 +3952,10 @@ s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n_,
 }
 
 static
-btn_val_t gui__btn_logic_ex(gui_t *gui, u64 id, mouse_button_t mb,
+gui_btn_e gui__btn_logic_ex(gui_t *gui, u64 id, gui_mouse_button_e mb,
                             b32 mouse_pos_can_focus, b32 mouse_pos_can_defocus)
 {
-	btn_val_t retval = BTN_NONE;
+	gui_btn_e retval = GUI_BTN_NONE;
 
 	gui__widget_handle_focus(gui, id, mouse_pos_can_defocus);
 
@@ -4895,16 +3964,16 @@ btn_val_t gui__btn_logic_ex(gui_t *gui, u64 id, mouse_button_t mb,
 	    && gui->key_repeat.triggered
 	    && (   gui->key_repeat.val == KB_RETURN
 	        || gui->key_repeat.val == KB_KP_ENTER))
-		retval = key_pressed(gui, gui->key_repeat.val) ? BTN_PRESS : BTN_HOLD;
+		retval = key_pressed(gui, gui->key_repeat.val) ? GUI_BTN_PRESS : GUI_BTN_HOLD;
 
 	if (gui->active_id == id) {
 		gui->active_id_found_this_frame = true;
 		if (mouse_released(gui, mb)) {
 			if (mouse_pos_can_focus)
-				retval = BTN_PRESS;
+				retval = GUI_BTN_PRESS;
 			gui->active_id = 0;
 		} else if (mouse_pos_can_focus && gui->mouse_repeat.triggered) {
-			retval = BTN_HOLD;
+			retval = GUI_BTN_HOLD;
 		}
 	} else if (gui->hot_id == id) {
 		if (mouse_pos_can_defocus || mouse_covered(gui)) {
@@ -4925,19 +3994,22 @@ btn_val_t gui__btn_logic_ex(gui_t *gui, u64 id, mouse_button_t mb,
 }
 
 static
-btn_val_t gui__btn_logic(gui_t *gui, u64 id, mouse_button_t mb, b32 contains_mouse)
+gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse)
 {
 	return gui__btn_logic_ex(gui, id, mb, contains_mouse, !contains_mouse);
 }
 
 static
 void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                     const char *txt, gui__widget_render_state_t render_state,
+                     const char *txt, gui__widget_render_state_e render_state,
+                     b32 contains_mouse,
                      const gui_widget_style_t *widget_style)
 {
 	const gui_element_style_t style = gui__element_style(gui, render_state, widget_style);
 	widget_style->pen(gui, x, y, w, h, &style);
 	gui_txt_styled(gui, x, y, w, h, txt, &style.text);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 }
 
 s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
@@ -4950,18 +4022,18 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
+	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
 
-	const gui__widget_render_state_t render_state
+	const gui__widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.btn);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.btn);
 	gui__hint_render(gui, id, gui->style.btn.hint);
 
 	return ret;
 }
 
-s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
-                img_scale_e scale)
+s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
+                gui_img_scale_e scale)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
@@ -4971,13 +4043,15 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const img_t *img,
 
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
-	const gui__widget_render_state_t render_state
+	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
+	const gui__widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
 		= gui__element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
 	gui_img_boxed(gui, x, y, w, h, img, scale);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 	gui__hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
@@ -4992,13 +4066,15 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	const btn_val_t ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
-	const gui__widget_render_state_t render_state
+	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
+	const gui__widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
 		= gui__element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 	gui__hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
@@ -5014,15 +4090,15 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 toggled = false;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 
-	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		*val = !*val;
 		toggled = true;
 	}
 
 	render_state = gui__widget_render_state(gui, id, toggled, *val, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.chk);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.chk);
 	gui__hint_render(gui, id, gui->style.chk.hint);
 	return toggled;
 }
@@ -5038,10 +4114,10 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 toggled = false;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 	gui_element_style_t style;
 
-	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		*val = !*val;
 		toggled = true;
 	}
@@ -5050,6 +4126,8 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	style = gui__element_style(gui, render_state, &gui->style.chk);
 	gui->style.chk.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 	gui__hint_render(gui, id, gui->style.chk.hint);
 	return toggled;
 }
@@ -5058,7 +4136,7 @@ typedef enum gui__slider_orientation
 {
 	GUI__SLIDER_X,
 	GUI__SLIDER_Y,
-} gui__slider_orientation_t;
+} gui__slider_orientation_e;
 
 static
 void gui__slider_move_x(s32 x, s32 w, s32 *hx, s32 hw, s32 dx, r32 *val)
@@ -5081,7 +4159,7 @@ void gui__slider_move_y(s32 y, s32 h, s32 *hy, s32 hh, s32 dy, r32 *val)
 }
 
 b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
-                gui__slider_orientation_t orientation)
+                gui__slider_orientation_e orientation)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
@@ -5149,7 +4227,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	}
 
 
-	const gui__widget_render_state_t render_state
+	const gui__widget_render_state_e render_state
 		= gui__widget_render_state(gui, id, triggered_by_key, false, true);
 	const gui_element_style_t style_track =
 		gui__element_style(gui, render_state, &gui->style.slider.track);
@@ -5163,6 +4241,8 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 		gui->style.slider.track.pen(gui, x, y + dy/2, w, h - dy, &style_track);
 	}
 	gui->style.slider.handle.pen(gui, hx, hy, hw, hh, &style_handle);
+	if (contains_mouse)
+		gui->cursor = GUI_CURSOR_BUTTON;
 	gui__hint_render(gui, id, gui->style.slider.handle.hint);
 	return gui->active_id == id || triggered_by_key;
 }
@@ -5207,10 +4287,10 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_selected = *val == opt;
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 	b32 selected = false;
 
-	if (   gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS
+	if (   gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS
 	    && !was_selected) {
 		*val = opt;
 		selected = true;
@@ -5218,7 +4298,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	render_state = gui__widget_render_state(gui, id, selected, *val == opt,
 	                                        contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.select);
 	gui__hint_render(gui, id, gui->style.select.hint);
 	return selected;
 }
@@ -5235,9 +4315,9 @@ b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 changed = false;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 
-	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == BTN_PRESS) {
+	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		if (*val & opt) {
 			*val &= ~opt;
 			changed = true;
@@ -5249,7 +4329,7 @@ b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	render_state = gui__widget_render_state(gui, id, changed, *val & opt,
 	                                        contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.select);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.select);
 	gui__hint_render(gui, id, gui->style.select.hint);
 	return changed;
 }
@@ -5275,7 +4355,7 @@ void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse,
 	                               && !mouse__covered_by_popup(gui);
 
 	if (gui__btn_logic_ex(gui, id, MB_LEFT, contains_mouse,
-	                      mouse_pos_can_defocus) == BTN_PRESS) {
+	                      mouse_pos_can_defocus) == GUI_BTN_PRESS) {
 		if (gui_widget_focused(gui, id))
 			gui__defocus_widget(gui, id);
 		else
@@ -5371,7 +4451,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const s32 ph = h * num_items;
 	s32 px, py;
 	b32 triggered_by_key = false;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 
 	assert(gui->dropdown.id == 0); /* cannot nest dropdowns */
 
@@ -5402,6 +4482,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui->dropdown.item_idx         = 0;
 	gui->dropdown.triggered_by_key = triggered_by_key;
 	gui->dropdown.render_state     = render_state;
+	gui->dropdown.contains_mouse   = contains_mouse;
 	strcpy(gui->dropdown.selected_item_txt, "");
 
 	if (gui_widget_focused(gui, id)) {
@@ -5431,7 +4512,7 @@ b32 gui_dropdown_item(gui_t *gui, u32 id, const char *txt)
 
 	if (gui_widget_focused(gui, gui->dropdown.id)) {
 		gui_style_push(gui, btn, gui_style(gui)->dropdown.btn);
-		if (pgui_btn_txt(gui, txt) == BTN_PRESS) {
+		if (pgui_btn_txt(gui, txt) == GUI_BTN_PRESS) {
 			*gui->dropdown.val = id;
 			chosen = true;
 		} else if (   gui->dropdown.triggered_by_key
@@ -5459,6 +4540,7 @@ void gui_dropdown_end(gui_t *gui)
 	const s32 h     = gui->dropdown.h;
 	const char *txt = gui->dropdown.selected_item_txt;
 	const s32 render_state = gui->dropdown.render_state;
+	const b32 contains_mouse = gui->dropdown.contains_mouse;
 
 	assert(strlen(txt) > 0);
 
@@ -5469,7 +4551,7 @@ void gui_dropdown_end(gui_t *gui)
 		gui__hint_render(gui, gui->dropdown.id, gui->style.dropdown.btn.hint);
 	}
 
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown.btn);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.dropdown.btn);
 
 	const gui_element_style_t style
 		= gui__element_style(gui, render_state, &gui->style.dropdown.btn);
@@ -5508,12 +4590,12 @@ void gui_drag_func_vertical(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 	*y = mouse_y + offset_y;
 }
 
-b32 gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb)
+b32 gui_drag(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, gui_mouse_button_e mb)
 {
 	return gui_dragf(gui, x, y, contains_mouse, mb, gui_drag_func_default, NULL);
 }
 
-b32 gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, mouse_button_t mb,
+b32 gui_dragf(gui_t *gui, s32 *x, s32 *y, b32 contains_mouse, gui_mouse_button_e mb,
               gui_drag_f cb, void *udata)
 {
 	b32 triggered_by_key = false;
@@ -5573,12 +4655,12 @@ void gui__drag_rect_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, b32 dragging)
 	gui__drag_render(gui, x, y, w, h, gui_widget_id(gui, x, y), dragging);
 }
 
-b32 gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb)
+b32 gui_drag_rect(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, gui_mouse_button_e mb)
 {
 	return gui_drag_rectf(gui, x, y, w, h, mb, gui_drag_func_default, NULL);
 }
 
-b32 gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
+b32 gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, gui_mouse_button_e mb,
                    gui_drag_f cb, void *udata)
 {
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, *x, *y, w, h);
@@ -5587,12 +4669,12 @@ b32 gui_drag_rectf(gui_t *gui, s32 *x, s32 *y, s32 w, s32 h, mouse_button_t mb,
 	return ret;
 }
 
-b32 gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb)
+b32 gui_drag_circ(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb)
 {
 	return gui_drag_circf(gui, x, y, r, mb, gui_drag_func_default, NULL);
 }
 
-b32 gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, mouse_button_t mb,
+b32 gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb,
                    gui_drag_f cb, void *udata)
 {
 	const v2i pos = { *x, *y };
@@ -5613,13 +4695,11 @@ b32 gui__resize_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h)
 {
 	box2i box;
 	box2i_from_xywh(&box, *x, y, w, h);
-	if (box2i_contains_point(box, gui->mouse_pos)) {
-		SDL_SetCursor(gui->cursors[GUI__CURSOR_RESIZE_EW]);
-		gui->use_default_cursor = false;
-	}
 	if (gui_drag_rectf(gui, x, &y, w, h, MB_LEFT, gui_drag_func_horizontal, NULL)) {
-		gui->use_default_cursor = false;
+		gui->cursor = GUI_CURSOR_RESIZE_EW;
 		return true;
+	} else if (box2i_contains_point(box, gui->mouse_pos)) {
+		gui->cursor = GUI_CURSOR_RESIZE_EW;
 	}
 	return false;
 }
@@ -5629,13 +4709,11 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 {
 	box2i box;
 	box2i_from_xywh(&box, x, *y, w, h);
-	if (box2i_contains_point(box, gui->mouse_pos)) {
-		SDL_SetCursor(gui->cursors[GUI__CURSOR_RESIZE_NS]);
-		gui->use_default_cursor = false;
-	}
 	if (gui_drag_rectf(gui, &x, y, w, h, MB_LEFT, gui_drag_func_vertical, NULL)) {
-		gui->use_default_cursor = false;
+		gui->cursor = GUI_CURSOR_RESIZE_NS;
 		return true;
+	} else if (box2i_contains_point(box, gui->mouse_pos)) {
+		gui->cursor = GUI_CURSOR_RESIZE_NS;
 	}
 	return false;
 }
@@ -5654,7 +4732,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const s32 pw = item_w;
 	const s32 ph = h * num_items;
 	s32 px, py;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 
 	if (gui->popup) {
 		px = x + w;
@@ -5667,7 +4745,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
 
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
-	gui__btn_render(gui, x, y, w, h, txt, render_state, &gui->style.dropdown.btn);
+	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.dropdown.btn);
 
 	if (gui_widget_focused(gui, id)) {
 		const s32 sw = gui->style.dropdown.shadow.width;
@@ -5747,6 +4825,8 @@ b32 gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 	cursor.y = y+val*h;
 	gui_circ(gui, cursor.x, cursor.y, 6, g_nocolor, g_white);
 	gui_circ(gui, cursor.x, cursor.y, 7, g_nocolor, g_black);
+	if (gui__widget_contains_mouse(gui, x, y, w, h))
+		gui->cursor = GUI_CURSOR_BUTTON;
 
 	return changed;
 }
@@ -5825,6 +4905,8 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 		gui_rect(gui, x, cursor-1, w, 2, g_nocolor, g_white);
 		gui_rect(gui, x, cursor-2, w, 4, g_nocolor, g_black);
 	}
+	if (gui__widget_contains_mouse(gui, x, y, w, h))
+		gui->cursor = GUI_CURSOR_BUTTON;
 
 	return changed;
 }
@@ -5841,7 +4923,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	s32 px, py;
-	gui__widget_render_state_t render_state;
+	gui__widget_render_state_e render_state;
 	gui_style_t *style = gui_style(gui);
 	color_t color = colorf_to_color(*c);
 
@@ -5855,7 +4937,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	style->btn.inactive.bg_color = color;
 	style->btn.hot.bg_color      = color;
 	style->btn.active.bg_color   = color;
-	gui__btn_render(gui, x, y, w, h, "", render_state, &gui->style.btn);
+	gui__btn_render(gui, x, y, w, h, "", render_state, contains_mouse, &gui->style.btn);
 	gui_style_pop(gui);
 
 	if (gui_widget_focused(gui, id)) {
@@ -5870,10 +4952,10 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		const s32 gy = py + style->panel.padding.bottom;
 		const s32 gw = pw - style->panel.padding.left - style->panel.padding.right;
 		const s32 gh = ph - style->panel.padding.bottom - style->panel.padding.top;
-		const npt_flags_t flags = NPT_CLEAR_ON_FOCUS
-		                        | NPT_COMPLETE_ON_TAB
-		                        | NPT_COMPLETE_ON_CLICK_OUT;
-		npt_filter_p filter = &g_gui_npt_filter_hex;
+		const gui_npt_flags_e flags = GUI_NPT_CLEAR_ON_FOCUS
+		                        | GUI_NPT_COMPLETE_ON_TAB
+		                        | GUI_NPT_COMPLETE_ON_CLICK_OUT;
+		gui_npt_filter_p filter = &g_gui_npt_filter_hex;
 		b32 changed = false, changed_npt = false;
 		u8 ch, cs, cv;
 
@@ -6290,29 +5372,6 @@ s32 gui_scale_val(s32 val, s32 scale)
 }
 
 
-/* Window */
-
-static
-void gui__window_drag_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                         s32 offset_x, s32 offset_y, void *udata) {}
-
-void gui_window_drag(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
-{
-	gui_style_push(gui, drag, g_gui_style_invis.drag);
-	if (gui_drag_rectf(gui, &x, &y, w, h, MB_LEFT, gui__window_drag_cb, NULL)) {
-		gui->dragging_window = true;
-	  if (!v2i_equal(gui->mouse_pos, gui->mouse_pos_last)) {
-			const v2i delta = v2i_sub(gui->mouse_pos, gui->mouse_pos_last);
-			gui_move(gui, delta.x, -delta.y);
-			gui->mouse_pos = gui->mouse_pos_last;
-		}
-	} else {
-		gui->dragging_window = false;
-	}
-	gui_style_pop(gui);
-}
-
-
 /* Grid layout */
 
 static
@@ -6613,7 +5672,7 @@ void pgui_txt(gui_t *gui, const char *str)
 	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
 }
 
-void pgui_img(gui_t *gui, const img_t *img, img_scale_e scale)
+void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
@@ -6622,33 +5681,33 @@ void pgui_img(gui_t *gui, const img_t *img, img_scale_e scale)
 
 s32 pgui_btn_txt(gui_t *gui, const char *lbl)
 {
-	btn_val_t result;
+	gui_btn_e result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_txt(gui, x, y, w, h, lbl);
-	if (result == BTN_PRESS && gui->popup)
+	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
 	return result;
 }
 
-s32 pgui_btn_img(gui_t *gui, const img_t *img, img_scale_e scale)
+s32 pgui_btn_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
 {
-	btn_val_t result;
+	gui_btn_e result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_img(gui, x, y, w, h, img, scale);
-	if (result == BTN_PRESS && gui->popup)
+	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
 	return result;
 }
 
 s32 pgui_btn_pen(gui_t *gui, gui_pen_t pen)
 {
-	btn_val_t result;
+	gui_btn_e result;
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_pen(gui, x, y, w, h, pen);
-	if (result == BTN_PRESS && gui->popup)
+	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
 	return result;
 }
@@ -6668,13 +5727,13 @@ b32 pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val)
 }
 
 s32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
-                 npt_flags_t flags)
+                 gui_npt_flags_e flags)
 {
-	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, &g_gui_npt_filter_print);
+	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, &g_gui_gui_npt_filter_print);
 }
 
 s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
-                    npt_flags_t flags, npt_filter_p filter)
+                    gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
@@ -6682,7 +5741,7 @@ s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
 }
 
 s32 pgui_npt_val(gui_t *gui, const char *txt, u32 n,
-                 npt_flags_t flags, npt_filter_p filter)
+                 gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	s32 x, y, w, h;
 	pgui__cell_consume(gui, &x, &y, &w, &h);
@@ -6976,7 +6035,7 @@ b32 gui__has_free_splits(gui_t *gui, u32 n)
 }
 
 static
-void gui__split_init(gui_split_t *split, gui_split_flags_t flags,
+void gui__split_init(gui_split_t *split, gui_split_flags_e flags,
                      gui_split_t *parent, r32 size)
 {
 	split->in_use            = true;
@@ -7038,7 +6097,7 @@ b32 gui_create_root_split(gui_t *gui, gui_split_t **root)
 }
 
 b32 gui_split2h(gui_t *gui, gui_split_t *parent, gui_split_t **left, r32 size,
-                gui_split_t **right, gui_split_flags_t flags)
+                gui_split_t **right, gui_split_flags_e flags)
 {
 	const r32 size0 = max(size,  0.f);
 	const r32 size1 = max(-size, 0.f);
@@ -7063,7 +6122,7 @@ out:
 }
 
 b32 gui_split2v(gui_t *gui, gui_split_t *parent, gui_split_t **top, r32 size,
-                gui_split_t **bottom, gui_split_flags_t flags)
+                gui_split_t **bottom, gui_split_flags_e flags)
 {
 	const r32 size0 = max(size,  0.f);
 	const r32 size1 = max(-size, 0.f);
@@ -7088,7 +6147,7 @@ out:
 }
 
 b32 gui_splitNh(gui_t *gui, gui_split_t *parent, gui_split_t **pchild,
-                r32 size, gui_split_flags_t flags)
+                r32 size, gui_split_flags_e flags)
 {
 	gui_split_t *child = NULL;
 	b32 success = false;
@@ -7108,7 +6167,7 @@ out:
 }
 
 b32 gui_splitNv(gui_t *gui, gui_split_t *parent, gui_split_t **pchild,
-                r32 size, gui_split_flags_t flags)
+                r32 size, gui_split_flags_e flags)
 {
 	gui_split_t *child = NULL;
 	b32 success = false;
@@ -7178,7 +6237,7 @@ b32 gui__find_split(gui_t *gui, v2i point, gui_split_t **split)
 	return gui__find_split_from(gui->root_split, point, split);
 }
 
-enum gui__split_division_type
+typedef enum gui__split_division_type
 {
 	GUI__SPLIT_DIVISION_NONE,
 	GUI__SPLIT_DIVISION_CENTER,
@@ -7186,7 +6245,7 @@ enum gui__split_division_type
 	GUI__SPLIT_DIVISION_RIGHT,
 	GUI__SPLIT_DIVISION_TOP,
 	GUI__SPLIT_DIVISION_BOTTOM,
-};
+} gui__split_division_type_e;
 
 static
 s32 gui__split_division(const gui_split_t *split, v2i point)
@@ -7241,7 +6300,7 @@ void gui__split_render_branch(gui_t *gui, gui_split_t *split, b32 *changed)
 	    && !mouse_covered(gui)) {
 		child = split->children.first;
 		box2i_to_xywh(child->box, &cx, &cy, &cw, &ch);
-		if (split->children.vertical) {
+		if (!split->children.vertical) {
 			const s32 orig_drag_x = cx + cw - GUI_SPLIT_RESIZE_BORDER / 2;
 			s32 drag_x = orig_drag_x;
 			if (gui__resize_horiz(gui, &drag_x, cy, GUI_SPLIT_RESIZE_BORDER, ch)) {
@@ -7468,7 +6527,7 @@ void gui_splits_compute(gui_t *gui)
 
 void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                       s32 x, s32 y, s32 w, s32 h,
-                      const char *title, gui_panel_flags_t flags)
+                      const char *title, gui_panel_flags_e flags)
 {
 	assert(id <= GUI__MAX_PANEL_ID);
 	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
@@ -7495,7 +6554,7 @@ void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                      s32 x, s32 y, s32 w, s32 h,
-                     const char *title, gui_panel_flags_t flags)
+                     const char *title, gui_panel_flags_e flags)
 {
 	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
 	pgui_panel_to_front(gui, panel);
@@ -7503,7 +6562,7 @@ void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
 
 void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
                               s32 w, s32 h,
-                              const char *title, gui_panel_flags_t flags)
+                              const char *title, gui_panel_flags_e flags)
 {
 	const s32 x = (gui->window_dim.x - w)/2;
 	const s32 y = (gui->window_dim.y - h)/2;
@@ -7512,7 +6571,7 @@ void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
 
 void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
                               gui_split_t *split,
-                              const char *title, gui_panel_flags_t flags)
+                              const char *title, gui_panel_flags_e flags)
 {
 	s32 x, y, w, h;
 
@@ -7526,7 +6585,7 @@ void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
 }
 
 static
-void pgui__validate_tab_flags(gui_panel_flags_t flags0, gui_panel_flags_t flags1)
+void pgui__validate_tab_flags(gui_panel_flags_e flags0, gui_panel_flags_e flags1)
 {
 	assert(flags0 & GUI_PANEL_TITLEBAR);
 	assert(flags1 & GUI_PANEL_TITLEBAR);
@@ -7660,7 +6719,7 @@ void pgui__panel_resize(gui_t *gui, gui_panel_t *panel)
 	if (   (panel->flags & GUI_PANEL_RESIZABLE)
 	    && !panel->split
 	    && !panel->collapsed
-	    && gui->use_default_cursor) {
+	    && gui->cursor == GUI_CURSOR_DEFAULT) {
 		gui_style_push(gui, drag, g_gui_style_invis.drag);
 
 		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
@@ -7838,7 +6897,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 			gui_style_push(gui, btn, gui->style.panel.restore);
 		else
 			gui_style_push(gui, btn, gui->style.panel.collapse);
-		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == GUI_BTN_PRESS)
 			panel->collapsed = !panel->collapsed;
 		gui_style_pop(gui);
 		rx += dim;
@@ -7846,7 +6905,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 
 	if (panel->flags & GUI_PANEL_CLOSABLE) {
 		gui_style_push(gui, btn, gui->style.panel.close);
-		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == BTN_PRESS)
+		if (gui_btn_pen(gui, rx, y, dim, dim, gui->style.btn.pen) == GUI_BTN_PRESS)
 			pgui_panel_close(gui, panel);
 		gui_style_pop(gui);
 		rx += dim;
@@ -8248,6 +7307,11 @@ gui_style_t *gui_style(gui_t *gui)
 	return &gui->style;
 }
 
+const gui_style_t *gui_style_c(const gui_t *gui)
+{
+	return &gui->style;
+}
+
 void gui_style_set(gui_t *gui, const gui_style_t *style)
 {
 	gui->style = *style;
@@ -8340,66 +7404,6 @@ void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
 	assert(pen);
 	gui_style_push_(gui, &fn, offset, size);
 }
-
-
-
-/* Shaders */
-
-#ifdef __EMSCRIPTEN__
-static const char *g_vertex_shader =
-	"uniform vec2 window_halfdim;\n"
-	"attribute vec2 position;\n"
-	"attribute vec4 color;\n"
-	"attribute vec2 tex_coord;\n"
-	"varying vec2 TexCoord;\n"
-	"varying vec4 Color;\n"
-	"\n"
-	"void main() {\n"
-	"  vec2 p = (position - window_halfdim) / window_halfdim;\n"
-	"  gl_Position = vec4(p.xy, 0.0, 1.0);\n"
-	"  TexCoord = tex_coord;\n"
-	"  Color = color;\n"
-	"}";
-
-static const char *g_fragment_shader =
-	"precision mediump float;\n"
-	"uniform sampler2D tex;\n"
-	"varying vec2 TexCoord;\n"
-	"varying vec4 Color;\n"
-	"\n"
-	"void main() {\n"
-	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
-	"  gl_FragColor = texture2D(tex, TexCoord_flipped) * Color;\n"
-	"}";
-#else
-static const char *g_vertex_shader =
-	"#version 330\n"
-	"layout(location = 0) in vec2 position;\n"
-	"layout(location = 1) in vec4 color;\n"
-	"layout(location = 2) in vec2 tex_coord;\n"
-	"uniform vec2 window_halfdim;\n"
-	"out vec2 TexCoord;\n"
-	"out vec4 Color;\n"
-	"\n"
-	"void main() {\n"
-	"  vec2 p = (position - window_halfdim) / window_halfdim;\n"
-	"  gl_Position = vec4(p.xy, 0.0, 1.0);\n"
-	"  TexCoord = tex_coord;\n"
-	"  Color = color;\n"
-	"}";
-
-static const char *g_fragment_shader =
-	"#version 330\n"
-	"in vec2 TexCoord;\n"
-	"in vec4 Color;\n"
-	"uniform sampler2D tex;\n"
-	"out vec4 FragColor;\n"
-	"\n"
-	"void main() {\n"
-	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
-	"  FragColor = texture(tex, TexCoord_flipped) * Color;\n"
-	"}";
-#endif
 
 #undef GUI_IMPLEMENTATION
 #endif // GUI_IMPLEMENTATION

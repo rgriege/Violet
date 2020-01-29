@@ -84,7 +84,7 @@ u32 triangulate_reserve_sz(u32 n)
 	return triangulate_out_sz(n) + n;
 }
 
-b32 triangulate(const v2f *v_, u32 n_, v2f **triangles)
+b32 triangulate(const v2f *v_, u32 n_, array(v2f) *triangles)
 {
 	const u32 prev_triangle_cnt = array_sz(*triangles);
 	const u32 out_vtx_cnt = triangulate_out_sz(n_);
