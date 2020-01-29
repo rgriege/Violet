@@ -1,8 +1,6 @@
 #ifndef VIOLET_SDL_GL_H
 #define VIOLET_SDL_GL_H
 
-#define GUI_USE_CURSOR_BUTTON
-
 /* Mesh */
 
 typedef struct mesh_t
