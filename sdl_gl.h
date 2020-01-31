@@ -801,15 +801,21 @@ void window_minimize(window_t *window)
 }
 
 static
-void window__store_window_rect(window_t *window)
+void window__store_window_rect(window_t *window, v2i pos, v2i dim)
 {
-	v2i pos, dim;
-	SDL_GetWindowPosition(window->window, &pos.x, &pos.y);
-	SDL_GetWindowSize(window->window, &dim.x, &dim.y);
 	window->restore_pos.x = pos.x;
 	window->restore_pos.y = pos.y;
 	window->restore_dim.x = dim.x;
 	window->restore_dim.y = dim.y;
+}
+
+static
+void window__store_current_window_rect(window_t *window)
+{
+	v2i pos, dim;
+	SDL_GetWindowPosition(window->window, &pos.x, &pos.y);
+	SDL_GetWindowSize(window->window, &dim.x, &dim.y);
+	window__store_window_rect(window, pos, dim);
 }
 
 void window_maximize(window_t *window)
@@ -817,7 +823,7 @@ void window_maximize(window_t *window)
 	/* NOTE(rgriege): needs a workaround because
 	 * SDL_MaximizeWindow consumes the menu bar on windoge */
 	SDL_Rect rect;
-	window__store_window_rect(window);
+	window__store_current_window_rect(window);
 	if (window__maximum_window_rect(window, &rect)) {
 		SDL_SetWindowPosition(window->window, rect.x, rect.y);
 		SDL_SetWindowSize(window->window, rect.w, rect.h);
@@ -827,19 +833,37 @@ void window_maximize(window_t *window)
 	}
 }
 
-void window_restore(window_t *window)
+static
+void window__restore(window_t *window, v2i pos, v2i dim)
 {
-	const v2i pos = window->restore_pos;
-	const v2i dim = window->restore_dim;
 	/* NOTE(rgriege): order is important here */
 	SDL_SetWindowSize(window->window, dim.x, dim.y);
 	SDL_SetWindowPosition(window->window, pos.x, pos.y);
 }
 
+void window_restore(window_t *window)
+{
+	v2i pos, dim;
+	SDL_Rect rect;
+
+	if (   window__maximum_window_rect(window, &rect)
+	    && (rect.w == window->restore_dim.x && rect.h == window->restore_dim.y)) {
+		SDL_GetWindowSize(window->window, &dim.x, &dim.y);
+		const v2i border = v2i_scale_inv(dim, 10);
+		dim = v2i_sub(dim, v2i_scale(border, 2));
+		pos = border;
+	} else {
+		pos = window->restore_pos;
+		dim = window->restore_dim;
+	}
+
+	window__restore(window, pos, dim);
+}
+
 void window_fullscreen(window_t *window)
 {
 	SDL_Rect rect;
-		window__store_window_rect(window);
+	window__store_current_window_rect(window);
 	if (window__maximum_window_rect(window, &rect))
 		SDL_MaximizeWindow(window->window);
 }
@@ -1074,7 +1098,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	v2i dim;
 	SDL_GetWindowSize(window->window, &dim.x, &dim.y);
 
-	window__store_window_rect(window);
+	window__store_current_window_rect(window);
 
 	++g_window_cnt;
 
@@ -1149,7 +1173,16 @@ void window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h)
 	gui_t *gui = window->gui;
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
 	if (gui_drag_rectf(gui, &x, &y, w, h, MB_LEFT, window__drag_cb, NULL)) {
-		if (mouse_pos_changed(gui)) {
+		if (window_is_maximized(window)) {
+			/* Shrink the window so that it can be dragged around.
+			 * This is going to cause the drag to end, since the drag id won't be the same
+			 * next frame.  Fixing this is hard, since the reported mouse position will be
+			 * very different next frame even though it hasn't moved. */
+			const v2i border = v2i_scale_inv(gui->window_dim, 10);
+			const v2i dim = v2i_sub(gui->window_dim, v2i_scale(border, 2));
+			const v2i pos = { .x = border.x, .y = 0 };
+			window__restore(window, pos, dim);
+		} else if (mouse_pos_changed(gui)) {
 			v2i delta;
 			mouse_pos_delta(gui, &delta.x, &delta.y);
 			window_move(window, delta.x, -delta.y);
