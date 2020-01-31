@@ -351,7 +351,7 @@ typedef enum gui_btn_val
 	GUI_BTN_HOLD,
 } gui_btn_e;
 
-const gui_npt_filter_t g_gui_gui_npt_filter_print;
+const gui_npt_filter_t g_gui_npt_filter_print;
 const gui_npt_filter_t g_gui_npt_filter_numeric;
 const gui_npt_filter_t g_gui_npt_filter_hex;
 
@@ -3494,7 +3494,7 @@ void gui_get_render_output(const gui_t *gui, gui_render_output_t *output)
 	output->draw_calls = gui->draw_calls;
 }
 
-const gui_npt_filter_t g_gui_gui_npt_filter_print = {
+const gui_npt_filter_t g_gui_npt_filter_print = {
 	.ascii = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -3713,7 +3713,7 @@ s32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                 const char *hint, gui_npt_flags_e flags)
 {
 	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags,
-	                      &g_gui_gui_npt_filter_print);
+	                      &g_gui_npt_filter_print);
 }
 
 static
@@ -5728,7 +5728,7 @@ b32 pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val)
 s32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
                  gui_npt_flags_e flags)
 {
-	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, &g_gui_gui_npt_filter_print);
+	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, &g_gui_npt_filter_print);
 }
 
 s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
