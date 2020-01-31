@@ -107,7 +107,10 @@ window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         window_flags_t flags);
 window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
                            window_flags_t flags, const char *font_file_path);
+void      window_destroy(window_t *window);
 
+b32    window_begin_frame(window_t *window);
+void   window_end_frame(window_t *window);
 void   window_move(const window_t *window, s32 dx, s32 dy);
 b32    window_is_maximized(const window_t *window);
 void   window_minimize(window_t *window);
@@ -116,6 +119,7 @@ void   window_restore(window_t *window);
 void   window_fullscreen(window_t *window);
 void   window_run(window_t *window, u32 fps, b32(*ufunc)(window_t*, void*), void *udata);
 
+gui_t *window_get_gui(window_t *window);
 const gui_img_t *window_get_img(window_t *window, const char *fname);
 
 void   window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h);
@@ -855,6 +859,11 @@ cached_img_t *window__find_img(window_t *window, u32 id)
 		if (ci->id == id)
 			return ci;
 	return NULL;
+}
+
+gui_t *window_get_gui(window_t *window)
+{
+	return window->gui;
 }
 
 const gui_img_t *window_get_img(window_t *window, const char *fname)
