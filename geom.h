@@ -8,7 +8,9 @@ void arc_to_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
 
 u32 triangulate_out_sz(u32 n);
 u32 triangulate_reserve_sz(u32 n);
-b32 triangulate(const v2f *v, u32 n, array(v2f) *triangles);
+/* triangles buffer must be at least triangulate_reserve_sz() long */
+b32 triangulate(const v2f *v, u32 n, v2f *triangles);
+b32 triangulatea(const v2f *v, u32 n, array(v2f) *triangles);
 
 
 #endif // VIOLET_GEOM_H
@@ -84,45 +86,54 @@ u32 triangulate_reserve_sz(u32 n)
 	return triangulate_out_sz(n) + n;
 }
 
-b32 triangulate(const v2f *v_, u32 n_, array(v2f) *triangles)
+b32 triangulate(const v2f *v, u32 n, v2f *triangles)
 {
-	const u32 prev_triangle_cnt = array_sz(*triangles);
-	const u32 out_vtx_cnt = triangulate_out_sz(n_);
-	v2f *v;
-	u32 n;
-
-	array_reserve(*triangles, prev_triangle_cnt + triangulate_reserve_sz(n_));
+	v2f *v_mut;
+	u32 n_cur = n;
+	u32 out = 0;
 
 	/* Copy the original poly into the last verts of triangle buffer
 	 * so we can remove the vertices later. */
-	v = &(*triangles)[prev_triangle_cnt + out_vtx_cnt];
-	memcpy(v, v_, n_ * sizeof(*v_));
-	n = n_;
+	v_mut = &(triangles)[triangulate_out_sz(n)];
+	memcpy(v_mut, v, n * sizeof(*v));
 
-	if (polyf_is_cw(v_, n_))
-		reverse(v, sizeof(*v_), n);
+	if (polyf_is_cw(v, n))
+		reverse(v_mut, sizeof(*v), n);
 
-	while (n > 2) {
-		const u32 old_n = n;
-		for (u32 i = 0; i < n; ++i) {
+	while (n_cur > 2) {
+		const u32 n_prev = n_cur;
+		for (u32 i = 0; i < n_cur; ++i) {
 			/* iterate in reverse order to likely reduce cost of vtx removal */
-			const u32 a = (2 * n - i - 2) % n, b = n - i - 1, c = (n - i) % n;
-			if (triangulate__snip(v, a, b, c, n)) {
-				array_append(*triangles, v[a]);
-				array_append(*triangles, v[b]);
-				array_append(*triangles, v[c]);
-				buf_remove(v, b, n);
-				--n;
+			const u32 a = (2 * n_cur - i - 2) % n_cur;
+			const u32 b = n_cur - i - 1;
+			const u32 c = (n_cur - i) % n_cur;
+			if (triangulate__snip(v_mut, a, b, c, n_cur)) {
+				triangles[out+0] = v_mut[a];
+				triangles[out+1] = v_mut[b];
+				triangles[out+2] = v_mut[c];
+				out += 3;
+
+				buf_remove(v_mut, b, n_cur);
+				--n_cur;
 				break;
 			}
 		}
-		if (old_n == n) {
-			array_set_sz(*triangles, prev_triangle_cnt);
+		if (n_prev == n_cur)
 			return false;
-		}
 	}
 
 	return true;
+}
+
+b32 triangulatea(const v2f *v, u32 n, array(v2f) *triangles)
+{
+	const u32 prev_triangle_cnt = array_sz(*triangles);
+	array_reserve(*triangles, prev_triangle_cnt + triangulate_reserve_sz(n));
+	if (triangulate(v, n, &(*triangles)[prev_triangle_cnt])) {
+		array_set_sz(*triangles, prev_triangle_cnt + triangulate_out_sz(n));
+		return true;
+	}
+	return false;
 }
 
 #undef GEOM_IMPLEMENTATION

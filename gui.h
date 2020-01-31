@@ -2299,6 +2299,7 @@ void gui__triangles(gui_t *gui, const v2f *v, u32 n, color_t fill)
 	}
 }
 
+/* NOTE(rgriege): this input vertices may point to the gui.verts output */
 static
 void gui__poly(gui_t *gui, const v2f *v, u32 n, gui_draw_call_type_e type,
                color_t fill, color_t stroke, b32 closed)
@@ -2801,23 +2802,21 @@ void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke)
 {
 	const u32 num_verts = arc_poly_sz(r, angle_start, angle_end);
-	array(v2f) vert_buf;
-	array_init_ex(vert_buf, num_verts, g_temp_allocator);
-	array_set_sz(vert_buf, num_verts);
-	arc_to_poly(x, y, r, angle_start, angle_end, A2PN(vert_buf), false);
-	gui__poly(gui, A2PN(vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, false);
-	array_destroy(vert_buf);
+	if (gui->vert_cnt + num_verts <= GUI_MAX_VERTS) {
+		v2f *verts = &gui->verts[gui->vert_cnt];
+		arc_to_poly(x, y, r, angle_start, angle_end, verts, num_verts, false);
+		gui__poly(gui, verts, num_verts, GUI_DRAW_TRIANGLE_FAN, fill, stroke, false);
+	}
 }
 
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
 	const u32 num_verts = arc_poly_sz(r, 0, fPI * 2.f);
-	array(v2f) vert_buf;
-	array_init_ex(vert_buf, num_verts, g_temp_allocator);
-	array_set_sz(vert_buf, num_verts);
-	arc_to_poly(x, y, r, 0, fPI * 2.f, A2PN(vert_buf), true);
-	gui__poly(gui, A2PN(vert_buf), GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
-	array_destroy(vert_buf);
+	if (gui->vert_cnt + num_verts <= GUI_MAX_VERTS) {
+		v2f *verts = &gui->verts[gui->vert_cnt];
+		arc_to_poly(x, y, r, 0, fPI * 2.f, verts, num_verts, true);
+		gui__poly(gui, verts, num_verts, GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
+	}
 }
 
 void gui_trisf(gui_t *gui, const v2f *v, u32 n, color_t fill)
@@ -2827,15 +2826,14 @@ void gui_trisf(gui_t *gui, const v2f *v, u32 n, color_t fill)
 
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke)
 {
-	array(v2f) vert_buf;
-	array_init_ex(vert_buf, n, g_temp_allocator);
-	array_set_sz(vert_buf, n);
-	for (u32 i = 0; i < n; ++i) {
-		vert_buf[i].x = v[i].x;
-		vert_buf[i].y = v[i].y;
+	if (gui->vert_cnt + n <= GUI_MAX_VERTS) {
+		v2f *verts = &gui->verts[gui->vert_cnt];
+		for (u32 i = 0; i < n; ++i) {
+			verts[i].x = v[i].x;
+			verts[i].y = v[i].y;
+		}
+		gui_polyf(gui, verts, n, fill, stroke);
 	}
-	gui_polyf(gui, vert_buf, n, fill, stroke);
-	array_destroy(vert_buf);
 }
 
 void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
@@ -2843,14 +2841,13 @@ void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 	if (n == 3 || fill.a == 0 || polyf_is_convex(v, n)) {
 		gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
 	} else {
-		const u32 n_vert_buf = triangulate_reserve_sz(n);
-		array(v2f) vert_buf;
-		array_init_ex(vert_buf, n_vert_buf, g_temp_allocator);
-		if (triangulate(v, n, &vert_buf))
-			gui__triangles(gui, A2PN(vert_buf), fill);
+		if (gui->vert_cnt + triangulate_reserve_sz(n) <= GUI_MAX_VERTS) {
+			v2f *verts = &gui->verts[gui->vert_cnt];
+			if (triangulate(v, n, verts))
+				gui__triangles(gui, verts, triangulate_out_sz(n), fill);
+		}
 		if (stroke.a != 0)
 			gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, true);
-		array_destroy(vert_buf);
 	}
 }
 
@@ -2875,15 +2872,14 @@ void gui__polyline_corner_offset(v2f a, v2f b, v2f c, r32 d, v2f *p)
 
 void gui_polyline(gui_t *gui, const v2i *v, u32 n, color_t stroke)
 {
-	array(v2f) vert_buf;
-	array_init_ex(vert_buf, n, g_temp_allocator);
-	array_set_sz(vert_buf, n);
-	for (u32 i = 0; i < n; ++i) {
-		vert_buf[i].x = v[i].x;
-		vert_buf[i].y = v[i].y;
+	if (gui->vert_cnt + n <= GUI_MAX_VERTS) {
+		v2f *verts = &gui->verts[gui->vert_cnt];
+		for (u32 i = 0; i < n; ++i) {
+			verts[i].x = v[i].x;
+			verts[i].y = v[i].y;
+		}
+		gui__poly(gui, verts, n, GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, false);
 	}
-	gui__poly(gui, A2PN(vert_buf), GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, false);
-	array_destroy(vert_buf);
 }
 
 void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
@@ -2891,30 +2887,26 @@ void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
 	assert(n >= 2 && w >= 1.f);
 	if (w == 1.f) {
 		gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, false);
-	} else {
+	} else if (gui->vert_cnt + 2*n <= GUI_MAX_VERTS) {
 		const r32 w2    = w / 2.f;
 		const v2f dir0  = v2f_scale(v2f_dir(v[0], v[1]), w2);
 		const v2f perp0 = v2f_lperp(dir0);
 		const v2f dirn  = v2f_scale(v2f_dir(v[n-2], v[n-1]), w2);
 		const v2f perpn = v2f_lperp(dirn);
+		v2f *verts = &gui->verts[gui->vert_cnt];
 
-		array(v2f) vert_buf;
-		array_init_ex(vert_buf, 2*n, g_temp_allocator);
-		array_set_sz(vert_buf, 2*n);
-
-		vert_buf[0] = v2f_sub(v2f_sub(v[0], dir0), perp0);
-		vert_buf[1] = v2f_add(v2f_sub(v[0], dir0), perp0);
+		verts[0] = v2f_sub(v2f_sub(v[0], dir0), perp0);
+		verts[1] = v2f_add(v2f_sub(v[0], dir0), perp0);
 
 		for (u32 i = 1; i < n-1; ++i) {
-			gui__polyline_corner_offset(v[i-1], v[i], v[i+1], w2, &vert_buf[2*i]);
-			vert_buf[2*i+1] = v2f_add(v[i], v2f_sub(v[i], vert_buf[2*i]));
+			gui__polyline_corner_offset(v[i-1], v[i], v[i+1], w2, &verts[2*i]);
+			verts[2*i+1] = v2f_add(v[i], v2f_sub(v[i], verts[2*i]));
 		}
 
-		vert_buf[2*n-2] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
-		vert_buf[2*n-1] = v2f_add(v2f_add(v[n-1], dirn), perpn);
+		verts[2*n-2] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
+		verts[2*n-1] = v2f_add(v2f_add(v[n-1], dirn), perpn);
 
-		gui__poly(gui, A2PN(vert_buf), GUI_DRAW_TRIANGLE_STRIP, stroke, g_nocolor, true);
-		array_destroy(vert_buf);
+		gui__poly(gui, verts, 2*n, GUI_DRAW_TRIANGLE_STRIP, stroke, g_nocolor, true);
 	}
 }
 
