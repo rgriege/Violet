@@ -10,13 +10,13 @@
 #define DMATH_IMPLEMENTATION
 #define FMATH_IMPLEMENTATION
 #define GEOM_IMPLEMENTATION
-#define GRAPHICS_IMPLEMENTATION
 #define GUI_IMPLEMENTATION
 #define IMATH_IMPLEMENTATION
 #define LIST_IMPLEMENTATION
 #define LOCALIZE_IMPLEMENTATION
 #define OS_IMPLEMENTATION
 #define PROFILER_IMPLEMENTATION
+#define SDL_GL_IMPLEMENTATION
 #define STRING_IMPLEMENTATION
 #define UTF8_IMPLEMENTATION
 #define VSON_IMPLEMENTATION
@@ -48,8 +48,8 @@
 /* Gui */
 #include "violet/color.h"
 #ifndef VIOLET_NO_GUI
-#include "violet/graphics.h"
 #include "violet/gui.h"
+#include "violet/sdl_gl.h"
 #else
 #include "violet/stbi.h"
 #endif

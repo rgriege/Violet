@@ -897,7 +897,6 @@ void gui_style_pop(gui_t *gui);
 #include "violet/array.h"
 #include "violet/fmath.h"
 #include "violet/geom.h"
-#include "violet/graphics.h"
 #include "violet/imath.h"
 #include "violet/string.h"
 #include "violet/utf8.h"
