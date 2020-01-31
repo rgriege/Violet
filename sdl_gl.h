@@ -135,6 +135,8 @@ void      window_destroy(window_t *window);
 
 b32    window_begin_frame(window_t *window);
 void   window_end_frame(window_t *window);
+void   window_end_frame_ex(window_t *window, u32 target_frame_milli,
+                           u32 idle_frame_milli, u32 idle_start_milli);
 void   window_move(const window_t *window, s32 dx, s32 dy);
 b32    window_is_maximized(const window_t *window);
 void   window_minimize(window_t *window);
@@ -1371,6 +1373,24 @@ void window_end_frame(window_t *window)
 		else
 			SDL_StopTextInput();
 	}
+}
+
+void window_end_frame_ex(window_t *window, u32 target_frame_milli,
+                         u32 idle_frame_milli, u32 idle_start_milli)
+{
+	gui_t *gui = window->gui;
+	u32 frame_milli;
+
+	window_end_frame(window);
+	frame_milli = time_diff_milli(gui_frame_start(gui), time_current());
+
+	if (frame_milli > target_frame_milli)
+		log_warn("long frame: %ums", frame_milli);
+	else if (  time_diff_milli(gui_last_input_time(gui), gui_frame_start(gui))
+	         > idle_start_milli)
+		time_sleep_milli(idle_frame_milli - frame_milli);
+	else
+		time_sleep_milli(target_frame_milli - frame_milli);
 }
 
 void window_run(window_t *window, u32 fps, b32(*ufunc)(window_t *window, void *udata), void *udata)
