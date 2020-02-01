@@ -2562,7 +2562,7 @@ b32 mouse_down_bg(const gui_t *gui, u32 mask)
 
 b32 mouse_released(const gui_t *gui, u32 mask)
 {
-	return !(gui->mouse_btn & mask) && !(gui->mouse_btn_last & mask);
+	return !(gui->mouse_btn & mask) && (gui->mouse_btn_last & mask);
 }
 
 b32 mouse_released_bg(const gui_t *gui, u32 mask)
