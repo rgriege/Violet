@@ -390,6 +390,9 @@ void log_level_writev(log_level_t level, const char *format, va_list ap);
 #define log_write(fmt, ...) log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
 
 void file_logger(void *udata, log_level_t level, const char *format, va_list ap);
+#if defined(_WIN32)
+void msvc_debug_logger(void *udata, log_level_t level, const char *format, va_list ap);
+#endif
 
 #ifdef VIOLET_MAIN
 int app_entry(int argc, char *const argv[]);
@@ -1111,6 +1114,21 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 	fputc('\n', fp);
 	fflush(fp);
 }
+
+#if defined(_WIN32)
+b32 os_string_from_utf8(wchar_t *dst, size_t dstlen, const char *src);
+void msvc_debug_logger(void *udata, log_level_t level, const char *format, va_list ap)
+{
+	static thread_local wchar_t str_w[1024];
+	static thread_local char str[1024];
+	const int n = vsnprintf(B2PC(str), format, ap);
+	if (   n > 0
+	    && n + 2 <= countof(str)
+	    && strcpy(&str[n], "\n")
+	    && os_string_from_utf8(B2PC(str_w), str))
+		OutputDebugStringW(str_w);
+}
+#endif
 
 /* Runtime */
 
