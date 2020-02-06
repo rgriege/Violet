@@ -1577,6 +1577,8 @@ typedef struct gui
 	gui_scroll_area_t *scroll_area;
 	gui_tree_t tree;
 	s32 hint_timer;
+	b32 text_input_exceeds_buffer_size;
+	b32 clipboard_input_exceeds_buffer_size;
 
 	/* grid */
 	gui_grid_t grid_panel;
@@ -1739,6 +1741,8 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->scroll_area = NULL;
 	memclr(gui->tree);
 	gui->hint_timer = GUI_HINT_TIMER;
+	gui->text_input_exceeds_buffer_size = false;
+	gui->clipboard_input_exceeds_buffer_size = false;
 
 	gui->grid = NULL;
 
@@ -1920,6 +1924,8 @@ void gui_events_begin(gui_t *gui)
 	gui->text_npt[0] = '\0';
 	gui->clipboard[0] = '\0';
 	gui->left_window = false;
+	gui->text_input_exceeds_buffer_size = false;
+	gui->clipboard_input_exceeds_buffer_size = false;
 }
 
 void gui_event_add_update(gui_t *gui)
@@ -1943,7 +1949,7 @@ void gui_event_add_text_input(gui_t *gui, const char *text)
 	if (strlen(gui->text_npt) + strlen(text) + 1 <= countof(gui->text_npt))
 		strcat(gui->text_npt, text);
 	else
-		log_warn("text input exceeds buffer size");
+		gui->text_input_exceeds_buffer_size = true;
 	if (text[0] != 0)
 		gui_event_add_update(gui);
 }
@@ -1959,7 +1965,7 @@ void gui_event_add_clipboard(gui_t *gui, const char *text)
 	if (strlen(gui->clipboard) + strlen(text) + 1 <= countof(gui->clipboard))
 		strcat(gui->clipboard, text);
 	else
-		log_warn("clipboard input exceeds buffer size");
+		gui->clipboard_input_exceeds_buffer_size = true;
 }
 
 void gui_event_add_window_leave(gui_t *gui)
@@ -3765,6 +3771,8 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			char *pnext;
 			s32 cp;
 			u32 cp_sz;
+			if (gui->text_input_exceeds_buffer_size)
+				log_warn("text input exceeds buffer size");
 			while (   (cp = utf8_next_codepoint(p, &pnext)) != 0
 			       && (cp_sz = (u32)(pnext - p))
 			       && len + cp_sz < n) {
@@ -3805,6 +3813,8 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				u32 sz;
 				gui__npt_prep_action(gui, flags, txt, &len);
 				if ((sz = (u32)strlen(gui->clipboard)) > 0 && len + sz < n) {
+					if (gui->clipboard_input_exceeds_buffer_size)
+						log_warn("clipboard input exceeds buffer size");
 					memmove(&txt[gui->npt.cursor_pos + sz],
 					        &txt[gui->npt.cursor_pos],
 					        len - gui->npt.cursor_pos + 1);
