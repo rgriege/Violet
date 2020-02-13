@@ -740,7 +740,7 @@ void window_move(const window_t *window, s32 dx, s32 dy)
 static
 b32 window__get_display_usable_bounds(s32 display_idx, SDL_Rect *rect)
 {
-	if (SDL_GetDisplayUsableBounds(0, rect) != 0) {
+	if (SDL_GetDisplayUsableBounds(display_idx, rect) != 0) {
 		log_error("SDL_GetDisplayUsableBounds failed: %s", SDL_GetError());
 		return false;
 	}
