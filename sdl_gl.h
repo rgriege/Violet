@@ -901,7 +901,9 @@ b32 window__get_char_quad(void *handle, s32 codepoint, r32 x, r32 y, gui_char_qu
 {
 	const font_t *font = handle;
 	const r32 x0 = x;
+#ifndef NDEBUG
 	const r32 y0 = y;
+#endif
 	stbtt_aligned_quad q;
 
 	if (codepoint >= font->num_glyphs)
