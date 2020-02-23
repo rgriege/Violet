@@ -1276,21 +1276,16 @@ FMDEF b32 fmath_ray_intersect_coords(v2f a, v2f adir, v2f b, v2f bdir, r32 *t, r
 	 * u = (B - A) X R / (R X S)
 	 */
 
-	v2f ab;
-	r32 rxs;
+	const v2f ab = v2f_sub(b, a);
+	const r32 rxs = v2f_cross(adir, bdir);
 
-	ab = v2f_sub(b, a);
-	rxs = v2f_cross(adir, bdir);
+	// parallel or collinear rays are considered not intersecting
+	if (fabsf(rxs) < FLT_EPSILON)
+		return false;
 
-	if (rxs != 0)
-	{
-		*t = v2f_cross(ab, bdir) / rxs;
-		*u = v2f_cross(ab, adir) / rxs;
-		return true;
-	}
-	// parallel or collinear
-	// treating collinear lines as not intersecting
-	return false;
+	*t = v2f_cross(ab, bdir) / rxs;
+	*u = v2f_cross(ab, adir) / rxs;
+	return true;
 }
 
 FMDEF b32 fmath_line_intersect_coords(v2f a0, v2f a1, v2f b0, v2f b1, r32 *t, r32 *u)
