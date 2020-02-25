@@ -192,6 +192,7 @@ FMDEF b32   ivalf_overlaps(ivalf lhs, ivalf rhs);
 FMDEF b32   ivalf_overlaps_within(ivalf lhs, ivalf rhs, r32 error);
 FMDEF r32   ivalf_overlap(ivalf lhs, ivalf rhs);
 FMDEF ivalf ivalf_overlap_ival(ivalf lhs, ivalf rhs);
+FMDEF ivalf ivalf_invert(ivalf i);
 
 /* 2D Anti-aliased bounding box */
 
@@ -1042,6 +1043,11 @@ FMDEF ivalf ivalf_overlap_ival(ivalf lhs, ivalf rhs)
 	return (ivalf){ .l = fmaxf(lhs.l, rhs.l), .r = fminf(lhs.r, rhs.r) };
 }
 
+FMDEF ivalf ivalf_invert(ivalf i)
+{
+	return (ivalf){ .l = -i.r, .r = -i.l };
+}
+
 /* 2D Anti-aliased bounding box */
 
 FMDEF void box2f_from_point(box2f *b, v2f p)
@@ -1360,15 +1366,9 @@ FMDEF r32 fmath_point_to_ray_dist(v2f a0, v2f dir, v2f p)
 
 FMDEF ivalf linef_project(v2f a, v2f b, v2f axis)
 {
-	ivalf projection;
-	r32 dp_a, dp_b;
-
-	dp_a = v2f_dot(a, axis);
-	dp_b = v2f_dot(b, axis);
-
-	projection.l = fminf(dp_a, dp_b);
-	projection.r = fmaxf(dp_a, dp_b);
-	return projection;
+	const r32 dp_a = v2f_dot(a, axis);
+	const r32 dp_b = v2f_dot(b, axis);
+	return (ivalf){ .l = fminf(dp_a, dp_b), .r = fmaxf(dp_a, dp_b) };
 }
 
 /* Polygon */
