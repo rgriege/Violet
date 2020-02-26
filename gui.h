@@ -602,6 +602,10 @@ void gui_pen_tree_restore(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 #define GUI_SPLIT_RESIZE_BORDER 4
 #endif
 
+#ifndef GUI_SPLIT_ALIGN_LAST_TO_END
+#define GUI_SPLIT_ALIGN_LAST_TO_END 1
+#endif
+
 typedef enum gui_split_flags
 {
 	GUI_SPLIT_RESIZABLE = 0x1,
@@ -6440,7 +6444,9 @@ void gui__splits_compute_from(gui_split_t *split, s32 scale)
 	const b32 vertical = split->children.vertical;
 	const s32 collapsed_dimension = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, scale);
 	const v2i start = { split->box.min.x, split->box.max.y };
+#if GUI_SPLIT_ALIGN_LAST_TO_END
 	const v2i end = { split->box.max.x, split->box.min.y };
+#endif
 	const v2i dir = { 1, -1 };
 	const v2i dim = box2i_get_extent(split->box);
 	v2i cpos;
@@ -6485,6 +6491,7 @@ void gui__splits_compute_from(gui_split_t *split, s32 scale)
 		if (gui__split_collapsed(child)) {
 			cdim.d[vertical] = collapsed_dimension;
 			--num_children_collapsed_remaining;
+#if GUI_SPLIT_ALIGN_LAST_TO_END
 		} else if (num_children_remaining == num_children_collapsed_remaining + 1) {
 			/* expand to fill available space */
 			const s32 remaining = v2i_mul(v2i_sub(end, cpos), dir).d[vertical]
@@ -6493,6 +6500,7 @@ void gui__splits_compute_from(gui_split_t *split, s32 scale)
 			                                  total_sized_child_dimension,
 			                                  num_children_without_size);
 			cdim.d[vertical] = max(cdim.d[vertical], remaining);
+#endif
 		} else {
 			cdim.d[vertical] = gui__split_dim(child->size, dim.d[vertical], scale,
 			                                  total_sized_child_dimension,
