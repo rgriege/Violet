@@ -7156,7 +7156,6 @@ void pgui_panel_open(gui_t *gui, gui_panel_t *panel)
 
 void pgui_panel_close(gui_t *gui, gui_panel_t *panel)
 {
-	assert(panel->flags & GUI_PANEL_CLOSABLE);
 	assert(!panel->closed);
 	panel->closed = true;
 	pgui_panel_remove_tab(gui, panel);
