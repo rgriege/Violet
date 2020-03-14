@@ -263,7 +263,8 @@ FMDEF r32 fmath_point_to_ray_dist(v2f a0, v2f dir, v2f p);
 
 FMDEF ivalf linef_project(v2f a, v2f b, v2f axis);
 
-FMDEF b32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir,
+/* NOTE(rgriege): returns a unix-style error code - see implementation for details */
+FMDEF s32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir,
                                         r32 *t, r32 *u);
 FMDEF v3f fmath_nearest_point_on_line_3d(v3f a, v3f b, v3f p);
 FMDEF r32 fmath_point_to_line_dist_3d(v3f a, v3f b, v3f p);
@@ -1402,7 +1403,7 @@ FMDEF ivalf linef_project(v2f a, v2f b, v2f axis)
 }
 
 
-FMDEF b32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir, r32 *t, r32 *u)
+FMDEF s32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir, r32 *t, r32 *u)
 {
 	/* (uppercase = vector, lowercase = scalar)
 	 * ray intersection equation
@@ -1426,15 +1427,14 @@ FMDEF b32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir, r32 *t
 
 	/* parallel or collinear rays are considered not intersecting */
 	if (fabsf(rxs_mag_sq) < FLT_EPSILON)
-		return false;
-
-	/* rays must be co-planar */
-	if (v3f_dot(ab, rxs) > 10.f * FLT_EPSILON)
-		return false;
+		return -1;
 
 	*t = v3f_dot(v3f_cross(ab, bdir), rxs) / rxs_mag_sq;
 	*u = v3f_dot(v3f_cross(ab, adir), rxs) / rxs_mag_sq;
-	return true;
+
+	/* rays must be co-planar, but I couldn't determine a good error margin,
+	 * so we allow the caller to handle it. */
+	return (v3f_dot(ab, rxs) > 10.f * FLT_EPSILON) ? 1 : 0;
 }
 
 static r32 fmath__line_interpolate_3d(v3f a, v3f b, v3f p, v3f *ab)
