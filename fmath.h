@@ -104,13 +104,17 @@ FMGDECL const v3f g_v3f_y_axis;
 FMGDECL const v3f g_v3f_z_axis;
 FMGDECL const v3f g_v3f_zero;
 
+FMDEF v3f v3f_create_xy_z(v2f xy, r32 z);
 FMDEF r32 v3f_mag(v3f v);
 FMDEF r32 v3f_mag_sq(v3f v);
+FMDEF r32 v3f_dist(v3f lhs, v3f rhs);
+FMDEF r32 v3f_dist_sq(v3f lhs, v3f rhs);
 FMDEF v3f v3f_normalize(v3f v);
 FMDEF b32 v3f_is_unit(v3f v);
 FMDEF v3f v3f_scale(v3f v, r32 s);
 FMDEF v3f v3f_add(v3f lhs, v3f rhs);
 FMDEF v3f v3f_sub(v3f lhs, v3f rhs);
+FMDEF v3f v3f_fmadd(v3f v, v3f dir, r32 s);
 FMDEF r32 v3f_dot(v3f lhs, v3f rhs);
 FMDEF v3f v3f_cross(v3f lhs, v3f rhs);
 FMDEF v3f v3f_proj(v3f v, v3f axis);
@@ -258,6 +262,12 @@ FMDEF r32 fmath_point_to_line_dist_sq(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_ray_dist(v2f a0, v2f dir, v2f p);
 
 FMDEF ivalf linef_project(v2f a, v2f b, v2f axis);
+
+FMDEF b32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir,
+                                        r32 *t, r32 *u);
+FMDEF v3f fmath_nearest_point_on_line_3d(v3f a, v3f b, v3f p);
+FMDEF r32 fmath_point_to_line_dist_3d(v3f a, v3f b, v3f p);
+FMDEF r32 fmath_point_to_line_dist_sq_3d(v3f a, v3f b, v3f p);
 
 /* Polygon */
 
@@ -529,6 +539,11 @@ FMGDEF const v3f g_v3f_y_axis = { 0, 1, 0 };
 FMGDEF const v3f g_v3f_z_axis = { 0, 0, 1 };
 FMGDEF const v3f g_v3f_zero   = { 0, 0, 0 };
 
+FMDEF v3f v3f_create_xy_z(v2f xy, r32 z)
+{
+	return (v3f){ .x = xy.x, .y = xy.y, .z = z };
+}
+
 FMDEF r32 v3f_mag(v3f v)
 {
 	return sqrtf(v3f_mag_sq(v));
@@ -537,6 +552,16 @@ FMDEF r32 v3f_mag(v3f v)
 FMDEF r32 v3f_mag_sq(v3f v)
 {
 	return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+
+FMDEF r32 v3f_dist(v3f lhs, v3f rhs)
+{
+	return sqrtf(v3f_dist_sq(lhs, rhs));
+}
+
+FMDEF r32 v3f_dist_sq(v3f lhs, v3f rhs)
+{
+	return v3f_mag_sq(v3f_sub(lhs, rhs));
 }
 
 FMDEF v3f v3f_normalize(v3f v)
@@ -562,6 +587,11 @@ FMDEF v3f v3f_add(v3f lhs, v3f rhs)
 FMDEF v3f v3f_sub(v3f lhs, v3f rhs)
 {
 	return (v3f){ .x = lhs.x - rhs.x, .y = lhs.y - rhs.y, .z = lhs.z - rhs.z };
+}
+
+FMDEF v3f v3f_fmadd(v3f v, v3f dir, r32 s)
+{
+	return v3f_add(v, v3f_scale(dir, s));
 }
 
 FMDEF r32 v3f_dot(v3f lhs, v3f rhs)
@@ -1369,6 +1399,65 @@ FMDEF ivalf linef_project(v2f a, v2f b, v2f axis)
 	const r32 dp_a = v2f_dot(a, axis);
 	const r32 dp_b = v2f_dot(b, axis);
 	return (ivalf){ .l = fminf(dp_a, dp_b), .r = fmaxf(dp_a, dp_b) };
+}
+
+
+FMDEF b32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir, r32 *t, r32 *u)
+{
+	/* (uppercase = vector, lowercase = scalar)
+	 * ray intersection equation
+	 * A + tR = B + uS
+	 *
+	 * (A + tR) x S = (B + uS) x S                # cross both sides by S
+	 * A x S = tR x S = B x S + uS x S            # distribute cross product
+	 * A x S + tR x S = B x S                     # S x S = 0
+	 * tR x S = B x S - A x S
+	 * t(R x S) = (B - A) x S
+	 * t(R x S) = AB x S                          # let AB = B - A
+	 * t(R x S) * (R x S) = (AB x S) * (R x S)    # * = dot product
+	 * t|R x S|^2 = (AB x S) * (R x S)            # A * A = |A|^2
+	 * t = (AB x S) * (R x S) / |R x S|^2
+	 * ...
+	 * u = (AB x R) * (R x S) / |R x S|^2 */
+
+	const v3f ab = v3f_sub(b, a);
+	const v3f rxs = v3f_cross(adir, bdir);
+	const r32 rxs_mag_sq = v3f_mag_sq(rxs);
+
+	/* parallel or collinear rays are considered not intersecting */
+	if (fabsf(rxs_mag_sq) < FLT_EPSILON)
+		return false;
+
+	/* rays must be co-planar */
+	if (v3f_dot(ab, rxs) > 10.f * FLT_EPSILON)
+		return false;
+
+	*t = v3f_dot(v3f_cross(ab, bdir), rxs) / rxs_mag_sq;
+	*u = v3f_dot(v3f_cross(ab, adir), rxs) / rxs_mag_sq;
+	return true;
+}
+
+static r32 fmath__line_interpolate_3d(v3f a, v3f b, v3f p, v3f *ab)
+{
+	*ab = v3f_sub(b, a);
+	return v3f_dot(v3f_sub(p, a), *ab) / v3f_mag_sq(*ab);
+}
+
+FMDEF v3f fmath_nearest_point_on_line_3d(v3f a, v3f b, v3f p)
+{
+	v3f ab;
+	r32 t = fmath__line_interpolate_3d(a, b, p, &ab);
+	return v3f_add(a, v3f_scale(ab, t));
+}
+
+FMDEF r32 fmath_point_to_line_dist_3d(v3f a, v3f b, v3f p)
+{
+	return sqrtf(fmath_point_to_line_dist_sq_3d(a, b, p));
+}
+
+FMDEF r32 fmath_point_to_line_dist_sq_3d(v3f a, v3f b, v3f p)
+{
+	return v3f_dist_sq(p, fmath_nearest_point_on_line_3d(a, b, p));
 }
 
 /* Polygon */
