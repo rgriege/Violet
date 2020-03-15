@@ -236,6 +236,7 @@ typedef struct box3f
 
 FMDEF void box3f_from_point(box3f *b, v3f p);
 FMDEF void box3f_extend_point(box3f *b, v3f p);
+FMDEF void box3f_extend_box(box3f *b, box3f other);
 FMDEF v3f  box3f_get_center(box3f b);
 FMDEF v3f  box3f_get_extent(box3f b);
 FMDEF v3f  box3f_get_half_dim(box3f b);
@@ -1258,6 +1259,12 @@ FMDEF void box3f_extend_point(box3f *b, v3f p)
 	b->max.x = fmaxf(b->max.x, p.x);
 	b->max.y = fmaxf(b->max.y, p.y);
 	b->max.z = fmaxf(b->max.z, p.z);
+}
+
+FMDEF void box3f_extend_box(box3f *lhs, box3f rhs)
+{
+	box3f_extend_point(lhs, rhs.min);
+	box3f_extend_point(lhs, rhs.max);
 }
 
 FMDEF v3f box3f_get_center(box3f b)
