@@ -114,6 +114,7 @@ FMDEF b32 v3f_is_unit(v3f v);
 FMDEF v3f v3f_scale(v3f v, r32 s);
 FMDEF v3f v3f_add(v3f lhs, v3f rhs);
 FMDEF v3f v3f_sub(v3f lhs, v3f rhs);
+FMDEF v3f v3f_dir(v3f src, v3f dst);
 FMDEF v3f v3f_fmadd(v3f v, v3f dir, r32 s);
 FMDEF r32 v3f_dot(v3f lhs, v3f rhs);
 FMDEF v3f v3f_cross(v3f lhs, v3f rhs);
@@ -589,6 +590,11 @@ FMDEF v3f v3f_add(v3f lhs, v3f rhs)
 FMDEF v3f v3f_sub(v3f lhs, v3f rhs)
 {
 	return (v3f){ .x = lhs.x - rhs.x, .y = lhs.y - rhs.y, .z = lhs.z - rhs.z };
+}
+
+FMDEF v3f v3f_dir(v3f src, v3f dst)
+{
+	return v3f_normalize(v3f_sub(dst, src));
 }
 
 FMDEF v3f v3f_fmadd(v3f v, v3f dir, r32 s)
