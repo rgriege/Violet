@@ -713,6 +713,7 @@ void pgui_panel_collapse(gui_panel_t *panel);
 void pgui_panel_restore(gui_panel_t *panel);
 void pgui_panel_open(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_close(gui_t *gui, gui_panel_t *panel);
+void pgui_panel_toggle(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 b32  pgui_panel_content_visible(const gui_panel_t *panel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
@@ -7160,6 +7161,14 @@ void pgui_panel_close(gui_t *gui, gui_panel_t *panel)
 	assert(!panel->closed);
 	panel->closed = true;
 	pgui_panel_remove_tab(gui, panel);
+}
+
+void pgui_panel_toggle(gui_t *gui, gui_panel_t *panel)
+{
+	if (panel->closed)
+		pgui_panel_open(gui, panel);
+	else
+		pgui_panel_close(gui, panel);
 }
 
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
