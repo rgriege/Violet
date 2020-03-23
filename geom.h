@@ -6,10 +6,11 @@ u32  arc_poly_sz(r32 r, r32 angle_start, r32 angle_end);
 void arc_to_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
                  v2f *v, u32 segments, b32 closed);
 
+/* maximum number of vertices for triangle output */
 u32 triangulate_out_sz(u32 n);
 u32 triangulate_reserve_sz(u32 n);
 /* triangles buffer must be at least triangulate_reserve_sz() long */
-b32 triangulate(const v2f *v, u32 n, v2f *triangles);
+b32 triangulate(const v2f *v, u32 n, v2f *triangles, u32 *n_verts);
 b32 triangulatea(const v2f *v, u32 n, array(v2f) *triangles);
 
 
@@ -86,7 +87,7 @@ u32 triangulate_reserve_sz(u32 n)
 	return triangulate_out_sz(n) + n;
 }
 
-b32 triangulate(const v2f *v, u32 n, v2f *triangles)
+b32 triangulate(const v2f *v, u32 n, v2f *triangles, u32 *n_verts)
 {
 	v2f *v_mut;
 	u32 n_cur = n;
@@ -118,19 +119,25 @@ b32 triangulate(const v2f *v, u32 n, v2f *triangles)
 				break;
 			}
 		}
+		/* This doesn't necessarily mean failure - it could have triangulated in such
+		 * a way that fewer vertices were needed than expected. I have seen a case
+		 * where this condition was hit due to all remaining vertices being collinear. */
 		if (n_prev == n_cur)
-			return false;
+			break;
 	}
 
-	return true;
+	*n_verts = out;
+	return out >= 3;
 }
 
 b32 triangulatea(const v2f *v, u32 n, array(v2f) *triangles)
 {
-	const u32 prev_triangle_cnt = array_sz(*triangles);
-	array_reserve(*triangles, prev_triangle_cnt + triangulate_reserve_sz(n));
-	if (triangulate(v, n, &(*triangles)[prev_triangle_cnt])) {
-		array_set_sz(*triangles, prev_triangle_cnt + triangulate_out_sz(n));
+	const u32 prev_vert_cnt = array_sz(*triangles);
+	u32 new_vert_cnt = 0;
+
+	array_reserve(*triangles, prev_vert_cnt + triangulate_reserve_sz(n));
+	if (triangulate(v, n, &(*triangles)[prev_vert_cnt], &new_vert_cnt)) {
+		array_set_sz(*triangles, prev_vert_cnt + new_vert_cnt);
 		return true;
 	}
 	return false;

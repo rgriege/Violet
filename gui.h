@@ -2853,8 +2853,9 @@ void gui_polyf(gui_t *gui, const v2f *v, u32 n, color_t fill, color_t stroke)
 	} else {
 		if (gui->vert_cnt + triangulate_reserve_sz(n) <= GUI_MAX_VERTS) {
 			v2f *verts = &gui->verts[gui->vert_cnt];
-			if (triangulate(v, n, verts))
-				gui__triangles(gui, verts, triangulate_out_sz(n), fill);
+			u32 n_verts = 0;
+			if (triangulate(v, n, verts, &n_verts))
+				gui__triangles(gui, verts, n_verts, fill);
 		}
 		if (stroke.a != 0)
 			gui__poly(gui, v, n, GUI_DRAW_TRIANGLE_FAN, g_nocolor, stroke, true);
