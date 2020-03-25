@@ -453,10 +453,11 @@ void gui_unlock(gui_t *gui);
 /* NOTE: I usually hate 'conditional' methods, but this cleans up usage code */
 void gui_lock_if(gui_t *gui, b32 cond, u32 *lock);
 void gui_unlock_if(gui_t *gui, u32 lock);
-/* Scales splits, fonts, and grids.  A value of 100 means unscaled.
+/* Scales splits, panels, and panel grids.  A value of 100 means unscaled.
  * Be careful calling this between frame_begin & frame_end. */
 void gui_set_scale(gui_t *gui, s32 scale);
 s32  gui_scale_val(s32 val, s32 scale);
+s32  gui_scale_val_inverse(s32 val, s32 scale);
 
 
 /* Grid layout */
@@ -683,7 +684,8 @@ typedef enum gui_panel_flags
 
 typedef struct gui_panel
 {
-	s32 x, y, width, height;
+	struct { s32 x, y, w, h; } unscaled;
+	struct { s32 x, y, w, h; };
 	const char *title; /* un-owned, can be NULL */
 	gui_panel_flags_e flags;
 	u32 id;
@@ -695,6 +697,7 @@ typedef struct gui_panel
 	b32 closed;
 	b32 collapsed;
 	b32 tabbed_out;
+	s32 scale_anchor;
 } gui_panel_t;
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
@@ -5156,6 +5159,7 @@ void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 {
+	const s32 scroll_rate = gui_scale_val(GUI_SCROLL_RATE, gui->scale);
 	const v2i pos = scroll_area->pos;
 	const v2i dim = scroll_area->dim;
 	const v2i last_max_dim = scroll_area->last_max_dim;
@@ -5182,7 +5186,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 		if (key_mod(gui, KBM_SHIFT) && !mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
-			scroll_area->scroll.x -= scroll * GUI_SCROLL_RATE;
+			scroll_area->scroll.x -= scroll * scroll_rate;
 			scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
 		}
 		if (gui->style.scroll_area.scrollbar_track_width > 0) {
@@ -5209,7 +5213,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 		if (!key_mod(gui, KBM_SHIFT) && !mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
-			scroll_area->scroll.y -= scroll * GUI_SCROLL_RATE;
+			scroll_area->scroll.y -= scroll * scroll_rate;
 			scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
 		}
 		if (gui->style.scroll_area.scrollbar_track_width > 0) {
@@ -5370,6 +5374,7 @@ void gui_unlock_if(gui_t *gui, u32 lock)
 
 void gui_set_scale(gui_t *gui, s32 scale)
 {
+	assert(!gui->panel);
 	gui->scale = scale;
 }
 
@@ -5378,6 +5383,10 @@ s32 gui_scale_val(s32 val, s32 scale)
 	return val * scale / 100;
 }
 
+s32 gui_scale_val_inverse(s32 val, s32 scale)
+{
+	return val * 100 / scale;
+}
 
 /* Grid layout */
 
@@ -6536,6 +6545,54 @@ void gui_splits_compute(gui_t *gui)
 		gui__splits_compute_from(gui->root_split, gui->scale);
 }
 
+static
+void pgui__panel_compute_scaled_dimensions(const gui_t *gui, gui_panel_t *panel)
+{
+	const s32  x = panel->unscaled.x;
+	const s32  y = panel->unscaled.y;
+	const s32 uw = panel->unscaled.w;
+	const s32 uh = panel->unscaled.h;
+	const s32 sw = gui_scale_val(uw, gui->scale);
+	const s32 sh = gui_scale_val(uh, gui->scale);
+	v2i uanchor, sanchor;
+
+	gui_align_anchor(x, y, uw, uh, panel->scale_anchor, &uanchor.x, &uanchor.y);
+	gui_align_anchor(x, y, sw, sh, panel->scale_anchor, &sanchor.x, &sanchor.y);
+
+	panel->x = x + uanchor.x - sanchor.x;
+	panel->y = y + uanchor.y - sanchor.y;
+	panel->w = sw;
+	panel->h = sh;
+
+	if (panel->flags & GUI_PANEL_TITLEBAR) {
+		/* Ensure we don't scale the drag handle to a position off the screen. */
+		if (panel->x < 0)
+			panel->x = 0;
+		if (panel->y + panel->h > gui->window_dim.y)
+			panel->y = gui->window_dim.y - panel->h;
+	}
+}
+
+static
+void pgui__panel_compute_unscaled_dimensions(const gui_t *gui, gui_panel_t *panel)
+{
+	const s32  x = panel->x;
+	const s32  y = panel->y;
+	const s32 sw = panel->w;
+	const s32 sh = panel->h;
+	const s32 uw = gui_scale_val_inverse(sw, gui->scale);
+	const s32 uh = gui_scale_val_inverse(sh, gui->scale);
+	v2i uanchor, sanchor;
+
+	gui_align_anchor(x, y, uw, uh, panel->scale_anchor, &uanchor.x, &uanchor.y);
+	gui_align_anchor(x, y, sw, sh, panel->scale_anchor, &sanchor.x, &sanchor.y);
+
+	panel->unscaled.x = x + sanchor.x - uanchor.x;
+	panel->unscaled.y = y + sanchor.y - uanchor.y;
+	panel->unscaled.w = uw;
+	panel->unscaled.h = uh;
+}
+
 void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                       s32 x, s32 y, s32 w, s32 h,
                       const char *title, gui_panel_flags_e flags)
@@ -6543,10 +6600,11 @@ void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
 	assert(id <= GUI__MAX_PANEL_ID);
 	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
 
-	panel->x = x;
-	panel->y = y;
-	panel->width = w;
-	panel->height = h;
+	panel->unscaled.x = x;
+	panel->unscaled.y = y;
+	panel->unscaled.w = w;
+	panel->unscaled.h = h;
+	pgui__panel_compute_scaled_dimensions(gui, panel);
 	panel->id = id;
 
 	panel->title = title;
@@ -6561,6 +6619,7 @@ void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
 	panel->closed     = false;
 	panel->collapsed  = false;
 	panel->tabbed_out = false;
+	panel->scale_anchor = GUI_ALIGN_MIDCENTER;
 }
 
 void pgui_panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
@@ -6709,14 +6768,14 @@ b32 gui__current_panel_contains_mouse(const gui_t *gui)
 
 	if (panel->collapsed) {
 		const s32 titlebar_height = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, gui->scale);
-		y = panel->y + panel->height - titlebar_height;
+		y = panel->y + panel->h - titlebar_height;
 		height = titlebar_height;
 	} else {
 		y = panel->y;
-		height = panel->height;
+		height = panel->h;
 	}
 
-	box2i_from_xywh(&box, panel->x, y, panel->width, height);
+	box2i_from_xywh(&box, panel->x, y, panel->w, height);
 	gui__mask_box(gui, &box);
 	return box2i_contains_point(box, gui->mouse_pos);
 }
@@ -6724,6 +6783,8 @@ b32 gui__current_panel_contains_mouse(const gui_t *gui)
 static
 void pgui__panel_resize(gui_t *gui, gui_panel_t *panel)
 {
+	const s32 min_dim = gui_scale_val(GUI_PANEL_MIN_DIM, gui->scale);
+	const s32 resize_border = gui_scale_val(GUI_PANEL_RESIZE_BORDER, gui->scale);
 	v2i resize;
 	s32 resize_delta;
 
@@ -6733,56 +6794,54 @@ void pgui__panel_resize(gui_t *gui, gui_panel_t *panel)
 	    && gui->cursor == GUI_CURSOR_DEFAULT) {
 		gui_style_push(gui, drag, g_gui_style_invis.drag);
 
-		resize.x = panel->x - GUI_PANEL_RESIZE_BORDER;
-		if (gui__resize_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		                      panel->height)) {
-			resize_delta = panel->x - GUI_PANEL_RESIZE_BORDER - resize.x;
-			if (panel->width + resize_delta < GUI_PANEL_MIN_DIM) {
-				const r32 dx = panel->width - GUI_PANEL_MIN_DIM;
-				panel->width = GUI_PANEL_MIN_DIM;
+		resize.x = panel->x - resize_border;
+		if (gui__resize_horiz(gui, &resize.x, panel->y, resize_border, panel->h)) {
+			resize_delta = panel->x - resize_border - resize.x;
+			if (panel->w + resize_delta < min_dim) {
+				const r32 dx = panel->w - min_dim;
+				panel->w = min_dim;
 				panel->x += dx;
-				gui->active_id = gui_widget_id(gui, panel->x - GUI_PANEL_RESIZE_BORDER,
-				                               panel->y);
+				gui->active_id = gui_widget_id(gui, panel->x - resize_border, panel->y);
 			} else {
-				panel->width += resize_delta;
+				panel->w += resize_delta;
 				panel->x -= resize_delta;
 			}
+			pgui__panel_compute_unscaled_dimensions(gui, panel);
 		}
 
-		resize.x = panel->x + panel->width;
-		if (gui__resize_horiz(gui, &resize.x, panel->y, GUI_PANEL_RESIZE_BORDER,
-		                      panel->height)) {
-			panel->width += resize.x - (panel->x + panel->width);
-			if (panel->width < GUI_PANEL_MIN_DIM) {
-				panel->width = GUI_PANEL_MIN_DIM;
-				gui->active_id = gui_widget_id(gui, panel->x + panel->width, panel->y);
+		resize.x = panel->x + panel->w;
+		if (gui__resize_horiz(gui, &resize.x, panel->y, resize_border, panel->h)) {
+			panel->w += resize.x - (panel->x + panel->w);
+			if (panel->w < min_dim) {
+				panel->w = min_dim;
+				gui->active_id = gui_widget_id(gui, panel->x + panel->w, panel->y);
 			}
+			pgui__panel_compute_unscaled_dimensions(gui, panel);
 		}
 
-		resize.y = panel->y - GUI_PANEL_RESIZE_BORDER;
-		if (gui__resize_vert(gui, panel->x, &resize.y, panel->width,
-		                     GUI_PANEL_RESIZE_BORDER)) {
-			resize_delta = panel->y - GUI_PANEL_RESIZE_BORDER - resize.y;
-			if (panel->height + resize_delta < GUI_PANEL_MIN_DIM) {
-				const r32 dy = panel->height - GUI_PANEL_MIN_DIM;
-				panel->height = GUI_PANEL_MIN_DIM;
+		resize.y = panel->y - resize_border;
+		if (gui__resize_vert(gui, panel->x, &resize.y, panel->w, resize_border)) {
+			resize_delta = panel->y - resize_border - resize.y;
+			if (panel->h + resize_delta < min_dim) {
+				const r32 dy = panel->h - min_dim;
+				panel->h = min_dim;
 				panel->y += dy;
-				gui->active_id = gui_widget_id(gui, panel->x,
-				                               panel->y - GUI_PANEL_RESIZE_BORDER);
+				gui->active_id = gui_widget_id(gui, panel->x, panel->y - resize_border);
 			} else {
-				panel->height += resize_delta;
+				panel->h += resize_delta;
 				panel->y -= resize_delta;
 			}
+			pgui__panel_compute_unscaled_dimensions(gui, panel);
 		}
 
-		resize.y = panel->y + panel->height;
-		if (gui__resize_vert(gui, panel->x, &resize.y, panel->width,
-		                     GUI_PANEL_RESIZE_BORDER)) {
-			panel->height += resize.y - (panel->y + panel->height);
-			if (panel->height < GUI_PANEL_MIN_DIM) {
-				panel->height = GUI_PANEL_MIN_DIM;
-				gui->active_id = gui_widget_id(gui, panel->x, panel->y + panel->height);
+		resize.y = panel->y + panel->h;
+		if (gui__resize_vert(gui, panel->x, &resize.y, panel->w, resize_border)) {
+			panel->h += resize.y - (panel->y + panel->h);
+			if (panel->h < min_dim) {
+				panel->h = min_dim;
+				gui->active_id = gui_widget_id(gui, panel->x, panel->y + panel->h);
 			}
+			pgui__panel_compute_unscaled_dimensions(gui, panel);
 		}
 
 		gui_style_pop(gui);
@@ -6823,13 +6882,14 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	s32 tab_count;
 	gui_panel_t *panel_to_remove_from_tabs = NULL;
 
-	y = panel->y + panel->height - dim;
+	y = panel->y + panel->h - dim;
 
 	if (panel->flags & GUI_PANEL_DRAGGABLE) {
 		const b32 contains_mouse = gui__widget_contains_mouse(gui, panel->x, y, dim, dim);
 		*dragging = gui_drag(gui, &panel->x, &y, contains_mouse, MB_LEFT);
 		if (*dragging) {
-			panel->y = y - panel->height + dim;
+			panel->y = y - panel->h + dim;
+			pgui__panel_compute_unscaled_dimensions(gui, panel);
 			if (panel->split) {
 				pgui_panel_remove_tab(gui, panel);
 				pgui_panel_to_front(gui, panel);
@@ -6841,7 +6901,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 		*dragging = false;
 	}
 
-	gui_rect(gui, panel->x, y, panel->width,
+	gui_rect(gui, panel->x, y, panel->w,
 	         dim, gui->style.panel.titlebar.bg_color,
 	         gui->style.panel.titlebar.outline_color);
 
@@ -6862,7 +6922,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 		const s32 max_tab_dim = gui_scale_val(GUI_PANEL_MAX_TAB_WIDTH, gui->scale);
 		s32 tab_dim, tab_idx;
 		u32 selected_tab_idx;
-		tab_dim = (panel->width - dim - rw) / tab_count;
+		tab_dim = (panel->w - dim - rw) / tab_count;
 		tab_dim = min(tab_dim, max_tab_dim);
 		tab_idx = 0;
 		selected_tab_idx = 0;
@@ -6889,8 +6949,9 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 					gui->drag_offset.y = -dim/2;
 					p->x   = gui->mouse_pos.x - dim/2;
 					drag_y = gui->mouse_pos.y - dim/2;
-					p->y   = drag_y - p->height + dim;
+					p->y   = drag_y - p->h + dim;
 					gui->active_id = gui__widget_id(gui, p->id, p->x, drag_y);
+					pgui__panel_compute_unscaled_dimensions(gui, panel);
 					panel_to_remove_from_tabs = p;
 				}
 			}
@@ -6898,11 +6959,11 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 		}
 		gui_style_pop(gui);
 	} else {
-		gui_txt_styled(gui, panel->x + dim, y, panel->width, dim,
+		gui_txt_styled(gui, panel->x + dim, y, panel->w, dim,
 		               panel->title, &gui->style.panel.titlebar.text);
 	}
 
-	rx = panel->x + panel->width - rw;
+	rx = panel->x + panel->w - rw;
 	if (panel->flags & GUI_PANEL_COLLAPSABLE) {
 		if (panel->collapsed)
 			gui_style_push(gui, btn, gui->style.panel.restore);
@@ -7008,8 +7069,8 @@ static
 s32 pgui__panel_body_height(const gui_panel_t *panel, r32 scale)
 {
 	return (panel->flags & GUI_PANEL_TITLEBAR)
-	     ? panel->height - gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, scale)
-	     : panel->height;
+	     ? panel->h - gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, scale)
+	     : panel->h;
 }
 
 static
@@ -7050,10 +7111,14 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		while (first->prev)
 			first = first->prev;
 
+		panel->unscaled.x  = first->unscaled.x;
+		panel->unscaled.y  = first->unscaled.y;
+		panel->unscaled.w  = first->unscaled.w;
+		panel->unscaled.h  = first->unscaled.h;
 		panel->x           = first->x;
 		panel->y           = first->y;
-		panel->width       = first->width;
-		panel->height      = first->height;
+		panel->w           = first->w;
+		panel->h           = first->h;
 		panel->split       = first->split;
 		panel->closed      = first->closed;
 		panel->collapsed   = first->collapsed;
@@ -7065,16 +7130,21 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		b32 was_dragging = false;
 		b32 dragging = false;
 
-		if (panel->split)
-			box2i_to_xywh(panel->split->box, &panel->x, &panel->y,
-			              &panel->width, &panel->height);
+		if (panel->split) {
+			box2i_to_xywh(panel->split->box, &panel->x, &panel->y, &panel->w, &panel->h);
+			pgui__panel_compute_unscaled_dimensions(gui, panel);
+		} else if (gui->active_id == 0) {
+			/* Don't update dimensions if the user is dragging or resizing the panel -
+			 * it will fuck up the widget id's due to integer division rounding. */
+			pgui__panel_compute_scaled_dimensions(gui, panel);
+		}
 
 		gui->panel = panel;
 
 		/* must run after gui->panel is assigned so drag id is correct */
 		if (panel->flags & GUI_PANEL_TITLEBAR) {
 			const s32 titlebar_height = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, gui->scale);
-			const s32 drag_y = panel->y + panel->height - titlebar_height;
+			const s32 drag_y = panel->y + panel->h - titlebar_height;
 			const u64 drag_id = gui_widget_id(gui, panel->x, drag_y);
 			was_dragging = gui_widget_active(gui, drag_id);
 		}
@@ -7091,7 +7161,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		if (panel->collapsed && !panel->split) {
 			/* background outline display */
 			const s32 h = gui_scale_val(GUI_PANEL_TITLEBAR_HEIGHT, gui->scale);
-			gui_rect(gui, panel->x, panel->y + panel->height - h, panel->width, h,
+			gui_rect(gui, panel->x, panel->y + panel->h - h, panel->w, h,
 			         g_nocolor, gui->style.panel.border_color);
 		}
 
@@ -7109,22 +7179,22 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 
 	if (   !content_visible
 	    || !pgui_panel_content_visible(panel)
-	    || panel->width <= 0
-	    || panel->height <= 0) {
+	    || panel->w <= 0
+	    || panel->h <= 0) {
 		gui->panel = NULL;
 		return false;
 	}
 
 	/* background outline display */
 	if (!panel->split)
-		gui_rect(gui, panel->x, panel->y, panel->width, panel->height,
+		gui_rect(gui, panel->x, panel->y, panel->w, panel->h,
 		         g_nocolor, gui->style.panel.border_color);
 
 	{
 		const s32 body_height = pgui__panel_body_height(panel, gui->scale);
 		box2i box;
 		v2i pos, dim;
-		box2i_from_xywh(&box, panel->x, panel->y, panel->width, body_height);
+		box2i_from_xywh(&box, panel->x, panel->y, panel->w, body_height);
 		pos = box.min;
 		dim = box2i_get_extent(box);
 
