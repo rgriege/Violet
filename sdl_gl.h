@@ -106,14 +106,14 @@ void img_destroy(gui_img_t *img);
 typedef struct font_t
 {
 	const char *filename;
-	u32 sz;
+	s32 sz;
 	s32 num_glyphs;
 	gui_font_metrics_t metrics;
 	void *char_info;
 	gui_texture_t texture;
 } font_t;
 
-b32  font_load(font_t *f, const char *filename, u32 sz);
+b32  font_load(font_t *f, const char *filename, s32 sz);
 void font_destroy(font_t *f);
 
 typedef enum window_flags_t
@@ -639,7 +639,7 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 	return packed;
 }
 
-b32 font_load(font_t *f, const char *filename, u32 sz)
+b32 font_load(font_t *f, const char *filename, s32 sz)
 {
 	b32 retval = false;
 	stbtt_fontinfo info = { .userdata = g_temp_allocator };
@@ -656,7 +656,7 @@ b32 font_load(font_t *f, const char *filename, u32 sz)
 		goto err_ttf;
 
 	f->num_glyphs = info.numGlyphs;
-	log_debug("packing %d glyphs for %s:%u", f->num_glyphs, filename, sz);
+	log_debug("packing %d glyphs for %s:%s", f->num_glyphs, filename, sz);
 	f->char_info = malloc(f->num_glyphs * sizeof(stbtt_packedchar));
 
 	if (!rgtt_Pack(&info, sz, f->char_info, &f->texture))
@@ -869,7 +869,7 @@ void window_fullscreen(window_t *window)
 }
 
 static
-void *window__get_font(void *handle, u32 sz)
+void *window__get_font(void *handle, s32 sz)
 {
 	window_t *window = handle;
 	font_t *font = window->fonts, *font_end = array_end(window->fonts);

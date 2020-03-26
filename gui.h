@@ -70,7 +70,7 @@ typedef struct gui_char_quad
 	r32 advance;
 } gui_char_quad_t;
 
-typedef void*(*gui_font_f)(void *handle, u32 size);
+typedef void*(*gui_font_f)(void *handle, s32 size);
 typedef b32(*gui_font_metrics_f)(void *font, gui_font_metrics_t *metrics);
 typedef b32(*gui_char_quad_f)(void *font, s32 codepoint, r32 x, r32 y, gui_char_quad_t *quad);
 
@@ -221,7 +221,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_e align);
 void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph);
-s32  gui_txt_width(const gui_t *gui, const char *txt, u32 sz);
+s32  gui_txt_width(const gui_t *gui, const char *txt, s32 sz);
 
 void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_mask_pop(gui_t *gui);
@@ -235,7 +235,7 @@ void gui_line_styled(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1,
                      const gui_line_style_t *style);
 void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                     const char *txt, const gui_text_style_t *style);
-u32  gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width);
+u32  gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, s32 size, r32 max_width);
 
 typedef void(*gui_pen_t)(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                          const gui_element_style_t *style);
@@ -754,7 +754,7 @@ typedef struct gui_line_style
 
 typedef struct gui_text_style
 {
-	u32 size;
+	s32 size;
 	color_t color;
 	gui_align_e align;
 	s32 padding;
@@ -2974,7 +2974,7 @@ void gui__add_codepoint_to_line_width(const gui_t *gui, void *font, s32 cp, r32 
 		*line_width += q.advance;
 }
 
-u32 gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, u32 size, r32 max_width)
+u32 gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, s32 size, r32 max_width)
 {
 	char *p = txt;
 	char *pnext;
@@ -3244,7 +3244,7 @@ void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 	*ph = ivalf_length(y_range);
 }
 
-s32 gui_txt_width(const gui_t *gui, const char *txt, u32 sz)
+s32 gui_txt_width(const gui_t *gui, const char *txt, s32 sz)
 {
 	const char *p = txt;
 	char *pnext;
