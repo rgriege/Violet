@@ -3246,17 +3246,19 @@ void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 
 s32 gui_txt_width(const gui_t *gui, const char *txt, u32 sz)
 {
+	const char *p = txt;
+	char *pnext;
 	s32 width = 0;
-	const char *line = txt;
+	s32 line_width;
+	s32 cp;
 
-
-	while (*line != '\0') {
-		const s32 line_width = gui__txt_line_width(gui, line, gui->fonts.get_char_quad);
+	while (*p != 0) {
+		line_width = gui__txt_line_width(gui, p, gui->fonts.get_char_quad);
 		width = max(width, line_width);
-		while (*line != '\0' && *line != '\n')
-			++line;
-		if (*line == '\n')
-			++line;
+		while ((cp = utf8_next_codepoint(p, &pnext)) != 0 && cp != '\n')
+			p = pnext;
+		if (cp == '\n')
+			p = pnext;
 	}
 	return width;
 }
