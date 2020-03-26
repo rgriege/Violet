@@ -687,7 +687,7 @@ typedef struct gui_panel
 	struct { s32 x, y, w, h; } unscaled;
 	struct { s32 x, y, w, h; };
 	const char *title; /* un-owned, can be NULL */
-	gui_panel_flags_e flags;
+	s32 flags;
 	u32 id;
 	intptr userdata;
 	gui_scroll_area_t scroll_area;
@@ -756,7 +756,7 @@ typedef struct gui_text_style
 {
 	s32 size;
 	color_t color;
-	gui_align_e align;
+	s32 align;
 	s32 padding;
 	b32 wrap;
 } gui_text_style_t;
@@ -856,8 +856,7 @@ void         gui_style_set(gui_t *gui, const gui_style_t *style);
 void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size);
 void gui_style_push_current_(gui_t *gui, size_t offset, size_t size);
 void gui_style_push_color_(gui_t *gui, size_t offset, color_t val);
-void gui_style_push_b32_(gui_t *gui, size_t offset, u32 val);
-void gui_style_push_u32_(gui_t *gui, size_t offset, u32 val);
+void gui_style_push_b32_(gui_t *gui, size_t offset, b32 val);
 void gui_style_push_s32_(gui_t *gui, size_t offset, s32 val);
 void gui_style_push_r32_(gui_t *gui, size_t offset, r32 val);
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
@@ -872,8 +871,6 @@ void gui_style_pop(gui_t *gui);
 	gui_style_push_color_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_b32(gui, loc, val) \
 	gui_style_push_b32_(gui, offsetof(gui_style_t, loc), val)
-#define gui_style_push_u32(gui, loc, val) \
-	gui_style_push_u32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_s32(gui, loc, val) \
 	gui_style_push_s32_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_r32(gui, loc, val) \
@@ -5014,7 +5011,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		pgui_spacer(gui);
 		pgui_spacer(gui);
 
-		gui_style_push_u32(gui, txt.align, GUI_ALIGN_MIDRIGHT);
+		gui_style_push_s32(gui, txt.align, GUI_ALIGN_MIDRIGHT);
 
 		pgui_col_cellsv(gui, 0, rows_npt);
 
@@ -7514,7 +7511,6 @@ void gui_style_push_##name##_(gui_t *gui, size_t offset, type val) \
 
 GUI_STYLE_STACK_PUSH_LITERAL(color, color_t)
 GUI_STYLE_STACK_PUSH_LITERAL(b32, b32)
-GUI_STYLE_STACK_PUSH_LITERAL(u32, u32)
 GUI_STYLE_STACK_PUSH_LITERAL(s32, s32)
 GUI_STYLE_STACK_PUSH_LITERAL(r32, r32)
 GUI_STYLE_STACK_PUSH_LITERAL(ptr, const void*)
