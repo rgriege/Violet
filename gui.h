@@ -963,11 +963,10 @@ s32 font__line_offset_x(void *font, const char *txt,
                         const gui_text_style_t *style,
                         gui_char_quad_f get_char_quad)
 {
-	const s32 width = font__line_width(font, txt, get_char_quad);
 	if (style->align & GUI_ALIGN_CENTER)
-		return -width / 2;
+		return -font__line_width(font, txt, get_char_quad) / 2;
 	else if (style->align & GUI_ALIGN_RIGHT)
-		return -(width + style->padding);
+		return -(font__line_width(font, txt, get_char_quad) + style->padding);
 	else /* default to GUI_ALIGN_LEFT */
 		return style->padding;
 }
