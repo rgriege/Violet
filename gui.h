@@ -219,7 +219,7 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
                    gui_img_scale_e scale);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
              gui_align_e align);
-void gui_txt_dim(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
+void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph);
 s32  gui_txt_width(const gui_t *gui, const char *txt, u32 sz);
 
@@ -3189,7 +3189,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 	gui__txt(gui, &x, &y, txt, &style);
 }
 
-void gui_txt_dim(gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
+void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph)
 {
 	const char *p = txt;
