@@ -106,14 +106,14 @@ void img_destroy(gui_img_t *img);
 typedef struct font_t
 {
 	const char *filename;
-	s32 sz;
+	s32 size;
 	s32 num_glyphs;
 	gui_font_metrics_t metrics;
 	void *char_info;
 	gui_texture_t texture;
 } font_t;
 
-b32  font_load(font_t *f, const char *filename, s32 sz);
+b32  font_load(font_t *f, const char *filename, s32 size);
 void font_destroy(font_t *f);
 
 typedef enum window_flags_t
@@ -639,7 +639,7 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 	return packed;
 }
 
-b32 font_load(font_t *f, const char *filename, s32 sz)
+b32 font_load(font_t *f, const char *filename, s32 size)
 {
 	b32 retval = false;
 	stbtt_fontinfo info = { .userdata = g_temp_allocator };
@@ -656,16 +656,16 @@ b32 font_load(font_t *f, const char *filename, s32 sz)
 		goto err_ttf;
 
 	f->num_glyphs = info.numGlyphs;
-	log_debug("packing %d glyphs for %s:%s", f->num_glyphs, filename, sz);
+	log_debug("packing %d glyphs for %s:%d", f->num_glyphs, filename, size);
 	f->char_info = malloc(f->num_glyphs * sizeof(stbtt_packedchar));
 
-	if (!rgtt_Pack(&info, sz, f->char_info, &f->texture))
+	if (!rgtt_Pack(&info, size, f->char_info, &f->texture))
 		goto err_pack;
 
 	f->filename = filename;
-	f->sz = sz;
+	f->size = size;
 	stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
-	scale = stbtt_ScaleForPixelHeight(&info, sz);
+	scale = stbtt_ScaleForPixelHeight(&info, size);
 	f->metrics.ascent = scale * ascent;
 	f->metrics.descent = scale * descent;
 	f->metrics.line_gap = scale * line_gap;
@@ -869,17 +869,17 @@ void window_fullscreen(window_t *window)
 }
 
 static
-void *window__get_font(void *handle, s32 sz)
+void *window__get_font(void *handle, s32 size)
 {
 	window_t *window = handle;
 	font_t *font = window->fonts, *font_end = array_end(window->fonts);
-	while (font != font_end && font->sz != sz)
+	while (font != font_end && font->size != size)
 		++font;
 	if (font != font_end)
 		return font;
 
 	font = array_append_null(window->fonts);
-	if (font_load(font, window->font_file_path, sz)) {
+	if (font_load(font, window->font_file_path, size)) {
 		return font;
 	} else {
 		array_pop(window->fonts);

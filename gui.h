@@ -217,11 +217,11 @@ void gui_img_ex(gui_t *gui, s32 x, s32 y, const gui_img_t *img, r32 sx, r32 sy,
                 r32 rotation, r32 opacity);
 void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
                    gui_img_scale_e scale);
-void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt, color_t c,
+void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt, color_t c,
              gui_align_e align);
-void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
+void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph);
-s32  gui_txt_width(const gui_t *gui, const char *txt, s32 sz);
+s32  gui_txt_width(const gui_t *gui, const char *txt, s32 size);
 
 void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_mask_pop(gui_t *gui);
@@ -960,23 +960,24 @@ out:
 
 static
 s32 font__line_offset_x(void *font, const char *txt,
-                        const gui_text_style_t *style,
+                        s32 align, s32 padding,
                         gui_char_quad_f get_char_quad)
 {
-	if (style->align & GUI_ALIGN_CENTER)
+	if (align & GUI_ALIGN_CENTER)
 		return -font__line_width(font, txt, get_char_quad) / 2;
-	else if (style->align & GUI_ALIGN_RIGHT)
-		return -(font__line_width(font, txt, get_char_quad) + style->padding);
+	else if (align & GUI_ALIGN_RIGHT)
+		return -(font__line_width(font, txt, get_char_quad) + padding);
 	else /* default to GUI_ALIGN_LEFT */
-		return style->padding;
+		return padding;
 }
 
 static
-s32 font__offset_y(void *font, const char *txt, const gui_text_style_t *style,
+s32 font__offset_y(void *font, const char *txt,
+                   s32 align, s32 padding,
                    const gui_font_metrics_t *m)
 {
 	s32 height;
-	if (style->align & GUI_ALIGN_MIDDLE) {
+	if (align & GUI_ALIGN_MIDDLE) {
 		height = 1;
 		for (const char *c = txt; *c != '\0'; ++c)
 			if (*c == '\n')
@@ -985,10 +986,10 @@ s32 font__offset_y(void *font, const char *txt, const gui_text_style_t *style,
 		       ? -m->descent + m->line_gap + m->newline_dist * (height / 2 - 1)
 		       :   -m->descent - (m->ascent - m->descent) / 2
 		         + m->newline_dist * (height / 2);
-	} else if (style->align & GUI_ALIGN_TOP) {
-		return -m->ascent - m->line_gap / 2 - style->padding;
+	} else if (align & GUI_ALIGN_TOP) {
+		return -m->ascent - m->line_gap / 2 - padding;
 	} else /* default to GUI_ALIGN_BOTTOM */ {
-		height = -m->descent + m->line_gap / 2 + style->padding;
+		height = -m->descent + m->line_gap / 2 + padding;
 		for (const char *c = txt; *c != '\0'; ++c)
 			if (*c == '\n')
 				height += m->newline_dist;
@@ -1608,8 +1609,9 @@ typedef struct gui
 
 static
 s32 gui__txt_line_width(const gui_t *gui, const char *txt,
-                        s32 size, gui_char_quad_f get_char_quad)
+                        s32 size_, gui_char_quad_f get_char_quad)
 {
+	const s32 size = gui_scale_val(gui, size_);
 	void *font = gui->fonts.get_font(gui->fonts.handle, size);
 	return font ? font__line_width(font, txt, get_char_quad) : 0;
 }
@@ -1619,21 +1621,26 @@ s32 gui__txt_line_offset_x(const gui_t *gui, const char *txt,
                            const gui_text_style_t *style,
                            gui_char_quad_f get_char_quad)
 {
-	void *font = gui->fonts.get_font(gui->fonts.handle, style->size);
-	return font ? font__line_offset_x(font, txt, style, get_char_quad) : 0;
+	const s32 size = gui_scale_val(gui, style->size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, size);
+	const s32 align = style->align;
+	const s32 padding = gui_scale_val(gui, style->padding);
+	return font ? font__line_offset_x(font, txt, align, padding, get_char_quad) : 0;
 }
 
 static
 s32 gui__txt_offset_y(const gui_t *gui, const char *txt, const gui_text_style_t *style)
 {
-	void *font = gui->fonts.get_font(gui->fonts.handle, style->size);
+	const s32 size = gui_scale_val(gui, style->size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, size);
 	gui_font_metrics_t metrics;
+	const s32 padding = gui_scale_val(gui, style->padding);
 
 	if (!font)
 		return 0;
 
 	gui->fonts.get_metrics(font, &metrics);
-	return font__offset_y(font, txt, style, &metrics);
+	return font__offset_y(font, txt, style->align, padding, &metrics);
 }
 
 
@@ -2973,10 +2980,12 @@ void gui__add_codepoint_to_line_width(const gui_t *gui, void *font, s32 cp, r32 
 		*line_width += q.advance;
 }
 
-u32 gui_wrap_txt(const gui_t *gui, char *txt, s32 padding, s32 size, r32 max_width)
+u32 gui_wrap_txt(const gui_t *gui, char *txt, s32 padding_, s32 size_, r32 max_width)
 {
 	char *p = txt;
 	char *pnext;
+	const s32 padding = gui_scale_val(gui, padding_);
+	const s32 size = gui_scale_val(gui, size_);
 	s32 cp = utf8_next_codepoint(p, &pnext);
 	r32 line_width = padding;
 	u32 num_lines = 1;
@@ -3030,13 +3039,14 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	r32 x, y;
 	gui_char_quad_t q;
 	array(char) buf = NULL;
+	const s32 size = gui_scale_val(gui, style->size);
 	const char *txt = txt_;
 	const char *p = txt;
 	char *pnext;
 	s32 cp;
 	u32 i;
 
-	font = gui->fonts.get_font(gui->fonts.handle, style->size);
+	font = gui->fonts.get_font(gui->fonts.handle, size);
 	if (!font)
 		return;
 
@@ -3085,11 +3095,12 @@ void gui__txt(gui_t *gui, s32 x0, s32 y0, const char *txt,
 	gui_font_metrics_t font_metrics;
 	r32 x = x0, y = y0;
 	gui_char_quad_t q;
+	const s32 size = gui_scale_val(gui, style->size);
 	const char *p = txt;
 	char *pnext;
 	s32 cp;
 
-	font = gui->fonts.get_font(gui->fonts.handle, style->size);
+	font = gui->fonts.get_font(gui->fonts.handle, size);
 	if (!font)
 		return;
 
@@ -3123,6 +3134,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	s32 closest_dist, dist;
 	v2i p;
 	array(char) buf = NULL;
+	const s32 size = gui_scale_val(gui, style->size);
 	const char *txt  = txt_;
 	const char *ptxt = txt_;
 	char *pnext;
@@ -3137,7 +3149,7 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 		ptxt = buf;
 	}
 
-	font = gui->fonts.get_font(gui->fonts.handle, style->size);
+	font = gui->fonts.get_font(gui->fonts.handle, size);
 	if (!font)
 		return 0;
 
@@ -3173,11 +3185,11 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 	return closest_pos;
 }
 
-void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
+void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
              color_t c, gui_align_e align)
 {
 	const gui_text_style_t style = {
-		.size = sz,
+		.size = size,
 		.color = c,
 		.align = align,
 		.padding = 0,
@@ -3186,7 +3198,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 	gui__txt(gui, x, y, txt, &style);
 }
 
-void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
+void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 size_, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph)
 {
 	const char *p = txt;
@@ -3196,8 +3208,9 @@ void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 	r32 x = x_, y = y_;
 	ivalf x_range, y_range;
 	gui_char_quad_t q;
+	const s32 size = gui_scale_val(gui, size_);
 	const gui_text_style_t style = {
-		.size = sz,
+		.size = size_,
 		.color = g_nocolor,
 		.align = align,
 		.padding = 0,
@@ -3205,7 +3218,7 @@ void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 	};
 	gui_font_metrics_t font_metrics;
 
-	font = gui->fonts.get_font(gui->fonts.handle, style.size);
+	font = gui->fonts.get_font(gui->fonts.handle, size);
 	if (!font) {
 		*px = 0;
 		*py = 0;
@@ -3241,7 +3254,7 @@ void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
 	*ph = ivalf_length(y_range);
 }
 
-s32 gui_txt_width(const gui_t *gui, const char *txt, s32 sz)
+s32 gui_txt_width(const gui_t *gui, const char *txt, s32 size)
 {
 	const char *p = txt;
 	char *pnext;
@@ -3250,7 +3263,7 @@ s32 gui_txt_width(const gui_t *gui, const char *txt, s32 sz)
 	s32 cp;
 
 	while (*p != 0) {
-		line_width = gui__txt_line_width(gui, p, sz, gui->fonts.get_char_quad);
+		line_width = gui__txt_line_width(gui, p, size, gui->fonts.get_char_quad);
 		width = max(width, line_width);
 		while ((cp = utf8_next_codepoint(p, &pnext)) != 0 && cp != '\n')
 			p = pnext;
@@ -3683,14 +3696,15 @@ void gui__hint_render(gui_t *gui, u64 id, const char *hint)
 		const gui_element_style_t *style = &gui->style.hint;
 		const s32 x = gui->mouse_pos.x;
 		const s32 y = gui->mouse_pos.y;
+		const s32 padding = gui_scale_val(gui, style->text.padding);
 		s32 rx, ry, rw, rh;
 		gui_widget_bounds_t bounds = {0};
 		gui_txt_dim(gui, x, y, style->text.size, hint,
 		            GUI_ALIGN_BOTLEFT, &rx, &ry, &rw, &rh);
 		rx = (x + rw < gui->window_dim.x) ? x : x - rw;
 		ry = (y + rh < gui->window_dim.y) ? y : y - rh;
-		rw += 2 * style->text.padding;
-		rh += 2 * style->text.padding;
+		rw += 2 * padding;
+		rh += 2 * padding;
 		gui_mask_push(gui, rx, ry, rw, rh);
 		box2i_from_xywh(&bounds.bbox, rx, ry, rw, rh);
 		gui_widget_bounds_push(gui, &bounds, false);
@@ -3765,7 +3779,8 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		                                         gui->mouse_pos, txt_style);
 	}
 	if (gui_widget_focused(gui, id)) {
-		void *font = gui->fonts.get_font(gui->fonts.handle, style->active.text.size);
+		const s32 size = gui_scale_val(gui, style->active.text.size);
+		void *font = gui->fonts.get_font(gui->fonts.handle, size);
 		u32 len = (u32)strlen(txt);
 		gui->npt.cursor_pos = clamp(0, gui->npt.cursor_pos, len);
 #ifdef __APPLE__
@@ -3912,7 +3927,8 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (gui_widget_focused(gui, id)) {
 		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
 			const color_t color = elem_style.text.color;
-			void *font = gui->fonts.get_font(gui->fonts.handle, elem_style.text.size);
+			const s32 size = gui_scale_val(gui, elem_style.text.size);
+			void *font = gui->fonts.get_font(gui->fonts.handle, size);
 			if (font) {
 				gui_font_metrics_t metrics;
 				gui->fonts.get_metrics(font, &metrics);
