@@ -2380,8 +2380,8 @@ m3f gui_texture_get_transform(const gui_texture_t *texture, s32 x, s32 y,
 }
 
 static
-void texture__render(gui_t *gui, const gui_texture_t *texture, s32 x, s32 y,
-                     r32 sx, r32 sy, r32 rotation, color_t color)
+void gui__texture(gui_t *gui, const gui_texture_t *texture, s32 x, s32 y,
+                  r32 sx, r32 sy, r32 rotation, color_t color)
 {
 	static const v2f corners[] = {
 		{ 0.f, 0.f },
@@ -2422,7 +2422,7 @@ void texture__render(gui_t *gui, const gui_texture_t *texture, s32 x, s32 y,
 }
 
 static
-void text__render(gui_t *gui, const gui_char_quad_t *q, color_t color)
+void gui__char(gui_t *gui, const gui_char_quad_t *q, color_t color)
 {
 	const box2i bbox = {
 		.min = { (s32)q->x0, (s32)q->y0 },
@@ -2938,7 +2938,7 @@ void gui_img_ex(gui_t *gui, s32 x, s32 y, const gui_img_t *img, r32 sx, r32 sy,
 
 	color_t color = g_white;
 	color.a = opacity * 255;
-	texture__render(gui, img, x, y, sx, sy, rotation, color);
+	gui__texture(gui, img, x, y, sx, sy, rotation, color);
 }
 
 void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
@@ -3078,12 +3078,12 @@ out:
 }
 
 static
-void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
+void gui__txt(gui_t *gui, s32 x0, s32 y0, const char *txt,
               const gui_text_style_t *style)
 {
 	void *font;
 	gui_font_metrics_t font_metrics;
-	r32 x = *ix, y = *iy;
+	r32 x = x0, y = y0;
 	gui_char_quad_t q;
 	const char *p = txt;
 	char *pnext;
@@ -3101,15 +3101,13 @@ void gui__txt(gui_t *gui, s32 *ix, s32 *iy, const char *txt,
 	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
 			y -= font_metrics.newline_dist;
-			x = *ix + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+			x = x0 + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
 		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
-			text__render(gui, &q, style->color);
+			gui__char(gui, &q, style->color);
 			x += q.advance;
 		}
 		p = pnext;
 	}
-	*ix = x;
-	*iy = y;
 }
 
 static
@@ -3185,7 +3183,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 sz, const char *txt,
 		.padding = 0,
 		.wrap = false,
 	};
-	gui__txt(gui, &x, &y, txt, &style);
+	gui__txt(gui, x, y, txt, &style);
 }
 
 void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 sz, const char *txt,
@@ -3350,10 +3348,10 @@ void gui_txt_styled(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		array_init_ex(buf, len + 1, g_temp_allocator);
 		memcpy(buf, txt, len + 1);
 		gui_wrap_txt(gui, buf, style->padding, style->size, w);
-		gui__txt(gui, &x, &y, buf, style);
+		gui__txt(gui, x, y, buf, style);
 		array_destroy(buf);
 	} else {
-		gui__txt(gui, &x, &y, txt, style);
+		gui__txt(gui, x, y, txt, style);
 	}
 }
 
