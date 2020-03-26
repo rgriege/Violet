@@ -1608,10 +1608,9 @@ typedef struct gui
 
 static
 s32 gui__txt_line_width(const gui_t *gui, const char *txt,
-                        gui_char_quad_f get_char_quad)
+                        s32 size, gui_char_quad_f get_char_quad)
 {
-	const gui_text_style_t *style = &gui->style.txt;
-	void *font = gui->fonts.get_font(gui->fonts.handle, style->size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, size);
 	return font ? font__line_width(font, txt, get_char_quad) : 0;
 }
 
@@ -3253,7 +3252,7 @@ s32 gui_txt_width(const gui_t *gui, const char *txt, s32 sz)
 	s32 cp;
 
 	while (*p != 0) {
-		line_width = gui__txt_line_width(gui, p, gui->fonts.get_char_quad);
+		line_width = gui__txt_line_width(gui, p, sz, gui->fonts.get_char_quad);
 		width = max(width, line_width);
 		while ((cp = utf8_next_codepoint(p, &pnext)) != 0 && cp != '\n')
 			p = pnext;
