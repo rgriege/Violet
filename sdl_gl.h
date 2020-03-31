@@ -998,7 +998,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	if (!window__get_display_usable_bounds(0, &usable_bounds))
 		goto err_ctx;
 
-	u32 sdl_flags = SDL_WINDOW_OPENGL;
+	u32 sdl_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
 	if (flags & WINDOW_BORDERLESS)
 		sdl_flags |= SDL_WINDOW_BORDERLESS;
 	if (flags & WINDOW_RESIZABLE)
@@ -1094,11 +1094,11 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	{
 		SDL_Event evt;
-		while (SDL_PollEvent(&evt) == 1); /* must be run before SDL_GetWindowSize */
+		while (SDL_PollEvent(&evt) == 1); /* must be run before SDL_GL_GetDrawableSize */
 	}
 
 	v2i dim;
-	SDL_GetWindowSize(window->window, &dim.x, &dim.y);
+	SDL_GL_GetDrawableSize(window->window, &dim.x, &dim.y);
 
 	window__store_current_window_rect(window);
 
@@ -1207,7 +1207,8 @@ b32 window_begin_frame(window_t *window)
 	const colorf_t bg_color = color_to_colorf(gui_style_c(gui)->bg_color);
 	b32 quit = false;
 	SDL_Event evt;
-	v2i dim;
+	v2i window_dim;
+	v2i drawable_dim;
 	v2i mouse_pos;
 	u32 mouse_btn;
 	s32 mouse_wheel = 0;
@@ -1264,8 +1265,9 @@ b32 window_begin_frame(window_t *window)
 		}
 	}
 
-	SDL_GetWindowSize(window->window, &dim.x, &dim.y);
-	gui_event_set_window_dim(gui, dim.x, dim.y);
+	SDL_GL_GetDrawableSize(window->window, &drawable_dim.x, &drawable_dim.y);
+	SDL_GetWindowSize(window->window, &window_dim.x, &window_dim.y);
+	gui_event_set_window_dim(gui, drawable_dim.x, drawable_dim.y);
 
 	if (gui_window_dragging(gui)) {
 		v2i pos;
@@ -1277,7 +1279,10 @@ b32 window_begin_frame(window_t *window)
 	}
 	if (mouse_wheel != 0)
 		mouse_btn |= (mouse_wheel > 0 ? MB_WHEELUP : MB_WHEELDOWN);
-	mouse_pos.y = dim.y - mouse_pos.y;
+	/* Drawable size may be greater than window size on high-DPI monitors, but
+	 * the mouse position is always reported in window-size coordinates (with inverted y). */
+	mouse_pos.x = mouse_pos.x * drawable_dim.x / window_dim.x;
+	mouse_pos.y = drawable_dim.y - mouse_pos.y * drawable_dim.y / window_dim.y;
 	gui_event_set_mouse_pos(gui, mouse_pos.x, mouse_pos.y);
 	gui_event_set_mouse_btn(gui, mouse_btn);
 
@@ -1286,10 +1291,10 @@ b32 window_begin_frame(window_t *window)
 
 	gui_events_end(gui);
 
-	GL_CHECK(glViewport, 0, 0, dim.x, dim.y);
+	GL_CHECK(glViewport, 0, 0, drawable_dim.x, drawable_dim.y);
 
 	/* NOTE(rgriege): reset the scissor for glClear */
-	GL_CHECK(glScissor, 0, 0, dim.x, dim.y);
+	GL_CHECK(glScissor, 0, 0, drawable_dim.x, drawable_dim.y);
 
 	GL_CHECK(glClearColor, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
 	GL_CHECK(glClear, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
