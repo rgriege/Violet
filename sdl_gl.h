@@ -150,6 +150,7 @@ const gui_img_t *window_get_img(window_t *window, const char *fname);
 
 void   window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h);
 
+s32    window_get_scale_for_dpi(const window_t *window);
 void   mouse_pos_global(const window_t *window, s32 *x, s32 *y);
 
 #endif // VIOLET_SDL_GL_H
@@ -1194,6 +1195,14 @@ void window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h)
 		gui_window_drag_end(gui);
 	}
 	gui_style_pop(gui);
+}
+
+s32 window_get_scale_for_dpi(const window_t *window)
+{
+	v2i drawable_dim, window_dim;
+	SDL_GL_GetDrawableSize(window->window, &drawable_dim.x, &drawable_dim.y);
+	SDL_GetWindowSize(window->window, &window_dim.x, &window_dim.y);
+	return max(100 * drawable_dim.x / window_dim.x, 100 * drawable_dim.y / window_dim.y);
 }
 
 void mouse_pos_global(const window_t *window, s32 *x, s32 *y)
