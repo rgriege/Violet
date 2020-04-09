@@ -507,6 +507,7 @@ typedef struct gui_grid
 void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h);
 void pgui_grid_end(gui_t *gui, gui_grid_t *grid);
 u32  pgui_grid_depth(const gui_t *gui);
+void pgui_grid_dimensions(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 /* Cell values are evaluated roughly as follows:
  * 1. Subtract pixel values from the total row/column dimension.
@@ -7346,6 +7347,19 @@ u32 pgui_grid_depth(const gui_t *gui)
 {
 	assert(gui->grid);
 	return gui->grid->depth;
+}
+
+void pgui_grid_dimensions(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	assert(gui->grid);
+	if (x)
+		*x = gui->grid->pos.x;
+	if (y)
+		*y = gui->grid->pos.y - gui->grid->dim.y;
+	if (w)
+		*w = gui->grid->dim.x;
+	if (h)
+		*h = gui->grid->dim.y;
 }
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
