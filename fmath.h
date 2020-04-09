@@ -283,6 +283,7 @@ FMDEF void  polyf_bounding_box(const v2f *v, u32 n, box2f *box);
 FMDEF void  polyf_translate(v2f *v, u32 n, v2f delta);
 FMDEF void  polyf_transform(v2f *v, u32 n, const m3f mat);
 FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis);
+FMDEF ivalf polyf_project_onto_ray(const v2f *v, u32 n, v2f start, v2f dir);
 FMDEF v2f   polyf_center(const v2f *v, u32 n);
 FMDEF r32   polyf_area(const v2f *v, u32 n);
 FMDEF r32   polyf_area_signed(const v2f *v, u32 n);
@@ -1600,6 +1601,11 @@ FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis)
 			projection.r = dp;
 	}
 	return projection;
+}
+
+FMDEF ivalf polyf_project_onto_ray(const v2f *v, u32 n, v2f start, v2f dir)
+{
+	return ivalf_slide(polyf_project(v, n, dir), -v2f_dot(start, dir));
 }
 
 FMDEF v2f polyf_center(const v2f *v, u32 n)
