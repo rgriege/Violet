@@ -982,8 +982,11 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 #ifndef __EMSCRIPTEN__
 	// Use OpenGL 3.3 core
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+	/* not checking return values because we check the important ones later */
+	const int gl_major_version_target = 3;
+	const int gl_minor_version_target = 3;
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_major_version_target);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_minor_version_target);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
@@ -1033,6 +1036,25 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	if (window->gl_context == NULL) {
 		log_error("SDL_CreateContext failed: %s", SDL_GetError());
 		goto err_ctx;
+	}
+
+	/* SDL docs say we should do this after creating the context */
+	int gl_major_version;
+	int gl_minor_version;
+	if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &gl_major_version) != 0) {
+		log_error("failed to get OpenGL major version: %s", SDL_GetError());
+		goto err_ver;
+	}
+	if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &gl_minor_version) != 0) {
+		log_error("failed to get OpenGL minor version: %s", SDL_GetError());
+		goto err_ver;
+	}
+	if (   gl_major_version < gl_major_version_target
+	    || (   gl_major_version == gl_major_version_target
+	        && gl_minor_version  < gl_minor_version_target)) {
+		log_error("OpenGL context version too small: %d.%d",
+		          gl_major_version, gl_minor_version);
+		goto err_ver;
 	}
 
 	if (SDL_GL_SetSwapInterval(0) != 0)
@@ -1127,6 +1149,7 @@ err_white:
 	texture_destroy(&window->texture_white_dotted);
 	GL_CHECK(glDeleteBuffers, 3, window->vbo);
 	GL_CHECK(glDeleteVertexArrays, 1, &window->vao);
+err_ver:
 err_glew:
 	SDL_GL_DeleteContext(window->gl_context);
 	if (window->parent_window)
