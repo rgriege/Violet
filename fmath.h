@@ -198,6 +198,7 @@ FMDEF b32   ivalf_overlaps_within(ivalf lhs, ivalf rhs, r32 error);
 FMDEF r32   ivalf_overlap(ivalf lhs, ivalf rhs);
 FMDEF ivalf ivalf_overlap_ival(ivalf lhs, ivalf rhs);
 FMDEF ivalf ivalf_invert(ivalf i);
+FMDEF ivalf ivalf_join(ivalf lhs, ivalf rhs);
 
 /* 2D Anti-aliased bounding box */
 
@@ -1085,6 +1086,11 @@ FMDEF ivalf ivalf_overlap_ival(ivalf lhs, ivalf rhs)
 FMDEF ivalf ivalf_invert(ivalf i)
 {
 	return (ivalf){ .l = -i.r, .r = -i.l };
+}
+
+FMDEF ivalf ivalf_join(ivalf lhs, ivalf rhs)
+{
+	return (ivalf){ .l = fminf(lhs.l, rhs.l), .r = fmaxf(lhs.r, rhs.r) };
 }
 
 /* 2D Anti-aliased bounding box */
