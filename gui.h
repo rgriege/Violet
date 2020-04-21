@@ -96,7 +96,13 @@ void   gui_end_frame(gui_t *gui);
 void   gui_end_frame_ex(gui_t *gui, u32 target_frame_milli,
                         u32 idle_frame_milli, u32 idle_start_milli);
 
+#ifndef GUI_CLIPBOARD_SIZE
+#define GUI_CLIPBOARD_SIZE 64
+#endif
+
 b32   gui_text_input_active(const gui_t *gui);
+b32   gui_has_clipboard_text(const gui_t *gui);
+void  gui_get_clipboard_text(const gui_t *gui, char *text);
 u32   gui_cursor(const gui_t *gui);
 void *gui_window(gui_t *gui);
 void  gui_set_window(gui_t *gui, void *window);
@@ -1527,7 +1533,8 @@ typedef struct gui
 	s32 key_toggles[KBT_COUNT]; /* gui__key_toggle_state_e */
 	gui__repeat_t key_repeat;
 	char text_npt[32];
-	char clipboard[32];
+	char clipboard_in[GUI_CLIPBOARD_SIZE];
+	char clipboard_out[GUI_CLIPBOARD_SIZE];
 
 	/* style */
 	gui_style_t style;
@@ -1557,7 +1564,8 @@ typedef struct gui
 	/* specific widget state */
 	struct {
 		b32 active;
-		u32 cursor_pos; /* byte, NOT GLYPH, offset */
+		u32 cursor; /* byte, NOT GLYPH, offset */
+		u32 selection; /* byte, NOT GLYPH, offset */
 		b32 performed_action;
 		u32 initial_txt_hash;
 		char val_buf[GUI_TXT_MAX_LENGTH];
@@ -1641,6 +1649,15 @@ s32 gui__txt_offset_y(const gui_t *gui, const char *txt, const gui_text_style_t 
 	return font__offset_y(font, txt, style->align, padding, &metrics);
 }
 
+static
+v2f gui__txt_start_pos(const gui_t *gui, const char *txt,
+                       v2i anchor, const gui_text_style_t *style)
+{
+	return (v2f) {
+		.x = anchor.x + gui__txt_line_offset_x(gui, txt, style, gui->fonts.get_char_quad),
+		.y = anchor.y + gui__txt_offset_y(gui, txt, style),
+	};
+}
 
 static
 void gui__repeat_init(gui__repeat_t *repeat)
@@ -1702,7 +1719,8 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	memset(gui->key_toggles, 0, sizeof(gui->key_toggles));
 	gui__repeat_init(&gui->key_repeat);
 	memset(gui->text_npt, 0, sizeof(gui->text_npt));
-	memset(gui->clipboard, 0, sizeof(gui->clipboard));
+	memset(gui->clipboard_in, 0, sizeof(gui->clipboard_in));
+	memset(gui->clipboard_out, 0, sizeof(gui->clipboard_out));
 
 	gui_style_set(gui, &g_gui_style_default);
 
@@ -1738,7 +1756,8 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 
 
 	gui->npt.active = false;
-	gui->npt.cursor_pos = 0;
+	gui->npt.cursor = 0;
+	gui->npt.selection = 0;
 	gui->npt.performed_action = false;
 	gui->npt.initial_txt_hash = 0;
 	gui->npt.pw_buf[0] = 0;
@@ -1933,7 +1952,8 @@ void gui_events_begin(gui_t *gui)
 
 	gui->mouse_btn = 0;
 	gui->text_npt[0] = '\0';
-	gui->clipboard[0] = '\0';
+	gui->clipboard_in[0] = '\0';
+	gui->clipboard_out[0] = '\0';
 	gui->left_window = false;
 	gui->text_input_exceeds_buffer_size = false;
 	gui->clipboard_input_exceeds_buffer_size = false;
@@ -1973,8 +1993,8 @@ void gui_event_set_keyboard(gui_t *gui, const u8 *keys, u32 key_cnt)
 
 void gui_event_add_clipboard(gui_t *gui, const char *text)
 {
-	if (strlen(gui->clipboard) + strlen(text) + 1 <= countof(gui->clipboard))
-		strcat(gui->clipboard, text);
+	if (strlen(gui->clipboard_in) + strlen(text) + 1 <= countof(gui->clipboard_in))
+		strcat(gui->clipboard_in, text);
 	else
 		gui->clipboard_input_exceeds_buffer_size = true;
 }
@@ -2493,6 +2513,23 @@ void gui_end_frame_ex(gui_t *gui, u32 target_frame_milli,
 b32 gui_text_input_active(const gui_t *gui)
 {
 	return gui->npt.active;
+}
+
+#ifdef __APPLE__
+#define GUI__KBM_CLIPBOARD KBM_GUI
+#else
+#define GUI__KBM_CLIPBOARD KBM_CTRL
+#endif
+
+b32 gui_has_clipboard_text(const gui_t *gui)
+{
+	return gui->clipboard_out[0] != 0;
+}
+
+void gui_get_clipboard_text(const gui_t *gui, char *text)
+{
+	assert(gui_has_clipboard_text(gui));
+	strcpy(text, gui->clipboard_out);
 }
 
 u32 gui_cursor(const gui_t *gui)
@@ -3028,21 +3065,22 @@ u32 gui_wrap_txt(const gui_t *gui, char *txt, s32 padding_, s32 size_, r32 max_w
 }
 
 static
-void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
-                       const char *txt_, u32 pos, const gui_text_style_t *style)
+void gui__txt_get_cursor_pos(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                             const char *txt, u32 cursor,
+                             const gui_text_style_t *style,
+                             s32 *cx, s32 *cy)
 {
 	void *font;
 	gui_font_metrics_t font_metrics;
-	s32 ix_ = *ix, iy_ = *iy;
-	r32 x, y;
+	v2i anchor;
+	v2f pos;
 	gui_char_quad_t q;
-	array(char) buf = NULL;
+	str_t wrapped = NULL;
 	const s32 size = gui_scale_val(gui, style->size);
-	const char *txt = txt_;
-	const char *p = txt;
+	const char *display = txt;
+	const char *p, *target;
 	char *pnext;
 	s32 cp;
-	u32 i;
 
 	font = gui->fonts.get_font(gui->fonts.handle, size);
 	if (!font)
@@ -3051,43 +3089,41 @@ void gui__txt_char_pos(gui_t *gui, s32 *ix, s32 *iy, s32 w, s32 h,
 	gui->fonts.get_metrics(font, &font_metrics);
 
 	if (style->wrap) {
-		const u32 len = (u32)strlen(txt);
-		array_init_ex(buf, len + 1, g_temp_allocator);
-		memcpy(buf, txt, len + 1);
-		gui_wrap_txt(gui, buf, style->padding, style->size, w);
-		txt = buf;
-		p = buf;
+		wrapped = str_dup(txt, g_temp_allocator);
+		gui_wrap_txt(gui, wrapped, style->padding, style->size, w);
+		display = wrapped;
 	}
 
-	gui_align_anchor(ix_, iy_, w, h, style->align, &ix_, &iy_);
-	x = ix_ + gui__txt_line_offset_x(gui, txt, style, gui->fonts.get_char_quad);
-	y = iy_ + gui__txt_offset_y(gui, txt, style);
+	gui_align_anchor(x, y, w, h, style->align, &anchor.x, &anchor.y);
+	pos = gui__txt_start_pos(gui, display, anchor, style);
 
-	if (pos == 0)
+	if (cursor == 0)
 		goto out;
 
-	i = 0;
-	while (i < pos && (cp = utf8_next_codepoint(p, &pnext)) != 0) {
+	p = display;
+	target = &display[cursor];
+	while (p < target && (cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
-			y -= font_metrics.newline_dist;
-			x = ix_ + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
-		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
-			x += q.advance;
+			pos.y -= font_metrics.newline_dist;
+			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+		} else if (gui->fonts.get_char_quad(font, cp, pos.x, pos.y, &q)) {
+			pos.x += q.advance;
 		}
-		i += (pnext - p);
 		p = pnext;
 	}
 
 out:
-	*ix = x;
-	*iy = y;
-	if (buf)
-		array_destroy(buf);
+	*cx = pos.x;
+	*cy = pos.y;
+	if (wrapped)
+		str_destroy(&wrapped);
 }
 
 static
-void gui__txt(gui_t *gui, s32 x0, s32 y0, const char *txt,
-              const gui_text_style_t *style)
+void gui__txt_sequence(gui_t *gui, s32 x_anchor, r32 x0, r32 y0,
+                       const char *txt, u32 max_len,
+                       const gui_text_style_t *style,
+                       r32 *x1, r32 *y1)
 {
 	void *font;
 	gui_font_metrics_t font_metrics;
@@ -3100,51 +3136,59 @@ void gui__txt(gui_t *gui, s32 x0, s32 y0, const char *txt,
 
 	font = gui->fonts.get_font(gui->fonts.handle, size);
 	if (!font)
-		return;
+		goto out;
 
 	gui->fonts.get_metrics(font, &font_metrics);
 
-	x += gui__txt_line_offset_x(gui, txt, style, gui->fonts.get_char_quad);
-	y += gui__txt_offset_y(gui, txt, style);
-
-	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
+	while (p - txt < max_len && (cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
 			y -= font_metrics.newline_dist;
-			x = x0 + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+			x = x_anchor + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
 		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
 			gui__char(gui, &q, style->color);
 			x += q.advance;
 		}
 		p = pnext;
 	}
+out:
+	*x1 = x;
+	*y1 = y;
 }
 
 static
-u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
-                       const char *txt_, v2i mouse, const gui_text_style_t *style)
+void gui__txt(gui_t *gui, s32 x0, s32 y0, const char *txt,
+              const gui_text_style_t *style)
+{
+	const v2i anchor = { x0, y0 };
+	const v2f pos = gui__txt_start_pos(gui, txt, anchor, style);
+	r32 x1, y1;
+	gui__txt_sequence(gui, anchor.x, pos.x, pos.y, txt, ~0, style, &x1, &y1);
+}
+
+static
+u32 gui__txt_get_cursor_at_pos(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                               const char *txt, v2i mouse,
+                               const gui_text_style_t *style)
 {
 	void *font;
 	gui_font_metrics_t font_metrics;
-	s32 xi = xi_, yi = yi_;
-	r32 x, y;
+	v2i anchor;
+	v2f pos;
 	gui_char_quad_t q;
 	u32 closest_pos;
 	s32 closest_dist, dist;
-	v2i p;
-	array(char) buf = NULL;
+	v2i pp;
+	str_t wrapped = NULL;
 	const s32 size = gui_scale_val(gui, style->size);
-	const char *txt  = txt_;
-	const char *ptxt = txt_;
+	const char *display = txt;
+	const char *p;
 	char *pnext;
 	s32 cp;
 
 	if (style->wrap) {
-		const u32 len = (u32)strlen(txt);
-		array_init_ex(buf, len + 1, g_temp_allocator);
-		memcpy(buf, txt, len + 1);
-		gui_wrap_txt(gui, buf, style->padding, style->size, w);
-		txt  = buf;
-		ptxt = buf;
+		wrapped = str_dup(txt, g_temp_allocator);
+		gui_wrap_txt(gui, wrapped, style->padding, style->size, w);
+		display = wrapped;
 	}
 
 	font = gui->fonts.get_font(gui->fonts.handle, size);
@@ -3153,33 +3197,33 @@ u32 gui__txt_mouse_pos(gui_t *gui, s32 xi_, s32 yi_, s32 w, s32 h,
 
 	gui->fonts.get_metrics(font, &font_metrics);
 
-	gui_align_anchor(xi, yi, w, h, style->align, &xi, &yi);
-	x = xi + gui__txt_line_offset_x(gui, txt, style, gui->fonts.get_char_quad);
-	y = yi + gui__txt_offset_y(gui, txt, style);
+	gui_align_anchor(x, y, w, h, style->align, &anchor.x, &anchor.y);
+	pos = gui__txt_start_pos(gui, display, anchor, style);
 
-	v2i_set(&p, x, y + font_metrics.ascent / 2);
+	v2i_set(&pp, pos.x, pos.y + font_metrics.ascent / 2);
 	closest_pos = 0;
-	closest_dist = v2i_dist_sq(p, mouse);
+	closest_dist = v2i_dist_sq(pp, mouse);
 
-	while ((cp = utf8_next_codepoint(ptxt, &pnext)) != 0) {
-		ptxt = pnext;
+	p = display;
+	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
+		p = pnext;
 		if (cp == '\n') {
-			y -= font_metrics.newline_dist;
-			x = xi + gui__txt_line_offset_x(gui, ptxt, style, gui->fonts.get_char_quad);
-		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
-			x += q.advance;
+			pos.y -= font_metrics.newline_dist;
+			pos.x = anchor.x + gui__txt_line_offset_x(gui, p, style, gui->fonts.get_char_quad);
+		} else if (gui->fonts.get_char_quad(font, cp, pos.x, pos.y, &q)) {
+			pos.x += q.advance;
 		} else {
 			continue;
 		}
-		v2i_set(&p, roundf(x), roundf(y + font_metrics.ascent / 2));
-		dist = v2i_dist_sq(p, mouse);
+		v2i_set(&pp, roundf(pos.x), roundf(pos.y + font_metrics.ascent / 2));
+		dist = v2i_dist_sq(pp, mouse);
 		if (dist < closest_dist) {
 			closest_dist = dist;
-			closest_pos = (u32)(ptxt - txt);
+			closest_pos = (u32)(p - display);
 		}
 	}
-	if (buf)
-		array_destroy(buf);
+	if (wrapped)
+		str_destroy(&wrapped);
 	return closest_pos;
 }
 
@@ -3196,14 +3240,15 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
 	gui__txt(gui, x, y, txt, &style);
 }
 
-void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 size_, const char *txt,
+void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size_, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph)
 {
+	const v2i anchor = { x, y };
 	const char *p = txt;
 	char *pnext;
 	s32 cp;
 	void *font;
-	r32 x = x_, y = y_;
+	v2f pos;
 	ivalf x_range, y_range;
 	gui_char_quad_t q;
 	const s32 size = gui_scale_val(gui, size_);
@@ -3227,22 +3272,21 @@ void gui_txt_dim(const gui_t *gui, s32 x_, s32 y_, s32 size_, const char *txt,
 
 	gui->fonts.get_metrics(font, &font_metrics);
 
-	x += gui__txt_line_offset_x(gui, txt, &style, gui->fonts.get_char_quad);
-	y += gui__txt_offset_y(gui, txt, &style);
+	pos = gui__txt_start_pos(gui, txt, anchor, &style);
 
-	x_range.l = x_range.r = x;
-	y_range.l = y_range.r = y;
+	x_range.l = x_range.r = pos.x;
+	y_range.l = y_range.r = pos.y;
 
 	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
-			y -= font_metrics.newline_dist;
-			x = x_ + gui__txt_line_offset_x(gui, pnext, &style, gui->fonts.get_char_quad);
-		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
+			pos.y -= font_metrics.newline_dist;
+			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, &style, gui->fonts.get_char_quad);
+		} else if (gui->fonts.get_char_quad(font, cp, pos.x, pos.y, &q)) {
 			x_range.l = min(x_range.l, q.x0);
 			x_range.r = max(x_range.r, q.x1);
 			y_range.l = min(y_range.l, q.y0);
 			y_range.r = max(y_range.r, q.y1);
-			x += q.advance;
+			pos.x += q.advance;
 		}
 		p = pnext;
 	}
@@ -3553,18 +3597,51 @@ const gui_npt_filter_t g_gui_npt_filter_hex = {
 };
 
 static
+void gui__npt_selection_moved(gui_t *gui)
+{
+	if (!key_mod(gui, KBM_SHIFT))
+		gui->npt.cursor = gui->npt.selection;
+}
+
+static
+void gui__npt_move_cursor_left(gui_t *gui, const char *txt)
+{
+	if (gui->npt.selection > 0) {
+		const char *cursor = &txt[gui->npt.selection];
+		char *prev;
+		utf8_prev_codepoint(cursor, &prev);
+		gui->npt.selection -= (cursor - prev);
+		gui__npt_selection_moved(gui);
+	}
+}
+
+static
+void gui__npt_move_cursor_right(gui_t *gui, const char *txt)
+{
+	const char *cursor = &txt[gui->npt.selection];
+	char *next;
+	if (utf8_next_codepoint(cursor, &next) != 0) {
+		gui->npt.selection += (next - cursor);
+		gui__npt_selection_moved(gui);
+	}
+}
+
+static
 void gui__npt_move_cursor_vertical(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                                    const char *txt, s32 diff, u32 fallback)
 {
-	const u32 orig_pos = gui->npt.cursor_pos;
+	const u32 orig_pos = gui->npt.selection;
 	const gui_text_style_t *style = &gui->style.npt.active.text;
-	v2i cursor = { .x = x, .y = y };
+	v2i cursor;
 
-	gui__txt_char_pos(gui, &cursor.x, &cursor.y, w, h, txt, orig_pos, style);
+	gui__txt_get_cursor_pos(gui, x, y, w, h, txt, orig_pos, style, &cursor.x, &cursor.y);
 	cursor.y += diff;
-	gui->npt.cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt, cursor, style);
-	if (gui->npt.cursor_pos == orig_pos && orig_pos != fallback)
-		gui->npt.cursor_pos = fallback;
+
+	gui->npt.selection = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt, cursor, style);
+	if (gui->npt.selection == orig_pos && orig_pos != fallback)
+		gui->npt.selection = fallback;
+
+	gui__npt_selection_moved(gui);
 }
 
 static
@@ -3677,12 +3754,41 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 mouse_pos_can_defocus)
 }
 
 static
+b32 gui__npt_get_selection(const gui_t *gui, u32 *beg, u32 *end)
+{
+	if (gui->npt.cursor < gui->npt.selection) {
+		*beg = gui->npt.cursor;
+		*end = gui->npt.selection;
+		return true;
+	} else if (gui->npt.selection < gui->npt.cursor) {
+		*beg = gui->npt.selection;
+		*end = gui->npt.cursor;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static
+b32 gui__npt_has_selection(const gui_t *gui)
+{
+	u32 beg, end;
+	return gui__npt_get_selection(gui, &beg, &end);
+}
+
+static
 void gui__npt_prep_action(gui_t *gui, gui_npt_flags_e flags, char *txt, u32 *len)
 {
+	u32 beg, end;
 	if (!gui->npt.performed_action && (flags & GUI_NPT_CLEAR_ON_FOCUS)) {
 		txt[0] = '\0';
 		*len = 0;
-		gui->npt.cursor_pos = 0;
+		gui->npt.cursor = gui->npt.selection = 0;
+	} else if (gui__npt_get_selection(gui, &beg, &end)) {
+		const u32 n = end - beg;
+		buf_remove_n(txt, beg, n, *len+1);
+		*len -= n;
+		gui->npt.cursor = gui->npt.selection = beg;
 	}
 	gui->npt.performed_action = true;
 }
@@ -3746,20 +3852,112 @@ s32 gui__font_newline_dist(const gui_t *gui, void *font)
 }
 
 static
+void gui__npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                  const char *txt, b32 active,
+                  const gui_text_style_t *style, color_t bg)
+{
+	const s32 size = gui_scale_val(gui, style->size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, size);
+	const char *display = txt;
+	gui_font_metrics_t metrics;
+	gui_text_style_t style_inverse = *style;
+	str_t wrapped = NULL;
+	u32 beg, end;
+	v2i anchor;
+	v2f pos;
+	s32 cp;
+	const char *p;
+	char *pnext;
+	r32 rx, ry, rh;
+	b32 inside_selection;
+	gui_char_quad_t q;
+	const char *txt0, *txt1, *txt2;
+	u32 len0, len1, len2;
+
+	if (!active || !gui__npt_get_selection(gui, &beg, &end)) {
+		gui_txt_styled(gui, x, y, w, h, txt, style);
+		return;
+	}
+
+	if (!font)
+		return;
+
+	gui->fonts.get_metrics(font, &metrics);
+	rh = metrics.ascent - metrics.descent;
+	style_inverse.color = bg;
+
+	if (style->wrap) {
+		wrapped = str_dup(txt, g_temp_allocator);
+		gui_wrap_txt(gui, wrapped, style->padding, style->size, w);
+		display = wrapped;
+	}
+
+	/* render the selection background(s) */
+	gui_align_anchor(x, y, w, h, style->align, &anchor.x, &anchor.y);
+	pos = gui__txt_start_pos(gui, display, anchor, style);
+	rx = pos.x;
+	inside_selection = false;
+	p = display;
+	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
+		if (p - display == beg) {
+			inside_selection = true;
+			rx = pos.x;
+		}
+		if (p - display == end) {
+			ry = pos.y + metrics.descent;
+			gui_rect(gui, rx, ry, pos.x - rx, rh, style->color, g_nocolor);
+			inside_selection = false;
+		}
+		if (cp == '\n') {
+			if (inside_selection) {
+				ry = pos.y + metrics.descent;
+				gui_rect(gui, rx, ry, pos.x - rx, rh, style->color, g_nocolor);
+			}
+			pos.y -= metrics.newline_dist;
+			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+			rx = pos.x;
+		} else if (gui->fonts.get_char_quad(font, cp, pos.x, pos.y, &q)) {
+			pos.x += q.advance;
+		}
+		p = pnext;
+	}
+	if (inside_selection) {
+		ry = pos.y + metrics.descent;
+		gui_rect(gui, rx, ry, pos.x - rx, rh, style->color, g_nocolor);
+	}
+
+	/* compute & render the text sequences */
+	txt0 = display;
+	len0 = beg;
+	txt1 = &display[beg];
+	len1 = end - beg;
+	txt2 = &display[end];
+	len2 = (u32)strlen(display) - end;
+
+	pos = gui__txt_start_pos(gui, display, anchor, style);
+	gui__txt_sequence(gui, anchor.x, pos.x, pos.y, txt0, len0, style, &pos.x, &pos.y);
+	gui__txt_sequence(gui, anchor.x, pos.x, pos.y, txt1, len1, &style_inverse, &pos.x, &pos.y);
+	gui__txt_sequence(gui, anchor.x, pos.x, pos.y, txt2, len2, style, &pos.x, &pos.y);
+
+	if (wrapped)
+		str_destroy(&wrapped);
+}
+
+static
 gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse);
 
 s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                    const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	const u64 id = gui_widget_id(gui, x, y);
+	const b32 was_active = gui->active_id == id;
 	const b32 was_focused = gui_widget_focused(gui, id);
 	const gui_widget_style_t *style = &gui->style.npt;
 	b32 contains_mouse;
 	s32 complete = 0;
 	gui__widget_render_state_e render_state;
 	gui_element_style_t elem_style;
-	const char *displayed_txt;
-	const char *txt_to_display;
+	const char *display_txt;
 
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
@@ -3773,19 +3971,22 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 
 	if (gui->active_id == id && contains_mouse) {
 		const gui_text_style_t *txt_style = &style->active.text;
-		gui->npt.cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
-		                                         gui->mouse_pos, txt_style);
+		if (mouse_pressed(gui, MB_LEFT)) {
+			gui->npt.cursor = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
+			                                             gui->mouse_pos, txt_style);
+			gui->npt.selection = gui->npt.cursor;
+		} else {
+			gui->npt.selection = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
+			                                                gui->mouse_pos, txt_style);
+		}
 	}
 	if (gui_widget_focused(gui, id)) {
 		const s32 size = gui_scale_val(gui, style->active.text.size);
 		void *font = gui->fonts.get_font(gui->fonts.handle, size);
 		u32 len = (u32)strlen(txt);
-		gui->npt.cursor_pos = clamp(0, gui->npt.cursor_pos, len);
-#ifdef __APPLE__
-		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_GUI)) {
-#else
-		if (strlen(gui->text_npt) > 0 && !key_mod(gui, KBM_CTRL)) {
-#endif
+		gui->npt.cursor    = clamp(0, gui->npt.cursor,    len);
+		gui->npt.selection = clamp(0, gui->npt.selection, len);
+		if (strlen(gui->text_npt) > 0 && !key_mod(gui, GUI__KBM_CLIPBOARD)) {
 			gui__npt_prep_action(gui, flags, txt, &len);
 			const char *p = gui->text_npt;
 			char *pnext;
@@ -3798,69 +3999,90 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			       && len + cp_sz < n) {
 				if (gui_npt_filter(filter, cp)) {
 					/* move all bytes after the cursor (inc NUL) forward by cp_sz */
-					for (u32 i = len + cp_sz; i > gui->npt.cursor_pos + cp_sz - 1; --i)
+					for (u32 i = len + cp_sz; i > gui->npt.cursor + cp_sz - 1; --i)
 						txt[i] = txt[i-cp_sz];
-					memcpy(&txt[gui->npt.cursor_pos], p, cp_sz);
+					memcpy(&txt[gui->npt.cursor], p, cp_sz);
 					len += cp_sz;
-					gui->npt.cursor_pos += cp_sz;
+					gui->npt.cursor += cp_sz;
+					gui->npt.selection = gui->npt.cursor;
 				}
 				p = pnext;
 			}
 		} else if (gui->key_repeat.triggered) {
 			const u32 key_idx = gui->key_repeat.val;
 			if (key_idx == KB_BACKSPACE) {
+				const b32 has_selection = gui__npt_has_selection(gui);
 				gui__npt_prep_action(gui, flags, txt, &len);
-				if (gui->npt.cursor_pos > 0) {
-					char *cursor = &txt[gui->npt.cursor_pos], *prev;
+				if (!has_selection && gui->npt.cursor > 0) {
+					char *cursor = &txt[gui->npt.cursor], *prev;
 					utf8_prev_codepoint(cursor, &prev);
-					gui->npt.cursor_pos -= (cursor - prev);
-					buf_remove_n(txt, gui->npt.cursor_pos, cursor - prev, len+1);
+					gui->npt.cursor -= (cursor - prev);
+					gui->npt.selection = gui->npt.cursor;
+					buf_remove_n(txt, gui->npt.cursor, cursor - prev, len+1);
 				}
 			} else if (key_idx == KB_DELETE) {
+				const b32 has_selection = gui__npt_has_selection(gui);
 				gui__npt_prep_action(gui, flags, txt, &len);
-				char *cursor = &txt[gui->npt.cursor_pos], *next;
-				if (utf8_next_codepoint(cursor, &next) != 0)
-					buf_remove_n(txt, gui->npt.cursor_pos, next - cursor, len+1);
+				char *cursor = &txt[gui->npt.cursor], *next;
+				if (!has_selection && utf8_next_codepoint(cursor, &next) != 0)
+					buf_remove_n(txt, gui->npt.cursor, next - cursor, len+1);
 			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
+				gui->npt.selection = gui->npt.cursor;
 				gui__npt_prep_action(gui, flags, txt, &len);
 				gui__defocus_widget(gui, id);
 				complete = GUI_NPT_COMPLETE_ON_ENTER;
-#ifdef __APPLE__
-			} else if (key_idx == KB_V && key_mod(gui, KBM_GUI)) {
-#else
-			} else if (key_idx == KB_V && key_mod(gui, KBM_CTRL)) {
-#endif
+			} else if (key_idx == KB_C && key_mod(gui, GUI__KBM_CLIPBOARD)) {
+				u32 beg, end;
+				if (gui__npt_get_selection(gui, &beg, &end)) {
+					const u32 sz = min(end - beg, sizeof(gui->clipboard_out) - 1);
+					memcpy(gui->clipboard_out, &txt[beg], sz);
+					gui->clipboard_out[sz] = 0;
+				}
+			} else if (key_idx == KB_V && key_mod(gui, GUI__KBM_CLIPBOARD)) {
 				u32 sz;
 				gui__npt_prep_action(gui, flags, txt, &len);
-				if ((sz = (u32)strlen(gui->clipboard)) > 0 && len + sz < n) {
+				if ((sz = (u32)strlen(gui->clipboard_in)) > 0 && len + sz < n) {
 					if (gui->clipboard_input_exceeds_buffer_size)
 						log_warn("clipboard input exceeds buffer size");
-					memmove(&txt[gui->npt.cursor_pos + sz],
-					        &txt[gui->npt.cursor_pos],
-					        len - gui->npt.cursor_pos + 1);
-					memcpy(&txt[gui->npt.cursor_pos], gui->clipboard, sz);
-					gui->npt.cursor_pos += sz;
+					memmove(&txt[gui->npt.cursor + sz],
+					        &txt[gui->npt.cursor],
+					        len - gui->npt.cursor + 1);
+					memcpy(&txt[gui->npt.cursor], gui->clipboard_in, sz);
+					gui->npt.cursor += sz;
+					gui->npt.selection = gui->npt.cursor;
 				}
 			} else if (gui__key_up(gui)) {
 				const s32 dy = gui__font_newline_dist(gui, font);
-				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
+				u32 beg, end;
+				if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
+					gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
+				else
+					gui->npt.cursor = gui->npt.selection = beg;
 			} else if (gui__key_down(gui)) {
 				const s32 dy = -gui__font_newline_dist(gui, font);
-				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
+				u32 beg, end;
+				if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
+					gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
+				else
+					gui->npt.cursor = gui->npt.selection = end;
 			} else if (gui__key_left(gui)) {
-				if (gui->npt.cursor_pos > 0) {
-					char *cursor = &txt[gui->npt.cursor_pos], *prev;
-					utf8_prev_codepoint(cursor, &prev);
-					gui->npt.cursor_pos -= (cursor - prev);
-				}
+				u32 beg, end;
+				if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
+					gui__npt_move_cursor_left(gui, txt);
+				else
+					gui->npt.cursor = gui->npt.selection = beg;
 			} else if (gui__key_right(gui)) {
-				char *cursor = &txt[gui->npt.cursor_pos], *next;
-				if (utf8_next_codepoint(cursor, &next) != 0)
-					gui->npt.cursor_pos += (next - cursor);
+				u32 beg, end;
+				if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
+					gui__npt_move_cursor_right(gui, txt);
+				else
+					gui->npt.cursor = gui->npt.selection = end;
 			} else if (gui__key_home(gui)) {
-				gui->npt.cursor_pos = 0;
+				gui->npt.selection = 0;
+				gui__npt_selection_moved(gui);
 			} else if (gui__key_end(gui)) {
-				gui->npt.cursor_pos = len;
+				gui->npt.selection = len;
+				gui__npt_selection_moved(gui);
 			}
 		}
 	}
@@ -3885,13 +4107,8 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			}
 		} else {
 			gui->npt.active = true;
-			if (flags & GUI_NPT_CLEAR_ON_FOCUS) {
-				gui->npt.cursor_pos = 0;
-			} else {
-				const gui_text_style_t *txt_style = &style->active.text;
-				gui->npt.cursor_pos = gui__txt_mouse_pos(gui, x, y, w, h, txt,
-				                                         gui->mouse_pos, txt_style);
-			}
+			if ((flags & GUI_NPT_CLEAR_ON_FOCUS) || !was_active)
+				gui->npt.cursor = gui->npt.selection = 0;
 			gui->npt.performed_action = false;
 			gui->npt.initial_txt_hash = hashn(txt, n);
 		}
@@ -3901,14 +4118,14 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	                                        contains_mouse || gui_widget_focused(gui, id));
 	elem_style = gui__element_style(gui, render_state, style);
 	style->pen(gui, x, y, w, h, &elem_style);
-	txt_to_display = !gui_widget_focused(gui, id)
-	              || gui->npt.performed_action
-	              || !(flags & GUI_NPT_CLEAR_ON_FOCUS)
-	               ? txt : "";
+	display_txt = !gui_widget_focused(gui, id)
+	           || gui->npt.performed_action
+	           || !(flags & GUI_NPT_CLEAR_ON_FOCUS)
+	            ? txt : "";
 
 	if (flags & GUI_NPT_PASSWORD) {
-		assert(strlen(txt_to_display) < GUI_TXT_MAX_LENGTH);
-		const char *p = txt_to_display;
+		assert(strlen(display_txt) < GUI_TXT_MAX_LENGTH);
+		const char *p = display_txt;
 		char *pnext;
 		u32 i = 0;
 		while (i < GUI_TXT_MAX_LENGTH-1 && utf8_next_codepoint(p, &pnext) != 0) {
@@ -3916,22 +4133,24 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			p = pnext;
 		}
 		gui->npt.pw_buf[i] = '\0';
-		gui_txt_styled(gui, x, y, w, h, gui->npt.pw_buf, &elem_style.text);
-		displayed_txt = gui->npt.pw_buf;
-	} else {
-		gui_txt_styled(gui, x, y, w, h, txt_to_display, &elem_style.text);
-		displayed_txt = txt_to_display;
+		display_txt = gui->npt.pw_buf;
+	}
+	if (display_txt[0] != 0) {
+		const b32 active = (id == gui->active_id || gui_widget_focused(gui, id));
+		gui__npt_txt(gui, x, y, w, h, display_txt, active,
+		             &elem_style.text, elem_style.bg_color);
 	}
 	if (gui_widget_focused(gui, id)) {
-		if (time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
+		if (   !gui__npt_has_selection(gui)
+		    && time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
 			const color_t color = elem_style.text.color;
 			const s32 size = gui_scale_val(gui, elem_style.text.size);
 			void *font = gui->fonts.get_font(gui->fonts.handle, size);
 			if (font) {
 				gui_font_metrics_t metrics;
 				gui->fonts.get_metrics(font, &metrics);
-				gui__txt_char_pos(gui, &x, &y, w, h, displayed_txt,
-				                  gui->npt.cursor_pos, &elem_style.text);
+				gui__txt_get_cursor_pos(gui, x, y, w, h, display_txt,
+				                        gui->npt.cursor, &elem_style.text, &x, &y);
 				x += 1;
 				gui_line(gui, x, y + metrics.descent, x, y + metrics.ascent, 1, color);
 			}

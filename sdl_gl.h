@@ -1439,6 +1439,13 @@ void window_end_frame(window_t *window)
 	GL_CHECK(glFlush);
 	SDL_GL_SwapWindow(window->window);
 
+	if (gui_has_clipboard_text(gui)) {
+		char clipboard[GUI_CLIPBOARD_SIZE];
+		gui_get_clipboard_text(gui, clipboard);
+		if (SDL_SetClipboardText(clipboard) != 0)
+			log_error("SDL_SetClipboardText failed: %s", SDL_GetError());
+	}
+
 	if (gui_text_input_active(gui) != SDL_IsTextInputActive()) {
 		if (gui_text_input_active(gui))
 			SDL_StartTextInput();
