@@ -1614,23 +1614,23 @@ typedef struct gui
 /* Font */
 
 static
-s32 gui__txt_line_width(const gui_t *gui, const char *txt,
-                        s32 size_, gui_char_quad_f get_char_quad)
+s32 gui__txt_line_width(const gui_t *gui, const char *txt, s32 size_)
 {
 	const s32 size = gui_scale_val(gui, size_);
 	void *font = gui->fonts.get_font(gui->fonts.handle, size);
+	gui_char_quad_f get_char_quad = gui->fonts.get_char_quad;
 	return font ? font__line_width(font, txt, get_char_quad) : 0;
 }
 
 static
 s32 gui__txt_line_offset_x(const gui_t *gui, const char *txt,
-                           const gui_text_style_t *style,
-                           gui_char_quad_f get_char_quad)
+                           const gui_text_style_t *style)
 {
 	const s32 size = gui_scale_val(gui, style->size);
 	void *font = gui->fonts.get_font(gui->fonts.handle, size);
 	const s32 align = style->align;
 	const s32 padding = gui_scale_val(gui, style->padding);
+	gui_char_quad_f get_char_quad = gui->fonts.get_char_quad;
 	return font ? font__line_offset_x(font, txt, align, padding, get_char_quad) : 0;
 }
 
@@ -1654,7 +1654,7 @@ v2f gui__txt_start_pos(const gui_t *gui, const char *txt,
                        v2i anchor, const gui_text_style_t *style)
 {
 	return (v2f) {
-		.x = anchor.x + gui__txt_line_offset_x(gui, txt, style, gui->fonts.get_char_quad),
+		.x = anchor.x + gui__txt_line_offset_x(gui, txt, style),
 		.y = anchor.y + gui__txt_offset_y(gui, txt, style),
 	};
 }
@@ -3105,7 +3105,7 @@ void gui__txt_get_cursor_pos(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	while (p < target && (cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
 			pos.y -= font_metrics.newline_dist;
-			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, style);
 		} else if (gui->fonts.get_char_quad(font, cp, pos.x, pos.y, &q)) {
 			pos.x += q.advance;
 		}
@@ -3143,7 +3143,7 @@ void gui__txt_sequence(gui_t *gui, s32 x_anchor, r32 x0, r32 y0,
 	while (p - txt < max_len && (cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
 			y -= font_metrics.newline_dist;
-			x = x_anchor + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+			x = x_anchor + gui__txt_line_offset_x(gui, pnext, style);
 		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
 			gui__char(gui, &q, style->color);
 			x += q.advance;
@@ -3209,7 +3209,7 @@ u32 gui__txt_get_cursor_at_pos(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		p = pnext;
 		if (cp == '\n') {
 			pos.y -= font_metrics.newline_dist;
-			pos.x = anchor.x + gui__txt_line_offset_x(gui, p, style, gui->fonts.get_char_quad);
+			pos.x = anchor.x + gui__txt_line_offset_x(gui, p, style);
 		} else if (gui->fonts.get_char_quad(font, cp, pos.x, pos.y, &q)) {
 			pos.x += q.advance;
 		} else {
@@ -3280,7 +3280,7 @@ void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size_, const char *txt,
 	while ((cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
 			pos.y -= font_metrics.newline_dist;
-			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, &style, gui->fonts.get_char_quad);
+			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, &style);
 		} else if (gui->fonts.get_char_quad(font, cp, pos.x, pos.y, &q)) {
 			x_range.l = min(x_range.l, q.x0);
 			x_range.r = max(x_range.r, q.x1);
@@ -3305,7 +3305,7 @@ s32 gui_txt_width(const gui_t *gui, const char *txt, s32 size)
 	s32 cp;
 
 	while (*p != 0) {
-		line_width = gui__txt_line_width(gui, p, size, gui->fonts.get_char_quad);
+		line_width = gui__txt_line_width(gui, p, size);
 		width = max(width, line_width);
 		while ((cp = utf8_next_codepoint(p, &pnext)) != 0 && cp != '\n')
 			p = pnext;
@@ -3914,7 +3914,7 @@ void gui__npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 				gui_rect(gui, rx, ry, pos.x - rx, rh, style->color, g_nocolor);
 			}
 			pos.y -= metrics.newline_dist;
-			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, style, gui->fonts.get_char_quad);
+			pos.x = anchor.x + gui__txt_line_offset_x(gui, pnext, style);
 			rx = pos.x;
 		} else if (gui->fonts.get_char_quad(font, cp, pos.x, pos.y, &q)) {
 			pos.x += q.advance;
