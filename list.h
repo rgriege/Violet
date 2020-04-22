@@ -56,7 +56,7 @@ LSTDEF void *list__append(list_t *list, const void *item_, size_t sz  MEMCALL_AR
 	allocator_t *a = list__allocator(*list);
 	list__item_header_t *header = a->malloc_(item_sz, a  MEMCALL_VARS);
 	void *item = header + 1;
-	error_if(!header, "list__append: oom");
+	if (!header) { fatal("list__append: oom"); return NULL; }
 	memset(header, 0, sizeof(list__item_header_t));
 	memcpy(item, item_, sz);
 	if (!list->head) {

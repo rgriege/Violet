@@ -119,6 +119,8 @@ void vlt_destroy(vlt_thread_type_e thread_type);
 
 /* Error handling */
 
+void fatal(const char *msg);
+
 typedef void (*error_f)(const char *msg, void *udata);
 
 struct error_handler
@@ -446,6 +448,11 @@ void error_fatal(const char *msg, void *udata)
 #else
 	exit(1);
 #endif
+}
+
+void fatal(const char *msg)
+{
+	error_fatal(msg, NULL);
 }
 
 thread_local struct error_handler g_error_handler_stack[ERROR_HANDLER_STACK_SIZE];
@@ -962,8 +969,8 @@ timepoint_t time__diff(timepoint_t start, timepoint_t end)
 	}
 
 	/* C standard states that tv_nsec should be [0, 999,999,999] */
-	error_if(end.tv_nsec - mod_start.tv_nsec >= 1000000000, "invalid nanosec diff");
-	error_if(end.tv_sec < mod_start.tv_sec, "end is before start");
+	assert(end.tv_nsec - mod_start.tv_nsec < 1000000000);
+	assert(end.tv_sec >= mod_start.tv_sec);
 	res.tv_sec = end.tv_sec - mod_start.tv_sec;
 	res.tv_nsec = end.tv_nsec - mod_start.tv_nsec;
 	return res;

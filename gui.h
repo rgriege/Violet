@@ -7707,7 +7707,7 @@ void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size)
 		gui__style_stack_push_item(gui, item);
 		memcpy(loc, value, item.size);
 	} else {
-		error("style stack limit exceeded");
+		assert(false);
 	}
 }
 
@@ -7717,7 +7717,7 @@ void gui_style_push_current_(gui_t *gui, size_t offset, size_t size)
 	if (gui__style_stack_can_push_item(gui, item))
 		gui__style_stack_push_item(gui, item);
 	else
-		error("style stack limit exceeded");
+		assert(false);
 }
 
 void gui_style_pop(gui_t *gui)
@@ -7731,8 +7731,8 @@ void gui_style_pop(gui_t *gui)
 		loc = gui__style_stack_item_location(gui, item);
 		memcpy(loc, &gui->style_stack[gui->style_stack_sz], item.size);
 	} else {
+		assert(false);
 		gui->style_stack_sz = 0;
-		error("style stack empty");
 	}
 }
 
