@@ -142,6 +142,9 @@ void gui_window_drag(gui_t *gui);
 b32  gui_window_dragging(const gui_t *gui);
 void gui_window_drag_end(gui_t *gui);
 
+#ifndef GUI_MOUSE_DOUBLE_CLICK_INTERVAL
+#define GUI_MOUSE_DOUBLE_CLICK_INTERVAL 500 /* windows default */
+#endif
 
 void mouse_pos(const gui_t *gui, s32 *x, s32 *y);
 void mouse_pos_last(const gui_t *gui, s32 *x, s32 *y);
@@ -157,6 +160,7 @@ b32  mouse_released_bg(const gui_t *gui, u32 mask);
 b32  mouse_covered(const gui_t *gui);
 void mouse_cover(gui_t *gui, u64 widget_id);
 b32  mouse_over_bg(const gui_t *gui);
+b32  mouse_double(const gui_t *gui, u32 mask);
 b32  mouse_scroll(const gui_t *gui, s32 *dir);
 b32  mouse_scroll_bg(const gui_t *gui, s32 *dir);
 void mouse_press_debug(gui_t *gui, b32 enabled);
@@ -331,7 +335,7 @@ void gui_get_render_output(const gui_t *gui, gui_render_output_t *output);
 typedef enum gui_npt_flags
 {
 	GUI_NPT_PASSWORD              = 1 << 0,
-	GUI_NPT_CLEAR_ON_FOCUS        = 1 << 1,
+	GUI_NPT_SELECT_ON_TAB_FOCUS   = 1 << 1,
 	GUI_NPT_COMPLETE_ON_ENTER     = 1 << 2, /* always enabled */
 	GUI_NPT_COMPLETE_ON_TAB       = 1 << 3,
 	GUI_NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
@@ -1483,6 +1487,11 @@ typedef struct gui_popup
 	gui_grid_t grid;
 } gui_popup_t;
 
+typedef struct gui_mouse_press {
+	timepoint_t time;
+	u32 btn;
+} gui_mouse_press_t;
+
 typedef struct gui
 {
 	timepoint_t creation_time;
@@ -1521,6 +1530,7 @@ typedef struct gui
 	v2i mouse_pos_press;
 	u32 mouse_btn;
 	u32 mouse_btn_last;
+	gui_mouse_press_t mouse_press_history[3];
 	u64 mouse_covered_by_widget_id;
 	b32 mouse_debug;
 	gui__repeat_t mouse_repeat;
@@ -1566,7 +1576,6 @@ typedef struct gui
 		b32 active;
 		u32 cursor; /* byte, NOT GLYPH, offset */
 		u32 selection; /* byte, NOT GLYPH, offset */
-		b32 performed_action;
 		u32 initial_txt_hash;
 		char val_buf[GUI_TXT_MAX_LENGTH];
 		char pw_buf[GUI_TXT_MAX_LENGTH];
@@ -1736,6 +1745,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->mouse_btn_last = 0;
 	gui->mouse_pos_last = g_v2i_zero;
 	gui->mouse_pos_press = g_v2i_zero;
+	arrclr(gui->mouse_press_history);
 	gui->mouse_debug = false;
 	gui__repeat_init(&gui->mouse_repeat);
 	gui->left_window = false;
@@ -1758,7 +1768,6 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->npt.active = false;
 	gui->npt.cursor = 0;
 	gui->npt.selection = 0;
-	gui->npt.performed_action = false;
 	gui->npt.initial_txt_hash = 0;
 	gui->npt.pw_buf[0] = 0;
 	gui->npt.val_buf[0] = 0;
@@ -2032,6 +2041,13 @@ void gui_events_end(gui_t *gui)
 		gui_event_add_update(gui);
 	if (!v2i_equal(gui->mouse_pos_last, gui->mouse_pos))
 		gui_event_add_update(gui);
+
+	if (mouse_pressed(gui, ~0)) {
+		for (u32 i = countof(gui->mouse_press_history); i > 1; --i)
+			gui->mouse_press_history[i-1] = gui->mouse_press_history[i-2];
+		gui->mouse_press_history[0].time = gui->frame_start_time;
+		gui->mouse_press_history[0].btn  = gui->mouse_btn;
+	}
 
 	{
 		u32 key = 0;
@@ -2669,6 +2685,17 @@ b32 mouse_over_bg(const gui_t *gui)
 	return gui->active_id == 0
 	    && gui->active_id_at_frame_start == 0
 	    && !mouse_covered(gui);
+}
+
+b32 mouse_double(const gui_t *gui, u32 mask)
+{
+	const gui_mouse_press_t *history = gui->mouse_press_history;
+	return (history[1].btn & mask)
+	    &&   time_diff_milli(history[1].time, history[0].time)
+	       < GUI_MOUSE_DOUBLE_CLICK_INTERVAL
+	    && (   !(history[2].btn & mask)
+	        ||   time_diff_milli(history[2].time, history[1].time)
+	           > GUI_MOUSE_DOUBLE_CLICK_INTERVAL);
 }
 
 b32 mouse_scroll(const gui_t *gui, s32 *dir)
@@ -3780,17 +3807,12 @@ static
 void gui__npt_prep_action(gui_t *gui, gui_npt_flags_e flags, char *txt, u32 *len)
 {
 	u32 beg, end;
-	if (!gui->npt.performed_action && (flags & GUI_NPT_CLEAR_ON_FOCUS)) {
-		txt[0] = '\0';
-		*len = 0;
-		gui->npt.cursor = gui->npt.selection = 0;
-	} else if (gui__npt_get_selection(gui, &beg, &end)) {
+	if (gui__npt_get_selection(gui, &beg, &end)) {
 		const u32 n = end - beg;
 		buf_remove_n(txt, beg, n, *len+1);
 		*len -= n;
 		gui->npt.cursor = gui->npt.selection = beg;
 	}
-	gui->npt.performed_action = true;
 }
 
 static
@@ -3972,10 +3994,15 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (gui->active_id == id && contains_mouse) {
 		const gui_text_style_t *txt_style = &style->active.text;
 		if (mouse_pressed(gui, MB_LEFT)) {
-			gui->npt.cursor = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
-			                                             gui->mouse_pos, txt_style);
-			gui->npt.selection = gui->npt.cursor;
-		} else {
+			if (mouse_double(gui, MB_LEFT)) {
+				gui->npt.cursor = 0;
+				gui->npt.selection = strlen(txt);
+			} else {
+				gui->npt.cursor = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
+				                                             gui->mouse_pos, txt_style);
+				gui->npt.selection = gui->npt.cursor;
+			}
+		} else if (mouse_down(gui, MB_LEFT) && !mouse_double(gui, MB_LEFT)) {
 			gui->npt.selection = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
 			                                                gui->mouse_pos, txt_style);
 		}
@@ -4107,9 +4134,12 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			}
 		} else {
 			gui->npt.active = true;
-			if ((flags & GUI_NPT_CLEAR_ON_FOCUS) || !was_active)
+			if (!was_active && (flags & GUI_NPT_SELECT_ON_TAB_FOCUS)) {
+				gui->npt.cursor = 0;
+				gui->npt.selection = strlen(txt);
+			} else {
 				gui->npt.cursor = gui->npt.selection = 0;
-			gui->npt.performed_action = false;
+			}
 			gui->npt.initial_txt_hash = hashn(txt, n);
 		}
 	}
@@ -4118,10 +4148,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	                                        contains_mouse || gui_widget_focused(gui, id));
 	elem_style = gui__element_style(gui, render_state, style);
 	style->pen(gui, x, y, w, h, &elem_style);
-	display_txt = !gui_widget_focused(gui, id)
-	           || gui->npt.performed_action
-	           || !(flags & GUI_NPT_CLEAR_ON_FOCUS)
-	            ? txt : "";
+	display_txt = txt;
 
 	if (flags & GUI_NPT_PASSWORD) {
 		assert(strlen(display_txt) < GUI_TXT_MAX_LENGTH);
@@ -5196,9 +5223,8 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		const s32 gy = py + padding.bottom;
 		const s32 gw = pw - padding.left - padding.right;
 		const s32 gh = ph - padding.bottom - padding.top;
-		const gui_npt_flags_e flags = GUI_NPT_CLEAR_ON_FOCUS
-		                        | GUI_NPT_COMPLETE_ON_TAB
-		                        | GUI_NPT_COMPLETE_ON_CLICK_OUT;
+		const gui_npt_flags_e flags = GUI_NPT_COMPLETE_ON_TAB
+		                            | GUI_NPT_COMPLETE_ON_CLICK_OUT;
 		gui_npt_filter_p filter = &g_gui_npt_filter_hex;
 		b32 changed = false, changed_npt = false;
 		u8 ch, cs, cv;
