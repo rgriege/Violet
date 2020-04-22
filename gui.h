@@ -3996,7 +3996,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		if (mouse_pressed(gui, MB_LEFT)) {
 			if (mouse_double(gui, MB_LEFT)) {
 				gui->npt.cursor = 0;
-				gui->npt.selection = strlen(txt);
+				gui->npt.selection = (u32)strlen(txt);
 			} else {
 				gui->npt.cursor = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
 				                                             gui->mouse_pos, txt_style);
@@ -4060,7 +4060,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				complete = GUI_NPT_COMPLETE_ON_ENTER;
 			} else if (key_idx == KB_A && key_mod(gui, GUI__KBM_CLIPBOARD)) {
 				gui->npt.cursor = 0;
-				gui->npt.selection = strlen(txt);
+				gui->npt.selection = (u32)strlen(txt);
 			} else if (key_idx == KB_C && key_mod(gui, GUI__KBM_CLIPBOARD)) {
 				u32 beg, end;
 				if (gui__npt_get_selection(gui, &beg, &end)) {
@@ -4147,7 +4147,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			gui->npt.active = true;
 			if (!was_active && (flags & GUI_NPT_SELECT_ON_TAB_FOCUS)) {
 				gui->npt.cursor = 0;
-				gui->npt.selection = strlen(txt);
+				gui->npt.selection = (u32)strlen(txt);
 			} else {
 				gui->npt.cursor = gui->npt.selection = 0;
 			}
