@@ -4058,6 +4058,9 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				gui__npt_prep_action(gui, flags, txt, &len);
 				gui__defocus_widget(gui, id);
 				complete = GUI_NPT_COMPLETE_ON_ENTER;
+			} else if (key_idx == KB_A && key_mod(gui, GUI__KBM_CLIPBOARD)) {
+				gui->npt.cursor = 0;
+				gui->npt.selection = strlen(txt);
 			} else if (key_idx == KB_C && key_mod(gui, GUI__KBM_CLIPBOARD)) {
 				u32 beg, end;
 				if (gui__npt_get_selection(gui, &beg, &end)) {
