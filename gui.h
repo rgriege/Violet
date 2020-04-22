@@ -3804,7 +3804,7 @@ b32 gui__npt_has_selection(const gui_t *gui)
 }
 
 static
-void gui__npt_prep_action(gui_t *gui, gui_npt_flags_e flags, char *txt, u32 *len)
+void gui__npt_remove_selected(gui_t *gui, char *txt, u32 *len)
 {
 	u32 beg, end;
 	if (gui__npt_get_selection(gui, &beg, &end)) {
@@ -4014,7 +4014,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		gui->npt.cursor    = clamp(0, gui->npt.cursor,    len);
 		gui->npt.selection = clamp(0, gui->npt.selection, len);
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, GUI__KBM_CLIPBOARD)) {
-			gui__npt_prep_action(gui, flags, txt, &len);
+			gui__npt_remove_selected(gui, txt, &len);
 			const char *p = gui->text_npt;
 			char *pnext;
 			s32 cp;
@@ -4039,7 +4039,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 			const u32 key_idx = gui->key_repeat.val;
 			if (key_idx == KB_BACKSPACE) {
 				const b32 has_selection = gui__npt_has_selection(gui);
-				gui__npt_prep_action(gui, flags, txt, &len);
+				gui__npt_remove_selected(gui, txt, &len);
 				if (!has_selection && gui->npt.cursor > 0) {
 					char *cursor = &txt[gui->npt.cursor], *prev;
 					utf8_prev_codepoint(cursor, &prev);
@@ -4049,13 +4049,13 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				}
 			} else if (key_idx == KB_DELETE) {
 				const b32 has_selection = gui__npt_has_selection(gui);
-				gui__npt_prep_action(gui, flags, txt, &len);
+				gui__npt_remove_selected(gui, txt, &len);
 				char *cursor = &txt[gui->npt.cursor], *next;
 				if (!has_selection && utf8_next_codepoint(cursor, &next) != 0)
 					buf_remove_n(txt, gui->npt.cursor, next - cursor, len+1);
 			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
 				gui->npt.selection = gui->npt.cursor;
-				gui__npt_prep_action(gui, flags, txt, &len);
+				gui__npt_remove_selected(gui, txt, &len);
 				gui__defocus_widget(gui, id);
 				complete = GUI_NPT_COMPLETE_ON_ENTER;
 			} else if (key_idx == KB_A && key_mod(gui, GUI__KBM_CLIPBOARD)) {
@@ -4068,9 +4068,17 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 					memcpy(gui->clipboard_out, &txt[beg], sz);
 					gui->clipboard_out[sz] = 0;
 				}
+			} else if (key_idx == KB_X && key_mod(gui, GUI__KBM_CLIPBOARD)) {
+				u32 beg, end;
+				if (gui__npt_get_selection(gui, &beg, &end)) {
+					const u32 sz = min(end - beg, sizeof(gui->clipboard_out) - 1);
+					memcpy(gui->clipboard_out, &txt[beg], sz);
+					gui->clipboard_out[sz] = 0;
+					gui__npt_remove_selected(gui, txt, &len);
+				}
 			} else if (key_idx == KB_V && key_mod(gui, GUI__KBM_CLIPBOARD)) {
 				u32 sz;
-				gui__npt_prep_action(gui, flags, txt, &len);
+				gui__npt_remove_selected(gui, txt, &len);
 				if ((sz = (u32)strlen(gui->clipboard_in)) > 0 && len + sz < n) {
 					if (gui->clipboard_input_exceeds_buffer_size)
 						log_warn("clipboard input exceeds buffer size");
