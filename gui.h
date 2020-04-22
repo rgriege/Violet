@@ -7532,13 +7532,15 @@ void pgui_panel_toggle(gui_t *gui, gui_panel_t *panel)
 
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 {
-	const b32 contains_mouse = gui__current_panel_contains_mouse(gui);
+	b32 contains_mouse;
 
 	assert(gui->panel == panel);
 
 	pgui__style_push_panel_scroll_area(gui);
 	gui_scroll_area_end(gui, &panel->scroll_area);
 	pgui__style_pop_panel_scroll_area(gui);
+
+	contains_mouse = gui__current_panel_contains_mouse(gui);
 
 	/* NOTE(rgriege): would be great to avoid the additional layer here,
 	 * but otherwise the next widgets are on top of the panel bg & scrollbars */
