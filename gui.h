@@ -335,7 +335,7 @@ void gui_get_render_output(const gui_t *gui, gui_render_output_t *output);
 typedef enum gui_npt_flags
 {
 	GUI_NPT_PASSWORD              = 1 << 0,
-	GUI_NPT_SELECT_ON_TAB_FOCUS   = 1 << 1,
+	GUI_NPT_SELECT_ON_FOCUS       = 1 << 1,
 	GUI_NPT_COMPLETE_ON_ENTER     = 1 << 2, /* always enabled */
 	GUI_NPT_COMPLETE_ON_TAB       = 1 << 3,
 	GUI_NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
@@ -3804,6 +3804,13 @@ b32 gui__npt_has_selection(const gui_t *gui)
 }
 
 static
+void gui__npt_select_all(gui_t *gui, const char *txt)
+{
+	gui->npt.cursor    = 0;
+	gui->npt.selection = (u32)strlen(txt);
+}
+
+static
 void gui__npt_remove_selected(gui_t *gui, char *txt, u32 *len)
 {
 	u32 beg, end;
@@ -3991,22 +3998,46 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS && !was_focused)
 		gui__focus_widget(gui, id);
 
-	if (gui->active_id == id && contains_mouse) {
-		const gui_text_style_t *txt_style = &style->active.text;
-		if (mouse_pressed(gui, MB_LEFT)) {
-			if (mouse_double(gui, MB_LEFT)) {
-				gui->npt.cursor = 0;
-				gui->npt.selection = (u32)strlen(txt);
-			} else {
-				gui->npt.cursor = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
-				                                             gui->mouse_pos, txt_style);
-				gui->npt.selection = gui->npt.cursor;
+	/* mouse & tab-focus selection handling */
+	if (gui->active_id == id && !was_active) {
+		/* make sure to clear selection first */
+		gui->npt.cursor = gui->npt.selection = 0;
+	}
+	if (contains_mouse) {
+		if (gui->active_id == id) {
+			const gui_text_style_t *txt_style = &style->active.text;
+			if (mouse_pressed(gui, MB_LEFT)) {
+				if (mouse_double(gui, MB_LEFT)) {
+					gui__npt_select_all(gui, txt);
+				} else {
+					gui->npt.cursor = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
+					                                             gui->mouse_pos, txt_style);
+					gui->npt.selection = gui->npt.cursor;
+				}
+			} else if (mouse_down(gui, MB_LEFT) && !mouse_double(gui, MB_LEFT)) {
+				gui->npt.selection = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
+				                                                gui->mouse_pos, txt_style);
 			}
-		} else if (mouse_down(gui, MB_LEFT) && !mouse_double(gui, MB_LEFT)) {
-			gui->npt.selection = gui__txt_get_cursor_at_pos(gui, x, y, w, h, txt,
-			                                                gui->mouse_pos, txt_style);
+		} else if (   was_active
+		           && mouse_released(gui, MB_LEFT)
+		           && !was_focused
+		           && (flags & GUI_NPT_SELECT_ON_FOCUS)
+		           && gui->npt.selection == gui->npt.cursor) {
+				gui__npt_select_all(gui, txt);
 		}
 	}
+
+	if (gui_widget_focused(gui, id) && !was_focused) {
+		if (!was_active) {
+			/* handle focus from tabbing */
+			if (flags & GUI_NPT_SELECT_ON_FOCUS)
+				gui__npt_select_all(gui, txt);
+			else
+				gui->npt.cursor = gui->npt.selection = 0;
+		}
+	}
+
+	/* keyboard input */
 	if (gui_widget_focused(gui, id)) {
 		const s32 size = gui_scale_val(gui, style->active.text.size);
 		void *font = gui->fonts.get_font(gui->fonts.handle, size);
@@ -4059,8 +4090,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				gui__defocus_widget(gui, id);
 				complete = GUI_NPT_COMPLETE_ON_ENTER;
 			} else if (key_idx == KB_A && key_mod(gui, GUI__KBM_CLIPBOARD)) {
-				gui->npt.cursor = 0;
-				gui->npt.selection = (u32)strlen(txt);
+				gui__npt_select_all(gui, txt);
 			} else if (key_idx == KB_C && key_mod(gui, GUI__KBM_CLIPBOARD)) {
 				u32 beg, end;
 				if (gui__npt_get_selection(gui, &beg, &end)) {
@@ -4125,36 +4155,31 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		}
 	}
 
-	if (was_focused != gui_widget_focused(gui, id)) {
-		if (was_focused) {
-			gui->npt.active = false;
-			if (complete || gui->lock) {
-			} else if (   (flags & GUI_NPT_COMPLETE_ON_TAB)
-			           && gui__key_triggered(gui, KB_TAB)) {
-				complete = GUI_NPT_COMPLETE_ON_TAB;
-			} else if (   (flags & GUI_NPT_COMPLETE_ON_CLICK_OUT)
-			           && mouse_pressed(gui, ~0)
-			           && !contains_mouse) {
-				complete = GUI_NPT_COMPLETE_ON_CLICK_OUT;
-			} else if (   (flags & GUI_NPT_COMPLETE_ON_ESCAPE)
-			           && gui__key_triggered(gui, KB_ESCAPE)) {
-				complete = GUI_NPT_COMPLETE_ON_ESCAPE;
-			} else if (   (flags & GUI_NPT_COMPLETE_ON_UNCHANGED)
-			           || gui->npt.initial_txt_hash != hashn(txt, n)) {
-				complete = GUI_NPT_COMPLETE_ON_UNCHANGED;
-			}
-		} else {
-			gui->npt.active = true;
-			if (!was_active && (flags & GUI_NPT_SELECT_ON_TAB_FOCUS)) {
-				gui->npt.cursor = 0;
-				gui->npt.selection = (u32)strlen(txt);
-			} else {
-				gui->npt.cursor = gui->npt.selection = 0;
-			}
-			gui->npt.initial_txt_hash = hashn(txt, n);
+	if (gui_widget_focused(gui, id) && !was_focused)
+		gui->npt.initial_txt_hash = hashn(txt, n);
+	if (gui_widget_focused(gui, id) != was_focused)
+		gui->npt.active = gui_widget_focused(gui, id);
+
+	/* completion state */
+	if (!gui_widget_focused(gui, id) && was_focused) {
+		if (complete || gui->lock) {
+		} else if (   (flags & GUI_NPT_COMPLETE_ON_TAB)
+		           && gui__key_triggered(gui, KB_TAB)) {
+			complete = GUI_NPT_COMPLETE_ON_TAB;
+		} else if (   (flags & GUI_NPT_COMPLETE_ON_CLICK_OUT)
+		           && mouse_pressed(gui, ~0)
+		           && !contains_mouse) {
+			complete = GUI_NPT_COMPLETE_ON_CLICK_OUT;
+		} else if (   (flags & GUI_NPT_COMPLETE_ON_ESCAPE)
+		           && gui__key_triggered(gui, KB_ESCAPE)) {
+			complete = GUI_NPT_COMPLETE_ON_ESCAPE;
+		} else if (   (flags & GUI_NPT_COMPLETE_ON_UNCHANGED)
+		           || gui->npt.initial_txt_hash != hashn(txt, n)) {
+			complete = GUI_NPT_COMPLETE_ON_UNCHANGED;
 		}
 	}
 
+	/* rendering */
 	render_state = gui__widget_render_state(gui, id, true, false,
 	                                        contains_mouse || gui_widget_focused(gui, id));
 	elem_style = gui__element_style(gui, render_state, style);
