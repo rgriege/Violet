@@ -361,9 +361,9 @@ typedef enum gui_btn_val
 	GUI_BTN_HOLD,
 } gui_btn_e;
 
-const gui_npt_filter_t g_gui_npt_filter_print;
-const gui_npt_filter_t g_gui_npt_filter_numeric;
-const gui_npt_filter_t g_gui_npt_filter_hex;
+extern const gui_npt_filter_t g_gui_npt_filter_print;
+extern const gui_npt_filter_t g_gui_npt_filter_numeric;
+extern const gui_npt_filter_t g_gui_npt_filter_hex;
 
 b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint);
 const char *gui_npt_val_buf(const gui_t *gui);
@@ -857,8 +857,8 @@ typedef struct gui_style
 	gui_line_style_t        split;
 } gui_style_t;
 
-const gui_style_t g_gui_style_default;
-const gui_style_t g_gui_style_invis;
+extern const gui_style_t g_gui_style_default;
+extern const gui_style_t g_gui_style_invis;
 
 gui_style_t *gui_style(gui_t *gui);
 const gui_style_t *gui_style_c(const gui_t *gui);
