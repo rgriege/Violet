@@ -212,7 +212,7 @@ void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v)
 			*h = 0.f/3.f + b_del - g_del;
 		else if (g == rgb_max)
 			*h = 1.f/3.f + r_del - b_del;
-		else if (b == rgb_max)
+		else
 			*h = 2.f/3.f + g_del - r_del;
 	}
 }

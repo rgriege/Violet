@@ -8,7 +8,9 @@ char *sprint_s32(char *buf, u32 n, s32 val);
 char *sprint_s64(char *buf, u32 n, s64 val);
 char *sprint_r32(char *buf, u32 n, r32 val, u32 dec);
 
-#define strbcpy(dst, src) strncpy(dst, src, sizeof(dst))
+/* Version of strncpy that ensures dest (size bytes) is null-terminated. */
+char* strncpy_nt(char* dst, const char* src, size_t size);
+#define strbcpy(dst, src) strncpy_nt(dst, src, sizeof(dst))
 
 /* Immediate strings - single string buffer for immediate use.
  * Be very careful when writing functions that take a string as a parameter
@@ -177,6 +179,16 @@ out:
 	return buf;
 }
 
+char* strncpy_nt(char* dst, const char* src, size_t size)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+    strncpy(dst, src, size);
+    dst[size - 1] = '\0';
+    return dst;
+#pragma GCC diagnostic pop
+}
+
 static thread_local char g_imprint_buf[IMPRINT_BUFFER_SIZE] = {0};
 
 char *imstr(void)
@@ -211,7 +223,7 @@ char *imprintf(const char *fmt, ...)
 char *imstrcpy(const char *str)
 {
 	assert(strlen(str) < IMPRINT_BUFFER_SIZE);
-	strncpy(g_imprint_buf, str, IMPRINT_BUFFER_SIZE);
+	strbcpy(g_imprint_buf, str);
 	return g_imprint_buf;
 }
 
