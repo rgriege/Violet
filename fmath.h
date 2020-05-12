@@ -57,7 +57,6 @@ FMDEF r32  v2f_dist(v2f lhs, v2f rhs);
 FMDEF r32  v2f_dist_sq(v2f lhs, v2f rhs);
 FMDEF v2f  v2f_normalize(v2f v);
 FMDEF void v2f_normalize_eq(v2f *v);
-FMDEF b32  v2f_is_unit(v2f v);
 FMDEF v2f  v2f_scale(v2f v, r32 s);
 FMDEF void v2f_scale_eq(v2f *v, r32 s);
 FMDEF v2f  v2f_add(v2f lhs, v2f rhs);
@@ -110,7 +109,6 @@ FMDEF r32 v3f_mag_sq(v3f v);
 FMDEF r32 v3f_dist(v3f lhs, v3f rhs);
 FMDEF r32 v3f_dist_sq(v3f lhs, v3f rhs);
 FMDEF v3f v3f_normalize(v3f v);
-FMDEF b32 v3f_is_unit(v3f v);
 FMDEF v3f v3f_scale(v3f v, r32 s);
 FMDEF v3f v3f_add(v3f lhs, v3f rhs);
 FMDEF v3f v3f_sub(v3f lhs, v3f rhs);
@@ -362,11 +360,6 @@ FMDEF void v2f_normalize_eq(v2f *v)
 	*v = v2f_normalize(*v);
 }
 
-FMDEF b32 v2f_is_unit(v2f v)
-{
-	return v2f_mag_sq(v) == 1.f;
-}
-
 FMDEF v2f v2f_scale(v2f v, r32 s)
 {
 	v2f result = { v.x * s, v.y * s };
@@ -572,11 +565,6 @@ FMDEF r32 v3f_dist_sq(v3f lhs, v3f rhs)
 FMDEF v3f v3f_normalize(v3f v)
 {
 	return v3f_scale(v, 1.f / v3f_mag(v));
-}
-
-FMDEF b32 v3f_is_unit(v3f v)
-{
-	return v3f_mag_sq(v) == 1;
 }
 
 FMDEF v3f v3f_scale(v3f v, r32 s)
