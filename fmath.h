@@ -248,6 +248,7 @@ FMDEF v2f fmath_line_extrapolate(v2f a, v2f b, r32 t);
 FMDEF r32 fmath_line_interpolate(v2f a, v2f b, v2f p);
 FMDEF b32 fmath_ray_intersect_coords(v2f a, v2f adir, v2f b, v2f bdir,
                                      r32 *t, r32 *u);
+FMDEF b32 fmath_ray_intersect(v2f a, v2f adir, v2f b, v2f bdir, v2f *isec);
 FMDEF b32 fmath_line_intersect_coords(v2f a0, v2f a1, v2f b0, v2f b1,
                                       r32 *t, r32 *u);
 FMDEF b32 fmath_line_intersect(v2f a0, v2f a1, v2f b0, v2f b1, v2f *isec);
@@ -1331,6 +1332,14 @@ FMDEF b32 fmath_ray_intersect_coords(v2f a, v2f adir, v2f b, v2f bdir, r32 *t, r
 	*t = v2f_cross(ab, bdir) / rxs;
 	*u = v2f_cross(ab, adir) / rxs;
 	return true;
+}
+
+FMDEF b32 fmath_ray_intersect(v2f a, v2f adir, v2f b, v2f bdir, v2f *isec)
+{
+	r32 t = 0, u = 0;
+	b32 result = fmath_ray_intersect_coords(a, adir, b, bdir, &t, &u);
+	*isec = v2f_fmadd(a, adir, t);
+	return result;
 }
 
 FMDEF b32 fmath_line_intersect_coords(v2f a0, v2f a1, v2f b0, v2f b1, r32 *t, r32 *u)
