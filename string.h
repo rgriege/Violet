@@ -181,12 +181,16 @@ out:
 
 char* strncpy_nt(char* dst, const char* src, size_t size)
 {
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
     strncpy(dst, src, size);
     dst[size - 1] = '\0';
     return dst;
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 }
 
 static thread_local char g_imprint_buf[IMPRINT_BUFFER_SIZE] = {0};
