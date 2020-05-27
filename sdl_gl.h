@@ -1066,8 +1066,10 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_ver;
 	}
 
+#ifndef __EMSCRIPTEN__
 	if (SDL_GL_SetSwapInterval(0) != 0)
 		log_warn("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
+#endif
 
 	glewExperimental = GL_TRUE;
 	GLenum glew_err = glewInit();
@@ -1080,7 +1082,9 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	log_info("GL version: %s", glGetString(GL_VERSION));
 	GL_ERR_CHECK("glGetString");
 
+#ifndef __EMSCRIPTEN__
 	GL_CHECK(glEnable, GL_MULTISAMPLE);
+#endif
 	GL_CHECK(glEnable, GL_BLEND);
 	GL_CHECK(glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	GL_CHECK(glEnable, GL_SCISSOR_TEST);
