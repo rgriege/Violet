@@ -980,14 +980,22 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		window->parent_gl_context = SDL_GL_GetCurrentContext();
 	}
 
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+	// Use OpenGLES 2.0
+	/* not checking return values because we check the important ones later */
+	const int gl_major_version_target = 2;
+	const int gl_minor_version_target = 0;
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_major_version_target);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_minor_version_target);
+#else
 	// Use OpenGL 3.3 core
 	/* not checking return values because we check the important ones later */
 	const int gl_major_version_target = 3;
 	const int gl_minor_version_target = 3;
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_major_version_target);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_minor_version_target);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 #endif
@@ -1038,7 +1046,6 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_ctx;
 	}
 
-#ifndef __EMSCRIPTEN__
 	/* SDL docs say we should do this after creating the context */
 	int gl_major_version;
 	int gl_minor_version;
@@ -1058,7 +1065,6 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		          gl_major_version, gl_minor_version);
 		goto err_ver;
 	}
-#endif
 
 	if (SDL_GL_SetSwapInterval(0) != 0)
 		log_warn("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
