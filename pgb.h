@@ -147,7 +147,11 @@ typedef union pgb__max_align
 	void (*f)(void);
 } pgb__max_align_t;
 
+#ifdef offsetof
+#define pgb_offsetof(s, m) offsetof(s, m)
+#else
 #define pgb_offsetof(s, m) ((size_t)&((s*)(NULL))->m)
+#endif
 
 #define pgb_static_assert(cnd, msg) typedef int msg[(cnd) ? 1 : -1]
 
