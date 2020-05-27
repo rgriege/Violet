@@ -1038,6 +1038,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_ctx;
 	}
 
+#ifndef __EMSCRIPTEN__
 	/* SDL docs say we should do this after creating the context */
 	int gl_major_version;
 	int gl_minor_version;
@@ -1049,6 +1050,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		log_error("failed to get OpenGL minor version: %s", SDL_GetError());
 		goto err_ver;
 	}
+
 	if (   gl_major_version < gl_major_version_target
 	    || (   gl_major_version == gl_major_version_target
 	        && gl_minor_version  < gl_minor_version_target)) {
@@ -1056,6 +1058,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		          gl_major_version, gl_minor_version);
 		goto err_ver;
 	}
+#endif
 
 	if (SDL_GL_SetSwapInterval(0) != 0)
 		log_warn("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
