@@ -181,16 +181,24 @@ out:
 
 char* strncpy_nt(char* dst, const char* src, size_t size)
 {
+#ifdef __EMSCRIPTEN__
+	/* For some reason, the strncpy implementation throws runtime errors
+	 * with sanitize flags enabled. */
+	dst[0] = 0;
+	strncat(dst, src, size-1);
+	return dst;
+#else
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif
-    strncpy(dst, src, size);
-    dst[size - 1] = '\0';
-    return dst;
+	strncpy(dst, src, size);
+	dst[size - 1] = '\0';
+	return dst;
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
+#endif // __EMSCRIPTEN__
 }
 
 static thread_local char g_imprint_buf[IMPRINT_BUFFER_SIZE] = {0};
