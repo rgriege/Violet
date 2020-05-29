@@ -711,7 +711,7 @@ typedef struct window
 	/* rendering */
 	u32 vao, vbo[VBO_COUNT];
 	shader_prog_t shader;
-#ifdef __EMSCRIPTEN__
+#ifdef SDL_GL_ES_2
 	s32 shader_attrib_loc[VBO_COUNT];
 #endif
 	gui_texture_t texture_white;
@@ -981,10 +981,16 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 
 #ifdef __EMSCRIPTEN__
-	// Use OpenGLES 2.0
 	/* not checking return values because we check the important ones later */
+#ifdef SDL_GL_ES_2
+	// Use OpenGLES 2.0
 	const int gl_major_version_target = 2;
 	const int gl_minor_version_target = 0;
+#else
+	// Use OpenGLES 3.0
+	const int gl_major_version_target = 3;
+	const int gl_minor_version_target = 0;
+#endif
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_major_version_target);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_minor_version_target);
@@ -1106,7 +1112,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	                                      g_fragment_shader))
 		goto err_white;
 
-#ifdef __EMSCRIPTEN__
+#ifdef SDL_GL_ES_2
 	window->shader_attrib_loc[VBO_VERT]  = shader_program_attrib(&window->shader, "position");
 	window->shader_attrib_loc[VBO_COLOR] = shader_program_attrib(&window->shader, "color");
 	window->shader_attrib_loc[VBO_TEX]   = shader_program_attrib(&window->shader, "tex_coord");
@@ -1362,7 +1368,7 @@ static const GLenum g_draw_call_types[GUI_DRAW_COUNT] = {
 
 void window_end_frame(window_t *window)
 {
-#ifdef __EMSCRIPTEN__
+#ifdef SDL_GL_ES_2
 	const s32 *loc = window->shader_attrib_loc;
 #else
 	const s32 loc[VBO_COUNT] = { VBO_VERT, VBO_COLOR, VBO_TEX };
@@ -1503,6 +1509,7 @@ void window_run(window_t *window, u32 fps, b32(*ufunc)(window_t *window, void *u
 }
 
 #ifdef __EMSCRIPTEN__
+#ifdef SDL_GL_ES_2
 static const char *g_vertex_shader =
 	"uniform vec2 window_halfdim;\n"
 	"attribute vec2 position;\n"
@@ -1528,6 +1535,36 @@ static const char *g_fragment_shader =
 	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
 	"  gl_FragColor = texture2D(tex, TexCoord_flipped) * Color;\n"
 	"}";
+#else // SDL_GL_ES_2
+static const char *g_vertex_shader =
+	"#version 300 es\n"
+	"layout(location = 0) in vec2 position;\n"
+	"layout(location = 1) in vec4 color;\n"
+	"layout(location = 2) in vec2 tex_coord;\n"
+	"uniform vec2 window_halfdim;\n"
+	"out vec2 TexCoord;\n"
+	"out vec4 Color;\n"
+	"\n"
+	"void main() {\n"
+	"  vec2 p = (position - window_halfdim) / window_halfdim;\n"
+	"  gl_Position = vec4(p.xy, 0.0, 1.0);\n"
+	"  TexCoord = tex_coord;\n"
+	"  Color = color;\n"
+	"}";
+
+static const char *g_fragment_shader =
+	"#version 300 es\n"
+	"precision mediump float;\n"
+	"in vec2 TexCoord;\n"
+	"in vec4 Color;\n"
+	"uniform sampler2D tex;\n"
+	"out vec4 FragColor;\n"
+	"\n"
+	"void main() {\n"
+	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
+	"  FragColor = texture(tex, TexCoord_flipped) * Color;\n"
+	"}";
+#endif // SDL_GL_ES_2
 #else // __EMSCRIPTEN__
 static const char *g_vertex_shader =
 	"#version 330\n"
