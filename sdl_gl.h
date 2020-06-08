@@ -1486,7 +1486,7 @@ void window_end_frame_ex(window_t *window, u32 target_frame_milli,
 		log_warn("long frame: %ums", frame_milli);
 	else if (  time_diff_milli(gui_last_input_time(gui), gui_frame_start(gui))
 	         > idle_start_milli)
-		time_sleep_milli(idle_frame_milli - frame_milli);
+		SDL_WaitEventTimeout(NULL, idle_frame_milli - frame_milli);
 	else
 		time_sleep_milli(target_frame_milli - frame_milli);
 }
