@@ -1595,4 +1595,5 @@ static const char *g_fragment_shader =
 	"}";
 #endif // __EMSCRIPTEN__
 
+#undef SDL_GL_IMPLEMENTATION
 #endif // SDL_GL_IMPLEMENTATION

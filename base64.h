@@ -143,4 +143,5 @@ void base64_decode(const char *data, size_t size, void *out)
 	}
 }
 
+#undef BASE64_IMPLEMENTATION
 #endif // BASE64_IMPLEMENTATION

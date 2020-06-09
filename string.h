@@ -401,4 +401,4 @@ size_t str_len(str_t *str)
 }
 
 #undef STRING_IMPLEMENTATION
-#endif
+#endif // STRING_IMPLEMENTATION
