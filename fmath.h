@@ -7,14 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef FMATH_NO_SSE
-#ifndef _WIN32
-#include <x86intrin.h>
-#else
-#include <intrin.h>
-#endif
-#endif
-
 #define FMDEF
 #define FMGDECL extern
 #define FMGDEF
@@ -143,13 +135,7 @@ FMDEF b32 m3f_equal(m3f lhs, m3f rhs);
 
 typedef struct m4f
 {
-#if FMATH_NO_SSE
 	r32 v[16];
-#elif !defined(_WIN32)
-	_Alignas(16) r32 v[16];
-#else
-	__declspec(align(16)) r32 v[16];
-#endif
 } m4f;
 
 FMGDECL const m4f g_m4f_identity;
@@ -831,25 +817,15 @@ FMDEF m4f m4f_look_at(v3f eye, v3f center, v3f up_)
 FMDEF m4f m4f_mul_m4(m4f lhs, m4f rhs)
 {
 	const r32 *lhs_i, *rhs_k;
-	r32 *res_i, lhs_ik;
+	r32 *res_i;
 	m4f res = g_m4f_zero;
 	for (int i = 0; i < 4; ++i) {
 		lhs_i = lhs.v + 4 * i;
 		res_i = res.v + 4 * i;
 		for (int k = 0; k < 4; ++k) {
 			rhs_k = rhs.v + 4 * k;
-			lhs_ik = lhs_i[k];
-#ifndef FMATH_NO_SSE
-			__m128 r_vec = _mm_set_ps1(lhs_ik);
-			__m128 rhs_vec = _mm_load_ps(rhs_k);
-			__m128 res_vec = _mm_load_ps(res_i);
-			__m128 mul = _mm_mul_ps(r_vec, rhs_vec);
-			__m128 add = _mm_add_ps(res_vec, mul);
-			_mm_store_ps(res_i, add);
-#else
 			for (int j = 0; j < 4; j++)
-				res_i[j] += lhs_ik * rhs_k[j];
-#endif
+				res_i[j] += lhs_i[k] * rhs_k[j];
 		}
 	}
 	return res;
