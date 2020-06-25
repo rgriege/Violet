@@ -176,6 +176,7 @@ FMDEF r32   ivalf_center(ivalf i);
 FMDEF ivalf ivalf_slide(ivalf i, r32 d);
 FMDEF r32   ivalf_length(ivalf i);
 FMDEF b32   ivalf_contains_val(ivalf i, r32 x);
+FMDEF b32   ivalf_contains_val_within(ivalf i, r32 x, r32 error);
 FMDEF b32   ivalf_contains_ival(ivalf lhs, ivalf rhs);
 FMDEF b32   ivalf_contains_ival_within(ivalf lhs, ivalf rhs, r32 error);
 FMDEF b32   ivalf_overlaps(ivalf lhs, ivalf rhs);
@@ -1020,6 +1021,11 @@ FMDEF r32 ivalf_length(ivalf i)
 FMDEF b32 ivalf_contains_val(ivalf i, r32 x)
 {
 	return x >= i.l && x <= i.r;
+}
+
+FMDEF b32 ivalf_contains_val_within(ivalf i, r32 x, r32 error)
+{
+	return x - i.l >= -error && i.r - x >= -error;
 }
 
 FMDEF b32 ivalf_contains_ival(ivalf lhs, ivalf rhs)
