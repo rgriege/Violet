@@ -252,6 +252,7 @@ FMDEF r32 fmath_point_to_line_dist_sq(v2f a, v2f b, v2f p);
 FMDEF r32 fmath_point_to_ray_dist(v2f a0, v2f dir, v2f p);
 
 FMDEF ivalf linef_project(v2f a, v2f b, v2f axis);
+FMDEF ivalf linef_project_onto_ray(v2f a, v2f b, v2f start, v2f dir);
 
 /* NOTE(rgriege): returns a unix-style error code - see implementation for details */
 FMDEF s32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir,
@@ -1407,6 +1408,10 @@ FMDEF ivalf linef_project(v2f a, v2f b, v2f axis)
 	return (ivalf){ .l = fminf(dp_a, dp_b), .r = fmaxf(dp_a, dp_b) };
 }
 
+FMDEF ivalf linef_project_onto_ray(v2f a, v2f b, v2f start, v2f dir)
+{
+	return ivalf_slide(linef_project(a, b, dir), -v2f_dot(start, dir));
+}
 
 FMDEF s32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir, r32 *t, r32 *u)
 {
