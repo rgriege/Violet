@@ -324,3 +324,12 @@ b32 open_file_external(const char *filename)
 {
 	return EM_ASM_INT(return window.open(UTF8ToString($0)) != null, filename);
 }
+
+/* System */
+
+b32 cpu_supports_sse41(void)
+{
+	/* Based on the documentation, I _think_ that emscripten will
+	 * provide a fallback for any SSE instructions it doesn't support. */
+	return true;
+}

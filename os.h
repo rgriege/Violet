@@ -100,6 +100,10 @@ void exec(char *const argv[]);
 int  run(const char *command);
 b32  open_file_external(const char *filename);
 
+/* System */
+
+b32 cpu_supports_sse41(void);
+
 #endif
 
 

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <cpuid.h>
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/syslimits.h>
@@ -431,4 +432,18 @@ b32 open_file_external(const char *filename)
 	const size_t sz = strlen(command);
 	strncpy(command + sz, filename, 256 - sz - 1);
 	return run(command) == 0;
+}
+
+/* System */
+
+b32 cpu_supports_sse41(void)
+{
+	unsigned int info[4];
+	unsigned int max_function_id = __get_cpuid_max(0, NULL);
+	if (max_function_id < 1) {
+		log_error("failed to fetch highest cpuid functionid");
+		return false;
+	}
+	__get_cpuid(1, &info[0], &info[1], &info[2], &info[3]);
+	return info[2] & (1 << 19);
 }

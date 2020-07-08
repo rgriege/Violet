@@ -612,3 +612,19 @@ b32 open_file_external(const char *filename)
 	}
 	return true;
 }
+
+/* System */
+
+b32 cpu_supports_sse41(void)
+{
+	int info[4];
+	int max_function_id;
+	__cpuid(info, 0);
+	max_function_id = info[0];
+	if (max_function_id < 1) {
+		log_error("failed to fetch highest cpuid functionid");
+		return false;
+	}
+	__cpuid(info, 1);
+	return info[2] & (1 << 19);
+}
