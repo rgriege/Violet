@@ -109,13 +109,13 @@ b32  open_file_external(const char *filename);
 #undef OS_IMPLEMENTATION
 
 #ifdef VLT_USE_TINYDIR
-#ifdef __GNUC__
+#if defined(__GNUC__) && (__GNUC__ >= 8)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wrestrict"
 #endif
 #define TINYDIR_IMPLEMENTATION
 #include <tinydir/tinydir.h>
-#ifdef __GNUC__
+#if defined(__GNUC__) && (__GNUC__ >= 8)
 #pragma GCC diagnostic pop
 #endif
 #endif

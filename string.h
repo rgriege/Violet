@@ -188,14 +188,14 @@ char* strncpy_nt(char* dst, const char* src, size_t size)
 	strncat(dst, src, size-1);
 	return dst;
 #else
-#ifdef __GNUC__
+#if defined(__GNUC__) && (__GNUC__ >= 8)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif
 	strncpy(dst, src, size);
 	dst[size - 1] = '\0';
 	return dst;
-#ifdef __GNUC__
+#if defined(__GNUC__) && (__GNUC__ >= 8)
 #pragma GCC diagnostic pop
 #endif
 #endif // __EMSCRIPTEN__
