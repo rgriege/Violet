@@ -397,7 +397,7 @@ b32 open_file_external(const char *filename)
 
 b32 cpu_supports_sse41(void)
 {
-	unsigned int info[4];
+	unsigned int info[4] = {0};
 	unsigned int max_function_id = __get_cpuid_max(0, NULL);
 	if (max_function_id < 1) {
 		log_error("failed to fetch highest cpuid functionid");

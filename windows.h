@@ -617,7 +617,7 @@ b32 open_file_external(const char *filename)
 
 b32 cpu_supports_sse41(void)
 {
-	int info[4];
+	int info[4] = {0};
 	int max_function_id;
 	__cpuid(info, 0);
 	max_function_id = info[0];
