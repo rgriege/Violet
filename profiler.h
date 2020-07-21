@@ -81,7 +81,7 @@ b32 profiler__block_in_siblings(const profile__block_t *siblings,
 
 void profile_block_begin(const char *name)
 {
-	const u32 id = hash(name);
+	const u32 id = hash_compute(name);
 	profile__block_t *block = NULL;
 
 	if (   !profile__block_find(id, &block)
@@ -161,7 +161,7 @@ void profile__block_clear(profile__block_t *block)
 void profile_block_end(const char *name)
 {
 	const timepoint_t end = time_current();
-	const u32 id = hash(name);
+	const u32 id = hash_compute(name);
 	profile__block_t *block = g_profiler_block_last;
 
 	if (block->id != id) {

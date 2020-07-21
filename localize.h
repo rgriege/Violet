@@ -65,7 +65,7 @@ const char *localize_string(const char *str)
 		return str;
 
 	localized_string_t *slot;
-	if (   localization_table_find_slot(&g_localization_table, hash(str), &slot)
+	if (   localization_table_find_slot(&g_localization_table, hash_compute(str), &slot)
 	    && slot->id != 0) {
 		return &g_localization_table.chars[slot->index];
 	} else {
@@ -87,12 +87,12 @@ b32 localize_is_language_default(void)
 
 void localize_set_language_default(const char *fname)
 {
-	g_lang_default = hash(fname);
+	g_lang_default = hash_compute(fname);
 }
 
 b32 localize_set_language(const char *fname)
 {
-	const u32 lang = hash(fname);
+	const u32 lang = hash_compute(fname);
 
 	if (g_lang == lang)
 		return true;
@@ -255,12 +255,12 @@ b32 localize_is_language_default(void)
 
 void localize_set_language_default(const char *fname)
 {
-	g_lang_default = hash(fname);
+	g_lang_default = hash_compute(fname);
 }
 
 b32  localize_set_language(const char *fname)
 {
-	if (hash(fname) != g_lang_default)
+	if (hash_compute(fname) != g_lang_default)
 		return false;
 
 	g_lang = g_lang_default;

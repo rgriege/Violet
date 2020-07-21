@@ -4156,7 +4156,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	}
 
 	if (gui_widget_focused(gui, id) && !was_focused)
-		gui->npt.initial_txt_hash = hashn(txt, n);
+		gui->npt.initial_txt_hash = hashn_compute(txt, n);
 	if (gui_widget_focused(gui, id) != was_focused)
 		gui->npt.active = gui_widget_focused(gui, id);
 
@@ -4174,7 +4174,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		           && gui__key_triggered(gui, KB_ESCAPE)) {
 			complete = GUI_NPT_COMPLETE_ON_ESCAPE;
 		} else if (   (flags & GUI_NPT_COMPLETE_ON_UNCHANGED)
-		           || gui->npt.initial_txt_hash != hashn(txt, n)) {
+		           || gui->npt.initial_txt_hash != hashn_compute(txt, n)) {
 			complete = GUI_NPT_COMPLETE_ON_UNCHANGED;
 		}
 	}

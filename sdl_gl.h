@@ -944,7 +944,7 @@ gui_t *window_get_gui(window_t *window)
 
 const gui_img_t *window_get_img(window_t *window, const char *fname)
 {
-	const u32 id = hash(fname);
+	const u32 id = hash_compute(fname);
 	cached_img_t *cached_img = window__find_img(window, id);
 	if (cached_img)
 		return &cached_img->img;

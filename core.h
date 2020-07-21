@@ -291,10 +291,10 @@ static inline void  std_free(void *ptr) { return free(ptr); }
 
 /* Hash */
 
-u32 hash(const char *str);
-u32 hash_seeded(const char *str, u32 seed);
-u32 hashn(const char *str, u32 n);
-u32 hashn_seeded(const char *str, u32 n, u32 seed);
+u32 hash_compute(const char *str);
+u32 hash_compute_seeded(const char *str, u32 seed);
+u32 hashn_compute(const char *str, u32 n);
+u32 hashn_compute_seeded(const char *str, u32 n, u32 seed);
 
 /* Utility */
 
@@ -856,12 +856,12 @@ void vlt_mem_log_usage(void)
 
 /* Hash (djb2 by dan bernstein) */
 
-u32 hash(const char *str)
+u32 hash_compute(const char *str)
 {
-	return hash_seeded(str, 5381);
+	return hash_compute_seeded(str, 5381);
 }
 
-u32 hash_seeded(const char *str, u32 seed)
+u32 hash_compute_seeded(const char *str, u32 seed)
 {
 	u32 hash = seed;
 	int c;
@@ -870,12 +870,12 @@ u32 hash_seeded(const char *str, u32 seed)
 	return hash;
 }
 
-u32 hashn(const char *str, u32 n)
+u32 hashn_compute(const char *str, u32 n)
 {
-	return hashn_seeded(str, n, 5381);
+	return hashn_compute_seeded(str, n, 5381);
 }
 
-u32 hashn_seeded(const char *str, u32 n, u32 seed)
+u32 hashn_compute_seeded(const char *str, u32 n, u32 seed)
 {
 	u32 hash = seed;
 	for (u32 i = 0; i < n; ++i)
