@@ -401,6 +401,7 @@ s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
                  gui_img_scale_e scale);
 s32  gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen);
+s32  gui_btn_color(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t color);
 b32  gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val);
 b32  gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val);
 b32  gui_slider_x(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val);
@@ -439,6 +440,14 @@ b32  gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_menu_end(gui_t *gui);
 b32  gui_color_picker_sv(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c);
 b32  gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c);
+b32  gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                            s32 pw, s32 ph, colorf_t c);
+b32  gui_color_picker_popup_default(gui_t *gui, colorf_t *c);
+void gui_color_picker_end(gui_t *gui);
+b32  gui_color_picker8_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                             s32 pw, s32 ph, color_t c);
+b32  gui_color_picker8_popup_default(gui_t *gui, color_t *c);
+void gui_color_picker8_end(gui_t *gui);
 b32  gui_color_picker(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
                       s32 pw, s32 ph, colorf_t *c);
 b32  gui_color_picker8(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
@@ -554,6 +563,7 @@ void pgui_col_empty(gui_t *gui, s32 width);
 void pgui_col_centered(gui_t *gui, s32 width, s32 height);
 
 void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
+void pgui_cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 u64  pgui_next_widget_id(const gui_t *gui);
 
 void pgui_spacer(gui_t *gui);
@@ -563,6 +573,7 @@ void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
 s32  pgui_btn_txt(gui_t *gui, const char *lbl);
 s32  pgui_btn_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
 s32  pgui_btn_pen(gui_t *gui, gui_pen_t pen);
+s32  pgui_btn_color(gui_t *gui, color_t color);
 b32  pgui_chk(gui_t *gui, const char *lbl, b32 *val);
 b32  pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val);
 s32  pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
@@ -822,6 +833,15 @@ typedef struct gui_dropdown_style
 	} shadow;
 } gui_dropdown_style_t;
 
+typedef struct gui_color_picker_style
+{
+	gui_widget_style_t btn;
+	struct {
+		color_t color;
+		s32 width;
+	} shadow;
+} gui_color_picker_style_t;
+
 typedef struct gui_panel_style
 {
 	color_t bg_color;
@@ -840,21 +860,22 @@ typedef struct gui_panel_style
 
 typedef struct gui_style
 {
-	color_t                 bg_color;
-	gui_line_style_t        line;
-	gui_text_style_t        txt;
-	gui_widget_style_t      npt;
-	gui_widget_style_t      btn;
-	gui_widget_style_t      chk;
-	gui_slider_style_t      slider;
-	gui_widget_style_t      select;
-	gui_dropdown_style_t    dropdown;
-	gui_widget_style_t      drag;
-	gui_element_style_t     hint;
-	gui_scroll_area_style_t scroll_area;
-	gui_widget_style_t      tree;
-	gui_panel_style_t       panel;
-	gui_line_style_t        split;
+	color_t                  bg_color;
+	gui_line_style_t         line;
+	gui_text_style_t         txt;
+	gui_widget_style_t       npt;
+	gui_widget_style_t       btn;
+	gui_widget_style_t       chk;
+	gui_slider_style_t       slider;
+	gui_widget_style_t       select;
+	gui_dropdown_style_t     dropdown;
+	gui_color_picker_style_t color_picker;
+	gui_widget_style_t       drag;
+	gui_element_style_t      hint;
+	gui_scroll_area_style_t  scroll_area;
+	gui_widget_style_t       tree;
+	gui_panel_style_t        panel;
+	gui_line_style_t         split;
 } gui_style_t;
 
 extern const gui_style_t g_gui_style_default;
@@ -1162,6 +1183,14 @@ s32 font__offset_y(void *font, const char *txt,
 	}, \
 }
 
+#define gi__gui_color_picker_style_default { \
+	.btn = gi__gui_btn_style_default, \
+	.shadow = { \
+		.color = { .r=0x20, .g=0x20, .b=0x20, .a=0x20 }, \
+		.width = 10, \
+	}, \
+}
+
 #define gi__gui_scroll_area_style_default { \
 	.bg_color = gi_nocolor, \
 	.padding = {0}, \
@@ -1208,6 +1237,7 @@ const gui_style_t g_gui_style_default = {
 	.slider = gi__gui_slider_style_default,
 	.select = gi__gui_btn_style_default,
 	.dropdown = gi__gui_dropdown_style_default,
+	.color_picker = gi__gui_color_picker_style_default,
 	.drag = gi__gui_chk_style_default,
 	.hint = gi__gui_hint_style_default,
 	.scroll_area = gi__gui_scroll_area_style_default,
@@ -1392,6 +1422,14 @@ const gui_style_t g_gui_style_default = {
 	}, \
 }
 
+#define gi__gui_color_picker_style_invis { \
+	.btn = gi__gui_widget_style_invis, \
+	.shadow = { \
+		.color = gi_nocolor, \
+		.width = 0, \
+	}, \
+}
+
 #define gi__gui_scroll_area_style_invis { \
 	.bg_color = gi_nocolor, \
 	.padding = {0}, \
@@ -1400,20 +1438,21 @@ const gui_style_t g_gui_style_default = {
 }
 
 const gui_style_t g_gui_style_invis = {
-	.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
-	.line     = gi__gui_line_style_invis,
-	.txt      = gi__gui_text_style_invis,
-	.npt      = gi__gui_widget_style_invis,
-	.btn      = gi__gui_widget_style_invis,
-	.chk      = gi__gui_widget_style_invis,
-	.slider   = gi__gui_slider_style_invis,
-	.select   = gi__gui_widget_style_invis,
-	.dropdown = gi__gui_dropdown_style_invis,
-	.drag     = gi__gui_widget_style_invis,
-	.hint     = gi__gui_element_style_invis,
-	.scroll_area = gi__gui_scroll_area_style_invis,
-	.tree     = gi__gui_widget_style_invis,
-	.panel    = {
+	.bg_color     = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xff },
+	.line         = gi__gui_line_style_invis,
+	.txt          = gi__gui_text_style_invis,
+	.npt          = gi__gui_widget_style_invis,
+	.btn          = gi__gui_widget_style_invis,
+	.chk          = gi__gui_widget_style_invis,
+	.slider       = gi__gui_slider_style_invis,
+	.select       = gi__gui_widget_style_invis,
+	.dropdown     = gi__gui_dropdown_style_invis,
+	.color_picker = gi__gui_color_picker_style_invis,
+	.drag         = gi__gui_widget_style_invis,
+	.hint         = gi__gui_element_style_invis,
+	.scroll_area  = gi__gui_scroll_area_style_invis,
+	.tree         = gi__gui_widget_style_invis,
+	.panel        = {
 		.bg_color          = gi_nocolor,
 		.border_color      = gi_nocolor,
 		.drag              = gi__gui_widget_style_invis,
@@ -4383,6 +4422,25 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 	return ret;
 }
 
+static
+void gui__style_for_btn_color(gui_t *gui, color_t color)
+{
+	gui->style.btn.hot.outline_color = g_white;
+	gui->style.btn.inactive.bg_color = color;
+	gui->style.btn.hot.bg_color      = color;
+	gui->style.btn.active.bg_color   = color;
+}
+
+s32 gui_btn_color(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t color)
+{
+	s32 result;
+	gui_style_push_current(gui, btn);
+	gui__style_for_btn_color(gui, color);
+	result = gui_btn_txt(gui, x, y, w, h, "");
+	gui_style_pop(gui);
+	return result;
+}
+
 b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
@@ -5217,8 +5275,8 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 
 gui_padding_style_t gui__scale_padding(gui_padding_style_t padding, s32 scale);
 
-b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                     s32 pw, s32 ph, colorf_t *c)
+b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                           s32 pw, s32 ph, colorf_t c)
 {
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
@@ -5231,7 +5289,7 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	s32 px, py;
 	gui__widget_render_state_e render_state;
 	gui_style_t *style = gui_style(gui);
-	color_t color = colorf_to_color(*c);
+	color_t color = colorf_to_color(c);
 
 	gui__popup_position(gui, x, y, w, h, pw, ph, &px, &py);
 	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
@@ -5239,157 +5297,204 @@ b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
 
 	gui_style_push_current(gui, btn);
-	style->btn.hot.outline_color = g_white;
-	style->btn.inactive.bg_color = color;
-	style->btn.hot.bg_color      = color;
-	style->btn.active.bg_color   = color;
+	gui__style_for_btn_color(gui, color);
 	gui__btn_render(gui, x, y, w, h, "", render_state, contains_mouse, &gui->style.btn);
 	gui_style_pop(gui);
 
 	if (gui_widget_focused(gui, id)) {
-		static const s32 cols_major[] = { 0, 80 };
-		static const s32 rows[] = { 0, 2, 20 };
-		static const s32 cols[] = { 0, 2, 20 };
-		static const s32 cols_npt[] = { 20, 0 };
-		static const s32 rows_npt[] = {
-			20, 5, 20, 5, 20, 10, 20, 5, 20, 5, 20, 10, 20
-		};
+		const s32 sw = gui_scale_val(gui, gui->style.color_picker.shadow.width);
 		const gui_padding_style_t padding = gui__scale_padding(style->panel.padding, gui->scale);
 		const s32 gx = px + padding.left;
 		const s32 gy = py + padding.bottom;
 		const s32 gw = pw - padding.left - padding.right;
 		const s32 gh = ph - padding.bottom - padding.top;
-		const gui_npt_flags_e flags = GUI_NPT_COMPLETE_ON_TAB
-		                            | GUI_NPT_COMPLETE_ON_CLICK_OUT;
-		gui_npt_filter_p filter = &g_gui_npt_filter_hex;
-		b32 changed = false, changed_npt = false;
-		u8 ch, cs, cv;
 
 		if (!gui__popup_begin(gui, id, px, py, pw, ph))
 			return false;
 
+		if (sw > 0) {
+			const color_t shadow_color = gui->style.color_picker.shadow.color;
+			gui__shadow_box(gui, px, py, pw, ph, sw, shadow_color);
+		}
+
 		pgui_grid_begin(gui, &gui->popup->grid, gx, gy, gw, gh);
 		/* NOTE(rgriege): shrink required to pass entire rect through layer */
-		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color,
-		         style->panel.border_color);
-
-		pgui_row_cellsv(gui, 0, cols_major);
-
-		pgui_col_cellsv(gui, 0, rows);
-
-		pgui_row_cellsv(gui, 0, cols);
-		if (pgui_color_picker_sv(gui, c)) changed = true;
-		pgui_spacer(gui);
-		if (pgui_color_picker_h(gui, c)) changed = true;
-
-		if (changed) color = colorf_to_color(*c);
-
-		pgui_row_empty(gui, 0);
-
-		pgui_row_cellsv(gui, 0, cols);
-		gui_style_push_color(gui, panel.cell_bg_color, color);
-		pgui_spacer(gui);
-		gui_style_pop(gui);
-		pgui_spacer(gui);
-		pgui_spacer(gui);
-
-		gui_style_push_s32(gui, txt.align, GUI_ALIGN_MIDRIGHT);
-
-		pgui_col_cellsv(gui, 0, rows_npt);
-
-		pgui_row_cellsv(gui, 0, cols_npt);
-		pgui_txt(gui, "r");
-		if (pgui_npt_val(gui, imprintf("%u", color.r), 4, flags, filter)) {
-			changed_npt = true;
-			color.r = strtoul(gui_npt_val_buf(gui), NULL, 0);
-		}
-		pgui_row_empty(gui, 0);
-
-		pgui_row_cellsv(gui, 0, cols_npt);
-		pgui_txt(gui, "g");
-		if (pgui_npt_val(gui, imprintf("%u", color.g), 4, flags, filter)) {
-			changed_npt = true;
-			color.g = strtoul(gui_npt_val_buf(gui), NULL, 0);
-		}
-		pgui_row_empty(gui, 0);
-
-		pgui_row_cellsv(gui, 0, cols_npt);
-		pgui_txt(gui, "b");
-		if (pgui_npt_val(gui, imprintf("%u", color.b), 4, flags, filter)) {
-			changed_npt = true;
-			color.b = strtoul(gui_npt_val_buf(gui), NULL, 0);
-		}
-		pgui_row_empty(gui, 0);
-
-		color_to_hsv8(color, &ch, &cs, &cv);
-		pgui_row_cellsv(gui, 0, cols_npt);
-		pgui_txt(gui, "h");
-		if (pgui_npt_val(gui, imprintf("%u", ch), 4, flags, filter)) {
-			changed_npt = true;
-			ch = strtoul(gui_npt_val_buf(gui), NULL, 0);
-			hsv_to_color8(ch, cs, cv, &color);
-		}
-		pgui_row_empty(gui, 0);
-
-		pgui_row_cellsv(gui, 0, cols_npt);
-		pgui_txt(gui, "s");
-		if (pgui_npt_val(gui, imprintf("%u", cs), 4, flags, filter)) {
-			changed_npt = true;
-			cs = strtoul(gui_npt_val_buf(gui), NULL, 0);
-			hsv_to_color8(ch, cs, cv, &color);
-		}
-		pgui_row_empty(gui, 0);
-
-		pgui_row_cellsv(gui, 0, cols_npt);
-		pgui_txt(gui, "v");
-		if (pgui_npt_val(gui, imprintf("%u", cv), 4, flags, filter)) {
-			changed_npt = true;
-			cv = strtoul(gui_npt_val_buf(gui), NULL, 0);
-			hsv_to_color8(ch, cs, cv, &color);
-		}
-		pgui_row_empty(gui, 0);
-
-		pgui_row_cellsv(gui, 0, cols_npt);
-		pgui_txt(gui, "#");
-		if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x", color.r, color.g, color.b), 8, flags, filter)) {
-			const color_t c_orig = color;
-			if (color_from_hex(gui_npt_val_buf(gui), &color))
-				changed_npt = true;
-			else
-				color = c_orig;
-		}
-
-		gui_style_pop(gui);
-
-		if (changed_npt) {
-			*c = color_to_colorf(color);
-			changed = true;
-		}
-
-		pgui_grid_end(gui, &gui->popup->grid);
-		gui__popup_end(gui);
-		return changed;
+		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color, style->panel.border_color);
+		return true;
 	} else {
 		return false;
 	}
 }
 
-b32 gui_color_picker8(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                      s32 pw, s32 ph, color_t *c)
+b32 gui_color_picker_popup_default(gui_t *gui, colorf_t *c)
+{
+	const s32 cols_major[] = { 0, 80 };
+	const s32 rows[] = { 0, 2, 20 };
+	const s32 cols[] = { 0, 2, 20 };
+	const s32 cols_npt[] = { 20, 0 };
+	const s32 rows_npt[] = { 20, 5, 20, 5, 20, 10, 20, 5, 20, 5, 20, 10, 20 };
+	const gui_npt_flags_e flags = GUI_NPT_COMPLETE_ON_TAB
+	                            | GUI_NPT_COMPLETE_ON_CLICK_OUT;
+	gui_npt_filter_p filter = &g_gui_npt_filter_hex;
+	b32 changed = false, changed_npt = false;
+	color_t color = colorf_to_color(*c);
+	u8 ch, cs, cv;
+
+	pgui_row_cellsv(gui, 0, cols_major);
+
+	pgui_col_cellsv(gui, 0, rows);
+
+	pgui_row_cellsv(gui, 0, cols);
+	if (pgui_color_picker_sv(gui, c)) changed = true;
+	pgui_spacer(gui);
+	if (pgui_color_picker_h(gui, c)) changed = true;
+
+	if (changed) color = colorf_to_color(*c);
+
+	pgui_row_empty(gui, 0);
+
+	pgui_row_cellsv(gui, 0, cols);
+	gui_style_push_color(gui, panel.cell_bg_color, color);
+	pgui_spacer(gui);
+	gui_style_pop(gui);
+	pgui_spacer(gui);
+	pgui_spacer(gui);
+
+	gui_style_push_s32(gui, txt.align, GUI_ALIGN_MIDRIGHT);
+
+	pgui_col_cellsv(gui, 0, rows_npt);
+
+	pgui_row_cellsv(gui, 0, cols_npt);
+	pgui_txt(gui, "r");
+	if (pgui_npt_val(gui, imprintf("%u", color.r), 4, flags, filter)) {
+		changed_npt = true;
+		color.r = strtoul(gui_npt_val_buf(gui), NULL, 0);
+	}
+	pgui_row_empty(gui, 0);
+
+	pgui_row_cellsv(gui, 0, cols_npt);
+	pgui_txt(gui, "g");
+	if (pgui_npt_val(gui, imprintf("%u", color.g), 4, flags, filter)) {
+		changed_npt = true;
+		color.g = strtoul(gui_npt_val_buf(gui), NULL, 0);
+	}
+	pgui_row_empty(gui, 0);
+
+	pgui_row_cellsv(gui, 0, cols_npt);
+	pgui_txt(gui, "b");
+	if (pgui_npt_val(gui, imprintf("%u", color.b), 4, flags, filter)) {
+		changed_npt = true;
+		color.b = strtoul(gui_npt_val_buf(gui), NULL, 0);
+	}
+	pgui_row_empty(gui, 0);
+
+	color_to_hsv8(color, &ch, &cs, &cv);
+	pgui_row_cellsv(gui, 0, cols_npt);
+	pgui_txt(gui, "h");
+	if (pgui_npt_val(gui, imprintf("%u", ch), 4, flags, filter)) {
+		changed_npt = true;
+		ch = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		hsv_to_color8(ch, cs, cv, &color);
+	}
+	pgui_row_empty(gui, 0);
+
+	pgui_row_cellsv(gui, 0, cols_npt);
+	pgui_txt(gui, "s");
+	if (pgui_npt_val(gui, imprintf("%u", cs), 4, flags, filter)) {
+		changed_npt = true;
+		cs = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		hsv_to_color8(ch, cs, cv, &color);
+	}
+	pgui_row_empty(gui, 0);
+
+	pgui_row_cellsv(gui, 0, cols_npt);
+	pgui_txt(gui, "v");
+	if (pgui_npt_val(gui, imprintf("%u", cv), 4, flags, filter)) {
+		changed_npt = true;
+		cv = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		hsv_to_color8(ch, cs, cv, &color);
+	}
+	pgui_row_empty(gui, 0);
+
+	pgui_row_cellsv(gui, 0, cols_npt);
+	pgui_txt(gui, "#");
+	if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x", color.r, color.g, color.b), 8, flags, filter)) {
+		const color_t c_orig = color;
+		if (color_from_hex(gui_npt_val_buf(gui), &color))
+			changed_npt = true;
+		else
+			color = c_orig;
+	}
+
+	gui_style_pop(gui);
+
+	if (changed_npt) {
+		*c = color_to_colorf(color);
+		changed = true;
+	}
+
+	return changed;
+}
+
+void gui_color_picker_end(gui_t *gui)
+{
+	assert(gui->popup);
+	assert(gui->popup->id != 0);
+	assert(gui->popup->id == gui->focus_ids[gui->popup - gui->popups]);
+	pgui_grid_end(gui, &gui->popup->grid);
+	gui__popup_end(gui);
+}
+
+b32 gui_color_picker8_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                            s32 pw, s32 ph, color_t c)
 {
 	const u64 id = gui_widget_id(gui, x, y);
 	if (gui_widget_focused(gui, id)) {
-		if (gui_color_picker(gui, x, y, w, h, pw, ph, &gui->color_picker8_color)) {
-			*c = colorf_to_color(gui->color_picker8_color);
+		return gui_color_picker_begin(gui, x, y, w, h, pw, ph, gui->color_picker8_color);
+	} else {
+		colorf_t cf = color_to_colorf(c);
+		if (gui_color_picker_begin(gui, x, y, w, h, pw, ph, cf)) {
+			gui->color_picker8_color = cf;
 			return true;
 		}
-	} else {
-		colorf_t cf = color_to_colorf(*c);
-		gui_color_picker(gui, x, y, w, h, pw, ph, &cf);
-		if (gui_widget_focused(gui, id))
-			gui->color_picker8_color = cf;
 	}
 	return false;
+}
+
+b32 gui_color_picker8_popup_default(gui_t *gui, color_t *c)
+{
+	if (gui_color_picker_popup_default(gui, &gui->color_picker8_color)) {
+		*c = colorf_to_color(gui->color_picker8_color);
+		return true;
+	}
+	return false;
+}
+
+void gui_color_picker8_end(gui_t *gui)
+{
+	return gui_color_picker_end(gui);
+}
+
+b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                     s32 pw, s32 ph, colorf_t *c)
+{
+	b32 changed = false;
+	if (gui_color_picker_begin(gui, x, y, w, h, pw, ph, *c)) {
+		changed = gui_color_picker_popup_default(gui, c);
+		gui_color_picker_end(gui);
+	}
+	return changed;
+}
+
+b32 gui_color_picker8(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                      s32 pw, s32 ph, color_t *c)
+{
+	b32 changed = false;
+	if (gui_color_picker8_begin(gui, x, y, w, h, pw, ph, *c)) {
+		changed = gui_color_picker8_popup_default(gui, c);
+		gui_color_picker8_end(gui);
+	}
+	return changed;
 }
 
 static
@@ -5961,8 +6066,7 @@ void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 	gui__grid_get_next_cell(gui->grid, x, y, w, h);
 }
 
-static
-void pgui__cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+void pgui_cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 {
 	assert(gui->grid);
 	gui__grid_get_next_cell(gui->grid, x, y, w, h);
@@ -5982,14 +6086,14 @@ void pgui_spacer(gui_t *gui)
 {
 	const gui_panel_style_t *style = &gui->style.panel;
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
 }
 
 void pgui_spacer_blank(gui_t *gui)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	gui_widget_bounds_extend(gui, x, y, w, h);
 }
 
@@ -5997,7 +6101,7 @@ void pgui_txt(gui_t *gui, const char *str)
 {
 	const gui_panel_style_t *style = &gui->style.panel;
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
 	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
 }
@@ -6005,7 +6109,7 @@ void pgui_txt(gui_t *gui, const char *str)
 void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	gui_img_boxed(gui, x, y, w, h, img, scale);
 }
 
@@ -6013,7 +6117,7 @@ s32 pgui_btn_txt(gui_t *gui, const char *lbl)
 {
 	gui_btn_e result;
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_txt(gui, x, y, w, h, lbl);
 	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
@@ -6024,7 +6128,7 @@ s32 pgui_btn_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
 {
 	gui_btn_e result;
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_img(gui, x, y, w, h, img, scale);
 	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
@@ -6035,8 +6139,19 @@ s32 pgui_btn_pen(gui_t *gui, gui_pen_t pen)
 {
 	gui_btn_e result;
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	result = gui_btn_pen(gui, x, y, w, h, pen);
+	if (result == GUI_BTN_PRESS && gui->popup)
+		gui->popup->close_at_end = true;
+	return result;
+}
+
+s32 pgui_btn_color(gui_t *gui, color_t color)
+{
+	gui_btn_e result;
+	s32 x, y, w, h;
+	pgui_cell_consume(gui, &x, &y, &w, &h);
+	result = gui_btn_color(gui, x, y, w, h, color);
 	if (result == GUI_BTN_PRESS && gui->popup)
 		gui->popup->close_at_end = true;
 	return result;
@@ -6045,14 +6160,14 @@ s32 pgui_btn_pen(gui_t *gui, gui_pen_t pen)
 b32 pgui_chk(gui_t *gui, const char *lbl, b32 *val)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_chk(gui, x, y, w, h, lbl, val);
 }
 
 b32 pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_chk_pen(gui, x, y, w, h, pen, val);
 }
 
@@ -6066,7 +6181,7 @@ s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
                     gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_npt_txt_ex(gui, x, y, w, h, lbl, n, hint, flags, filter);
 }
 
@@ -6074,28 +6189,28 @@ s32 pgui_npt_val(gui_t *gui, const char *txt, u32 n,
                  gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_npt_val(gui, x, y, w, h, txt, n, flags, filter);
 }
 
 b32 pgui_select(gui_t *gui, const char *lbl, u32 *val, u32 opt)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_select(gui, x, y, w, h, lbl, val, opt);
 }
 
 b32 pgui_mselect(gui_t *gui, const char *txt, u32 *val, u32 opt)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_mselect(gui, x, y, w, h, txt, val, opt);
 }
 
 b32 pgui_dropdown_begin(gui_t *gui, u32 *val, u32 num_items)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_dropdown_begin(gui, x, y, w, h, val, num_items);
 }
 
@@ -6112,14 +6227,14 @@ void pgui_dropdown_end(gui_t *gui)
 b32 pgui_slider_x(gui_t *gui, r32 *val)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_slider_x(gui, x, y, w, h, val);
 }
 
 b32 pgui_slider_y(gui_t *gui, r32 *val)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_slider_y(gui, x, y, w, h, val);
 }
 
@@ -6142,7 +6257,7 @@ b32 pgui_range_y(gui_t *gui, r32 *val, r32 min, r32 max)
 b32 pgui_menu_begin(gui_t *gui, const char *txt, s32 item_w, u32 num_items)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_menu_begin(gui, x, y, w, h, txt, item_w, num_items);
 }
 
@@ -6154,35 +6269,35 @@ void pgui_menu_end(gui_t *gui)
 b32 pgui_color_picker_sv(gui_t *gui, colorf_t *color)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_color_picker_sv(gui, x, y, w, h, color);
 }
 
 b32 pgui_color_picker_h(gui_t *gui, colorf_t *color)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_color_picker_h(gui, x, y, w, h, color);
 }
 
 b32 pgui_color_picker(gui_t *gui, s32 pw, s32 ph, colorf_t *color)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_color_picker(gui, x, y, w, h, pw, ph, color);
 }
 
 b32 pgui_color_picker8(gui_t *gui, s32 pw, s32 ph, color_t *color)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	return gui_color_picker8(gui, x, y, w, h, pw, ph, color);
 }
 
 void pgui_scroll_area_begin(gui_t *gui, gui_scroll_area_t *scroll_area)
 {
 	s32 x, y, w, h;
-	pgui__cell_consume(gui, &x, &y, &w, &h);
+	pgui_cell_consume(gui, &x, &y, &w, &h);
 	gui_scroll_area_begin(gui, x, y, w, h, scroll_area);
 }
 
