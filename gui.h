@@ -5478,7 +5478,7 @@ b32 gui_color_picker8_popup_default(gui_t *gui, color_t *c)
 
 void gui_color_picker8_end(gui_t *gui)
 {
-	return gui_color_picker_end(gui);
+	gui_color_picker_end(gui);
 }
 
 b32 gui_color_picker(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
