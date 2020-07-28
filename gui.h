@@ -5676,9 +5676,15 @@ void pgui_scroll_area_grid_end(gui_t *gui, gui_grid_t *grid)
 	pgui_grid_end(gui, grid);
 }
 
+/* IDs:  0......1........X.........UINT_MAX
+ *       ^          ^         ^        ^
+ *      skip      panels   popups   default
+ *
+ * 0 is skipped to ensure that no widget id is ever 0,
+ * which is used as the invalid id */
 #define GUI__DEFAULT_PANEL_ID UINT_MAX
 #define GUI__POPUP_PANEL_ID  (UINT_MAX-1)
-#define GUI__MAX_PANEL_ID    (UINT_MAX-1-GUI_POPUP_STACK_SIZE)
+#define GUI__MAX_PANEL_ID    (UINT_MAX-1-GUI_POPUP_STACK_SIZE-1)
 
 u64 gui__widget_id(const gui_t *gui, u32 base_id, s32 x, s32 y)
 {
@@ -5690,7 +5696,7 @@ u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 	if (gui->popup)
 		return gui__widget_id(gui, GUI__POPUP_PANEL_ID - (gui->popup - gui->popups), x, y);
 	else if (gui->panel)
-		return gui__widget_id(gui, gui->panel->id, x, y);
+		return gui__widget_id(gui, gui->panel->id + 1, x, y);
 	else
 		return gui__widget_id(gui, GUI__DEFAULT_PANEL_ID, x, y);
 }
