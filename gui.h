@@ -386,7 +386,7 @@ typedef struct gui_scroll_area
 	v2i dim;
 	v2i scroll;
 	gui_widget_bounds_t widget_bounds;
-	v2i last_max_dim;
+	box2i last_children_bbox;
 	struct gui_scroll_area *prev;
 } gui_scroll_area_t;
 
@@ -5522,14 +5522,14 @@ void gui__scroll_area_usable_rect(const gui_t *gui,
 	*w -= padding.left + padding.right;
 	*h -= padding.bottom + padding.top;
 
-	if (   scroll_area->dim.x < scroll_area->last_max_dim.x
+	if (   scroll_area->dim.x < box2i_width(scroll_area->last_children_bbox)
 	    && scrollbar_track_width > padding.bottom) {
 		const s32 extra_track_width = scrollbar_track_width - padding.bottom;
 		*y += extra_track_width;
 		*h -= extra_track_width;
 	}
 
-	if (   scroll_area->dim.y < scroll_area->last_max_dim.y
+	if (   scroll_area->dim.y < box2i_height(scroll_area->last_children_bbox)
 	    && scrollbar_track_width > padding.right) {
 		const s32 extra_track_width = scrollbar_track_width - padding.right;
 		*w -= extra_track_width;
@@ -5573,7 +5573,8 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 	const s32 track_width = gui_scale_val(gui, style->scrollbar_track_width);
 	const v2i pos = scroll_area->pos;
 	const v2i dim = scroll_area->dim;
-	const v2i last_max_dim = scroll_area->last_max_dim;
+	const v2i prev_scroll = scroll_area->scroll;
+	const box2i last_children_bbox = scroll_area->last_children_bbox;
 	const b32 contains_mouse
 		= gui__widget_contains_mouse(gui, pos.x, pos.y, dim.x, dim.y);
 	const color_t bg_color = style->bg_color;
@@ -5591,59 +5592,67 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area)
 
 	gui__scroll_area_usable_rect(gui, scroll_area, &rx, &ry, &rw, &rh);
 
-	if (rw < last_max_dim.x) {
-		const s32 needed = last_max_dim.x - rw;
-		scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
+	if (rw < box2i_width(last_children_bbox)) {
+		const s32 needed_l = max(rx - last_children_bbox.min.x, 0);
+		const s32 needed_r = max(last_children_bbox.max.x - (rx + rw), 0);
+		const s32 needed = needed_l + needed_r;
+		scroll_area->scroll.x = -clamp(-needed_l, -scroll_area->scroll.x, needed_r);
 		if (key_mod(gui, KBM_SHIFT) && !mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
 			scroll_area->scroll.x -= scroll * scroll_rate;
-			scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
+			scroll_area->scroll.x = -clamp(-needed_l, -scroll_area->scroll.x, needed_r);
 		}
 		if (track_width > 0) {
 			const s32 x = pos.x;
 			const s32 y = pos.y;
 			const s32 w = dim.x;
 			const s32 h = track_width;
-			const s32 handle_size = max(track_width, w * rw / last_max_dim.x);
-			r32 slider_val = (r32)-scroll_area->scroll.x / (r32)needed;
+			const s32 handle_size = max(track_width, w * rw / box2i_width(last_children_bbox));
+			r32 slider_val = (r32)(-scroll_area->scroll.x + needed_l) / (r32)needed;
 			gui_style_push(gui, slider, style->scrollbar);
 			gui__slider(gui, x, y, w, h, &slider_val, handle_size, GUI__SLIDER_X);
 			gui_style_pop(gui);
-			scroll_area->scroll.x = (s32)(-slider_val * (r32)needed);
-			scroll_area->scroll.x = -clamp(0, -scroll_area->scroll.x, needed);
+			scroll_area->scroll.x = -((s32)(slider_val * (r32)needed) - needed_l);
+			scroll_area->scroll.x = -clamp(-needed_l, -scroll_area->scroll.x, needed_r);
 		}
 	} else {
 		scroll_area->scroll.x = 0;
 	}
 
-	if (rh < last_max_dim.y) {
-		const s32 needed = last_max_dim.y - rh;
-		scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
+	if (rh < box2i_height(last_children_bbox)) {
+		const s32 needed_b = max(ry - last_children_bbox.min.y, 0);
+		const s32 needed_t = max(last_children_bbox.max.y - (ry + rh), 0);
+		const s32 needed = needed_b + needed_t;
+		scroll_area->scroll.y = clamp(-needed_t, scroll_area->scroll.y, needed_b);
 		if (!key_mod(gui, KBM_SHIFT) && !mouse_covered(gui) && contains_mouse) {
 			s32 scroll;
 			mouse_scroll(gui, &scroll);
 			scroll_area->scroll.y -= scroll * scroll_rate;
-			scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
+			scroll_area->scroll.y = clamp(-needed_t, scroll_area->scroll.y, needed_b);
 		}
 		if (track_width > 0) {
 			const s32 x = pos.x + dim.x - track_width;
 			const s32 y = pos.y;
 			const s32 w = track_width;
 			const s32 h = dim.y;
-			const s32 handle_size = max(track_width, h * rh / last_max_dim.y);
-			r32 slider_val = 1.f - ((r32)scroll_area->scroll.y / (r32)needed);
+			const s32 handle_size = max(track_width, h * rh / box2i_height(last_children_bbox));
+			r32 slider_val = 1.f - ((r32)(scroll_area->scroll.y - needed_t) / (r32)needed);
 			gui_style_push(gui, slider, style->scrollbar);
 			gui__slider(gui, x, y, w, h, &slider_val, handle_size, GUI__SLIDER_Y);
 			gui_style_pop(gui);
-			scroll_area->scroll.y = (s32)(-(slider_val - 1.f) * (r32)needed);
-			scroll_area->scroll.y = clamp(0, scroll_area->scroll.y, needed);
+			scroll_area->scroll.y = (s32)(-(slider_val - 1.f) * (r32)needed) + needed_t;
+			scroll_area->scroll.y = clamp(-needed_t, scroll_area->scroll.y, needed_b);
 		}
 	} else {
 		scroll_area->scroll.y = 0;
 	}
 
-	scroll_area->last_max_dim = box2i_get_extent(scroll_area->widget_bounds.children);
+	scroll_area->last_children_bbox = scroll_area->widget_bounds.children;
+	scroll_area->last_children_bbox.min.x -= prev_scroll.x;
+	scroll_area->last_children_bbox.max.x -= prev_scroll.x;
+	scroll_area->last_children_bbox.min.y -= prev_scroll.y;
+	scroll_area->last_children_bbox.max.y -= prev_scroll.y;
 
 	if (contains_mouse && !mouse_covered(gui))
 		mouse_cover(gui, gui_widget_id(gui, pos.x, pos.y));
