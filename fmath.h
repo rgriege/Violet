@@ -17,6 +17,7 @@
 #define fminf(x, y) (((x) > (y)) ? (y) : (x))
 
 #define fPI 3.14159265359f
+#define f2PI (2.f * fPI)
 #define fDEG2RAD (fPI / 180.f)
 
 #define fmath_clamp(lo, val, hi) fmaxf(lo, fminf(hi, val))
