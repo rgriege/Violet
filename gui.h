@@ -4541,7 +4541,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	b32 contains_mouse;
 	b32 triggered_by_key = false;
 
-	assert(*val >= 0.f && *val <= 1.f);
+	*val = clamp(0.f, *val, 1.f);
 
 	if (orientation == GUI__SLIDER_X) {
 		hw = hnd_len;
