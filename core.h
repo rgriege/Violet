@@ -363,15 +363,16 @@ typedef enum log_level
 	LOG_ALL     = (LOG_DEBUG | LOG_INFO | LOG_WARNING | LOG_ERROR | LOG_FATAL),
 	LOG_STDOUT  = (LOG_DEBUG | LOG_INFO),
 	LOG_STDERR  = (LOG_WARNING | LOG_ERROR | LOG_FATAL),
-} log_level_t;
+} log_level_e;
 
-typedef void(*logger_t)(void *udata, log_level_t level,
+typedef void(*logger_t)(void *udata, log_level_e level,
                         const char *format, va_list ap);
 
 #define LOG_STREAM_CAP 3
 
-void log_add_stream(log_level_t level, logger_t logger, void *udata);
-void log_remove_stream(logger_t logger, void *udata);
+void log_add_stream(log_level_e level, logger_t logger, void *udata);
+void log_remove_stream(logger_t logger, const void *udata);
+void log_set_stream_level(logger_t logger, const void *udata, log_level_e level);
 #define log_add_file(level, fp) log_add_stream(level, file_logger, fp)
 #define log_remove_file(fp) log_remove_stream(file_logger, fp)
 #define log_add_std(stdout_level) do { \
@@ -382,8 +383,8 @@ void log_remove_stream(logger_t logger, void *udata);
 		log_remove_file(stdout); \
 		log_remove_file(stderr); \
 	} while (0);
-void log_level_write(log_level_t level, const char *format, ...);
-void log_level_writev(log_level_t level, const char *format, va_list ap);
+void log_level_write(log_level_e level, const char *format, ...);
+void log_level_writev(log_level_e level, const char *format, va_list ap);
 #define log_debug(fmt, ...) log_level_write(LOG_DEBUG,   fmt, ##__VA_ARGS__)
 #define log_info(fmt, ...)  log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
 #define log_warn(fmt, ...)  log_level_write(LOG_WARNING, fmt, ##__VA_ARGS__)
@@ -391,9 +392,9 @@ void log_level_writev(log_level_t level, const char *format, va_list ap);
 #define log_fatal(fmt, ...) log_level_write(LOG_FATAL,   fmt, ##__VA_ARGS__)
 #define log_write(fmt, ...) log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
 
-void file_logger(void *udata, log_level_t level, const char *format, va_list ap);
+void file_logger(void *udata, log_level_e level, const char *format, va_list ap);
 #if defined(_WIN32)
-void msvc_debug_logger(void *udata, log_level_t level, const char *format, va_list ap);
+void msvc_debug_logger(void *udata, log_level_e level, const char *format, va_list ap);
 #endif
 
 #ifdef VIOLET_MAIN
@@ -1042,14 +1043,14 @@ void time_sleep_milli(u32 milli)
 typedef struct log_stream
 {
 	logger_t logger;
-	log_level_t level;
+	log_level_e level;
 	void *udata;
 } log_stream_t;
 
 log_stream_t g_log_streams[LOG_STREAM_CAP];
 u32 g_log_stream_cnt = 0;
 
-void log_add_stream(log_level_t level, logger_t logger, void *udata)
+void log_add_stream(log_level_e level, logger_t logger, void *udata)
 {
 	assert(g_log_stream_cnt < LOG_STREAM_CAP);
 	g_log_streams[g_log_stream_cnt].logger = logger;
@@ -1070,7 +1071,18 @@ void log_remove_stream(logger_t logger, void *udata)
 	assert(false);
 }
 
-void log_level_write(log_level_t level, const char *format, ...)
+void log_set_stream_level(logger_t logger, const void *udata, log_level_e level)
+{
+	for (u32 i = 0; i < g_log_stream_cnt; ++i) {
+		if (logger == g_log_streams[i].logger && udata == g_log_streams[i].udata) {
+			g_log_streams[i].level = level;
+			return;
+		}
+	}
+	assert(false);
+}
+
+void log_level_write(log_level_e level, const char *format, ...)
 {
 	for (u32 i = 0; i < g_log_stream_cnt; ++i) {
 		if (level & g_log_streams[i].level) {
@@ -1082,7 +1094,7 @@ void log_level_write(log_level_t level, const char *format, ...)
 	}
 }
 
-void log_level_writev(log_level_t level, const char *format, va_list ap)
+void log_level_writev(log_level_e level, const char *format, va_list ap)
 {
 	for (u32 i = 0; i < g_log_stream_cnt; ++i) {
 		if (level & g_log_streams[i].level) {
@@ -1094,7 +1106,7 @@ void log_level_writev(log_level_t level, const char *format, va_list ap)
 	}
 }
 
-void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
+void file_logger(void *udata, log_level_e level, const char *format, va_list ap)
 {
 	FILE *fp = udata;
 	switch (level) {
@@ -1124,7 +1136,7 @@ void file_logger(void *udata, log_level_t level, const char *format, va_list ap)
 
 #if defined(_WIN32)
 b32 os_string_from_utf8(wchar_t *dst, size_t dstlen, const char *src);
-void msvc_debug_logger(void *udata, log_level_t level, const char *format, va_list ap)
+void msvc_debug_logger(void *udata, log_level_e level, const char *format, va_list ap)
 {
 	static thread_local wchar_t str_w[1024];
 	static thread_local char str[1024];
