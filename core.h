@@ -1059,7 +1059,7 @@ void log_add_stream(log_level_e level, logger_t logger, void *udata)
 	++g_log_stream_cnt;
 }
 
-void log_remove_stream(logger_t logger, void *udata)
+void log_remove_stream(logger_t logger, const void *udata)
 {
 	for (u32 i = 0; i < g_log_stream_cnt; ++i) {
 		if (logger == g_log_streams[i].logger && udata == g_log_streams[i].udata) {
