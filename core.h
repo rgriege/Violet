@@ -121,43 +121,6 @@ void vlt_destroy(vlt_thread_type_e thread_type);
 
 void fatal(const char *msg);
 
-typedef void (*error_f)(const char *msg, void *udata);
-
-struct error_handler
-{
-	error_f func;
-	void *udata;
-	const struct error_handler *prev;
-};
-
-extern thread_local const struct error_handler *g_error_handler;
-#ifndef ERROR_HANDLER_STACK_SIZE
-#define ERROR_HANDLER_STACK_SIZE 5
-#endif
-void error_handler_push(error_f func, void *udata);
-void error_handler_pop(error_f func, void *udata);
-#ifndef DEBUG
-#define error(msg) g_error_handler->func(msg, g_error_handler->udata);
-#else
-#define error(msg) g_error_handler->func(LOCATION ": " msg, g_error_handler->udata);
-#endif
-#define error_if(cnd, msg)  do { if (cnd) error(msg); } while (0);
-
-void error_catch(const char *msg, void *udata);
-
-#ifndef __cplusplus
-#define try \
-	do { \
-		jmp_buf jmpbuf_try; \
-		error_handler_push(error_catch, &jmpbuf_try); \
-		if (setjmp(jmpbuf_try) == 0)
-#define catch \
-		else
-#define finally \
-		error_handler_pop(error_catch, &jmpbuf_try); \
-	} while (0)
-#endif
-
 
 /* Memory allocation */
 
@@ -440,8 +403,7 @@ int main(int argc, char *const argv[])
 
 /* Error handling */
 
-static
-void error_fatal(const char *msg, void *udata)
+void fatal(const char *msg)
 {
 	log_fatal(msg);
 #ifdef DEBUG
@@ -451,45 +413,6 @@ void error_fatal(const char *msg, void *udata)
 #endif
 }
 
-void fatal(const char *msg)
-{
-	error_fatal(msg, NULL);
-}
-
-thread_local struct error_handler g_error_handler_stack[ERROR_HANDLER_STACK_SIZE];
-
-const struct error_handler g_error_handler0 = {
-	.func = error_fatal,
-	.udata = NULL,
-	.prev = NULL,
-};
-
-thread_local const struct error_handler *g_error_handler = NULL;
-
-void error_handler_push(error_f func, void *udata)
-{
-	const size_t idx = g_error_handler->prev
-	                 ? g_error_handler - g_error_handler_stack + 1 : 0;
-	assert(idx < ERROR_HANDLER_STACK_SIZE);
-	g_error_handler_stack[idx].func = func;
-	g_error_handler_stack[idx].udata = udata;
-	g_error_handler_stack[idx].prev = g_error_handler;
-	g_error_handler = &g_error_handler_stack[idx];
-}
-
-void error_handler_pop(error_f func, void *udata)
-{
-	assert(g_error_handler->func == func);
-	assert(g_error_handler->udata == udata);
-	assert(g_error_handler->prev);
-	g_error_handler = g_error_handler->prev;
-}
-
-void error_catch(const char *msg, void *udata)
-{
-	log_fatal("%s", msg);
-	longjmp(*(jmp_buf*)udata, 0);
-}
 
 /* Memory allocation */
 
@@ -1157,7 +1080,6 @@ void msvc_debug_logger(void *udata, log_level_e level, const char *format, va_li
 
 void vlt_init(vlt_thread_type_e thread_type)
 {
-	g_error_handler  = &g_error_handler0;
 #ifdef VLT_TRACK_MEMORY
 	if (thread_type == VLT_THREAD_MAIN) {
 		global_alloc_tracker_t *global_tracker = g_allocator->udata;
@@ -1189,7 +1111,6 @@ void vlt_destroy(vlt_thread_type_e thread_type)
 		SDL_DestroyMutex(global_tracker->mutex);
 	}
 #endif
-	g_error_handler  = NULL;
 }
 
 #undef CORE_IMPLEMENTATION
