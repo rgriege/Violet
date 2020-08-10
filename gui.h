@@ -1586,6 +1586,9 @@ typedef struct gui
 	char clipboard_in[GUI_CLIPBOARD_SIZE];
 	char clipboard_out[GUI_CLIPBOARD_SIZE];
 
+	/* misc input events */
+	char drop_file[PATH_MAX];
+
 	/* style */
 	gui_style_t style;
 	u8 style_stack[GUI_STYLE_STACK_LIMIT];
@@ -2006,6 +2009,7 @@ void gui_events_begin(gui_t *gui)
 	gui->left_window = false;
 	gui->text_input_exceeds_buffer_size = false;
 	gui->clipboard_input_exceeds_buffer_size = false;
+	gui->drop_file[0] = '\0';
 }
 
 void gui_event_add_update(gui_t *gui)
@@ -2060,6 +2064,11 @@ void gui_event_set_window_dim(gui_t *gui, s32 w, s32 h)
 		gui_event_add_update(gui);
 	gui->window_dim.x = w;
 	gui->window_dim.y = h;
+}
+
+void gui_event_add_drop_file(gui_t *gui, const char *path)
+{
+	strbcpy(gui->drop_file, path);
 }
 
 void gui_events_end(gui_t *gui)
@@ -2586,6 +2595,11 @@ void gui_get_clipboard_text(const gui_t *gui, char *text)
 {
 	assert(gui_has_clipboard_text(gui));
 	strcpy(text, gui->clipboard_out);
+}
+
+b32 gui_has_drop_file(const gui_t *gui)
+{
+	return gui->drop_file[0] != 0;
 }
 
 u32 gui_cursor(const gui_t *gui)

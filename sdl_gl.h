@@ -1313,6 +1313,10 @@ b32 window_begin_frame(window_t *window)
 		case SDL_TEXTINPUT:
 			gui_event_add_text_input(gui, evt.text.text);
 		break;
+		case SDL_DROPFILE:
+			gui_event_add_drop_file(gui, evt.drop.file);
+			SDL_free(evt.drop.file);
+		break;
 		}
 	}
 
