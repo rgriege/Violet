@@ -1417,7 +1417,7 @@ void window_end_frame(window_t *window)
 
 	GL_CHECK(glUseProgram, window->shader.handle);
 	GL_CHECK(glUniform2f, glGetUniformLocation(window->shader.handle, "window_halfdim"),
-	         dim.x/2, dim.y/2);
+	         ((r32)dim.x)/2, ((r32)dim.y)/2);
 
 	/* NOTE(rgriege): This method of ordering creates an inconsistency:
 	 * panels/layers must be called from top-to-bottom, but widgets/primitives
