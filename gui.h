@@ -919,6 +919,8 @@ void gui_style_pop(gui_t *gui);
 #define GUI_STYLE_STACK_LIMIT 2048
 #endif
 
+gui_padding_style_t gui_scale_padding(const gui_t *gui, gui_padding_style_t padding);
+
 
 #endif // VIOLET_GUI_H
 
@@ -5295,8 +5297,6 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 	return changed;
 }
 
-gui_padding_style_t gui__scale_padding(gui_padding_style_t padding, s32 scale);
-
 b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                            s32 pw, s32 ph, colorf_t c)
 {
@@ -5325,7 +5325,7 @@ b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 	if (gui_widget_focused(gui, id)) {
 		const s32 sw = gui_scale_val(gui, gui->style.color_picker.shadow.width);
-		const gui_padding_style_t padding = gui__scale_padding(style->panel.padding, gui->scale);
+		const gui_padding_style_t padding = gui_scale_padding(gui, style->panel.padding);
 		const s32 gx = px + padding.left;
 		const s32 gy = py + padding.bottom;
 		const s32 gw = pw - padding.left - padding.right;
@@ -5526,7 +5526,7 @@ void gui__scroll_area_usable_rect(const gui_t *gui,
 {
 	const gui_scroll_area_style_t *style = &gui->style.scroll_area;
 	const s32 scrollbar_track_width = gui_scale_val(gui, style->scrollbar_track_width);
-	const gui_padding_style_t padding = gui__scale_padding(style->padding, gui->scale);
+	const gui_padding_style_t padding = gui_scale_padding(gui, style->padding);
 
 	*x = scroll_area->pos.x;
 	*y = scroll_area->pos.y;
@@ -5833,13 +5833,13 @@ s32 gui_scale_val_inverse(const gui_t *gui, s32 val)
 	return val * 100 / gui->scale;
 }
 
-gui_padding_style_t gui__scale_padding(gui_padding_style_t padding, s32 scale)
+gui_padding_style_t gui_scale_padding(const gui_t *gui, gui_padding_style_t padding)
 {
 	return (gui_padding_style_t) {
-		.top    = gui__scale_val(padding.top, scale),
-		.right  = gui__scale_val(padding.right, scale),
-		.bottom = gui__scale_val(padding.bottom, scale),
-		.left   = gui__scale_val(padding.left, scale),
+		.top    = gui__scale_val(padding.top, gui->scale),
+		.right  = gui__scale_val(padding.right, gui->scale),
+		.bottom = gui__scale_val(padding.bottom, gui->scale),
+		.left   = gui__scale_val(padding.left, gui->scale),
 	};
 }
 
@@ -7679,7 +7679,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		pgui__style_pop_panel_scroll_area(gui);
 	} else {
 		const s32 body_height = pgui_panel_body_height(gui, panel);
-		const gui_padding_style_t padding = gui__scale_padding(style->padding, gui->scale);
+		const gui_padding_style_t padding = gui_scale_padding(gui, style->padding);
 		box2i mask;
 
 		mask.min.x = panel->x + padding.left;
@@ -7800,7 +7800,7 @@ void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex)
 		pgui__style_pop_panel_scroll_area(gui);
 	} else {
 		const gui_panel_style_t *style = &gui->style.panel;
-		const gui_padding_style_t padding = gui__scale_padding(style->padding, gui->scale);
+		const gui_padding_style_t padding = gui_scale_padding(gui, style->padding);
 		const gui_panel_t *panel = gui->panel;
 		const s32 body_height = pgui_panel_body_height(gui, panel);
 		v2i pos, dim;
