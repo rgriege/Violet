@@ -7799,14 +7799,16 @@ void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex)
 		pgui_scroll_area_grid_begin(gui, &gui->grid_panel, flex);
 		pgui__style_pop_panel_scroll_area(gui);
 	} else {
+		const gui_panel_style_t *style = &gui->style.panel;
+		const gui_padding_style_t padding = gui__scale_padding(style->padding, gui->scale);
 		const gui_panel_t *panel = gui->panel;
 		const s32 body_height = pgui_panel_body_height(gui, panel);
-		box2i box;
 		v2i pos, dim;
 
-		box2i_from_xywh(&box, panel->x, panel->y, panel->w, body_height);
-		pos = box.min;
-		dim = box2i_get_extent(box);
+		pos.x = panel->x + padding.left;
+		pos.y = panel->y + padding.bottom;
+		dim.x = panel->w - padding.left - padding.right;
+		dim.y = body_height - padding.bottom - padding.top;
 
 		if (flex & GUI_GRID_FLEX_HORIZONTAL)
 			dim.x = 0;
