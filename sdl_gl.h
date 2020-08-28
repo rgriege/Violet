@@ -593,19 +593,19 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 	stbtt_pack_context context;
 	b32 packed = false, failed = false;
 
-	/* TODO(rgriege): oversample with smaller fonts */
-	// stbtt_PackSetOversampling(&context, 2, 2);
-
 	while (!packed && !failed) {
 		temp_memory_restore(mark);
 		bitmap = amalloc(w * h * bpp, g_temp_allocator);
 		/* NOTE(rgriege): otherwise bitmap has noise at the bottom */
 		memset(bitmap, 0, w * h * bpp);
 
-		if (!stbtt_PackBegin(&context, bitmap, w, h, w * bpp, 1, g_temp_allocator)) {
-			failed = true;
-		} else if (rgtt_PackFontRange(&context, info, font_size, 0,
-		                              info->numGlyphs, char_info)) {
+		if ((failed = !stbtt_PackBegin(&context, bitmap, w, h, w * bpp, 1, g_temp_allocator)))
+			break;
+
+		stbtt_PackSetOversampling(&context, 3, 1);
+
+		if (rgtt_PackFontRange(&context, info, font_size, 0,
+		                       info->numGlyphs, char_info)) {
 			stbtt_PackEnd(&context); // not really necessary, handled by memory mark
 			packed = true;
 		} else if (w < 1024) {
@@ -911,7 +911,7 @@ b32 window__get_char_quad(void *handle, s32 codepoint, r32 x, r32 y, gui_char_qu
 		return false;
 
 	stbtt_GetPackedQuad(font->char_info, font->texture.width, font->texture.height,
-	                    codepoint, &x, &y, &q, 1);
+	                    codepoint, &x, &y, &q, 0);
 	assert(y0 == y);
 
 	/* NOTE(rgriege): stbtt assumes y=0 at top, but for violet y=0 is at bottom */
