@@ -701,7 +701,7 @@ typedef enum gui_panel_flags
 	GUI_PANEL_RESIZABLE   = 0x04,
 	GUI_PANEL_CLOSABLE    = 0x08,
 	GUI_PANEL_COLLAPSABLE = 0x10,
-	GUI_PANEL_SCROLLBARS  = 0x20,
+	GUI_PANEL_SCROLLABLE  = 0x20,
 	GUI_PANEL_DOCKABLE    = 0x40,
 	GUI_PANEL_FULL        = 0x7f,
 } gui_panel_flags_e;
@@ -743,6 +743,7 @@ void pgui_panel_close(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_toggle(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel);
 b32  pgui_panel_content_visible(const gui_panel_t *panel);
+s32  pgui_panel_body_height(const gui_t *gui, const gui_panel_t *panel);
 void pgui_panel_to_front(gui_t *gui, gui_panel_t *panel);
 int  pgui_panel_sort(const void *lhs, const void *rhs);
 int  pgui_panel_sortp(const void *lhs, const void *rhs);
@@ -7545,11 +7546,10 @@ void pgui__panel_stop_dragging(gui_t *gui, gui_panel_t *panel)
 	}
 }
 
-static
-s32 pgui__panel_body_height(const gui_panel_t *panel, r32 scale)
+s32 pgui_panel_body_height(const gui_t *gui, const gui_panel_t *panel)
 {
 	return (panel->flags & GUI_PANEL_TITLEBAR)
-	     ? panel->h - gui__scale_val(GUI_PANEL_TITLEBAR_HEIGHT, scale)
+	     ? panel->h - gui__scale_val(GUI_PANEL_TITLEBAR_HEIGHT, gui->scale)
 	     : panel->h;
 }
 
@@ -7575,6 +7575,7 @@ void pgui__style_pop_panel_scroll_area(gui_t *gui)
 
 b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 {
+	const gui_panel_style_t *style = &gui->style.panel;
 	const b32 content_visible = pgui_panel_content_visible(panel);
 
 	assert(!gui->panel);
@@ -7642,7 +7643,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 			/* background outline display */
 			const s32 h = gui_scale_val(gui, GUI_PANEL_TITLEBAR_HEIGHT);
 			gui_rect(gui, panel->x, panel->y + panel->h - h, panel->w, h,
-			         g_nocolor, gui->style.panel.border_color);
+			         g_nocolor, style->border_color);
 		}
 
 		if (   dragging
@@ -7668,19 +7669,26 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	/* background outline display */
 	if (!panel->split)
 		gui_rect(gui, panel->x, panel->y, panel->w, panel->h,
-		         g_nocolor, gui->style.panel.border_color);
+		         g_nocolor, style->border_color);
 
-	{
-		const s32 body_height = pgui__panel_body_height(panel, gui->scale);
-		box2i box;
-		v2i pos, dim;
-		box2i_from_xywh(&box, panel->x, panel->y, panel->w, body_height);
-		pos = box.min;
-		dim = box2i_get_extent(box);
-
+	if (panel->flags & GUI_PANEL_SCROLLABLE) {
+		const s32 body_height = pgui_panel_body_height(gui, panel);
 		pgui__style_push_panel_scroll_area(gui);
-		gui_scroll_area_begin(gui, pos.x, pos.y, dim.x, dim.y, &panel->scroll_area);
+		gui_scroll_area_begin(gui, panel->x, panel->y, panel->w, body_height,
+		                      &panel->scroll_area);
 		pgui__style_pop_panel_scroll_area(gui);
+	} else {
+		const s32 body_height = pgui_panel_body_height(gui, panel);
+		const gui_padding_style_t padding = gui__scale_padding(style->padding, gui->scale);
+		box2i mask;
+
+		mask.min.x = panel->x + padding.left;
+		mask.min.y = panel->y + padding.bottom;
+		mask.max.x = panel->x + panel->w - padding.right;
+		mask.max.y = panel->y + body_height - padding.top;
+
+		gui__mask_box(gui, &mask);
+		gui_mask_push_box(gui, mask);
 	}
 	return true;
 }
@@ -7727,9 +7735,16 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 
 	assert(gui->panel == panel);
 
-	pgui__style_push_panel_scroll_area(gui);
-	gui_scroll_area_end(gui, &panel->scroll_area);
-	pgui__style_pop_panel_scroll_area(gui);
+	if (panel->flags & GUI_PANEL_SCROLLABLE) {
+		pgui__style_push_panel_scroll_area(gui);
+		gui_scroll_area_end(gui, &panel->scroll_area);
+		pgui__style_pop_panel_scroll_area(gui);
+	} else {
+		const s32 body_height = pgui_panel_body_height(gui, panel);
+		const gui_panel_style_t *style = &gui->style.panel;
+		gui_mask_pop(gui);
+		gui_rect(gui, panel->x, panel->y, panel->w, body_height, style->bg_color, g_nocolor);
+	}
 
 	contains_mouse = gui__current_panel_contains_mouse(gui);
 
@@ -7779,9 +7794,30 @@ void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex)
 {
 	assert(gui->panel);
 
-	pgui__style_push_panel_scroll_area(gui);
-	pgui_scroll_area_grid_begin(gui, &gui->grid_panel, flex);
-	pgui__style_pop_panel_scroll_area(gui);
+	if (gui->scroll_area) {
+		pgui__style_push_panel_scroll_area(gui);
+		pgui_scroll_area_grid_begin(gui, &gui->grid_panel, flex);
+		pgui__style_pop_panel_scroll_area(gui);
+	} else {
+		const gui_panel_t *panel = gui->panel;
+		const s32 body_height = pgui_panel_body_height(gui, panel);
+		box2i box;
+		v2i pos, dim;
+
+		box2i_from_xywh(&box, panel->x, panel->y, panel->w, body_height);
+		pos = box.min;
+		dim = box2i_get_extent(box);
+
+		if (flex & GUI_GRID_FLEX_HORIZONTAL)
+			dim.x = 0;
+
+		if (flex & GUI_GRID_FLEX_VERTICAL) {
+			pos.y += dim.y;
+			dim.y = 0;
+		}
+
+		pgui_grid_begin(gui, &gui->grid_panel, pos.x, pos.y, dim.x, dim.y);
+	}
 }
 
 void pgui_panel_grid_end(gui_t *gui)
