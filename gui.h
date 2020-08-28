@@ -565,6 +565,7 @@ void pgui_col_centered(gui_t *gui, s32 width, s32 height);
 
 void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 void pgui_cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
+void pgui_cell_merge_next(gui_t *gui);
 u64  pgui_next_widget_id(const gui_t *gui);
 
 void pgui_spacer(gui_t *gui);
@@ -6106,6 +6107,21 @@ void pgui_cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 	assert(gui->grid);
 	gui__grid_get_next_cell(gui->grid, x, y, w, h);
 	gui__grid_advance_cell(gui->grid);
+}
+
+void pgui_cell_merge_next(gui_t *gui)
+{
+	assert(gui->grid);
+	assert(gui->grid->depth > 0);
+	gui_grid_strip_t *strip = &gui->grid->strips[gui->grid->depth - 1];
+	if (strip->current_cell + 1 < strip->max_cell) {
+		strip->current_cell[0] += strip->current_cell[1];
+		for (s32 *cell = strip->current_cell + 2; cell != strip->max_cell; ++cell)
+			cell[-1] = cell[0];
+		--strip->max_cell;
+	} else {
+		assert(false);
+	}
 }
 
 u64 pgui_next_widget_id(const gui_t *gui)
