@@ -608,9 +608,9 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 		                       info->numGlyphs, char_info)) {
 			stbtt_PackEnd(&context); // not really necessary, handled by memory mark
 			packed = true;
-		} else if (w < 1024) {
+		} else if (w < 2048) {
 			w *= 2;
-		} else if (h < 1024) {
+		} else if (h < 2048) {
 			h *= 2;
 		} else {
 			failed = true; // fail on fonts needing too large a texture
