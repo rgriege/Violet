@@ -590,6 +590,7 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 	temp_memory_mark_t mark = temp_memory_save(g_temp_allocator);
 	unsigned char *bitmap = NULL;
 	s32 w = 512, h = 512;
+	s32 h_oversample = 3;
 	stbtt_pack_context context;
 	b32 packed = false, failed = false;
 
@@ -602,7 +603,7 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 		if ((failed = !stbtt_PackBegin(&context, bitmap, w, h, w * bpp, 1, g_temp_allocator)))
 			break;
 
-		stbtt_PackSetOversampling(&context, 3, 1);
+		stbtt_PackSetOversampling(&context, h_oversample, 1);
 
 		if (rgtt_PackFontRange(&context, info, font_size, 0,
 		                       info->numGlyphs, char_info)) {
@@ -612,6 +613,8 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 			w *= 2;
 		} else if (h < 2048) {
 			h *= 2;
+		} else if (h_oversample > 3) {
+			h_oversample = 1;
 		} else {
 			failed = true; // fail on fonts needing too large a texture
 		}
