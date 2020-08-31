@@ -582,7 +582,7 @@ int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
 static
 int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_t *tex)
 {
-#if defined(__EMSCRIPTEN__) && defined(SDL_GL_ES_2)
+#ifdef __EMSCRIPTEN__
 	const s32 bpp = 4;
 #else
 	const s32 bpp = 1;
@@ -621,7 +621,7 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 	}
 
 	if (packed) {
-#if defined(__EMSCRIPTEN__) && defined(SDL_GL_ES_2)
+#ifdef __EMSCRIPTEN__
 		unsigned char *row = amalloc(w * bpp, g_temp_allocator);
 		for (s32 r = 0; r < h; ++r) {
 			memset(row, ~0, w * bpp);
