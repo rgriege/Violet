@@ -160,6 +160,7 @@ b32  mouse_released_bg(const gui_t *gui, u32 mask);
 b32  mouse_covered(const gui_t *gui);
 void mouse_cover(gui_t *gui, u64 widget_id);
 b32  mouse_over_bg(const gui_t *gui);
+/* use in conjunction with mouse_pressed or mouse_released */
 b32  mouse_double(const gui_t *gui, u32 mask);
 b32  mouse_scroll(const gui_t *gui, s32 *dir);
 b32  mouse_scroll_bg(const gui_t *gui, s32 *dir);
