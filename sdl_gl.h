@@ -980,26 +980,29 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		window->parent_gl_context = SDL_GL_GetCurrentContext();
 	}
 
-#ifdef __EMSCRIPTEN__
 	/* not checking return values because we check the important ones later */
-#ifdef SDL_GL_ES_2
-	// Use OpenGLES 2.0
-	const int gl_major_version_target = 2;
-	const int gl_minor_version_target = 0;
-#else
-	// Use OpenGLES 3.0
-	const int gl_major_version_target = 3;
-	const int gl_minor_version_target = 0;
-#endif
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_major_version_target);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_minor_version_target);
-#else
+#ifndef __EMSCRIPTEN__
 	// Use OpenGL 3.3 core
 	/* not checking return values because we check the important ones later */
 	const int gl_major_version_target = 3;
 	const int gl_minor_version_target = 3;
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_major_version_target);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_minor_version_target);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+#elif defined(SDL_GL_ES_2)
+	// Use OpenGLES 2.0
+	const int gl_major_version_target = 2;
+	const int gl_minor_version_target = 0;
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_major_version_target);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_minor_version_target);
+#else
+	// Use OpenGLES 3.0
+	const int gl_major_version_target = 3;
+	const int gl_minor_version_target = 0;
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_major_version_target);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_minor_version_target);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
