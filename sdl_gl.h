@@ -51,11 +51,11 @@ void texture_unbind(void);
 
 /* Shader */
 
-typedef enum shader_type_t
+typedef enum shader_type
 {
 	VERTEX_SHADER,
 	FRAGMENT_SHADER
-} shader_type_t;
+} shader_type_e;
 
 typedef struct shader_t
 {
@@ -65,9 +65,9 @@ typedef struct shader_t
 
 
 b32  shader_init_from_string(shader_t *shader, const char *str,
-                             shader_type_t type, const char *id);
+                             shader_type_e type, const char *id);
 b32  shader_init_from_file(shader_t *shader, const char *fname,
-                           shader_type_t type);
+                           shader_type_e type);
 void shader_destroy(shader_t *shader);
 
 typedef struct shader_prog_t
@@ -116,21 +116,21 @@ typedef struct font_t
 b32  font_load(font_t *f, const char *filename, s32 size);
 void font_destroy(font_t *f);
 
-typedef enum window_flags_t
+typedef enum window_flags
 {
 	WINDOW_BORDERLESS = 1 << 0,
 	WINDOW_RESIZABLE  = 1 << 1,
 	WINDOW_MAXIMIZED  = 1 << 2,
 	WINDOW_FULLSCREEN = 1 << 3,
 	WINDOW_CENTERED   = 1 << 4,
-} window_flags_t;
+} window_flags_e;
 
 typedef struct window window_t;
 
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
-                        window_flags_t flags);
+                        window_flags_e flags);
 window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
-                           window_flags_t flags, const char *font_file_path);
+                           window_flags_e flags, const char *font_file_path);
 void      window_destroy(window_t *window);
 
 b32    window_begin_frame(window_t *window);
@@ -315,7 +315,7 @@ void texture_unbind(void)
 /* Shader */
 
 b32 shader_init_from_string(shader_t *shader, const char *str,
-                            shader_type_t type, const char *id)
+                            shader_type_e type, const char *id)
 {
 	b32 retval = false;
 	char *log_buf;
@@ -344,7 +344,7 @@ err:
 }
 
 b32 shader_init_from_file(shader_t *shader, const char *fname,
-                          shader_type_t type)
+                          shader_type_e type)
 {
 	b32 retval = false;
 	FILE *file;
@@ -697,7 +697,7 @@ typedef enum gui_vbo_type
 	VBO_COLOR,
 	VBO_TEX,
 	VBO_COUNT
-} gui_vbo_type_t;
+} gui_vbo_type_e;
 
 typedef struct cached_img
 {
@@ -962,13 +962,13 @@ const gui_img_t *window_get_img(window_t *window, const char *fname)
 }
 
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
-                        window_flags_t flags)
+                        window_flags_e flags)
 {
 	return window_create_ex(x, y, w, h, title, flags, GUI_FONT_FILE_PATH);
 }
 
 window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
-                           window_flags_t flags, const char *font_file_path)
+                           window_flags_e flags, const char *font_file_path)
 {
 	window_t *window = calloc(1, sizeof(window_t));
 	if (g_window_cnt == 0) {

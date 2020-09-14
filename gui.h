@@ -12,7 +12,7 @@ typedef enum gui_blend
 	GUI_BLEND_NRM,
 	GUI_BLEND_ADD,
 	GUI_BLEND_MUL,
-	GUI_BLEND_MAX = GUI_BLEND_MUL,
+	GUI_BLEND__COUNT,
 } gui_blend_e;
 
 typedef struct gui_texture
