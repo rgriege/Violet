@@ -961,6 +961,34 @@ const gui_img_t *window_get_img(window_t *window, const char *fname)
 	return NULL;
 }
 
+static
+b32 window__supports_opengl_version(int major_version_target, int minor_version_target)
+{
+	/* SDL docs say we should do this after creating the context */
+	int major_version = 0;
+	int minor_version = 0;
+
+	if (major_version_target < 3) {
+		/* OpenGL < 3 doesn't support fetching version information from
+		 * glGetIntegerv, so just say we support it & hope for the best.
+		 * Checking the result of the string from GL_VERSION doesn't
+		 * seem very well-defined, but I didn't look too hard since
+		 * OpenGL 2 support isn't that important for us. */
+		return true;
+	}
+
+	major_version = 0;
+	minor_version = 0;
+	GL_CHECK(glGetIntegerv, GL_MAJOR_VERSION, &major_version);
+	GL_CHECK(glGetIntegerv, GL_MINOR_VERSION, &minor_version);
+
+	log_info("window OpenGL version number: %d.%d", major_version, minor_version);
+
+	return major_version > major_version_target
+	    || (   major_version == major_version_target
+	        && minor_version >= minor_version_target);
+}
+
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         window_flags_e flags)
 {
@@ -1058,26 +1086,6 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_ctx;
 	}
 
-	/* SDL docs say we should do this after creating the context */
-	int gl_major_version;
-	int gl_minor_version;
-	if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &gl_major_version) != 0) {
-		log_error("failed to get OpenGL major version: %s", SDL_GetError());
-		goto err_ver;
-	}
-	if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &gl_minor_version) != 0) {
-		log_error("failed to get OpenGL minor version: %s", SDL_GetError());
-		goto err_ver;
-	}
-
-	if (   gl_major_version < gl_major_version_target
-	    || (   gl_major_version == gl_major_version_target
-	        && gl_minor_version  < gl_minor_version_target)) {
-		log_error("OpenGL context version too small: %d.%d",
-		          gl_major_version, gl_minor_version);
-		goto err_ver;
-	}
-
 #ifndef __EMSCRIPTEN__
 	if (SDL_GL_SetSwapInterval(0) != 0)
 		log_warn("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
@@ -1091,8 +1099,20 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 	GL_ERR_CHECK("glewInit");
 
-	log_info("GL version: %s", glGetString(GL_VERSION));
+	const char *gl_str = glGetString(GL_VERSION);
 	GL_ERR_CHECK("glGetString");
+	log_info("OpenGL version: %s", gl_str ? gl_str : "unknown");
+	gl_str = glGetString(GL_RENDERER);
+	GL_ERR_CHECK("glGetString");
+	log_info("OpenGL renderer: %s", gl_str ? gl_str : "unknown");
+	gl_str = glGetString(GL_VENDOR);
+	GL_ERR_CHECK("glGetString");
+	log_info("OpenGL vendor: %s", gl_str ? gl_str : "unknown");
+
+	if (!window__supports_opengl_version(gl_major_version_target, gl_minor_version_target)) {
+		log_error("OpenGL context version too small");
+		goto err_ver;
+	}
 
 #ifndef __EMSCRIPTEN__
 	GL_CHECK(glEnable, GL_MULTISAMPLE);
