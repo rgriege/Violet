@@ -1099,15 +1099,16 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 	GL_ERR_CHECK("glewInit");
 
-	const char *gl_str = glGetString(GL_VERSION);
+	const unsigned char *gl_str = glGetString(GL_VERSION);
+	const unsigned char gl_str_unknown[] = "unknown";
 	GL_ERR_CHECK("glGetString");
-	log_info("OpenGL version: %s", gl_str ? gl_str : "unknown");
+	log_info("OpenGL version: %s", gl_str ? gl_str : gl_str_unknown);
 	gl_str = glGetString(GL_RENDERER);
 	GL_ERR_CHECK("glGetString");
-	log_info("OpenGL renderer: %s", gl_str ? gl_str : "unknown");
+	log_info("OpenGL renderer: %s", gl_str ? gl_str : gl_str_unknown);
 	gl_str = glGetString(GL_VENDOR);
 	GL_ERR_CHECK("glGetString");
-	log_info("OpenGL vendor: %s", gl_str ? gl_str : "unknown");
+	log_info("OpenGL vendor: %s", gl_str ? gl_str : gl_str_unknown);
 
 	if (!window__supports_opengl_version(gl_major_version_target, gl_minor_version_target)) {
 		log_error("OpenGL context version too small");
