@@ -87,6 +87,16 @@ typedef struct gui_fonts
 
 typedef struct gui gui_t;
 
+typedef enum gui_cursor
+{
+	GUI_CURSOR_DEFAULT,
+	GUI_CURSOR_RESIZE_NS,
+	GUI_CURSOR_RESIZE_EW,
+	GUI_CURSOR_TEXT_INPUT,
+	GUI_CURSOR_BUTTON,
+	GUI_CURSOR_COUNT
+} gui_cursor_e;
+
 gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
                   gui_fonts_t fonts);
 void   gui_destroy(gui_t *gui);
@@ -104,6 +114,7 @@ b32   gui_text_input_active(const gui_t *gui);
 b32   gui_has_clipboard_text(const gui_t *gui);
 void  gui_get_clipboard_text(const gui_t *gui, char *text);
 u32   gui_cursor(const gui_t *gui);
+void  gui_set_cursor(gui_t *gui, gui_cursor_e cursor);
 void *gui_window(gui_t *gui);
 void  gui_set_window(gui_t *gui, void *window);
 
@@ -281,16 +292,6 @@ typedef struct gui_layer
 	s32 x, y, w, h;
 	s32 pri;
 } gui_layer_t;
-
-typedef enum gui_cursor
-{
-	GUI_CURSOR_DEFAULT,
-	GUI_CURSOR_RESIZE_NS,
-	GUI_CURSOR_RESIZE_EW,
-	GUI_CURSOR_TEXT_INPUT,
-	GUI_CURSOR_BUTTON,
-	GUI_CURSOR_COUNT
-} gui_cursor_e;
 
 typedef struct gui_render_output
 {
@@ -2610,6 +2611,11 @@ b32 gui_has_drop_file(const gui_t *gui)
 u32 gui_cursor(const gui_t *gui)
 {
 	return gui->cursor;
+}
+
+void gui_set_cursor(gui_t *gui, gui_cursor_e cursor)
+{
+	gui->cursor = cursor;
 }
 
 void *gui_window(gui_t *gui)
