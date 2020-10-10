@@ -62,6 +62,7 @@ b32      colorf_equal(colorf_t lhs, colorf_t rhs);
 color_t  color_blend(color_t src, color_t dst);
 colorf_t colorf_mix(colorf_t lhs, colorf_t rhs, r32 t);
 colorf_t colorf_darken(colorf_t c, r32 factor);
+color_t  color_darken(color_t c, r32 factor);
 r32      colorf_brightness(colorf_t c);
 color_t  color_fade(color_t c, u8 alpha);
 
@@ -177,6 +178,11 @@ colorf_t colorf_darken(colorf_t c, r32 factor)
 		.b = c.b * factor,
 		.a = c.a,
 	};
+}
+
+color_t color_darken(color_t c, r32 factor)
+{
+	return colorf_to_color(colorf_darken(color_to_colorf(c), factor));
 }
 
 r32 colorf_brightness(colorf_t c)
