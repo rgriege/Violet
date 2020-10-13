@@ -153,6 +153,11 @@ typedef union pgb__max_align
 #define pgb_offsetof(s, m) ((size_t)&((s*)(NULL))->m)
 #endif
 
+#ifndef pgb_assert
+#include <assert.h>
+#define pgb_assert(cnd) assert(cnd)
+#endif
+
 #define pgb_static_assert(cnd, msg) typedef int msg[(cnd) ? 1 : -1]
 
 pgb_static_assert(sizeof(pgb__max_align_t) <= pgb__alignment(PGB_MIN_PAGE_SIZE),
@@ -303,7 +308,7 @@ void pgb_heap_destroy(pgb_heap_t *heap)
 
 struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t max_size)
 {
-	assert(min_size <= max_size);
+	pgb_assert(min_size <= max_size);
 	pgb_page_t *page = heap->first_page;
 	while (page && page->size < min_size)
 		page = page->next;
@@ -374,7 +379,7 @@ void pgb_init(pgb_t *pgb, pgb_heap_t *heap)
 static
 void pgb__pop_page(pgb_t *pgb)
 {
-	assert(pgb->current_page);
+	pgb_assert(pgb->current_page);
 	pgb_page_t *prev = pgb->current_page->prev;
 	pgb_heap_return_page(pgb->heap, pgb->current_page);
 	pgb->current_page = prev;
@@ -384,7 +389,7 @@ void pgb__pop_page(pgb_t *pgb)
 
 void pgb_destroy(pgb_t *pgb)
 {
-	assert(!(pgb->current_page && pgb->current_page->next));
+	pgb_assert(!(pgb->current_page && pgb->current_page->next));
 	while (pgb->current_page)
 		pgb__pop_page(pgb);
 }
@@ -459,7 +464,7 @@ void pgb__restore_current_page_ptr(pgb_t *pgb, size_t slot)
 			return;
 		}
 	}
-	assert(false); /* should have encountered header */
+	pgb_assert(false); /* should have encountered header */
 	pgb->current_ptr = pgb__page_first_usable_slot(page);
 }
 
@@ -470,7 +475,7 @@ void *pgb__realloc(pgb_byte *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 	size_t old_size;
 
 	if (!pgb__find_page_for_ptr(pgb, ptr, &page)) {
-		assert(false);
+		pgb_assert(false);
 #ifdef PGB_TRACK_MEMORY
 		PGB_LOG("pgb_realloc: memory leak @ %s", loc);
 #endif
@@ -525,7 +530,7 @@ void pgb_free(void *ptr_, pgb_t *pgb  MEMCALL_ARGS)
 		return;
 
 	if (!pgb__find_page_for_ptr(pgb, ptr, &page)) {
-		assert(false);
+		pgb_assert(false);
 #ifdef PGB_TRACK_MEMORY
 		PGB_LOG("pgb_free: memory leak @ %s", loc);
 #endif
@@ -534,7 +539,7 @@ void pgb_free(void *ptr_, pgb_t *pgb  MEMCALL_ARGS)
 
 	slot = pgb__alloc_get_slot_idx(ptr, page);
 	size = pgb__alloc_get_sz(ptr, page);
-	assert(size != 0);
+	pgb_assert(size != 0);
 	pgb__alloc_set_sz(ptr, page, 0);
 
 	if (ptr + size == pgb->current_ptr) {
@@ -640,7 +645,7 @@ void pgb_watermark_stats(pgb_watermark_t mark, size_t *bytes_used, size_t *pages
 	if (page != mark.page) {
 		*bytes_used = 0;
 		*pages_used = 0;
-		assert(false);
+		pgb_assert(false);
 	} else if (page) {
 		*bytes_used += pgb__page_end(page) - mark.ptr;
 		*pages_used += 1;
