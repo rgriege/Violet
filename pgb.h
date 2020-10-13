@@ -59,13 +59,29 @@ void             pgb_heap_create_page(pgb_heap_t *heap, size_t size);
 
 void pgb_heap_move_all_pages(pgb_heap_t *dst, pgb_heap_t *src);
 
-
 typedef uint8_t pgb_byte;
+
+typedef struct pgb_watermark_data
+{
+	struct pgb *pgb;
+	struct pgb_page *page;
+	pgb_byte *ptr;
+} pgb_watermark_data_t;
+
+typedef struct pgb_watermark
+{
+	pgb_watermark_data_t data;
+#ifdef DEBUG
+	pgb_watermark_data_t prev; /* stored in debug to validate reallocations */
+#endif
+} pgb_watermark_t;
+
 typedef struct pgb
 {
 	struct pgb_heap *heap;
 	struct pgb_page *current_page;
 	pgb_byte *current_ptr;
+	pgb_watermark_t last_mark;
 } pgb_t;
 
 void pgb_init(pgb_t *pgb, pgb_heap_t *heap);
@@ -75,13 +91,6 @@ void *pgb_malloc(size_t size, pgb_t *pgb  MEMCALL_ARGS);
 void *pgb_calloc(size_t nmemb, size_t size, pgb_t *pgb  MEMCALL_ARGS);
 void *pgb_realloc(void *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS);
 void  pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS);
-
-typedef struct pg_watermark
-{
-	struct pgb *pgb;
-	struct pgb_page *page;
-	pgb_byte *ptr;
-} pgb_watermark_t;
 
 pgb_watermark_t pgb_save(pgb_t *pgb);
 void            pgb_restore(pgb_watermark_t watermark);
@@ -374,6 +383,7 @@ void pgb_init(pgb_t *pgb, pgb_heap_t *heap)
 	pgb->heap         = heap;
 	pgb->current_page = NULL;
 	pgb->current_ptr  = NULL;
+	pgb->last_mark    = (pgb_watermark_t){0};
 }
 
 static
@@ -387,9 +397,19 @@ void pgb__pop_page(pgb_t *pgb)
 		prev->next = NULL;
 }
 
+#ifdef DEBUG
+static
+bool pgb__mark_valid(pgb_watermark_t mark)
+{
+	return mark.data.pgb && mark.data.page && mark.data.ptr;
+}
+#endif
+
 void pgb_destroy(pgb_t *pgb)
 {
 	pgb_assert(!(pgb->current_page && pgb->current_page->next));
+	pgb_assert(!pgb__mark_valid(pgb->last_mark));
+
 	while (pgb->current_page)
 		pgb__pop_page(pgb);
 }
@@ -468,6 +488,23 @@ void pgb__restore_current_page_ptr(pgb_t *pgb, size_t slot)
 	pgb->current_ptr = pgb__page_first_usable_slot(page);
 }
 
+#ifdef DEBUG
+static
+bool pgb__ptr_freed_by_mark(pgb_watermark_t mark,
+                            const pgb_page_t *page,
+                            const pgb_byte *ptr)
+{
+	if (mark.data.page == page) {
+		return ptr >= mark.data.ptr;
+	} else {
+		for (const pgb_page_t *p = mark.data.page->prev; p; p = p->prev)
+			if (p == page)
+				return false;
+		return true;
+	}
+}
+#endif
+
 static
 void *pgb__realloc(pgb_byte *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 {
@@ -483,6 +520,11 @@ void *pgb__realloc(pgb_byte *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 	}
 
 	old_size = pgb__alloc_get_sz(ptr, page);
+
+	/* Avoid the case where a pointer was not set to be freed by the last watermark,
+	 * but it will be after reallocation. */
+	pgb_assert(   !pgb__mark_valid(pgb->last_mark)
+	           || pgb__ptr_freed_by_mark(pgb->last_mark, page, ptr));
 
 	if ((old_size = pgb__alloc_get_sz(ptr, page)) >= size) {
 		return ptr;
@@ -565,25 +607,31 @@ void pgb_free(void *ptr_, pgb_t *pgb  MEMCALL_ARGS)
 
 pgb_watermark_t pgb_save(pgb_t *pgb)
 {
-	return (pgb_watermark_t) {
-		.pgb  = pgb,
-		.page = pgb->current_page,
-		.ptr  = pgb->current_ptr,
+	pgb_watermark_t mark = {
+		.data = {
+			.pgb  = pgb,
+			.page = pgb->current_page,
+			.ptr  = pgb->current_ptr,
+		},
+		.prev = pgb->last_mark.data,
 	};
+	pgb->last_mark.data = mark.data;
+	return mark;
 }
 
 void pgb_restore(pgb_watermark_t watermark)
 {
-	pgb_t *pgb = watermark.pgb;
-	while (pgb->current_page != watermark.page)
+	pgb_t *pgb = watermark.data.pgb;
+	while (pgb->current_page != watermark.data.page)
 		pgb__pop_page(pgb);
-	pgb->current_page = watermark.page;
-	pgb->current_ptr  = watermark.ptr;
+	pgb->current_page = watermark.data.page;
+	pgb->current_ptr  = watermark.data.ptr;
 	if (pgb->current_page) {
 		const size_t slot = pgb__alloc_get_slot_idx(pgb->current_ptr, pgb->current_page);
 		memset(&pgb->current_page->alloc_sizes[slot], 0, PGB__PAGE_SLOTS - slot);
 		pgb->current_page->next = NULL;
 	}
+	pgb->last_mark.data = watermark.prev;
 }
 
 size_t pgb_alloc_size(const pgb_t *pgb, const void *ptr)
@@ -624,30 +672,30 @@ void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
 
 void pgb_watermark_stats(pgb_watermark_t mark, size_t *bytes_used, size_t *pages_used)
 {
-	pgb_t *pgb = mark.pgb;
+	pgb_t *pgb = mark.data.pgb;
 	pgb_page_t *page = pgb->current_page;
 
 	*bytes_used = 0;
 	*pages_used = 0;
 
-	if (page && page != mark.page) {
+	if (page && page != mark.data.page) {
 		*bytes_used += pgb->current_ptr - pgb__page_first_usable_slot(page);
 		*pages_used += 1;
 		page = page->prev;
 	}
 
-	while (page && page != mark.page) {
+	while (page && page != mark.data.page) {
 		*bytes_used += page->size;
 		*pages_used += 1;
 		page = page->prev;
 	}
 
-	if (page != mark.page) {
+	if (page != mark.data.page) {
 		*bytes_used = 0;
 		*pages_used = 0;
 		pgb_assert(false);
 	} else if (page) {
-		*bytes_used += pgb__page_end(page) - mark.ptr;
+		*bytes_used += pgb__page_end(page) - mark.data.ptr;
 		*pages_used += 1;
 	}
 }
