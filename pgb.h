@@ -613,7 +613,9 @@ pgb_watermark_t pgb_save(pgb_t *pgb)
 			.page = pgb->current_page,
 			.ptr  = pgb->current_ptr,
 		},
+#ifdef DEBUG
 		.prev = pgb->last_mark.data,
+#endif
 	};
 	pgb->last_mark.data = mark.data;
 	return mark;
@@ -631,7 +633,9 @@ void pgb_restore(pgb_watermark_t watermark)
 		memset(&pgb->current_page->alloc_sizes[slot], 0, PGB__PAGE_SLOTS - slot);
 		pgb->current_page->next = NULL;
 	}
+#ifdef DEBUG
 	pgb->last_mark.data = watermark.prev;
+#endif
 }
 
 size_t pgb_alloc_size(const pgb_t *pgb, const void *ptr)
