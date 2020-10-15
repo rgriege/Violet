@@ -123,6 +123,11 @@ typedef enum window_flags
 	WINDOW_MAXIMIZED  = 1 << 2,
 	WINDOW_FULLSCREEN = 1 << 3,
 	WINDOW_CENTERED   = 1 << 4,
+	/* vsync protip:
+	 * enable this and call window_end_frame_ex with 0 target_frame_milli to
+	 * avoid sleeping between draws, this seems to block on glClear in
+	 * window_begin_frame to rate limit according to the system. */
+	WINDOW_NOVSYNC    = 1 << 5,
 } window_flags_e;
 
 typedef struct window window_t;
@@ -1087,8 +1092,9 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 
 #ifndef __EMSCRIPTEN__
-	if (SDL_GL_SetSwapInterval(0) != 0)
-		log_warn("SDL_GL_SetSwapInterval failed: %s", SDL_GetError());
+	int vsync = flags & WINDOW_NOVSYNC ? 0 : 1;
+	if (SDL_GL_SetSwapInterval(vsync) != 0)
+		log_warn("SDL_GL_SetSwapInterval(%i) failed: %s", vsync, SDL_GetError());
 #endif
 
 	glewExperimental = GL_TRUE;
@@ -1504,6 +1510,8 @@ void window_end_frame(window_t *window)
 	}
 }
 
+/* if target_frame_milli is 0, never sleep or complain about long frames,
+ * but respect idle values */
 void window_end_frame_ex(window_t *window, u32 target_frame_milli,
                          u32 idle_frame_milli, u32 idle_start_milli)
 {
@@ -1513,12 +1521,12 @@ void window_end_frame_ex(window_t *window, u32 target_frame_milli,
 	window_end_frame(window);
 	frame_milli = time_diff_milli(gui_frame_start(gui), time_current());
 
-	if (frame_milli > target_frame_milli)
+	if (target_frame_milli && frame_milli > target_frame_milli)
 		log_warn("long frame: %ums", frame_milli);
 	else if (  time_diff_milli(gui_last_input_time(gui), gui_frame_start(gui))
 	         > idle_start_milli)
 		SDL_WaitEventTimeout(NULL, idle_frame_milli - frame_milli);
-	else
+	else if (target_frame_milli)
 		time_sleep_milli(target_frame_milli - frame_milli);
 }
 
