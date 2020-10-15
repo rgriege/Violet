@@ -1560,7 +1560,7 @@ FMDEF b32 polyf_contains(const v2f *v, u32 n, v2f point)
 		v2f a = v[i];
 		v2f b = v[(i+1)%n];
 		if (   fmath_line_intersect_coords(a, b, out_p, point, &t, &u)
-		    && 0 < t && t <= 1 && 0 < u && u < 1)
+		    && FLT_EPSILON < t && t <= 1 + FLT_EPSILON && 0 < u && u < 1)
 			++intersections;
 	}
 	return intersections % 2 == 1;
