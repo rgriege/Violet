@@ -1,6 +1,6 @@
 # Violet
 
-Violet is the (open source) tech behind the tool suite for TestFit Inc. It includes some general purpose code including a gui library, a math suite, and some serilaization tools.
+Violet is the (open source) tech behind the tool suite for TestFit Inc. It includes some general purpose code including a gui library, a math suite, and some serialization tools.
 
 The project started as a C++ Entity Component System.  While development has been discontinued, you can get the source in the ECS-c++ branch.
 
