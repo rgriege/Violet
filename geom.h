@@ -25,7 +25,7 @@ u32 arc_poly_sz(r32 r, r32 angle_start, r32 angle_end)
 	const r32 angle_delta = angle_end > angle_start
 	                      ? angle_end - angle_start
 	                      : angle_end - angle_start + 2.f*fPI;
-	return (u32)((2.f + r) * (angle_delta / fPI));
+	return max(2, (u32)((2.f + r) * (angle_delta / fPI)));
 }
 
 void arc_to_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
