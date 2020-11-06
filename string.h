@@ -332,7 +332,7 @@ char *imstrcatprintfv(char *imstr, const char *fmt, va_list args)
 
 u32 imstrlen(void)
 {
-	return strlen(g_imprint_buf);
+	return (u32)strlen(g_imprint_buf);
 }
 
 u32 imstrrem(void)
