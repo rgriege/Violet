@@ -96,11 +96,11 @@ void profile_block_begin(const char *name)
 	block->aggregate  = g_profiler_block_last->aggregate;
 	block->last_start = time_current();
 	block->parent     = g_profiler_block_last;
-	if (!profiler__block_in_siblings(g_profiler_block_last->child, block))
+	if (!profiler__block_in_siblings(g_profiler_block_last->child, block)) {
 		block->sibling  = g_profiler_block_last->child;
-
-	g_profiler_block_last->child = block;
-	g_profiler_block_last        = block;
+		g_profiler_block_last->child = block;
+	}
+	g_profiler_block_last = block;
 }
 
 static
