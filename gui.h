@@ -400,6 +400,7 @@ s32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                     const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter);
 s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n,
                  gui_npt_flags_e flags, gui_npt_filter_p filter);
+gui_btn_e gui_btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse);
 s32  gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt);
 s32  gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
                  gui_img_scale_e scale);
@@ -4371,6 +4372,11 @@ static
 gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse)
 {
 	return gui__btn_logic_ex(gui, id, mb, contains_mouse, !contains_mouse);
+}
+
+gui_btn_e gui_btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse)
+{
+	return gui__btn_logic(gui, id, mb, contains_mouse);
 }
 
 static
