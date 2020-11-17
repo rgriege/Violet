@@ -1357,6 +1357,9 @@ b32 window_begin_frame(window_t *window)
 	SDL_GetWindowSize(window->window, &window_dim.x, &window_dim.y);
 	gui_event_set_window_dim(gui, drawable_dim.x, drawable_dim.y);
 
+	keys = SDL_GetKeyboardState(&key_cnt);
+	gui_event_set_keyboard(gui, keys, key_cnt);
+
 	if (gui_window_dragging(gui)) {
 		v2i pos;
 		SDL_GetWindowPosition(window->window, &pos.x, &pos.y);
@@ -1367,15 +1370,18 @@ b32 window_begin_frame(window_t *window)
 	}
 	if (mouse_wheel != 0)
 		mouse_btn |= (mouse_wheel > 0 ? MB_WHEELUP : MB_WHEELDOWN);
+#ifdef __APPLE__
+	if ((keys[KB_LCTRL] || keys[KB_RCTRL]) && (mouse_btn & MB_LEFT)) {
+		mouse_btn &= ~MB_LEFT;
+		mouse_btn |= MB_RIGHT;
+	}
+#endif
 	/* Drawable size may be greater than window size on high-DPI monitors, but
 	 * the mouse position is always reported in window-size coordinates (with inverted y). */
 	mouse_pos.x = mouse_pos.x * drawable_dim.x / window_dim.x;
 	mouse_pos.y = drawable_dim.y - mouse_pos.y * drawable_dim.y / window_dim.y;
 	gui_event_set_mouse_pos(gui, mouse_pos.x, mouse_pos.y);
 	gui_event_set_mouse_btn(gui, mouse_btn);
-
-	keys = SDL_GetKeyboardState(&key_cnt);
-	gui_event_set_keyboard(gui, keys, key_cnt);
 
 	gui_events_end(gui);
 
