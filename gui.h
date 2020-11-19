@@ -337,12 +337,13 @@ void gui_get_render_output(const gui_t *gui, gui_render_output_t *output);
 typedef enum gui_npt_flags
 {
 	GUI_NPT_PASSWORD              = 1 << 0,
-	GUI_NPT_SELECT_ON_FOCUS       = 1 << 1,
-	GUI_NPT_COMPLETE_ON_ENTER     = 1 << 2, /* always enabled */
-	GUI_NPT_COMPLETE_ON_TAB       = 1 << 3,
-	GUI_NPT_COMPLETE_ON_CLICK_OUT = 1 << 4,
-	GUI_NPT_COMPLETE_ON_ESCAPE    = 1 << 5,
-	GUI_NPT_COMPLETE_ON_UNCHANGED = 1 << 6,
+	GUI_NPT_MULTILINE             = 1 << 1,
+	GUI_NPT_SELECT_ON_FOCUS       = 1 << 2,
+	GUI_NPT_COMPLETE_ON_ENTER     = 1 << 3, /* always enabled */
+	GUI_NPT_COMPLETE_ON_TAB       = 1 << 4,
+	GUI_NPT_COMPLETE_ON_CLICK_OUT = 1 << 5,
+	GUI_NPT_COMPLETE_ON_ESCAPE    = 1 << 6,
+	GUI_NPT_COMPLETE_ON_UNCHANGED = 1 << 7,
 	GUI_NPT_COMPLETE_ON_DEFOCUS   = GUI_NPT_COMPLETE_ON_TAB
 	                              | GUI_NPT_COMPLETE_ON_CLICK_OUT
 	                              | GUI_NPT_COMPLETE_ON_ESCAPE
@@ -364,6 +365,7 @@ typedef enum gui_btn_val
 } gui_btn_e;
 
 extern const gui_npt_filter_t g_gui_npt_filter_print;
+extern const gui_npt_filter_t g_gui_npt_filter_print_multiline;
 extern const gui_npt_filter_t g_gui_npt_filter_numeric;
 extern const gui_npt_filter_t g_gui_npt_filter_hex;
 
@@ -3661,6 +3663,20 @@ const gui_npt_filter_t g_gui_npt_filter_print = {
 	.non_ascii = 1,
 };
 
+const gui_npt_filter_t g_gui_npt_filter_print_multiline = {
+	.ascii = {
+		0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	},
+	.non_ascii = 1,
+};
+
 const gui_npt_filter_t g_gui_npt_filter_numeric = {
 	.ascii = {
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -3930,8 +3946,10 @@ b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint)
 s32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                 const char *hint, gui_npt_flags_e flags)
 {
-	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags,
-	                      &g_gui_npt_filter_print);
+	gui_npt_filter_p filter = (flags & GUI_NPT_MULTILINE)
+	                        ? &g_gui_npt_filter_print_multiline
+	                        : &g_gui_npt_filter_print;
+	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags, filter);
 }
 
 static
@@ -4041,6 +4059,32 @@ void gui__npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 static
 gui_btn_e gui__btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse);
 
+static
+void gui__npt_insert_txt(gui_t *gui, char *txt, u32 n, u32 *len, const char *insert, gui_npt_filter_p filter)
+{
+	gui__npt_remove_selected(gui, txt, len);
+	const char *p = insert;
+	char *pnext;
+	s32 cp;
+	u32 cp_sz;
+	if (gui->text_input_exceeds_buffer_size)
+		log_warn("text input exceeds buffer size");
+	while (   (cp = utf8_next_codepoint(p, &pnext)) != 0
+	       && (cp_sz = (u32)(pnext - p))
+	       && *len + cp_sz < n) {
+		if (gui_npt_filter(filter, cp)) {
+			/* move all bytes after the cursor (inc NUL) forward by cp_sz */
+			for (u32 i = *len + cp_sz; i > gui->npt.cursor + cp_sz - 1; --i)
+				txt[i] = txt[i-cp_sz];
+			memcpy(&txt[gui->npt.cursor], p, cp_sz);
+			*len += cp_sz;
+			gui->npt.cursor += cp_sz;
+			gui->npt.selection = gui->npt.cursor;
+		}
+		p = pnext;
+	}
+}
+
 s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                    const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
@@ -4111,27 +4155,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		gui->npt.cursor    = clamp(0, gui->npt.cursor,    len);
 		gui->npt.selection = clamp(0, gui->npt.selection, len);
 		if (strlen(gui->text_npt) > 0 && !key_mod(gui, GUI__KBM_CLIPBOARD)) {
-			gui__npt_remove_selected(gui, txt, &len);
-			const char *p = gui->text_npt;
-			char *pnext;
-			s32 cp;
-			u32 cp_sz;
-			if (gui->text_input_exceeds_buffer_size)
-				log_warn("text input exceeds buffer size");
-			while (   (cp = utf8_next_codepoint(p, &pnext)) != 0
-			       && (cp_sz = (u32)(pnext - p))
-			       && len + cp_sz < n) {
-				if (gui_npt_filter(filter, cp)) {
-					/* move all bytes after the cursor (inc NUL) forward by cp_sz */
-					for (u32 i = len + cp_sz; i > gui->npt.cursor + cp_sz - 1; --i)
-						txt[i] = txt[i-cp_sz];
-					memcpy(&txt[gui->npt.cursor], p, cp_sz);
-					len += cp_sz;
-					gui->npt.cursor += cp_sz;
-					gui->npt.selection = gui->npt.cursor;
-				}
-				p = pnext;
-			}
+			gui__npt_insert_txt(gui, txt, n, &len, gui->text_npt, filter);
 		} else if (gui->key_repeat.triggered) {
 			const u32 key_idx = gui->key_repeat.val;
 			if (key_idx == KB_BACKSPACE) {
@@ -4150,11 +4174,15 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 				char *cursor = &txt[gui->npt.cursor], *next;
 				if (!has_selection && utf8_next_codepoint(cursor, &next) != 0)
 					buf_remove_n(txt, gui->npt.cursor, next - cursor, len+1);
-			} else if (key_idx == KB_RETURN || key_idx == KB_KP_ENTER) {
-				gui->npt.selection = gui->npt.cursor;
-				gui__npt_remove_selected(gui, txt, &len);
-				gui__defocus_widget(gui, id);
-				complete = GUI_NPT_COMPLETE_ON_ENTER;
+			} else if ((key_idx == KB_RETURN || key_idx == KB_KP_ENTER)) {
+				if ((flags & GUI_NPT_MULTILINE) && key_mod(gui, KBM_SHIFT)) {
+					gui__npt_insert_txt(gui, txt, n, &len, "\n", filter);
+				} else {
+					gui->npt.selection = gui->npt.cursor;
+					gui__npt_remove_selected(gui, txt, &len);
+					gui__defocus_widget(gui, id);
+					complete = GUI_NPT_COMPLETE_ON_ENTER;
+				}
 			} else if (key_idx == KB_A && key_mod(gui, GUI__KBM_CLIPBOARD)) {
 				gui__npt_select_all(gui, txt);
 			} else if (key_idx == KB_C && key_mod(gui, GUI__KBM_CLIPBOARD)) {
@@ -6239,7 +6267,10 @@ b32 pgui_chk_pen(gui_t *gui, gui_pen_t pen, b32 *val)
 s32 pgui_npt_txt(gui_t *gui, char *lbl, u32 n, const char *hint,
                  gui_npt_flags_e flags)
 {
-	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, &g_gui_npt_filter_print);
+	gui_npt_filter_p filter = (flags & GUI_NPT_MULTILINE)
+	                        ? &g_gui_npt_filter_print_multiline
+	                        : &g_gui_npt_filter_print;
+	return pgui_npt_txt_ex(gui, lbl, n, hint, flags, filter);
 }
 
 s32 pgui_npt_txt_ex(gui_t *gui, char *lbl, u32 n, const char *hint,
