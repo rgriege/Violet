@@ -45,13 +45,23 @@ void arc_to_poly(r32 x, r32 y, r32 r, r32 angle_start, r32 angle_end,
 /* Polygon triangulation algorithm
  * Modified from John W. Ratcliff
  * www.flipcode.com/archives/Efficient_Polygon_Triangulation.shtml */
-static
-b32 triangle__contains(v2f a, v2f b, v2f c, v2f p)
+
+/* Check if the point is on the correct side (within error) of each edge of
+ * the triangle. This is checked using the point-normal form of the plane
+ * pointing inwards from each edge. Points are distances since this is 2D.
+ *
+ * This function would be much easier to call if it took in the
+ * triangle's vertices, but doing it this way is faster since it
+ * allows us to hoist most of the computation out of the inner loop. */
+static inline
+b32 triangle__contains(v2f normal0, r32 point0,
+                       v2f normal1, r32 point1,
+                       v2f normal2, r32 point2,
+                       v2f p, r32 epsilon)
 {
-	const r32 ab_cross_ap = v2f_cross(v2f_sub(b, a), v2f_sub(p, a));
-	const r32 bc_cross_bp = v2f_cross(v2f_sub(c, b), v2f_sub(p, b));
-	const r32 ca_cross_cp = v2f_cross(v2f_sub(a, c), v2f_sub(p, c));
-	return ab_cross_ap >= 0.f && bc_cross_bp >= 0.f && ca_cross_cp >= 0.f;
+	return v2f_dot(normal0, p) >= point0 - epsilon
+	    && v2f_dot(normal1, p) >= point1 - epsilon
+	    && v2f_dot(normal2, p) >= point2 - epsilon;
 }
 
 static
@@ -60,19 +70,25 @@ b32 triangulate__snip(const v2f *poly, u32 u, u32 v, u32 w, u32 n)
 	const v2f a = poly[u];
 	const v2f b = poly[v];
 	const v2f c = poly[w];
-	static const float EPSILON = 0.0000000001f;
+	const r32 epsilon = 0.0000001f;
 
 	/* cannot snip if b is a concave vertex */
-	if ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x) < EPSILON)
+	if (v2f_cross(v2f_sub(b, a), v2f_sub(c, b)) < epsilon)
 		return false;
 
 	/* cannot snip if triangle abc contains another (concave) vtx in poly */
+	const v2f perp0 = v2f_lperp(v2f_dir(a, b));
+	const r32 dp0   = v2f_dot(perp0, a);
+	const v2f perp1 = v2f_lperp(v2f_dir(b, c));
+	const r32 dp1   = v2f_dot(perp1, b);
+	const v2f perp2 = v2f_lperp(v2f_dir(c, a));
+	const r32 dp2   = v2f_dot(perp2, c);
 	for (u32 i = 0; i < n; ++i)
 		if (   i != u && i != v && i != w
-		    && !v2f_equal(poly[i], a)
-		    && !v2f_equal(poly[i], b)
-		    && !v2f_equal(poly[i], c)
-		    && triangle__contains(a, b, c, poly[i]))
+#if 0 /* supports some degenerate polygons with overlapping edges, like ][ */
+		    && !v2f_equal(poly[i], a) && !v2f_equal(poly[i], b) && !v2f_equal(poly[i], c)
+#endif
+		    && triangle__contains(perp0, dp0, perp1, dp1, perp2, dp2, poly[i], epsilon))
 			return false;
 	return true;
 }
