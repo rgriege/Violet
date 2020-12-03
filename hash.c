@@ -17,6 +17,6 @@ int main(int argc, char *const argv[])
 		str_cat(&str, argv[i]);
 	}
 
-	printf("%u\n", hash(str));
+	printf("%u\n", hash_compute(str));
 	return 0;
 }

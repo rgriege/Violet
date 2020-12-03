@@ -51,7 +51,8 @@ int main(int argc, char *const argv[])
 	}
 
 	for (int i = 1; i < argc; ++i) {
-		void *contents = file_read_all(argv[i], "r", g_allocator);
+		size_t sz;
+		void *contents = file_read_all(argv[i], "r", &sz, g_allocator);
 		if (!contents) {
 			printf("Failed to read file '%s'\n", argv[i]);
 			return 1;
