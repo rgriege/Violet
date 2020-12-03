@@ -292,6 +292,12 @@ void isort(void *base, size_t nmemb, size_t size,
            int (*compar)(const void *, const void *));
 int  sort_s32_asc(const void *lhs, const void *rhs);
 int  sort_s32_desc(const void *lhs, const void *rhs);
+int  sort_u32_asc(const void *lhs, const void *rhs);
+int  sort_u32_desc(const void *lhs, const void *rhs);
+int  sort_r32_asc(const void *lhs, const void *rhs);
+int  sort_r32_desc(const void *lhs, const void *rhs);
+
+int find_u32(const void *lhs, const void *rhs);
 
 void buf_insert_(void *p, size_t idx, size_t nmemb, size_t size);
 #define buf_insert(p, idx, val, nmemb) \
@@ -849,6 +855,41 @@ int sort_s32_desc(const void *lhs_, const void *rhs_)
 {
 	const s32 *lhs = lhs_, *rhs = rhs_;
 	return *rhs - *lhs;
+}
+
+int sort_u32_asc(const void *lhs_, const void *rhs_)
+{
+	const u32 lhs = *(const u32*)lhs_;
+	const u32 rhs = *(const u32*)rhs_;
+	return lhs < rhs ? -1 : lhs > rhs ? 1 : 0;
+}
+
+int sort_u32_desc(const void *lhs_, const void *rhs_)
+{
+	const u32 lhs = *(const u32*)lhs_;
+	const u32 rhs = *(const u32*)rhs_;
+	return lhs < rhs ? 1 : lhs > rhs ? -1 : 0;
+}
+
+int sort_r32_asc(const void *lhs_, const void *rhs_)
+{
+	const r32 lhs = *(const r32*)lhs_;
+	const r32 rhs = *(const r32*)rhs_;
+	return (lhs > rhs) - (lhs < rhs);
+}
+
+int sort_r32_desc(const void *lhs_, const void *rhs_)
+{
+	const r32 lhs = *(const r32*)lhs_;
+	const r32 rhs = *(const r32*)rhs_;
+  return (rhs > lhs) - (rhs < lhs);
+}
+
+int find_u32(const void *lhs_, const void *rhs_)
+{
+	const u32 lhs = *(const u32*)lhs_;
+	const u32 rhs = *(const u32*)rhs_;
+	return lhs == rhs ? 0 : 1;
 }
 
 void buf_insert_(void *p_, size_t idx, size_t nmemb, size_t size)
