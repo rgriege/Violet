@@ -42,8 +42,8 @@ typedef struct profile__block
 	struct profile__block *sibling; /* non-owned, can be NULL */
 } profile__block_t;
 
-static thread_local profile__block_t g_profiler_blocks[PROFILE_BLOCK_COUNT] = {0};
-static thread_local profile__block_t *g_profiler_block_last = &(profile__block_t){0};
+thread_local profile__block_t g_profiler_blocks[PROFILE_BLOCK_COUNT] = {0};
+thread_local profile__block_t *g_profiler_block_last = NULL; /* NULL at frame start */
 
 static
 b32 profile__block_find(u32 id, profile__block_t **block)
@@ -92,13 +92,17 @@ void profile_block_begin(const char *name)
 
 	block->name       = name;
 	block->id         = id;
-	block->depth      = g_profiler_block_last->depth + 1;
-	block->aggregate  = g_profiler_block_last->aggregate;
+	block->depth      = 0;
+	block->aggregate  = false;
 	block->last_start = time_current();
 	block->parent     = g_profiler_block_last;
-	if (!profiler__block_in_siblings(g_profiler_block_last->child, block)) {
-		block->sibling  = g_profiler_block_last->child;
-		g_profiler_block_last->child = block;
+	if (g_profiler_block_last) {
+		block->depth      = g_profiler_block_last->depth + 1;
+		block->aggregate  = g_profiler_block_last->aggregate;
+		if (!profiler__block_in_siblings(g_profiler_block_last->child, block)) {
+			block->sibling  = g_profiler_block_last->child;
+			g_profiler_block_last->child = block;
+		}
 	}
 	g_profiler_block_last = block;
 }
@@ -164,6 +168,8 @@ void profile_block_end(const char *name)
 	const u32 id = hash_compute(name);
 	profile__block_t *block = g_profiler_block_last;
 
+	assert(block);
+
 	if (block->id != id) {
 		assert(false);
 		return;
@@ -172,7 +178,6 @@ void profile_block_end(const char *name)
 	block->count        += 1;
 	block->microseconds += time_diff_micro(block->last_start, end);
 
-	assert(block->parent);
 	g_profiler_block_last = block->parent;
 
 	if (!block->aggregate) {
@@ -182,7 +187,8 @@ void profile_block_end(const char *name)
 
 		profile__block_log(block);
 
-		g_profiler_block_last->child = block->sibling;
+		if (g_profiler_block_last)
+			g_profiler_block_last->child = block->sibling;
 
 		profile__block_clear(block);
 	}
@@ -190,12 +196,14 @@ void profile_block_end(const char *name)
 
 void profile_aggregate(void)
 {
+	assert(g_profiler_block_last);
+	assert(g_profiler_block_last->parent);
 	g_profiler_block_last->aggregate = true;
 }
 
 void profile_reset(void)
 {
-	assert(g_profiler_block_last->parent == NULL);
+	assert(!g_profiler_block_last);
 }
 
 #undef PROFILER_IMPLEMENTATION
