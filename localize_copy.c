@@ -133,6 +133,7 @@ int main(int argc, char *const argv[])
 			}
 		}
 
+		localization_table_sort(&dst);
 		if (!localization_table_save(&dst, argv[i]))
 			printf("Failed to write file '%s'\n", argv[i]);
 	}

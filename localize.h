@@ -31,12 +31,13 @@ typedef struct localization_table {
 	char chars[LOCALIZE_MAX_STR_BYTES];
 } localization_table_t;
 
-b32 localization_table_load(localization_table_t *table, const char *fname);
-b32 localization_table_save(const localization_table_t *table, const char *fname);
-b32 localization_table_find_slot(localization_table_t *table, u32 id,
-                                 localized_string_t **slot);
-u32 localization_table_num_strings(const localization_table_t *table);
-u32 localization_table_num_bytes(const localization_table_t *table);
+b32  localization_table_load(localization_table_t *table, const char *fname);
+b32  localization_table_save(const localization_table_t *table, const char *fname);
+void localization_table_sort(localization_table_t *table);
+b32  localization_table_find_slot(localization_table_t *table, u32 id,
+                                  localized_string_t **slot);
+u32  localization_table_num_strings(const localization_table_t *table);
+u32  localization_table_num_bytes(const localization_table_t *table);
 
 #else // NO_LOCALIZE
 
@@ -205,6 +206,19 @@ b32 localization_table_save(const localization_table_t *table, const char *fname
 
 	fclose(fp);
 	return true;
+}
+
+static
+int localization__slot_sort_asc(const void *lhs_, const void *rhs_)
+{
+	const localized_string_t *lhs = lhs_, *rhs = rhs_;
+	return lhs->id < rhs->id ? -1 : lhs->id > rhs->id ? 1 : 0;
+}
+
+void localization_table_sort(localization_table_t *table)
+{
+	qsort(table->slots, LOCALIZE_MAX_STR_SLOTS, sizeof(table->slots[0]),
+	      localization__slot_sort_asc);
 }
 
 b32 localization_table_find_slot(localization_table_t *table, u32 id,
