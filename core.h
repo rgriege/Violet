@@ -842,13 +842,13 @@ void isort(void *base_, size_t nmemb, size_t size,
 int sort_s32_asc(const void *lhs_, const void *rhs_)
 {
 	const s32 *lhs = lhs_, *rhs = rhs_;
-	return *rhs - *lhs;
+	return *lhs - *rhs;
 }
 
 int sort_s32_desc(const void *lhs_, const void *rhs_)
 {
 	const s32 *lhs = lhs_, *rhs = rhs_;
-	return *lhs - *rhs;
+	return *rhs - *lhs;
 }
 
 void buf_insert_(void *p_, size_t idx, size_t nmemb, size_t size)
