@@ -64,6 +64,7 @@ colorf_t colorf_mix(colorf_t lhs, colorf_t rhs, r32 t);
 colorf_t colorf_darken(colorf_t c, r32 factor);
 color_t  color_darken(color_t c, r32 factor);
 r32      colorf_brightness(colorf_t c);
+r32      colorf_luminance(colorf_t c);
 color_t  color_fade(color_t c, u8 alpha);
 
 void rgb_to_hsv(r32 r, r32 g, r32 b, r32 *h, r32 *s, r32 *v);
@@ -188,6 +189,24 @@ color_t color_darken(color_t c, r32 factor)
 r32 colorf_brightness(colorf_t c)
 {
 	return (c.r + c.g + c.b) / 3.f;
+}
+
+/* https://en.wikipedia.org/wiki/SRGB#The_reverse_transformation */
+r32 srgb_gamma_corrected(r32 c)
+{
+	if (c <= 0.03928f)
+		return c / 12.92f;
+	else
+		return powf((c + 0.055f) / 1.055f, 2.4f);
+}
+
+/* https://www.w3.org/TR/WCAG20/#relativeluminancedef
+ * (the Y channel of CEI XYZ color space) */
+r32 colorf_luminance(colorf_t c)
+{
+	return 0.2126f * srgb_gamma_corrected(c.r)
+	     + 0.7152f * srgb_gamma_corrected(c.g)
+	     + 0.0722f * srgb_gamma_corrected(c.b);
 }
 
 color_t color_fade(color_t c, u8 alpha)
