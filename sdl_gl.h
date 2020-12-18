@@ -59,15 +59,14 @@ typedef enum shader_type
 
 typedef struct shader_t
 {
-	const char *filename;
 	u32 handle;
 } shader_t;
 
 
 b32  shader_init_from_string(shader_t *shader, const char *str,
-                             shader_type_e type, const char *id);
+                             shader_type_e type, const char *name);
 b32  shader_init_from_file(shader_t *shader, const char *fname,
-                           shader_type_e type);
+                           shader_type_e type, const char *name);
 void shader_destroy(shader_t *shader);
 
 typedef struct shader_prog_t
@@ -79,12 +78,14 @@ typedef struct shader_prog_t
 
 b32  shader_program_load_from_files(shader_prog_t *prog,
                                     const char *vert_fname,
-                                    const char *frag_fname);
+                                    const char *frag_fname,
+                                    const char *name);
 b32  shader_program_load_from_strings(shader_prog_t *prog,
                                       const char *vert_str,
-                                      const char *frag_str);
+                                      const char *frag_str,
+                                      const char *name);
 b32  shader_program_create(shader_prog_t *prog, shader_t vertex_shader,
-                           shader_t frag_shader);
+                           shader_t frag_shader, const char *name);
 void shader_program_destroy(shader_prog_t *p);
 void shader_program_bind(const shader_prog_t *p);
 void shader_program_unbind(void);
@@ -319,8 +320,13 @@ void texture_unbind(void)
 
 /* Shader */
 
+static const char *g_shader_type_names[2] = {
+	[VERTEX_SHADER] = "vertex",
+	[FRAGMENT_SHADER] = "fragment",
+};
+
 b32 shader_init_from_string(shader_t *shader, const char *str,
-                            shader_type_e type, const char *id)
+                            shader_type_e type, const char *name)
 {
 	b32 retval = false;
 	char *log_buf;
@@ -335,10 +341,11 @@ b32 shader_init_from_string(shader_t *shader, const char *str,
 	GL_CHECK(glGetShaderiv, shader->handle, GL_COMPILE_STATUS, &compiled);
 	if (compiled == GL_FALSE) {
 		GL_CHECK(glGetShaderiv, shader->handle, GL_INFO_LOG_LENGTH, &log_len);
-		log_buf = malloc(log_len);
+		log_buf = amalloc(log_len, g_temp_allocator);
 		GL_CHECK(glGetShaderInfoLog, shader->handle, log_len, NULL, log_buf);
-		log_error("Compilation error in shader '%s': %s", id, log_buf);
-		free(log_buf);
+		log_error("Compilation error in %s shader '%s': %s",
+		          g_shader_type_names[type], name, log_buf);
+		afree(log_buf, g_temp_allocator);
 		shader->handle = 0;
 		goto err;
 	}
@@ -349,7 +356,7 @@ err:
 }
 
 b32 shader_init_from_file(shader_t *shader, const char *fname,
-                          shader_type_e type)
+                          shader_type_e type, const char *name)
 {
 	b32 retval = false;
 	FILE *file;
@@ -358,7 +365,8 @@ b32 shader_init_from_file(shader_t *shader, const char *fname,
 
 	file = file_open(fname, "rb");
 	if (!file) {
-		log_error("Could not open shader file '%s'", fname);
+		log_error("Failed to open file '%s' for %s shader '%s'",
+		          fname, g_shader_type_names[type], name);
 		return retval;
 	}
 
@@ -367,7 +375,8 @@ b32 shader_init_from_file(shader_t *shader, const char *fname,
 	rewind(file);
 	file_buf = malloc(fsize + 1);
 	if (fread(file_buf, 1, fsize, file) != fsize) {
-		log_error("Failed to read shader file '%s'", fname);
+		log_error("Failed to read file '%s' for %s shader '%s'",
+		          fname, g_shader_type_names[type], name);
 		goto err;
 	}
 	file_buf[fsize] = 0;
@@ -388,19 +397,20 @@ void shader_destroy(shader_t *shader)
 
 b32 shader_program_load_from_strings(shader_prog_t *prog,
                                      const char *vert_str,
-                                     const char *frag_str)
+                                     const char *frag_str,
+                                     const char *name)
 {
 	b32 retval = false;
 
 	if (!shader_init_from_string(&prog->vertex_shader, vert_str,
-	                             VERTEX_SHADER, "vertex ubershader"))
+	                             VERTEX_SHADER, name))
 		goto out;
 
 	if (!shader_init_from_string(&prog->frag_shader, frag_str,
-	                             FRAGMENT_SHADER, "fragment ubershader"))
+	                             FRAGMENT_SHADER, name))
 		goto err_frag;
 
-	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader)) {
+	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader, name)) {
 		retval = true;
 		goto out;
 	}
@@ -414,17 +424,18 @@ out:
 
 b32 shader_program_load_from_files(shader_prog_t *prog,
                                    const char *vert_fname,
-                                   const char *frag_fname)
+                                   const char *frag_fname,
+                                   const char *name)
 {
 	b32 retval = false;
 
-	if (!shader_init_from_file(&prog->vertex_shader, vert_fname, VERTEX_SHADER))
+	if (!shader_init_from_file(&prog->vertex_shader, vert_fname, VERTEX_SHADER, name))
 		goto out;
 
-	if (!shader_init_from_file(&prog->frag_shader, frag_fname, FRAGMENT_SHADER))
+	if (!shader_init_from_file(&prog->frag_shader, frag_fname, FRAGMENT_SHADER, name))
 		goto err_frag;
 	
-	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader)) {
+	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader, name)) {
 		retval = true;
 		goto out;
 	}
@@ -437,7 +448,7 @@ out:
 }
 
 b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
-                          shader_t frag_shader)
+                          shader_t frag_shader, const char *name)
 {
 	GLint status, length;
 	char *log_buf;
@@ -454,11 +465,10 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 	GL_CHECK(glGetProgramiv, p->handle, GL_LINK_STATUS, &status);
 	if (status == GL_FALSE) {
 		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
-		log_buf = malloc(length);
+		log_buf = amalloc(length, g_temp_allocator);
 		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
-		log_error("Shader link error using '%s' & '%s': %s",
-		          vertex_shader.filename, frag_shader.filename, log_buf);
-		free(log_buf);
+		log_error("Link error in shader '%s': %s", name, log_buf);
+		afree(log_buf, g_temp_allocator);
 		return false;
 	}
 
@@ -467,11 +477,10 @@ b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
 	GL_CHECK(glGetProgramiv, p->handle, GL_VALIDATE_STATUS, &status);
 	if (status == GL_FALSE) {
 		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
-		log_buf = malloc(length);
+		log_buf = amalloc(length, g_temp_allocator);
 		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
-		log_error("Shader validation error using '%s' & '%s': %s",
-		          vertex_shader.filename, frag_shader.filename, log_buf);
-		free(log_buf);
+		log_error("Validation error in shader '%s': %s", name, log_buf);
+		afree(log_buf, g_temp_allocator);
 		return false;
 	}
 #endif
@@ -1142,7 +1151,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	if (!shader_program_load_from_strings(&window->shader, g_vertex_shader,
-	                                      g_fragment_shader))
+	                                      g_fragment_shader, "gui ubershader"))
 		goto err_white;
 
 #ifdef SDL_GL_ES_2
