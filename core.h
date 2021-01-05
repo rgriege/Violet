@@ -314,10 +314,13 @@ void buf_remove_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
 
 /* Time */
 
+/* This is only for intervals - a timepoint does not represent the unix epoch */
 timepoint_t time_current(void);
 u32         time_diff_milli(timepoint_t start, timepoint_t end);
 u32         time_diff_micro(timepoint_t start, timepoint_t end);
 u32         time_diff_nano(timepoint_t start, timepoint_t end);
+
+s64         time_seconds_since_epoch(void);
 void        time_sleep_milli(u32 milli);
 
 /* Log */
@@ -959,6 +962,12 @@ u32 time_diff_nano(timepoint_t start, timepoint_t end)
 	return (u32)(res.tv_sec * 1000000000 + res.tv_nsec);
 }
 
+s64 time_seconds_since_epoch(void)
+{
+	/* This is true for POSIX but isn't technically guaranted by C */
+	return (s64)time(NULL);
+}
+
 void time_sleep_milli(u32 milli)
 {
 	timepoint_t t = { .tv_nsec = milli * 1000000 };
@@ -993,6 +1002,16 @@ u32 time_diff_nano(timepoint_t start, timepoint_t end)
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
 	return (u32)((end.QuadPart - start.QuadPart) * 1000000000 / frequency.QuadPart);
+}
+
+s64 time_seconds_since_epoch(void)
+{
+	FILETIME f;
+	ULARGE_INTEGER u;
+	GetSystemTimePreciseAsFileTime(&f);
+	u.u.LowPart  = f.dwLowDateTime;
+	u.u.HighPart = f.dwHighDateTime;
+	return (s64)(u.QuadPart / 10000000) - 11644473600;
 }
 
 void time_sleep_milli(u32 milli)
