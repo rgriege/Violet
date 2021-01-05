@@ -1534,11 +1534,11 @@ void window_end_frame_ex(window_t *window, u32 target_frame_milli,
 	u32 frame_milli;
 
 	window_end_frame(window);
-	frame_milli = time_diff_milli(gui_frame_start(gui), time_current());
+	frame_milli = timepoint_diff_milli(gui_frame_start(gui), timepoint_create());
 
 	if (target_frame_milli && frame_milli > target_frame_milli)
 		log_warn("long frame: %ums", frame_milli);
-	else if (  time_diff_milli(gui_last_input_time(gui), gui_frame_start(gui))
+	else if (  timepoint_diff_milli(gui_last_input_time(gui), gui_frame_start(gui))
 	         > idle_start_milli)
 		SDL_WaitEventTimeout(NULL, idle_frame_milli - frame_milli);
 	else if (target_frame_milli)
@@ -1554,7 +1554,7 @@ void window_run(window_t *window, u32 fps, b32(*ufunc)(window_t *window, void *u
 		vlt_mem_advance_gen();
 		quit = ufunc(window, udata);
 		window_end_frame(window);
-		frame_milli = time_diff_milli(gui_frame_start(window->gui), time_current());
+		frame_milli = timepoint_diff_milli(gui_frame_start(window->gui), timepoint_create());
 		if (frame_milli < target_frame_milli)
 			time_sleep_milli(target_frame_milli - frame_milli);
 		else

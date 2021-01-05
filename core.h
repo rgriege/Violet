@@ -315,10 +315,10 @@ void buf_remove_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
 /* Time */
 
 /* This is only for intervals - a timepoint does not represent the unix epoch */
-timepoint_t time_current(void);
-u32         time_diff_milli(timepoint_t start, timepoint_t end);
-u32         time_diff_micro(timepoint_t start, timepoint_t end);
-u32         time_diff_nano(timepoint_t start, timepoint_t end);
+timepoint_t timepoint_create(void);
+u32         timepoint_diff_milli(timepoint_t start, timepoint_t end);
+u32         timepoint_diff_micro(timepoint_t start, timepoint_t end);
+u32         timepoint_diff_nano(timepoint_t start, timepoint_t end);
 
 s64         time_seconds_since_epoch(void);
 void        time_sleep_milli(u32 milli);
@@ -917,7 +917,7 @@ void buf_remove_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
 
 #ifndef _WIN32
 
-timepoint_t time_current(void)
+timepoint_t timepoint_create(void)
 {
 	timepoint_t t;
 	clock_gettime(CLOCK_MONOTONIC, &t);
@@ -944,19 +944,19 @@ timepoint_t time__diff(timepoint_t start, timepoint_t end)
 	return res;
 }
 
-u32 time_diff_milli(timepoint_t start, timepoint_t end)
+u32 timepoint_diff_milli(timepoint_t start, timepoint_t end)
 {
 	timepoint_t res = time__diff(start, end);
 	return (u32)(res.tv_sec * 1000 + res.tv_nsec / 1000000);
 }
 
-u32 time_diff_micro(timepoint_t start, timepoint_t end)
+u32 timepoint_diff_micro(timepoint_t start, timepoint_t end)
 {
 	timepoint_t res = time__diff(start, end);
 	return (u32)(res.tv_sec * 1000000 + res.tv_nsec / 1000);
 }
 
-u32 time_diff_nano(timepoint_t start, timepoint_t end)
+u32 timepoint_diff_nano(timepoint_t start, timepoint_t end)
 {
 	timepoint_t res = time__diff(start, end);
 	return (u32)(res.tv_sec * 1000000000 + res.tv_nsec);
@@ -976,28 +976,28 @@ void time_sleep_milli(u32 milli)
 
 #else
 
-timepoint_t time_current(void)
+timepoint_t timepoint_create(void)
 {
 	timepoint_t t;
 	QueryPerformanceCounter(&t);
 	return t;
 }
 
-u32 time_diff_milli(timepoint_t start, timepoint_t end)
+u32 timepoint_diff_milli(timepoint_t start, timepoint_t end)
 {
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
 	return (u32)((end.QuadPart - start.QuadPart) * 1000 / frequency.QuadPart);
 }
 
-u32 time_diff_micro(timepoint_t start, timepoint_t end)
+u32 timepoint_diff_micro(timepoint_t start, timepoint_t end)
 {
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);
 	return (u32)((end.QuadPart - start.QuadPart) * 1000000 / frequency.QuadPart);
 }
 
-u32 time_diff_nano(timepoint_t start, timepoint_t end)
+u32 timepoint_diff_nano(timepoint_t start, timepoint_t end)
 {
 	LARGE_INTEGER frequency;
 	QueryPerformanceFrequency(&frequency);

@@ -1766,7 +1766,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 {
 	gui_t *gui = calloc(1, sizeof(gui_t));
 
-	gui->creation_time = time_current();
+	gui->creation_time = timepoint_create();
 	gui->frame_start_time = gui->creation_time;
 	gui->last_input_time = gui->creation_time;
 	gui->frame_time_milli = 0;
@@ -1998,9 +1998,9 @@ void gui__on_widget_tab_focused(gui_t *gui, u64 id)
 
 void gui_begin_frame(gui_t *gui)
 {
-	const timepoint_t now = time_current();
+	const timepoint_t now = timepoint_create();
 
-	gui->frame_time_milli = time_diff_milli(gui->frame_start_time, now);
+	gui->frame_time_milli = timepoint_diff_milli(gui->frame_start_time, now);
 	gui->frame_start_time = now;
 }
 
@@ -2573,11 +2573,11 @@ void gui_end_frame_ex(gui_t *gui, u32 target_frame_milli,
 	u32 frame_milli;
 
 	gui_end_frame(gui);
-	frame_milli = time_diff_milli(gui_frame_start(gui), time_current());
+	frame_milli = timepoint_diff_milli(gui_frame_start(gui), timepoint_create());
 
 	if (frame_milli > target_frame_milli)
 		log_warn("long frame: %ums", frame_milli);
-	else if (  time_diff_milli(gui_last_input_time(gui), gui_frame_start(gui))
+	else if (  timepoint_diff_milli(gui_last_input_time(gui), gui_frame_start(gui))
 	         > idle_start_milli)
 		time_sleep_milli(idle_frame_milli - frame_milli);
 	else
@@ -2759,10 +2759,10 @@ b32 mouse_double(const gui_t *gui, u32 mask)
 {
 	const gui_mouse_press_t *history = gui->mouse_press_history;
 	return (history[1].btn & mask)
-	    &&   time_diff_milli(history[1].time, history[0].time)
+	    &&   timepoint_diff_milli(history[1].time, history[0].time)
 	       < GUI_MOUSE_DOUBLE_CLICK_INTERVAL
 	    && (   !(history[2].btn & mask)
-	        ||   time_diff_milli(history[2].time, history[1].time)
+	        ||   timepoint_diff_milli(history[2].time, history[1].time)
 	           > GUI_MOUSE_DOUBLE_CLICK_INTERVAL);
 }
 
@@ -4299,7 +4299,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	}
 	if (gui_widget_focused(gui, id)) {
 		if (   !gui__npt_has_selection(gui)
-		    && time_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
+		    && timepoint_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
 			const color_t color = elem_style.text.color;
 			const s32 size = gui_scale_val(gui, elem_style.text.size);
 			void *font = gui->fonts.get_font(gui->fonts.handle, size);

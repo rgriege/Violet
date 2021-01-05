@@ -94,7 +94,7 @@ void profile_block_begin(const char *name)
 	block->id         = id;
 	block->depth      = 0;
 	block->aggregate  = false;
-	block->last_start = time_current();
+	block->last_start = timepoint_create();
 	block->parent     = g_profiler_block_last;
 	if (g_profiler_block_last) {
 		block->depth      = g_profiler_block_last->depth + 1;
@@ -164,7 +164,7 @@ void profile__block_clear(profile__block_t *block)
 
 void profile_block_end(const char *name)
 {
-	const timepoint_t end = time_current();
+	const timepoint_t end = timepoint_create();
 	const u32 id = hash_compute(name);
 	profile__block_t *block = g_profiler_block_last;
 
@@ -176,7 +176,7 @@ void profile_block_end(const char *name)
 	}
 
 	block->count        += 1;
-	block->microseconds += time_diff_micro(block->last_start, end);
+	block->microseconds += timepoint_diff_micro(block->last_start, end);
 
 	g_profiler_block_last = block->parent;
 
