@@ -572,6 +572,7 @@ void pgui_cell(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 void pgui_cell_consume(gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 void pgui_cell_merge_next(gui_t *gui);
 u64  pgui_next_widget_id(const gui_t *gui);
+void pgui_strip(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 void pgui_spacer(gui_t *gui);
 void pgui_spacer_blank(gui_t *gui);
@@ -6173,6 +6174,34 @@ u64 pgui_next_widget_id(const gui_t *gui)
 	s32 x, y;
 	pgui_cell(gui, &x, &y, NULL, NULL);
 	return gui_widget_id(gui, x, y);
+}
+
+void pgui_strip(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	const gui_grid_strip_t *strip;
+	const gui_grid_t *grid;
+	v2i pos, dim;
+
+	assert(gui->grid);
+	assert(gui->grid->depth > 0);
+
+	grid = gui->grid;
+	strip = &grid->strips[grid->depth - 1];
+
+	assert((u32)(strip->max_cell - strip->current_cell) == strip->num_cells);
+
+	dim   = strip->dim;
+	pos.x = grid->pos.x;
+	pos.y = grid->pos.y - dim.y;
+
+	if (x)
+		*x = pos.x;
+	if (y)
+		*y = pos.y;
+	if (w)
+		*w = dim.x;
+	if (h)
+		*h = dim.y;
 }
 
 void pgui_spacer(gui_t *gui)
