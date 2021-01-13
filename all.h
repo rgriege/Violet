@@ -29,6 +29,7 @@
 #include "violet/sdl_gl.h"
 #else
 #include "violet/stbi.h"
+#include "violet/img_stub.h"
 #endif
 /* Audio */
 #include "violet/audio.h"
@@ -72,6 +73,7 @@ v2d v2f_to_v2d(v2f v)
 #define GEOM_IMPLEMENTATION
 #define GUI_IMPLEMENTATION
 #define IMATH_IMPLEMENTATION
+#define IMG_STUB_IMPLEMENTATION
 #define LIST_IMPLEMENTATION
 #define LOCALIZE_IMPLEMENTATION
 #define OS_IMPLEMENTATION
@@ -112,6 +114,7 @@ v2d v2f_to_v2d(v2f v)
 #include "violet/sdl_gl.h"
 #else
 #include "violet/stbi.h"
+#include "violet/img_stub.h"
 #endif
 /* Audio */
 #include "violet/audio.h"
