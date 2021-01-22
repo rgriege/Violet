@@ -289,6 +289,8 @@ void swap(void *lhs, void *rhs, size_t size);
 void reverse(void *data, size_t size, size_t count);
 #define reverse_buf(buf) reverse(buf, sizeof((buf)[0]), countof(buf))
 
+void ssort(void *base, size_t nmemb, size_t size,
+           int (*compar)(const void *, const void *));
 void isort(void *base, size_t nmemb, size_t size,
            int (*compar)(const void *, const void *));
 int  sort_s32_asc(const void *lhs, const void *rhs);
@@ -848,6 +850,8 @@ void reverse(void *data_, size_t size, size_t count)
 	for (size_t i = 0, n = count/2; i < n; ++i)
 		swap(data+i*size, data+(count-1-i)*size, size);
 }
+
+#include "violet/ssort.c"
 
 void isort(void *base_, size_t nmemb, size_t size,
            int (*compar)(const void *, const void *))

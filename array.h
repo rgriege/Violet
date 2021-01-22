@@ -74,6 +74,7 @@ typedef struct array__head
 
 #define array_reverse(a)           reverse(a, array__esz(a), array_sz(a))
 #define array_qsort(a, cmp)        qsort(a, array_sz(a), array__esz(a), cmp)
+#define array_ssort(a, cmp)        ssort(a, array_sz(a), array__esz(a), cmp)
 #define array_bsearch(a, e, cmp)   bsearch(&(e), a, array_sz(a), \
                                            array__esz(a), cmp)
 #define array_find(a, p, cmp)      array__find(a, p, array__esz(a), cmp)
