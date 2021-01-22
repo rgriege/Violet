@@ -47,6 +47,8 @@
 
 typedef struct pgb_heap
 {
+	struct pgb_page *gfirst_page;
+	struct pgb_page *glast_page;
 	struct pgb_page *first_page;
 } pgb_heap_t;
 
@@ -57,6 +59,7 @@ struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t 
 void             pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page);
 void             pgb_heap_create_page(pgb_heap_t *heap, size_t size);
 
+bool pgb_heap_has_page(const pgb_heap_t *heap, const struct pgb_page *page);
 void pgb_heap_move_all_pages(pgb_heap_t *dst, pgb_heap_t *src);
 
 typedef uint8_t pgb_byte;
@@ -95,6 +98,7 @@ void  pgb_free(void *ptr, pgb_t *pgb  MEMCALL_ARGS);
 pgb_watermark_t pgb_save(pgb_t *pgb);
 void            pgb_restore(pgb_watermark_t watermark);
 
+bool   pgb_has_page(const pgb_t *pgb, const struct pgb_page *page);
 size_t pgb_alloc_size(const pgb_t *pgb, const void *ptr);
 
 void pgb_stats(const pgb_t *pgb, size_t *bytes_used, size_t *pages_used,
@@ -138,6 +142,7 @@ typedef struct pgb_page
 {
 	struct {
 		pgb_byte alloc_sizes[PGB__PAGE_SLOTS];
+		struct pgb_page *gnext;
 		struct pgb_page *prev;
 		struct pgb_page *next;
 		size_t size;
@@ -283,6 +288,7 @@ pgb_page_t *pgb__page_create(size_t page_size)
 {
 	pgb_page_t *page = PGB_MALLOC(page_size);
 	page->size = page_size;
+	page->gnext = NULL;
 	pgb__page_clear(page);
 	return page;
 }
@@ -301,7 +307,9 @@ void pgb__page_remove(pgb_page_t *page)
 
 void pgb_heap_init(pgb_heap_t *heap)
 {
-	heap->first_page = NULL;
+	heap->gfirst_page = NULL;
+	heap->glast_page  = NULL;
+	heap->first_page  = NULL;
 }
 
 void pgb_heap_destroy(pgb_heap_t *heap)
@@ -312,7 +320,27 @@ void pgb_heap_destroy(pgb_heap_t *heap)
 		PGB_FREE(page);
 		page = next;
 	}
-	heap->first_page = NULL;
+	heap->gfirst_page = NULL;
+	heap->glast_page  = NULL;
+	heap->first_page  = NULL;
+}
+
+static
+void pgb__heap_add_page_to_global_list(pgb_heap_t *heap, struct pgb_page *page)
+{
+	if (!heap->gfirst_page)
+		heap->gfirst_page = page;
+	else
+		heap->glast_page->gnext = page;
+	heap->glast_page = page;
+}
+
+static
+struct pgb_page *pgb__heap_create_page(pgb_heap_t *heap, size_t size)
+{
+	pgb_page_t *page = pgb__page_create(size);
+	pgb__heap_add_page_to_global_list(heap, page);
+	return page;
 }
 
 struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t max_size)
@@ -322,7 +350,7 @@ struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t 
 	while (page && page->size < min_size)
 		page = page->next;
 	if (!page || page->size > max_size) {
-		return pgb__page_create(min_size);
+		return pgb__heap_create_page(heap, min_size);
 	} else {
 		if (page == heap->first_page)
 			heap->first_page = page->next;
@@ -361,7 +389,18 @@ void pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page)
 
 void pgb_heap_create_page(pgb_heap_t *heap, size_t size)
 {
-	pgb_heap_return_page(heap, pgb__page_create(size));
+	pgb_heap_return_page(heap, pgb__heap_create_page(heap, size));
+}
+
+bool pgb_heap_has_page(const pgb_heap_t *heap, const struct pgb_page *page)
+{
+	pgb_page_t *p = heap->first_page;
+	while (p) {
+		if (p == page)
+			return true;
+		p = p->next;
+	}
+	return false;
 }
 
 void pgb_heap_move_all_pages(pgb_heap_t *dst, pgb_heap_t *src)
@@ -372,7 +411,13 @@ void pgb_heap_move_all_pages(pgb_heap_t *dst, pgb_heap_t *src)
 		pgb_heap_return_page(dst, page);
 		page = next;
 	}
-	src->first_page = NULL;
+
+	if (src->gfirst_page)
+		pgb__heap_add_page_to_global_list(dst, src->gfirst_page);
+
+	src->gfirst_page = NULL;
+	src->glast_page  = NULL;
+	src->first_page  = NULL;
 }
 
 
@@ -407,11 +452,17 @@ bool pgb__mark_valid(pgb_watermark_t mark)
 
 void pgb_destroy(pgb_t *pgb)
 {
+	pgb_assert(pgb->heap);
 	pgb_assert(!(pgb->current_page && pgb->current_page->next));
 	pgb_assert(!pgb__mark_valid(pgb->last_mark));
 
 	while (pgb->current_page)
 		pgb__pop_page(pgb);
+
+	pgb->heap         = NULL;
+	pgb->current_page = NULL;
+	pgb->current_ptr  = NULL;
+	pgb->last_mark    = (pgb_watermark_t){0};
 }
 
 static
@@ -504,6 +555,14 @@ bool pgb__ptr_freed_by_mark(pgb_watermark_t mark,
 	}
 }
 #endif
+
+bool pgb_has_page(const pgb_t *pgb, const struct pgb_page *page)
+{
+	const pgb_page_t *p = pgb->current_page;
+	while (p && p != page)
+		p = p->prev;
+	return p != NULL;
+}
 
 static
 void *pgb__realloc(pgb_byte *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)

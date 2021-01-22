@@ -196,6 +196,7 @@ typedef pgb_watermark_t temp_memory_mark_t;
 allocator_t temp_memory_fork_(pgb_t *pgb);
 #define     temp_memory_fork()         temp_memory_fork_(&(pgb_t){0})
 void        temp_memory_merge(allocator_t *fork);
+void        temp_memory_merge_all(void);
 
 void *temp_malloc(size_t size, allocator_t *a  MEMCALL_ARGS);
 void *temp_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS);
@@ -519,6 +520,15 @@ void temp_memory_merge(allocator_t *fork)
 {
 	assert(fork != g_temp_allocator);
 	pgb_destroy(fork->udata);
+}
+
+void temp_memory_merge_all(void)
+{
+	pgb_heap_t *heap = &g_temp_memory_heap;
+	for (pgb_page_t *page = heap->gfirst_page; page; page = page->gnext)
+		if (   !pgb_has_page(g_temp_allocator->udata, page)
+		    && !pgb_heap_has_page(heap, page))
+			pgb_heap_return_page(heap, page);
 }
 
 
@@ -1146,6 +1156,7 @@ void vlt_init(vlt_thread_type_e thread_type)
 		global_tracker->mutex = SDL_CreateMutex();
 	}
 #endif
+	pgb_heap_init(&g_temp_memory_heap);
 	g_temp_allocator_ = allocator_create(temp, &g_temp_allocator_pgb);
 	g_temp_allocator  = &g_temp_allocator_;
 	pgb_init(g_temp_allocator->udata, &g_temp_memory_heap);
