@@ -7,6 +7,7 @@ void profile_block_begin(const char *name);
 void profile_block_end(const char *name);
 void profile_aggregate(void);
 void profile_reset(void);
+void profile_clear_all(void);
 
 #ifdef PROFILE
 #define PROFILE_BLOCK_BEGIN(name)           profile_block_begin(#name)
@@ -15,6 +16,7 @@ void profile_reset(void);
 #define PROFILE_FUNCTION_END()              profile_block_end(__FUNCTION__)
 #define PROFILE_AGGREGATE()                 profile_aggregate()
 #define PROFILE_RESET()                     profile_reset()
+#define PROFILE_CLEAR_ALL()                 profile_clear_all()
 #else
 #define PROFILE_BLOCK_BEGIN(name)           NOOP
 #define PROFILE_BLOCK_END(name)             NOOP
@@ -22,6 +24,7 @@ void profile_reset(void);
 #define PROFILE_FUNCTION_END()              NOOP
 #define PROFILE_AGGREGATE()                 NOOP
 #define PROFILE_RESET()                     NOOP
+#define PROFILE_CLEAR_ALL()                 NOOP
 #endif
 
 #endif // VIOLET_PROFILER_H
@@ -204,6 +207,12 @@ void profile_aggregate(void)
 void profile_reset(void)
 {
 	assert(!g_profiler_block_last);
+}
+
+void profile_clear_all(void)
+{
+	arrclr(g_profiler_blocks);
+	g_profiler_block_last = NULL;
 }
 
 #undef PROFILER_IMPLEMENTATION
