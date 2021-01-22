@@ -1008,7 +1008,7 @@ s64 time_seconds_since_epoch(void)
 {
 	FILETIME f;
 	ULARGE_INTEGER u;
-	GetSystemTimePreciseAsFileTime(&f);
+	GetSystemTimeAsFileTime(&f);
 	u.u.LowPart  = f.dwLowDateTime;
 	u.u.HighPart = f.dwHighDateTime;
 	return (s64)(u.QuadPart / 10000000) - 11644473600;
