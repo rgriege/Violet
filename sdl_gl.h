@@ -328,21 +328,69 @@ static const char *g_shader_type_names[2] = {
 b32 shader_init_from_string(shader_t *shader, const char *str,
                             shader_type_e type, const char *name)
 {
+	const char *type_name = g_shader_type_names[type];
 	b32 retval = false;
-	char *log_buf;
-	GLint compiled, log_len;
+	GLint compiled = GL_FALSE;
+	GLenum err = GL_NO_ERROR;
+
+	/* NOTE(rgriege): Do OpenGL error checking here even in release builds
+	 * since a lot of graphics errors have shown up here, and the cause
+	 * is typically very opaque to the user.  Additionally, we can
+	 * add more customized log messages, including more than just the OpenGL
+	 * function name.  I didn't profile this code with error checking,
+	 * but shader compilation is supposedly expensive, so a little
+	 * error checking shouldn't impact performance too badly. */
+
+	glGetError(); /* clear error flag */
 
 	shader->handle = glCreateShader(  type == VERTEX_SHADER
 	                                ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
-	GL_ERR_CHECK("glCreateShader");
-	GL_CHECK(glShaderSource, shader->handle, 1, (const GLchar **)&str, 0);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glCreateShader(%s, %s) = %s", name,
+		          type_name, gl_get_err_str(err));
+		goto err;
+	}
 
-	GL_CHECK(glCompileShader, shader->handle);
-	GL_CHECK(glGetShaderiv, shader->handle, GL_COMPILE_STATUS, &compiled);
+	glShaderSource(shader->handle, 1, (const GLchar **)&str, 0);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glShaderSource(%s, %s) = %s", name,
+		          type_name, gl_get_err_str(err));
+		goto err;
+	}
+
+	glCompileShader(shader->handle);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glCompileShader(%s, %s) = %s", name,
+		          type_name, gl_get_err_str(err));
+		goto err;
+	}
+
+	glGetShaderiv(shader->handle, GL_COMPILE_STATUS, &compiled);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glGetShaderiv(%s, %s, GL_COMPILE_STATUS) = %s", name,
+		          type_name, gl_get_err_str(err));
+		goto err;
+	}
+
 	if (compiled == GL_FALSE) {
-		GL_CHECK(glGetShaderiv, shader->handle, GL_INFO_LOG_LENGTH, &log_len);
+		GLint log_len;
+		char *log_buf;
+
+		glGetShaderiv(shader->handle, GL_INFO_LOG_LENGTH, &log_len);
+		if ((err = glGetError()) != GL_NO_ERROR) {
+			log_error("glGetShaderiv(%s, %s, GL_INFO_LOG_LENGTH) = %s", name,
+			          type_name, gl_get_err_str(err));
+			goto err;
+		}
+
 		log_buf = amalloc(log_len, g_temp_allocator);
-		GL_CHECK(glGetShaderInfoLog, shader->handle, log_len, NULL, log_buf);
+		glGetShaderInfoLog(shader->handle, log_len, NULL, log_buf);
+		if ((err = glGetError()) != GL_NO_ERROR) {
+			log_error("glGetShaderInfoLog(%s, %s) = %s", name,
+			          type_name, gl_get_err_str(err));
+			goto err;
+		}
+
 		log_error("Compilation error in %s shader '%s': %s",
 		          g_shader_type_names[type], name, log_buf);
 		afree(log_buf, g_temp_allocator);
@@ -450,42 +498,113 @@ out:
 b32 shader_program_create(shader_prog_t *p, shader_t vertex_shader,
                           shader_t frag_shader, const char *name)
 {
-	GLint status, length;
-	char *log_buf;
+	b32 retval = false;
+	GLint status = GL_FALSE;
+	GLenum err = GL_NO_ERROR;
+
+	/* NOTE(rgriege): Do OpenGL error checking here even in release builds
+	 * since a lot of graphics errors have shown up here, and the cause
+	 * is typically very opaque to the user.  Additionally, we can
+	 * add more customized log messages, including more than just the OpenGL
+	 * function name.  I didn't profile this code with error checking,
+	 * but shader compilation is supposedly expensive, so a little
+	 * error checking shouldn't impact performance too badly. */
+
+	glGetError(); /* clear error flag */
 
 	p->handle = glCreateProgram();
-	GL_ERR_CHECK("glCreateProgram");
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glCreateProgram(%s) = %s", name, gl_get_err_str(err));
+		goto err;
+	}
 
-	GL_CHECK(glAttachShader, p->handle, vertex_shader.handle);
+	glAttachShader(p->handle, vertex_shader.handle);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glAttachShader(%s, vertex) = %s", name, gl_get_err_str(err));
+		goto err;
+	}
 	p->vertex_shader = vertex_shader;
-	GL_CHECK(glAttachShader, p->handle, frag_shader.handle);
+
+	glAttachShader(p->handle, frag_shader.handle);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glAttachShader(%s, fragment) = %s", name, gl_get_err_str(err));
+		goto err;
+	}
 	p->frag_shader = frag_shader;
 
-	GL_CHECK(glLinkProgram, p->handle);
-	GL_CHECK(glGetProgramiv, p->handle, GL_LINK_STATUS, &status);
+	glLinkProgram(p->handle);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glLinkProgram(%s) = %s", name, gl_get_err_str(err));
+		goto err;
+	}
+
+	glGetProgramiv(p->handle, GL_LINK_STATUS, &status);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glGetProgramiv(%s, GL_LINK_STATUS) = %s", name, gl_get_err_str(err));
+		goto err;
+	}
+
 	if (status == GL_FALSE) {
-		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
+		GLint length;
+		char *log_buf;
+
+		glGetProgramiv(p->handle, GL_INFO_LOG_LENGTH, &length);
+		if ((err = glGetError()) != GL_NO_ERROR) {
+			log_error("glGetProgramiv(%s, GL_INFO_LOG_LENGTH) = %s", name, gl_get_err_str(err));
+			goto err;
+		}
+
 		log_buf = amalloc(length, g_temp_allocator);
-		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
+		glGetProgramInfoLog(p->handle, length, NULL, log_buf);
+		if ((err = glGetError()) != GL_NO_ERROR) {
+			log_error("glGetProgramInfoLog(%s) = %s", name, gl_get_err_str(err));
+			goto err;
+		}
+
 		log_error("Link error in shader '%s': %s", name, log_buf);
 		afree(log_buf, g_temp_allocator);
-		return false;
+		goto err;
 	}
 
 #ifdef GUI_VALIDATE_SHADER
-	GL_CHECK(glValidateProgram, p->handle);
-	GL_CHECK(glGetProgramiv, p->handle, GL_VALIDATE_STATUS, &status);
+	glValidateProgram(p->handle);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glValidateProgram(%s) = %s", name, gl_get_err_str(err));
+		goto err;
+	}
+
+	glGetProgramiv(p->handle, GL_VALIDATE_STATUS, &status);
+	if ((err = glGetError()) != GL_NO_ERROR) {
+		log_error("glGetProgramiv(%s, GL_VALIDATE_STATUS) = %s", name, gl_get_err_str(err));
+		goto err;
+	}
+
 	if (status == GL_FALSE) {
-		GL_CHECK(glGetProgramiv, p->handle, GL_INFO_LOG_LENGTH, &length);
+		GLint length;
+		char *log_buf;
+
+		glGetProgramiv(p->handle, GL_INFO_LOG_LENGTH, &length);
+		if ((err = glGetError()) != GL_NO_ERROR) {
+			log_error("glGetProgramiv(%s, GL_INFO_LOG_LENGTH) = %s", name, gl_get_err_str(err));
+			goto err;
+		}
+
 		log_buf = amalloc(length, g_temp_allocator);
-		GL_CHECK(glGetProgramInfoLog, p->handle, length, NULL, log_buf);
+		glGetProgramInfoLog(p->handle, length, NULL, log_buf);
+		if ((err = glGetError()) != GL_NO_ERROR) {
+			log_error("glGetProgramInfoLog(%s) = %s", name, gl_get_err_str(err));
+			goto err;
+		}
+
 		log_error("Validation error in shader '%s': %s", name, log_buf);
 		afree(log_buf, g_temp_allocator);
-		return false;
+		goto err;
 	}
 #endif
 
-	return true;
+	retval = true;
+err:
+	return retval;
 }
 
 void shader_program_bind(const shader_prog_t *p)
