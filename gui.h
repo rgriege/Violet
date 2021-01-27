@@ -1765,7 +1765,7 @@ static void gui__layer_new(gui_t *gui);
 gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
                   gui_fonts_t fonts)
 {
-	gui_t *gui = calloc(1, sizeof(gui_t));
+	gui_t *gui = acalloc(1, sizeof(gui_t), g_allocator);
 
 	gui->creation_time = timepoint_create();
 	gui->frame_start_time = gui->creation_time;
@@ -1853,7 +1853,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 
 void gui_destroy(gui_t *gui)
 {
-	free(gui);
+	afree(gui, g_allocator);
 }
 
 void gui_dim(const gui_t *gui, s32 *x, s32 *y)

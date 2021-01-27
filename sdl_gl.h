@@ -421,7 +421,7 @@ b32 shader_init_from_file(shader_t *shader, const char *fname,
 	fseek(file, 0, SEEK_END);
 	fsize = ftell(file);
 	rewind(file);
-	file_buf = malloc(fsize + 1);
+	file_buf = amalloc(fsize + 1, g_allocator);
 	if (fread(file_buf, 1, fsize, file) != fsize) {
 		log_error("Failed to read file '%s' for %s shader '%s'",
 		          fname, g_shader_type_names[type], name);
@@ -432,7 +432,7 @@ b32 shader_init_from_file(shader_t *shader, const char *fname,
 	retval = shader_init_from_string(shader, file_buf, type, fname);
 
 err:
-	free(file_buf);
+	afree(file_buf, g_allocator);
 	fclose(file);
 	return retval;
 }
@@ -794,7 +794,7 @@ b32 font_load(font_t *f, const char *filename, s32 size)
 
 	f->num_glyphs = info.numGlyphs;
 	log_debug("packing %d glyphs for %s:%d", f->num_glyphs, filename, size);
-	f->char_info = malloc(f->num_glyphs * sizeof(stbtt_packedchar));
+	f->char_info = amalloc(f->num_glyphs * sizeof(stbtt_packedchar), g_allocator);
 
 	if (!rgtt_Pack(&info, size, f->char_info, &f->texture))
 		goto err_pack;
@@ -811,7 +811,7 @@ b32 font_load(font_t *f, const char *filename, s32 size)
 
 err_pack:
 	if (!retval)
-		free(f->char_info);
+		afree(f->char_info, g_allocator);
 err_ttf:
 	afree(ttf, g_temp_allocator);
 out:
@@ -820,7 +820,7 @@ out:
 
 void font_destroy(font_t *f)
 {
-	free(f->char_info);
+	afree(f->char_info, g_allocator);
 	texture_destroy(&f->texture);
 }
 
@@ -1131,7 +1131,7 @@ window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
 window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
                            window_flags_e flags, const char *font_file_path)
 {
-	window_t *window = calloc(1, sizeof(window_t));
+	window_t *window = acalloc(1, sizeof(window_t), g_allocator);
 	if (g_window_cnt == 0) {
 		SDL_SetMainReady();
 		if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -1339,7 +1339,7 @@ err_ctx:
 err_win:
 	SDL_Quit();
 err_sdl:
-	free(window);
+	afree(window, g_allocator);
 	window = NULL;
 out:
 	return window;
@@ -1367,7 +1367,7 @@ void window_destroy(window_t *window)
 	else if (window->parent_window)
 		SDL_GL_MakeCurrent(window->parent_window, window->parent_gl_context);
 	gui_destroy(window->gui);
-	free(window);
+	afree(window, g_allocator);
 }
 
 static
