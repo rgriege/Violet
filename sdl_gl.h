@@ -1231,7 +1231,8 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		log_error("glewInit error: %s", glewGetErrorString(glew_err));
 		goto err_glew;
 	}
-	GL_ERR_CHECK("glewInit");
+
+	glGetError(); /* clear error flag */
 
 	const unsigned char *gl_str = glGetString(GL_VERSION);
 	const unsigned char gl_str_unknown[] = "unknown";
