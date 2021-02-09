@@ -36,22 +36,22 @@ typedef union
 #define gi_nocolor      { .r=0,    .g=0,    .b=0,    .a=0 }
 
 
-#define g_black     (color_t)gi_black
-#define g_grey77    (color_t)gi_grey77
-#define g_grey128   (color_t)gi_grey128
-#define g_white     (color_t)gi_white
+extern const color_t g_black;
+extern const color_t g_grey77;
+extern const color_t g_grey128;
+extern const color_t g_white;
 
-#define g_blue      (color_t)gi_blue
-#define g_fuchsia   (color_t)gi_fuchsia
-#define g_green     (color_t)gi_green
-#define g_lightblue (color_t)gi_lightblue
-#define g_medblue   (color_t)gi_medblue
-#define g_orange    (color_t)gi_orange
-#define g_red       (color_t)gi_red
-#define g_yellow    (color_t)gi_yellow
-#define g_cyan      (color_t)gi_cyan
+extern const color_t g_blue;
+extern const color_t g_fuchsia;
+extern const color_t g_green;
+extern const color_t g_lightblue;
+extern const color_t g_medblue;
+extern const color_t g_orange;
+extern const color_t g_red;
+extern const color_t g_yellow;
+extern const color_t g_cyan;
 
-#define g_nocolor   (color_t)gi_nocolor
+extern const color_t g_nocolor;
 
 colorf_t color_to_colorf(color_t c);
 color_t  colorf_to_color(colorf_t cf);
@@ -79,6 +79,23 @@ void hsv_to_color8(u8 h, u8 s, u8 v, color_t *c);
 /* Implementation */
 
 #ifdef COLOR_IMPLEMENTATION
+
+const color_t g_black     = gi_black;
+const color_t g_grey77    = gi_grey77;
+const color_t g_grey128   = gi_grey128;
+const color_t g_white     = gi_white;
+
+const color_t g_blue      = gi_blue;
+const color_t g_fuchsia   = gi_fuchsia;
+const color_t g_green     = gi_green;
+const color_t g_lightblue = gi_lightblue;
+const color_t g_medblue   = gi_medblue;
+const color_t g_orange    = gi_orange;
+const color_t g_red       = gi_red;
+const color_t g_yellow    = gi_yellow;
+const color_t g_cyan      = gi_cyan;
+
+const color_t g_nocolor   = gi_nocolor;
 
 colorf_t color_to_colorf(color_t c)
 {
