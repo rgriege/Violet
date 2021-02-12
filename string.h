@@ -47,6 +47,7 @@ char *imstrend(void);
 #define str_t array(char)
 
 str_t  str_create(allocator_t *a);
+str_t  str_create_ex(size_t capacity, allocator_t *a);
 str_t  str_dup(const char *src, allocator_t *a);
 void   str_destroy(str_t *str);
 
@@ -348,6 +349,14 @@ char *imstrend(void)
 str_t str_create(allocator_t *a)
 {
 	return str_dup("", a);
+}
+
+str_t str_create_ex(size_t capacity, allocator_t *a)
+{
+	str_t str;
+	array_init_ex(str, (array_size_t)capacity, a);
+	str_cpy(&str, "");
+	return str;
 }
 
 str_t str_dup(const char *src, allocator_t *a)
