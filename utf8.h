@@ -1,6 +1,7 @@
 #ifndef VIOLET_UTF8_H
 #define VIOLET_UTF8_H
 
+b32 utf8_can_decode_codepoint(const char *nptr, size_t max_size);
 s32 utf8_next_codepoint(const char *nptr, char **endptr);
 s32 utf8_prev_codepoint(const char *nptr, char **beginptr);
 
@@ -9,6 +10,33 @@ s32 utf8_prev_codepoint(const char *nptr, char **beginptr);
 /* Implementation */
 
 #ifdef UTF8_IMPLEMENTATION
+
+static
+b32 utf8__can_decode_remainder(const char *p, size_t n)
+{
+	for (size_t i = 0; i < n; ++i)
+		if ((p[1] & 0xc0) != 0x80)
+			return false;
+	return true;
+}
+
+/* doesn't validate the codepoint or exclude overlong encodings */
+b32 utf8_can_decode_codepoint(const char *nptr, size_t max_size)
+{
+	const char *p = nptr;
+	if (max_size == 0)
+		return false;
+	else if (max_size >= 1 && (p[0] & 0x80) == 0x00)
+		return true;
+	else if (max_size >= 2 && (p[0] & 0xe0) == 0xc0 && utf8__can_decode_remainder(&p[1], 1))
+		return true;
+	else if (max_size >= 3 && (p[0] & 0xf0) == 0xe0 && utf8__can_decode_remainder(&p[1], 2))
+		return true;
+	else if (max_size >= 4 && (p[0] & 0xf8) == 0xf0 && utf8__can_decode_remainder(&p[1], 3))
+		return true;
+	else
+		return false;
+}
 
 s32 utf8_next_codepoint(const char *nptr, char **endptr)
 {
