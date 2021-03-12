@@ -81,6 +81,7 @@ typedef struct array__head
 #define array_index(a, p, cmp)     array__index(a, p, array__esz(a), cmp)
 #define array_upper(a, e, cmp)     array__upper(a, &(e), array__esz(a), cmp)
 
+/* Array To Pointer + Number */
 #define A2PN(a)                    (a), array_sz(a)
 
 

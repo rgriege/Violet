@@ -34,6 +34,8 @@ typedef struct timespec timepoint_t;
 
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
 
+/* Buffer To Pointer + Size
+ * Buffer To Pointer + Count */
 #define B2PS(x) (x), sizeof(x)
 #define B2PC(x) (x), countof(x)
 
