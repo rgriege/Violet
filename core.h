@@ -32,6 +32,8 @@ typedef struct timespec timepoint_t;
 
 /* Utility macros */
 
+#define optional(type) type*
+
 #define countof(x) (sizeof(x) / sizeof((x)[0]))
 
 /* Buffer To Pointer + Size
