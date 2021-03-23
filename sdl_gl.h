@@ -1122,6 +1122,47 @@ b32 window__supports_opengl_version(int major_version_target, int minor_version_
 	        && minor_version >= minor_version_target);
 }
 
+#if defined(DEBUG) || defined(CHECK_GL)
+static
+void window__gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                               GLsizei length, const GLchar *message, const void *userp)
+{
+	log_level_e level = LOG_DEBUG;
+	switch (severity) {
+	case GL_DEBUG_SEVERITY_HIGH:         level = LOG_ERROR;   break;
+	case GL_DEBUG_SEVERITY_MEDIUM:       level = LOG_WARNING; break;
+	case GL_DEBUG_SEVERITY_LOW:          level = LOG_DEBUG;   break;
+	case GL_DEBUG_SEVERITY_NOTIFICATION: level = LOG_INFO;    break;
+	}
+
+	const char *type_string = "unknown";
+	switch (type) {
+	case GL_DEBUG_TYPE_ERROR:               type_string = "error";               break;
+	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: type_string = "deprecated behavior"; break;
+	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  type_string = "undefined behavior";  break;
+	case GL_DEBUG_TYPE_PORTABILITY:         type_string = "portability";         break;
+	case GL_DEBUG_TYPE_PERFORMANCE:         type_string = "performance";         break;
+	case GL_DEBUG_TYPE_MARKER:              type_string = "marker";              break;
+	case GL_DEBUG_TYPE_PUSH_GROUP:          type_string = "push group";          break;
+	case GL_DEBUG_TYPE_POP_GROUP:           type_string = "pop group";           break;
+	case GL_DEBUG_TYPE_OTHER:               type_string = "other";               break;
+	}
+
+	const char *source_string = "unknown";
+	switch (source) {
+	case GL_DEBUG_SOURCE_API:             source_string = "api";             break;
+	case GL_DEBUG_SOURCE_WINDOW_SYSTEM:   source_string = "window system";   break;
+	case GL_DEBUG_SOURCE_SHADER_COMPILER: source_string = "shader compiler"; break;
+	case GL_DEBUG_SOURCE_THIRD_PARTY:     source_string = "third parth";     break;
+	case GL_DEBUG_SOURCE_APPLICATION:     source_string = "application";     break;
+	case GL_DEBUG_SOURCE_OTHER:           source_string = "other";           break;
+	}
+
+	log_level_write(level, "GL CALLBACK: type = %s, message = %s, from = %s",
+	                type_string, message, source_string);
+}
+#endif
+
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         window_flags_e flags)
 {
@@ -1173,6 +1214,10 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 #endif
 	// SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+#if defined(DEBUG) || defined(CHECK_GL)
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
 
 	if (SDL_GetNumVideoDisplays() < 1) {
 		log_error("could not create window: no video displays found");
@@ -1233,6 +1278,11 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	}
 
 	glGetError(); /* clear error flag */
+
+#if defined(DEBUG) || defined(CHECK_GL)
+	GL_CHECK(glEnable, GL_DEBUG_OUTPUT);
+	GL_CHECK(glDebugMessageCallback, window__gl_debug_callback, NULL);
+#endif
 
 	const unsigned char *gl_str = glGetString(GL_VERSION);
 	const unsigned char gl_str_unknown[] = "unknown";
