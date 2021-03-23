@@ -1213,6 +1213,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 #endif
+	// This is enabled by default.
 	// SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 #if defined(DEBUG) || defined(CHECK_GL)
