@@ -199,7 +199,11 @@ void profile_block_end(const char *name)
 
 void profile_aggregate(void)
 {
+	/* must be inside a block to aggregate - AGGREGATE should immediately follow BEGIN */
 	assert(g_profiler_block_last);
+	/* aggregated block must have a parent, otherwise we won't know when to spit out
+	 * the aggregated data.  The urrent block's BEGIN must be prececed by another BEGIN
+	 * somewhere up the call stack. */
 	assert(g_profiler_block_last->parent);
 	g_profiler_block_last->aggregate = true;
 }
