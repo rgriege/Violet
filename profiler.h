@@ -144,10 +144,10 @@ void profile__block_log(const profile__block_t *block)
 
 #ifdef DEBUG
 	/* try to make it extra clear that these are debug timings */
-	log_debug("PROFILE: %*s%s = %s us (%u) [DEBUG]", block->depth - 1, "", block->name,
+	log_debug("PROFILE: %*s%s = %s us (%u) [DEBUG]", block->depth, "", block->name,
 	          imprint_u32(block->microseconds), block->count);
 #else
-	log_info("PROFILE: %*s%s = %s us (%u)", block->depth - 1, "", block->name,
+	log_info("PROFILE: %*s%s = %s us (%u)", block->depth, "", block->name,
 	         imprint_u32(block->microseconds), block->count);
 #endif
 }
