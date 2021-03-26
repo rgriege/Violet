@@ -36,7 +36,7 @@ static inline int a_ctz_64(uint64_t x)
 		63, 52, 6, 26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10,
 		51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12
 	};
-	return debruijn64[(x&-x)*0x022fdd63cc95386dull >> 58];
+	return debruijn64[(x&-(int64_t)x)*0x022fdd63cc95386dull >> 58];
 }
 
 #define ntz(x) a_ctz_64((x))
