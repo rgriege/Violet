@@ -264,7 +264,7 @@ FMDEF r32 fmath_point_to_line_dist_sq_3d(v3f a, v3f b, v3f p);
 
 /* Polygon */
 
-FMDEF void  polyf_from_box(v2f *v, box2f box);
+FMDEF void  polyf_from_box(v2f v[4], box2f box);
 FMDEF b32   polyf_is_simple(const v2f *v, u32 n);
 FMDEF b32   polyf_is_convex(const v2f *v, u32 n);
 FMDEF b32   polyf_is_concave(const v2f *v, u32 n);
@@ -1473,15 +1473,15 @@ FMDEF r32 fmath_point_to_line_dist_sq_3d(v3f a, v3f b, v3f p)
 
 /* Polygon */
 
-FMDEF void polyf_from_box(v2f *v, box2f box)
+FMDEF void polyf_from_box(v2f v[4], box2f box)
 {
 	const v2f top_left = { box.min.x, box.max.y };
 	const v2f bottom_right = { box.max.x, box.min.y };
 
-	*v++ = bottom_right;
-	*v++ = box.max;
-	*v++ = top_left;
-	*v = box.min;
+	v[0] = bottom_right;
+	v[1] = box.max;
+	v[2] = top_left;
+	v[3] = box.min;
 }
 
 FMDEF b32 polyf_is_simple(const v2f *v, u32 n)
