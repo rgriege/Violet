@@ -1122,7 +1122,7 @@ b32 window__supports_opengl_version(int major_version_target, int minor_version_
 	        && minor_version >= minor_version_target);
 }
 
-#if defined(DEBUG) || defined(CHECK_GL)
+#ifdef CHECK_GL_VERBOSE
 static
 void window__gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
                                GLsizei length, const GLchar *message, const void *userp)
@@ -1216,7 +1216,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	// This is enabled by default.
 	// SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-#if defined(DEBUG) || defined(CHECK_GL)
+#ifdef CHECK_GL_VERBOSE
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
@@ -1280,7 +1280,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	glGetError(); /* clear error flag */
 
-#if defined(DEBUG) || defined(CHECK_GL)
+#ifdef CHECK_GL_VERBOSE
 	GL_CHECK(glEnable, GL_DEBUG_OUTPUT);
 	GL_CHECK(glDebugMessageCallback, window__gl_debug_callback, NULL);
 #endif
