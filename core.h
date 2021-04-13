@@ -312,12 +312,18 @@ void buf_insert_(void *p, size_t idx, size_t nmemb, size_t size);
 		const size_t buf_insert_idx_ = idx; \
 		buf_insert_(p, buf_insert_idx_, nmemb, sizeof(*(p))); \
 		(p)[buf_insert_idx_] = (val); \
-	} while (0);
+	} while (0)
 
 void buf_remove_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
 #define buf_remove(p, idx, nmemb)      buf_remove_(p, idx, 1, nmemb, sizeof(*p))
 #define buf_remove_n(p, idx, n, nmemb) buf_remove_(p, idx, n, nmemb, sizeof(*p))
 
+#define buf_rotate_left(p, nmemb, type) \
+	do { \
+		const type buf_shift__p0 = p[0]; \
+		buf_remove(p, 0, nmemb); \
+		p[nmemb-1] = buf_shift__p0; \
+	} while (0)
 
 /* Time */
 
