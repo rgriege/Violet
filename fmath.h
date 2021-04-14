@@ -108,6 +108,7 @@ FMDEF v3f v3f_add(v3f lhs, v3f rhs);
 FMDEF v3f v3f_sub(v3f lhs, v3f rhs);
 FMDEF v3f v3f_dir(v3f src, v3f dst);
 FMDEF v3f v3f_fmadd(v3f v, v3f dir, r32 s);
+FMDEF v3f v3f_fmsub(v3f v, v3f dir, r32 s);
 FMDEF r32 v3f_dot(v3f lhs, v3f rhs);
 FMDEF v3f v3f_cross(v3f lhs, v3f rhs);
 FMDEF v3f v3f_proj(v3f v, v3f axis);
@@ -589,6 +590,11 @@ FMDEF v3f v3f_dir(v3f src, v3f dst)
 FMDEF v3f v3f_fmadd(v3f v, v3f dir, r32 s)
 {
 	return v3f_add(v, v3f_scale(dir, s));
+}
+
+FMDEF v3f v3f_fmsub(v3f v, v3f dir, r32 s)
+{
+	return v3f_sub(v, v3f_scale(dir, s));
 }
 
 FMDEF r32 v3f_dot(v3f lhs, v3f rhs)
