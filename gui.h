@@ -467,6 +467,7 @@ void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area);
 u64  gui_widget_id(const gui_t *gui, s32 x, s32 y);
 void gui_widget_push_base_id(gui_t *gui, u32 id, u32 *prev);
 void gui_widget_pop_base_id(gui_t *gui, u32 id, u32 prev);
+void gui_widget_change_id(gui_t *gui, u64 src, u64 dst);
 void gui_widget_focus_next(gui_t *gui);
 void gui_widget_deactivate(gui_t *gui, u64 id);
 b32  gui_widget_hot(const gui_t *gui, u64 id);
@@ -5882,6 +5883,31 @@ void gui_widget_pop_base_id(gui_t *gui, u32 id, u32 prev)
 {
 	assert(gui->base_id == id);
 	gui->base_id = prev;
+}
+
+void gui_widget_change_id(gui_t *gui, u64 src, u64 dst)
+{
+	if (gui->hot_id == src)
+		gui->hot_id = dst;
+	if (gui->active_id == src)
+		gui->active_id = dst;
+	for (u32 i = 0; i < countof(gui->focus_ids); ++i)
+		if (gui->focus_ids[i] == src)
+			gui->focus_ids[i] = dst;
+
+	if (gui->active_id_at_frame_start == src)
+		gui->active_id_at_frame_start = dst;
+	if (gui->focus_id_at_frame_start == src)
+		gui->focus_id_at_frame_start = dst;
+	if (gui->focus_prev_widget_id == src)
+		gui->focus_prev_widget_id = dst;
+	if (gui->prev_widget_id == src)
+		gui->prev_widget_id = dst;
+	if (gui->hot_id_last_frame == src)
+		gui->hot_id_last_frame = dst;
+
+	if (gui->dropdown.id == src)
+		gui->dropdown.id = dst;
 }
 
 void gui_widget_focus_next(gui_t *gui)
