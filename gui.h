@@ -894,6 +894,37 @@ gui_style_t *gui_style(gui_t *gui);
 const gui_style_t *gui_style_c(const gui_t *gui);
 void         gui_style_set(gui_t *gui, const gui_style_t *style);
 
+/* Temporarily modifying styles is done through the style stack.  To change
+ * a value in the style struct, you can push and pop values for struct members
+ * of gui_style_t.
+ *
+ * gui_style_push_s32(gui, txt.size, 18);
+ * gui_txt(gui, "Test");
+ * gui_style_pop(gui);
+ *
+ * Due to implementation details, you must explicity specify the field type
+ * (like 's32') if the value is a literal.  Otherwise, you can call
+ * gui_style_push() with any type of value.
+ *
+ * Often, it is desirable to change a single field for every state of a widget
+ * so the widget looks similar whether it is inactive, hot, active, or disabled.
+ *
+ * gui_style_push_widget_s32(gui, btn, txt.size, 18);
+ * pgui_btn_txt(gui, "Test");
+ * gui_style_pop_widget(gui);
+ *
+ * Make sure every push has a matching pop.  Failure to do so shouldn't crash
+ * the application, but it will cause weird styling behavior and trigger an
+ * assertion in debug mode.
+ *
+ * Unfortunately, to make the calling code simple, the interface is rather
+ * macro-heavy. */
+
+/* maximum size (in bytes) of the style stack */
+#ifndef GUI_STYLE_STACK_LIMIT
+#define GUI_STYLE_STACK_LIMIT 2048
+#endif
+
 void gui_style_push_(gui_t *gui, const void *value, size_t offset, size_t size);
 void gui_style_push_current_(gui_t *gui, size_t offset, size_t size);
 void gui_style_push_color_(gui_t *gui, size_t offset, color_t val);
@@ -921,9 +952,51 @@ void gui_style_pop(gui_t *gui);
 #define gui_style_push_ptr(gui, loc, val) \
 	gui_style_push_ptr_(gui, offsetof(gui_style_t, loc), val)
 
-#ifndef GUI_STYLE_STACK_LIMIT
-#define GUI_STYLE_STACK_LIMIT 2048
-#endif
+#define gui_style_push_widget(gui, widget, loc, val) \
+	do { \
+		gui_style_push(gui, widget.inactive.loc, val); \
+		gui_style_push(gui, widget.hot.loc, val); \
+		gui_style_push(gui, widget.active.loc, val); \
+		gui_style_push(gui, widget.disabled.loc, val); \
+	} while (0)
+
+#define gui_style_push_widget_current(gui, widget, loc) \
+	do { \
+		gui_style_push_current(gui, widget.inactive.loc); \
+		gui_style_push_current(gui, widget.hot.loc); \
+		gui_style_push_current(gui, widget.active.loc); \
+		gui_style_push_current(gui, widget.disabled.loc); \
+	} while (0)
+
+#define gui_style_push_widget_(suffix, gui, widget, loc, val) \
+	do { \
+		gui_style_push_##suffix(gui, widget.inactive.loc, val); \
+		gui_style_push_##suffix(gui, widget.hot.loc, val); \
+		gui_style_push_##suffix(gui, widget.active.loc, val); \
+		gui_style_push_##suffix(gui, widget.disabled.loc, val); \
+	} while (0)
+
+#define gui_style_push_widget_color(gui, widget, loc, val) \
+	gui_style_push_widget_(color, gui, widget, loc, val)
+#define gui_style_push_widget_b32(gui, widget, loc, val) \
+	gui_style_push_widget_(b32, gui, widget, loc, val)
+#define gui_style_push_widget_s32(gui, widget, loc, val) \
+	gui_style_push_widget_(s32, gui, widget, loc, val)
+#define gui_style_push_widget_r32(gui, widget, loc, val) \
+	gui_style_push_widget_(r32, gui, widget, loc, val)
+#define gui_style_push_widget_pen(gui, widget, loc, val) \
+	gui_style_push_widget_(pen, gui, widget, loc, val)
+#define gui_style_push_widget_ptr(gui, widget, loc, val) \
+	gui_style_push_widget_(ptr, gui, widget, loc, val)
+
+#define gui_style_pop_widget(gui) \
+	do { \
+		gui_style_pop(gui); \
+		gui_style_pop(gui); \
+		gui_style_pop(gui); \
+		gui_style_pop(gui); \
+	} while (0)
+
 
 gui_padding_style_t gui_scale_padding(const gui_t *gui, gui_padding_style_t padding);
 
