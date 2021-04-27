@@ -334,6 +334,8 @@ void gui_get_render_output(const gui_t *gui, gui_render_output_t *output);
 #define GUI_HINT_TIMER 1000
 #endif
 
+#define GUI_MIN_CUSTOM_BASE_ID (1 << 16)
+
 typedef enum gui_npt_flags
 {
 	GUI_NPT_PASSWORD              = 1 << 0,
@@ -463,6 +465,8 @@ void gui_scroll_area_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 void gui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area);
 
 u64  gui_widget_id(const gui_t *gui, s32 x, s32 y);
+void gui_widget_push_base_id(gui_t *gui, u32 id, u32 *prev);
+void gui_widget_pop_base_id(gui_t *gui, u32 id, u32 prev);
 void gui_widget_focus_next(gui_t *gui);
 void gui_widget_deactivate(gui_t *gui, u64 id);
 b32  gui_widget_hot(const gui_t *gui, u64 id);
@@ -722,6 +726,7 @@ typedef struct gui_panel
 	intptr userdata;
 	gui_scroll_area_t scroll_area;
 	s32 pri;
+	u32 prev_widget_base_id;
 	struct gui_panel *prev, *next; /* un-owned, can be NULL */
 	gui_split_t *split; /* un-owned, can be NULL */
 	b32 closed;
@@ -1573,6 +1578,18 @@ const gui_style_t g_gui_style_invis = {
 #define GUI__LAYER_PRIORITY_HINT  2
 #define GUI__LAYER_PRIORITY_POPUP 1
 
+/* IDs:  0....1........X.........X.........UINT_MAX
+ *       ^         ^         ^        ^        ^
+ *      skip    popups    panels   custom   default
+ *
+ * 0 is skipped to ensure that no widget id is ever 0,
+ * which is used as the invalid id.  We also limit the # of panels
+ * to keep all 'reserved' base id's below 1 << 16. */
+#define GUI__DEFAULT_BASE_ID UINT_MAX
+#define GUI__MIN_POPUP_BASE_ID 1
+#define GUI__MIN_PANEL_BASE_ID (1 + GUI_POPUP_STACK_SIZE)
+#define GUI__MAX_PANEL_ID (GUI_MIN_CUSTOM_BASE_ID - GUI__MIN_PANEL_BASE_ID)
+
 typedef enum gui__key_toggle_state
 {
 	GUI__KBT_OFF,
@@ -1606,6 +1623,7 @@ typedef struct gui_popup
 		s32 x, y, w, h;
 	} mask;
 	struct gui_popup *prev;
+	u32 prev_widget_base_id;
 	b32 close_at_end;
 	gui_grid_t grid;
 } gui_popup_t;
@@ -1681,6 +1699,7 @@ typedef struct gui
 	 * hot    = hover
 	 * active = mouse down
 	 * hot    = post-click activation, e.g. text input */
+	u32 base_id;
 	u32 lock;
 	u64 hot_id;
 	u64 active_id;
@@ -1877,6 +1896,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->left_window = false;
 	gui->cursor = GUI_CURSOR_DEFAULT;
 
+	gui->base_id = GUI__DEFAULT_BASE_ID;
 	gui->lock = 0;
 	gui->hot_id = 0;
 	gui->active_id = 0;
@@ -2201,6 +2221,7 @@ void gui_events_end(gui_t *gui)
 
 	gui->mouse_covered_by_widget_id = ~0;
 
+	gui->base_id = GUI__DEFAULT_BASE_ID;
 	gui->lock = 0;
 
 	/* Should rarely hit these */
@@ -2626,6 +2647,7 @@ static int gui__layer_sort(const void *lhs, const void *rhs);
 void gui_end_frame(gui_t *gui)
 {
 	assert(gui->grid == NULL);
+	assert(gui->base_id == GUI__DEFAULT_BASE_ID);
 	assert(gui->lock == 0);
 
 	if (gui->root_split && !gui->splits_rendered_this_frame)
@@ -4863,12 +4885,15 @@ void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse)
 	}
 }
 
+static
+u32 gui__popup_base_id(const gui_t *gui, const gui_popup_t *popup);
 
 static
 b32 gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 {
 	u32 slot;
 	gui_popup_t *popup = NULL;
+	u32 base_id;
 
 	if (gui__find_popup(gui, id, &slot)) {
 		popup = &gui->popups[slot];
@@ -4881,6 +4906,9 @@ b32 gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 
 	gui_mask_push(gui, x, y, w, h);
 	gui->layer->pri = GUI__LAYER_PRIORITY_POPUP;
+
+	base_id = gui__popup_base_id(gui, popup);
+	gui_widget_push_base_id(gui, base_id, &popup->prev_widget_base_id);
 
 	popup->id = id;
 	popup->mask.x = x;
@@ -4896,10 +4924,15 @@ b32 gui__popup_begin(gui_t *gui, u64 id, s32 x, s32 y, s32 w, s32 h)
 static
 void gui__popup_end(gui_t *gui)
 {
+	u32 base_id;
+
 	assert(gui->popup);
 
 	/* switch to new layer (mirroring interrupted layer) after last item */
 	gui_mask_pop(gui);
+
+	base_id = gui__popup_base_id(gui, gui->popup);
+	gui_widget_pop_base_id(gui, base_id, gui->popup->prev_widget_base_id);
 
 	if (gui->popup->close_at_end || gui->focus_next_widget)
 		gui__defocus_widget(gui, gui->popup->id);
@@ -5815,29 +5848,40 @@ void pgui_scroll_area_grid_end(gui_t *gui, gui_grid_t *grid)
 	pgui_grid_end(gui, grid);
 }
 
-/* IDs:  0......1........X.........UINT_MAX
- *       ^          ^         ^        ^
- *      skip      panels   popups   default
- *
- * 0 is skipped to ensure that no widget id is ever 0,
- * which is used as the invalid id */
-#define GUI__DEFAULT_PANEL_ID UINT_MAX
-#define GUI__POPUP_PANEL_ID  (UINT_MAX-1)
-#define GUI__MAX_PANEL_ID    (UINT_MAX-1-GUI_POPUP_STACK_SIZE-1)
-
-u64 gui__widget_id(const gui_t *gui, u32 base_id, s32 x, s32 y)
+static
+u64 gui__widget_id(u32 base_id, s32 x, s32 y)
 {
 	return (((u64)x) << 48) | (((u64)y) << 32) | base_id;
 }
 
 u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
 {
-	if (gui->popup)
-		return gui__widget_id(gui, GUI__POPUP_PANEL_ID - (gui->popup - gui->popups), x, y);
-	else if (gui->panel)
-		return gui__widget_id(gui, gui->panel->id + 1, x, y);
-	else
-		return gui__widget_id(gui, GUI__DEFAULT_PANEL_ID, x, y);
+	return gui__widget_id(gui->base_id, x, y);
+}
+
+static
+u32 gui__popup_base_id(const gui_t *gui, const gui_popup_t *popup)
+{
+	const u32 slot = popup - gui->popups;
+	return GUI__MIN_POPUP_BASE_ID + slot;
+}
+
+static
+u32 gui__panel_base_id(const gui_panel_t *panel)
+{
+	return GUI__MIN_PANEL_BASE_ID + panel->id;
+}
+
+void gui_widget_push_base_id(gui_t *gui, u32 id, u32 *prev)
+{
+	*prev = gui->base_id;
+	gui->base_id = id;
+}
+
+void gui_widget_pop_base_id(gui_t *gui, u32 id, u32 prev)
+{
+	assert(gui->base_id == id);
+	gui->base_id = prev;
 }
 
 void gui_widget_focus_next(gui_t *gui)
@@ -7576,7 +7620,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 					p->x   = gui->mouse_pos.x - dim/2;
 					drag_y = gui->mouse_pos.y - dim/2;
 					p->y   = drag_y - p->h + dim;
-					gui->active_id = gui__widget_id(gui, p->id, p->x, drag_y);
+					gui->active_id = gui__widget_id(p->id, p->x, drag_y);
 					pgui__panel_compute_unscaled_dimensions(gui, panel);
 					panel_to_remove_from_tabs = p;
 				}
@@ -7722,6 +7766,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 {
 	const gui_panel_style_t *style = &gui->style.panel;
 	const b32 content_visible = pgui_panel_content_visible(panel);
+	const u32 base_id = gui__panel_base_id(panel);
 
 	assert(!gui->panel);
 
@@ -7749,6 +7794,8 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		panel->closed      = first->closed;
 		panel->collapsed   = first->collapsed;
 
+		gui_widget_push_base_id(gui, base_id, &panel->prev_widget_base_id);
+
 		gui->panel = panel;
 	} else if (panel->closed) {
 		return false;
@@ -7764,6 +7811,8 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 			 * it will fuck up the widget id's due to integer division rounding. */
 			pgui__panel_compute_scaled_dimensions(gui, panel);
 		}
+
+		gui_widget_push_base_id(gui, base_id, &panel->prev_widget_base_id);
 
 		gui->panel = panel;
 
@@ -7808,6 +7857,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	    || panel->w <= 0
 	    || panel->h <= 0) {
 		gui->panel = NULL;
+		gui_widget_pop_base_id(gui, base_id, panel->prev_widget_base_id);
 		return false;
 	}
 
@@ -7876,6 +7926,7 @@ void pgui_panel_toggle(gui_t *gui, gui_panel_t *panel)
 
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 {
+	const u32 base_id = gui__panel_base_id(panel);
 	b32 contains_mouse;
 
 	assert(gui->panel == panel);
@@ -7899,6 +7950,8 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 
 	if (contains_mouse && !mouse_covered(gui))
 		mouse_cover(gui, gui_widget_id(gui, ~0, ~0));
+
+	gui_widget_pop_base_id(gui, base_id, panel->prev_widget_base_id);
 
 	gui->panel = NULL;
 }
