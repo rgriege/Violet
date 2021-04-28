@@ -4849,8 +4849,7 @@ void gui__popup_position(const gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 }
 
 static
-void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse,
-                          s32 px, s32 py, s32 pw, s32 ph)
+void gui__popup_btn_logic(gui_t *gui, u64 id, b32 contains_mouse)
 {
 	const b32 mouse_pos_can_defocus = !contains_mouse
 	                               && !mouse__covered_by_popup(gui);
@@ -4957,7 +4956,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	assert(gui->dropdown.id == 0); /* cannot nest dropdowns */
 
 	gui__popup_position(gui, x, y, w, h, pw, ph, &px, &py);
-	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
+	gui__popup_btn_logic(gui, id, contains_mouse);
 
 	if (gui_widget_focused(gui, id) && !gui->lock && gui->key_repeat.triggered) {
 		if (gui__key_up(gui) && *val > 0) {
@@ -5243,7 +5242,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		py = y - ph;
 	}
 
-	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
+	gui__popup_btn_logic(gui, id, contains_mouse);
 
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.dropdown.btn);
@@ -5429,7 +5428,7 @@ b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	color_t color = colorf_to_color(c);
 
 	gui__popup_position(gui, x, y, w, h, pw, ph, &px, &py);
-	gui__popup_btn_logic(gui, id, contains_mouse, px, py, pw, ph);
+	gui__popup_btn_logic(gui, id, contains_mouse);
 
 	render_state = gui__widget_render_state(gui, id, false, false, contains_mouse);
 
