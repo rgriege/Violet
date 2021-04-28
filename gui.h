@@ -5612,6 +5612,7 @@ void gui_color_picker_end(gui_t *gui)
 	assert(gui->popup->id != 0);
 	assert(gui->popup->id == gui->focus_ids[gui->popup - gui->popups]);
 	pgui_grid_end(gui, &gui->popup->grid);
+	gui->popup->close_at_end = false; /* stay open even if a button was pressed */
 	gui__popup_end(gui);
 }
 
