@@ -2559,8 +2559,8 @@ m3f gui_texture_get_transform(const gui_texture_t *texture, s32 x, s32 y,
                               r32 sx, r32 sy, r32 rotation)
 {
 	const v2f dim = {
-		((r32)texture->width) * sx,
-		((r32)texture->height) * sy 
+		((r32)texture->width)  * fabsf(sx),
+		((r32)texture->height) * fabsf(sy),
 	};
 
 	m3f transform = m3f_init_translation((v2f){ x, y });
@@ -2570,6 +2570,20 @@ m3f gui_texture_get_transform(const gui_texture_t *texture, s32 x, s32 y,
 		transform = m3f_mul_m3(transform, m3f_init_translation(center));
 		transform = m3f_mul_m3(transform, m3f_init_rotation(rotation));
 		transform = m3f_mul_m3(transform, m3f_init_translation(v2f_inverse(center)));
+	}
+
+	if (sx < 0.f) {
+		const v2f s = { -1.f, 1.f };
+		const v2f d = { -dim.x, 0.f };
+		transform = m3f_mul_m3(transform, m3f_init_scale(s));
+		transform = m3f_mul_m3(transform, m3f_init_translation(d));
+	}
+
+	if (sy < 0.f) {
+		const v2f s = { 1.f, -1.f };
+		const v2f d = { 0.f, -dim.y };
+		transform = m3f_mul_m3(transform, m3f_init_scale(s));
+		transform = m3f_mul_m3(transform, m3f_init_translation(d));
 	}
 
 	return m3f_mul_m3(transform, m3f_init_scale(dim));
