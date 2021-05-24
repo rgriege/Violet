@@ -29,6 +29,7 @@ typedef union
 #define gi_lightblue    { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff }
 #define gi_medblue      { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff }
 #define gi_orange       { .r=0xff, .g=0x92, .b=0x1e, .a=0xff }
+#define gi_medred       { .r=0xff, .g=0x63, .b=0x63, .a=0xff };
 #define gi_red          { .r=0xff, .g=0,    .b=0,    .a=0xff }
 #define gi_yellow       { .r=0xff, .g=0xff, .b=0,    .a=0xff }
 #define gi_cyan         { .r=0x00, .g=0xff, .b=0xff, .a=0xff }
@@ -47,6 +48,7 @@ extern const color_t g_green;
 extern const color_t g_lightblue;
 extern const color_t g_medblue;
 extern const color_t g_orange;
+extern const color_t g_medred;
 extern const color_t g_red;
 extern const color_t g_yellow;
 extern const color_t g_cyan;
@@ -91,6 +93,7 @@ const color_t g_green     = gi_green;
 const color_t g_lightblue = gi_lightblue;
 const color_t g_medblue   = gi_medblue;
 const color_t g_orange    = gi_orange;
+const color_t g_medred    = gi_medred;
 const color_t g_red       = gi_red;
 const color_t g_yellow    = gi_yellow;
 const color_t g_cyan      = gi_cyan;
