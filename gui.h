@@ -613,6 +613,8 @@ b32  pgui_color_picker(gui_t *gui, s32 pw, s32 ph, colorf_t *c);
 b32  pgui_color_picker8(gui_t *gui, s32 pw, s32 ph, color_t *c);
 void pgui_scroll_area_begin(gui_t *gui, gui_scroll_area_t *scroll_area);
 void pgui_scroll_area_end(gui_t *gui, gui_scroll_area_t *scroll_area);
+b32 gui_has_drop_file(const gui_t *gui);
+const char *gui_drop_file_buf(const gui_t *gui);
 
 
 typedef struct gui_tree_node
@@ -4436,6 +4438,11 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 const char *gui_npt_val_buf(const gui_t *gui)
 {
 	return gui->npt.val_buf;
+}
+
+const char *gui_drop_file_buf(const gui_t *gui)
+{
+	return gui->drop_file;
 }
 
 char *gui_npt_val_buf_mut(gui_t *gui)
