@@ -3,13 +3,15 @@
 
 /* C strings */
 char *strtrim(char *str);
+char *strext(char *dst, const char *src, u32 n, char **end, u32 *rem);
+void  stradv(const char *str, u32 n, char **end, u32 *rem);
 char *sprint_u32(char *buf, u32 n, u32 val);
 char *sprint_s32(char *buf, u32 n, s32 val);
 char *sprint_s64(char *buf, u32 n, s64 val);
 char *sprint_r32(char *buf, u32 n, r32 val, u32 dec);
 
 /* Version of strncpy that ensures dest (size bytes) is null-terminated. */
-char* strncpy_nt(char* dst, const char* src, size_t size);
+char* strncpy_nt(char *dst, const char *src, size_t size);
 #define strbcpy(dst, src) strncpy_nt(dst, src, sizeof(dst))
 
 /* Immediate strings - single string buffer for immediate use.
@@ -77,6 +79,29 @@ char *strtrim(char *str)
 	for (size_t i = 0; i <= sz - n; ++i)
 		str[i] = str[i+n];
 	return str;
+}
+
+char *strext(char *dst, const char *src, u32 n, char **end, u32 *rem)
+{
+	assert(n > 0);
+	const u32 len = (u32)strlen(src);
+	const u32 adv = (len == 0 || n <= 1)
+	              ? 0 : min(len, n - 1);
+	memcpy(dst, src, adv);
+	dst[adv] = 0;
+	*end = dst + adv;
+	*rem = n   - adv;
+	assert(*rem > 0);
+	return dst;
+}
+
+void stradv(const char *str, u32 n, char **end, u32 *rem)
+{
+	const u32 len = (u32)strlen(str);
+	assert(len < n);
+	*end = (char*)str + len;
+	*rem = n          - len;
+	assert(*rem > 0);
 }
 
 static
