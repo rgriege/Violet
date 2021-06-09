@@ -111,6 +111,7 @@ typedef struct font_t
 	s32 num_glyphs;
 	gui_font_metrics_t metrics;
 	void *char_info;
+	void *index_map;
 	gui_texture_t texture;
 } font_t;
 
@@ -663,57 +664,146 @@ void img_destroy(gui_img_t *img)
 	texture_destroy(img);
 }
 
+/* copied + modified from stbtt_PackFontRangesGatherRects */
 static
-int rgtt_PackFontRanges(stbtt_pack_context *spc, stbtt_fontinfo *info,
-                        stbtt_pack_range *ranges, int num_ranges)
+void vltt_PackFontAllGatherRects(stbtt_pack_context *spc, const stbtt_fontinfo *info,
+                                 int font_size, stbrp_rect *rects)
 {
-	int i, j, n, return_value = 1;
+	int missing_glyph_added = 0;
+	float fh = font_size;
+	float scale = fh > 0 ? stbtt_ScaleForPixelHeight(info, fh)
+	                     : stbtt_ScaleForMappingEmToPixels(info, -fh);
+
+	for (int glyph = 0; glyph < info->numGlyphs; ++glyph) {
+		int x0,y0,x1,y1;
+		if (glyph == 0 && (spc->skip_missing || missing_glyph_added)) {
+			rects[glyph].w = rects[glyph].h = 0;
+		} else {
+			stbtt_GetGlyphBitmapBoxSubpixel(info,glyph,
+			                                scale * spc->h_oversample,
+			                                scale * spc->v_oversample,
+			                                0,0,
+			                                &x0,&y0,&x1,&y1);
+			rects[glyph].w = (stbrp_coord) (x1-x0 + spc->padding + spc->h_oversample-1);
+			rects[glyph].h = (stbrp_coord) (y1-y0 + spc->padding + spc->v_oversample-1);
+			if (glyph == 0)
+				missing_glyph_added = 1;
+		}
+	}
+}
+
+/* copied + modified from stbtt_PackFontRangesRenderIntoRects */
+static
+int vltt_PackFontAllRenderIntoRects(stbtt_pack_context *spc, const stbtt_fontinfo *info,
+                                    int font_size, stbrp_rect *rects,
+                                    stbtt_packedchar *chardata)
+{
+	int missing_glyph = -1, return_value = 1;
+	float fh = font_size;
+	float scale = fh > 0 ? stbtt_ScaleForPixelHeight(info, fh)
+	                     : stbtt_ScaleForMappingEmToPixels(info, -fh);
+
+	for (int glyph = 0; glyph < info->numGlyphs; ++glyph) {
+		float recip_h,recip_v,sub_x,sub_y;
+		recip_h = 1.0f / spc->h_oversample;
+		recip_v = 1.0f / spc->v_oversample;
+		sub_x = stbtt__oversample_shift(spc->h_oversample);
+		sub_y = stbtt__oversample_shift(spc->v_oversample);
+		stbrp_rect *r = &rects[glyph];
+		if (r->was_packed && r->w != 0 && r->h != 0) {
+			stbtt_packedchar *bc = &chardata[glyph];
+			int advance, lsb, x0,y0,x1,y1;
+			stbrp_coord pad = (stbrp_coord) spc->padding;
+
+			// pad on left and top
+			r->x += pad;
+			r->y += pad;
+			r->w -= pad;
+			r->h -= pad;
+			stbtt_GetGlyphHMetrics(info, glyph, &advance, &lsb);
+			stbtt_GetGlyphBitmapBox(info, glyph,
+			                        scale * spc->h_oversample,
+			                        scale * spc->v_oversample,
+			                        &x0,&y0,&x1,&y1);
+			stbtt_MakeGlyphBitmapSubpixel(info,
+			                              spc->pixels + r->x + r->y*spc->stride_in_bytes,
+			                              r->w - spc->h_oversample+1,
+			                              r->h - spc->v_oversample+1,
+			                              spc->stride_in_bytes,
+			                              scale * spc->h_oversample,
+			                              scale * spc->v_oversample,
+			                              0,0,
+			                              glyph);
+
+			if (spc->h_oversample > 1)
+				stbtt__h_prefilter(spc->pixels + r->x + r->y*spc->stride_in_bytes,
+				                   r->w, r->h, spc->stride_in_bytes,
+				                   spc->h_oversample);
+
+			if (spc->v_oversample > 1)
+				stbtt__v_prefilter(spc->pixels + r->x + r->y*spc->stride_in_bytes,
+				                   r->w, r->h, spc->stride_in_bytes,
+				                   spc->v_oversample);
+
+			bc->x0       = (stbtt_int16)  r->x;
+			bc->y0       = (stbtt_int16)  r->y;
+			bc->x1       = (stbtt_int16) (r->x + r->w);
+			bc->y1       = (stbtt_int16) (r->y + r->h);
+			bc->xadvance =                scale * advance;
+			bc->xoff     =       (float)  x0 * recip_h + sub_x;
+			bc->yoff     =       (float)  y0 * recip_v + sub_y;
+			bc->xoff2    =                (x0 + r->w) * recip_h + sub_x;
+			bc->yoff2    =                (y0 + r->h) * recip_v + sub_y;
+
+			if (glyph == 0)
+				missing_glyph = glyph;
+		} else if (spc->skip_missing) {
+			return_value = 0;
+		} else if (r->was_packed && r->w == 0 && r->h == 0 && missing_glyph >= 0) {
+			chardata[glyph] = chardata[missing_glyph];
+		} else {
+			return_value = 0; // if any fail, report failure
+		}
+	}
+
+	return return_value;
+}
+
+/* Instead of packing individual ranges, pack all the codepoints that are in the file.
+ * Since the stbtt interface wasn't designed for this use, I had to copy+paste+refactor
+ * a few functions from the library.  A cleaner approach would be to build a list
+ * of ranges from the font's character mapping, but I don't understand the TTF file
+ * format well enough to do that.
+ *
+ * This function is copied + modified from stbtt_PackFontRanges */
+static
+int vltt_PackFontAll(stbtt_pack_context *spc, stbtt_fontinfo *info,
+                     int font_size, stbtt_packedchar *chardata)
+{
+	const int n = info->numGlyphs;
+	int return_value = 1;
 	stbrp_rect *rects;
 
 	// flag all characters as NOT packed
-	for (i=0; i < num_ranges; ++i)
-		for (j=0; j < ranges[i].num_chars; ++j)
-			ranges[i].chardata_for_range[j].x0 =
-				ranges[i].chardata_for_range[j].y0 =
-				ranges[i].chardata_for_range[j].x1 =
-				ranges[i].chardata_for_range[j].y1 = 0;
-
-	n = 0;
-	for (i = 0; i < num_ranges; ++i)
-		n += ranges[i].num_chars;
+	for (int i = 0; i < n; ++i)
+		chardata[i].x0 = chardata[i].y0 = chardata[i].x1 = chardata[i].y1 = 0;
 
 	rects = STBTT_malloc(sizeof(*rects) * n, spc->user_allocator_context);
 	if (!rects)
 		return 0;
 
-	n = stbtt_PackFontRangesGatherRects(spc, info, ranges, num_ranges, rects);
+	vltt_PackFontAllGatherRects(spc, info, font_size, rects);
 
 	stbtt_PackFontRangesPackRects(spc, rects, n);
 
-	return_value = stbtt_PackFontRangesRenderIntoRects(spc, info, ranges,
-	                                                   num_ranges, rects);
+	return_value = vltt_PackFontAllRenderIntoRects(spc, info, font_size, rects, chardata);
 
 	STBTT_free(rects, spc->user_allocator_context);
 	return return_value;
 }
 
 static
-int rgtt_PackFontRange(stbtt_pack_context *spc, stbtt_fontinfo *info,
-                       float font_size, int first_unicode_codepoint_in_range,
-                       int num_chars_in_range,
-                       stbtt_packedchar *chardata_for_range)
-{
-	stbtt_pack_range range;
-	range.first_unicode_codepoint_in_range = first_unicode_codepoint_in_range;
-	range.array_of_unicode_codepoints = NULL;
-	range.num_chars                   = num_chars_in_range;
-	range.chardata_for_range          = chardata_for_range;
-	range.font_size                   = font_size;
-	return rgtt_PackFontRanges(spc, info, &range, 1);
-}
-
-static
-int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_t *tex)
+int vltt_PackFont(stbtt_fontinfo *info, int font_size, stbtt_packedchar *chardata, gui_texture_t *tex)
 {
 #ifdef __EMSCRIPTEN__
 	const s32 bpp = 4;
@@ -738,8 +828,7 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 
 		stbtt_PackSetOversampling(&context, h_oversample, 1);
 
-		if (rgtt_PackFontRange(&context, info, font_size, 0,
-		                       info->numGlyphs, char_info)) {
+		if (vltt_PackFontAll(&context, info, font_size, chardata)) {
 			stbtt_PackEnd(&context); // not really necessary, handled by memory mark
 			packed = true;
 		} else if (w < 2048) {
@@ -776,6 +865,63 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 	return packed;
 }
 
+/* See https://docs.microsoft.com/en-us/typography/opentype/spec/cmap */
+static
+size_t font__index_map_size(const stbtt_fontinfo *info)
+{
+	stbtt_uint8 *data = info->data;
+	stbtt_uint32 index_map = info->index_map;
+	stbtt_uint16 format = ttUSHORT(data + index_map + 0);
+
+	if (format == 0) { // byte encoding table
+		return ttUSHORT(data + index_map + 2);
+	} else if (format == 2) { // high-byte mapping through table
+		return ttUSHORT(data + index_map + 2);
+	} else if (format == 4) { // segment mapping to delta values
+		return ttUSHORT(data + index_map + 2);
+	} else if (format == 6) { // trimmed table mapping
+		return ttUSHORT(data + index_map + 2);
+	} else if (format == 8) { // mixed 16-bit and 32-bit coverage
+		return ttULONG(data + index_map + 4);
+	} else if (format == 10) { // trimmed array
+		return ttULONG(data + index_map + 4);
+	} else if (format == 12) { // segmented coverage
+		return ttULONG(data + index_map + 4);
+	} else if (format == 13) { // many-to-one range mappings
+		return ttULONG(data + index_map + 4);
+	} else if (format == 14) { // unicode variation sequences
+		return ttULONG(data + index_map + 2);
+	} else {
+		assert(0);
+		return 0;
+	}
+}
+
+static
+void font__index_map_copy(font_t *f, const stbtt_fontinfo *info, allocator_t *alloc)
+{
+	stbtt_uint8 *data = info->data;
+	stbtt_uint32 index_map = info->index_map;
+	size_t size = font__index_map_size(info);
+
+	f->index_map = amalloc(size, alloc);
+	memcpy(f->index_map, data + index_map, size);
+}
+
+static
+int font__get_index_for_codepoint(const font_t *f, s32 codepoint)
+{
+	/* NOTE(rgriege): kinda hacky - only works as long as stbtt_FindGlyphIndex
+	 * doesn't use any other fields from info.  Storing our own hash map instead
+	 * of the TTF's index map may be faster & more robust. */
+	stbtt_fontinfo info = {
+		.data = f->index_map,
+		.index_map = 0,
+	};
+	return stbtt_FindGlyphIndex(&info, codepoint);
+}
+
+
 b32 font_load(font_t *f, const char *filename, s32 size)
 {
 	b32 retval = false;
@@ -796,8 +942,10 @@ b32 font_load(font_t *f, const char *filename, s32 size)
 	log_debug("packing %d glyphs for %s:%d", f->num_glyphs, filename, size);
 	f->char_info = amalloc(f->num_glyphs * sizeof(stbtt_packedchar), g_allocator);
 
-	if (!rgtt_Pack(&info, size, f->char_info, &f->texture))
+	if (!vltt_PackFont(&info, size, f->char_info, &f->texture))
 		goto err_pack;
+
+	font__index_map_copy(f, &info, g_allocator);
 
 	f->filename = filename;
 	f->size = size;
@@ -820,6 +968,7 @@ out:
 
 void font_destroy(font_t *f)
 {
+	afree(f->index_map, g_allocator);
 	afree(f->char_info, g_allocator);
 	texture_destroy(&f->texture);
 }
@@ -1041,13 +1190,14 @@ b32 window__get_char_quad(void *handle, s32 codepoint, r32 x, r32 y, gui_char_qu
 #ifndef NDEBUG
 	const r32 y0 = y;
 #endif
+	const int index = font__get_index_for_codepoint(font, codepoint);
 	stbtt_aligned_quad q;
 
-	if (codepoint >= font->num_glyphs)
+	if (index == 0)
 		return false;
 
 	stbtt_GetPackedQuad(font->char_info, font->texture.width, font->texture.height,
-	                    codepoint, &x, &y, &q, 0);
+	                    index, &x, &y, &q, 0);
 	assert(y0 == y);
 
 	/* NOTE(rgriege): stbtt assumes y=0 at top, but for violet y=0 is at bottom */
