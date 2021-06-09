@@ -696,12 +696,14 @@ void vltt_PackFontAllGatherRects(stbtt_pack_context *spc, const stbtt_fontinfo *
 static
 int vltt_PackFontAllRenderIntoRects(stbtt_pack_context *spc, const stbtt_fontinfo *info,
                                     int font_size, stbrp_rect *rects,
-                                    stbtt_packedchar *chardata)
+                                    stbtt_packedchar *chardata, int *num_unpacked)
 {
 	int missing_glyph = -1, return_value = 1;
 	float fh = font_size;
 	float scale = fh > 0 ? stbtt_ScaleForPixelHeight(info, fh)
 	                     : stbtt_ScaleForMappingEmToPixels(info, -fh);
+
+	*num_unpacked = 0;
 
 	for (int glyph = 0; glyph < info->numGlyphs; ++glyph) {
 		float recip_h,recip_v,sub_x,sub_y;
@@ -759,10 +761,12 @@ int vltt_PackFontAllRenderIntoRects(stbtt_pack_context *spc, const stbtt_fontinf
 				missing_glyph = glyph;
 		} else if (spc->skip_missing) {
 			return_value = 0;
+			++*num_unpacked;
 		} else if (r->was_packed && r->w == 0 && r->h == 0 && missing_glyph >= 0) {
 			chardata[glyph] = chardata[missing_glyph];
 		} else {
 			return_value = 0; // if any fail, report failure
+			++*num_unpacked;
 		}
 	}
 
@@ -778,7 +782,7 @@ int vltt_PackFontAllRenderIntoRects(stbtt_pack_context *spc, const stbtt_fontinf
  * This function is copied + modified from stbtt_PackFontRanges */
 static
 int vltt_PackFontAll(stbtt_pack_context *spc, stbtt_fontinfo *info,
-                     int font_size, stbtt_packedchar *chardata)
+                     int font_size, stbtt_packedchar *chardata, int *num_unpacked)
 {
 	const int n = info->numGlyphs;
 	int return_value = 1;
@@ -796,7 +800,7 @@ int vltt_PackFontAll(stbtt_pack_context *spc, stbtt_fontinfo *info,
 
 	stbtt_PackFontRangesPackRects(spc, rects, n);
 
-	return_value = vltt_PackFontAllRenderIntoRects(spc, info, font_size, rects, chardata);
+	return_value = vltt_PackFontAllRenderIntoRects(spc, info, font_size, rects, chardata, num_unpacked);
 
 	STBTT_free(rects, spc->user_allocator_context);
 	return return_value;
@@ -816,6 +820,7 @@ int vltt_PackFont(stbtt_fontinfo *info, int font_size, stbtt_packedchar *chardat
 	s32 h_oversample = 3;
 	stbtt_pack_context context;
 	b32 packed = false, failed = false;
+	s32 num_unpacked = 0;
 
 	while (!packed && !failed) {
 		temp_memory_restore(mark);
@@ -828,17 +833,31 @@ int vltt_PackFont(stbtt_fontinfo *info, int font_size, stbtt_packedchar *chardat
 
 		stbtt_PackSetOversampling(&context, h_oversample, 1);
 
-		if (vltt_PackFontAll(&context, info, font_size, chardata)) {
+		if (vltt_PackFontAll(&context, info, font_size, chardata, &num_unpacked)) {
 			stbtt_PackEnd(&context); // not really necessary, handled by memory mark
 			packed = true;
-		} else if (w < 2048) {
-			w *= 2;
-		} else if (h_oversample > 1) {
-			h_oversample = 1;
-		} else if (h < 2048) {
-			h *= 2;
 		} else {
-			failed = true; // fail on fonts needing too large a texture
+			const s32 num_glyphs_packed = info->numGlyphs - num_unpacked;
+			s32 est_glyphs_packed = num_glyphs_packed;
+			s32 est_glyphs_packed_prev;
+			do {
+				est_glyphs_packed_prev = est_glyphs_packed;
+				if (w < 2048) {
+					w *= 2;
+					est_glyphs_packed *= 2;
+				} else if (h_oversample > 1) {
+					const s32 old_h_oversample = h_oversample;
+					h_oversample = 1;
+					est_glyphs_packed *= old_h_oversample;
+				} else if (h < 2048) {
+					h *= 2;
+					est_glyphs_packed *= 2;
+				}
+			} while (   est_glyphs_packed < info->numGlyphs / 2
+			         && est_glyphs_packed > est_glyphs_packed_prev);
+			// fail on fonts needing too large a texture,
+			// but try one last time if we've changed a parameter
+			failed = (est_glyphs_packed == num_glyphs_packed);
 		}
 	}
 
