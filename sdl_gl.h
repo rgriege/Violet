@@ -746,7 +746,7 @@ int rgtt_Pack(stbtt_fontinfo *info, int font_size, void *char_info, gui_texture_
 			w *= 2;
 		} else if (h < 2048) {
 			h *= 2;
-		} else if (h_oversample > 3) {
+		} else if (h_oversample > 1) {
 			h_oversample = 1;
 		} else {
 			failed = true; // fail on fonts needing too large a texture
