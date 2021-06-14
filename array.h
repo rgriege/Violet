@@ -20,6 +20,7 @@ typedef struct array__head
 } array__head;
 
 #define array(type) type*
+#define ENFORCE_ARRAY_OF_ARRAY(a)  ((void)(**(a)), (array(array(void)))(a))
 
 #define array__get_head(a)         (((array__head*)(a)) - 1)
 #define array__allocator(a)        (array__get_head(a)->allocator)
@@ -29,6 +30,7 @@ typedef struct array__head
 #define array_init_ex(a, cap, alc) (a)=array__create(cap, sizeof(*a), alc \
                                                      MEMCALL_LOCATION)
 #define array_destroy(a)           afree(array__get_head(a), array__allocator(a))
+#define array_array_destroy(a)     array__array_destroy(ENFORCE_ARRAY_OF_ARRAY(a))
 
 #define array__esz(a)              (sizeof(*(a)))
 #define array_sz(a)                (array__get_head(a)->sz)
@@ -106,6 +108,7 @@ ARRDEF array_size_t array__index(void *a, const void *userp, size_t sz,
                                  int(*cmp)(const void *, const void *));
 ARRDEF void *array__upper(void *a, const void *elem, size_t sz,
                           int(*cmp)(const void *, const void*));
+ARRDEF void  array__array_destroy(array(array(void)) a);
 
 #endif
 
@@ -237,6 +240,13 @@ ARRDEF void *array__upper(void *a, const void *elem, size_t sz,
 		mid = (right+left)/2;
 	}
 	return res;
+}
+
+ARRDEF void array__array_destroy(array(array(void)) a)
+{
+	array_foreach(a, array(void), b)
+		array_destroy(*b);
+	array_destroy(a);
 }
 
 #undef ARRAY_IMPLEMENTATION
