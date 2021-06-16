@@ -305,6 +305,7 @@ int  sort_r32_asc(const void *lhs, const void *rhs);
 int  sort_r32_desc(const void *lhs, const void *rhs);
 
 int find_u32(const void *lhs, const void *rhs);
+int find_s32(const void *lhs, const void *rhs);
 
 void buf_insert_(void *p, size_t idx, size_t nmemb, size_t size);
 #define buf_insert(p, idx, val, nmemb) \
@@ -916,6 +917,13 @@ int find_u32(const void *lhs_, const void *rhs_)
 {
 	const u32 lhs = *(const u32*)lhs_;
 	const u32 rhs = *(const u32*)rhs_;
+	return lhs == rhs ? 0 : 1;
+}
+
+int find_s32(const void *lhs_, const void *rhs_)
+{
+	const s32 lhs = *(const u32*)lhs_;
+	const s32 rhs = *(const u32*)rhs_;
 	return lhs == rhs ? 0 : 1;
 }
 
