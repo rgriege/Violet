@@ -274,6 +274,7 @@ FMDEF b32   polyf_is_convex(const v2f *v, u32 n);
 FMDEF b32   polyf_is_concave(const v2f *v, u32 n);
 FMDEF b32   polyf_contains(const v2f *v, u32 n, v2f point);
 FMDEF void  polyf_bounding_box(const v2f *v, u32 n, box2f *box);
+FMDEF v2f   polyf_extent(const v2f *v, u32 n);
 FMDEF void  polyf_translate(v2f *v, u32 n, v2f delta);
 FMDEF void  polyf_transform(v2f *v, u32 n, const m3f mat);
 FMDEF ivalf polyf_project(const v2f *v, u32 n, v2f axis);
@@ -1588,6 +1589,13 @@ FMDEF void polyf_bounding_box(const v2f *v, u32 n, box2f *box)
 	box2f_from_point(box, *v++);
 	for (const v2f *vn = v+n-1; v != vn; ++v)
 		box2f_extend_point(box, *v);
+}
+
+FMDEF v2f polyf_extent(const v2f *v, u32 n)
+{
+	box2f bbox;
+	polyf_bounding_box(v, n, &bbox);
+	return box2f_get_extent(bbox);
 }
 
 FMDEF void polyf_translate(v2f *v, u32 n, v2f delta)
