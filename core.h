@@ -910,7 +910,7 @@ int sort_r32_desc(const void *lhs_, const void *rhs_)
 {
 	const r32 lhs = *(const r32*)lhs_;
 	const r32 rhs = *(const r32*)rhs_;
-  return (rhs > lhs) - (rhs < lhs);
+	return (rhs > lhs) - (rhs < lhs);
 }
 
 int find_u32(const void *lhs_, const void *rhs_)
