@@ -134,6 +134,18 @@ FMDEF m3f m3f_mul_m3(m3f lhs, m3f rhs);
 FMDEF v2f m3f_mul_v2(m3f m, v2f v);
 FMDEF b32 m3f_equal(m3f lhs, m3f rhs);
 
+/* 4D Vector */
+
+typedef union v4f
+{
+	struct { r32 x, y, z, w; };
+	struct { v2f xy; };
+	struct { v3f xyz; };
+	struct { r32 d[4]; };
+} v4f;
+
+FMDEF v4f v4f_create_xyz_w(v3f xyz, r32 w);
+
 /* 4x4 Matrix */
 
 typedef struct m4f
@@ -154,6 +166,8 @@ FMDEF m4f  m4f_orthographic(r32 left, r32 right, r32 bottom, r32 top,
 FMDEF m4f  m4f_look_at(v3f eye, v3f center, v3f up);
 FMDEF m4f  m4f_mul_m4(m4f lhs, m4f rhs);
 FMDEF v3f  m4f_mul_v3(m4f lhs, v3f rhs);
+FMDEF v3f  m4f_mul_v3w(m4f lhs, v3f rhs, r32 w);
+FMDEF v4f  m4f_mul_v4(m4f lhs, v4f rhs);
 FMDEF m4f  m4f_scale(m4f m, v3f scale);
 FMDEF m4f  m4f_inverse(m4f m);
 FMDEF m4f  m4f_translate(m4f m, v3f diff);
@@ -723,6 +737,14 @@ FMDEF b32 m3f_equal(m3f lhs, m3f rhs)
 }
 
 
+/* 4D Vector */
+
+FMDEF v4f v4f_create_xyz_w(v3f xyz, r32 w)
+{
+	return (v4f){ .x = xyz.x, .y = xyz.y, .z = xyz.z, .w = w };
+}
+
+
 /* 4x4 Matrix */
 
 FMGDEF const m4f g_m4f_identity = {
@@ -845,13 +867,23 @@ FMDEF m4f m4f_mul_m4(m4f lhs, m4f rhs)
 
 FMDEF v3f m4f_mul_v3(m4f lhs, v3f rhs)
 {
-	v3f result;
-	r32 w;
-	result.x = lhs.v[0] * rhs.x + lhs.v[1] * rhs.y + lhs.v[2] * rhs.z + lhs.v[3];
-	result.y = lhs.v[4] * rhs.x + lhs.v[5] * rhs.y + lhs.v[6] * rhs.z + lhs.v[7];
-	result.z = lhs.v[8] * rhs.x + lhs.v[9] * rhs.y + lhs.v[10] * rhs.z + lhs.v[11];
-	w = lhs.v[12] * rhs.x + lhs.v[13] * rhs.y + lhs.v[14] * rhs.z + lhs.v[15];
-	return v3f_scale(result, 1 / w);
+	v4f result = m4f_mul_v4(lhs, v4f_create_xyz_w(rhs, 1.f));
+	return v3f_scale(result.xyz, 1.f / result.w);
+}
+
+FMDEF v3f m4f_mul_v3w(m4f lhs, v3f rhs, r32 w)
+{
+	return m4f_mul_v4(lhs, v4f_create_xyz_w(rhs, w)).xyz;
+}
+
+FMDEF v4f m4f_mul_v4(m4f lhs, v4f rhs)
+{
+	return (v4f) {
+		.x = lhs.v[ 0] * rhs.x + lhs.v[ 1] * rhs.y + lhs.v[ 2] * rhs.z + lhs.v[ 3] * rhs.w,
+		.y = lhs.v[ 4] * rhs.x + lhs.v[ 5] * rhs.y + lhs.v[ 6] * rhs.z + lhs.v[ 7] * rhs.w,
+		.z = lhs.v[ 8] * rhs.x + lhs.v[ 9] * rhs.y + lhs.v[10] * rhs.z + lhs.v[11] * rhs.w,
+		.w = lhs.v[12] * rhs.x + lhs.v[13] * rhs.y + lhs.v[14] * rhs.z + lhs.v[15] * rhs.w,
+	};
 }
 
 FMDEF m4f m4f_scale(m4f m, v3f scale)
