@@ -64,6 +64,8 @@ typedef struct box2i
 	v2i max;
 } box2i;
 
+IMGDECL const box2i g_box2i_empty;
+
 IMDEF void  box2i_from_point(box2i *b, v2i point);
 IMDEF void  box2i_from_center(box2i *b, v2i center, v2i half_dim);
 IMDEF void  box2i_from_dims(box2i *b, s32 left, s32 top, s32 right, s32 bottom);
@@ -259,6 +261,8 @@ IMDEF b32 ivali_overlaps_within(ivali lhs, ivali rhs, s32 error)
 }
 
 /* 2D Anti-aliased bounding box */
+
+IMGDEF const box2i g_box2i_empty = {0};
 
 IMDEF void box2i_from_point(box2i *box, v2i point)
 {
