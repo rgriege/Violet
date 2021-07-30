@@ -863,7 +863,7 @@ typedef struct gui_color_picker_style
 typedef struct gui_panel_style
 {
 	color_t bg_color;
-	color_t border_color;
+	gui_line_style_t    border;
 	gui_element_style_t titlebar;
 	gui_widget_style_t  drag;
 	gui_widget_style_t  tab;
@@ -1337,7 +1337,7 @@ const gui_style_t g_gui_style_default = {
 	.tree = gi__gui_tree_style_default,
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
-		.border_color = gi_grey128,
+		.border   = { .color = gi_grey128, .thickness = 1.f },
 		.titlebar = {
 			.line = gi__gui_line_style_default,
 			.text = gi__gui_text_style_default,
@@ -1547,7 +1547,7 @@ const gui_style_t g_gui_style_invis = {
 	.tree         = gi__gui_widget_style_invis,
 	.panel        = {
 		.bg_color          = gi_nocolor,
-		.border_color      = gi_nocolor,
+		.border            = { .color = gi_nocolor, .thickness = 1.f },
 		.drag              = gi__gui_widget_style_invis,
 		.tab               = gi__gui_widget_style_invis,
 		.titlebar          = gi__gui_element_style_invis,
@@ -3021,6 +3021,38 @@ void gui_tri(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 x2, s32 y2,
 		{ x2, y2 },
 	};
 	gui__poly(gui, poly, 3, GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
+}
+
+static
+void gui__rect_inset_border(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                            color_t fill, const gui_line_style_t *style)
+{
+	v2f poly[4] = {
+		{ x,     y },
+		{ x + w, y },
+		{ x + w, y + h },
+		{ x,     y + h },
+	};
+	gui__poly(gui, poly, 4, GUI_DRAW_TRIANGLE_FAN, fill, g_nocolor, true);
+	if (!color_equal(style->color, g_nocolor)) {
+		const r32 offset = style->thickness / 2.f;
+
+		gui_line_styled(gui,
+		                poly[0].x + offset, poly[0].y + offset,
+		                poly[1].x - offset, poly[1].y + offset, style);
+
+		gui_line_styled(gui,
+		                poly[1].x - offset, poly[1].y + offset * 3,
+		                poly[2].x - offset, poly[2].y - offset * 3, style);
+
+		gui_line_styled(gui,
+		                poly[2].x - offset, poly[2].y - offset,
+		                poly[3].x + offset, poly[3].y - offset, style);
+
+		gui_line_styled(gui,
+		                poly[3].x + offset, poly[3].y - offset * 3,
+		                poly[0].x + offset, poly[0].y + offset * 3, style);
+	}
 }
 
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke)
@@ -5510,7 +5542,7 @@ b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_grid_begin(gui, &gui->popup->grid, gx, gy, gw, gh);
 		/* NOTE(rgriege): shrink required to pass entire rect through layer */
-		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color, style->panel.border_color);
+		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color, style->panel.border.color);
 		return true;
 	} else {
 		return false;
@@ -7881,11 +7913,11 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		else if (was_dragging)
 			pgui__panel_stop_dragging(gui, panel);
 
-		if (panel->collapsed && !panel->split) {
+		if (panel->collapsed) {
 			/* background outline display */
 			const s32 h = gui_scale_val(gui, GUI_PANEL_TITLEBAR_HEIGHT);
-			gui_rect(gui, panel->x, panel->y + panel->h - h, panel->w, h,
-			         g_nocolor, style->border_color);
+			gui__rect_inset_border(gui, panel->x, panel->y + panel->h - h, panel->w, h,
+			                       g_nocolor, &style->border);
 		}
 
 		if (   dragging
@@ -7910,9 +7942,8 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	}
 
 	/* background outline display */
-	if (!panel->split)
-		gui_rect(gui, panel->x, panel->y, panel->w, panel->h,
-		         g_nocolor, style->border_color);
+	gui__rect_inset_border(gui, panel->x, panel->y, panel->w, panel->h,
+	                       g_nocolor, &style->border);
 
 	if (panel->flags & GUI_PANEL_SCROLLABLE) {
 		const s32 body_height = pgui_panel_body_height(gui, panel);
