@@ -270,7 +270,13 @@ size_t pgb__page_max_size_for_alloc(size_t alloc_size)
 	 * This is unlikely to occur as the smallest page that fits will be used. */
 	const size_t max_alignment = pgb__round_up_power_of_two(alloc_size) << 1;
 	const size_t max_page_size = max_alignment * PGB__PAGE_SLOTS;
-	return max_page_size > PGB_MIN_PAGE_SIZE ? max_page_size : PGB_MIN_PAGE_SIZE;
+	/* check for overflow */
+	if ((alloc_size & (0x3 << 30)) || max_alignment > SIZE_MAX / PGB__PAGE_SLOTS)
+		return SIZE_MAX;
+	else if (max_page_size < PGB_MIN_PAGE_SIZE)
+		return PGB_MIN_PAGE_SIZE;
+	else
+		return max_page_size;
 }
 
 static
