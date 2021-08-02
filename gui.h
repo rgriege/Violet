@@ -1337,7 +1337,7 @@ const gui_style_t g_gui_style_default = {
 	.tree = gi__gui_tree_style_default,
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
-		.border   = { .color = g_nocolor, .thickness = 1.f },
+		.border   = { .color = gi_nocolor, .thickness = 1.f },
 		.titlebar = {
 			.line = gi__gui_line_style_default,
 			.text = gi__gui_text_style_default,
