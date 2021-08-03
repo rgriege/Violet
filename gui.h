@@ -387,6 +387,7 @@ typedef struct gui_widget_bounds
 void gui_widget_bounds_push(gui_t *gui, gui_widget_bounds_t *bounds, b32 propogate);
 void gui_widget_bounds_pop(gui_t *gui, gui_widget_bounds_t *bounds, b32 propogate);
 void gui_widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
+void gui_widget_bounds_get(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 typedef struct gui_scroll_area
 {
@@ -2430,6 +2431,11 @@ void gui_widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 	box2i box;
 	box2i_from_xywh(&box, x, y, w, h);
 	box2i_extend_box(&gui->widget_bounds->children, box);
+}
+
+void gui_widget_bounds_get(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	box2i_to_xywh(gui->widget_bounds->children, x, y, w, h);
 }
 
 b32 gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type)
