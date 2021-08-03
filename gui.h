@@ -903,6 +903,14 @@ extern const gui_padding_style_t g_gui_padding_none;
 gui_style_t *gui_style(gui_t *gui);
 const gui_style_t *gui_style_c(const gui_t *gui);
 void         gui_style_set(gui_t *gui, const gui_style_t *style);
+#define gui_style_set_widget(gui, widget, loc, val) \
+	do { \
+		gui_style(gui)->widget.inactive.loc = (val); \
+		gui_style(gui)->widget.hot.loc =      (val); \
+		gui_style(gui)->widget.active.loc =   (val); \
+		gui_style(gui)->widget.disabled.loc = (val); \
+	} while (0)
+
 
 /* Temporarily modifying styles is done through the style stack.  To change
  * a value in the style struct, you can push and pop values for struct members
