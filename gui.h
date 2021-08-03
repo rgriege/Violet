@@ -245,6 +245,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt, color_t c,
 void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph);
 s32  gui_txt_width(const gui_t *gui, const char *txt, s32 size);
+gui_fonts_t gui_get_fonts(const gui_t *gui);
 
 void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_mask_pop(gui_t *gui);
@@ -3565,6 +3566,11 @@ s32 gui_txt_width(const gui_t *gui, const char *txt, s32 size)
 			p = pnext;
 	}
 	return width;
+}
+
+gui_fonts_t gui_get_fonts(const gui_t *gui)
+{
+	return gui->fonts;
 }
 
 static
