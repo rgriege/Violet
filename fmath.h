@@ -209,6 +209,7 @@ FMDEF void box2f_clamp_point(box2f b, v2f *p);
 FMDEF b32  box2f_overlaps(box2f lhs, box2f rhs);
 FMDEF b32  box2f_eq(box2f lhs, box2f rhs);
 FMDEF void box2f_extend_point(box2f *b, v2f p);
+FMDEF void box2f_extend_points(box2f *b, const v2f *p, u32 n);
 FMDEF void box2f_extend_box(box2f *b, box2f other);
 FMDEF void box2f_extend_scalar(box2f *b, r32 dim);
 FMDEF void box2f_translate(box2f *b, v2f v);
@@ -1194,6 +1195,12 @@ FMDEF void box2f_extend_point(box2f *box, v2f point)
 	                fmaxf(box->max.x, point.x), fminf(box->min.y, point.y));
 }
 
+FMDEF void box2f_extend_points(box2f *box, const v2f *p, u32 n)
+{
+	for (u32 i = 0; i < n; ++i)
+		box2f_extend_point(box, p[i]);
+}
+
 FMDEF void box2f_extend_box(box2f *lhs, box2f rhs)
 {
 	box2f_extend_point(lhs, rhs.min);
@@ -1586,9 +1593,9 @@ FMDEF b32 polyf_contains(const v2f *v, u32 n, v2f point)
 
 FMDEF void polyf_bounding_box(const v2f *v, u32 n, box2f *box)
 {
-	box2f_from_point(box, *v++);
-	for (const v2f *vn = v+n-1; v != vn; ++v)
-		box2f_extend_point(box, *v);
+	assert(n > 0);
+	box2f_from_point(box, v[0]);
+	box2f_extend_points(box, &v[1], n-1);
 }
 
 FMDEF v2f polyf_extent(const v2f *v, u32 n)
