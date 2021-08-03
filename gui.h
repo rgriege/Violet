@@ -898,6 +898,7 @@ typedef struct gui_style
 
 extern const gui_style_t g_gui_style_default;
 extern const gui_style_t g_gui_style_invis;
+extern const gui_padding_style_t g_gui_padding_none;
 
 gui_style_t *gui_style(gui_t *gui);
 const gui_style_t *gui_style_c(const gui_t *gui);
@@ -1561,6 +1562,8 @@ const gui_style_t g_gui_style_invis = {
 	},
 	.split    = gi__gui_line_style_invis,
 };
+
+const gui_padding_style_t g_gui_padding_none = {0};
 
 
 #ifndef GUI_MAX_VERTS
