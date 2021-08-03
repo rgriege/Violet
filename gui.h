@@ -486,6 +486,7 @@ void gui_lock_if(gui_t *gui, b32 cond, u32 *lock);
 void gui_unlock_if(gui_t *gui, u32 lock);
 /* Scales splits, panels, and panel grids.  A value of 100 means unscaled.
  * Be careful calling this between frame_begin & frame_end. */
+s32  gui_get_scale(gui_t *gui);
 void gui_set_scale(gui_t *gui, s32 scale);
 s32  gui_scale_val(const gui_t *gui, s32 val);
 s32  gui_scale_val_inverse(const gui_t *gui, s32 val);
@@ -6059,6 +6060,11 @@ void gui_unlock_if(gui_t *gui, u32 lock)
 		assert(gui->lock == lock);
 		gui_unlock(gui);
 	}
+}
+
+s32 gui_get_scale(gui_t *gui)
+{
+	return gui->scale;
 }
 
 void gui_set_scale(gui_t *gui, s32 scale)
