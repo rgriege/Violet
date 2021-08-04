@@ -810,7 +810,7 @@ static
 int vltt_PackFont(stbtt_fontinfo *info, int font_size, stbtt_packedchar *chardata, gui_texture_t *tex)
 {
 #ifdef __EMSCRIPTEN__
-	const s32 bpp = 4;
+	const s32 bpp = 2;
 #else
 	const s32 bpp = 1;
 #endif
@@ -870,7 +870,7 @@ int vltt_PackFont(stbtt_fontinfo *info, int font_size, stbtt_packedchar *chardat
 				row[c * bpp + bpp - 1] = bitmap[r * w * bpp + c];
 			memcpy(&bitmap[r * w * bpp], row, w * bpp);
 		}
-		texture_init(tex, w, h, GL_RGBA, bitmap);
+		texture_init(tex, w, h, GL_LUMINANCE_ALPHA, bitmap);
 #else
 		texture_init(tex, w, h, GL_RED, bitmap);
 		GL_CHECK(glTexParameteri, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
