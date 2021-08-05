@@ -1028,7 +1028,8 @@ typedef struct window
 	SDL_Cursor *cursors[GUI_CURSOR_COUNT];
 	char font_file_path[256];
 	array(font_t) fonts;
-	cached_img_t *imgs;
+	font_t *last_font;
+	array(cached_img_t) imgs;
 
 	gui_t *gui;
 } window_t;
@@ -1188,11 +1189,18 @@ void *window__get_font(void *handle, s32 size)
 	window_t *window = handle;
 	font_t *font;
 
-	if ((font = window__find_font(window, size)))
-		return font->char_info ? font : NULL;
+	if (window->last_font && window->last_font->size == size)
+		return window->last_font->char_info ? window->last_font : NULL;
 
+	if ((font = window__find_font(window, size))) {
+		window->last_font = font;
+		return font->char_info ? font : NULL;
+	}
+
+	window->last_font = NULL;
 	font = array_append_null(window->fonts);
 	if (font_load(font, window->font_file_path, size)) {
+		window->last_font = font;
 		return font;
 	} else {
 		/* keep empty entries around so we don't try to load them again */
@@ -1524,6 +1532,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 			goto err_cursor;
 	strncpy(window->font_file_path, font_file_path, sizeof(window->font_file_path)-1);
 	window->fonts = array_create();
+	window->last_font = NULL;
 	window->imgs = array_create();
 
 	{
