@@ -1029,6 +1029,7 @@ typedef struct window
 	char font_file_path[256];
 	array(font_t) fonts;
 	font_t *last_font;
+	s32 last_font_size;
 	array(cached_img_t) imgs;
 
 	gui_t *gui;
@@ -1184,30 +1185,49 @@ font_t *window__find_font(window_t *window, s32 size)
 }
 
 static
+font_t *window__find_smaller_font(window_t *window, s32 size)
+{
+	font_t *nearest = NULL;
+	s32 max_size = 0;
+	array_iterate(window->fonts, i, n) {
+		if (   window->fonts[i].char_info
+		    && window->fonts[i].size < size
+		    && window->fonts[i].size > max_size) {
+			nearest = &window->fonts[i];
+			max_size = window->fonts[i].size;
+		}
+	}
+	return nearest;
+}
+
+static
 void *window__get_font(void *handle, s32 size)
 {
 	window_t *window = handle;
 	font_t *font;
 
-	if (window->last_font && window->last_font->size == size)
-		return window->last_font->char_info ? window->last_font : NULL;
+	if (window->last_font_size == size)
+		return window->last_font;
+
+	window->last_font_size = size;
 
 	if ((font = window__find_font(window, size))) {
-		window->last_font = font;
-		return font->char_info ? font : NULL;
+		window->last_font = font->char_info ? font : window__find_smaller_font(window, size);
+		return window->last_font;
 	}
 
 	window->last_font = NULL;
 	font = array_append_null(window->fonts);
 	if (font_load(font, window->font_file_path, size)) {
 		window->last_font = font;
-		return font;
+		return window->last_font;
 	} else {
 		/* keep empty entries around so we don't try to load them again */
 		memclr(*font);
 		font->filename = window->font_file_path;
 		font->size = size;
-		return NULL;
+		window->last_font = window__find_smaller_font(window, size);
+		return window->last_font;
 	}
 }
 
@@ -1533,6 +1553,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	strncpy(window->font_file_path, font_file_path, sizeof(window->font_file_path)-1);
 	window->fonts = array_create();
 	window->last_font = NULL;
+	window->last_font_size = 0;
 	window->imgs = array_create();
 
 	{
