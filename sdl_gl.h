@@ -1174,21 +1174,31 @@ void window_fullscreen(window_t *window)
 }
 
 static
+font_t *window__find_font(window_t *window, s32 size)
+{
+	array_iterate(window->fonts, i, n)
+		if (window->fonts[i].size == size)
+			return &window->fonts[i];
+	return NULL;
+}
+
+static
 void *window__get_font(void *handle, s32 size)
 {
 	window_t *window = handle;
-	font_t *font = window->fonts, *font_end = array_end(window->fonts);
-	while (font != font_end && font->size != size)
-		++font;
-	if (font != font_end)
-		return font;
+	font_t *font;
+
+	if ((font = window__find_font(window, size)))
+		return font->char_info ? font : NULL;
 
 	font = array_append_null(window->fonts);
 	if (font_load(font, window->font_file_path, size)) {
 		return font;
 	} else {
-		array_pop(window->fonts);
-		assert(false);
+		/* keep empty entries around so we don't try to load them again */
+		memclr(*font);
+		font->filename = window->font_file_path;
+		font->size = size;
 		return NULL;
 	}
 }
