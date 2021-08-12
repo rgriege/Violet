@@ -1428,6 +1428,18 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		goto err_win;
 	}
 
+	v2i window_dim;
+	SDL_GetWindowSize(window->window, &window_dim.x, &window_dim.y);
+	if (window_dim.x == 0 || window_dim.y == 0) {
+		/* NOTE(rgriege): I've seen this happen on some browsers w/ Emscripten builds
+		 * even though the requested dimensions were valid. */
+		v2i window_pos;
+		SDL_GetWindowPosition(window->window, &window_pos.x, &window_pos.y);
+		log_error("SDL_CreateWindow: invalid window dimensions [%d %d %d %d] -> [%d %d %d %d]",
+		          x, y, w, h, window_pos.x, window_pos.y, window_dim.x, window_dim.y);
+		goto err_ctx;
+	}
+
 	window->gl_context = SDL_GL_CreateContext(window->window);
 	if (window->gl_context == NULL) {
 		log_error("SDL_CreateContext failed: %s", SDL_GetError());
