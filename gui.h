@@ -245,6 +245,7 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt, color_t c,
 void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph);
 s32  gui_txt_width(const gui_t *gui, const char *txt, s32 size);
+gui_fonts_t gui_get_fonts(const gui_t *gui);
 
 void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_mask_pop(gui_t *gui);
@@ -386,6 +387,7 @@ typedef struct gui_widget_bounds
 void gui_widget_bounds_push(gui_t *gui, gui_widget_bounds_t *bounds, b32 propogate);
 void gui_widget_bounds_pop(gui_t *gui, gui_widget_bounds_t *bounds, b32 propogate);
 void gui_widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
+void gui_widget_bounds_get(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 typedef struct gui_scroll_area
 {
@@ -486,6 +488,7 @@ void gui_lock_if(gui_t *gui, b32 cond, u32 *lock);
 void gui_unlock_if(gui_t *gui, u32 lock);
 /* Scales splits, panels, and panel grids.  A value of 100 means unscaled.
  * Be careful calling this between frame_begin & frame_end. */
+s32  gui_get_scale(gui_t *gui);
 void gui_set_scale(gui_t *gui, s32 scale);
 s32  gui_scale_val(const gui_t *gui, s32 val);
 s32  gui_scale_val_inverse(const gui_t *gui, s32 val);
@@ -863,7 +866,7 @@ typedef struct gui_color_picker_style
 typedef struct gui_panel_style
 {
 	color_t bg_color;
-	color_t border_color;
+	gui_line_style_t    border;
 	gui_element_style_t titlebar;
 	gui_widget_style_t  drag;
 	gui_widget_style_t  tab;
@@ -898,10 +901,19 @@ typedef struct gui_style
 
 extern const gui_style_t g_gui_style_default;
 extern const gui_style_t g_gui_style_invis;
+extern const gui_padding_style_t g_gui_padding_none;
 
 gui_style_t *gui_style(gui_t *gui);
 const gui_style_t *gui_style_c(const gui_t *gui);
 void         gui_style_set(gui_t *gui, const gui_style_t *style);
+#define gui_style_set_widget(gui, widget, loc, val) \
+	do { \
+		gui_style(gui)->widget.inactive.loc = (val); \
+		gui_style(gui)->widget.hot.loc =      (val); \
+		gui_style(gui)->widget.active.loc =   (val); \
+		gui_style(gui)->widget.disabled.loc = (val); \
+	} while (0)
+
 
 /* Temporarily modifying styles is done through the style stack.  To change
  * a value in the style struct, you can push and pop values for struct members
@@ -1337,7 +1349,7 @@ const gui_style_t g_gui_style_default = {
 	.tree = gi__gui_tree_style_default,
 	.panel = {
 		.bg_color = { .r=0x22, .g=0x1f, .b=0x1f, .a=0xbf },
-		.border_color = gi_grey128,
+		.border   = { .color = gi_nocolor, .thickness = 1.f },
 		.titlebar = {
 			.line = gi__gui_line_style_default,
 			.text = gi__gui_text_style_default,
@@ -1547,7 +1559,7 @@ const gui_style_t g_gui_style_invis = {
 	.tree         = gi__gui_widget_style_invis,
 	.panel        = {
 		.bg_color          = gi_nocolor,
-		.border_color      = gi_nocolor,
+		.border            = { .color = gi_nocolor, .thickness = 1.f },
 		.drag              = gi__gui_widget_style_invis,
 		.tab               = gi__gui_widget_style_invis,
 		.titlebar          = gi__gui_element_style_invis,
@@ -1561,6 +1573,8 @@ const gui_style_t g_gui_style_invis = {
 	},
 	.split    = gi__gui_line_style_invis,
 };
+
+const gui_padding_style_t g_gui_padding_none = {0};
 
 
 #ifndef GUI_MAX_VERTS
@@ -2419,6 +2433,11 @@ void gui_widget_bounds_extend(gui_t *gui, s32 x, s32 y, s32 w, s32 h)
 	box2i_extend_box(&gui->widget_bounds->children, box);
 }
 
+void gui_widget_bounds_get(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	box2i_to_xywh(gui->widget_bounds->children, x, y, w, h);
+}
+
 b32 gui_begin(gui_t *gui, u32 num_verts, gui_draw_call_type_e type)
 {
 	return gui_begin_tex(gui, num_verts, type, 0, GUI_BLEND_NRM);
@@ -3023,6 +3042,38 @@ void gui_tri(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 x2, s32 y2,
 	gui__poly(gui, poly, 3, GUI_DRAW_TRIANGLE_FAN, fill, stroke, true);
 }
 
+static
+void gui__rect_inset_border(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                            color_t fill, const gui_line_style_t *style)
+{
+	v2f poly[4] = {
+		{ x,     y },
+		{ x + w, y },
+		{ x + w, y + h },
+		{ x,     y + h },
+	};
+	gui__poly(gui, poly, 4, GUI_DRAW_TRIANGLE_FAN, fill, g_nocolor, true);
+	if (!color_equal(style->color, g_nocolor)) {
+		const r32 offset = style->thickness / 2.f;
+
+		gui_line_styled(gui,
+		                poly[0].x + offset, poly[0].y + offset,
+		                poly[1].x - offset, poly[1].y + offset, style);
+
+		gui_line_styled(gui,
+		                poly[1].x - offset, poly[1].y + offset * 3,
+		                poly[2].x - offset, poly[2].y - offset * 3, style);
+
+		gui_line_styled(gui,
+		                poly[2].x - offset, poly[2].y - offset,
+		                poly[3].x + offset, poly[3].y - offset, style);
+
+		gui_line_styled(gui,
+		                poly[3].x + offset, poly[3].y - offset * 3,
+		                poly[0].x + offset, poly[0].y + offset * 3, style);
+	}
+}
+
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke)
 {
 	v2f poly[4] = {
@@ -3521,6 +3572,11 @@ s32 gui_txt_width(const gui_t *gui, const char *txt, s32 size)
 			p = pnext;
 	}
 	return width;
+}
+
+gui_fonts_t gui_get_fonts(const gui_t *gui)
+{
+	return gui->fonts;
 }
 
 static
@@ -5510,7 +5566,7 @@ b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_grid_begin(gui, &gui->popup->grid, gx, gy, gw, gh);
 		/* NOTE(rgriege): shrink required to pass entire rect through layer */
-		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color, style->panel.border_color);
+		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color, style->panel.border.color);
 		return true;
 	} else {
 		return false;
@@ -6016,6 +6072,11 @@ void gui_unlock_if(gui_t *gui, u32 lock)
 		assert(gui->lock == lock);
 		gui_unlock(gui);
 	}
+}
+
+s32 gui_get_scale(gui_t *gui)
+{
+	return gui->scale;
 }
 
 void gui_set_scale(gui_t *gui, s32 scale)
@@ -7881,11 +7942,11 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 		else if (was_dragging)
 			pgui__panel_stop_dragging(gui, panel);
 
-		if (panel->collapsed && !panel->split) {
+		if (panel->collapsed) {
 			/* background outline display */
 			const s32 h = gui_scale_val(gui, GUI_PANEL_TITLEBAR_HEIGHT);
-			gui_rect(gui, panel->x, panel->y + panel->h - h, panel->w, h,
-			         g_nocolor, style->border_color);
+			gui__rect_inset_border(gui, panel->x, panel->y + panel->h - h, panel->w, h,
+			                       g_nocolor, &style->border);
 		}
 
 		if (   dragging
@@ -7910,9 +7971,8 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	}
 
 	/* background outline display */
-	if (!panel->split)
-		gui_rect(gui, panel->x, panel->y, panel->w, panel->h,
-		         g_nocolor, style->border_color);
+	gui__rect_inset_border(gui, panel->x, panel->y, panel->w, panel->h,
+	                       g_nocolor, &style->border);
 
 	if (panel->flags & GUI_PANEL_SCROLLABLE) {
 		const s32 body_height = pgui_panel_body_height(gui, panel);

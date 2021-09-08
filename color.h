@@ -26,9 +26,9 @@ typedef union
 #define gi_blue         { .r=0,    .g=0,    .b=0xff, .a=0xff }
 #define gi_fuchsia      { .r=0xff, .g=0,    .b=0xff, .a=0xff }
 #define gi_green        { .r=0,    .g=0xff, .b=0,    .a=0xff }
-#define gi_lightblue    { .r=0x3f, .g=0xa8, .b=0xf5, .a=0xff }
+#define gi_lightblue    { .r=0x3f, .g=0xa9, .b=0xf5, .a=0xff }
 #define gi_medblue      { .r=0x3f, .g=0x68, .b=0xf5, .a=0xff }
-#define gi_orange       { .r=0xff, .g=0x92, .b=0x1e, .a=0xff }
+#define gi_orange       { .r=0xff, .g=0x93, .b=0x1e, .a=0xff }
 #define gi_medred       { .r=0xff, .g=0x63, .b=0x63, .a=0xff }
 #define gi_red          { .r=0xff, .g=0,    .b=0,    .a=0xff }
 #define gi_yellow       { .r=0xff, .g=0xff, .b=0,    .a=0xff }

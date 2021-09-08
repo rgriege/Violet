@@ -29,6 +29,10 @@ typedef struct timespec timepoint_t;
 
 #endif // _WIN32
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#include <malloc.h>
+#endif
 
 /* Utility macros */
 
@@ -776,6 +780,17 @@ void vlt_mem_advance_gen(void)
 #endif
 }
 
+#ifdef __EMSCRIPTEN__
+#include <unistd.h>
+EM_JS(size_t, vlt_emscripten_get_total_memory, (), { return HEAP8.length; });
+size_t vlt_emscripten_get_used_memory(void)
+{
+	struct mallinfo info = mallinfo();
+	size_t dynamic_top = (size_t)sbrk(0);
+	return dynamic_top + info.fordblks;
+}
+#endif
+
 static
 void vlt_mem_log_usage_(size_t temp_bytes_current, size_t temp_pages_current,
                         size_t temp_bytes_total, size_t temp_pages_total,
@@ -797,8 +812,17 @@ void vlt_mem_log_usage_(size_t temp_bytes_current, size_t temp_pages_current,
 		log_warn("%6lu bytes still active in %lu pages!",
 		         temp_bytes_current, temp_pages_current);
 
-	log_info("current:  %7lu bytes in %lu pages", temp_bytes_current, temp_pages_current);
-	log_info("total:    %7lu bytes in %lu pages", temp_bytes_total, temp_pages_total);
+	log_info("current: %8lu bytes in %lu pages", temp_bytes_current, temp_pages_current);
+	log_info("total:   %8lu bytes in %lu pages", temp_bytes_total, temp_pages_total);
+
+#ifdef __EMSCRIPTEN__
+	const size_t em_used_mem = vlt_emscripten_get_used_memory();
+	const size_t em_total_mem = vlt_emscripten_get_total_memory();
+	log_info("***EMSCRIPTEN***");
+	log_info("heap:");
+	log_info("used:  %10lu bytes", em_used_mem);
+	log_info("total: %10lu bytes", em_total_mem);
+#endif
 }
 
 void vlt_mem_log_usage(void)
