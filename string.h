@@ -56,6 +56,7 @@ void   str_destroy(str_t *str);
 str_t *str_cpy(str_t *dst, const char *src);
 str_t *str_cpy2(str_t *dst, const char *src1, const char *src2);
 str_t *str_cat(str_t *dst, const char *src);
+str_t *str_catn(str_t *dst, const char *src, size_t size);
 
 str_t *str_clear(str_t *str);
 str_t *str_remove_to_end(str_t *str, const char *p);
@@ -419,6 +420,14 @@ str_t *str_cat(str_t *dst, const char *src)
 	const size_t sz = strlen(src) + 1;
 	array_pop(*dst);
 	array_appendn(*dst, src, (array_size_t)sz);
+	return dst;
+}
+
+str_t *str_catn(str_t *dst, const char *src, size_t size)
+{
+	array_pop(*dst);
+	array_appendn(*dst, src, (array_size_t)size);
+	array_append(*dst, 0);
 	return dst;
 }
 
