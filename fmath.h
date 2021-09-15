@@ -96,6 +96,7 @@ FMGDECL const v3f g_v3f_x_axis;
 FMGDECL const v3f g_v3f_y_axis;
 FMGDECL const v3f g_v3f_z_axis;
 FMGDECL const v3f g_v3f_zero;
+FMGDECL const v3f g_v3f_one;
 
 FMDEF v3f v3f_create_xy_z(v2f xy, r32 z);
 FMDEF r32 v3f_mag(v3f v);
@@ -545,6 +546,7 @@ FMGDEF const v3f g_v3f_x_axis = { 1, 0, 0 };
 FMGDEF const v3f g_v3f_y_axis = { 0, 1, 0 };
 FMGDEF const v3f g_v3f_z_axis = { 0, 0, 1 };
 FMGDEF const v3f g_v3f_zero   = { 0, 0, 0 };
+FMGDEF const v3f g_v3f_one    = { 1, 1, 1 };
 
 FMDEF v3f v3f_create_xy_z(v2f xy, r32 z)
 {
