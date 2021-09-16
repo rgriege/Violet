@@ -367,7 +367,7 @@ err:
 out:
 	return imstr();
 #else
-	return imstrcpy(default_dir);
+	return imapppath(default_dir);
 #endif
 }
 
