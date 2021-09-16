@@ -64,6 +64,7 @@ str_t *str_remove_to_end(str_t *str, const char *p);
 char  *str_beg(str_t *str);
 char  *str_end(str_t *str); // pointer to null terminator
 size_t str_len(str_t *str); // like strlen, doesn't include null terminator
+b32    str_is_blank(str_t *str);
 
 #define cstr(str) str_beg(str)
 
@@ -459,6 +460,11 @@ char *str_end(str_t *str)
 size_t str_len(str_t *str)
 {
 	return array_sz(*str) - 1;
+}
+
+b32 str_is_blank(str_t *str)
+{
+	return str_len(str) == 0 || strlen(strtrim(*str)) == 0;
 }
 
 #undef STRING_IMPLEMENTATION
