@@ -120,6 +120,7 @@ void  gui_set_window(gui_t *gui, void *window);
 
 timepoint_t gui_frame_start(const gui_t *gui);
 u32         gui_frame_time_milli(const gui_t *gui);
+u32         gui_run_time_milli(const gui_t *gui);
 timepoint_t gui_last_input_time(const gui_t *gui);
 
 
@@ -2774,6 +2775,11 @@ u32 gui_frame_time_milli(const gui_t *gui)
 	return gui->frame_time_milli;
 }
 
+u32 gui_run_time_milli(const gui_t *gui)
+{
+	return timepoint_diff_milli(gui->creation_time, gui->frame_start_time);
+}
+
 timepoint_t gui_last_input_time(const gui_t *gui)
 {
 	return gui->last_input_time;
@@ -4467,8 +4473,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		             &elem_style.text, elem_style.bg_color);
 	}
 	if (gui_widget_focused(gui, id)) {
-		if (   !gui__npt_has_selection(gui)
-		    && timepoint_diff_milli(gui->creation_time, gui->frame_start_time) % 1000 < 500) {
+		if (!gui__npt_has_selection(gui) && gui_run_time_milli(gui) % 1000 < 500) {
 			const color_t color = elem_style.text.color;
 			const s32 size = gui_scale_val(gui, elem_style.text.size);
 			void *font = gui->fonts.get_font(gui->fonts.handle, size);
