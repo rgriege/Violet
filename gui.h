@@ -769,6 +769,10 @@ int  pgui_panel_sortp(const void *lhs, const void *rhs);
 void pgui_panel_grid_begin(gui_t *gui, gui_grid_flex_e flex);
 void pgui_panel_grid_end(gui_t *gui);
 
+/* can return NULL if no panel is currently active */
+gui_panel_t *pgui_current_panel(gui_t *gui);
+const gui_panel_t *pgui_current_panel_c(const gui_t *gui);
+
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                              const gui_element_style_t *style);
 void gui_pen_window_maximize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -8139,6 +8143,16 @@ void pgui_panel_grid_end(gui_t *gui)
 	assert(gui->grid);
 	assert(gui->grid == &gui->grid_panel);
 	pgui_grid_end(gui, gui->grid);
+}
+
+gui_panel_t *pgui_current_panel(gui_t *gui)
+{
+	return gui->panel;
+}
+
+const gui_panel_t *pgui_current_panel_c(const gui_t *gui)
+{
+	return gui->panel;
 }
 
 u32 pgui_grid_depth(const gui_t *gui)
