@@ -29,6 +29,7 @@ char *imprint_s32(s32 val);
 char *imprint_r32(r32 val, u32 dec);
 char *imprintf(const char *fmt, ...);
 char *imstrcpy(const char *str);
+char *imstrncpy(const char *str, size_t n); /* copies n chacters, then NULL terminates */
 char *imstrcpy2(const char *src1, const char *src2);
 char *imstrcpyv(const char *src1, ...); /* final parameter must be NULL */
 char *imstrcat(const char *src);
@@ -268,6 +269,15 @@ char *imstrcpy(const char *str)
 {
 	assert(strlen(str) < IMPRINT_BUFFER_SIZE);
 	strbcpy(g_imprint_buf, str);
+	return g_imprint_buf;
+}
+
+char *imstrncpy(const char *str, size_t n)
+{
+	assert(n < IMPRINT_BUFFER_SIZE);
+	const size_t size = min(n, IMPRINT_BUFFER_SIZE - 1);
+	memcpy(g_imprint_buf, str, size);
+	g_imprint_buf[size] = 0;
 	return g_imprint_buf;
 }
 
