@@ -229,7 +229,7 @@ void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stro
 void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      color_t bl, color_t br, color_t tr, color_t tl);
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke);
-void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
+void gui_arc(gui_t *gui, s32 x, s32 y, r32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke);
 void gui_trisf(gui_t *gui, const v2f *v, u32 n, color_t fill);
 void gui_poly(gui_t *gui, const v2i *v, u32 n, color_t fill, color_t stroke);
@@ -3121,7 +3121,7 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	}
 }
 
-void gui_arc(gui_t *gui, s32 x, s32 y, s32 r, r32 angle_start, r32 angle_end,
+void gui_arc(gui_t *gui, s32 x, s32 y, r32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke)
 {
 	const u32 num_verts = arc_poly_sz(r, angle_start, angle_end);
