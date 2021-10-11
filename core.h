@@ -334,6 +334,7 @@ void buf_remove_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
 
 /* This is only for intervals - a timepoint does not represent the unix epoch */
 timepoint_t timepoint_create(void);
+u32         timepoint_diff_seconds(timepoint_t start, timepoint_t end);
 u32         timepoint_diff_milli(timepoint_t start, timepoint_t end);
 u32         timepoint_diff_micro(timepoint_t start, timepoint_t end);
 u32         timepoint_diff_nano(timepoint_t start, timepoint_t end);
@@ -998,6 +999,12 @@ timepoint_t time__diff(timepoint_t start, timepoint_t end)
 	res.tv_sec = end.tv_sec - mod_start.tv_sec;
 	res.tv_nsec = end.tv_nsec - mod_start.tv_nsec;
 	return res;
+}
+
+u32 timepoint_diff_seconds(timepoint_t start, timepoint_t end)
+{
+	timepoint_t res = time__diff(start, end);
+	return (u32)res.tv_sec;
 }
 
 u32 timepoint_diff_milli(timepoint_t start, timepoint_t end)
