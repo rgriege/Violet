@@ -257,6 +257,7 @@ b32 texture_load(gui_texture_t *tex, const char *filename)
 {
 	b32 ret = false;
 	int w, h;
+	stbi_set_flip_vertically_on_load(true);
 	u8 *image = stbi_load(filename, &w, &h, NULL, 4);
 	if (image) {
 		texture_init(tex, w, h, GL_RGBA, image);
@@ -1519,8 +1520,6 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		log_error("OpenGL context version too small");
 		goto err_ver;
 	}
-
-	stbi_set_flip_vertically_on_load(true);
 
 #ifndef __EMSCRIPTEN__
 	GL_CHECK(glEnable, GL_MULTISAMPLE);

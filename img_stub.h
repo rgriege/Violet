@@ -28,6 +28,7 @@ b32 img_load(gui_img_t *img, const char *filename)
 {
 	b32 ret = false;
 	int w, h;
+	stbi_set_flip_vertically_on_load(true);
 	u8 *image = stbi_load(filename, &w, &h, NULL, 4);
 	if (image) {
 		img->handle = 42; /* don't use 0 - represents NULL in OpenGL */
