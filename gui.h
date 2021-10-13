@@ -2675,10 +2675,10 @@ void gui__char(gui_t *gui, const gui_char_quad_t *q, color_t color)
 
 	if (gui_begin_tex(gui, 4, GUI_DRAW_TRIANGLE_FAN,
 	                  q->texture.handle, q->texture.blend)) {
-		gui__vertf(gui, q->x0, q->y1, color, q->s0, q->t0);
-		gui__vertf(gui, q->x0, q->y0, color, q->s0, q->t1);
-		gui__vertf(gui, q->x1, q->y0, color, q->s1, q->t1);
-		gui__vertf(gui, q->x1, q->y1, color, q->s1, q->t0);
+		gui__vertf(gui, q->x0, q->y1, color, q->s0, q->t1);
+		gui__vertf(gui, q->x0, q->y0, color, q->s0, q->t0);
+		gui__vertf(gui, q->x1, q->y0, color, q->s1, q->t0);
+		gui__vertf(gui, q->x1, q->y1, color, q->s1, q->t1);
 		gui_end(gui);
 	}
 }

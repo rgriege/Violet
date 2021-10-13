@@ -1262,11 +1262,11 @@ b32 window__get_char_quad(void *handle, s32 codepoint, r32 x, r32 y, gui_char_qu
 	quad->x0 = q.x0;
 	quad->y0 = y + (y - q.y1);
 	quad->s0 = q.s0;
-	quad->t0 = 1.f - q.t0;
+	quad->t0 = q.t1;
 	quad->x1 = q.x1;
 	quad->y1 = quad->y0 + (q.y1 - q.y0);
 	quad->s1 = q.s1;
-	quad->t1 = 1.f - q.t1;
+	quad->t1 = q.t0;
 	quad->advance = x - x0;
 	return true;
 }
@@ -1519,6 +1519,8 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		log_error("OpenGL context version too small");
 		goto err_ver;
 	}
+
+	stbi_set_flip_vertically_on_load(true);
 
 #ifndef __EMSCRIPTEN__
 	GL_CHECK(glEnable, GL_MULTISAMPLE);
@@ -1978,8 +1980,7 @@ static const char *g_fragment_shader =
 	"varying vec4 Color;\n"
 	"\n"
 	"void main() {\n"
-	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
-	"  gl_FragColor = texture2D(tex, TexCoord_flipped) * Color;\n"
+	"  gl_FragColor = texture2D(tex, TexCoord) * Color;\n"
 	"}";
 #else // SDL_GL_ES_2
 static const char *g_vertex_shader =
@@ -2007,8 +2008,7 @@ static const char *g_fragment_shader =
 	"out vec4 FragColor;\n"
 	"\n"
 	"void main() {\n"
-	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
-	"  FragColor = texture(tex, TexCoord_flipped) * Color;\n"
+	"  FragColor = texture(tex, TexCoord) * Color;\n"
 	"}";
 #endif // SDL_GL_ES_2
 #else // __EMSCRIPTEN__
@@ -2036,8 +2036,7 @@ static const char *g_fragment_shader =
 	"out vec4 FragColor;\n"
 	"\n"
 	"void main() {\n"
-	"  vec2 TexCoord_flipped = vec2(TexCoord.x, 1.0 - TexCoord.y);\n"
-	"  FragColor = texture(tex, TexCoord_flipped) * Color;\n"
+	"  FragColor = texture(tex, TexCoord) * Color;\n"
 	"}";
 #endif // __EMSCRIPTEN__
 
