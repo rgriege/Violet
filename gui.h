@@ -154,6 +154,9 @@ void gui_window_drag(gui_t *gui);
 b32  gui_window_dragging(const gui_t *gui);
 void gui_window_drag_end(gui_t *gui);
 
+#ifndef GUI_MOUSE_DOUBLE_CLICK_DIST
+#define GUI_MOUSE_DOUBLE_CLICK_DIST     5
+#endif
 #ifndef GUI_MOUSE_DOUBLE_CLICK_INTERVAL
 #define GUI_MOUSE_DOUBLE_CLICK_INTERVAL 500 /* windows default */
 #endif
@@ -1654,6 +1657,7 @@ typedef struct gui_popup
 typedef struct gui_mouse_press {
 	timepoint_t time;
 	u32 btn;
+	v2i pos;
 } gui_mouse_press_t;
 
 typedef struct gui
@@ -2222,6 +2226,7 @@ void gui_events_end(gui_t *gui)
 			gui->mouse_press_history[i-1] = gui->mouse_press_history[i-2];
 		gui->mouse_press_history[0].time = gui->frame_start_time;
 		gui->mouse_press_history[0].btn  = gui->mouse_btn;
+		gui->mouse_press_history[0].pos  = gui->mouse_pos;
 	}
 
 	{
@@ -2901,11 +2906,15 @@ b32 mouse_double(const gui_t *gui, u32 mask)
 {
 	const gui_mouse_press_t *history = gui->mouse_press_history;
 	return (history[1].btn & mask)
+	    &&   abs(history[1].pos.x - history[0].pos.x) < GUI_MOUSE_DOUBLE_CLICK_DIST
+	    &&   abs(history[1].pos.y - history[0].pos.y) < GUI_MOUSE_DOUBLE_CLICK_DIST
 	    &&   timepoint_diff_milli(history[1].time, history[0].time)
 	       < GUI_MOUSE_DOUBLE_CLICK_INTERVAL
-	    && (   !(history[2].btn & mask)
-	        ||   timepoint_diff_milli(history[2].time, history[1].time)
-	           > GUI_MOUSE_DOUBLE_CLICK_INTERVAL);
+	    && !(   (history[2].btn & mask)
+	         &&   abs(history[2].pos.x - history[1].pos.x) < GUI_MOUSE_DOUBLE_CLICK_DIST
+	         &&   abs(history[2].pos.y - history[1].pos.y) < GUI_MOUSE_DOUBLE_CLICK_DIST
+	         &&   timepoint_diff_milli(history[2].time, history[1].time)
+	            < GUI_MOUSE_DOUBLE_CLICK_INTERVAL);
 }
 
 b32 mouse_scroll(const gui_t *gui, s32 *dir)
