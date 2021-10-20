@@ -5540,6 +5540,13 @@ b32 gui_color_picker_h(gui_t *gui, s32 x, s32 y, s32 w, s32 h, colorf_t *c)
 	return changed;
 }
 
+static
+void pgui__grid_end(gui_t *gui, gui_grid_t *grid, b32 propagate);
+
+static
+void pgui__grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h,
+                      b32 propagate);
+
 b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                            s32 pw, s32 ph, colorf_t c)
 {
@@ -5574,15 +5581,21 @@ b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		const s32 gw = pw - padding.left - padding.right;
 		const s32 gh = ph - padding.bottom - padding.top;
 
-		if (!gui__popup_begin(gui, id, px, py, pw, ph))
-			return false;
-
 		if (sw > 0) {
 			const color_t shadow_color = gui->style.color_picker.shadow.color;
+			gui_widget_bounds_t bounds = {0};
+			gui_mask_push(gui, px - sw, py - sw, pw + sw * 2, ph + sw * 2);
+			gui_widget_bounds_push(gui, &bounds, false);
 			gui__shadow_box(gui, px, py, pw, ph, sw, shadow_color);
+			gui_widget_bounds_pop(gui, &bounds, false);
+			gui_mask_pop(gui);
 		}
 
-		pgui_grid_begin(gui, &gui->popup->grid, gx, gy, gw, gh);
+		if (!gui__popup_begin(gui, id, px, py, pw, ph)) {
+			return false;
+		}
+
+		pgui__grid_begin(gui, &gui->popup->grid, gx, gy, gw, gh, false);
 		/* NOTE(rgriege): shrink required to pass entire rect through layer */
 		gui_rect(gui, px+1, py, pw-1, ph-1, style->panel.bg_color, style->panel.border.color);
 		return true;
@@ -5706,7 +5719,7 @@ void gui_color_picker_end(gui_t *gui)
 	assert(gui->popup);
 	assert(gui->popup->id != 0);
 	assert(gui->popup->id == gui->focus_ids[gui->popup - gui->popups]);
-	pgui_grid_end(gui, &gui->popup->grid);
+	pgui__grid_end(gui, &gui->popup->grid, false);
 	gui->popup->close_at_end = false; /* stay open even if a button was pressed */
 	gui__popup_end(gui);
 }
@@ -6308,22 +6321,35 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	++grid->depth;
 }
 
-void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h)
+static
+void pgui__grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h,
+                      b32 propagate)
 {
 	assert(grid != gui->grid);
 	gui__grid_init(grid, x, y, w, h, gui->grid);
-	gui_widget_bounds_push(gui, &grid->widget_bounds, true);
+	gui_widget_bounds_push(gui, &grid->widget_bounds, propagate);
 	gui->grid = grid;
 }
 
-void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
+void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h)
+{
+	pgui__grid_begin(gui, grid, x, y, w, h, true);
+}
+
+static
+void pgui__grid_end(gui_t *gui, gui_grid_t *grid, b32 propagate)
 {
 	assert(grid);
 	assert(gui->grid == grid);
 	assert(gui->grid->depth == 0);
 	gui->grid = gui->grid->prev;
 	box2i_extend_box(&gui->widget_bounds->bbox, gui->widget_bounds->children);
-	gui_widget_bounds_pop(gui, &grid->widget_bounds, true);
+	gui_widget_bounds_pop(gui, &grid->widget_bounds, propagate);
+}
+
+void pgui_grid_end(gui_t *gui, gui_grid_t *grid)
+{
+	pgui__grid_end(gui, grid, true);
 }
 
 void pgui_row(gui_t *gui, s32 height, u32 num_cells)
