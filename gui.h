@@ -922,6 +922,16 @@ void         gui_style_set(gui_t *gui, const gui_style_t *style);
 		gui_style(gui)->widget.disabled.loc = (val); \
 	} while (0)
 
+typedef enum gui_widget_render_state
+{
+	GUI_WIDGET_RENDER_INACTIVE,
+	GUI_WIDGET_RENDER_HOT,
+	GUI_WIDGET_RENDER_ACTIVE,
+} gui_widget_render_state_e;
+
+gui_element_style_t gui_element_style(const gui_t *gui,
+                                      gui_widget_render_state_e render_state,
+                                      const gui_widget_style_t *widget_style);
 
 /* Temporarily modifying styles is done through the style stack.  To change
  * a value in the style struct, you can push and pop values for struct members
@@ -3712,51 +3722,43 @@ b32 gui__allow_new_interaction(const gui_t *gui)
 	    && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
 }
 
-typedef enum gui__widget_render_state
-{
-	GUI__WIDGET_RENDER_INACTIVE,
-	GUI__WIDGET_RENDER_HOT,
-	GUI__WIDGET_RENDER_ACTIVE,
-} gui__widget_render_state_e;
-
 static
-gui__widget_render_state_e gui__widget_render_state(const gui_t *gui, u64 id,
-                                                    b32 triggered,
-                                                    b32 checked,
-                                                    b32 contains_mouse)
+gui_widget_render_state_e gui__widget_render_state(const gui_t *gui, u64 id,
+                                                   b32 triggered,
+                                                   b32 checked,
+                                                   b32 contains_mouse)
 {
 	if (gui->active_id == id)
-		return contains_mouse ? GUI__WIDGET_RENDER_ACTIVE : GUI__WIDGET_RENDER_HOT;
+		return contains_mouse ? GUI_WIDGET_RENDER_ACTIVE : GUI_WIDGET_RENDER_HOT;
 	else if (gui_widget_focused(gui, id))
-		return triggered ? GUI__WIDGET_RENDER_ACTIVE : GUI__WIDGET_RENDER_HOT;
+		return triggered ? GUI_WIDGET_RENDER_ACTIVE : GUI_WIDGET_RENDER_HOT;
 	else if (gui->hot_id == id)
-		return GUI__WIDGET_RENDER_HOT;
+		return GUI_WIDGET_RENDER_HOT;
 	else
-		return checked ? GUI__WIDGET_RENDER_ACTIVE : GUI__WIDGET_RENDER_INACTIVE;
+		return checked ? GUI_WIDGET_RENDER_ACTIVE : GUI_WIDGET_RENDER_INACTIVE;
 }
 
 static
-gui__widget_render_state_e gui__btn_render_state(const gui_t *gui, u64 id,
-                                                 gui_btn_e val, b32 contains_mouse)
+gui_widget_render_state_e gui__btn_render_state(const gui_t *gui, u64 id,
+                                                gui_btn_e val, b32 contains_mouse)
 {
 	return gui__widget_render_state(gui, id, val != GUI_BTN_NONE, false, contains_mouse);
 }
 
-static
-gui_element_style_t gui__element_style(const gui_t *gui,
-                                       gui__widget_render_state_e render_state,
-                                       const gui_widget_style_t *widget_style)
+gui_element_style_t gui_element_style(const gui_t *gui,
+                                      gui_widget_render_state_e render_state,
+                                      const gui_widget_style_t *widget_style)
 {
 	gui_element_style_t style;
 
 	switch (render_state) {
-	case GUI__WIDGET_RENDER_ACTIVE:
+	case GUI_WIDGET_RENDER_ACTIVE:
 		style = widget_style->active;
 	break;
-	case GUI__WIDGET_RENDER_HOT:
+	case GUI_WIDGET_RENDER_HOT:
 		style = widget_style->hot;
 	break;
-	case GUI__WIDGET_RENDER_INACTIVE:
+	case GUI_WIDGET_RENDER_INACTIVE:
 		style = widget_style->inactive;
 	break;
 	}
@@ -4282,7 +4284,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	const gui_widget_style_t *style = &gui->style.npt;
 	b32 contains_mouse;
 	s32 complete = 0;
-	gui__widget_render_state_e render_state;
+	gui_widget_render_state_e render_state;
 	gui_element_style_t elem_style;
 	const char *display_txt;
 
@@ -4464,7 +4466,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	/* rendering */
 	render_state = gui__widget_render_state(gui, id, true, false,
 	                                        contains_mouse || gui_widget_focused(gui, id));
-	elem_style = gui__element_style(gui, render_state, style);
+	elem_style = gui_element_style(gui, render_state, style);
 	style->pen(gui, x, y, w, h, &elem_style);
 	display_txt = txt;
 
@@ -4601,11 +4603,11 @@ gui_btn_e gui_btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_
 
 static
 void gui__btn_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                     const char *txt, gui__widget_render_state_e render_state,
+                     const char *txt, gui_widget_render_state_e render_state,
                      b32 contains_mouse,
                      const gui_widget_style_t *widget_style)
 {
-	const gui_element_style_t style = gui__element_style(gui, render_state, widget_style);
+	const gui_element_style_t style = gui_element_style(gui, render_state, widget_style);
 	widget_style->pen(gui, x, y, w, h, &style);
 	gui_txt_styled(gui, x, y, w, h, txt, &style.text);
 	if (contains_mouse)
@@ -4624,7 +4626,7 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
 
-	const gui__widget_render_state_e render_state
+	const gui_widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.btn);
 	gui__hint_render(gui, id, gui->style.btn.hint);
@@ -4644,10 +4646,10 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
-	const gui__widget_render_state_e render_state
+	const gui_widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
-		= gui__element_style(gui, render_state, &gui->style.btn);
+		= gui_element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
 	gui_img_boxed(gui, x, y, w, h, img, scale);
 	if (contains_mouse)
@@ -4667,10 +4669,10 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	const gui_btn_e ret = gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
-	const gui__widget_render_state_e render_state
+	const gui_widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	const gui_element_style_t style
-		= gui__element_style(gui, render_state, &gui->style.btn);
+		= gui_element_style(gui, render_state, &gui->style.btn);
 	gui->style.btn.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
 	if (contains_mouse)
@@ -4709,7 +4711,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 toggled = false;
-	gui__widget_render_state_e render_state;
+	gui_widget_render_state_e render_state;
 
 	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		*val = !*val;
@@ -4733,7 +4735,7 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 toggled = false;
-	gui__widget_render_state_e render_state;
+	gui_widget_render_state_e render_state;
 	gui_element_style_t style;
 
 	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
@@ -4742,7 +4744,7 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	}
 
 	render_state = gui__widget_render_state(gui, id, toggled, *val, contains_mouse);
-	style = gui__element_style(gui, render_state, &gui->style.chk);
+	style = gui_element_style(gui, render_state, &gui->style.chk);
 	gui->style.chk.pen(gui, x, y, w, h, &style);
 	pen(gui, x, y, w, h, &style);
 	if (contains_mouse)
@@ -4846,12 +4848,12 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	}
 
 
-	const gui__widget_render_state_e render_state
+	const gui_widget_render_state_e render_state
 		= gui__widget_render_state(gui, id, triggered_by_key, false, true);
 	const gui_element_style_t style_track =
-		gui__element_style(gui, render_state, &gui->style.slider.track);
+		gui_element_style(gui, render_state, &gui->style.slider.track);
 	const gui_element_style_t style_handle =
-		gui__element_style(gui, render_state, &gui->style.slider.handle);
+		gui_element_style(gui, render_state, &gui->style.slider.handle);
 	if (orientation == GUI__SLIDER_X) {
 		const s32 dx = (gui->style.slider.track_narrow) ? hw : 0;
 		gui->style.slider.track.pen(gui, x + dx/2, y, w - dx, h, &style_track);
@@ -4906,7 +4908,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 was_selected = *val == opt;
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
-	gui__widget_render_state_e render_state;
+	gui_widget_render_state_e render_state;
 	b32 selected = false;
 
 	if (   gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS
@@ -4934,7 +4936,7 @@ b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	b32 changed = false;
-	gui__widget_render_state_e render_state;
+	gui_widget_render_state_e render_state;
 
 	if (gui__btn_logic(gui, id, MB_LEFT, contains_mouse) == GUI_BTN_PRESS) {
 		if (*val & opt) {
@@ -5080,7 +5082,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const s32 ph = h * num_items;
 	s32 px, py;
 	b32 triggered_by_key = false;
-	gui__widget_render_state_e render_state;
+	gui_widget_render_state_e render_state;
 
 	assert(gui->dropdown.id == 0); /* cannot nest dropdowns */
 
@@ -5183,7 +5185,7 @@ void gui_dropdown_end(gui_t *gui)
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.dropdown.btn);
 
 	const gui_element_style_t style
-		= gui__element_style(gui, render_state, &gui->style.dropdown.btn);
+		= gui_element_style(gui, render_state, &gui->style.dropdown.btn);
 	const gui_element_style_t style_pen = {
 		.line = {
 			.thickness = 1.f,
@@ -5273,7 +5275,7 @@ void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id, b32 draggi
 {
 	const gui_widget_style_t *widget_style = &gui->style.drag;
 	const s32 state = gui__widget_render_state(gui, id, dragging, false, true);
-	const gui_element_style_t style = gui__element_style(gui, state, widget_style);
+	const gui_element_style_t style = gui_element_style(gui, state, widget_style);
 	widget_style->pen(gui, x, y, w, h, &style);
 	gui__hint_render(gui, id, widget_style->hint);
 }
@@ -5361,7 +5363,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const s32 pw = item_w;
 	const s32 ph = h * num_items;
 	s32 px, py;
-	gui__widget_render_state_e render_state;
+	gui_widget_render_state_e render_state;
 
 	if (gui->popup) {
 		px = x + w;
@@ -5559,7 +5561,7 @@ b32 gui_color_picker_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	const u64 id = gui_widget_id(gui, x, y);
 	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
 	s32 px, py;
-	gui__widget_render_state_e render_state;
+	gui_widget_render_state_e render_state;
 	gui_style_t *style = gui_style(gui);
 	color_t color = colorf_to_color(c);
 
