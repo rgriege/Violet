@@ -7389,11 +7389,42 @@ void pgui__panel_compute_scaled_dimensions(const gui_t *gui, gui_panel_t *panel)
 	panel->w = sw;
 	panel->h = sh;
 
-	if (panel->flags & GUI_PANEL_TITLEBAR) {
-		/* Ensure we don't scale the drag handle to a position off the screen. */
+	/* Ensure the panel is visible */
+	if (panel->flags & GUI_PANEL_DRAGGABLE) {
+		/* We can be more forgiving when panels are draggable - as long as the
+		 * drag handle is visible & interactive, it's ok for the panel
+		 * to be partially off screen. */
+		const s32 handle_dim = gui_scale_val(gui, GUI_PANEL_TITLEBAR_HEIGHT);
 		if (panel->x < 0)
 			panel->x = 0;
+		else if (panel->x + handle_dim <= gui->window_dim.x)
+			; /* fine */
+		else if (panel->w <= gui->window_dim.x)
+			panel->x = gui->window_dim.x - panel->w;
+		else
+			panel->x = gui->window_dim.x - handle_dim;
+
 		if (panel->y + panel->h > gui->window_dim.y)
+			panel->y = gui->window_dim.y - panel->h;
+		else if (panel->y + panel->h - handle_dim >= 0)
+			; /* fine */
+		else if (panel->h <= gui->window_dim.y)
+			panel->y = 0;
+		else
+			panel->y = gui->window_dim.y - panel->h;
+	} else {
+		if (panel->w > gui->window_dim.x)
+			panel->x = (gui->window_dim.x - panel->w) / 2;
+		else if (panel->x < 0)
+			panel->x = 0;
+		else if (panel->x + panel->w > gui->window_dim.x)
+			panel->x = gui->window_dim.x - panel->w;
+
+		if (panel->h > gui->window_dim.y)
+			panel->y = (gui->window_dim.y - panel->h) / 2;
+		else if (panel->y < 0)
+			panel->y = 0;
+		else if (panel->y + panel->h > gui->window_dim.y)
 			panel->y = gui->window_dim.y - panel->h;
 	}
 }
