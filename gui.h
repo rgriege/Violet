@@ -7418,12 +7418,23 @@ void pgui__panel_compute_unscaled_dimensions(const gui_t *gui, gui_panel_t *pane
 	panel->unscaled.h = uh;
 }
 
+static
+void pgui__panel_validate_flags(gui_panel_flags_e flags)
+{
+	/* these only work if the titlebar is enabled */
+	assert(!(flags & GUI_PANEL_DRAGGABLE)   || (flags & GUI_PANEL_TITLEBAR));
+	assert(!(flags & GUI_PANEL_CLOSABLE)    || (flags & GUI_PANEL_TITLEBAR));
+	assert(!(flags & GUI_PANEL_COLLAPSABLE) || (flags & GUI_PANEL_TITLEBAR));
+}
+
+static
 void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                       s32 x, s32 y, s32 w, s32 h,
                       const char *title, gui_panel_flags_e flags)
 {
 	assert(id <= GUI__MAX_PANEL_ID);
 	assert(!(flags & GUI_PANEL_TITLEBAR) || title);
+	pgui__panel_validate_flags(flags);
 
 	panel->unscaled.x = x;
 	panel->unscaled.y = y;
@@ -7924,6 +7935,7 @@ b32 pgui_panel(gui_t *gui, gui_panel_t *panel)
 	const u32 base_id = gui__panel_base_id(panel);
 
 	assert(!gui->panel);
+	pgui__panel_validate_flags(panel->flags);
 
 	if (panel->split && !gui->splits_rendered_this_frame) {
 		b32 changed = false;
