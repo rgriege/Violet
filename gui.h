@@ -485,6 +485,7 @@ b32  gui_any_widget_active(const gui_t *gui);
 b32  gui_any_widget_has_focus(const gui_t *gui);
 b32  gui_any_widget_had_focus(const gui_t *gui);
 b32  gui_locked(const gui_t *gui);
+u32  gui_lock_count(const gui_t *gui);
 void gui_lock(gui_t *gui);
 void gui_unlock(gui_t *gui);
 /* NOTE: I usually hate 'conditional' methods, but this cleans up usage code */
@@ -6076,6 +6077,11 @@ b32 gui_any_widget_had_focus(const gui_t *gui)
 b32 gui_locked(const gui_t *gui)
 {
 	return gui->lock > 0;
+}
+
+u32 gui_lock_count(const gui_t *gui)
+{
+	return gui->lock;
 }
 
 void gui_lock(gui_t *gui)
