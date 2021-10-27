@@ -286,6 +286,7 @@ b32   polyf_is_simple(const v2f *v, u32 n);
 b32   polyf_is_convex(const v2f *v, u32 n);
 b32   polyf_is_concave(const v2f *v, u32 n);
 b32   polyf_contains(const v2f *v, u32 n, v2f point);
+b32   polyf_contains_fast(const v2f *v, u32 n, box2f *bbox, v2f pt);
 void  polyf_bounding_box(const v2f *v, u32 n, box2f *box);
 v2f   polyf_extent(const v2f *v, u32 n);
 void  polyf_translate(v2f *v, u32 n, v2f delta);
@@ -1621,6 +1622,24 @@ b32 polyf_contains(const v2f *v, u32 n, v2f point)
 			++intersections;
 	}
 	return intersections % 2 == 1;
+}
+
+// TODO(luke): write tests... get advice from Ryan
+/* Algorithm per https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
+   Known to report false negatives (i.e. point not in polygon) when point is
+   on some edges of the polygon, but not others. */
+b32 polyf_contains_fast(const v2f *v, u32 n, box2f *box, v2f point)
+{
+	if (!box2f_contains_point(*box, point))
+		return false;
+
+	b32 result = false;
+	for (u32 i = 0, j = n-1; i < n; j = i++)
+		if (   ((v[i].y > point.y) != (v[j].y > point.y))
+		    && (point.x < (v[j].x - v[i].x) * (point.y - v[i].y) / (v[j].y - v[i].y) + v[i].x))
+			result = !result;
+
+	return result;
 }
 
 void polyf_bounding_box(const v2f *v, u32 n, box2f *box)
