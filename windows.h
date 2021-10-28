@@ -449,7 +449,7 @@ FILE *file_open(const char *fname, const char *mode)
 		return NULL;
 	}
 	if (!(fp = _wfopen(fname_w, mode_w))) {
-		log_error("%s(%s): _wfopen() error %d", __FUNCTION__, fname, errno);
+		log_error("%s(%s, %s): _wfopen() error %d", __FUNCTION__, fname, mode, errno);
 		return NULL;
 	}
 	return fp;
