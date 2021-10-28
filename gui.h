@@ -591,6 +591,7 @@ void pgui_strip(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 void pgui_spacer(gui_t *gui);
 void pgui_spacer_blank(gui_t *gui);
 void pgui_txt(gui_t *gui, const char *str);
+void pgui_txt_info(gui_t *gui, const char *str);
 void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
 s32  pgui_btn_txt(gui_t *gui, const char *lbl);
 s32  pgui_btn_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
@@ -906,6 +907,7 @@ typedef struct gui_style
 	gui_widget_style_t       tree;
 	gui_panel_style_t        panel;
 	gui_line_style_t         split;
+	gui_widget_style_t       txt_info;
 } gui_style_t;
 
 extern const gui_style_t g_gui_style_default;
@@ -6503,6 +6505,22 @@ void pgui_txt(gui_t *gui, const char *str)
 	pgui_cell_consume(gui, &x, &y, &w, &h);
 	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
 	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
+}
+
+void pgui_txt_info(gui_t *gui, const char *str)
+{
+	const gui_panel_style_t *style = &gui->style.panel;
+	s32 x, y, w, h;
+	pgui_cell_consume(gui, &x, &y, &w, &h);
+	gui_rect(gui, x, y, w, h, style->cell_bg_color, style->cell_border_color);
+	gui_txt_styled(gui, x, y, w, h, str, &gui->style.txt);
+
+	const u64 id = gui_widget_id(gui, x, y);
+	const b32 contains_mouse = gui__widget_contains_mouse(gui, x, y, w, h);
+	/* Handle hover events by repurposing btn_logic.
+	   This is a dirty hack but adequate for the use case. */
+	gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
+	gui__hint_render(gui, id, gui->style.txt_info.hint);
 }
 
 void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
