@@ -150,6 +150,7 @@ void   window_minimize(window_t *window);
 void   window_maximize(window_t *window);
 void   window_restore(window_t *window);
 void   window_fullscreen(window_t *window);
+void   window_set_title(window_t *window, const char *title);
 void   window_run(window_t *window, u32 fps, b32(*ufunc)(window_t*, void*), void *udata);
 
 gui_t *window_get_gui(window_t *window);
@@ -1174,6 +1175,11 @@ void window_fullscreen(window_t *window)
 	window__store_current_window_rect(window);
 	if (window__maximum_window_rect(window, &rect))
 		SDL_MaximizeWindow(window->window);
+}
+
+void window_set_title(window_t *window, const char *title)
+{
+	SDL_SetWindowTitle(window->window, title);
 }
 
 static
