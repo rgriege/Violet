@@ -1150,6 +1150,8 @@ void window__restore(window_t *window, v2i pos, v2i dim)
 	SDL_SetWindowPosition(window->window, pos.x, pos.y);
 }
 
+static const s32 g_window_border_ratio = 10;
+
 void window_restore(window_t *window)
 {
 	v2i pos, dim;
@@ -1158,7 +1160,7 @@ void window_restore(window_t *window)
 	if (   window__maximum_window_rect(window, &rect)
 	    && (rect.w == window->restore_dim.x && rect.h == window->restore_dim.y)) {
 		SDL_GetWindowSize(window->window, &dim.x, &dim.y);
-		const v2i border = v2i_scale_inv(dim, 10);
+		const v2i border = v2i_scale_inv(dim, g_window_border_ratio);
 		dim = v2i_sub(dim, v2i_scale(border, 2));
 		pos = border;
 	} else {
@@ -1443,6 +1445,18 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	if (!window__get_display_usable_bounds(0, &usable_bounds))
 		goto err_ctx;
 
+	/* ensure we don't end up with a 0-width or 0-height window */
+	if (w == 0) {
+		const s32 border = usable_bounds.w / g_window_border_ratio;
+		w = usable_bounds.w - 2 * border;
+		x = usable_bounds.x + border;
+	}
+	if (h == 0) {
+		const s32 border = usable_bounds.h / g_window_border_ratio;
+		h = usable_bounds.h - 2 * border;
+		y = usable_bounds.y + border;
+	}
+
 	u32 sdl_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
 	if (flags & WINDOW_BORDERLESS)
 		sdl_flags |= SDL_WINDOW_BORDERLESS;
@@ -1664,7 +1678,7 @@ void window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h)
 			 * This is going to cause the drag to end, since the drag id won't be the same
 			 * next frame.  Fixing this is hard, since the reported mouse position will be
 			 * very different next frame even though it hasn't moved. */
-			const v2i border = v2i_scale_inv(gui->window_dim, 10);
+			const v2i border = v2i_scale_inv(gui->window_dim, g_window_border_ratio);
 			const v2i dim = v2i_sub(gui->window_dim, v2i_scale(border, 2));
 			const v2i pos = { .x = border.x, .y = 0 };
 			window__restore(window, pos, dim);
