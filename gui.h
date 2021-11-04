@@ -4052,8 +4052,9 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 mouse_pos_can_defocus)
 			if (mouse_pressed(gui, ~0) && mouse_pos_can_defocus)
 				gui__defocus_widget(gui, id);
 		}
-	} else if (gui->focus_next_widget && gui_widget_tab_focus_enabled(gui)) {
-		gui__on_widget_tab_focused(gui, id);
+	} else if (gui->focus_next_widget) {
+		if (gui_widget_tab_focus_enabled(gui))
+			gui__on_widget_tab_focused(gui, id);
 	} else if (gui->focus_prev_widget_id == id) {
 		if (!gui_widget_tab_focus_enabled(gui))
 			gui->focus_prev_widget_id = gui->prev_widget_id;
