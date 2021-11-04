@@ -1754,7 +1754,7 @@ typedef struct gui
 	b32 focus_id_found_this_frame;
 	b32 focus_next_widget;
 	u64 focus_prev_widget_id;
-	u64 prev_widget_id;
+	u64 last_tab_focusable_widget_id;
 	u64 hot_id_last_frame;
 	u32 tab_focus_lock;
 	gui_widget_bounds_t *widget_bounds;
@@ -1949,7 +1949,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->focus_id_at_frame_start = 0;
 	gui->focus_next_widget = false;
 	gui->focus_prev_widget_id = 0;
-	gui->prev_widget_id = 0;
+	gui->last_tab_focusable_widget_id = 0;
 	gui->hot_id_last_frame = 0;
 	gui->tab_focus_lock = 0;
 	gui->widget_bounds = &gui->default_widget_bounds;
@@ -2115,7 +2115,7 @@ void gui__tab_focus_adjacent_widget(gui_t *gui)
 	if (gui__get_most_focused_widget(gui, &id))
 		gui__defocus_widget(gui, id);
 	if (key_mod(gui, KBM_SHIFT)) {
-		gui->focus_prev_widget_id = gui->prev_widget_id;
+		gui->focus_prev_widget_id = gui->last_tab_focusable_widget_id;
 		gui->focus_id_found_this_frame = true;
 		gui->focus_next_widget = false;
 	} else {
@@ -4057,7 +4057,7 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 mouse_pos_can_defocus)
 			gui__on_widget_tab_focused(gui, id);
 	} else if (gui->focus_prev_widget_id == id) {
 		if (!gui_widget_tab_focus_enabled(gui))
-			gui->focus_prev_widget_id = gui->prev_widget_id;
+			gui->focus_prev_widget_id = gui->last_tab_focusable_widget_id;
 		else
 			gui__on_widget_tab_focused(gui, id);
 	}
@@ -4518,7 +4518,8 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	if (contains_mouse)
 		gui->cursor = GUI_CURSOR_TEXT_INPUT;
 	gui__hint_render(gui, id, gui->style.npt.hint);
-	gui->prev_widget_id = id;
+	if (gui_widget_tab_focus_enabled(gui))
+		gui->last_tab_focusable_widget_id = id;
 	return complete;
 }
 
@@ -4597,7 +4598,8 @@ gui_btn_e gui__btn_logic_ex(gui_t *gui, u64 id, gui_mouse_button_e mb,
 		gui->hot_id = id;
 		gui->hot_id_found_this_frame = true;
 	}
-	gui->prev_widget_id = id;
+	if (gui_widget_tab_focus_enabled(gui))
+		gui->last_tab_focusable_widget_id = id;
 	return retval;
 }
 
@@ -6035,8 +6037,8 @@ void gui_widget_change_id(gui_t *gui, u64 src, u64 dst)
 		gui->focus_id_at_frame_start = dst;
 	if (gui->focus_prev_widget_id == src)
 		gui->focus_prev_widget_id = dst;
-	if (gui->prev_widget_id == src)
-		gui->prev_widget_id = dst;
+	if (gui->last_tab_focusable_widget_id == src)
+		gui->last_tab_focusable_widget_id = dst;
 	if (gui->hot_id_last_frame == src)
 		gui->hot_id_last_frame = dst;
 
