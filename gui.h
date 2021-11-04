@@ -2219,6 +2219,18 @@ void gui_event_add_drop_file(gui_t *gui, const char *path)
 	strbcpy(gui->drop_file, path);
 }
 
+static
+void gui__decompose_widget_id(u64 id, s32 *x, s32 *y, u32 *base_id);
+
+static
+void gui__warn_not_drawn(u64 id, const char *type)
+{
+	s32 x, y;
+	u32 base_id;
+	gui__decompose_widget_id(id, &x, &y, &base_id);
+	log_warn("%s widget [%d,%d] on layer %u was not drawn", type, x, y, base_id);
+}
+
 void gui_events_end(gui_t *gui)
 {
 	if (gui->left_window && !gui->dragging_window) {
@@ -2272,19 +2284,19 @@ void gui_events_end(gui_t *gui)
 
 	/* Should rarely hit these */
 	if (gui->hot_id != 0 && !gui->hot_id_found_this_frame) {
-		log_warn("hot widget %" PRIu64 " was not drawn", gui->hot_id);
+		gui__warn_not_drawn(gui->hot_id, "hot");
 		gui->hot_id = 0;
 	}
 	gui->hot_id_found_this_frame = false;
 	if (gui->active_id != 0 && !gui->active_id_found_this_frame) {
-		log_warn("active widget %" PRIu64 " was not drawn", gui->active_id);
+		gui__warn_not_drawn(gui->active_id, "active");
 		gui->active_id = 0;
 	}
 	gui->active_id_found_this_frame = false;
 	if (gui->focus_ids[0] != 0 && !gui->focus_id_found_this_frame) {
 		for (u32 i = 0; i < countof(gui->focus_ids); ++i)
 			if (gui->focus_ids[i] != 0)
-				log_warn("focus widget %" PRIu64 " was not drawn", gui->focus_ids[i]);
+				gui__warn_not_drawn(gui->focus_ids[i], "focus");
 		arrclr(gui->focus_ids);
 		arrclr(gui->popups);
 		gui->npt.active = false;
@@ -5989,6 +6001,14 @@ static
 u64 gui__widget_id(u32 base_id, s32 x, s32 y)
 {
 	return (((u64)x) << 48) | (((u64)y) << 32) | base_id;
+}
+
+static
+void gui__decompose_widget_id(u64 id, s32 *x, s32 *y, u32 *base_id)
+{
+	*x = (id >> 48) & 0xffff;
+	*y = (id >> 32) & 0xffff;
+	*base_id = id & 0xffffffff;
 }
 
 u64 gui_widget_id(const gui_t *gui, s32 x, s32 y)
