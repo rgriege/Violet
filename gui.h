@@ -476,6 +476,9 @@ void gui_widget_push_base_id(gui_t *gui, u32 id, u32 *prev);
 void gui_widget_pop_base_id(gui_t *gui, u32 id, u32 prev);
 void gui_widget_change_id(gui_t *gui, u64 src, u64 dst);
 void gui_widget_focus_next(gui_t *gui);
+void gui_widget_disable_tab_focus(gui_t *gui);
+void gui_widget_enable_tab_focus(gui_t *gui);
+b32  gui_widget_tab_focus_enabled(const gui_t *gui);
 void gui_widget_deactivate(gui_t *gui, u64 id);
 b32  gui_widget_hot(const gui_t *gui, u64 id);
 b32  gui_widget_active(const gui_t *gui, u64 id);
@@ -1753,6 +1756,7 @@ typedef struct gui
 	u64 focus_prev_widget_id;
 	u64 prev_widget_id;
 	u64 hot_id_last_frame;
+	u32 tab_focus_lock;
 	gui_widget_bounds_t *widget_bounds;
 	gui_widget_bounds_t default_widget_bounds;
 
@@ -1947,6 +1951,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->focus_prev_widget_id = 0;
 	gui->prev_widget_id = 0;
 	gui->hot_id_last_frame = 0;
+	gui->tab_focus_lock = 0;
 	gui->widget_bounds = &gui->default_widget_bounds;
 	memclr(gui->default_widget_bounds);
 
@@ -2285,6 +2290,7 @@ void gui_events_end(gui_t *gui)
 		gui->npt.active = false;
 	}
 	gui->focus_id_found_this_frame = false;
+	gui->tab_focus_lock = 0;
 
 	if (gui__key_triggered(gui, KB_TAB) && gui->focus_ids[0] == 0)
 		gui__tab_focus_adjacent_widget(gui);
@@ -2709,6 +2715,7 @@ void gui_end_frame(gui_t *gui)
 	assert(gui->grid == NULL);
 	assert(gui->base_id == GUI__DEFAULT_BASE_ID);
 	assert(gui->lock == 0);
+	assert(gui->tab_focus_lock == 0);
 
 	if (gui->root_split && !gui->splits_rendered_this_frame)
 		gui_splits_render(gui);
@@ -4045,10 +4052,10 @@ void gui__widget_handle_focus(gui_t *gui, u64 id, b32 mouse_pos_can_defocus)
 			if (mouse_pressed(gui, ~0) && mouse_pos_can_defocus)
 				gui__defocus_widget(gui, id);
 		}
-	} else if (gui->focus_next_widget && !gui->lock) {
+	} else if (gui->focus_next_widget && gui_widget_tab_focus_enabled(gui)) {
 		gui__on_widget_tab_focused(gui, id);
 	} else if (gui->focus_prev_widget_id == id) {
-		if (gui->lock)
+		if (!gui_widget_tab_focus_enabled(gui))
 			gui->focus_prev_widget_id = gui->prev_widget_id;
 		else
 			gui__on_widget_tab_focused(gui, id);
@@ -5327,29 +5334,41 @@ b32 gui_drag_circf(gui_t *gui, s32 *x, s32 *y, s32 r, gui_mouse_button_e mb,
 static
 b32 gui__resize_horiz(gui_t *gui, s32 *x, s32 y, s32 w, s32 h)
 {
+	b32 ret = false;
 	box2i box;
+
+	gui_widget_disable_tab_focus(gui);
+
 	box2i_from_xywh(&box, *x, y, w, h);
 	if (gui_drag_rectf(gui, x, &y, w, h, MB_LEFT, gui_drag_func_horizontal, NULL)) {
 		gui->cursor = GUI_CURSOR_RESIZE_EW;
-		return true;
+		ret = true;
 	} else if (box2i_contains_point(box, gui->mouse_pos)) {
 		gui->cursor = GUI_CURSOR_RESIZE_EW;
 	}
-	return false;
+
+	gui_widget_enable_tab_focus(gui);
+	return ret;
 }
 
 static
 b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 {
+	b32 ret = false;
 	box2i box;
+
+	gui_widget_disable_tab_focus(gui);
+
 	box2i_from_xywh(&box, x, *y, w, h);
 	if (gui_drag_rectf(gui, &x, y, w, h, MB_LEFT, gui_drag_func_vertical, NULL)) {
 		gui->cursor = GUI_CURSOR_RESIZE_NS;
-		return true;
+		ret = true;
 	} else if (box2i_contains_point(box, gui->mouse_pos)) {
 		gui->cursor = GUI_CURSOR_RESIZE_NS;
 	}
-	return false;
+
+	gui_widget_enable_tab_focus(gui);
+	return ret;
 }
 
 b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
@@ -6030,6 +6049,24 @@ void gui_widget_focus_next(gui_t *gui)
 	    && !gui->focus_next_widget
 	    && gui->focus_prev_widget_id == 0)
 		gui->focus_next_widget = true;
+}
+
+void gui_widget_disable_tab_focus(gui_t *gui)
+{
+	++gui->tab_focus_lock;
+}
+
+void gui_widget_enable_tab_focus(gui_t *gui)
+{
+	if (gui->tab_focus_lock > 0)
+		--gui->tab_focus_lock;
+	else
+		assert(false);
+}
+
+b32 gui_widget_tab_focus_enabled(const gui_t *gui)
+{
+	return gui->lock == 0 && gui->tab_focus_lock == 0;
 }
 
 void gui_widget_deactivate(gui_t *gui, u64 id)
@@ -7773,6 +7810,8 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	s32 tab_count;
 	gui_panel_t *panel_to_remove_from_tabs = NULL;
 
+	gui_widget_disable_tab_focus(gui);
+
 	y = panel->y + panel->h - dim;
 
 	if (panel->flags & GUI_PANEL_DRAGGABLE) {
@@ -7785,7 +7824,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 				pgui_panel_remove_tab(gui, panel);
 				pgui_panel_to_front(gui, panel);
 				pgui__panel_titlebar(gui, panel, dragging);
-				return;
+				goto out;
 			}
 		}
 	} else {
@@ -7880,6 +7919,9 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 		if (panel_to_remove_from_tabs == panel)
 			pgui__panel_titlebar(gui, panel, dragging);
 	}
+
+out:
+	gui_widget_enable_tab_focus(gui);
 }
 
 static
