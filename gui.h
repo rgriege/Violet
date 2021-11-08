@@ -858,22 +858,22 @@ typedef struct gui_scroll_area_style
 	gui_slider_style_t scrollbar;
 } gui_scroll_area_style_t;
 
+typedef struct gui_shadow_style
+{
+	color_t color;
+	s32 width;
+} gui_shadow_style_t;
+
 typedef struct gui_dropdown_style
 {
 	gui_widget_style_t btn;
-	struct {
-		color_t color;
-		s32 width;
-	} shadow;
+	gui_shadow_style_t shadow;
 } gui_dropdown_style_t;
 
 typedef struct gui_color_picker_style
 {
 	gui_widget_style_t btn;
-	struct {
-		color_t color;
-		s32 width;
-	} shadow;
+	gui_shadow_style_t shadow;
 } gui_color_picker_style_t;
 
 typedef struct gui_panel_style
@@ -5066,18 +5066,24 @@ void gui__popup_end(gui_t *gui)
 	gui->popup = gui->popup->prev;
 }
 
+/* Unlike gui_rect_dropshadow, this function
+ * 1) doesn't take an offset parameter
+ * 2) doesn't place any shadow above the box
+ * 3) doesn't shade the interior of the box */
 static
-void gui__shadow_box(gui_t *gui, s32 px, s32 py, s32 pw, s32 ph, s32 sw, color_t color)
+void gui__shadow_box(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                     s32 thickness, color_t color)
 {
+	const s32 t = thickness;
 	const v2f verts[8] = {
-		{ px,           py + ph },
-		{ px,           py },
-		{ px + pw,      py },
-		{ px + pw,      py + ph },
-		{ px + pw + sw, py + ph },
-		{ px + pw + sw, py - sw },
-		{ px - sw,      py - sw },
-		{ px - sw,      py + ph },
+		{ x,         y + h },
+		{ x,         y },
+		{ x + w,     y },
+		{ x + w,     y + h },
+		{ x + w + t, y + h },
+		{ x + w + t, y - t },
+		{ x - t,     y - t },
+		{ x - t,     y + h },
 	};
 	if (gui_begin(gui, countof(verts), GUI_DRAW_TRIANGLE_STRIP)) {
 		gui_vertf(gui, verts[0].x, verts[0].y, color,     0.f, 0.f);
