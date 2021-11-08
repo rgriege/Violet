@@ -231,6 +231,8 @@ void gui_tri(gui_t *gui, s32 x0, s32 y0, s32 x1, s32 y1, s32 x2, s32 y2,
 void gui_rect(gui_t *gui, s32 x, s32 y, s32 w, s32 h, color_t fill, color_t stroke);
 void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                      color_t bl, color_t br, color_t tr, color_t tl);
+void gui_rect_dropshadow(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         s32 offset, s32 thickness, color_t color);
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke);
 void gui_arc(gui_t *gui, s32 x, s32 y, r32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke);
@@ -864,6 +866,13 @@ typedef struct gui_shadow_style
 	s32 width;
 } gui_shadow_style_t;
 
+typedef struct gui_dropshadow_style
+{
+	color_t color;
+	s32 offset;
+	s32 width;
+} gui_dropshadow_style_t;
+
 typedef struct gui_dropdown_style
 {
 	gui_widget_style_t btn;
@@ -890,6 +899,7 @@ typedef struct gui_panel_style
 	color_t cell_bg_color;
 	color_t cell_border_color;
 	gui_padding_style_t padding;
+	gui_dropshadow_style_t shadow;
 } gui_panel_style_t;
 
 typedef struct gui_style
@@ -3158,6 +3168,42 @@ void gui_rect_mcolor(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		gui__vertf(gui, vbr.x, vbr.y, br, 0.f, 0.f);
 		gui__vertf(gui, vtr.x, vtr.y, tr, 0.f, 0.f);
 		gui__vertf(gui, vtl.x, vtl.y, tl, 0.f, 0.f);
+		gui_end(gui);
+	}
+}
+
+void gui_rect_dropshadow(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
+                         s32 offset, s32 thickness, color_t color)
+{
+	const s32 o = offset;
+	const s32 t = thickness;
+	const s32 xo = x + o;
+	const s32 yo = y - o;
+	const v2f inner[4] = {
+		{ xo,         yo + h },
+		{ xo,         yo },
+		{ xo + w,     yo },
+		{ xo + w,     yo + h },
+	};
+	const v2f outer[4] = {
+		{ xo - t,     yo + h + t},
+		{ xo - t,     yo - t },
+		{ xo + w + t, yo - t },
+		{ xo + w + t, yo + h + t },
+	};
+	if (gui_begin(gui, 12, GUI_DRAW_TRIANGLE_STRIP)) {
+		gui_vertf(gui, inner[3].x, inner[3].y, color,     0.f, 0.f);
+		gui_vertf(gui, inner[2].x, inner[2].y, color,     0.f, 0.f);
+		gui_vertf(gui, inner[0].x, inner[0].y, color,     0.f, 0.f);
+		gui_vertf(gui, inner[1].x, inner[1].y, color,     0.f, 0.f);
+		gui_vertf(gui, outer[1].x, outer[1].y, g_nocolor, 0.f, 0.f);
+		gui_vertf(gui, inner[2].x, inner[2].y, color,     0.f, 0.f);
+		gui_vertf(gui, outer[2].x, outer[2].y, g_nocolor, 0.f, 0.f);
+		gui_vertf(gui, inner[3].x, inner[3].y, color,     0.f, 0.f);
+		gui_vertf(gui, outer[3].x, outer[3].y, g_nocolor, 0.f, 0.f);
+		gui_vertf(gui, inner[0].x, inner[0].y, color,     0.f, 0.f);
+		gui_vertf(gui, outer[0].x, outer[0].y, g_nocolor, 0.f, 0.f);
+		gui_vertf(gui, outer[1].x, outer[1].y, g_nocolor, 0.f, 0.f);
 		gui_end(gui);
 	}
 }
@@ -8219,6 +8265,7 @@ void pgui_panel_toggle(gui_t *gui, gui_panel_t *panel)
 void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 {
 	const u32 base_id = gui__panel_base_id(panel);
+	const gui_panel_style_t *style = &gui->style.panel;
 	b32 contains_mouse;
 
 	assert(gui->panel == panel);
@@ -8229,7 +8276,6 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 		pgui__style_pop_panel_scroll_area(gui);
 	} else {
 		const s32 body_height = pgui_panel_body_height(gui, panel);
-		const gui_panel_style_t *style = &gui->style.panel;
 		gui_mask_pop(gui);
 		gui_rect(gui, panel->x, panel->y, panel->w, body_height, style->bg_color, g_nocolor);
 	}
@@ -8239,6 +8285,10 @@ void pgui_panel_finish(gui_t *gui, gui_panel_t *panel)
 	/* NOTE(rgriege): would be great to avoid the additional layer here,
 	 * but otherwise the next widgets are on top of the panel bg & scrollbars */
 	gui__layer_new(gui);
+
+	if (!panel->split && style->shadow.width > 0 && style->shadow.color.a > 0)
+		gui_rect_dropshadow(gui, panel->x, panel->y, panel->w, panel->h,
+		                    style->shadow.offset, style->shadow.width, style->shadow.color);
 
 	if (contains_mouse && !mouse_covered(gui))
 		mouse_cover(gui, gui_widget_id(gui, ~0, ~0));
