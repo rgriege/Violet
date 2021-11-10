@@ -3208,10 +3208,19 @@ void gui_rect_dropshadow(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	}
 }
 
+static
+u32 gui__arc_poly_sz(r32 r, r32 angle_start, r32 angle_end)
+{
+	const r32 angle_delta = angle_end > angle_start
+	                      ? angle_end - angle_start
+	                      : angle_end - angle_start + 2.f*fPI;
+	return max(2, (u32)((2.f + r) * (angle_delta / fPI)));
+}
+
 void gui_arc(gui_t *gui, s32 x, s32 y, r32 r, r32 angle_start, r32 angle_end,
              color_t fill, color_t stroke)
 {
-	const u32 num_verts = arc_poly_sz(r, angle_start, angle_end);
+	const u32 num_verts = gui__arc_poly_sz(r, angle_start, angle_end);
 	if (gui->vert_cnt + num_verts <= GUI_MAX_VERTS) {
 		v2f *verts = &gui->verts[gui->vert_cnt];
 		arc_to_poly(x, y, r, angle_start, angle_end, verts, num_verts, false);
@@ -3221,7 +3230,7 @@ void gui_arc(gui_t *gui, s32 x, s32 y, r32 r, r32 angle_start, r32 angle_end,
 
 void gui_circ(gui_t *gui, s32 x, s32 y, s32 r, color_t fill, color_t stroke)
 {
-	const u32 num_verts = arc_poly_sz(r, 0, fPI * 2.f);
+	const u32 num_verts = gui__arc_poly_sz(r, 0, fPI * 2.f);
 	if (gui->vert_cnt + num_verts <= GUI_MAX_VERTS) {
 		v2f *verts = &gui->verts[gui->vert_cnt];
 		arc_to_poly(x, y, r, 0, fPI * 2.f, verts, num_verts, true);
