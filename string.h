@@ -59,6 +59,8 @@ str_t *str_cpy2(str_t *dst, const char *src1, const char *src2);
 str_t *str_cpyn(str_t *dst, const char *src, size_t size);
 str_t *str_cat(str_t *dst, const char *src);
 str_t *str_catn(str_t *dst, const char *src, size_t size);
+str_t *str_catprintf(str_t *dst, const char *fmt, ...);
+str_t *str_catprintfv(str_t *dst, const char *fmt, va_list args);
 
 str_t *str_clear(str_t *str);
 str_t *str_remove_to_end(str_t *str, const char *p);
@@ -448,6 +450,34 @@ str_t *str_catn(str_t *dst, const char *src, size_t size)
 	array_pop(*dst);
 	array_appendn(*dst, src, (array_size_t)size);
 	array_append(*dst, 0);
+	return dst;
+}
+
+str_t *str_catprintf(str_t *dst, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	str_catprintfv(dst, fmt, args);
+	va_end(args);
+	return dst;
+}
+
+str_t *str_catprintfv(str_t *dst, const char *fmt, va_list args)
+{
+	int size;
+	va_list args2;
+
+	va_copy(args2, args);
+
+	/* invalidates args */
+	size = vsnprintf(NULL, 0, fmt, args);
+	array_grow(*dst, size);
+	/* + 1 for null terminator */
+	vsnprintf(str_end(dst), size + 1, fmt, args2);
+	array_extend_sz(*dst, size);
+
+	va_end(args2);
+
 	return dst;
 }
 
