@@ -100,8 +100,8 @@ void img_destroy(gui_img_t *img);
 
 /* Font */
 
-#ifndef GUI_FONT_FILE_PATH
-#define GUI_FONT_FILE_PATH "Roboto.ttf"
+#ifndef WINDOW_FONT_FILE_PATH
+#define WINDOW_FONT_FILE_PATH "Roboto.ttf"
 #endif
 
 typedef struct font_t
@@ -1426,7 +1426,7 @@ SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, v
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         window_flags_e flags)
 {
-	return window_create_ex(x, y, w, h, title, flags, GUI_FONT_FILE_PATH);
+	return window_create_ex(x, y, w, h, title, flags, WINDOW_FONT_FILE_PATH);
 }
 
 window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
