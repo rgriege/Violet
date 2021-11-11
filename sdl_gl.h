@@ -1385,6 +1385,7 @@ static
 SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, void *userdata)
 {
 	const box2i *drag_area = userdata;
+	const u32 flags = SDL_GetWindowFlags(window);
 	v2i drawable_dim;
 	v2i window_dim;
 	v2i p;
@@ -1395,9 +1396,30 @@ SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, v
 	p.x = point->x * drawable_dim.x / window_dim.x;
 	p.y = drawable_dim.y - point->y * drawable_dim.y / window_dim.y;
 
-	return box2i_contains_point(*drag_area, p)
-	     ? SDL_HITTEST_DRAGGABLE
-	     : SDL_HITTEST_NORMAL;
+	if (box2i_contains_point(*drag_area, p))
+		return SDL_HITTEST_DRAGGABLE;
+
+	if (flags & SDL_WINDOW_RESIZABLE) {
+		u32 row = 1, col = 1;
+		// Windows will call this function when the mouse is slightly
+		// outside the window.
+		if (p.x < 0)
+			col = 0;
+		if (p.x > window_dim.x)
+			col = 2;
+		if (p.y < 0)
+			row = 2;
+		if (p.y > window_dim.y)
+			row = 0;
+		const SDL_HitTestResult grid[3][3] = {
+			{ SDL_HITTEST_RESIZE_TOPLEFT,    SDL_HITTEST_RESIZE_TOP,    SDL_HITTEST_RESIZE_TOPRIGHT, },
+			{ SDL_HITTEST_RESIZE_LEFT,       SDL_HITTEST_NORMAL,        SDL_HITTEST_RESIZE_RIGHT, },
+			{ SDL_HITTEST_RESIZE_BOTTOMLEFT, SDL_HITTEST_RESIZE_BOTTOM, SDL_HITTEST_RESIZE_BOTTOMRIGHT, },
+		};
+		return grid[row][col];
+	}
+
+	return SDL_HITTEST_NORMAL;
 }
 #endif // _WIN32
 
