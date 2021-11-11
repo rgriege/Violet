@@ -149,11 +149,6 @@ void gui_event_add_window_leave(gui_t *gui);
 void gui_event_set_window_dim(gui_t *gui, s32 w, s32 h);
 void gui_events_end(gui_t *gui);
 
-/* done after regular events since it uses a gui drag widget */
-void gui_window_drag(gui_t *gui);
-b32  gui_window_dragging(const gui_t *gui);
-void gui_window_drag_end(gui_t *gui);
-
 #ifndef GUI_MOUSE_DOUBLE_CLICK_DIST
 #define GUI_MOUSE_DOUBLE_CLICK_DIST     5
 #endif
@@ -1794,7 +1789,6 @@ typedef struct gui
 	} dropdown;
 	gui_popup_t popups[GUI_POPUP_STACK_SIZE];
 	gui_popup_t *popup;
-	b32 dragging_window;
 	colorf_t color_picker8_color;
 	gui_scroll_area_t *scroll_area;
 	gui_tree_t tree;
@@ -1976,7 +1970,6 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->dropdown.id = 0;
 	arrclr(gui->popups);
 	gui->popup = NULL;
-	gui->dragging_window = false;
 	gui->color_picker8_color = (colorf_t){0};
 	gui->scroll_area = NULL;
 	memclr(gui->tree);
@@ -2243,7 +2236,7 @@ void gui__warn_not_drawn(u64 id, const char *type)
 
 void gui_events_end(gui_t *gui)
 {
-	if (gui->left_window && !gui->dragging_window) {
+	if (gui->left_window) {
 		gui->mouse_btn = 0;
 		gui->hot_id = 0;
 		gui->active_id = 0;
@@ -2372,9 +2365,6 @@ void gui_events_end(gui_t *gui)
 	}
 	gui->popup = NULL;
 
-	/* ensure this is set every frame when dragging the window (perf) */
-	gui->dragging_window = false;
-
 	gui->cursor = GUI_CURSOR_DEFAULT;
 	if (gui->root_split) {
 		gui_splits_compute(gui);
@@ -2390,22 +2380,6 @@ void gui_events_end(gui_t *gui)
 
 	/* kinda wasteful, but ensures split resizers & mouse debug are drawn on top */
 	gui__layer_new(gui);
-}
-
-void gui_window_drag(gui_t *gui)
-{
-	gui->dragging_window = true;
-	gui->mouse_pos = gui->mouse_pos_last;
-}
-
-b32 gui_window_dragging(const gui_t *gui)
-{
-	return gui->dragging_window;
-}
-
-void gui_window_drag_end(gui_t *gui)
-{
-	gui->dragging_window = false;
 }
 
 static
