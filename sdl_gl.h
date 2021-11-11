@@ -1025,6 +1025,7 @@ typedef struct window
 
 	v2i restore_pos;
 	v2i restore_dim;
+	box2i drag_area;
 
 	/* style */
 	SDL_Cursor *cursors[GUI_CURSOR_COUNT];
@@ -1379,6 +1380,27 @@ void window__gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum sev
 }
 #endif
 
+#ifdef _WIN32
+static
+SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, void *userdata)
+{
+	const box2i *drag_area = userdata;
+	v2i drawable_dim;
+	v2i window_dim;
+	v2i p;
+
+	SDL_GL_GetDrawableSize(window, &drawable_dim.x, &drawable_dim.y);
+	SDL_GetWindowSize(window, &window_dim.x, &window_dim.y);
+
+	p.x = point->x * drawable_dim.x / window_dim.x;
+	p.y = drawable_dim.y - point->y * drawable_dim.y / window_dim.y;
+
+	return box2i_contains_point(*drag_area, p)
+	     ? SDL_HITTEST_DRAGGABLE
+	     : SDL_HITTEST_NORMAL;
+}
+#endif // _WIN32
+
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         window_flags_e flags)
 {
@@ -1599,6 +1621,12 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 
 	window__store_current_window_rect(window);
 
+	box2i_from_xywh(&window->drag_area, 0, 0, 0, 0);
+#ifdef _WIN32
+	if (flags & WINDOW_BORDERLESS)
+		SDL_SetWindowHitTest(window->window, window__hit_test, &window->drag_area);
+#endif
+
 	++g_window_cnt;
 
 	gui_fonts_t fonts = {
@@ -1670,6 +1698,9 @@ void window__drag_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
 
 void window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h)
 {
+#ifdef _WIN32
+	box2i_from_xywh(&window->drag_area, x, y, w, h);
+#else
 	gui_t *gui = window->gui;
 	gui_style_push(gui, drag, g_gui_style_invis.drag);
 	if (gui_drag_rectf(gui, &x, &y, w, h, MB_LEFT, window__drag_cb, NULL)) {
@@ -1692,6 +1723,7 @@ void window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h)
 		gui_window_drag_end(gui);
 	}
 	gui_style_pop(gui);
+#endif // !_WIN32
 }
 
 s32 window_get_scale_for_dpi(const window_t *window)
