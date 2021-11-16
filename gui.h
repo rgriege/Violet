@@ -480,6 +480,8 @@ void gui_widget_deactivate(gui_t *gui, u64 id);
 b32  gui_widget_hot(const gui_t *gui, u64 id);
 b32  gui_widget_active(const gui_t *gui, u64 id);
 b32  gui_widget_focused(const gui_t *gui, u64 id);
+void gui_widget_animate(gui_t *gui, u64 id);
+b32  gui_widget_animated(const gui_t *gui, u64 id, u32 *time);
 b32  gui_any_widget_hot(const gui_t *gui);
 b32  gui_any_widget_active(const gui_t *gui);
 b32  gui_any_widget_has_focus(const gui_t *gui);
@@ -1762,6 +1764,11 @@ typedef struct gui
 	u64 last_tab_focusable_widget_id;
 	u64 hot_id_last_frame;
 	u32 tab_focus_lock;
+	struct
+	{
+		u64 widget_id;
+		u32 time_start;
+	} animation;
 	gui_widget_bounds_t *widget_bounds;
 	gui_widget_bounds_t default_widget_bounds;
 
@@ -1956,6 +1963,8 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->last_tab_focusable_widget_id = 0;
 	gui->hot_id_last_frame = 0;
 	gui->tab_focus_lock = 0;
+	gui->animation.widget_id = 0;
+	gui->animation.time_start = 0;
 	gui->widget_bounds = &gui->default_widget_bounds;
 	memclr(gui->default_widget_bounds);
 
@@ -4642,6 +4651,22 @@ gui_btn_e gui__btn_logic_ex(gui_t *gui, u64 id, gui_mouse_button_e mb,
 	if (gui_widget_tab_focus_enabled(gui))
 		gui->last_tab_focusable_widget_id = id;
 	return retval;
+}
+
+void gui_widget_animate(gui_t *gui, u64 id)
+{
+	gui->animation.widget_id = id;
+	gui->animation.time_start = gui_run_time_milli(gui);
+}
+
+b32 gui_widget_animated(const gui_t *gui, u64 id, u32 *time)
+{
+	if (gui->animation.widget_id == id) {
+		*time = gui_run_time_milli(gui) - gui->animation.time_start;
+		return true;
+	} else {
+		return false;
+	}
 }
 
 static
