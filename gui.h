@@ -760,6 +760,7 @@ void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
                               gui_split_t *split,
                               const char *title, gui_panel_flags_e flags);
 void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
+void pgui_panel_remove_tab(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_select_tab(gui_panel_t *panel);
 b32  pgui_panel(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_collapse(gui_panel_t *panel);
