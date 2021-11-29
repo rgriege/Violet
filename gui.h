@@ -7886,11 +7886,22 @@ s32 box2i_to_point_dist_sq(box2i box, v2i point)
 }
 
 static
+s32 pgui__panel_titlebar_btns_width(const gui_panel_t *panel, s32 btn_dim)
+{
+	s32 w = 0;
+	if (panel->flags & GUI_PANEL_COLLAPSABLE)
+		w += btn_dim;
+	if (panel->flags & GUI_PANEL_CLOSABLE)
+		w += btn_dim;
+	return w;
+}
+static
 void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 {
 	const s32 dim = gui_scale_val(gui, GUI_PANEL_TITLEBAR_HEIGHT);
+	const s32 rw  = pgui__panel_titlebar_btns_width(panel, dim);
 	s32 y;
-	s32 rw, rx;
+	s32 rx;
 	s32 tab_count;
 	gui_panel_t *panel_to_remove_from_tabs = NULL;
 
@@ -7922,12 +7933,6 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	gui_style_push(gui, drag, gui->style.panel.drag);
 	gui__drag_rect_render(gui, panel->x, y, dim, dim, *dragging);
 	gui_style_pop(gui);
-
-	rw = 0;
-	if (panel->flags & GUI_PANEL_COLLAPSABLE)
-		rw += dim;
-	if (panel->flags & GUI_PANEL_CLOSABLE)
-		rw += dim;
 
 	tab_count = 0;
 	for (gui_panel_t *p = panel; p; p = p->next)
