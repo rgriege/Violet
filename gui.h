@@ -7895,14 +7895,24 @@ s32 pgui__panel_titlebar_btns_width(const gui_panel_t *panel, s32 btn_dim)
 		w += btn_dim;
 	return w;
 }
+
+static
+s32 pgui__panel_tab_count(const gui_panel_t *panel)
+{
+	s32 tab_count = 0;
+	for (const gui_panel_t *p = panel; p; p = p->next)
+		++tab_count;
+	return tab_count;
+}
+
 static
 void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 {
 	const s32 dim = gui_scale_val(gui, GUI_PANEL_TITLEBAR_HEIGHT);
 	const s32 rw  = pgui__panel_titlebar_btns_width(panel, dim);
+	const s32 tab_count = pgui__panel_tab_count(panel);
 	s32 y;
 	s32 rx;
-	s32 tab_count;
 	gui_panel_t *panel_to_remove_from_tabs = NULL;
 
 	gui_widget_disable_tab_focus(gui);
@@ -7934,9 +7944,6 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	gui__drag_rect_render(gui, panel->x, y, dim, dim, *dragging);
 	gui_style_pop(gui);
 
-	tab_count = 0;
-	for (gui_panel_t *p = panel; p; p = p->next)
-		++tab_count;
 	if (tab_count > 1) {
 		const s32 max_tab_dim = gui_scale_val(gui, GUI_PANEL_MAX_TAB_WIDTH);
 		s32 tab_dim, tab_idx;
