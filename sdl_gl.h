@@ -1400,16 +1400,28 @@ SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, v
 		return SDL_HITTEST_DRAGGABLE;
 
 	if (flags & SDL_WINDOW_RESIZABLE) {
+#ifdef _WIN32
+		// NOTE(rgriege): When migrating from SDL 2.0.5 to 2.0.18, the mouse
+		// cursor/handles to resize borderless windows no longer appear.
+		// For windows with borders, Windows will trigger a resize if the
+		// mouse is inside an 8 pixel wide zone around the window.  We used
+		// to get that behavior in 2.0.5, but that has disappeared by 2.0.18.
+		// This is our workaround.  I opted to use a smaller dimension since
+		// this zone has to be inset into the window.
+		const s32 border = (flags & SDL_WINDOW_BORDERLESS) ? 4 : 0;
+#else
+		const s32 border = 0;
+#endif
 		u32 row = 1, col = 1;
 		// Windows will call this function when the mouse is slightly
 		// outside the window.
-		if (p.x < 0)
+		if (p.x < border)
 			col = 0;
-		if (p.x > window_dim.x)
+		if (p.x > window_dim.x - border)
 			col = 2;
-		if (p.y < 0)
+		if (p.y < border)
 			row = 2;
-		if (p.y > window_dim.y)
+		if (p.y > window_dim.y - border)
 			row = 0;
 		const SDL_HitTestResult grid[3][3] = {
 			{ SDL_HITTEST_RESIZE_TOPLEFT,    SDL_HITTEST_RESIZE_TOP,    SDL_HITTEST_RESIZE_TOPRIGHT, },
@@ -1435,6 +1447,10 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	window_t *window = acalloc(1, sizeof(window_t), g_allocator);
 	if (g_window_cnt == 0) {
 		SDL_SetMainReady();
+		// In the move from SDL 2.0.5 to 2.0.18, borderless SDL windows
+		// no longer interact with the Windows window manager by default.
+		// This hint restores features like snapping.
+		SDL_SetHint("SDL_BORDERLESS_RESIZABLE_STYLE", "true");
 		if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 			log_error("SDL_Init(VIDEO) failed: %s", SDL_GetError());
 			goto err_sdl;
@@ -1800,6 +1816,21 @@ b32 window_begin_frame(window_t *window)
 				gui_event_add_window_leave(gui);
 			break;
 			default:
+				gui_event_add_update(gui);
+			break;
+			case SDL_WINDOWEVENT_MAXIMIZED:
+#ifdef _WIN32
+				// In the move from SDL 2.0.5 to 2.0.18, borderless
+				// SDL windows started resizing over the task bar
+				// when maximized.  This is our hacky way to prevent
+				// that.  This event also gets sent at weird times
+				// when we're trying to restore a maximized window,
+				// hence the check for !window_is_maximized.
+				if (    (SDL_GetWindowFlags(window->window) & SDL_WINDOW_BORDERLESS)
+				    && !(SDL_GetWindowFlags(window->window) & SDL_WINDOW_FULLSCREEN)
+				    && !window_is_maximized(window))
+					window_maximize(window);
+#endif
 				gui_event_add_update(gui);
 			break;
 			}
