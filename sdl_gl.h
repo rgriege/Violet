@@ -1380,7 +1380,6 @@ void window__gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum sev
 }
 #endif
 
-#ifdef SDL_HIT_TEST
 static
 SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, void *userdata)
 {
@@ -1433,7 +1432,6 @@ SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, v
 
 	return SDL_HITTEST_NORMAL;
 }
-#endif // SDL_HIT_TEST
 
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         window_flags_e flags)
@@ -1660,10 +1658,8 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	window__store_current_window_rect(window);
 
 	box2i_from_xywh(&window->drag_area, 0, 0, 0, 0);
-#ifdef SDL_HIT_TEST
 	if (flags & WINDOW_BORDERLESS)
 		SDL_SetWindowHitTest(window->window, window__hit_test, &window->drag_area);
-#endif
 
 	++g_window_cnt;
 
@@ -1730,40 +1726,9 @@ void window_destroy(window_t *window)
 	afree(window, g_allocator);
 }
 
-#ifndef SDL_HIT_TEST
-static
-void window__drag_cb(s32 *x, s32 *y, s32 mouse_x, s32 mouse_y,
-                     s32 offset_x, s32 offset_y, void *udata) {}
-#endif
-
 void window_drag(window_t *window, s32 x, s32 y, s32 w, s32 h)
 {
-#ifdef SDL_HIT_TEST
 	box2i_from_xywh(&window->drag_area, x, y, w, h);
-#else
-	gui_t *gui = window->gui;
-	gui_style_push(gui, drag, g_gui_style_invis.drag);
-	if (gui_drag_rectf(gui, &x, &y, w, h, MB_LEFT, window__drag_cb, NULL)) {
-		if (window_is_maximized(window)) {
-			/* Shrink the window so that it can be dragged around.
-			 * This is going to cause the drag to end, since the drag id won't be the same
-			 * next frame.  Fixing this is hard, since the reported mouse position will be
-			 * very different next frame even though it hasn't moved. */
-			const v2i border = v2i_scale_inv(gui->window_dim, g_window_border_ratio);
-			const v2i dim = v2i_sub(gui->window_dim, v2i_scale(border, 2));
-			const v2i pos = { .x = border.x, .y = 0 };
-			window__restore(window, pos, dim);
-		} else if (mouse_pos_changed(gui)) {
-			v2i delta;
-			mouse_pos_delta(gui, &delta.x, &delta.y);
-			window_move(window, delta.x, -delta.y);
-		}
-		gui_window_drag(gui);
-	} else if (gui_window_dragging(gui)) {
-		gui_window_drag_end(gui);
-	}
-	gui_style_pop(gui);
-#endif
 }
 
 s32 window_get_scale_for_dpi(const window_t *window)
@@ -1869,14 +1834,7 @@ b32 window_begin_frame(window_t *window)
 	keys = SDL_GetKeyboardState(&key_cnt);
 	gui_event_set_keyboard(gui, keys, key_cnt);
 
-	if (gui_window_dragging(gui)) {
-		v2i pos;
-		SDL_GetWindowPosition(window->window, &pos.x, &pos.y);
-		mouse_btn = SDL_GetGlobalMouseState(&mouse_pos.x, &mouse_pos.y);
-		mouse_pos = v2i_sub(mouse_pos, pos);
-	} else {
-		mouse_btn = SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
-	}
+	mouse_btn = SDL_GetMouseState(&mouse_pos.x, &mouse_pos.y);
 	if (mouse_wheel != 0)
 		mouse_btn |= (mouse_wheel > 0 ? MB_WHEELUP : MB_WHEELDOWN);
 #ifdef __APPLE__
