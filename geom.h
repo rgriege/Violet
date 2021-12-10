@@ -76,7 +76,12 @@ b32 triangulate__snip(const v2f *poly, u32 u, u32 v, u32 w, u32 n)
 	const r32 dp2   = v2f_dot(perp2, c);
 	for (u32 i = 0; i < n; ++i)
 		if (   i != u && i != v && i != w
-#if 0 /* supports some degenerate polygons with overlapping edges, like ][ */
+#if 1
+		/** Supports some degenerate polygons with overlapping edges, like ][.
+		 * NOTE(ben) this was deemend unnecessary and disabled for a while, but
+		 * the increased support for holes in TestFit solvers has made this
+		 * necessary again. Refer to eb561726 for the disabling commit.
+		 */
 		    && !v2f_equal(poly[i], a) && !v2f_equal(poly[i], b) && !v2f_equal(poly[i], c)
 #endif
 		    && triangle__contains(perp0, dp0, perp1, dp1, perp2, dp2, poly[i], epsilon))
