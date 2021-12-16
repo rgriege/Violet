@@ -2,6 +2,9 @@
 #define VIOLET_STRING_H
 
 /* C strings */
+#ifndef _GNU_SOURCE
+char *strchrnul(const char *s, int c);
+#endif
 char *strtrim(char *str);
 char *strext(char *dst, const char *src, u32 n, char **end, u32 *rem);
 void  stradv(const char *str, u32 n, char **end, u32 *rem);
@@ -75,6 +78,14 @@ b32    str_is_blank(str_t *str);
 #endif // VIOLET_STRING_H
 
 #ifdef STRING_IMPLEMENTATION
+
+#ifndef _GNU_SOURCE
+char *strchrnul(const char *s, int c)
+{
+	char *loc = strchr(s, c);
+	return loc ? loc : (char*)s + strlen(s);
+}
+#endif
 
 char *strtrim(char *str)
 {
