@@ -61,7 +61,8 @@ typedef struct array__head
                                                            MEMCALL_LOCATION), \
                                     (a)+array_sz(a) - 1)
 #define array_append(a, e)         (*array_append_null(a) = e)
-#define array_appendn(a, p, n)     ((a)=array__appendn(a, p, n, array__esz(a) \
+#define array_appendn(a, p, n)     (assert((a) != (p)), \
+                                    (a)=array__appendn(a, p, n, array__esz(a) \
                                                        MEMCALL_LOCATION))
 #define array_insert_null(a, i)    ((a)=array__insert_null(a, i, array__esz(a) \
                                                            MEMCALL_LOCATION), \
