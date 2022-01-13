@@ -51,16 +51,17 @@ enum panel
 };
 #define PANEL_COUNT 3
 
-struct widget_data
+typedef struct widget_data
 {
 	b32 chk;
+	b32 chk2;
 	u32 select;
 	u32 mselect;
 	u32 dropdown;
 	r32 slider;
 	color_t color;
 	char npt[64];
-};
+} widget_data_t;
 
 struct log_data
 {
@@ -68,6 +69,252 @@ struct log_data
 	s32 level[LOG_LINE_COUNT];
 	u32 start, cnt;
 };
+
+#define PAYLOAD_LIMIT_STATIC 8  // bytes
+
+typedef struct payload_static {
+	union {
+		b32 b32;
+		u32 u32;
+		r32 r32;
+		unsigned char bytes[PAYLOAD_LIMIT_STATIC];
+	} bytes;
+	u32 size;
+} payload_static_t;
+
+typedef struct payload_dynamic {
+	array(unsigned char) bytes;
+	u32 size;
+} payload_dynamic_t;
+
+typedef struct replacement_dyn {
+	array(unsigned char) bytes_before;
+	array(unsigned char) bytes_after;
+	u32 size;
+} replacement_dyn_t;
+
+typedef enum command_kind {
+	COMMAND_KIND_MODIFY,    /* a single field */
+	COMMAND_KIND_REPLACE,   /* an entire struct, whose size is compile time constant */
+} command_kind_e;
+
+typedef union payload {
+	payload_static_t modify;
+	payload_dynamic_t replace;
+} payload_t;
+
+typedef struct command {
+	command_kind_e kind;
+	payload_t payload;
+	u32 offset;
+} command_t;
+
+// TODO(luke): unlikely that this wants to be a global
+u32 g_transaction_id = 0;
+
+typedef struct revertable_command {
+	command_kind_e kind;
+	u32 offset;
+	u32 transaction_id;
+	array(unsigned char) bytes_before;
+	array(unsigned char) bytes_after;
+} revertable_command_t;
+
+typedef struct store_gui {
+	widget_data_t data;
+	array(command_t) command_queue;
+	array(revertable_command_t) undo_stack;
+	array(revertable_command_t) redo_stack;
+} store_gui_t;
+
+#define MUTATION_PAYLOAD(value, type, payload) \
+	assert(sizeof(value) <= PAYLOAD_LIMIT_STATIC); \
+	payload_static_t (payload) = { \
+		.bytes.type = value, \
+		.size = sizeof(type), \
+	};
+
+static
+void revertable_command_init(revertable_command_t *cmd, const command_t *command,
+                             u32 transaction_id, allocator_t *alc)
+{
+	*cmd = (revertable_command_t){
+		.kind = command->kind,
+		.offset = command->offset,
+		.transaction_id = transaction_id,
+	};
+	cmd->bytes_before = array_create_ex(alc);
+	cmd->bytes_after = array_create_ex(alc);
+}
+
+static
+void revertable_command_destroy(revertable_command_t *cmd)
+{
+	array_destroy(cmd->bytes_before);
+	array_destroy(cmd->bytes_after);
+}
+
+static
+void store_begin_transaction(store_gui_t *store)
+{
+	array_clear(store->command_queue);
+}
+
+// TODO(luke): this function needs to be responsible for undoing any changes if they prove invalid
+static
+b32 store_execute_command(store_gui_t *store, const command_t *command, u32 transaction_id)
+{
+	revertable_command_t cmd;
+	allocator_t *alc = array__allocator(store->undo_stack);
+	revertable_command_init(&cmd, command, transaction_id, alc);
+
+	switch (command->kind) {
+	case COMMAND_KIND_MODIFY:
+		;
+		const payload_static_t *payload = &command->payload.modify;
+		/* NOTE(luke): byte arithmetic requires casting to single-byte pointer type */
+		void *dst = (unsigned char *)&store->data + command->offset;
+		array_appendn(cmd.bytes_before, dst, payload->size);
+		memcpy(dst, &payload->bytes, payload->size);
+		array_appendn(cmd.bytes_after, dst, payload->size);
+	break;
+	case COMMAND_KIND_REPLACE:
+		NOOP;
+	break;
+	default:
+		NOOP;
+	break;
+	}
+
+	array_append(store->undo_stack, cmd);
+	return true;
+
+// err:
+// 	revertable_command_destroy(&cmd);
+// 	return false;
+}
+
+static
+b32 command_revert(store_gui_t *store, revertable_command_t *cmd)
+{
+	switch (cmd->kind) {
+	case COMMAND_KIND_MODIFY:
+		;
+		/* NOTE(luke): byte arithmetic requires casting to single-byte pointer type */
+		void *dst = (unsigned char *)&store->data + cmd->offset;
+		memcpy(dst, cmd->bytes_before, array_sz(cmd->bytes_before));
+	break;
+	case COMMAND_KIND_REPLACE:
+		NOOP;
+	break;
+	default:
+		NOOP;
+	break;
+	}
+	return true;
+}
+
+static
+b32 command_unwind_history(store_gui_t *store, u32 unwind_count)
+{
+	for (u32 i = 0, start_idx = array_sz(store->undo_stack)-1; i < unwind_count; ++i)
+		if (command_revert(store, &store->undo_stack[start_idx-i]))
+			array_pop(store->undo_stack);
+		else
+			return false;
+	return true;
+}
+
+static
+b32 store_undo(store_gui_t *store)
+{
+	if (array_sz(store->undo_stack) == 0)
+		return false;
+
+	do {
+		revertable_command_t *cmd = &array_last(store->undo_stack);
+		if (!command_revert(store, cmd))
+			/* something went very haywire - expect undefined behavior */
+			assert(false);
+
+		array(unsigned char) swap = cmd->bytes_before;
+		cmd->bytes_before = cmd->bytes_after;
+		cmd->bytes_after = swap;
+
+		array_append(store->redo_stack, array_last(store->undo_stack));
+		array_pop(store->undo_stack);
+	} while (   array_sz(store->undo_stack) > 0
+	         && array_last(store->undo_stack).transaction_id
+	         == array_last(store->redo_stack).transaction_id);
+
+	--g_transaction_id;
+
+	return true;
+}
+
+static
+b32 store_redo(store_gui_t *store)
+{
+	if (array_sz(store->redo_stack) == 0)
+		return false;
+
+	do {
+		revertable_command_t *cmd = &array_last(store->redo_stack);
+		if (!command_revert(store, cmd))
+			/* something went very haywire - expect undefined behavior */
+			assert(false);
+
+		array(unsigned char) swap = cmd->bytes_before;
+		cmd->bytes_before = cmd->bytes_after;
+		cmd->bytes_after = swap;
+
+		array_append(store->undo_stack, array_last(store->redo_stack));
+		array_pop(store->redo_stack);
+	} while (   array_sz(store->redo_stack) > 0
+	         && array_last(store->undo_stack).transaction_id
+	         == array_last(store->redo_stack).transaction_id);
+
+	++g_transaction_id;
+
+	return true;
+}
+
+static
+b32 store_commit_transaction(store_gui_t *store)
+{
+	u32 success_count;
+	u32 transaction_id = g_transaction_id;
+	for (u32 i = 0; i < array_sz(store->command_queue); ++i)
+		if (store_execute_command(store, &store->command_queue[i], transaction_id)) {
+			success_count++;
+		} else {
+			if (!command_unwind_history(store, success_count))
+				/* something went very haywire - expect undefined behavior */
+				assert(false);
+			return false;
+		}
+
+	array_clear(store->command_queue);
+
+	array_foreach(store->redo_stack, revertable_command_t, cmd)
+		revertable_command_destroy(cmd);
+	array_clear(store->redo_stack);
+
+	g_transaction_id++;
+
+	return true;
+}
+
+static
+void store_enqueue_mutation(store_gui_t *store, payload_static_t *payload, u32 offset)
+{
+	const command_t command = {
+		.kind = COMMAND_KIND_MODIFY,
+		.payload = *payload,
+		.offset = offset,
+	};
+	array_append(store->command_queue, command);
+}
 
 static
 void buffer_logger(void *udata, log_level_e level, const char *format, va_list ap)
@@ -199,26 +446,68 @@ void draw_split_node(gui_t *gui, const gui_split_t *split)
 }
 
 static
-void draw_widgets(gui_t *gui, r32 row_height, r32 hx, struct widget_data *data)
+void draw_widgets(gui_t *gui, r32 row_height, r32 hx, widget_data_t *data,
+                  store_gui_t *store)
 {
 	const s32 cols[] = { 100, 0 };
 	const s32 cols_npt[] = { 100, 80 };
 	const s32 cols4[] = { 100, 0, 0, 0 };
 
 	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Button");
-	gui_style_push_ptr(gui, btn.hint, "Button");
-	if (pgui_btn_txt(gui, "Button Label")) {
-		/* not bound to any state change */
-		log_debug("pressed Button Label");
+	pgui_txt(gui, "Undo");
+	gui_style_push_ptr(gui, btn.hint, "Undo");
+	if (pgui_btn_txt(gui, "Undo")) {
+		store_undo(store);
+		log_debug(imprintf("undo stack size: %d", array_sz(store->undo_stack)));
+		log_debug(imprintf("redo stack size: %d", array_sz(store->redo_stack)));
 	}
+
 	gui_style_pop(gui);
 	pgui_row_empty(gui, hx);
 
 	pgui_row_cellsv(gui, row_height, cols);
+	pgui_txt(gui, "Redo");
+	gui_style_push_ptr(gui, btn.hint, "Redo");
+	if (pgui_btn_txt(gui, "Redo")) {
+		/* not bound to any state change */
+		store_redo(store);
+		log_debug(imprintf("undo stack size: %d", array_sz(store->undo_stack)));
+		log_debug(imprintf("redo stack size: %d", array_sz(store->redo_stack)));
+	}
+
+	gui_style_pop(gui);
+	pgui_row_empty(gui, hx);
+
+	b32 checked = store->data.chk;
+	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Checkbox");
 	gui_style_push_ptr(gui, chk.hint, "Checkbox");
-	pgui_chk(gui, data->chk ? "Checked" : "Unchecked", &data->chk);
+	if (pgui_chk(gui, checked ? "Checked" : "Unchecked", &checked)) {
+		log_debug("toggled Checkbox");
+
+		{
+			store_begin_transaction(store);
+
+			u32 offset = offsetof(widget_data_t, chk);
+			MUTATION_PAYLOAD(checked, b32, payload);
+			store_enqueue_mutation(store, &payload, offset);
+
+			offset = offsetof(widget_data_t, chk2);
+			store_enqueue_mutation(store, &payload, offset);
+
+			store_commit_transaction(store);
+		}
+	}
+
+	gui_style_pop(gui);
+	pgui_row_empty(gui, hx);
+
+	b32 checked2 = store->data.chk2;
+	pgui_row_cellsv(gui, row_height, cols);
+	pgui_txt(gui, "Does Nothing");
+	gui_style_push_ptr(gui, chk.hint, "Do Nothing Checkbox");
+	pgui_chk(gui, checked2 ? "Checked" : "Unchecked", &checked2);
+
 	gui_style_pop(gui);
 	pgui_row_empty(gui, hx);
 
@@ -301,11 +590,11 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx, struct widget_data *data)
 }
 
 static
-void draw_widget_panel(gui_t *gui, struct widget_data *data)
+void draw_widget_panel(gui_t *gui, widget_data_t *data, store_gui_t *store)
 {
 	pgui_panel_grid_begin(gui, GUI_GRID_FLEX_VERTICAL);
 
-	draw_widgets(gui, 20, 5, data);
+	draw_widgets(gui, 20, 5, data, store);
 
 	for (u32 i = 0; i < 10; ++i) {
 		pgui_row_empty(gui, 5);
@@ -317,7 +606,8 @@ void draw_widget_panel(gui_t *gui, struct widget_data *data)
 }
 
 static
-void draw_widgets_no_panel(gui_t *gui, box2i bbox, struct widget_data *data)
+void draw_widgets_no_panel(gui_t *gui, box2i bbox, widget_data_t *data,
+                           store_gui_t *store)
 {
 	const v2i padding = { 10, 10 };
 	const box2i bbox_padded = {
@@ -333,7 +623,7 @@ void draw_widgets_no_panel(gui_t *gui, box2i bbox, struct widget_data *data)
 	h  = 20;
 	hx = 5;
 
-	draw_widgets(gui, h, hx, data);
+	draw_widgets(gui, h, hx, data, store);
 
 	pgui_grid_end(gui, &grid);
 }
@@ -409,7 +699,15 @@ int main(int argc, char *const argv[])
 	gui_split_t splits[7];
 	gui_split_t *root_split, *menu_split, *main_split;
 	gui_panel_t widget_panel, log_panel, about_panel;
-	struct widget_data widget_data = { .color = gi_blue, .npt = "Why are you the way that you are?" };
+	widget_data_t widget_data = { .color = gi_blue, .npt = "Why are you the way that you are?" };
+
+	store_gui_t store = {
+		.data = widget_data,
+		.command_queue = array_create_ex(g_allocator),
+		.undo_stack = array_create_ex(g_allocator),
+		.redo_stack = array_create_ex(g_allocator),
+	};
+
 	struct log_data log_data = { 0 };
 	gui_panel_t *panels[PANEL_COUNT] = {
 		&widget_panel,
@@ -459,7 +757,7 @@ int main(int argc, char *const argv[])
 			case PANEL_WIDGETS:
 				gui_style_push_color(gui, panel.tab.inactive.bg_color, g_green);
 				if (pgui_panel(gui, &widget_panel)) {
-					draw_widget_panel(gui, &widget_data);
+					draw_widget_panel(gui, &widget_data, &store);
 					pgui_panel_finish(gui, &widget_panel);
 				}
 				gui_style_pop(gui);
@@ -482,7 +780,7 @@ int main(int argc, char *const argv[])
 		}
 
 		if (widget_panel.closed)
-			draw_widgets_no_panel(gui, main_split->box, &widget_data);
+			draw_widgets_no_panel(gui, main_split->box, &widget_data, &store);
 
 		if (key_pressed(gui, KB_Q) && !gui_any_widget_has_focus(gui))
 			quit = true;
@@ -501,6 +799,14 @@ int main(int argc, char *const argv[])
 	log_remove_stream(file_logger, stdout);
 
 err_window:
+	array_destroy(store.command_queue);
+	array_foreach(store.undo_stack, revertable_command_t, cmd)
+		revertable_command_destroy(cmd);
+	array_destroy(store.undo_stack);
+	array_foreach(store.redo_stack, revertable_command_t, cmd)
+		revertable_command_destroy(cmd);
+	array_destroy(store.redo_stack);
+
 	log_remove_stream(buffer_logger, &log_data);
 	vlt_destroy(VLT_THREAD_MAIN);
 	return 0;
