@@ -74,7 +74,7 @@ struct log_data
 
 #define PAYLOAD_LIMIT_STATIC 8  // bytes
 
-typedef struct payload_static {
+typedef struct payload_primitive {
 	union {
 		b32 b32;
 		u32 u32;
@@ -83,7 +83,7 @@ typedef struct payload_static {
 		unsigned char bytes[PAYLOAD_LIMIT_STATIC];
 	} bytes;
 	u32 size;
-} payload_static_t;
+} payload_primitive_t;
 
 typedef struct payload_dynamic {
 	array(unsigned char) bytes;
@@ -102,7 +102,7 @@ typedef enum command_kind {
 } command_kind_e;
 
 typedef union payload {
-	payload_static_t modify;
+	payload_primitive_t modify;
 	payload_dynamic_t replace;
 } payload_t;
 
@@ -136,7 +136,7 @@ typedef struct store_gui {
 
 #define MUTATION_PAYLOAD(value, type, payload) \
 	assert(sizeof(value) <= PAYLOAD_LIMIT_STATIC); \
-	payload_static_t (payload) = { \
+	payload_primitive_t (payload) = { \
 		.bytes.type = value, \
 		.size = sizeof(type), \
 	};
@@ -224,7 +224,7 @@ b32 command_execute(store_gui_t *store, u32 command_idx, u32 transaction_id,
 	switch (command->kind) {
 	case COMMAND_KIND_MODIFY:
 		;
-		const payload_static_t *payload = &command->payload.modify;
+		const payload_primitive_t *payload = &command->payload.modify;
 		void *dst = store_offset_bytes(store, command);
 
 		if (replace_prev) {
@@ -399,7 +399,7 @@ b32 store_commit_transaction(store_gui_t *store)
 }
 
 static
-void store_enqueue_mutation(store_gui_t *store, payload_static_t *payload, u32 offset)
+void store_enqueue_mutation(store_gui_t *store, payload_primitive_t *payload, u32 offset)
 {
 	const command_t command = {
 		.kind = COMMAND_KIND_MODIFY,
