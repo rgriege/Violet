@@ -72,7 +72,7 @@ struct log_data
 	u32 start, cnt;
 };
 
-#define PAYLOAD_LIMIT_STATIC 8  // bytes
+#define PAYLOAD_LIMIT_PRIMITIVE 8  // bytes
 
 typedef struct payload_primitive {
 	union {
@@ -80,15 +80,28 @@ typedef struct payload_primitive {
 		u32 u32;
 		s32 s32;
 		r32 r32;
-		unsigned char bytes[PAYLOAD_LIMIT_STATIC];
+		unsigned char bytes[PAYLOAD_LIMIT_PRIMITIVE];
 	} bytes;
 	u32 size;
 } payload_primitive_t;
 
 typedef struct payload_dynamic {
 	array(unsigned char) bytes;
-	u32 size;
 } payload_dynamic_t;
+
+static
+payload_dynamic_t payload_dynamic_create(allocator_t *alc)
+{
+	return (payload_dynamic_t) {
+		.bytes = array_create_ex(alc),
+	};
+}
+
+static
+void payload_dynamic_destroy(payload_dynamic_t *payload)
+{
+	array_destroy(payload->bytes);
+}
 
 typedef struct replacement_dyn {
 	array(unsigned char) bytes_before;
@@ -97,13 +110,14 @@ typedef struct replacement_dyn {
 } replacement_dyn_t;
 
 typedef enum command_kind {
-	COMMAND_KIND_MODIFY,    /* a single field */
-	COMMAND_KIND_REPLACE,   /* an entire struct, whose size is compile time constant */
+	COMMAND_KIND_MODIFY_PRIMITIVE,  // a single field
+	COMMAND_KIND_MODIFY_BUFFER,     // a single statically allocated buffer
+	COMMAND_KIND_REPLACE,           // an entire struct, whose size is compile time constant
 } command_kind_e;
 
 typedef union payload {
-	payload_primitive_t modify;
-	payload_dynamic_t replace;
+	payload_primitive_t primitive;
+	payload_dynamic_t   dynamic;
 } payload_t;
 
 typedef struct command {
@@ -134,12 +148,16 @@ typedef struct store_gui {
 	array(revertable_command_t) redo_stack;
 } store_gui_t;
 
-#define MUTATION_PAYLOAD(value, type, payload) \
-	assert(sizeof(value) <= PAYLOAD_LIMIT_STATIC); \
+#define payload_primitive(value, type, payload) \
+	assert(sizeof(type) <= PAYLOAD_LIMIT_PRIMITIVE); \
 	payload_primitive_t (payload) = { \
 		.bytes.type = value, \
 		.size = sizeof(type), \
 	};
+
+#define payload_dynamic_from_buffer(buf, alc, payload) \
+	payload_dynamic_t (payload) = payload_dynamic_create(alc); \
+	array_appendn(payload.bytes, (unsigned char *)buf, sizeof(buf));
 
 static
 void revertable_command_init(revertable_command_t *cmd, const command_t *command,
@@ -210,24 +228,35 @@ u32 store_n_commands_prev_transaction(store_gui_t *store)
 	return result;
 }
 
+static
+void command__copy_bytes(revertable_command_t *cmd, void *dst, const void *src, u32 n)
+{
+	cmd->dst = dst;
+	array_appendn(cmd->bytes_before, dst, n);
+	memcpy(dst, src, n);
+	array_appendn(cmd->bytes_after, dst, n);
+}
+
 // TODO(luke): this function needs to be responsible for undoing any changes if they prove invalid
+//             as well as cleaning up any dynamic memory allocacted with the payload generation
 static
 b32 command_execute(store_gui_t *store, u32 command_idx, u32 transaction_id,
                     b32 replace_prev)
 {
 	revertable_command_t cmd;
-	const command_t *command = &store->command_queue[command_idx];
+	command_t *command = &store->command_queue[command_idx];
 
 	if (!g_transaction_multi_frame)
 		assert(!replace_prev);
 
 	switch (command->kind) {
-	case COMMAND_KIND_MODIFY:
-		;
-		const payload_primitive_t *payload = &command->payload.modify;
+	case COMMAND_KIND_MODIFY_PRIMITIVE:
+	{
+		const payload_primitive_t *payload = &command->payload.primitive;
 		void *dst = store_offset_bytes(store, command);
 
 		if (replace_prev) {
+			// CLEANUP: de-dup with other COMMAND_KINDs
 			memcpy(dst, &payload->bytes, payload->size);
 			/* get the previously issued command that aligns to the current idx
 			   in the current queue */
@@ -239,11 +268,33 @@ b32 command_execute(store_gui_t *store, u32 command_idx, u32 transaction_id,
 		} else {
 			allocator_t *alc = array__allocator(store->undo_stack);
 			revertable_command_init(&cmd, command, transaction_id, alc);
-			cmd.dst = dst;
-			array_appendn(cmd.bytes_before, dst, payload->size);
-			memcpy(dst, &payload->bytes, payload->size);
-			array_appendn(cmd.bytes_after, dst, payload->size);
+			command__copy_bytes(&cmd, dst, &payload->bytes, payload->size);
 		}
+	}
+	break;
+	case COMMAND_KIND_MODIFY_BUFFER:
+	{
+		payload_dynamic_t *payload = &command->payload.dynamic;
+		void *dst = store_offset_bytes(store, command);
+		const u32 size = array_sz(payload->bytes);
+
+		if (replace_prev) {
+			memcpy(dst, payload->bytes, size);
+			/* get the previously issued command that aligns to the current idx
+			   in the current queue */
+			revertable_command_t *prev_cmd = &store->undo_stack[  array_sz(store->undo_stack)
+			                                                    - array_sz(store->command_queue)
+			                                                    + command_idx];
+			array_clear(prev_cmd->bytes_after);
+			array_appendn(prev_cmd->bytes_after, dst, size);
+		} else {
+			allocator_t *alc = array__allocator(store->undo_stack);
+			revertable_command_init(&cmd, command, transaction_id, alc);
+			command__copy_bytes(&cmd, dst, payload->bytes, size);
+		}
+
+		payload_dynamic_destroy(payload);
+	}
 	break;
 	case COMMAND_KIND_REPLACE:
 		NOOP;
@@ -266,10 +317,11 @@ static
 b32 command_revert(store_gui_t *store, revertable_command_t *cmd)
 {
 	switch (cmd->kind) {
-	case COMMAND_KIND_MODIFY:
+	case COMMAND_KIND_MODIFY_PRIMITIVE:
+	case COMMAND_KIND_MODIFY_BUFFER:
 		;
 		void *dst = store_offset_bytes_ex(store, cmd);
-		cmd->dst = dst;
+		assert(cmd->dst == dst);
 		memcpy(dst, cmd->bytes_before, array_sz(cmd->bytes_before));
 	break;
 	case COMMAND_KIND_REPLACE:
@@ -293,6 +345,7 @@ b32 command_unwind_history(store_gui_t *store, u32 unwind_count)
 	return true;
 }
 
+// CLEANUP: de-dup with store_redo
 static
 b32 store_undo(store_gui_t *store)
 {
@@ -320,6 +373,7 @@ b32 store_undo(store_gui_t *store)
 	return true;
 }
 
+// CLEANUP: de-dup with store_undo
 static
 b32 store_redo(store_gui_t *store)
 {
@@ -399,11 +453,22 @@ b32 store_commit_transaction(store_gui_t *store)
 }
 
 static
-void store_enqueue_mutation(store_gui_t *store, payload_primitive_t *payload, u32 offset)
+void store_enqueue_mutation_primitive(store_gui_t *store, payload_primitive_t *payload, u32 offset)
 {
 	const command_t command = {
-		.kind = COMMAND_KIND_MODIFY,
-		.payload = *payload,
+		.kind = COMMAND_KIND_MODIFY_PRIMITIVE,
+		.payload.primitive = *payload,
+		.offset = offset,
+	};
+	array_append(store->command_queue, command);
+}
+
+static
+void store_enqueue_mutation_buffer(store_gui_t *store, payload_dynamic_t *payload, u32 offset)
+{
+	const command_t command = {
+		.kind = COMMAND_KIND_MODIFY_BUFFER,
+		.payload.dynamic = *payload,    // NOTE(luke): copies ptr from dynamic allocation
 		.offset = offset,
 	};
 	array_append(store->command_queue, command);
@@ -539,6 +604,12 @@ void draw_split_node(gui_t *gui, const gui_split_t *split)
 }
 
 static
+b32 buf_eq(char *a, char* b, u32 n)
+{
+	return memcmp(a, b, n) == 0;
+}
+
+static
 void draw_widgets(gui_t *gui, r32 row_height, r32 hx, widget_data_t *data,
                   store_gui_t *store)
 {
@@ -585,8 +656,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx, widget_data_t *data,
 	if (pgui_btn_txt(gui, "-")) {
 		store_begin_transaction_multi_frame(store);
 		const u32 offset = offsetof(widget_data_t, increment);
-		MUTATION_PAYLOAD(--increment, s32, payload);
-		store_enqueue_mutation(store, &payload, offset);
+		payload_primitive(--increment, s32, payload);
+		store_enqueue_mutation_primitive(store, &payload, offset);
 		store_commit_transaction(store);
 	}
 
@@ -597,8 +668,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx, widget_data_t *data,
 	if (pgui_btn_txt(gui, "+")) {
 		store_begin_transaction_multi_frame(store);
 		const u32 offset = offsetof(widget_data_t, increment);
-		MUTATION_PAYLOAD(++increment, s32, payload);
-		store_enqueue_mutation(store, &payload, offset);
+		payload_primitive(++increment, s32, payload);
+		store_enqueue_mutation_primitive(store, &payload, offset);
 		store_commit_transaction(store);
 	}
 
@@ -619,11 +690,11 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx, widget_data_t *data,
 			store_begin_transaction(store);
 
 			u32 offset = offsetof(widget_data_t, chk);
-			MUTATION_PAYLOAD(checked, b32, payload);
-			store_enqueue_mutation(store, &payload, offset);
+			payload_primitive(checked, b32, payload);
+			store_enqueue_mutation_primitive(store, &payload, offset);
 
 			offset = offsetof(widget_data_t, chk2);
-			store_enqueue_mutation(store, &payload, offset);
+			store_enqueue_mutation_primitive(store, &payload, offset);
 
 			store_commit_transaction(store);
 		}
@@ -667,8 +738,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx, widget_data_t *data,
 	if (pgui_slider_x(gui, &slider)) {
 		{
 			store_begin_transaction_multi_frame(store);
-			MUTATION_PAYLOAD(slider, r32, payload);
-			store_enqueue_mutation(store, &payload, offsetof(widget_data_t, slider));
+			payload_primitive(slider, r32, payload);
+			store_enqueue_mutation_primitive(store, &payload, offsetof(widget_data_t, slider));
 			store_commit_transaction(store);
 		}
 	}
@@ -682,8 +753,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx, widget_data_t *data,
 	if (pgui_slider_x(gui, &slider2)) {
 		{
 			store_begin_transaction_multi_frame(store);
-			MUTATION_PAYLOAD(slider2, r32, payload);
-			store_enqueue_mutation(store, &payload, offsetof(widget_data_t, slider2));
+			payload_primitive(slider2, r32, payload);
+			store_enqueue_mutation_primitive(store, &payload, offsetof(widget_data_t, slider2));
 			store_commit_transaction(store);
 		}
 	}
@@ -693,20 +764,35 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx, widget_data_t *data,
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Color Picker");
 	pgui_color_picker8(gui, 280, 200, &data->color);
+
 	pgui_row_empty(gui, hx);
 
+	/* text input */
+	char npt_buf[sizeof(store->data.npt)];
+	memcpy(npt_buf, B2PS(store->data.npt));
 	pgui_row_cellsv(gui, 2 * row_height, cols_npt);
 	pgui_txt(gui, "Text input");
 	gui_style_push_b32(gui, npt.inactive.text.wrap, true);
 	gui_style_push_b32(gui, npt.hot.text.wrap, true);
 	gui_style_push_b32(gui, npt.active.text.wrap, true);
 	gui_style_push_b32(gui, npt.disabled.text.wrap, true);
-	pgui_npt_txt(gui, B2PS(data->npt), "Your text here...", 0);
+
+	pgui_npt_txt(gui, B2PS(npt_buf), "Your text here...", 0);
+	// ERGONOMICS: it sucks that we can't strictly rely on the return value of pgui_npt_txt
+	//             to tell if there was a text change
+	if (!buf_eq(npt_buf, B2PS(store->data.npt))) {
+		store_begin_transaction_multi_frame(store);
+		payload_dynamic_from_buffer(npt_buf, g_temp_allocator, payload);
+		store_enqueue_mutation_buffer(store, &payload, offsetof(widget_data_t, npt));
+		store_commit_transaction(store);
+	}
+
 	gui_style_pop(gui);
 	gui_style_pop(gui);
 	gui_style_pop(gui);
 	gui_style_pop(gui);
 
+	/* trees */
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Tree");
 	pgui_txt(gui, "Splits");
