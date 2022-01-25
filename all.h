@@ -33,6 +33,9 @@
 #endif
 /* Audio */
 #include "violet/audio.h"
+/* Undo/Redo System */
+#include "violet/store.h"
+#include "violet/transaction.h"
 
 /* Additional utilities useful when using the entire library */
 
@@ -79,7 +82,9 @@ v2d v2f_to_v2d(v2f v)
 #define OS_IMPLEMENTATION
 #define PROFILER_IMPLEMENTATION
 #define SDL_GL_IMPLEMENTATION
+#define STORE_IMPLEMENTATION
 #define STRING_IMPLEMENTATION
+#define TRANSACTION_IMPLEMENTATION
 #define UTF8_IMPLEMENTATION
 #define VSON_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -118,3 +123,6 @@ v2d v2f_to_v2d(v2f v)
 #endif
 /* Audio */
 #include "violet/audio.h"
+/* Undo/Redo System */
+#include "violet/store.h"
+#include "violet/transaction.h"

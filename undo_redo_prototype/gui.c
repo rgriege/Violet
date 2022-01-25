@@ -18,7 +18,9 @@
 #define OS_IMPLEMENTATION
 #define PROFILER_IMPLEMENTATION
 #define SDL_GL_IMPLEMENTATION
+#define STORE_IMPLEMENTATION
 #define STRING_IMPLEMENTATION
+#define TRANSACTION_IMPLEMENTATION
 #define UTF8_IMPLEMENTATION
 
 #include "violet/core.h"
@@ -33,6 +35,8 @@
 #include "violet/utf8.h"
 #include "violet/profiler.h"
 #include "violet/sdl_gl.h"
+#include "violet/store.h"
+#include "violet/transaction.h"
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
@@ -58,190 +62,6 @@ struct log_data
 	u32 start, cnt;
 };
 
-#define PAYLOAD_LIMIT_PRIMITIVE 8  // bytes
-
-typedef struct payload_primitive {
-	union {
-		b32 b32;
-		u32 u32;
-		s32 s32;
-		r32 r32;
-		unsigned char bytes[PAYLOAD_LIMIT_PRIMITIVE];
-	} bytes;
-	u32 size;
-} payload_primitive_t;
-
-typedef struct payload_dynamic {
-	array(unsigned char) bytes;
-} payload_dynamic_t;
-
-static
-payload_dynamic_t payload_dynamic_create(allocator_t *alc)
-{
-	return (payload_dynamic_t) {
-		.bytes = array_create_ex(alc),
-	};
-}
-
-static
-void payload_dynamic_destroy(payload_dynamic_t *payload)
-{
-	array_destroy(payload->bytes);
-}
-
-#define payload_primitive(value, type, payload) \
-	assert(sizeof(type) <= PAYLOAD_LIMIT_PRIMITIVE); \
-	payload_primitive_t (payload) = { \
-		.bytes.type = value, \
-		.size = sizeof(type), \
-	};
-
-#define payload_dynamic_from_buffer(buf, alc, payload) \
-	payload_dynamic_t (payload) = payload_dynamic_create(alc); \
-	array_appendn(payload.bytes, (unsigned char *)buf, sizeof(buf));
-
-typedef enum command_kind {
-	COMMAND_KIND_MODIFY_PRIMITIVE,  // a single field
-	COMMAND_KIND_MODIFY_BUFFER,     // a single statically allocated buffer
-	COMMAND_KIND_REPLACE,           // an entire struct, whose size is compile time constant
-} command_kind_e;
-
-typedef enum store_kind {
-	STORE_KIND_GUI,
-	STORE_KIND_A,
-	STORE_KIND_B,
-} store_kind_e;
-
-typedef union payload {
-	payload_primitive_t primitive;
-	payload_dynamic_t   dynamic;
-} payload_t;
-
-typedef struct command {
-	command_kind_e kind;
-	store_kind_e store_kind;
-	u32 offset;
-	u32 transaction_id;
-	payload_t payload;
-} command_t;
-
-typedef struct revertable_command {
-	command_kind_e kind;
-	store_kind_e store_kind;
-	u32 offset;
-	u32 transaction_id;
-	/* should only be used for comparing multi-frame transactions,
-	   to know if back-to-back interactions target the same mutation */
-	void *dst;
-	array(unsigned char) bytes_before;
-	array(unsigned char) bytes_after;
-} revertable_command_t;
-
-/* achieve polymorphism via C++ style inheritance, manually, of course */
-typedef struct store_interface {
-	store_kind_e (*get_kind)(void *instance);
-	void *       (*get_data)(void *instance);
-	void         (*destroy )(void *instance);
-} store_interface_t;
-
-typedef struct store {
-	void *instance;
-	const store_interface_t *interface;
-} store_t;
-
-store_t *store_create(void *instance, store_interface_t *interface, allocator_t *alc)
-{
-	store_t *store   = amalloc(sizeof(store_t), alc);
-	store->instance  = instance;
-	store->interface = interface;
-	return store;
-}
-
-void store_destroy(store_t *store, allocator_t *alc)
-{
-	(store->interface->destroy)(store->instance);
-	afree(store, alc);
-}
-
-store_kind_e store_get_kind(const store_t *store)
-{
-	return (store->interface->get_kind)(store->instance);
-}
-
-void *store_get_data(const store_t *store)
-{
-	return (store->interface->get_data)(store->instance);
-}
-
-#define store_offset_bytes(store, cmd, dst) \
-	unsigned char *(dst) = (unsigned char *)store_get_data(store) + (cmd)->offset;
-
-// TODO(luke): should we replace this with something that calls into
-//             store_instance_from_kind and/or store_get_data()?
-#define store_offsetof(store_type, member) \
-	offsetof(store_type, data.member) - offsetof(store_type, data)
-
-typedef struct megastore {
-	array(store_t *) d;
-	allocator_t *alc;
-} megastore_t;
-
-
-   typedef struct transaction_system {
-	u32 current_id;
-	store_kind_e current_store_kind;  // TODO(luke): make this into a stack, so we can push & pop to it,
-	                                  //             similar to the idiom fof gui styles.
-									  //             That should enable us to encapsulate which kind
-									  //             should be applied to mutations as they are enqueued.
-	b32 multi_frame;
-	b32 pending;
-	megastore_t mega;
-	array(command_t) command_queue;
-	array(revertable_command_t) undo_stack;
-	array(revertable_command_t) redo_stack;
-} transaction_system_t;
-
-transaction_system_t g_transaction_system;
-
-static
-transaction_system_t transaction_system_create(megastore_t mega, allocator_t *alc)
-{
-	return (transaction_system_t) {
-		.mega          = mega,
-		.command_queue = array_create_ex(alc),
-		.undo_stack    = array_create_ex(alc),
-		.redo_stack    = array_create_ex(alc),
-	};
-}
-
-void megastore_destroy(megastore_t mega)
-{
-	array_foreach(mega.d, store_t *, store_ptr)
-		store_destroy(*store_ptr, mega.alc);
-}
-
-/* having two or more store_t with the same store_kind causes undefined behavior */
-void megastore_append(megastore_t *mega, store_t *store)
-{
-	b32 store_kind_already_exists = false;
-	store_kind_e kind = store_get_kind(store);
-	array_foreach(mega->d, store_t *, store_ptr)
-		if (store_get_kind(*store_ptr) == kind)
-			store_kind_already_exists |= true;
-	assert(!store_kind_already_exists);
-
-	array_append(mega->d, store);
-}
-
-static
-void transaction_system_destroy(transaction_system_t *sys)
-{
-	megastore_destroy(sys->mega);
-	array_destroy(sys->command_queue);
-	array_destroy(sys->undo_stack);
-	array_destroy(sys->redo_stack);
-}
-
 typedef struct store_a_data {
 	b32 chk;
 	r32 slider;
@@ -253,6 +73,7 @@ typedef struct store_a {
 	store_a_data_t data;
 } store_a_t;
 
+static
 store_a_t *store_a_create(allocator_t *alc)
 {
 	store_a_t *store_a = amalloc(sizeof(store_a_t), alc);
@@ -261,22 +82,26 @@ store_a_t *store_a_create(allocator_t *alc)
 	return store_a;
 }
 
+static
 store_kind_e store_a__get_kind(store_a_t *store)
 {
 	return store->kind;
 }
 
+static
 void *store_a__get_data(store_a_t *store)
 {
 	return &store->data;
 }
 
 /* use for concrete store implementation(s), when there is no memory to clean up */
+static
 void store__noop(store_t *store)
 {
 	NOOP;
 }
 
+static
 store_interface_t *polymorph_store_a = &(store_interface_t) {
 	.get_kind        = (store_kind_e (*)(void *))store_a__get_kind,
 	.get_data        = (void *       (*)(void *))store_a__get_data,
@@ -292,6 +117,7 @@ typedef struct store_b {
 	store_b_data_t data;
 } store_b_t;
 
+static
 store_b_t *store_b_create(allocator_t *alc)
 {
 	store_b_t *store_b = amalloc(sizeof(store_b_t), alc);
@@ -300,16 +126,19 @@ store_b_t *store_b_create(allocator_t *alc)
 	return store_b;
 }
 
+static
 store_kind_e store_b__get_kind(store_b_t *store)
 {
 	return store->kind;
 }
 
+static
 void *store_b__get_data(store_b_t *store)
 {
 	return &store->data;
 }
 
+static
 store_interface_t *polymorph_store_b = &(store_interface_t) {
 	.get_kind        = (store_kind_e (*)(void *))store_b__get_kind,
 	.get_data        = (void *       (*)(void *))store_b__get_data,
@@ -331,6 +160,7 @@ typedef struct store_gui {
 	store_gui_data_t data;
 } store_gui_t;
 
+static
 store_gui_t *store_gui_create(allocator_t *alc)
 {
 	store_gui_t *store_gui = amalloc(sizeof(store_gui_t), alc);
@@ -342,21 +172,25 @@ store_gui_t *store_gui_create(allocator_t *alc)
 	return store_gui;
 }
 
+static
 void store_gui__destroy(store_gui_t *store)
 {
 	array_destroy(store->data.arr);
 }
 
+static
 store_kind_e store_gui__get_kind(store_gui_t *store)
 {
 	return store->kind;
 }
 
+static
 void *store_gui__get_data(store_gui_t *store)
 {
 	return &store->data;
 }
 
+static
 store_interface_t *polymorph_store_gui = &(store_interface_t) {
 	.get_kind        = (store_kind_e (*)(void *))store_gui__get_kind,
 	.get_data        = (void *       (*)(void *))store_gui__get_data,
@@ -364,7 +198,7 @@ store_interface_t *polymorph_store_gui = &(store_interface_t) {
 };
 
 static
-megastore_t megastore__create(allocator_t *alc)
+array(store_t *) stores__init(allocator_t *alc)
 {
 	store_gui_t *store_gui = store_gui_create(alc);
 	store_a_t *store_a = store_a_create(alc);
@@ -374,378 +208,11 @@ megastore_t megastore__create(allocator_t *alc)
 	store_t *a   = store_create(store_a, polymorph_store_a, alc);
 	store_t *b   = store_create(store_b, polymorph_store_b, alc);
 
-	megastore_t mega = { .d = array_create_ex(alc), .alc = alc };
-	megastore_append(&mega, gui);
-	megastore_append(&mega, a);
-	megastore_append(&mega, b);
-	return mega;
-}
-
-static
-void revertable_command_init(revertable_command_t *cmd, const command_t *command, allocator_t *alc)
-{
-	*cmd = (revertable_command_t){
-		.kind = command->kind,
-		.offset = command->offset,
-		.transaction_id = command->transaction_id,
-	};
-	cmd->bytes_before = array_create_ex(alc);
-	cmd->bytes_after = array_create_ex(alc);
-}
-
-static
-void revertable_command_destroy(revertable_command_t *cmd)
-{
-	array_destroy(cmd->bytes_before);
-	array_destroy(cmd->bytes_after);
-}
-
-static
-void command__copy_bytes(revertable_command_t *cmd, void *dst, const void *src, u32 n)
-{
-	cmd->dst = dst;
-	array_appendn(cmd->bytes_before, dst, n);
-	memcpy(dst, src, n);
-	array_appendn(cmd->bytes_after, dst, n);
-}
-
-static
-store_t *store_from_kind(store_kind_e kind)
-{
-	array_foreach(g_transaction_system.mega.d, store_t *, store_ptr) {
-		if (store_get_kind(*store_ptr) == kind)
-			return *store_ptr;
-	}
-	assert(false);
-	return NULL;
-}
-
-static
-void *store_instance_from_kind(store_kind_e kind)
-{
-	store_t *store = store_from_kind(kind);
-	return store->instance;
-}
-
-// TODO(luke): this function needs to be responsible for undoing any changes if they prove invalid
-//             as well as cleaning up any dynamic memory allocacted with the payload generation
-b32 store_execute_command(const store_t *store, u32 command_idx, b32 replace_prev)
-{
-	revertable_command_t cmd;
-	transaction_system_t *t = &g_transaction_system;
-	command_t *command = &t->command_queue[command_idx];
-
-	if (!t->multi_frame)
-		assert(!replace_prev);
-
-	switch (command->kind) {
-	case COMMAND_KIND_MODIFY_PRIMITIVE:
-	{
-		const payload_primitive_t *payload = &command->payload.primitive;
-		store_offset_bytes(store, command, dst);
-
-		if (replace_prev) {
-			// CLEANUP: de-dup with other COMMAND_KINDs
-			memcpy(dst, &payload->bytes, payload->size);
-			/* get the previously issued command that aligns to the current idx
-			   in the current queue */
-			revertable_command_t *prev_cmd = &t->undo_stack[  array_sz(t->undo_stack)
-			                                                - array_sz(t->command_queue)
-			                                                + command_idx];
-			array_clear(prev_cmd->bytes_after);
-			array_appendn(prev_cmd->bytes_after, dst, payload->size);
-		} else {
-			allocator_t *alc = array__allocator(t->undo_stack);
-			revertable_command_init(&cmd, command, alc);
-			command__copy_bytes(&cmd, dst, &payload->bytes, payload->size);
-		}
-	}
-	break;
-	case COMMAND_KIND_MODIFY_BUFFER:
-	{
-		payload_dynamic_t *payload = &command->payload.dynamic;
-		store_offset_bytes(store, command, dst);
-		const u32 size = array_sz(payload->bytes);
-
-		if (replace_prev) {
-			// CLEANUP: de-dup with other COMMAND_KINDs
-			memcpy(dst, payload->bytes, size);
-			/* get the previously issued command that aligns to the current idx
-			   in the current queue */
-			revertable_command_t *prev_cmd = &t->undo_stack[  array_sz(t->undo_stack)
-			                                                - array_sz(t->command_queue)
-			                                                + command_idx];
-			array_clear(prev_cmd->bytes_after);
-			array_appendn(prev_cmd->bytes_after, dst, size);
-		} else {
-			allocator_t *alc = array__allocator(t->undo_stack);
-			revertable_command_init(&cmd, command, alc);
-			command__copy_bytes(&cmd, dst, payload->bytes, size);
-		}
-
-		payload_dynamic_destroy(payload);
-	}
-	break;
-	case COMMAND_KIND_REPLACE:
-		NOOP;
-	break;
-	default:
-		NOOP;
-	break;
-	}
-
-	if (!replace_prev)
-		array_append(t->undo_stack, cmd);
-
-	return true;
-
-// err:
-// 	return false;
-
-}
-
-static
-void transaction_begin()
-{
-	g_transaction_system.multi_frame = false;
-	g_transaction_system.pending = true;
-	array_clear(g_transaction_system.command_queue);
-}
-
-/* Addresses the use case when some data mutation might be repeated with a
-   different payload. If the desired undo behavior is such that it reverts
-   to the state before any of the repeated actions happened, then instead
-   of creating a new undo point with every transaction, the previous
-   transaction's undo point is modified. */
-static
-void transaction_begin_multi_frame()
-{
-	g_transaction_system.multi_frame = true;
-	g_transaction_system.pending = true;
-	array_clear(g_transaction_system.command_queue);
-}
-
-static
-u32 transaction_prev_n_commands()
-{
-	transaction_system_t *t = &g_transaction_system;
-
-	if (array_sz(t->undo_stack) == 0)
-		return 0;
-
-	u32 result = 1;
-	u32 prev_frame_trans_id = array_last(t->undo_stack).transaction_id;
-	for (s32 i = array_sz(t->undo_stack)-2; i >= 0 ;--i) {
-		if (prev_frame_trans_id != t->undo_stack[i].transaction_id)
-			break;
-		++result;
-	}
-	return result;
-}
-
-static
-b32 command_revert(megastore_t *mega, revertable_command_t *cmd)
-{
-	store_t *store = store_from_kind(cmd->store_kind);
-
-	switch (cmd->kind) {
-	case COMMAND_KIND_MODIFY_PRIMITIVE:
-	case COMMAND_KIND_MODIFY_BUFFER:
-		;
-		store_offset_bytes(store, cmd, dst);
-		assert(cmd->dst == dst);
-		memcpy(dst, cmd->bytes_before, array_sz(cmd->bytes_before));
-	break;
-	case COMMAND_KIND_REPLACE:
-		NOOP;
-	break;
-	default:
-		NOOP;
-	break;
-	}
-	return true;
-}
-
-static
-b32 command_unwind_history(u32 unwind_count)
-{
-	transaction_system_t *t = &g_transaction_system;
-
-	for (u32 i = 0, start_idx = array_sz(t->undo_stack)-1; i < unwind_count; ++i)
-		if (command_revert(&t->mega, &t->undo_stack[start_idx-i]))
-			array_pop(t->undo_stack);
-		else
-			return false;
-	return true;
-}
-
-// CLEANUP: de-dup with store_redo
-static
-b32 transaction_undo()
-{
-	transaction_system_t *t = &g_transaction_system;
-
-	if (array_sz(t->undo_stack) == 0)
-		return false;
-
-	do {
-		revertable_command_t *cmd = &array_last(t->undo_stack);
-		if (!command_revert(&t->mega, cmd))
-			/* something went very haywire - expect undefined behavior */
-			assert(false);
-
-		array(unsigned char) swap = cmd->bytes_before;
-		cmd->bytes_before = cmd->bytes_after;
-		cmd->bytes_after = swap;
-
-		array_append(t->redo_stack, array_last(t->undo_stack));
-		array_pop(t->undo_stack);
-	} while (   array_sz(t->undo_stack) > 0
-	         && array_last(t->undo_stack).transaction_id
-	         == array_last(t->redo_stack).transaction_id);
-
-	--g_transaction_system.current_id;
-
-	return true;
-}
-
-// CLEANUP: de-dup with store_undo
-static
-b32 transaction_redo()
-{
-	transaction_system_t *t = &g_transaction_system;
-
-	if (array_sz(t->redo_stack) == 0)
-		return false;
-
-	do {
-		revertable_command_t *cmd = &array_last(t->redo_stack);
-		if (!command_revert(&t->mega, cmd))
-			/* something went very haywire - expect undefined behavior */
-			assert(false);
-
-		array(unsigned char) swap = cmd->bytes_before;
-		cmd->bytes_before = cmd->bytes_after;
-		cmd->bytes_after = swap;
-
-		array_append(t->undo_stack, array_last(t->redo_stack));
-		array_pop(t->redo_stack);
-	} while (   array_sz(t->redo_stack) > 0
-	         && array_last(t->undo_stack).transaction_id
-	         == array_last(t->redo_stack).transaction_id);
-
-	++g_transaction_system.current_id;
-
-	return true;
-}
-
-static
-b32 transaction_should_replace_prev(megastore_t *mega)
-{
-	transaction_system_t *t = &g_transaction_system;
-
-	if (!g_transaction_system.multi_frame || array_sz(t->undo_stack) == 0)
-		return false;
-
-	u32 prev_trans_n_cmds = transaction_prev_n_commands();
-	u32 curr_trans_n_cmds = array_sz(g_transaction_system.command_queue);
-
-	if (prev_trans_n_cmds != curr_trans_n_cmds)
-		return false;
-
-	for (u32 i = 0; i < curr_trans_n_cmds; ++i) {
-		const command_t *command = &t->command_queue[i];
-		store_t *store = store_from_kind(command->kind);
-		store_offset_bytes(store, command, dst);
-		if (t->undo_stack[array_sz(t->undo_stack) - prev_trans_n_cmds + i].dst != dst)
-			return false;
-	}
-
-	return true;
-}
-
-static
-void transaction__clear_redo_history()
-{
-	transaction_system_t *t = &g_transaction_system;
-
-	array_foreach(t->redo_stack, revertable_command_t, cmd)
-		revertable_command_destroy(cmd);
-	array_clear(t->redo_stack);
-
-}
-
-static
-b32 transaction_commit()
-{
-	u32 success_count;
-	transaction_system_t *t = &g_transaction_system;
-	const b32 replace_prev = transaction_should_replace_prev(&t->mega);
-
-	for (u32 i = 0, n = array_sz(t->command_queue); i < n; ++i) {
-		command_t *command = &t->command_queue[i];
-		const store_t *store = store_from_kind(command->store_kind);
-		if (store_execute_command(store, i, replace_prev)) {
-			success_count++;
-		} else {
-			if (!command_unwind_history(success_count))
-				/* something went very haywire - expect undefined behavior */
-				assert(false);
-			return false;
-		}
-	}
-
-	array_clear(t->command_queue);
-	transaction__clear_redo_history();
-
-	if (!replace_prev)
-		g_transaction_system.current_id++;
-
-	g_transaction_system.pending = false;
-	return true;
-}
-
-void transaction_set_store_kind(store_kind_e kind)
-{
-	g_transaction_system.current_store_kind = kind;
-}
-
-static
-void transaction__enqueue_validate(transaction_system_t *t)
-{
-	assert(t->pending);
-	// TODO(luke) assert that the transaction system's current kind is the same as the command
-	//            that's about to be enqueued. this is to prevent API user footguns
-}
-
-void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 offset)
-{
-	transaction_system_t *t = &g_transaction_system;
-	transaction__enqueue_validate(t);
-
-	const command_t command = {
-		.kind = COMMAND_KIND_MODIFY_PRIMITIVE,
-		.store_kind = t->current_store_kind,
-		.payload.primitive = *payload,
-		.offset = offset,
-		.transaction_id = t->current_id,
-	};
-	array_append(t->command_queue, command);
-}
-
-void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset)
-{
-	transaction_system_t *t = &g_transaction_system;
-	transaction__enqueue_validate(t);
-
-	const command_t command = {
-		.kind = COMMAND_KIND_MODIFY_BUFFER,
-		.store_kind = t->current_store_kind,
-		.payload.dynamic = *payload,    // NOTE(luke): copies ptr from dynamic allocation
-		.offset = offset,
-		.transaction_id = t->current_id,
-	};
-	array_append(t->command_queue, command);
+	array(store_t *) stores = array_create_ex(g_allocator);
+	array_append(stores, gui);
+	array_append(stores, a);
+	array_append(stores, b);
+	return stores;
 }
 
 static
@@ -909,8 +376,6 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	const s32 cols_plus_minus[] = {100, 30, 0, 30};
 
 	store_gui_t *store = (store_gui_t *)store_instance_from_kind(STORE_KIND_GUI);
-	/* it's conventient to set the store kind for many potential transactions,
-	   but this can be changed at any time, even in the middle of a transaction */
 	transaction_set_store_kind(store->kind);
 
 	pgui_row_cellsv(gui, row_height, cols);
@@ -918,8 +383,6 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_push_ptr(gui, btn.hint, "Undo");
 	if (pgui_btn_txt(gui, "Undo")) {
 		transaction_undo();
-		log_debug(imprintf("undo stack size: %d", array_sz(g_transaction_system.undo_stack)));
-		log_debug(imprintf("redo stack size: %d", array_sz(g_transaction_system.redo_stack)));
 	}
 	gui_style_pop(gui);
 
@@ -931,8 +394,6 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	if (pgui_btn_txt(gui, "Redo")) {
 		/* not bound to any state change */
 		transaction_redo();
-		log_debug(imprintf("undo stack size: %d", array_sz(g_transaction_system.undo_stack)));
-		log_debug(imprintf("redo stack size: %d", array_sz(g_transaction_system.redo_stack)));
 	}
 	gui_style_pop(gui);
 
@@ -1195,7 +656,10 @@ int main(int argc, char *const argv[])
 	gui_split_t *root_split, *menu_split, *main_split;
 	gui_panel_t widget_panel, log_panel, about_panel;
 
-	g_transaction_system = transaction_system_create(megastore__create(g_allocator), g_allocator);
+	array(store_t *) stores = stores__init(g_allocator);
+	transaction_system_t sys =  transaction_system_create(stores, g_allocator);
+	transaction_system_set_active(&sys);
+	array_destroy(stores);
 
 	struct log_data log_data = { 0 };
 	gui_panel_t *panels[PANEL_COUNT] = {
@@ -1288,7 +752,7 @@ int main(int argc, char *const argv[])
 	log_remove_stream(file_logger, stdout);
 
 err_window:
-	transaction_system_destroy(&g_transaction_system);
+	transaction_system_destroy(&sys);
 
 	log_remove_stream(buffer_logger, &log_data);
 	vlt_destroy(VLT_THREAD_MAIN);
