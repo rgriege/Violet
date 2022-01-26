@@ -97,6 +97,7 @@ void megastore_destroy(megastore_t mega)
 {
 	array_foreach(mega.d, store_t *, store_ptr)
 		store_destroy(*store_ptr, mega.alc);
+	array_destroy(mega.d);
 }
 
 #undef STORE_IMPLEMENTATION
