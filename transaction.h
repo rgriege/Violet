@@ -252,6 +252,7 @@ void transaction_system_destroy(transaction_system_t *sys)
 	array_destroy(sys->command_queue);
 	array_destroy(sys->undo_stack);
 	array_destroy(sys->redo_stack);
+	array_destroy(sys->store_kind_stack);
 }
 
 void transaction_system_set_active(transaction_system_t *sys)
