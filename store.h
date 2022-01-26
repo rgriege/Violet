@@ -8,18 +8,18 @@ typedef enum store_kind {
 } store_kind_e;
 
 /* achieve polymorphism via C++ style inheritance */
-typedef struct store_interface {
+typedef struct store_contract {
 	store_kind_e (*get_kind)(void *instance);
 	void *       (*get_data)(void *instance);
 	void         (*destroy )(void *instance);
-} store_interface_t;
+} store_contract_t;
 
 typedef struct store {
 	void *instance;
-	const store_interface_t *interface;
+	const store_contract_t *contract;
 } store_t;
 
-store_t *    store_create(void *instance, store_interface_t *interface, allocator_t *alc);
+store_t *    store_create(void *instance, store_contract_t *contract, allocator_t *alc);
 void         store_destroy(store_t *store, allocator_t *alc);
 store_kind_e store_get_kind(const store_t *store);
 void *       store_get_data(const store_t *store);
@@ -47,28 +47,28 @@ void megastore_destroy(megastore_t mega);
 
 #ifdef STORE_IMPLEMENTATION
 
-store_t *store_create(void *instance, store_interface_t *interface, allocator_t *alc)
+store_t *store_create(void *instance, store_contract_t *contract, allocator_t *alc)
 {
 	store_t *store   = amalloc(sizeof(store_t), alc);
 	store->instance  = instance;
-	store->interface = interface;
+	store->contract = contract;
 	return store;
 }
 
 void store_destroy(store_t *store, allocator_t *alc)
 {
-	(store->interface->destroy)(store->instance);
+	(store->contract->destroy)(store->instance);
 	afree(store, alc);
 }
 
 store_kind_e store_get_kind(const store_t *store)
 {
-	return (store->interface->get_kind)(store->instance);
+	return (store->contract->get_kind)(store->instance);
 }
 
 void *store_get_data(const store_t *store)
 {
-	return (store->interface->get_data)(store->instance);
+	return (store->contract->get_data)(store->instance);
 }
 
 static

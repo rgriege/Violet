@@ -384,7 +384,7 @@ void transaction__clear_redo_history()
 
 b32 transaction_commit()
 {
-	u32 success_count;
+	u32 success_count = 0;
 	transaction_system_t *sys = g_active_transaction_system;
 	const b32 replace_prev = transaction__should_replace_prev(&sys->mega);
 

@@ -102,7 +102,7 @@ void store__noop(store_t *store)
 }
 
 static
-store_interface_t *polymorph_store_a = &(store_interface_t) {
+store_contract_t *polymorph_store_a = &(store_contract_t) {
 	.get_kind        = (store_kind_e (*)(void *))store_a__get_kind,
 	.get_data        = (void *       (*)(void *))store_a__get_data,
 	.destroy         = (void         (*)(void *))store__noop,
@@ -139,7 +139,7 @@ void *store_b__get_data(store_b_t *store)
 }
 
 static
-store_interface_t *polymorph_store_b = &(store_interface_t) {
+store_contract_t *polymorph_store_b = &(store_contract_t) {
 	.get_kind        = (store_kind_e (*)(void *))store_b__get_kind,
 	.get_data        = (void *       (*)(void *))store_b__get_data,
 	.destroy         = (void         (*)(void *))store__noop,
@@ -191,7 +191,7 @@ void *store_gui__get_data(store_gui_t *store)
 }
 
 static
-store_interface_t *polymorph_store_gui = &(store_interface_t) {
+store_contract_t *polymorph_store_gui = &(store_contract_t) {
 	.get_kind        = (store_kind_e (*)(void *))store_gui__get_kind,
 	.get_data        = (void *       (*)(void *))store_gui__get_data,
 	.destroy         = (void         (*)(void *))store_gui__destroy,
