@@ -11,7 +11,7 @@ typedef enum store_kind {
 typedef struct store_interface {
 	store_kind_e (*get_kind)(void *instance);
 	void *       (*get_data)(void *instance);
-	void         (*destroy )(void *instance);
+	void         (*destroy )(void *instance, allocator_t *alc);
 } store_interface_t;
 
 typedef struct store {
@@ -57,7 +57,7 @@ store_t *store_create(void *instance, store_interface_t *interface, allocator_t 
 
 void store_destroy(store_t *store, allocator_t *alc)
 {
-	(store->interface->destroy)(store->instance);
+	(store->interface->destroy)(store->instance, alc);
 	afree(store, alc);
 }
 
