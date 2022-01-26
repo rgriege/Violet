@@ -376,7 +376,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	const s32 cols_plus_minus[] = {100, 30, 0, 30};
 
 	store_gui_t *store = (store_gui_t *)store_instance_from_kind(STORE_KIND_GUI);
-	transaction_set_store_kind(store->kind);
+	transaction_store_kind_push(store->kind);
 
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Undo");
@@ -544,6 +544,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 		}
 		pgui_tree_end(gui);
 	}
+
+	transaction_store_kind_pop();
 }
 
 static

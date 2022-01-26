@@ -54,29 +54,26 @@ typedef struct revertable_command {
 
 typedef struct transaction_system {
 	u32 current_id;
-	store_kind_e current_store_kind;  // TODO(luke): make this into a stack, so we can push & pop to it,
-	                                  //             similar to the idiom fof gui styles.
-	                                  //             That should enable us to encapsulate which kind
-	                                  //             should be applied to mutations as they are enqueued.
 	b32 multi_frame;
 	b32 pending;
 	megastore_t mega;
 	array(command_t) command_queue;
 	array(revertable_command_t) undo_stack;
 	array(revertable_command_t) redo_stack;
+	array(store_kind_e) store_kind_stack;
 } transaction_system_t;
 
 transaction_system_t transaction_system_create(array(store_t *) stores, allocator_t *alc);
 void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
+void transaction_system_on_update();
 void transaction_begin();
 void transaction_begin_multi_frame();
 b32  transaction_commit();
 b32  transaction_undo();
 b32  transaction_redo();
-/* it's conventient to set the store kind for many potential transactions,
-   but this can be changed at any time, even in the middle of a transaction */
-void transaction_set_store_kind(store_kind_e kind);
+void transaction_store_kind_push(store_kind_e kind);
+void transaction_store_kind_pop();
 void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 offset);
 void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset);
 
@@ -241,10 +238,11 @@ b32 transaction__execute_command(const store_t *store, u32 command_idx, b32 repl
 transaction_system_t transaction_system_create(array(store_t *) stores, allocator_t *alc)
 {
 	return (transaction_system_t) {
-		.mega          = megastore_create(stores, alc),
-		.command_queue = array_create_ex(alc),
-		.undo_stack    = array_create_ex(alc),
-		.redo_stack    = array_create_ex(alc),
+		.mega = megastore_create(stores, alc),
+		.command_queue    = array_create_ex(alc),
+		.undo_stack       = array_create_ex(alc),
+		.redo_stack       = array_create_ex(alc),
+		.store_kind_stack = array_create_ex(alc),
 	};
 }
 
@@ -259,6 +257,13 @@ void transaction_system_destroy(transaction_system_t *sys)
 void transaction_system_set_active(transaction_system_t *sys)
 {
 	g_active_transaction_system = sys;
+}
+
+/* called once per frame */
+void transaction_system_on_update()
+{
+	/* helps avoid the footgun of pushing store_kind_e's to the stack without popping them */
+	assert(array_sz(g_active_transaction_system->store_kind_stack) == 0);
 }
 
 static
@@ -464,19 +469,25 @@ b32 transaction_redo()
 	return true;
 }
 
-void transaction_set_store_kind(store_kind_e kind)
+
+void transaction_store_kind_push(store_kind_e kind)
 {
-	g_active_transaction_system->current_store_kind = kind;
+	array_append(g_active_transaction_system->store_kind_stack, kind);
+}
+
+void transaction_store_kind_pop()
+{
+	assert(array_sz(g_active_transaction_system->store_kind_stack) > 0);
+	array_pop(g_active_transaction_system->store_kind_stack);
 }
 
 static
 void transaction__enqueue_validate(transaction_system_t *sys)
 {
 	assert(sys->pending);
-	// TODO(luke) assert that the transaction system's current kind is the same as the command
-	//            that's about to be enqueued. this is to prevent API user footguns
 }
 
+// CLEANUP: de-dup with transaction_enqueue_mutation_buffer()
 void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 offset)
 {
 	transaction_system_t *sys = g_active_transaction_system;
@@ -484,7 +495,7 @@ void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 of
 
 	const command_t command = {
 		.kind = COMMAND_KIND_MODIFY_PRIMITIVE,
-		.store_kind = sys->current_store_kind,
+		.store_kind = array_last(sys->store_kind_stack),
 		.payload.primitive = *payload,
 		.offset = offset,
 		.transaction_id = sys->current_id,
@@ -499,7 +510,7 @@ void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset)
 
 	const command_t command = {
 		.kind = COMMAND_KIND_MODIFY_BUFFER,
-		.store_kind = sys->current_store_kind,
+		.store_kind = array_last(sys->store_kind_stack),
 		.payload.dynamic = *payload,    // NOTE(luke): copies ptr from dynamic allocation
 		.offset = offset,
 		.transaction_id = sys->current_id,
