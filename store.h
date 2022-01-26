@@ -11,7 +11,7 @@ typedef enum store_kind {
 typedef struct store_contract {
 	store_kind_e (*get_kind)(void *instance);
 	void *       (*get_data)(void *instance);
-	void         (*destroy )(void *instance);
+	void         (*destroy )(void *instance, allocator_t *alc);
 } store_contract_t;
 
 typedef struct store {
@@ -57,7 +57,7 @@ store_t *store_create(void *instance, store_contract_t *contract, allocator_t *a
 
 void store_destroy(store_t *store, allocator_t *alc)
 {
-	(store->contract->destroy)(store->instance);
+	(store->contract->destroy)(store->instance, alc);
 	afree(store, alc);
 }
 
@@ -97,6 +97,7 @@ void megastore_destroy(megastore_t mega)
 {
 	array_foreach(mega.d, store_t *, store_ptr)
 		store_destroy(*store_ptr, mega.alc);
+	array_destroy(mega.d);
 }
 
 #undef STORE_IMPLEMENTATION

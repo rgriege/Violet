@@ -96,16 +96,16 @@ void *store_a__get_data(store_a_t *store)
 
 /* use for concrete store implementation(s), when there is no memory to clean up */
 static
-void store__noop(store_t *store)
+void store__destroy_noop(store_t *store, allocator_t *alc)
 {
-	NOOP;
+	afree(store, alc);
 }
 
 static
 store_contract_t *polymorph_store_a = &(store_contract_t) {
-	.get_kind        = (store_kind_e (*)(void *))store_a__get_kind,
-	.get_data        = (void *       (*)(void *))store_a__get_data,
-	.destroy         = (void         (*)(void *))store__noop,
+	.get_kind = (store_kind_e (*)(void *))store_a__get_kind,
+	.get_data = (void *(*)(void *))store_a__get_data,
+	.destroy = (void (*)(void *, allocator_t *))store__destroy_noop,
 };
 
 typedef struct store_b_data {
@@ -140,9 +140,9 @@ void *store_b__get_data(store_b_t *store)
 
 static
 store_contract_t *polymorph_store_b = &(store_contract_t) {
-	.get_kind        = (store_kind_e (*)(void *))store_b__get_kind,
-	.get_data        = (void *       (*)(void *))store_b__get_data,
-	.destroy         = (void         (*)(void *))store__noop,
+	.get_kind = (store_kind_e (*)(void *))store_b__get_kind,
+	.get_data = (void *(*)(void *))store_b__get_data,
+	.destroy = (void (*)(void *, allocator_t *))store__destroy_noop,
 };
 
 typedef struct store_gui_data {
@@ -173,9 +173,10 @@ store_gui_t *store_gui_create(allocator_t *alc)
 }
 
 static
-void store_gui__destroy(store_gui_t *store)
+void store_gui__destroy(store_gui_t *store, allocator_t *alc)
 {
 	array_destroy(store->data.arr);
+	afree(store, alc);
 }
 
 static
@@ -192,9 +193,9 @@ void *store_gui__get_data(store_gui_t *store)
 
 static
 store_contract_t *polymorph_store_gui = &(store_contract_t) {
-	.get_kind        = (store_kind_e (*)(void *))store_gui__get_kind,
-	.get_data        = (void *       (*)(void *))store_gui__get_data,
-	.destroy         = (void         (*)(void *))store_gui__destroy,
+	.get_kind = (store_kind_e (*)(void *))store_gui__get_kind,
+	.get_data = (void *(*)(void *))store_gui__get_data,
+	.destroy = (void (*)(void *, allocator_t *))store_gui__destroy,
 };
 
 static
