@@ -80,6 +80,7 @@ void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset)
 // TODO(luke): store_from_kind probably shouldn't be exposed as an API function
 store_t *store_from_kind(store_kind_e kind);
 void    *store_instance_from_kind(store_kind_e kind);
+void    *store_data_from_kind(store_kind_e kind);
 
 #define payload_primitive(value, type, payload) \
 	assert(sizeof(type) <= PAYLOAD_LIMIT_PRIMITIVE); \
@@ -153,8 +154,14 @@ store_t *store_from_kind(store_kind_e kind)
 
 void *store_instance_from_kind(store_kind_e kind)
 {
-	store_t *store = store_from_kind(kind);
+	const store_t *store = store_from_kind(kind);
 	return store->instance;
+}
+
+void *store_data_from_kind(store_kind_e kind)
+{
+	const store_t *store = store_from_kind(kind);
+	return store_get_data(store);
 }
 
 // TODO(luke): this function needs to be responsible for undoing any changes if they prove invalid
