@@ -31,7 +31,6 @@ typedef struct megastore {
 
 megastore_t megastore_create(array(store_t *) stores, allocator_t *alc);
 void megastore_destroy(megastore_t mega);
-/* having two or more store_t with the same store_kind causes undefined behavior */
 
 #define store_offset_bytes(store, cmd, dst) \
 	unsigned char *(dst) = (unsigned char *)store_get_data(store) + (cmd)->offset;
@@ -71,6 +70,7 @@ void *store_get_data(const store_t *store)
 	return (store->contract->get_data)(store->instance);
 }
 
+/* having two or more store_t with the same store_kind causes undefined behavior */
 static
 void megastore__append(megastore_t *mega, store_t *store)
 {
