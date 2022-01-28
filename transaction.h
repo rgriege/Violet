@@ -76,6 +76,8 @@ void transaction_store_kind_push(store_kind_e kind);
 void transaction_store_kind_pop();
 void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 offset);
 void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset);
+// TODO(undo): delete from API once call is removed from testfit/gui.c redo()
+void transaction_clear_redo_history();
 
 // TODO(luke): store_from_kind probably shouldn't be exposed as an API function
 store_t *store_from_kind(store_kind_e kind);
@@ -380,8 +382,8 @@ b32 transaction__unwind_history(u32 unwind_count)
 	return true;
 }
 
-static
-void transaction__clear_redo_history()
+// TODO(undo): make this static once call is removed from testfit/gui.c redo()
+void transaction_clear_redo_history()
 {
 	transaction_system_t *sys = g_active_transaction_system;
 
@@ -410,7 +412,7 @@ b32 transaction_commit()
 	}
 
 	array_clear(sys->command_queue);
-	transaction__clear_redo_history();
+	transaction_clear_redo_history();
 
 	if (!replace_prev)
 		sys->current_id++;
