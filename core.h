@@ -245,7 +245,7 @@ void vlt_mem_log_usage(void);
 static inline void *std_malloc(size_t sz) { return malloc(sz); }
 static inline void *std_calloc(size_t nmemb, size_t sz) { return calloc(nmemb, sz); }
 static inline void *std_realloc(void *ptr, size_t sz) { return realloc(ptr, sz); }
-static inline void  std_free(void *ptr) { return free(ptr); }
+static inline void  std_free(void *ptr) { free(ptr); }
 
 #define malloc(sz)         amalloc(sz, g_allocator)
 #define calloc(nmemb, sz)  acalloc(nmemb, sz, g_allocator)
