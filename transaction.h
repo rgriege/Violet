@@ -36,7 +36,6 @@ typedef struct command {
 	command_kind_e kind;
 	store_kind_e store_kind;
 	u32 offset;
-	u32 transaction_id;
 	payload_t payload;
 } command_t;
 
@@ -44,7 +43,6 @@ typedef struct revertable_command {
 	command_kind_e kind;
 	store_kind_e store_kind;
 	u32 offset;
-	u32 transaction_id;
 	/* should only be used for comparing multi-frame transactions,
 	   to know if back-to-back interactions target the same mutation */
 	void *dst;
@@ -52,14 +50,41 @@ typedef struct revertable_command {
 	array(unsigned char) bytes_after;
 } revertable_command_t;
 
+typedef struct revertable_command_bundle {
+	array(revertable_command_t) d;
+	u32 transaction_id;
+} revertable_command_bundle_t;
+
+/* Triggers mutate state that is not strictly part of the transaction system;
+   that is, the trigger handle (function) is expected to alter state that has no
+   dependencies except for those in subsequent triggers, within the same transaction.
+   Use triggers when there is no direct correlation between GUI interaction
+   (widgets, editor canvas, etc) and the state that requires updating. */
+typedef struct trigger {
+	store_kind_e store_kind;
+	// b32 use_worker_thread;
+	// union {
+	// 	/* function signatures here */
+	// } handle;
+} trigger_t;
+
+typedef struct trigger_bundle {
+	array(trigger_t) d;
+	u32 transaction_id;
+} trigger_bundle_t;
+
 typedef struct transaction_system {
 	u32 current_id;
 	b32 multi_frame;
 	b32 pending;
+	// QUALITY(undo); eliminate megastore concept... no real reason to not just use
+	//             an array(store_t *) and cache the allocator_t * on the system itself
 	megastore_t mega;
 	array(command_t) command_queue;
-	array(revertable_command_t) undo_stack;
-	array(revertable_command_t) redo_stack;
+	array(revertable_command_bundle_t) undo_stack;
+	array(revertable_command_bundle_t) redo_stack;
+	array(trigger_bundle_t) undo_triggers;
+	array(trigger_bundle_t) redo_triggers;
 	array(store_kind_e) store_kind_stack;
 } transaction_system_t;
 
@@ -121,8 +146,8 @@ void revertable_command__init(revertable_command_t *cmd, const command_t *comman
 {
 	*cmd = (revertable_command_t){
 		.kind = command->kind,
+		.store_kind = command->store_kind,
 		.offset = command->offset,
-		.transaction_id = command->transaction_id,
 	};
 	cmd->bytes_before = array_create_ex(alc);
 	cmd->bytes_after = array_create_ex(alc);
@@ -142,6 +167,49 @@ void revertable_command__copy_bytes(revertable_command_t *cmd, void *dst, const 
 	array_appendn(cmd->bytes_before, dst, n);
 	memcpy(dst, src, n);
 	array_appendn(cmd->bytes_after, dst, n);
+}
+
+static
+void trigger__destroy(trigger_t *trigger)
+{
+	// TODO(undo): implementation
+	NOOP;
+}
+
+static
+revertable_command_bundle_t revertable_command_bundle__create(u32 transaction_id, allocator_t *alc)
+{
+	return (revertable_command_bundle_t) {
+		.transaction_id = transaction_id,
+		.d = array_create_ex(alc),
+	};
+}
+
+static
+void revertable_command_bundle__destroy(revertable_command_bundle_t *commands)
+{
+	array_foreach(commands->d, revertable_command_t, cmd) {
+		revertable_command__destroy(cmd);
+	}
+	array_destroy(commands->d);
+}
+
+static
+trigger_bundle_t trigger_bundle__create(u32 transaction_id, allocator_t *alc)
+{
+	return (trigger_bundle_t) {
+		.transaction_id = transaction_id,
+		.d = array_create_ex(alc),
+	};
+}
+
+static
+void trigger_bundle__destroy(trigger_bundle_t *triggers)
+{
+	array_foreach(triggers->d, trigger_t, trigger) {
+		trigger__destroy(trigger);
+	}
+	array_destroy(triggers->d);
 }
 
 store_t *store_from_kind(store_kind_e kind)
@@ -171,12 +239,14 @@ void *store_data_from_kind(store_kind_e kind)
 static
 b32 transaction__execute_command(const store_t *store, u32 command_idx, b32 replace_prev)
 {
-	revertable_command_t cmd;
 	transaction_system_t *sys = g_active_transaction_system;
-	command_t *command = &sys->command_queue[command_idx];
 
 	if (!sys->multi_frame)
 		assert(!replace_prev);
+
+	revertable_command_t cmd;
+	command_t *command = &sys->command_queue[command_idx];
+	revertable_command_bundle_t *commands = &array_last(sys->undo_stack);
 
 	switch (command->kind) {
 	case COMMAND_KIND_MODIFY_PRIMITIVE:
@@ -187,16 +257,11 @@ b32 transaction__execute_command(const store_t *store, u32 command_idx, b32 repl
 		if (replace_prev) {
 			// CLEANUP: de-dup with other COMMAND_KINDs
 			memcpy(dst, &payload->bytes, payload->size);
-			/* get the previously issued command that aligns to the current idx
-			   in the current queue */
-			revertable_command_t *prev_cmd = &sys->undo_stack[  array_sz(sys->undo_stack)
-			                                                - array_sz(sys->command_queue)
-			                                                + command_idx];
+			revertable_command_t *prev_cmd = &commands->d[command_idx];
 			array_clear(prev_cmd->bytes_after);
 			array_appendn(prev_cmd->bytes_after, dst, payload->size);
 		} else {
-			allocator_t *alc = array__allocator(sys->undo_stack);
-			revertable_command__init(&cmd, command, alc);
+			revertable_command__init(&cmd, command, sys->mega.alc);
 			revertable_command__copy_bytes(&cmd, dst, &payload->bytes, payload->size);
 		}
 	}
@@ -210,16 +275,11 @@ b32 transaction__execute_command(const store_t *store, u32 command_idx, b32 repl
 		if (replace_prev) {
 			// CLEANUP: de-dup with other COMMAND_KINDs
 			memcpy(dst, payload->bytes, size);
-			/* get the previously issued command that aligns to the current idx
-			   in the current queue */
-			revertable_command_t *prev_cmd = &sys->undo_stack[  array_sz(sys->undo_stack)
-			                                                - array_sz(sys->command_queue)
-			                                                + command_idx];
+			revertable_command_t *prev_cmd = &commands->d[command_idx];
 			array_clear(prev_cmd->bytes_after);
 			array_appendn(prev_cmd->bytes_after, dst, size);
 		} else {
-			allocator_t *alc = array__allocator(sys->undo_stack);
-			revertable_command__init(&cmd, command, alc);
+			revertable_command__init(&cmd, command, sys->mega.alc);
 			revertable_command__copy_bytes(&cmd, dst, payload->bytes, size);
 		}
 
@@ -235,7 +295,7 @@ b32 transaction__execute_command(const store_t *store, u32 command_idx, b32 repl
 	}
 
 	if (!replace_prev)
-		array_append(sys->undo_stack, cmd);
+		array_append(commands->d, cmd);
 
 	return true;
 
@@ -249,9 +309,11 @@ transaction_system_t transaction_system_create(array(store_t *) stores, allocato
 	return (transaction_system_t) {
 		.mega = megastore_create(stores, alc),
 		.command_queue    = array_create_ex(alc),
+		.store_kind_stack = array_create_ex(alc),
 		.undo_stack       = array_create_ex(alc),
 		.redo_stack       = array_create_ex(alc),
-		.store_kind_stack = array_create_ex(alc),
+		.undo_triggers    = array_create_ex(alc),
+		.redo_triggers    = array_create_ex(alc),
 	};
 }
 
@@ -259,9 +321,27 @@ void transaction_system_destroy(transaction_system_t *sys)
 {
 	megastore_destroy(sys->mega);
 	array_destroy(sys->command_queue);
-	array_destroy(sys->undo_stack);
-	array_destroy(sys->redo_stack);
 	array_destroy(sys->store_kind_stack);
+
+	array_foreach(sys->undo_stack, revertable_command_bundle_t, commands) {
+		revertable_command_bundle__destroy(commands);
+	}
+	array_destroy(sys->undo_stack);
+
+	array_foreach(sys->redo_stack, revertable_command_bundle_t, commands) {
+		revertable_command_bundle__destroy(commands);
+	}
+	array_destroy(sys->redo_stack);
+
+	array_foreach(sys->undo_triggers, trigger_bundle_t, triggers) {
+		trigger_bundle__destroy(triggers);
+	}
+	array_destroy(sys->undo_triggers);
+
+	array_foreach(sys->redo_triggers, trigger_bundle_t, triggers) {
+		trigger_bundle__destroy(triggers);
+	}
+	array_destroy(sys->redo_triggers);
 }
 
 void transaction_system_set_active(transaction_system_t *sys)
@@ -277,17 +357,22 @@ void transaction_system_on_update()
 }
 
 static
-void transaction_begin__validate(transaction_system_t *sys)
+void transaction__begin(transaction_system_t *sys)
 {
 	assert(array_sz(sys->command_queue) == 0);
+	sys->pending = true;
+
+	array_append(sys->undo_stack,
+	             revertable_command_bundle__create(sys->current_id, sys->mega.alc));;
+	array_append(sys->undo_triggers,
+	             trigger_bundle__create(sys->current_id, sys->mega.alc));
 }
 
 void transaction_begin()
 {
 	transaction_system_t *sys = g_active_transaction_system;
-	transaction_begin__validate(sys);
+	transaction__begin(sys);
 	sys->multi_frame = false;
-	sys->pending = true;
 }
 
 /* Addresses the use case when some data mutation might be repeated with a
@@ -298,31 +383,12 @@ void transaction_begin()
 void transaction_begin_multi_frame()
 {
 	transaction_system_t *sys = g_active_transaction_system;
-	transaction_begin__validate(sys);
+	transaction__begin(sys);
 	sys->multi_frame = true;
-	sys->pending = true;
 }
 
 static
-u32 transaction_prev_n_commands()
-{
-	transaction_system_t *sys = g_active_transaction_system;
-
-	if (array_sz(sys->undo_stack) == 0)
-		return 0;
-
-	u32 result = 1;
-	u32 prev_frame_trans_id = array_last(sys->undo_stack).transaction_id;
-	for (s32 i = array_sz(sys->undo_stack)-2; i >= 0 ;--i) {
-		if (prev_frame_trans_id != sys->undo_stack[i].transaction_id)
-			break;
-		++result;
-	}
-	return result;
-}
-
-static
-b32 transaction__revert_command(megastore_t *mega, revertable_command_t *cmd)
+b32 transaction__revert_command(revertable_command_t *cmd)
 {
 	store_t *store = store_from_kind(cmd->store_kind);
 
@@ -345,24 +411,26 @@ b32 transaction__revert_command(megastore_t *mega, revertable_command_t *cmd)
 }
 
 static
-b32 transaction__should_replace_prev(megastore_t *mega)
+b32 transaction__should_replace_prev()
 {
-	transaction_system_t *sys = g_active_transaction_system;
+	const transaction_system_t *sys = g_active_transaction_system;
 
-	if (!sys->multi_frame || array_sz(sys->undo_stack) == 0)
+	if (!sys->multi_frame || array_sz(sys->undo_stack) <= 1)
 		return false;
 
-	u32 prev_trans_n_cmds = transaction_prev_n_commands();
-	u32 curr_trans_n_cmds = array_sz(sys->command_queue);
+	const revertable_command_bundle_t *commands = &array_last(sys->undo_stack)-1;
+
+	const u32 prev_trans_n_cmds = array_sz(commands->d);
+	const u32 curr_trans_n_cmds = array_sz(sys->command_queue);
 
 	if (prev_trans_n_cmds != curr_trans_n_cmds)
 		return false;
 
 	for (u32 i = 0; i < curr_trans_n_cmds; ++i) {
 		const command_t *command = &sys->command_queue[i];
-		store_t *store = store_from_kind(command->kind);
+		const store_t *store = store_from_kind(command->store_kind);
 		store_offset_bytes(store, command, dst);
-		if (sys->undo_stack[array_sz(sys->undo_stack) - prev_trans_n_cmds + i].dst != dst)
+		if (commands->d[i].dst != dst)
 			return false;
 	}
 
@@ -370,15 +438,13 @@ b32 transaction__should_replace_prev(megastore_t *mega)
 }
 
 static
-b32 transaction__unwind_history(u32 unwind_count)
+b32 transaction__unwind_bundle(revertable_command_bundle_t *commands)
 {
-	transaction_system_t *sys = g_active_transaction_system;
-
-	for (u32 i = 0, start_idx = array_sz(sys->undo_stack)-1; i < unwind_count; ++i)
-		if (transaction__revert_command(&sys->mega, &sys->undo_stack[start_idx-i]))
-			array_pop(sys->undo_stack);
-		else
+	for (s32 i = array_sz(commands->d)-1; i >= 0; --i)
+		if (!transaction__revert_command(&commands->d[i]))
 			return false;
+
+	revertable_command_bundle__destroy(commands);
 	return true;
 }
 
@@ -387,38 +453,60 @@ void transaction_clear_redo_history()
 {
 	transaction_system_t *sys = g_active_transaction_system;
 
-	array_foreach(sys->redo_stack, revertable_command_t, cmd)
-		revertable_command__destroy(cmd);
+	array_foreach(sys->redo_stack, revertable_command_bundle_t, commands)
+		revertable_command_bundle__destroy(commands);
 	array_clear(sys->redo_stack);
+
+	array_foreach(sys->redo_triggers, trigger_bundle_t, triggers)
+		trigger_bundle__destroy(triggers);
+	array_clear(sys->redo_triggers);
 }
 
 b32 transaction_commit()
 {
-	u32 success_count = 0;
 	transaction_system_t *sys = g_active_transaction_system;
-	const b32 replace_prev = transaction__should_replace_prev(&sys->mega);
+
+	if (array_sz(sys->command_queue) == 0) {
+		/* we almost certainly want to queue at least 1 command during a transaction */
+		assert(false);
+		return false;
+	}
+
+	const b32 replace_prev = transaction__should_replace_prev();
+
+	if (replace_prev) {
+		/* remove the bundle that was added during transaction__begin() and redirect to the
+		   correct bundle */
+		revertable_command_bundle__destroy(&array_last(sys->undo_stack));
+		array_pop(sys->undo_stack);
+	}
 
 	for (u32 i = 0, n = array_sz(sys->command_queue); i < n; ++i) {
 		command_t *command = &sys->command_queue[i];
 		const store_t *store = store_from_kind(command->store_kind);
-		if (transaction__execute_command(store, i, replace_prev)) {
-			success_count++;
-		} else {
-			if (!transaction__unwind_history(success_count))
-				/* something went very haywire - expect undefined behavior */
-				assert(false);
-			return false;
-		}
+		if (!transaction__execute_command(store, i, replace_prev))
+			goto err;
 	}
 
-	array_clear(sys->command_queue);
-	transaction_clear_redo_history();
+	// TODO(undo): execute triggers (how should they interact if one or more commands get unwound??)
 
 	if (!replace_prev)
 		sys->current_id++;
 
+	transaction_clear_redo_history();
+
+	array_clear(sys->command_queue);
 	sys->pending = false;
 	return true;
+
+err:
+	if (!transaction__unwind_bundle(&array_last(sys->undo_stack)))
+		/* something went very haywire - expect undefined behavior */
+		assert(false);
+
+	array_clear(sys->command_queue);
+	sys->pending = false;
+	return false;
 }
 
 // CLEANUP: de-dup with store_redo
@@ -429,9 +517,16 @@ b32 transaction_undo()
 	if (array_sz(sys->undo_stack) == 0)
 		return false;
 
+	revertable_command_bundle_t *undo_commands = &array_last(sys->undo_stack);
+	array_append(sys->redo_stack,
+	             revertable_command_bundle__create(undo_commands->transaction_id, sys->mega.alc));
+	revertable_command_bundle_t *redo_commands = &array_last(sys->redo_stack);
+
+	// TODO(undo): undo triggers
+
 	do {
-		revertable_command_t *cmd = &array_last(sys->undo_stack);
-		if (!transaction__revert_command(&sys->mega, cmd))
+		revertable_command_t *cmd = &array_last(undo_commands->d);
+		if (!transaction__revert_command(cmd))
 			/* something went very haywire - expect undefined behavior */
 			assert(false);
 
@@ -439,11 +534,13 @@ b32 transaction_undo()
 		cmd->bytes_before = cmd->bytes_after;
 		cmd->bytes_after = swap;
 
-		array_append(sys->redo_stack, array_last(sys->undo_stack));
-		array_pop(sys->undo_stack);
-	} while (   array_sz(sys->undo_stack) > 0
-	         && array_last(sys->undo_stack).transaction_id
-	         == array_last(sys->redo_stack).transaction_id);
+		array_append(redo_commands->d, array_last(undo_commands->d));
+		array_pop(undo_commands->d);
+
+	} while (array_sz(undo_commands->d) > 0);
+
+	revertable_command_bundle__destroy(undo_commands);
+	array_pop(sys->undo_stack);
 
 	--sys->current_id;
 
@@ -458,9 +555,16 @@ b32 transaction_redo()
 	if (array_sz(sys->redo_stack) == 0)
 		return false;
 
+	revertable_command_bundle_t *redo_commands = &array_last(sys->redo_stack);
+	array_append(sys->undo_stack,
+	             revertable_command_bundle__create(redo_commands->transaction_id, sys->mega.alc));
+	revertable_command_bundle_t *undo_commands = &array_last(sys->undo_stack);
+
+	// TODO(undo): redo triggers
+
 	do {
-		revertable_command_t *cmd = &array_last(sys->redo_stack);
-		if (!transaction__revert_command(&sys->mega, cmd))
+		revertable_command_t *cmd = &array_last(redo_commands->d);
+		if (!transaction__revert_command(cmd))
 			/* something went very haywire - expect undefined behavior */
 			assert(false);
 
@@ -468,11 +572,13 @@ b32 transaction_redo()
 		cmd->bytes_before = cmd->bytes_after;
 		cmd->bytes_after = swap;
 
-		array_append(sys->undo_stack, array_last(sys->redo_stack));
-		array_pop(sys->redo_stack);
-	} while (   array_sz(sys->redo_stack) > 0
-	         && array_last(sys->undo_stack).transaction_id
-	         == array_last(sys->redo_stack).transaction_id);
+		array_append(undo_commands->d, array_last(redo_commands->d));
+		array_pop(redo_commands->d);
+
+	} while (array_sz(redo_commands->d) > 0);
+
+	revertable_command_bundle__destroy(redo_commands);
+	array_pop(sys->redo_stack);
 
 	++sys->current_id;
 
@@ -508,7 +614,6 @@ void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 of
 		.store_kind = array_last(sys->store_kind_stack),
 		.payload.primitive = *payload,
 		.offset = offset,
-		.transaction_id = sys->current_id,
 	};
 	array_append(sys->command_queue, command);
 }
@@ -523,7 +628,6 @@ void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset)
 		.store_kind = array_last(sys->store_kind_stack),
 		.payload.dynamic = *payload,    // NOTE(luke): copies ptr from dynamic allocation
 		.offset = offset,
-		.transaction_id = sys->current_id,
 	};
 	array_append(sys->command_queue, command);
 }
