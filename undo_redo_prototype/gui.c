@@ -662,7 +662,6 @@ int main(int argc, char *const argv[])
 	array(store_t *) stores = stores__init(g_allocator);
 	transaction_system_t sys =  transaction_system_create(stores, g_allocator);
 	transaction_system_set_active(&sys);
-	array_destroy(stores);
 
 	struct log_data log_data = { 0 };
 	gui_panel_t *panels[PANEL_COUNT] = {

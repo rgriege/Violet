@@ -24,14 +24,6 @@ void         store_destroy(store_t *store, allocator_t *alc);
 store_kind_e store_get_kind(const store_t *store);
 void *       store_get_data(const store_t *store);
 
-typedef struct megastore {
-	array(store_t *) d;
-	allocator_t *alc;
-} megastore_t;
-
-megastore_t megastore_create(array(store_t *) stores, allocator_t *alc);
-void megastore_destroy(megastore_t mega);
-
 #define store_offset_bytes(store, cmd, dst) \
 	unsigned char *(dst) = (unsigned char *)store_get_data(store) + (cmd)->offset;
 
@@ -68,36 +60,6 @@ store_kind_e store_get_kind(const store_t *store)
 void *store_get_data(const store_t *store)
 {
 	return (store->contract->get_data)(store->instance);
-}
-
-/* having two or more store_t with the same store_kind causes undefined behavior */
-static
-void megastore__append(megastore_t *mega, store_t *store)
-{
-	b32 store_kind_already_exists = false;
-	store_kind_e kind = store_get_kind(store);
-	array_foreach(mega->d, store_t *, store_ptr)
-		if (store_get_kind(*store_ptr) == kind)
-			store_kind_already_exists |= true;
-	assert(!store_kind_already_exists);
-
-	array_append(mega->d, store);
-}
-
-megastore_t megastore_create(array(store_t *) stores, allocator_t *alc)
-{
-	megastore_t mega = { .d = array_create_ex(alc), .alc = alc };
-    array_foreach(stores, store_t *, store_ptr) {
-        megastore__append(&mega, *store_ptr);
-    }
-    return mega;
-}
-
-void megastore_destroy(megastore_t mega)
-{
-	array_foreach(mega.d, store_t *, store_ptr)
-		store_destroy(*store_ptr, mega.alc);
-	array_destroy(mega.d);
 }
 
 #undef STORE_IMPLEMENTATION
