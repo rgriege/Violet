@@ -1798,6 +1798,7 @@ typedef struct gui
 	gui_popup_t popups[GUI_POPUP_STACK_SIZE];
 	gui_popup_t *popup;
 	colorf_t color_picker8_color;
+	b32 color_picker_input_hsv;
 	gui_scroll_area_t *scroll_area;
 	gui_tree_t tree;
 	s32 hint_timer;
@@ -1981,6 +1982,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	arrclr(gui->popups);
 	gui->popup = NULL;
 	gui->color_picker8_color = (colorf_t){0};
+	gui->color_picker_input_hsv = false;
 	gui->scroll_area = NULL;
 	memclr(gui->tree);
 	gui->hint_timer = GUI_HINT_TIMER;
@@ -5710,7 +5712,7 @@ b32 gui_color_picker_popup_default(gui_t *gui, colorf_t *c)
 	const s32 rows[] = { 0, 2, 20 };
 	const s32 cols[] = { 0, 2, 20 };
 	const s32 cols_npt[] = { 20, 0 };
-	const s32 rows_npt[] = { 20, 5, 20, 5, 20, 10, 20, 5, 20, 5, 20, 10, 20 };
+	const s32 rows_npt[] = { 20, 10, 20, 5, 20, 5, 20, 5, 20, 10, 20 };
 	const gui_npt_flags_e flags = GUI_NPT_COMPLETE_ON_TAB
 	                            | GUI_NPT_COMPLETE_ON_CLICK_OUT;
 	gui_npt_filter_p filter = &g_gui_npt_filter_hex;
@@ -5743,60 +5745,77 @@ b32 gui_color_picker_popup_default(gui_t *gui, colorf_t *c)
 	pgui_col_cellsv(gui, 0, rows_npt);
 
 	pgui_row_cellsv(gui, 0, cols_npt);
-	pgui_txt(gui, "r");
-	if (pgui_npt_val(gui, imprintf("%u", color.r), 4, flags, filter)) {
-		changed_npt = true;
-		color.r = strtoul(gui_npt_val_buf(gui), NULL, 0);
-	}
+	pgui_spacer(gui);
+	if (pgui_btn_txt(gui, gui->color_picker_input_hsv ? "HSV" : "RGB"))
+		gui->color_picker_input_hsv = !gui->color_picker_input_hsv;
 	pgui_row_empty(gui, 0);
 
-	pgui_row_cellsv(gui, 0, cols_npt);
-	pgui_txt(gui, "g");
-	if (pgui_npt_val(gui, imprintf("%u", color.g), 4, flags, filter)) {
-		changed_npt = true;
-		color.g = strtoul(gui_npt_val_buf(gui), NULL, 0);
+	if (gui->color_picker_input_hsv) {
+		color_to_hsv8(color, &ch, &cs, &cv);
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "h");
+		if (pgui_npt_val(gui, imprintf("%u", ch), 4, flags, filter)) {
+			changed_npt = true;
+			ch = strtoul(gui_npt_val_buf(gui), NULL, 0);
+			hsv_to_color8(ch, cs, cv, &color);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "s");
+		if (pgui_npt_val(gui, imprintf("%u", cs), 4, flags, filter)) {
+			changed_npt = true;
+			cs = strtoul(gui_npt_val_buf(gui), NULL, 0);
+			hsv_to_color8(ch, cs, cv, &color);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "v");
+		if (pgui_npt_val(gui, imprintf("%u", cv), 4, flags, filter)) {
+			changed_npt = true;
+			cv = strtoul(gui_npt_val_buf(gui), NULL, 0);
+			hsv_to_color8(ch, cs, cv, &color);
+		}
+		pgui_row_empty(gui, 0);
+
+	} else {
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "r");
+		if (pgui_npt_val(gui, imprintf("%u", color.r), 4, flags, filter)) {
+			changed_npt = true;
+			color.r = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "g");
+		if (pgui_npt_val(gui, imprintf("%u", color.g), 4, flags, filter)) {
+			changed_npt = true;
+			color.g = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		}
+		pgui_row_empty(gui, 0);
+
+		pgui_row_cellsv(gui, 0, cols_npt);
+		pgui_txt(gui, "b");
+		if (pgui_npt_val(gui, imprintf("%u", color.b), 4, flags, filter)) {
+			changed_npt = true;
+			color.b = strtoul(gui_npt_val_buf(gui), NULL, 0);
+		}
+		pgui_row_empty(gui, 0);
 	}
-	pgui_row_empty(gui, 0);
 
 	pgui_row_cellsv(gui, 0, cols_npt);
-	pgui_txt(gui, "b");
-	if (pgui_npt_val(gui, imprintf("%u", color.b), 4, flags, filter)) {
+	pgui_txt(gui, "a");
+	if (pgui_npt_val(gui, imprintf("%u", color.a), 4, flags, filter)) {
 		changed_npt = true;
-		color.b = strtoul(gui_npt_val_buf(gui), NULL, 0);
-	}
-	pgui_row_empty(gui, 0);
-
-	color_to_hsv8(color, &ch, &cs, &cv);
-	pgui_row_cellsv(gui, 0, cols_npt);
-	pgui_txt(gui, "h");
-	if (pgui_npt_val(gui, imprintf("%u", ch), 4, flags, filter)) {
-		changed_npt = true;
-		ch = strtoul(gui_npt_val_buf(gui), NULL, 0);
-		hsv_to_color8(ch, cs, cv, &color);
-	}
-	pgui_row_empty(gui, 0);
-
-	pgui_row_cellsv(gui, 0, cols_npt);
-	pgui_txt(gui, "s");
-	if (pgui_npt_val(gui, imprintf("%u", cs), 4, flags, filter)) {
-		changed_npt = true;
-		cs = strtoul(gui_npt_val_buf(gui), NULL, 0);
-		hsv_to_color8(ch, cs, cv, &color);
-	}
-	pgui_row_empty(gui, 0);
-
-	pgui_row_cellsv(gui, 0, cols_npt);
-	pgui_txt(gui, "v");
-	if (pgui_npt_val(gui, imprintf("%u", cv), 4, flags, filter)) {
-		changed_npt = true;
-		cv = strtoul(gui_npt_val_buf(gui), NULL, 0);
-		hsv_to_color8(ch, cs, cv, &color);
+		color.a = strtoul(gui_npt_val_buf(gui), NULL, 0);
 	}
 	pgui_row_empty(gui, 0);
 
 	pgui_row_cellsv(gui, 0, cols_npt);
 	pgui_txt(gui, "#");
-	if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x", color.r, color.g, color.b), 8, flags, filter)) {
+	if (pgui_npt_val(gui, imprintf("%.2x%.2x%.2x%.2x", color.r, color.g, color.b, color.a), 9, flags, filter)) {
 		const color_t c_orig = color;
 		if (color_from_hex(gui_npt_val_buf(gui), &color))
 			changed_npt = true;
