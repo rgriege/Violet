@@ -63,9 +63,7 @@ struct log_data
 };
 
 typedef struct store_a_data {
-	b32 chk;
-	r32 slider;
-	char npt[64];
+	char msg[64];
 } store_a_data_t;
 
 typedef struct store_a {
@@ -78,7 +76,9 @@ store_a_t *store_a_create(allocator_t *alc)
 {
 	store_a_t *store_a = amalloc(sizeof(store_a_t), alc);
 	store_a->kind = STORE_KIND_A;
-	store_a->data = (store_a_data_t){};
+	store_a->data = (store_a_data_t){
+		.msg = "you triggered store_a",
+	};
 	return store_a;
 }
 
@@ -109,7 +109,7 @@ store_contract_t *polymorph_store_a = &(store_contract_t) {
 };
 
 typedef struct store_b_data {
-	u32 value;
+	char msg[64];
 } store_b_data_t;
 
 typedef struct store_b {
@@ -122,7 +122,9 @@ store_b_t *store_b_create(allocator_t *alc)
 {
 	store_b_t *store_b = amalloc(sizeof(store_b_t), alc);
 	store_b->kind = STORE_KIND_B;
-	store_b->data = (store_b_data_t){};
+	store_b->data = (store_b_data_t){
+		.msg = "you triggered store_b",
+	};
 	return store_b;
 }
 
@@ -370,6 +372,20 @@ s32 pgui_npt_txt_transaction(gui_t *gui, char *lbl, u32 n,
 }
 
 static
+void trigger__store_a_message()
+{
+	store_a_data_t *data = store_data_from_kind(STORE_KIND_A);
+	log_debug("%s", data->msg);
+}
+
+static
+void trigger__store_b_message()
+{
+	store_a_data_t *data = store_data_from_kind(STORE_KIND_B);
+	log_debug("%s", data->msg);
+}
+
+static
 void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 {
 	const s32 cols[] = { 100, 0 };
@@ -446,6 +462,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 			payload_primitive(checked, b32, payload);
 			transaction_enqueue_mutation_primitive(&payload, store_offsetof(store_gui_t, chk));
 			transaction_enqueue_mutation_primitive(&payload, store_offsetof(store_gui_t, chk2));
+			transaction_enqueue_trigger_basic(trigger__store_a_message);
+			transaction_enqueue_trigger_basic(trigger__store_b_message);
 			transaction_commit();
 		}
 	}

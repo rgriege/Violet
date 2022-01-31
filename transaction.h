@@ -55,17 +55,26 @@ typedef struct revertable_command_bundle {
 	u32 transaction_id;
 } revertable_command_bundle_t;
 
+typedef enum trigger_kind {
+	TRIGGEr_KIND_BASIC,
+} trigger_kind_e;
+
 /* Triggers mutate state that is not strictly part of the transaction system;
    that is, the trigger handle (function) is expected to alter state that has no
    dependencies except for those in subsequent triggers, within the same transaction.
    Use triggers when there is no direct correlation between GUI interaction
    (widgets, editor canvas, etc) and the state that requires updating. */
 typedef struct trigger {
-	store_kind_e store_kind;
-	// b32 use_worker_thread;
-	// union {
-	// 	/* function signatures here */
-	// } handle;
+	trigger_kind_e kind;
+	// TODO(undo): research if there's a way to keep the metadata from a trigger
+	//             instead of strictly relying on pointers, so that if the transaction
+	//             history is saved to file, the "triggers" part of that is meaningful
+	union {
+		/* function signatures here */
+		void (* basic)();
+		// TODO(undo): some functions could have stack allocated args
+		// TODO(undo): some functions could have heap alloacted args
+	} handle;
 } trigger_t;
 
 typedef struct trigger_bundle {
@@ -80,6 +89,7 @@ typedef struct transaction_system {
 	allocator_t *alc;
 	array(store_t *) stores;
 	array(command_t) command_queue;
+	array(trigger_t) trigger_queue;
 	array(revertable_command_bundle_t) undo_stack;
 	array(revertable_command_bundle_t) redo_stack;
 	array(trigger_bundle_t) undo_triggers;
@@ -303,6 +313,38 @@ b32 transaction__execute_command(const store_t *store, u32 command_idx, b32 repl
 
 }
 
+static
+void transaction__execute_trigger_op(trigger_t *trigger)
+{
+	switch((trigger_kind_e)trigger->kind) {
+	case TRIGGEr_KIND_BASIC:
+		trigger->handle.basic();
+	break;
+	default:
+		NOOP;
+	break;
+	}
+}
+
+static
+void transaction__execute_trigger(u32 trigger_idx, b32 replace_prev)
+{
+	transaction_system_t *sys = g_active_transaction_system;
+
+	if (!sys->multi_frame)
+		assert(!replace_prev);
+
+	trigger_t *trigger = &sys->trigger_queue[trigger_idx];
+	transaction__execute_trigger_op(trigger);
+
+	trigger_bundle_t *triggers = &array_last(sys->undo_triggers);
+
+	if (!replace_prev)
+		array_append(triggers->d, *trigger);
+	else
+		triggers->d[trigger_idx] = *trigger;
+}
+
 transaction_system_t transaction_system_create(array(store_t *) stores, allocator_t *alc)
 {
 	/* having two or more store_t with the same store_kind causes undefined behavior */
@@ -322,6 +364,7 @@ transaction_system_t transaction_system_create(array(store_t *) stores, allocato
 		.alc = alc,
 		.stores = stores,
 		.command_queue    = array_create_ex(alc),
+		.trigger_queue    = array_create_ex(alc),
 		.store_kind_stack = array_create_ex(alc),
 		.undo_stack       = array_create_ex(alc),
 		.redo_stack       = array_create_ex(alc),
@@ -333,6 +376,7 @@ transaction_system_t transaction_system_create(array(store_t *) stores, allocato
 void transaction_system_destroy(transaction_system_t *sys)
 {
 	array_destroy(sys->command_queue);
+	array_destroy(sys->trigger_queue);
 	array_destroy(sys->store_kind_stack);
 
 	array_foreach(sys->stores, store_t *, store_ptr) {
@@ -451,6 +495,8 @@ b32 transaction__should_replace_prev()
 			return false;
 	}
 
+	// TODO(undo): do we care about triggers?
+
 	return true;
 }
 
@@ -479,6 +525,14 @@ void transaction_clear_redo_history()
 	array_clear(sys->redo_triggers);
 }
 
+static
+void transaction_system__cleanup_commit(transaction_system_t *sys)
+{
+	array_clear(sys->command_queue);
+	array_clear(sys->trigger_queue);
+	sys->pending = false;
+}
+
 b32 transaction_commit()
 {
 	transaction_system_t *sys = g_active_transaction_system;
@@ -492,28 +546,29 @@ b32 transaction_commit()
 	const b32 replace_prev = transaction__should_replace_prev();
 
 	if (replace_prev) {
-		/* remove the bundle that was added during transaction__begin() and redirect to the
-		   correct bundle */
+		/* free and remove the bundles that were added during transaction__begin() */
 		revertable_command_bundle__destroy(&array_last(sys->undo_stack));
+		trigger_bundle__destroy(&array_last(sys->undo_triggers));
 		array_pop(sys->undo_stack);
+		array_pop(sys->undo_triggers);
 	}
 
-	for (u32 i = 0, n = array_sz(sys->command_queue); i < n; ++i) {
-		command_t *command = &sys->command_queue[i];
-		const store_t *store = store_from_kind(command->store_kind);
+	array_iterate(sys->command_queue, i, n) {
+		const store_t *store = store_from_kind(sys->command_queue[i].store_kind);
 		if (!transaction__execute_command(store, i, replace_prev))
 			goto err;
 	}
 
 	// TODO(undo): execute triggers (how should they interact if one or more commands get unwound??)
+	array_iterate(sys->trigger_queue, i, n)
+		transaction__execute_trigger(i, replace_prev);
 
 	if (!replace_prev)
 		sys->current_id++;
 
 	transaction_clear_redo_history();
 
-	array_clear(sys->command_queue);
-	sys->pending = false;
+	transaction_system__cleanup_commit(sys);
 	return true;
 
 err:
@@ -521,12 +576,67 @@ err:
 		/* something went very haywire - expect undefined behavior */
 		assert(false);
 
-	array_clear(sys->command_queue);
-	sys->pending = false;
+	transaction_system__cleanup_commit(sys);
 	return false;
 }
 
-// CLEANUP: de-dup with store_redo
+static
+void transaction__revert_and_swap_commands(revertable_command_bundle_t *from,
+                                           revertable_command_bundle_t *to)
+{
+	do {
+		revertable_command_t *cmd = &array_last(from->d);
+		if (!transaction__revert_command(cmd))
+			/* something went very haywire - expect undefined behavior */
+			assert(false);
+
+		array(unsigned char) swap = cmd->bytes_before;
+		cmd->bytes_before = cmd->bytes_after;
+		cmd->bytes_after = swap;
+
+		array_append(to->d, array_last(from->d));
+		array_pop(from->d);
+
+	} while (array_sz(from->d) > 0);
+
+	revertable_command_bundle__destroy(from);
+}
+
+static
+void transaction__execute_and_swap_triggers(trigger_bundle_t *from, trigger_bundle_t *to)
+{
+	array_foreach(from->d, trigger_t, trigger) {
+		transaction__execute_trigger_op(trigger);
+		array_append(to->d, *trigger);
+	}
+
+	trigger_bundle__destroy(from);
+}
+
+static
+void transaction__undo_commands(transaction_system_t *sys)
+{
+	revertable_command_bundle_t *undo_commands = &array_last(sys->undo_stack);
+	array_append(sys->redo_stack,
+	             revertable_command_bundle__create(undo_commands->transaction_id, sys->alc));
+	revertable_command_bundle_t *redo_commands = &array_last(sys->redo_stack);
+
+	transaction__revert_and_swap_commands(undo_commands, redo_commands);
+	array_pop(sys->undo_stack);
+}
+
+static
+void transaction__undo_triggers(transaction_system_t *sys)
+{
+	trigger_bundle_t *undo_triggers = &array_last(sys->undo_triggers);
+	array_append(sys->redo_triggers,
+	             trigger_bundle__create(undo_triggers->transaction_id, sys->alc));
+	trigger_bundle_t *redo_triggers = &array_last(sys->redo_triggers);
+
+	transaction__execute_and_swap_triggers(undo_triggers, redo_triggers);
+	array_pop(sys->undo_triggers);
+}
+
 b32 transaction_undo()
 {
 	transaction_system_t *sys = g_active_transaction_system;
@@ -534,37 +644,38 @@ b32 transaction_undo()
 	if (array_sz(sys->undo_stack) == 0)
 		return false;
 
-	revertable_command_bundle_t *undo_commands = &array_last(sys->undo_stack);
-	array_append(sys->redo_stack,
-	             revertable_command_bundle__create(undo_commands->transaction_id, sys->alc));
-	revertable_command_bundle_t *redo_commands = &array_last(sys->redo_stack);
-
-	// TODO(undo): undo triggers
-
-	do {
-		revertable_command_t *cmd = &array_last(undo_commands->d);
-		if (!transaction__revert_command(cmd))
-			/* something went very haywire - expect undefined behavior */
-			assert(false);
-
-		array(unsigned char) swap = cmd->bytes_before;
-		cmd->bytes_before = cmd->bytes_after;
-		cmd->bytes_after = swap;
-
-		array_append(redo_commands->d, array_last(undo_commands->d));
-		array_pop(undo_commands->d);
-
-	} while (array_sz(undo_commands->d) > 0);
-
-	revertable_command_bundle__destroy(undo_commands);
-	array_pop(sys->undo_stack);
+	transaction__undo_commands(sys);
+	transaction__undo_triggers(sys);
 
 	--sys->current_id;
 
 	return true;
 }
 
-// CLEANUP: de-dup with store_undo
+static
+void transaction__redo_commands(transaction_system_t *sys)
+{
+	revertable_command_bundle_t *redo_commands = &array_last(sys->redo_stack);
+	array_append(sys->undo_stack,
+	             revertable_command_bundle__create(redo_commands->transaction_id, sys->alc));
+	revertable_command_bundle_t *undo_commands = &array_last(sys->undo_stack);
+
+	transaction__revert_and_swap_commands(redo_commands, undo_commands);
+	array_pop(sys->redo_stack);
+}
+
+static
+void transaction__redo_triggers(transaction_system_t *sys)
+{
+	trigger_bundle_t *redo_triggers = &array_last(sys->redo_triggers);
+	array_append(sys->undo_triggers,
+	             trigger_bundle__create(redo_triggers->transaction_id, sys->alc));
+	trigger_bundle_t *undo_triggers = &array_last(sys->undo_triggers);
+
+	transaction__execute_and_swap_triggers(redo_triggers, undo_triggers);
+	array_pop(sys->redo_triggers);
+}
+
 b32 transaction_redo()
 {
 	transaction_system_t *sys = g_active_transaction_system;
@@ -572,36 +683,13 @@ b32 transaction_redo()
 	if (array_sz(sys->redo_stack) == 0)
 		return false;
 
-	revertable_command_bundle_t *redo_commands = &array_last(sys->redo_stack);
-	array_append(sys->undo_stack,
-	             revertable_command_bundle__create(redo_commands->transaction_id, sys->alc));
-	revertable_command_bundle_t *undo_commands = &array_last(sys->undo_stack);
-
-	// TODO(undo): redo triggers
-
-	do {
-		revertable_command_t *cmd = &array_last(redo_commands->d);
-		if (!transaction__revert_command(cmd))
-			/* something went very haywire - expect undefined behavior */
-			assert(false);
-
-		array(unsigned char) swap = cmd->bytes_before;
-		cmd->bytes_before = cmd->bytes_after;
-		cmd->bytes_after = swap;
-
-		array_append(undo_commands->d, array_last(redo_commands->d));
-		array_pop(redo_commands->d);
-
-	} while (array_sz(redo_commands->d) > 0);
-
-	revertable_command_bundle__destroy(redo_commands);
-	array_pop(sys->redo_stack);
+	transaction__redo_commands(sys);
+	transaction__redo_triggers(sys);
 
 	++sys->current_id;
 
 	return true;
 }
-
 
 void transaction_store_kind_push(store_kind_e kind)
 {
@@ -620,6 +708,12 @@ void transaction__enqueue_validate(transaction_system_t *sys)
 	assert(sys->pending);
 }
 
+static
+store_kind_e transaction__active_store_kind(transaction_system_t *sys)
+{
+	return array_last(sys->store_kind_stack);
+}
+
 // CLEANUP: de-dup with transaction_enqueue_mutation_buffer()
 void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 offset)
 {
@@ -628,7 +722,7 @@ void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 of
 
 	const command_t command = {
 		.kind = COMMAND_KIND_MODIFY_PRIMITIVE,
-		.store_kind = array_last(sys->store_kind_stack),
+		.store_kind = transaction__active_store_kind(sys),
 		.payload.primitive = *payload,
 		.offset = offset,
 	};
@@ -642,11 +736,22 @@ void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset)
 
 	const command_t command = {
 		.kind = COMMAND_KIND_MODIFY_BUFFER,
-		.store_kind = array_last(sys->store_kind_stack),
+		.store_kind = transaction__active_store_kind(sys),
 		.payload.dynamic = *payload,    // NOTE(luke): copies ptr from dynamic allocation
 		.offset = offset,
 	};
 	array_append(sys->command_queue, command);
+}
+
+void transaction_enqueue_trigger_basic(void (* basic)())
+{
+	transaction_system_t *sys = g_active_transaction_system;
+
+	const trigger_t trigger = {
+		.kind = TRIGGEr_KIND_BASIC,
+		.handle.basic = basic,
+	};
+	array_append(sys->trigger_queue, trigger);
 }
 
 #undef TRANSACTION_IMPLEMENTATION
