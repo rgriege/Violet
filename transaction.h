@@ -348,15 +348,12 @@ void transaction__execute_trigger(u32 trigger_idx, b32 replace_prev)
 transaction_system_t transaction_system_create(array(store_t *) stores, allocator_t *alc)
 {
 	/* having two or more store_t with the same store_kind causes undefined behavior */
-	for (u32 i = 0, n = array_sz(stores); i < n; ++i) {
-		const store_kind_e kind_i = store_get_kind(stores[i]);
+	for (u32 i = 0, n = array_sz(stores); i < n; ++i)
 		for (u32 j = 0; j < n; ++j) {
 			if (i == j)
 				continue;
-			const store_kind_e kind_j = store_get_kind(stores[j]);
-			assert(kind_i != kind_j);
+			assert(store_get_kind(stores[i]) != store_get_kind(stores[j]));
 		}
-	}
 
 	assert(array__allocator(stores) == alc);
 
