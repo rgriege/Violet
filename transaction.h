@@ -3,11 +3,11 @@
 
 #define PAYLOAD_LIMIT_PRIMITIVE 8  // bytes
 
-typedef enum command_kind {
-	COMMAND_KIND_MODIFY_PRIMITIVE,  // a single field
-	COMMAND_KIND_MODIFY_BUFFER,     // a single statically allocated buffer
-	COMMAND_KIND_REPLACE,           // an entire struct, whose size is compile time constant
-} command_kind_e;
+typedef enum mutation_kind {
+	MUTATION_KIND_MODIFY_PRIMITIVE,  // a single field
+	MUTATION_KIND_MODIFY_BUFFER,     // a single statically allocated buffer
+	MUTATION_KIND_REPLACE,           // an entire struct, whose size is compile time constant
+} mutation_kind_e;
 
 typedef struct payload_primitive {
 	union {
@@ -32,15 +32,15 @@ typedef union payload {
 payload_dynamic_t payload_dynamic_create(allocator_t *alc);
 void payload_dynamic_destroy(payload_dynamic_t *payload);
 
-typedef struct command {
-	command_kind_e kind;
+typedef struct mutation {
+	mutation_kind_e kind;
 	store_kind_e store_kind;
 	u32 offset;
 	payload_t payload;
-} command_t;
+} mutation_t;
 
-typedef struct revertable_command {
-	command_kind_e kind;
+typedef struct revertable_mutation {
+	mutation_kind_e kind;
 	store_kind_e store_kind;
 	u32 offset;
 	/* should only be used for comparing multi-frame transactions,
@@ -48,12 +48,12 @@ typedef struct revertable_command {
 	void *dst;
 	array(unsigned char) bytes_before;
 	array(unsigned char) bytes_after;
-} revertable_command_t;
+} revertable_mutation_t;
 
-typedef struct revertable_command_bundle {
-	array(revertable_command_t) d;
+typedef struct revertable_mutation_bundle {
+	array(revertable_mutation_t) d;
 	u32 transaction_id;
-} revertable_command_bundle_t;
+} revertable_mutation_bundle_t;
 
 typedef enum trigger_kind {
 	TRIGGEr_KIND_BASIC,
@@ -88,10 +88,10 @@ typedef struct transaction_system {
 	b32 pending;
 	allocator_t *alc;
 	array(store_t *) stores;
-	array(command_t) command_queue;
+	array(mutation_t) mutation_queue;
 	array(trigger_t) trigger_queue;
-	array(revertable_command_bundle_t) undo_stack;
-	array(revertable_command_bundle_t) redo_stack;
+	array(revertable_mutation_bundle_t) undo_stack;
+	array(revertable_mutation_bundle_t) redo_stack;
 	array(trigger_bundle_t) undo_triggers;
 	array(trigger_bundle_t) redo_triggers;
 	array(store_kind_e) store_kind_stack;
@@ -150,27 +150,27 @@ void payload_dynamic_destroy(payload_dynamic_t *payload)
 }
 
 static
-void revertable_command__init(revertable_command_t *cmd, const command_t *command,
+void revertable_mutation__init(revertable_mutation_t *cmd, const mutation_t *mutation,
                               allocator_t *alc)
 {
-	*cmd = (revertable_command_t){
-		.kind = command->kind,
-		.store_kind = command->store_kind,
-		.offset = command->offset,
+	*cmd = (revertable_mutation_t){
+		.kind = mutation->kind,
+		.store_kind = mutation->store_kind,
+		.offset = mutation->offset,
 	};
 	cmd->bytes_before = array_create_ex(alc);
 	cmd->bytes_after = array_create_ex(alc);
 }
 
 static
-void revertable_command__destroy(revertable_command_t *cmd)
+void revertable_mutation__destroy(revertable_mutation_t *cmd)
 {
 	array_destroy(cmd->bytes_before);
 	array_destroy(cmd->bytes_after);
 }
 
 static
-void revertable_command__copy_bytes(revertable_command_t *cmd, void *dst, const void *src, u32 n)
+void revertable_mutation__copy_bytes(revertable_mutation_t *cmd, void *dst, const void *src, u32 n)
 {
 	cmd->dst = dst;
 	array_appendn(cmd->bytes_before, dst, n);
@@ -186,21 +186,21 @@ void trigger__destroy(trigger_t *trigger)
 }
 
 static
-revertable_command_bundle_t revertable_command_bundle__create(u32 transaction_id, allocator_t *alc)
+revertable_mutation_bundle_t revertable_mutation_bundle__create(u32 transaction_id, allocator_t *alc)
 {
-	return (revertable_command_bundle_t) {
+	return (revertable_mutation_bundle_t) {
 		.transaction_id = transaction_id,
 		.d = array_create_ex(alc),
 	};
 }
 
 static
-void revertable_command_bundle__destroy(revertable_command_bundle_t *commands)
+void revertable_mutation_bundle__destroy(revertable_mutation_bundle_t *mutations)
 {
-	array_foreach(commands->d, revertable_command_t, cmd) {
-		revertable_command__destroy(cmd);
+	array_foreach(mutations->d, revertable_mutation_t, cmd) {
+		revertable_mutation__destroy(cmd);
 	}
-	array_destroy(commands->d);
+	array_destroy(mutations->d);
 }
 
 static
@@ -246,56 +246,56 @@ void *store_data_from_kind(store_kind_e kind)
 // TODO(luke): this function needs to be responsible for undoing any changes if they prove invalid
 //             as well as cleaning up any dynamic memory allocacted with the payload generation
 static
-b32 transaction__execute_command(const store_t *store, u32 command_idx, b32 replace_prev)
+b32 transaction__execute_mutation(const store_t *store, u32 mutation_idx, b32 replace_prev)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 
 	if (!sys->multi_frame)
 		assert(!replace_prev);
 
-	revertable_command_t cmd;
-	command_t *command = &sys->command_queue[command_idx];
-	revertable_command_bundle_t *commands = &array_last(sys->undo_stack);
+	revertable_mutation_t cmd;
+	mutation_t *mutation = &sys->mutation_queue[mutation_idx];
+	revertable_mutation_bundle_t *mutations = &array_last(sys->undo_stack);
 
-	switch (command->kind) {
-	case COMMAND_KIND_MODIFY_PRIMITIVE:
+	switch (mutation->kind) {
+	case MUTATION_KIND_MODIFY_PRIMITIVE:
 	{
-		const payload_primitive_t *payload = &command->payload.primitive;
-		store_offset_bytes(store, command, dst);
+		const payload_primitive_t *payload = &mutation->payload.primitive;
+		store_offset_bytes(store, mutation, dst);
 
 		if (replace_prev) {
-			// CLEANUP: de-dup with other COMMAND_KINDs
+			// CLEANUP: de-dup with other MUTATION_KINDs
 			memcpy(dst, &payload->bytes, payload->size);
-			revertable_command_t *prev_cmd = &commands->d[command_idx];
+			revertable_mutation_t *prev_cmd = &mutations->d[mutation_idx];
 			array_clear(prev_cmd->bytes_after);
 			array_appendn(prev_cmd->bytes_after, dst, payload->size);
 		} else {
-			revertable_command__init(&cmd, command, sys->alc);
-			revertable_command__copy_bytes(&cmd, dst, &payload->bytes, payload->size);
+			revertable_mutation__init(&cmd, mutation, sys->alc);
+			revertable_mutation__copy_bytes(&cmd, dst, &payload->bytes, payload->size);
 		}
 	}
 	break;
-	case COMMAND_KIND_MODIFY_BUFFER:
+	case MUTATION_KIND_MODIFY_BUFFER:
 	{
-		payload_dynamic_t *payload = &command->payload.dynamic;
-		store_offset_bytes(store, command, dst);
+		payload_dynamic_t *payload = &mutation->payload.dynamic;
+		store_offset_bytes(store, mutation, dst);
 		const u32 size = array_sz(payload->bytes);
 
 		if (replace_prev) {
-			// CLEANUP: de-dup with other COMMAND_KINDs
+			// CLEANUP: de-dup with other MUTATION_KINDs
 			memcpy(dst, payload->bytes, size);
-			revertable_command_t *prev_cmd = &commands->d[command_idx];
+			revertable_mutation_t *prev_cmd = &mutations->d[mutation_idx];
 			array_clear(prev_cmd->bytes_after);
 			array_appendn(prev_cmd->bytes_after, dst, size);
 		} else {
-			revertable_command__init(&cmd, command, sys->alc);
-			revertable_command__copy_bytes(&cmd, dst, payload->bytes, size);
+			revertable_mutation__init(&cmd, mutation, sys->alc);
+			revertable_mutation__copy_bytes(&cmd, dst, payload->bytes, size);
 		}
 
 		payload_dynamic_destroy(payload);
 	}
 	break;
-	case COMMAND_KIND_REPLACE:
+	case MUTATION_KIND_REPLACE:
 		NOOP;
 	break;
 	default:
@@ -304,7 +304,7 @@ b32 transaction__execute_command(const store_t *store, u32 command_idx, b32 repl
 	}
 
 	if (!replace_prev)
-		array_append(commands->d, cmd);
+		array_append(mutations->d, cmd);
 
 	return true;
 
@@ -360,7 +360,7 @@ transaction_system_t transaction_system_create(array(store_t *) stores, allocato
 	return (transaction_system_t) {
 		.alc = alc,
 		.stores = stores,
-		.command_queue    = array_create_ex(alc),
+		.mutation_queue    = array_create_ex(alc),
 		.trigger_queue    = array_create_ex(alc),
 		.store_kind_stack = array_create_ex(alc),
 		.undo_stack       = array_create_ex(alc),
@@ -372,7 +372,7 @@ transaction_system_t transaction_system_create(array(store_t *) stores, allocato
 
 void transaction_system_destroy(transaction_system_t *sys)
 {
-	array_destroy(sys->command_queue);
+	array_destroy(sys->mutation_queue);
 	array_destroy(sys->trigger_queue);
 	array_destroy(sys->store_kind_stack);
 
@@ -381,13 +381,13 @@ void transaction_system_destroy(transaction_system_t *sys)
 	}
 	array_destroy(sys->stores);
 
-	array_foreach(sys->undo_stack, revertable_command_bundle_t, commands) {
-		revertable_command_bundle__destroy(commands);
+	array_foreach(sys->undo_stack, revertable_mutation_bundle_t, mutations) {
+		revertable_mutation_bundle__destroy(mutations);
 	}
 	array_destroy(sys->undo_stack);
 
-	array_foreach(sys->redo_stack, revertable_command_bundle_t, commands) {
-		revertable_command_bundle__destroy(commands);
+	array_foreach(sys->redo_stack, revertable_mutation_bundle_t, mutations) {
+		revertable_mutation_bundle__destroy(mutations);
 	}
 	array_destroy(sys->redo_stack);
 
@@ -417,11 +417,11 @@ void transaction_system_on_update()
 static
 void transaction__begin(transaction_system_t *sys)
 {
-	assert(array_sz(sys->command_queue) == 0);
+	assert(array_sz(sys->mutation_queue) == 0);
 	sys->pending = true;
 
 	array_append(sys->undo_stack,
-	             revertable_command_bundle__create(sys->current_id, sys->alc));;
+	             revertable_mutation_bundle__create(sys->current_id, sys->alc));;
 	array_append(sys->undo_triggers,
 	             trigger_bundle__create(sys->current_id, sys->alc));
 }
@@ -446,19 +446,19 @@ void transaction_begin_multi_frame()
 }
 
 static
-b32 transaction__revert_command(revertable_command_t *cmd)
+b32 transaction__revert_mutation(revertable_mutation_t *cmd)
 {
 	store_t *store = store_from_kind(cmd->store_kind);
 
 	switch (cmd->kind) {
-	case COMMAND_KIND_MODIFY_PRIMITIVE:
-	case COMMAND_KIND_MODIFY_BUFFER:
+	case MUTATION_KIND_MODIFY_PRIMITIVE:
+	case MUTATION_KIND_MODIFY_BUFFER:
 		;
 		store_offset_bytes(store, cmd, dst);
 		assert(cmd->dst == dst);
 		memcpy(dst, cmd->bytes_before, array_sz(cmd->bytes_before));
 	break;
-	case COMMAND_KIND_REPLACE:
+	case MUTATION_KIND_REPLACE:
 		NOOP;
 	break;
 	default:
@@ -476,19 +476,19 @@ b32 transaction__should_replace_prev()
 	if (!sys->multi_frame || array_sz(sys->undo_stack) <= 1)
 		return false;
 
-	const revertable_command_bundle_t *commands = &array_last(sys->undo_stack)-1;
+	const revertable_mutation_bundle_t *mutations = &array_last(sys->undo_stack)-1;
 
-	const u32 prev_trans_n_cmds = array_sz(commands->d);
-	const u32 curr_trans_n_cmds = array_sz(sys->command_queue);
+	const u32 prev_trans_n_cmds = array_sz(mutations->d);
+	const u32 curr_trans_n_cmds = array_sz(sys->mutation_queue);
 
 	if (prev_trans_n_cmds != curr_trans_n_cmds)
 		return false;
 
 	for (u32 i = 0; i < curr_trans_n_cmds; ++i) {
-		const command_t *command = &sys->command_queue[i];
-		const store_t *store = store_from_kind(command->store_kind);
-		store_offset_bytes(store, command, dst);
-		if (commands->d[i].dst != dst)
+		const mutation_t *mutation = &sys->mutation_queue[i];
+		const store_t *store = store_from_kind(mutation->store_kind);
+		store_offset_bytes(store, mutation, dst);
+		if (mutations->d[i].dst != dst)
 			return false;
 	}
 
@@ -498,13 +498,13 @@ b32 transaction__should_replace_prev()
 }
 
 static
-b32 transaction__unwind_bundle(revertable_command_bundle_t *commands)
+b32 transaction__unwind_bundle(revertable_mutation_bundle_t *mutations)
 {
-	for (s32 i = array_sz(commands->d)-1; i >= 0; --i)
-		if (!transaction__revert_command(&commands->d[i]))
+	for (s32 i = array_sz(mutations->d)-1; i >= 0; --i)
+		if (!transaction__revert_mutation(&mutations->d[i]))
 			return false;
 
-	revertable_command_bundle__destroy(commands);
+	revertable_mutation_bundle__destroy(mutations);
 	return true;
 }
 
@@ -513,8 +513,8 @@ void transaction_clear_redo_history()
 {
 	transaction_system_t *sys = g_active_transaction_system;
 
-	array_foreach(sys->redo_stack, revertable_command_bundle_t, commands)
-		revertable_command_bundle__destroy(commands);
+	array_foreach(sys->redo_stack, revertable_mutation_bundle_t, mutations)
+		revertable_mutation_bundle__destroy(mutations);
 	array_clear(sys->redo_stack);
 
 	array_foreach(sys->redo_triggers, trigger_bundle_t, triggers)
@@ -525,7 +525,7 @@ void transaction_clear_redo_history()
 static
 void transaction_system__cleanup_commit(transaction_system_t *sys)
 {
-	array_clear(sys->command_queue);
+	array_clear(sys->mutation_queue);
 	array_clear(sys->trigger_queue);
 	sys->pending = false;
 }
@@ -534,8 +534,8 @@ b32 transaction_commit()
 {
 	transaction_system_t *sys = g_active_transaction_system;
 
-	if (array_sz(sys->command_queue) == 0) {
-		/* we almost certainly want to queue at least 1 command during a transaction */
+	if (array_sz(sys->mutation_queue) == 0) {
+		/* we almost certainly want to queue at least 1 mutation during a transaction */
 		assert(false);
 		return false;
 	}
@@ -544,19 +544,19 @@ b32 transaction_commit()
 
 	if (replace_prev) {
 		/* free and remove the bundles that were added during transaction__begin() */
-		revertable_command_bundle__destroy(&array_last(sys->undo_stack));
+		revertable_mutation_bundle__destroy(&array_last(sys->undo_stack));
 		trigger_bundle__destroy(&array_last(sys->undo_triggers));
 		array_pop(sys->undo_stack);
 		array_pop(sys->undo_triggers);
 	}
 
-	array_iterate(sys->command_queue, i, n) {
-		const store_t *store = store_from_kind(sys->command_queue[i].store_kind);
-		if (!transaction__execute_command(store, i, replace_prev))
+	array_iterate(sys->mutation_queue, i, n) {
+		const store_t *store = store_from_kind(sys->mutation_queue[i].store_kind);
+		if (!transaction__execute_mutation(store, i, replace_prev))
 			goto err;
 	}
 
-	// TODO(undo): execute triggers (how should they interact if one or more commands get unwound??)
+	// TODO(undo): execute triggers (how should they interact if one or more mutations get unwound??)
 	array_iterate(sys->trigger_queue, i, n)
 		transaction__execute_trigger(i, replace_prev);
 
@@ -578,12 +578,12 @@ err:
 }
 
 static
-void transaction__revert_and_swap_commands(revertable_command_bundle_t *from,
-                                           revertable_command_bundle_t *to)
+void transaction__revert_and_swap_mutations(revertable_mutation_bundle_t *from,
+                                           revertable_mutation_bundle_t *to)
 {
 	do {
-		revertable_command_t *cmd = &array_last(from->d);
-		if (!transaction__revert_command(cmd))
+		revertable_mutation_t *cmd = &array_last(from->d);
+		if (!transaction__revert_mutation(cmd))
 			/* something went very haywire - expect undefined behavior */
 			assert(false);
 
@@ -596,7 +596,7 @@ void transaction__revert_and_swap_commands(revertable_command_bundle_t *from,
 
 	} while (array_sz(from->d) > 0);
 
-	revertable_command_bundle__destroy(from);
+	revertable_mutation_bundle__destroy(from);
 }
 
 static
@@ -611,14 +611,14 @@ void transaction__execute_and_swap_triggers(trigger_bundle_t *from, trigger_bund
 }
 
 static
-void transaction__undo_commands(transaction_system_t *sys)
+void transaction__undo_mutations(transaction_system_t *sys)
 {
-	revertable_command_bundle_t *undo_commands = &array_last(sys->undo_stack);
+	revertable_mutation_bundle_t *undo_mutations = &array_last(sys->undo_stack);
 	array_append(sys->redo_stack,
-	             revertable_command_bundle__create(undo_commands->transaction_id, sys->alc));
-	revertable_command_bundle_t *redo_commands = &array_last(sys->redo_stack);
+	             revertable_mutation_bundle__create(undo_mutations->transaction_id, sys->alc));
+	revertable_mutation_bundle_t *redo_mutations = &array_last(sys->redo_stack);
 
-	transaction__revert_and_swap_commands(undo_commands, redo_commands);
+	transaction__revert_and_swap_mutations(undo_mutations, redo_mutations);
 	array_pop(sys->undo_stack);
 }
 
@@ -641,7 +641,7 @@ b32 transaction_undo()
 	if (array_sz(sys->undo_stack) == 0)
 		return false;
 
-	transaction__undo_commands(sys);
+	transaction__undo_mutations(sys);
 	transaction__undo_triggers(sys);
 
 	--sys->current_id;
@@ -650,14 +650,14 @@ b32 transaction_undo()
 }
 
 static
-void transaction__redo_commands(transaction_system_t *sys)
+void transaction__redo_mutations(transaction_system_t *sys)
 {
-	revertable_command_bundle_t *redo_commands = &array_last(sys->redo_stack);
+	revertable_mutation_bundle_t *redo_mutations = &array_last(sys->redo_stack);
 	array_append(sys->undo_stack,
-	             revertable_command_bundle__create(redo_commands->transaction_id, sys->alc));
-	revertable_command_bundle_t *undo_commands = &array_last(sys->undo_stack);
+	             revertable_mutation_bundle__create(redo_mutations->transaction_id, sys->alc));
+	revertable_mutation_bundle_t *undo_mutations = &array_last(sys->undo_stack);
 
-	transaction__revert_and_swap_commands(redo_commands, undo_commands);
+	transaction__revert_and_swap_mutations(redo_mutations, undo_mutations);
 	array_pop(sys->redo_stack);
 }
 
@@ -680,7 +680,7 @@ b32 transaction_redo()
 	if (array_sz(sys->redo_stack) == 0)
 		return false;
 
-	transaction__redo_commands(sys);
+	transaction__redo_mutations(sys);
 	transaction__redo_triggers(sys);
 
 	++sys->current_id;
@@ -717,13 +717,13 @@ void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 of
 	transaction_system_t *sys = g_active_transaction_system;
 	transaction__enqueue_validate(sys);
 
-	const command_t command = {
-		.kind = COMMAND_KIND_MODIFY_PRIMITIVE,
+	const mutation_t mutation = {
+		.kind = MUTATION_KIND_MODIFY_PRIMITIVE,
 		.store_kind = transaction__active_store_kind(sys),
 		.payload.primitive = *payload,
 		.offset = offset,
 	};
-	array_append(sys->command_queue, command);
+	array_append(sys->mutation_queue, mutation);
 }
 
 void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset)
@@ -731,13 +731,13 @@ void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset)
 	transaction_system_t *sys = g_active_transaction_system;
 	transaction__enqueue_validate(sys);
 
-	const command_t command = {
-		.kind = COMMAND_KIND_MODIFY_BUFFER,
+	const mutation_t mutation = {
+		.kind = MUTATION_KIND_MODIFY_BUFFER,
 		.store_kind = transaction__active_store_kind(sys),
 		.payload.dynamic = *payload,    // NOTE(luke): copies ptr from dynamic allocation
 		.offset = offset,
 	};
-	array_append(sys->command_queue, command);
+	array_append(sys->mutation_queue, mutation);
 }
 
 void transaction_enqueue_trigger_basic(void (* basic)())
