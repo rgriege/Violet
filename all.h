@@ -34,6 +34,7 @@
 /* Audio */
 #include "violet/audio.h"
 /* Undo/Redo System */
+#include "violet/event.h"
 #include "violet/store.h"
 #include "violet/transaction.h"
 
@@ -72,6 +73,7 @@ v2d v2f_to_v2d(v2f v)
 #define COLOR_IMPLEMENTATION
 #define CORE_IMPLEMENTATION
 #define DMATH_IMPLEMENTATION
+#define EVENT_IMPLEMENTATION
 #define FMATH_IMPLEMENTATION
 #define GEOM_IMPLEMENTATION
 #define GUI_IMPLEMENTATION

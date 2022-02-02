@@ -10,6 +10,7 @@
 #define ARRAY_IMPLEMENTATION
 #define COLOR_IMPLEMENTATION
 #define CORE_IMPLEMENTATION
+#define EVENT_IMPLEMENTATION
 #define FMATH_IMPLEMENTATION
 #define GEOM_IMPLEMENTATION
 #define GUI_IMPLEMENTATION
@@ -37,6 +38,10 @@
 #include "violet/sdl_gl.h"
 #include "violet/store.h"
 #include "violet/transaction.h"
+#include "violet/event.h"
+
+#include "violet/undo_redo_prototype/stores.h"
+#include "violet/undo_redo_prototype/events.h"
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
@@ -61,162 +66,6 @@ struct log_data
 	s32 level[LOG_LINE_COUNT];
 	u32 start, cnt;
 };
-
-typedef struct store_a_data {
-	char msg[64];
-} store_a_data_t;
-
-typedef struct store_a {
-	store_kind_e kind;
-	store_a_data_t data;
-} store_a_t;
-
-static
-store_a_t *store_a_create(allocator_t *alc)
-{
-	store_a_t *store_a = amalloc(sizeof(store_a_t), alc);
-	store_a->kind = STORE_KIND_A;
-	store_a->data = (store_a_data_t){
-		.msg = "you triggered store_a",
-	};
-	return store_a;
-}
-
-static
-store_kind_e store_a__get_kind(store_a_t *store)
-{
-	return store->kind;
-}
-
-static
-void *store_a__get_data(store_a_t *store)
-{
-	return &store->data;
-}
-
-/* use for concrete store implementation(s), when there is no memory to clean up */
-static
-void store__destroy_noop(store_t *store, allocator_t *alc)
-{
-	afree(store, alc);
-}
-
-static
-store_contract_t *polymorph_store_a = &(store_contract_t) {
-	.get_kind = (store_kind_e (*)(void *))store_a__get_kind,
-	.get_data = (void *(*)(void *))store_a__get_data,
-	.destroy = (void (*)(void *, allocator_t *))store__destroy_noop,
-};
-
-typedef struct store_b_data {
-	char msg[64];
-} store_b_data_t;
-
-typedef struct store_b {
-	store_kind_e kind;
-	store_b_data_t data;
-} store_b_t;
-
-static
-store_b_t *store_b_create(allocator_t *alc)
-{
-	store_b_t *store_b = amalloc(sizeof(store_b_t), alc);
-	store_b->kind = STORE_KIND_B;
-	store_b->data = (store_b_data_t){
-		.msg = "you triggered store_b",
-	};
-	return store_b;
-}
-
-static
-store_kind_e store_b__get_kind(store_b_t *store)
-{
-	return store->kind;
-}
-
-static
-void *store_b__get_data(store_b_t *store)
-{
-	return &store->data;
-}
-
-static
-store_contract_t *polymorph_store_b = &(store_contract_t) {
-	.get_kind = (store_kind_e (*)(void *))store_b__get_kind,
-	.get_data = (void *(*)(void *))store_b__get_data,
-	.destroy = (void (*)(void *, allocator_t *))store__destroy_noop,
-};
-
-typedef struct store_gui_data {
-	b32 chk;
-	b32 chk2;
-	s32 increment;
-	r32 slider;
-	r32 slider2;
-	char npt[64];
-	array(u32) arr;
-} store_gui_data_t;
-
-typedef struct store_gui {
-	store_kind_e kind;
-	store_gui_data_t data;
-} store_gui_t;
-
-static
-store_gui_t *store_gui_create(allocator_t *alc)
-{
-	store_gui_t *store_gui = amalloc(sizeof(store_gui_t), alc);
-	store_gui->kind = STORE_KIND_GUI;
-	store_gui->data = (store_gui_data_t){
-		.npt = "Why are you the way that you are?",
-		.arr = array_create_ex(alc),
-	};
-	return store_gui;
-}
-
-static
-void store_gui__destroy(store_gui_t *store, allocator_t *alc)
-{
-	array_destroy(store->data.arr);
-	afree(store, alc);
-}
-
-static
-store_kind_e store_gui__get_kind(store_gui_t *store)
-{
-	return store->kind;
-}
-
-static
-void *store_gui__get_data(store_gui_t *store)
-{
-	return &store->data;
-}
-
-static
-store_contract_t *polymorph_store_gui = &(store_contract_t) {
-	.get_kind = (store_kind_e (*)(void *))store_gui__get_kind,
-	.get_data = (void *(*)(void *))store_gui__get_data,
-	.destroy = (void (*)(void *, allocator_t *))store_gui__destroy,
-};
-
-static
-array(store_t *) stores__init(allocator_t *alc)
-{
-	store_gui_t *store_gui = store_gui_create(alc);
-	store_a_t *store_a = store_a_create(alc);
-	store_b_t *store_b = store_b_create(alc);
-
-	store_t *gui = store_create(store_gui, polymorph_store_gui, alc);
-	store_t *a   = store_create(store_a, polymorph_store_a, alc);
-	store_t *b   = store_create(store_b, polymorph_store_b, alc);
-
-	array(store_t *) stores = array_create_ex(g_allocator);
-	array_append(stores, gui);
-	array_append(stores, a);
-	array_append(stores, b);
-	return stores;
-}
 
 static
 void buffer_logger(void *udata, log_level_e level, const char *format, va_list ap)
@@ -481,6 +330,34 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 
 	pgui_row_empty(gui, hx);
 
+	/* toggles - event sourced */
+	b32 checked_event = store->data.chk;
+	pgui_row_cellsv(gui, row_height, cols);
+	pgui_txt(gui, "Event Sourced");
+	gui_style_push_ptr(gui, chk.hint, "Event Sourced Checkbox");
+	if (pgui_chk(gui, checked_event ? "Checked" : "Unchecked", &checked_event)) {
+
+		struct event_gui_toggle_chk *event_chk = event_spawn_from_kind(EVENT_KIND_GUI_TOGGLE_CHK);
+		event_chk->value = checked_event;
+
+		struct event_gui_arr *event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
+		event_arr->op = LIST_OP_APPEND;
+		*event_arr->value = 7;
+
+		event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
+		event_arr->op = LIST_OP_UPDATE;
+		*event_arr->value = 42;
+
+		event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
+		event_arr->op = LIST_OP_POP;
+
+		events_flush();
+	}
+
+	gui_style_pop(gui);
+
+	pgui_row_empty(gui, hx);
+
 	/* sliders */
 	r32 slider = store->data.slider;
 	pgui_row_cellsv(gui, row_height, cols);
@@ -681,6 +558,8 @@ int main(int argc, char *const argv[])
 	transaction_system_t sys =  transaction_system_create(stores, g_allocator);
 	transaction_system_set_active(&sys);
 
+	g_events = array_create_ex(g_allocator);
+
 	struct log_data log_data = { 0 };
 	gui_panel_t *panels[PANEL_COUNT] = {
 		&widget_panel,
@@ -772,6 +651,10 @@ int main(int argc, char *const argv[])
 	log_remove_stream(file_logger, stdout);
 
 err_window:
+	array_foreach(g_events, event_t *, event_ptr)
+		event_destroy(*event_ptr, g_allocator);
+	array_destroy(g_events);
+
 	transaction_system_destroy(&sys);
 
 	log_remove_stream(buffer_logger, &log_data);
