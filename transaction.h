@@ -95,6 +95,9 @@ typedef struct transaction_system {
 	array(trigger_bundle_t) undo_triggers;
 	array(trigger_bundle_t) redo_triggers;
 	array(store_kind_e) store_kind_stack;
+	array(event_t *) event_queue;
+	/* append-only stack of event history */
+	array(event_t *) event_history;
 } transaction_system_t;
 
 transaction_system_t transaction_system_create(array(store_t *) stores, allocator_t *alc);
@@ -112,6 +115,8 @@ void transaction_enqueue_mutation_primitive(payload_primitive_t *payload, u32 of
 void transaction_enqueue_mutation_buffer(payload_dynamic_t *payload, u32 offset);
 // TODO(undo): delete from API once call is removed from testfit/gui.c redo()
 void transaction_clear_redo_history();
+void *transaction_spawn_event(const event_metadata_t *meta, u32 kind);
+void transaction_flush();
 
 // TODO(luke): store_from_kind probably shouldn't be exposed as an API function
 store_t *store_from_kind(store_kind_e kind);
@@ -367,6 +372,8 @@ transaction_system_t transaction_system_create(array(store_t *) stores, allocato
 		.redo_stack       = array_create_ex(alc),
 		.undo_triggers    = array_create_ex(alc),
 		.redo_triggers    = array_create_ex(alc),
+		.event_queue      = array_create_ex(alc),
+		.event_history    = array_create_ex(alc),
 	};
 }
 
@@ -400,6 +407,14 @@ void transaction_system_destroy(transaction_system_t *sys)
 		trigger_bundle__destroy(triggers);
 	}
 	array_destroy(sys->redo_triggers);
+
+	array_foreach(sys->event_queue, event_t *, event_ptr)
+		event_destroy(*event_ptr, sys->alc);
+	array_destroy(sys->event_queue);
+
+	array_foreach(sys->event_history, event_t *, event_ptr)
+		event_destroy(*event_ptr, sys->alc);
+	array_destroy(sys->event_history);
 }
 
 void transaction_system_set_active(transaction_system_t *sys)
@@ -749,6 +764,28 @@ void transaction_enqueue_trigger_basic(void (* basic)())
 		.handle.basic = basic,
 	};
 	array_append(sys->trigger_queue, trigger);
+}
+
+void *transaction_spawn_event(const event_metadata_t *meta, u32 kind)
+{
+	transaction_system_t *sys = g_active_transaction_system;
+
+	void *instance = meta->spawner(sys->alc);
+	const event_contract_t *contract = &meta->contract;
+	event_t *event = event_create(kind, instance, contract, sys->alc);
+	array_append(sys->event_queue, event);
+	return event->instance;
+}
+
+void transaction_flush()
+{
+	transaction_system_t *sys = g_active_transaction_system;
+
+	array_foreach(sys->event_queue, event_t *, event_ptr) {
+		event_execute(*event_ptr);
+		array_append(sys->event_history, *event_ptr);
+	}
+	array_clear(sys->event_queue);
 }
 
 #undef TRANSACTION_IMPLEMENTATION

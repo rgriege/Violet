@@ -37,8 +37,8 @@
 #include "violet/profiler.h"
 #include "violet/sdl_gl.h"
 #include "violet/store.h"
-#include "violet/transaction.h"
 #include "violet/event.h"
+#include "violet/transaction.h"
 
 #include "violet/undo_redo_prototype/stores.h"
 #include "violet/undo_redo_prototype/events.h"
@@ -351,7 +351,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 		event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
 		event_arr->op = LIST_OP_POP;
 
-		events_flush();
+		transaction_flush();
 	}
 
 	gui_style_pop(gui);
@@ -558,8 +558,6 @@ int main(int argc, char *const argv[])
 	transaction_system_t sys =  transaction_system_create(stores, g_allocator);
 	transaction_system_set_active(&sys);
 
-	g_events = array_create_ex(g_allocator);
-
 	struct log_data log_data = { 0 };
 	gui_panel_t *panels[PANEL_COUNT] = {
 		&widget_panel,
@@ -651,10 +649,6 @@ int main(int argc, char *const argv[])
 	log_remove_stream(file_logger, stdout);
 
 err_window:
-	array_foreach(g_events, event_t *, event_ptr)
-		event_destroy(*event_ptr, g_allocator);
-	array_destroy(g_events);
-
 	transaction_system_destroy(&sys);
 
 	log_remove_stream(buffer_logger, &log_data);

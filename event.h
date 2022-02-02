@@ -1,6 +1,10 @@
 #ifndef VIOLET_EVENT_H
 #define VIOLET_EVENT_H
 
+#define EVENT_KIND_NOOP 0
+#define EVENT_KIND_UNDO 1
+#define EVENT_KIND_REDO 2
+
 typedef struct event_contract {
 	void (*destroy)(void *instance, allocator_t *alc);
 	void (*execute)(const void *instance);
@@ -26,7 +30,7 @@ void event__destroy_noop(void *instance, allocator_t *alc);
 
 typedef struct event_metadata {
 	void *(*spawner)(allocator_t *alc);
-	event_contract_t contract;
+	const event_contract_t contract;
 	const char *description;
 	// b32 mark_undo_point_start;  // TODO(undo); evaluate if this is a good approach
 } event_metadata_t;
@@ -61,8 +65,6 @@ typedef enum list_operation {
 /* Implementation */
 
 #ifdef EVENT_IMPLEMENTATION
-
-array(event_t *) g_events = NULL;
 
 event_t *event_create(u32 kind, void *instance, const event_contract_t *contract,
                       allocator_t *alc)

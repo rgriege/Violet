@@ -1,32 +1,35 @@
 typedef enum event_kind {
-	// EVENT_KIND_NOOP,
-	// EVENT_KIND_UNDO,
-	// EVENT_KIND_REDO,
-	EVENT_KIND_GUI_TOGGLE_CHK,
+	EVENT_KIND_GUI_TOGGLE_CHK = 3, // begins after EVENT_KIND_REDO
 	EVENT_KIND_GUI_ARR,
 	EVENT_KIND__COUNT,
 } event_kind_e;
 
 static const event_metadata_t g_event_registry[EVENT_KIND__COUNT];
 
-void *event_spawn_from_kind(event_kind_e kind)
+static
+const event_metadata_t *event_metadata_from_kind(event_kind_e kind)
 {
-	allocator_t *alc = array__allocator(g_events);
-	void *instance = g_event_registry[kind].spawner(alc);
-	const event_contract_t *contract = &g_event_registry[kind].contract;
-	event_t *event = event_create(kind, instance, contract, alc);
-	array_append(g_events, event);
-	return event->instance;
+	return &g_event_registry[kind];
 }
 
-void events_flush()
+// TODO(undo): consider whether this should be event_kind_e or notmake
+void *event_spawn_from_kind(u32 kind)
 {
-	allocator_t *alc = array__allocator(g_events);
-	array_foreach(g_events, event_t *, event_ptr) {
-		event_execute(*event_ptr);
-		event_destroy(*event_ptr, alc);
+	assert(kind != EVENT_KIND_NOOP);
+	assert(kind < EVENT_KIND__COUNT);
+
+	switch (kind) {
+	case EVENT_KIND_UNDO:
+		// TODO(undo)
+		return NULL;
+	break;
+	case EVENT_KIND_REDO:
+		// TODO(undo)
+		return NULL;
+	break;
+	default:
+		return transaction_spawn_event(event_metadata_from_kind(kind), kind);
 	}
-	array_clear(g_events);
 }
 
 /* Concrete Event Implementations */
@@ -130,9 +133,9 @@ void event_gui_arr__undo(const struct event_gui_arr *event)
 
 /* Event Registry */
 static const event_metadata_t g_event_registry[EVENT_KIND__COUNT] = {
-	// [EVENT_KIND_NOOP]              = { NULL, NULL, "no-op" },
-	// [EVENT_KIND_UNDO]              = { NULL, NULL, "undo" },
-	// [EVENT_KIND_REDO]              = { NULL, NULL, "redo" },
+	[EVENT_KIND_NOOP] = {},
+	[EVENT_KIND_UNDO] = { .description = "Undo" },
+	[EVENT_KIND_REDO] = { .description = "Redo" },
 	[EVENT_KIND_GUI_TOGGLE_CHK] = {
 		event_factory(gui_toggle_chk),
 		"Toggle GUI Checkbox #1",

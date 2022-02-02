@@ -126,5 +126,6 @@ v2d v2f_to_v2d(v2f v)
 /* Audio */
 #include "violet/audio.h"
 /* Undo/Redo System */
+#include "violet/event.h"
 #include "violet/store.h"
 #include "violet/transaction.h"
