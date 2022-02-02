@@ -377,6 +377,7 @@ extern const gui_npt_filter_t g_gui_npt_filter_hex;
 b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint);
 const char *gui_npt_val_buf(const gui_t *gui);
 char       *gui_npt_val_buf_mut(gui_t *gui);
+void        gui_npt_val_buf_clear(gui_t *gui);
 
 typedef struct gui_widget_bounds
 {
@@ -4589,6 +4590,11 @@ const char *gui_drop_file_buf(const gui_t *gui)
 char *gui_npt_val_buf_mut(gui_t *gui)
 {
 	return gui->npt.val_buf;
+}
+
+void gui_npt_val_buf_clear(gui_t *gui)
+{
+	memclr(gui->npt.val_buf);
 }
 
 s32 gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n_,
