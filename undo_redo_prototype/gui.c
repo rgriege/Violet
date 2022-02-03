@@ -247,9 +247,9 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Undo");
 	gui_style_push_ptr(gui, btn.hint, "Undo");
-	if (pgui_btn_txt(gui, "Undo")) {
-		transaction_undo();
-	}
+	if (pgui_btn_txt(gui, "Undo"))
+		event_spawn_from_kind(EVENT_KIND_UNDO);
+
 	gui_style_pop(gui);
 
 	pgui_row_empty(gui, hx);
@@ -257,10 +257,9 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Redo");
 	gui_style_push_ptr(gui, btn.hint, "Redo");
-	if (pgui_btn_txt(gui, "Redo")) {
-		/* not bound to any state change */
-		transaction_redo();
-	}
+	if (pgui_btn_txt(gui, "Redo"))
+		event_spawn_from_kind(EVENT_KIND_REDO);
+
 	gui_style_pop(gui);
 
 	pgui_row_empty(gui, hx);
@@ -331,27 +330,27 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	pgui_row_empty(gui, hx);
 
 	/* toggles - event sourced */
-	b32 checked_event = store->data.chk;
+	b32 checked_event_chk = store->data.chk;
 	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Event Sourced");
+	pgui_txt(gui, "Event - Chk");
 	gui_style_push_ptr(gui, chk.hint, "Event Sourced Checkbox");
-	if (pgui_chk(gui, checked_event ? "Checked" : "Unchecked", &checked_event)) {
-
+	if (pgui_chk(gui, checked_event_chk ? "Checked" : "Unchecked", &checked_event_chk)) {
 		struct event_gui_toggle_chk *event_chk = event_spawn_from_kind(EVENT_KIND_GUI_TOGGLE_CHK);
-		event_chk->value = checked_event;
+		event_chk->value = checked_event_chk;
+	}
 
+	gui_style_pop(gui);
+
+	pgui_row_empty(gui, hx);
+
+	b32 checked_event_arr = false;
+	pgui_row_cellsv(gui, row_height, cols);
+	pgui_txt(gui, "Event - Array");
+	gui_style_push_ptr(gui, chk.hint, "Event Sourced Checkbox");
+	if (pgui_chk(gui, checked_event_arr ? "Checked" : "Unchecked", &checked_event_arr)) {
 		struct event_gui_arr *event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
 		event_arr->op = LIST_OP_APPEND;
-		*event_arr->value = 7;
-
-		event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
-		event_arr->op = LIST_OP_UPDATE;
 		*event_arr->value = 42;
-
-		event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
-		event_arr->op = LIST_OP_POP;
-
-		transaction_flush();
 	}
 
 	gui_style_pop(gui);
@@ -634,6 +633,8 @@ int main(int argc, char *const argv[])
 
 		if (key_pressed(gui, KB_Q) && !gui_any_widget_has_focus(gui))
 			quit = true;
+
+		transaction_system_on_update();
 
 		qsort(B2PC(panels), sizeof(panels[0]), pgui_panel_sortp);
 

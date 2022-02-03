@@ -7,33 +7,32 @@
 
 typedef struct event_contract {
 	void (*destroy)(void *instance, allocator_t *alc);
-	void (*execute)(const void *instance);
+	b32  (*execute)(const void *instance);
 	void (*undo   )(const void *instance);
 	// TODO(undo): if writing event stream to file, each event needs to be able
 	//             to serialize & deserialize itself
 } event_contract_t;
 
+typedef struct event_metadata {
+	void *(*spawner)(allocator_t *alc);
+	const event_contract_t *contract;
+	const char *description;
+} event_metadata_t;
+
 typedef struct event {
     /* expect event_kind_e */
 	u32 kind;
 	void *instance;
-	const event_contract_t *contract;
+	const event_metadata_t *meta;
 } event_t;
 
-event_t *event_create(u32 kind, void *instance, const event_contract_t *contract,
+event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta,
                       allocator_t *alc);
 void event_destroy(event_t *event, allocator_t *alc);
-void event_execute(const event_t *event);
+b32  event_execute(const event_t *event);
 void event_undo(const event_t *event);
 
 void event__destroy_noop(void *instance, allocator_t *alc);
-
-typedef struct event_metadata {
-	void *(*spawner)(allocator_t *alc);
-	const event_contract_t contract;
-	const char *description;
-	// b32 mark_undo_point_start;  // TODO(undo); evaluate if this is a good approach
-} event_metadata_t;
 
 // CLEANUP(undo): find a better spot for this type
 /* for dynamic arrays */
@@ -46,19 +45,22 @@ typedef enum list_operation {
 
 #define event_factory(type) \
 	(void *(*)(allocator_t *))event_##type##__create, \
-	(event_contract_t) { \
-		.destroy  = (void (*)(void *, allocator_t *))event__destroy_noop, \
-		.execute  = (void (*)(const void *))event_##type##__execute, \
+	&(event_contract_t) { \
+		.destroy  = event__destroy_noop, \
+		.execute  = (b32  (*)(const void *))event_##type##__execute, \
 		.undo     = (void (*)(const void *))event_##type##__undo, \
 	}
 
 #define event_factory_explicit_destructor(type) \
 	(void *(*)(allocator_t *))event_##type##__create, \
-	(event_contract_t) { \
+	&(event_contract_t) { \
 		.destroy     = (void (*)(void *, allocator_t *))event_##type##__destroy, \
-		.execute     = (void (*)(const void *))event_##type##__execute, \
+		.execute     = (b32  (*)(const void *))event_##type##__execute, \
 		.undo        = (void (*)(const void *))event_##type##__undo, \
 	}
+
+#define event_alloc(type, event, alc) \
+	struct event_##type *event = acalloc(1, sizeof(struct event_##type), alc);
 
 #endif // VIOLET_EVENT_H
 
@@ -66,30 +68,30 @@ typedef enum list_operation {
 
 #ifdef EVENT_IMPLEMENTATION
 
-event_t *event_create(u32 kind, void *instance, const event_contract_t *contract,
+event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta,
                       allocator_t *alc)
 {
 	event_t *event = amalloc(sizeof(event_t), alc);
 	event->kind = kind;
 	event->instance = instance;
-	event->contract = contract;
+	event->meta = meta;
 	return event;
 }
 
 void event_destroy(event_t *event, allocator_t *alc)
 {
-	(event->contract->destroy)(event->instance, alc);
+	(event->meta->contract->destroy)(event->instance, alc);
 	afree(event, alc);
 }
 
-void event_execute(const event_t *event)
+b32 event_execute(const event_t *event)
 {
-	return (event->contract->execute)(event->instance);
+	return (event->meta->contract->execute)(event->instance);
 }
 
 void event_undo(const event_t *event)
 {
-	return (event->contract->undo)(event->instance);
+	return (event->meta->contract->undo)(event->instance);
 }
 
 void event__destroy_noop(void *instance, allocator_t *alc)
