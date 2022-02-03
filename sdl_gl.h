@@ -98,6 +98,8 @@ b32  img_load(gui_img_t *img, const char *filename);
 void img_init(gui_img_t *img, u32 w, u32 h, u32 fmt, void *data);
 void img_destroy(gui_img_t *img);
 
+void save_screenshot(box2i bounds, const char *filename);
+
 /* Font */
 
 #ifndef WINDOW_FONT_FILE_PATH
@@ -167,6 +169,7 @@ void   mouse_pos_global(const window_t *window, s32 *x, s32 *y);
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
+#include <SDL2/SDL_surface.h>
 #define STB_IMAGE_IMPLEMENTATION
 // #define STB_IMAGE_STATIC
 #include "stbi.h"
@@ -664,6 +667,29 @@ void img_init(gui_img_t *img, u32 w, u32 h, u32 fmt, void *data)
 void img_destroy(gui_img_t *img)
 {
 	texture_destroy(img);
+}
+
+void save_screenshot(box2i bounds, const char *filename)
+{
+	s32 x, y, w, h;
+	box2i_to_xywh(bounds, &x, &y, &w, &h);
+
+	SDL_Surface *surface;
+	char *bytes = amalloc(w * h * 4, g_allocator);
+	char *bytes_flip = amalloc(w * h * 4, g_allocator);
+
+	glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, bytes);
+
+	for (s32 i = 0; i < h; i++)
+		memcpy(&bytes_flip[i * w * 4], &bytes[(h - i - 1) * w * 4], w * 4);
+
+	surface = SDL_CreateRGBSurfaceFrom(bytes_flip, w, h, 32, 4 * w,
+	                                   0x000000ff, 0x0000ff00,
+	                                   0x00ff0000, 0x00000000);
+	SDL_SaveBMP(surface, filename);
+	SDL_FreeSurface(surface);
+	afree(bytes, g_allocator);
+	afree(bytes_flip, g_allocator);
 }
 
 /* copied + modified from stbtt_PackFontRangesGatherRects */
