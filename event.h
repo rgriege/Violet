@@ -91,7 +91,7 @@ b32 event_execute(const event_t *event)
 
 void event_undo(const event_t *event)
 {
-	return (event->meta->contract->undo)(event->instance);
+	(event->meta->contract->undo)(event->instance);
 }
 
 void event__destroy_noop(void *instance, allocator_t *alc)
