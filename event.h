@@ -122,7 +122,7 @@ void event_undo(const event_t *event)
 
 void event_update(event_t *dst, const event_t *src)
 {
-	return (dst->meta->contract->update)(dst->instance, src->instance);
+	(dst->meta->contract->update)(dst->instance, src->instance);
 }
 
 void event__destroy_noop(void *instance, allocator_t *alc)
