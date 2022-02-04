@@ -9,6 +9,7 @@ typedef struct event_contract {
 	void (*destroy)(void *instance, allocator_t *alc);
 	b32  (*execute)(const void *instance);
 	void (*undo   )(const void *instance);
+	void (*update )(void *dst, const void* src);    // both dst and src are instances
 	// TODO(undo): if writing event stream to file, each event needs to be able
 	//             to serialize & deserialize itself
 } event_contract_t;
@@ -16,6 +17,7 @@ typedef struct event_contract {
 typedef struct event_metadata {
 	void *(*spawner)(allocator_t *alc);
 	const event_contract_t *contract;
+	const b32 multi_frame;
 	const char *description;
 } event_metadata_t;
 
@@ -31,6 +33,8 @@ event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta,
 void event_destroy(event_t *event, allocator_t *alc);
 b32  event_execute(const event_t *event);
 void event_undo(const event_t *event);
+	/* fast forward an event to another event - only used in multi-frame interactions */
+void event_update(event_t *dst, const event_t *src);
 
 void event__destroy_noop(void *instance, allocator_t *alc);
 
@@ -46,18 +50,40 @@ typedef enum list_operation {
 #define event_factory(type) \
 	(void *(*)(allocator_t *))event_##type##__create, \
 	&(event_contract_t) { \
-		.destroy  = event__destroy_noop, \
-		.execute  = (b32  (*)(const void *))event_##type##__execute, \
-		.undo     = (void (*)(const void *))event_##type##__undo, \
-	}
+		.destroy = event__destroy_noop, \
+		.execute = (b32  (*)(const void *))event_##type##__execute, \
+		.undo    = (void (*)(const void *))event_##type##__undo, \
+	}, \
+	false
+
+#define event_factory_multi_frame(type) \
+	(void *(*)(allocator_t *))event_##type##__create, \
+	&(event_contract_t) { \
+		.destroy = event__destroy_noop, \
+		.execute = (b32  (*)(const void *))event_##type##__execute, \
+		.undo    = (void (*)(const void *))event_##type##__undo, \
+		.update  = (void (*)(void *, const void *))event_##type##__update, \
+	}, \
+	true
 
 #define event_factory_explicit_destructor(type) \
 	(void *(*)(allocator_t *))event_##type##__create, \
 	&(event_contract_t) { \
-		.destroy     = (void (*)(void *, allocator_t *))event_##type##__destroy, \
-		.execute     = (b32  (*)(const void *))event_##type##__execute, \
-		.undo        = (void (*)(const void *))event_##type##__undo, \
-	}
+		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
+		.execute = (b32  (*)(const void *))event_##type##__execute, \
+		.undo    = (void (*)(const void *))event_##type##__undo, \
+	}, \
+	false
+
+#define event_factory_multi_frame_explicit_destructor(type) \
+	(void *(*)(allocator_t *))event_##type##__create, \
+	&(event_contract_t) { \
+		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
+		.execute = (b32  (*)(const void *))event_##type##__execute, \
+		.undo    = (void (*)(const void *))event_##type##__undo, \
+		.update  = (void (*)(void *, const void *))event_##type##__update, \
+	}, \
+	true
 
 #define event_alloc(type, event, alc) \
 	struct event_##type *event = acalloc(1, sizeof(struct event_##type), alc);
@@ -92,6 +118,11 @@ b32 event_execute(const event_t *event)
 void event_undo(const event_t *event)
 {
 	(event->meta->contract->undo)(event->instance);
+}
+
+void event_update(event_t *dst, const event_t *src)
+{
+	return (dst->meta->contract->update)(dst->instance, src->instance);
 }
 
 void event__destroy_noop(void *instance, allocator_t *alc)

@@ -895,7 +895,7 @@ void transaction_flush()
 	if (priority_event) {
 		if (event_execute(priority_event)) {
 			array_append(sys->event_history, priority_event);
-			log_debug("%s", priority_event->meta->description);
+			log_debug("        %s", priority_event->meta->description);
 		}
 		else
 			event_destroy(priority_event, sys->alc);
@@ -904,17 +904,33 @@ void transaction_flush()
 			if (*event_ptr != priority_event)
 				event_destroy(*event_ptr, sys->alc);
 	} else {
+		/* ensure that only one event fires at a time */
 		if (array_sz(sys->event_queue) == 1) {
 			event_t *event = sys->event_queue[0];
-			/* ensure that only one event fires at a time */
-			if (event_execute(event)) {
-				array_append(sys->event_history, event);
-				log_debug("%s", event->meta->description);
-			}
-			else
+			event_t *last_event = array_empty(sys->event_history)
+			                    ? NULL
+			                    : array_last(sys->event_history);
+
+			if (   event->meta->multi_frame
+			    && last_event
+			    && event->kind == last_event->kind) {
+				if (event_execute(event)) {
+					event_update(last_event, event);
+					log_debug("        %s", event->meta->description);
+				}
 				event_destroy(event, sys->alc);
+			} else {
+				if (event_execute(event)) {
+					array_append(sys->event_history, event);
+					log_debug("        %s", event->meta->description);
+				} else {
+					event_destroy(event, sys->alc);
+				}
+			}
 		} else {
 			assert(false);
+			array_foreach(sys->event_queue, event_t *, event_ptr)
+				event_destroy(*event_ptr, sys->alc);
 		}
 	}
 

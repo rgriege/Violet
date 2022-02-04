@@ -203,24 +203,6 @@ b32 buf_eq(char *a, char* b, u32 n)
 }
 
 static
-s32 pgui_npt_txt_transaction(gui_t *gui, char *lbl, u32 n,
-                             const char *hint, gui_npt_flags_e flags)
-{
-	char buf[n];
-	memcpy(buf, lbl, n);
-
-	const s32 result = pgui_npt_txt(gui, B2PS(buf), "Your text here...", 0);
-	/* detect changes to the buffer contents */
-	if (!buf_eq(buf, lbl, n)) {
-		transaction_begin_multi_frame();
-		payload_dynamic_from_buffer(buf, g_temp_allocator, payload);
-		transaction_enqueue_mutation_buffer(&payload, store_offsetof(store_gui_t, npt));
-		transaction_commit();
-	}
-	return result;
-}
-
-static
 void trigger__store_a_message()
 {
 	store_a_data_t *data = store_data_from_kind(STORE_KIND_A);
@@ -388,13 +370,23 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_pop(gui);
 	pgui_row_empty(gui, hx);
 
+	/* text input */
 	pgui_row_cellsv(gui, 2 * row_height, cols_npt);
 	pgui_txt(gui, "Text input");
 	gui_style_push_b32(gui, npt.inactive.text.wrap, true);
 	gui_style_push_b32(gui, npt.hot.text.wrap, true);
 	gui_style_push_b32(gui, npt.active.text.wrap, true);
 	gui_style_push_b32(gui, npt.disabled.text.wrap, true);
-	pgui_npt_txt_transaction(gui, B2PS(store->data.npt), "Your text here...", 0);
+
+	char npt_buf[64];
+	memcpy(npt_buf, B2PS(store->data.npt));
+	pgui_npt_txt(gui, B2PS(npt_buf), "Your text here...", 0);
+
+	/* detect changes to the buffer contents */
+	if (!buf_eq(npt_buf, B2PS(store->data.npt))) {
+		struct event_gui_npt_change *event_npt = event_spawn_from_kind(EVENT_KIND_GUI_NPT_CHANGE);
+		memcpy(event_npt->value, B2PS(npt_buf));
+	}
 
 	gui_style_pop(gui);
 	gui_style_pop(gui);
