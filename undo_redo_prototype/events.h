@@ -2,6 +2,7 @@ typedef enum event_kind {
 	EVENT_KIND_GUI_TOGGLE_CHK = 3, // begins after EVENT_KIND_REDO
 	EVENT_KIND_GUI_ARR,
 	EVENT_KIND_GUI_NPT_CHANGE,
+	EVENT_KIND_GUI_SLIDER_CHANGE,
 	EVENT_KIND__COUNT,
 } event_kind_e;
 
@@ -165,6 +166,43 @@ void event_gui_npt_change__update(struct event_gui_npt_change *dst,
 	memcpy(dst->value, B2PC(src->value));
 }
 
+struct event_gui_slider_change
+{
+	r32 value;
+	r32 value_before;
+};
+
+static
+struct event_gui_slider_change *event_gui_slider_change__create(allocator_t *alc)
+{
+	event_alloc(gui_slider_change, event, alc);
+	return event;
+}
+
+static
+b32 event_gui_slider_change__execute(struct event_gui_slider_change *event)
+{
+	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	event->value_before = data->slider;
+	data->slider = event->value;
+	log_debug("Slider change");
+	return true;
+}
+
+static
+void event_gui_slider_change__undo(struct event_gui_slider_change *event)
+{
+	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	data->slider = event->value_before;
+	log_debug("Reverted slider change");
+}
+
+static
+void event_gui_slider_change__update(struct event_gui_slider_change *dst, const struct event_gui_slider_change *src)
+{
+	dst->value = src->value;
+}
+
 /* Event Registry */
 static const event_metadata_t g_event_registry[EVENT_KIND__COUNT] = {
 	[EVENT_KIND_NOOP] = {},
@@ -188,4 +226,8 @@ static const event_metadata_t g_event_registry[EVENT_KIND__COUNT] = {
 		event_factory_multi_frame(gui_npt_change),
 		"GUI Text Input Change",
 	},
+	[EVENT_KIND_GUI_SLIDER_CHANGE] = {
+		event_factory_multi_frame(gui_slider_change),
+		"GUI Slider Change",
+	}
 };

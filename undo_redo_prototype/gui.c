@@ -345,27 +345,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	pgui_txt(gui, "Slider");
 	gui_style_push_ptr(gui, slider.handle.hint, "Wow!");
 	if (pgui_slider_x(gui, &slider)) {
-		{
-			transaction_begin_multi_frame();
-			payload_primitive(slider, r32, payload);
-			transaction_enqueue_mutation_primitive(&payload, store_offsetof(store_gui_t, slider));
-			transaction_commit();
-		}
-	}
-	gui_style_pop(gui);
-	pgui_row_empty(gui, hx);
-
-	r32 slider2 = store->data.slider2;
-	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Slider2");
-	gui_style_push_ptr(gui, slider.handle.hint, "Wow!");
-	if (pgui_slider_x(gui, &slider2)) {
-		{
-			transaction_begin_multi_frame();
-			payload_primitive(slider2, r32, payload);
-			transaction_enqueue_mutation_primitive(&payload, store_offsetof(store_gui_t, slider2));
-			transaction_commit();
-		}
+		struct event_gui_slider_change *event_slider = event_spawn_from_kind(EVENT_KIND_GUI_SLIDER_CHANGE);
+		event_slider->value = slider;
 	}
 	gui_style_pop(gui);
 	pgui_row_empty(gui, hx);
