@@ -257,10 +257,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_push(gui, btn.hot.text.color, gui_style(gui)->btn.active.bg_color);
 
 	if (pgui_btn_txt(gui, "-")) {
-		transaction_begin_multi_frame();
-		payload_primitive(--increment, s32, payload);
-		transaction_enqueue_mutation_primitive(&payload, store_offsetof(store_gui_t, increment));
-		transaction_commit();
+		struct event_gui_plus_minus *event = event_spawn_from_kind(EVENT_KIND_GUI_PLUS_MINUS);
+		event->value = store->data.increment - 1;
 	}
 
 	gui_style_push_s32(gui, txt.align, GUI_ALIGN_MIDCENTER);
@@ -268,10 +266,8 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_pop(gui);
 
 	if (pgui_btn_txt(gui, "+")) {
-		transaction_begin_multi_frame();
-		payload_primitive(++increment, s32, payload);
-		transaction_enqueue_mutation_primitive(&payload, store_offsetof(store_gui_t, increment));
-		transaction_commit();
+		struct event_gui_plus_minus *event = event_spawn_from_kind(EVENT_KIND_GUI_PLUS_MINUS);
+		event->value = store->data.increment + 1;
 	}
 
 	gui_style_pop(gui);

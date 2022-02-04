@@ -3,6 +3,7 @@ typedef enum event_kind {
 	EVENT_KIND_GUI_ARR,
 	EVENT_KIND_GUI_NPT_CHANGE,
 	EVENT_KIND_GUI_SLIDER_CHANGE,
+	EVENT_KIND_GUI_PLUS_MINUS,
 	EVENT_KIND__COUNT,
 } event_kind_e;
 
@@ -203,6 +204,43 @@ void event_gui_slider_change__update(struct event_gui_slider_change *dst, const 
 	dst->value = src->value;
 }
 
+struct event_gui_plus_minus
+{
+	s32 value;
+	s32 value_before;
+};
+
+static
+struct event_gui_plus_minus *event_gui_plus_minus__create(allocator_t *alc)
+{
+	event_alloc(gui_plus_minus, event, alc);
+	return event;
+}
+
+static
+b32 event_gui_plus_minus__execute(struct event_gui_plus_minus *event)
+{
+	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	event->value_before = data->increment;
+	data->increment = event->value;
+	log_debug("Plus / Minus change");
+	return true;
+}
+
+static
+void event_gui_plus_minus__undo(struct event_gui_plus_minus *event)
+{
+	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	data->increment = event->value_before;
+	log_debug("Reverted plus / minus change");
+}
+
+static
+void event_gui_plus_minus__update(struct event_gui_plus_minus *dst, const struct event_gui_plus_minus *src)
+{
+	dst->value = src->value;
+}
+
 /* Event Registry */
 static const event_metadata_t g_event_registry[EVENT_KIND__COUNT] = {
 	[EVENT_KIND_NOOP] = {},
@@ -229,5 +267,9 @@ static const event_metadata_t g_event_registry[EVENT_KIND__COUNT] = {
 	[EVENT_KIND_GUI_SLIDER_CHANGE] = {
 		event_factory_multi_frame(gui_slider_change),
 		"GUI Slider Change",
-	}
+	},
+	[EVENT_KIND_GUI_PLUS_MINUS] = {
+		event_factory_multi_frame(gui_plus_minus),
+		"GUI Increment Change",
+	},
 };
