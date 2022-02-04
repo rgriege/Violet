@@ -775,8 +775,6 @@ const event_t *transaction__last_valid_event(b32 undoing)
 
 	u32 undo_count = 0, redo_count = 0, real_event_count = 0;
 
-	// TODO(undo): fixme plz, ty
-
 	for (s32 i = array_sz(sys->event_history)-1; i >= 0; --i) {
 		event_t *event = sys->event_history[i];
 
@@ -789,11 +787,15 @@ const event_t *transaction__last_valid_event(b32 undoing)
 		break;
 		default:
 			real_event_count++;
-		}
 
-		if (   ( undoing && real_event_count >  undo_count - redo_count)
-		    || (!undoing && real_event_count == undo_count - redo_count))
-			return event;
+			if (   ( undoing && real_event_count >  undo_count - redo_count)
+			    || (!undoing && real_event_count == undo_count - redo_count))
+				return event;
+
+			if (redo_count >= undo_count)
+				/* nothing else to redo */
+				return NULL;
+		}
 	}
 
 	return NULL;
