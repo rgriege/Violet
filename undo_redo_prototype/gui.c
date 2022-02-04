@@ -169,69 +169,24 @@ void draw_menu_bar(gui_t *gui, box2i bbox, b32 *quit, gui_panel_t *panels[])
 }
 
 static
-void draw_split_node_box(gui_t *gui, const gui_split_t *split)
-{
-	s32 x, y, w, h;
-	box2i_to_xywh(split->box, &x, &y, &w, &h);
-	pgui_txt(gui, imprintf("[%d %d %d %d]", x, y, w, h));
-}
-
-static
-void draw_split_node(gui_t *gui, const gui_split_t *split)
-{
-	if (gui__split_is_leaf(split)) {
-		pgui_tree_leaf(gui);
-		draw_split_node_box(gui, split);
-	} else {
-		const b32 recurse = pgui_tree_node_begin(gui);
-		draw_split_node_box(gui, split);
-		if (recurse) {
-			gui_split_t *child = split->children.first;
-			while (child) {
-				draw_split_node(gui, child);
-				child = child->siblings.next;
-			}
-			pgui_tree_node_end(gui);
-		}
-	}
-}
-
-static
 b32 buf_eq(char *a, char* b, u32 n)
 {
 	return memcmp(a, b, n) == 0;
 }
 
 static
-void trigger__store_a_message()
-{
-	store_a_data_t *data = store_data_from_kind(STORE_KIND_A);
-	log_debug("%s", data->msg);
-}
-
-static
-void trigger__store_b_message()
-{
-	store_a_data_t *data = store_data_from_kind(STORE_KIND_B);
-	log_debug("%s", data->msg);
-}
-
-static
 void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 {
 	const s32 cols[] = { 100, 0 };
-	const s32 cols_npt[] = { 100, 80 };
 	const s32 cols_plus_minus[] = {100, 30, 0, 30};
 
 	store_gui_t *store = (store_gui_t *)store_instance_from_kind(STORE_KIND_GUI);
-	transaction_store_kind_push(store->kind);
 
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Undo");
 	gui_style_push_ptr(gui, btn.hint, "Undo");
 	if (pgui_btn_txt(gui, "Undo"))
 		event_spawn_from_kind(EVENT_KIND_UNDO);
-
 	gui_style_pop(gui);
 
 	pgui_row_empty(gui, hx);
@@ -241,10 +196,10 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_push_ptr(gui, btn.hint, "Redo");
 	if (pgui_btn_txt(gui, "Redo"))
 		event_spawn_from_kind(EVENT_KIND_REDO);
-
 	gui_style_pop(gui);
 
 	pgui_row_empty(gui, hx);
+
 
 	/* increment */
 	s32 increment = store->data.increment;
@@ -277,79 +232,52 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 
 	pgui_row_empty(gui, hx);
 
+
 	/* toggles */
-	b32 checked = store->data.chk;
+	b32 checked_event_chk = store->data.chk;
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Checkbox");
 	gui_style_push_ptr(gui, chk.hint, "Checkbox");
-	if (pgui_chk(gui, checked ? "Checked" : "Unchecked", &checked)) {
-		{
-			transaction_begin();
-			payload_primitive(checked, b32, payload);
-			transaction_enqueue_mutation_primitive(&payload, store_offsetof(store_gui_t, chk));
-			transaction_enqueue_mutation_primitive(&payload, store_offsetof(store_gui_t, chk2));
-			transaction_enqueue_trigger_basic(trigger__store_a_message);
-			transaction_enqueue_trigger_basic(trigger__store_b_message);
-			transaction_commit();
-		}
-	}
-	gui_style_pop(gui);
-
-	pgui_row_empty(gui, hx);
-
-	b32 checked2 = store->data.chk2;
-	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Does Nothing");
-	gui_style_push_ptr(gui, chk.hint, "Do Nothing Checkbox");
-	pgui_chk(gui, checked2 ? "Checked" : "Unchecked", &checked2);
-
-	gui_style_pop(gui);
-
-	pgui_row_empty(gui, hx);
-
-	/* toggles - event sourced */
-	b32 checked_event_chk = store->data.chk;
-	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Event - Chk");
-	gui_style_push_ptr(gui, chk.hint, "Event Sourced Checkbox");
 	if (pgui_chk(gui, checked_event_chk ? "Checked" : "Unchecked", &checked_event_chk)) {
 		struct event_gui_toggle_chk *event_chk = event_spawn_from_kind(EVENT_KIND_GUI_TOGGLE_CHK);
 		event_chk->value = checked_event_chk;
 	}
-
 	gui_style_pop(gui);
 
 	pgui_row_empty(gui, hx);
 
-	b32 checked_event_arr = false;
+
+	/* button - array */
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Event - Array");
-	gui_style_push_ptr(gui, chk.hint, "Event Sourced Checkbox");
-	if (pgui_chk(gui, checked_event_arr ? "Checked" : "Unchecked", &checked_event_arr)) {
+	gui_style_push_ptr(gui, btn.hint, "Event - Array");
+	if (pgui_btn_txt(gui, "Event - Array")) {
 		struct event_gui_arr *event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
 		event_arr->op = LIST_OP_APPEND;
 		*event_arr->value = 42;
 	}
-
 	gui_style_pop(gui);
 
 	pgui_row_empty(gui, hx);
 
-	/* sliders */
+
+	/* slider */
 	r32 slider = store->data.slider;
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Slider");
-	gui_style_push_ptr(gui, slider.handle.hint, "Wow!");
+	gui_style_push_ptr(gui, slider.handle.hint, "Slider");
 	if (pgui_slider_x(gui, &slider)) {
 		struct event_gui_slider_change *event_slider = event_spawn_from_kind(EVENT_KIND_GUI_SLIDER_CHANGE);
 		event_slider->value = slider;
 	}
 	gui_style_pop(gui);
+
 	pgui_row_empty(gui, hx);
 
+
 	/* text input */
-	pgui_row_cellsv(gui, 2 * row_height, cols_npt);
-	pgui_txt(gui, "Text input");
+	pgui_row_cellsv(gui, 2 * row_height, cols);
+	pgui_txt(gui, "Text Input");
 	gui_style_push_b32(gui, npt.inactive.text.wrap, true);
 	gui_style_push_b32(gui, npt.hot.text.wrap, true);
 	gui_style_push_b32(gui, npt.active.text.wrap, true);
@@ -359,7 +287,6 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	memcpy(npt_buf, B2PS(store->data.npt));
 	pgui_npt_txt(gui, B2PS(npt_buf), "Your text here...", 0);
 
-	/* detect changes to the buffer contents */
 	if (!buf_eq(npt_buf, B2PS(store->data.npt))) {
 		struct event_gui_npt_change *event_npt = event_spawn_from_kind(EVENT_KIND_GUI_NPT_CHANGE);
 		memcpy(event_npt->value, B2PS(npt_buf));
@@ -369,47 +296,6 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_pop(gui);
 	gui_style_pop(gui);
 	gui_style_pop(gui);
-
-	/* trees */
-	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Tree");
-	pgui_txt(gui, "Splits");
-	if (gui->root_split) {
-		static gui_tree_node_t nodes[16] = {0};
-		pgui_tree_begin(gui, B2PC(nodes), 20, 20);
-		draw_split_node(gui, gui->root_split);
-		pgui_tree_end(gui);
-	}
-
-	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Tree");
-	pgui_txt(gui, "Test");
-	{
-		static gui_tree_node_t nodes[24] = {0};
-		static int items[3][2][3] = {0};
-		pgui_tree_begin(gui, B2PC(nodes), 20, 20);
-		for (u32 i = 0; i < countof(items); ++i) {
-			const b32 show_i = pgui_tree_node_begin(gui);
-			pgui_txt(gui, imprint_u32(i));
-			if (show_i) {
-				for (u32 j = 0; j < countof(items[i]); ++j) {
-					const b32 show_j = pgui_tree_node_begin(gui);
-					pgui_txt(gui, imprint_u32(j));
-					if (show_j) {
-						for (u32 k = 0; k < countof(items[i][j]); ++k) {
-							pgui_tree_leaf(gui);
-							pgui_txt(gui, imprint_u32(k));
-						}
-						pgui_tree_node_end(gui);
-					}
-				}
-				pgui_tree_node_end(gui);
-			}
-		}
-		pgui_tree_end(gui);
-	}
-
-	transaction_store_kind_pop();
 }
 
 static
@@ -418,12 +304,6 @@ void draw_widget_panel(gui_t *gui)
 	pgui_panel_grid_begin(gui, GUI_GRID_FLEX_VERTICAL);
 
 	draw_widgets(gui, 20, 5);
-
-	for (u32 i = 0; i < 10; ++i) {
-		pgui_row_empty(gui, 5);
-		pgui_row(gui, 20, 1);
-		pgui_txt(gui, imprint_u32(i));
-	}
 
 	pgui_panel_grid_end(gui);
 }

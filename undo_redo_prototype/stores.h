@@ -105,7 +105,7 @@ store_gui_t *store_gui_create(allocator_t *alc)
 	store_gui_t *store_gui = amalloc(sizeof(store_gui_t), alc);
 	store_gui->kind = STORE_KIND_GUI;
 	store_gui->data = (store_gui_data_t){
-		.npt = "Why are you the way that you are?",
+		.npt = "Do you even tater, bro?",
 		.arr = array_create_ex(alc),
 	};
 	return store_gui;
