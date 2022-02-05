@@ -40,7 +40,7 @@ struct event_gui_toggle_chk *event_gui_toggle_chk__create(allocator_t *alc)
 static
 b32 event_gui_toggle_chk__execute(struct event_gui_toggle_chk *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
     event->value_before = data->chk;
 	data->chk = event->value;
 	log_debug("Toggled checkbox %s", event->value ? "on" : "off");
@@ -50,10 +50,16 @@ b32 event_gui_toggle_chk__execute(struct event_gui_toggle_chk *event)
 static
 void event_gui_toggle_chk__undo(struct event_gui_toggle_chk *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
     data->chk = event->value_before;
 	log_debug("Reverted checkbox toggle");
 }
+
+typedef enum list_operation {
+	LIST_OP_UPDATE,
+	LIST_OP_APPEND,
+	LIST_OP_POP,
+} list_operation_e;
 
 struct event_gui_arr
 {
@@ -85,7 +91,7 @@ void event_gui_arr__destroy(struct event_gui_arr *event, allocator_t *alc)
 static
 b32 event_gui_arr__execute(struct event_gui_arr *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
 
 	switch ((list_operation_e)event->op) {
 	case LIST_OP_UPDATE:
@@ -111,7 +117,7 @@ b32 event_gui_arr__execute(struct event_gui_arr *event)
 static
 void event_gui_arr__undo(const struct event_gui_arr *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
 
 	switch ((list_operation_e)event->op) {
 	case LIST_OP_UPDATE:
@@ -145,7 +151,7 @@ struct event_gui_npt_change *event_gui_npt_change__create(allocator_t *alc)
 static
 b32 event_gui_npt_change__execute(struct event_gui_npt_change *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
 	memcpy(event->value_before, B2PC(data->npt));
 	memcpy(data->npt, B2PC(event->value));
 	log_debug("Text input change");
@@ -155,7 +161,7 @@ b32 event_gui_npt_change__execute(struct event_gui_npt_change *event)
 static
 void event_gui_npt_change__undo(struct event_gui_npt_change *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
 	memcpy(data->npt, B2PC(event->value_before));
 	log_debug("Reverted text input change");
 }
@@ -183,7 +189,7 @@ struct event_gui_slider_change *event_gui_slider_change__create(allocator_t *alc
 static
 b32 event_gui_slider_change__execute(struct event_gui_slider_change *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
 	event->value_before = data->slider;
 	data->slider = event->value;
 	log_debug("Slider change");
@@ -193,7 +199,7 @@ b32 event_gui_slider_change__execute(struct event_gui_slider_change *event)
 static
 void event_gui_slider_change__undo(struct event_gui_slider_change *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
 	data->slider = event->value_before;
 	log_debug("Reverted slider change");
 }
@@ -220,7 +226,7 @@ struct event_gui_plus_minus *event_gui_plus_minus__create(allocator_t *alc)
 static
 b32 event_gui_plus_minus__execute(struct event_gui_plus_minus *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
 	event->value_before = data->increment;
 	data->increment = event->value;
 	log_debug("Plus / Minus change");
@@ -230,7 +236,7 @@ b32 event_gui_plus_minus__execute(struct event_gui_plus_minus *event)
 static
 void event_gui_plus_minus__undo(struct event_gui_plus_minus *event)
 {
-	store_gui_data_t *data = store_data_from_kind(STORE_KIND_GUI);
+	store_gui_t *data = store_data(STORE_KIND_GUI);
 	data->increment = event->value_before;
 	log_debug("Reverted plus / minus change");
 }

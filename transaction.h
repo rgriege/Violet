@@ -9,14 +9,14 @@ typedef struct transaction_system {
 	array(event_t *) event_history;
 } transaction_system_t;
 
-transaction_system_t transaction_system_create(array(store_t *) stores, allocator_t *alc);
+transaction_system_t transaction_system_create(allocator_t *alc);
 void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
 void transaction_system_on_update();
+void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
 void *transaction_spawn_event(const event_metadata_t *meta, u32 kind);
 
-void *store_instance_from_kind(store_kind_e kind);
-void *store_data_from_kind(store_kind_e kind);
+void *store_data(u32 kind);
 
 #endif // VIOLET_TRANSACTION_H
 
@@ -27,43 +27,27 @@ void *store_data_from_kind(store_kind_e kind);
 transaction_system_t *g_active_transaction_system = NULL;
 
 static
-store_t *store_from_kind(store_kind_e kind)
+store_t *store__from_kind(u32 kind)
 {
 	array_foreach(g_active_transaction_system->stores, store_t *, store_ptr) {
-		if (store_get_kind(*store_ptr) == kind)
+		if ((*store_ptr)->kind == kind)
 			return *store_ptr;
 	}
 	assert(false);
 	return NULL;
 }
 
-void *store_instance_from_kind(store_kind_e kind)
+void *store_data(u32 kind)
 {
-	const store_t *store = store_from_kind(kind);
+	const store_t *store = store__from_kind(kind);
 	return store->instance;
 }
 
-void *store_data_from_kind(store_kind_e kind)
+transaction_system_t transaction_system_create(allocator_t *alc)
 {
-	const store_t *store = store_from_kind(kind);
-	return store_get_data(store);
-}
-
-transaction_system_t transaction_system_create(array(store_t *) stores, allocator_t *alc)
-{
-	/* having two or more store_t with the same store_kind causes undefined behavior */
-	for (u32 i = 0, n = array_sz(stores); i < n; ++i)
-		for (u32 j = 0; j < n; ++j) {
-			if (i == j)
-				continue;
-			assert(store_get_kind(stores[i]) != store_get_kind(stores[j]));
-		}
-
-	assert(array__allocator(stores) == alc);
-
 	return (transaction_system_t) {
 		.alc = alc,
-		.stores = stores,
+		.stores        = array_create_ex(alc),
 		.event_queue   = array_create_ex(alc),
 		.event_history = array_create_ex(alc),
 	};
@@ -162,6 +146,19 @@ static const event_contract_t event_redo__contract = {
 	.destroy = event__destroy_noop,
 	.execute = (b32 (*)(const void *))event_redo__execute,
 };
+
+void transaction_spawn_store(const store_metadata_t *meta, u32 kind)
+{
+	transaction_system_t *sys = g_active_transaction_system;
+
+	/* having two or more stores with the same kind could wreak havoc */
+	for (u32 i = 0, n = array_sz(sys->stores); i < n; ++i)
+		assert(sys->stores[i]->kind != kind);
+
+	void *instance = meta->spawner(sys->alc);
+	store_t * store = store_create(kind, instance, meta, sys->alc);
+	array_append(sys->stores, store);
+}
 
 void *transaction_spawn_event(const event_metadata_t *meta, u32 kind)
 {

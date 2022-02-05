@@ -17,6 +17,11 @@ typedef struct event_contract {
 typedef struct event_metadata {
 	void *(*spawner)(allocator_t *alc);
 	const event_contract_t *contract;
+	/* Addresses the use case when some data mutation might be repeated with a
+	   different payload. If the desired undo behavior is such that it reverts
+	   to the state before any of the repeated actions happened, then instead
+	   of creating a new undo point with every transaction, the previous
+	   transaction's undo point is modified. */
 	const b32 multi_frame;
 	const char *description;
 } event_metadata_t;
@@ -28,24 +33,14 @@ typedef struct event {
 	const event_metadata_t *meta;
 } event_t;
 
-event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta,
-                      allocator_t *alc);
+event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta, allocator_t *alc);
 void event_destroy(event_t *event, allocator_t *alc);
 b32  event_execute(const event_t *event);
 void event_undo(const event_t *event);
 	/* fast forward an event to another event - only used in multi-frame interactions */
 void event_update(event_t *dst, const event_t *src);
 
-void event__destroy_noop(void *instance, allocator_t *alc);
-
-// CLEANUP(undo): find a better spot for this type
-/* for dynamic arrays */
-typedef enum list_operation {
-	LIST_OP_UPDATE,
-	LIST_OP_APPEND,
-	LIST_OP_POP,
-	// TODO(undo): what about insert and remove at index?
-} list_operation_e;
+static void event__destroy_noop(void *instance, allocator_t *alc);
 
 #define event_factory(type) \
 	(void *(*)(allocator_t *))event_##type##__create, \
@@ -125,6 +120,7 @@ void event_update(event_t *dst, const event_t *src)
 	(dst->meta->contract->update)(dst->instance, src->instance);
 }
 
+static
 void event__destroy_noop(void *instance, allocator_t *alc)
 {
 	afree(instance, alc);

@@ -180,7 +180,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	const s32 cols[] = { 100, 0 };
 	const s32 cols_plus_minus[] = {100, 30, 0, 30};
 
-	store_gui_t *store = (store_gui_t *)store_instance_from_kind(STORE_KIND_GUI);
+	store_gui_t *store = store_data(STORE_KIND_GUI);
 
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Undo");
@@ -202,7 +202,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 
 
 	/* increment */
-	s32 increment = store->data.increment;
+	s32 increment = store->increment;
 	pgui_row_cellsv(gui, row_height, cols_plus_minus);
 	pgui_txt(gui, "Plus / Minus");
 
@@ -213,7 +213,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 
 	if (pgui_btn_txt(gui, "-")) {
 		struct event_gui_plus_minus *event = event_spawn_from_kind(EVENT_KIND_GUI_PLUS_MINUS);
-		event->value = store->data.increment - 1;
+		event->value = store->increment - 1;
 	}
 
 	gui_style_push_s32(gui, txt.align, GUI_ALIGN_MIDCENTER);
@@ -222,7 +222,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 
 	if (pgui_btn_txt(gui, "+")) {
 		struct event_gui_plus_minus *event = event_spawn_from_kind(EVENT_KIND_GUI_PLUS_MINUS);
-		event->value = store->data.increment + 1;
+		event->value = store->increment + 1;
 	}
 
 	gui_style_pop(gui);
@@ -234,7 +234,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 
 
 	/* toggles */
-	b32 checked_event_chk = store->data.chk;
+	b32 checked_event_chk = store->chk;
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Checkbox");
 	gui_style_push_ptr(gui, chk.hint, "Checkbox");
@@ -262,7 +262,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 
 
 	/* slider */
-	r32 slider = store->data.slider;
+	r32 slider = store->slider;
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Slider");
 	gui_style_push_ptr(gui, slider.handle.hint, "Slider");
@@ -284,10 +284,10 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_push_b32(gui, npt.disabled.text.wrap, true);
 
 	char npt_buf[64];
-	memcpy(npt_buf, B2PS(store->data.npt));
+	memcpy(npt_buf, B2PS(store->npt));
 	pgui_npt_txt(gui, B2PS(npt_buf), "Your text here...", 0);
 
-	if (!buf_eq(npt_buf, B2PS(store->data.npt))) {
+	if (!buf_eq(npt_buf, B2PS(store->npt))) {
 		struct event_gui_npt_change *event_npt = event_spawn_from_kind(EVENT_KIND_GUI_NPT_CHANGE);
 		memcpy(event_npt->value, B2PS(npt_buf));
 	}
@@ -402,9 +402,11 @@ int main(int argc, char *const argv[])
 	gui_split_t *root_split, *menu_split, *main_split;
 	gui_panel_t widget_panel, log_panel, about_panel;
 
-	array(store_t *) stores = stores__init(g_allocator);
-	transaction_system_t sys =  transaction_system_create(stores, g_allocator);
+	transaction_system_t sys =  transaction_system_create(g_allocator);
 	transaction_system_set_active(&sys);
+	store_spawn_from_kind(STORE_KIND_GUI);
+	store_spawn_from_kind(STORE_KIND_A);
+	store_spawn_from_kind(STORE_KIND_B);
 
 	struct log_data log_data = { 0 };
 	gui_panel_t *panels[PANEL_COUNT] = {
