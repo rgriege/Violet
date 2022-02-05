@@ -15,8 +15,16 @@ void transaction_system_set_active(transaction_system_t *sys);
 void transaction_system_on_update();
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
 void *transaction_spawn_event(const event_metadata_t *meta, u32 kind);
+// TODO(undo): make static once old system is kaput; can also change return to void
+/* returns nonzero value corresponding to an event_kind_e that was accomplished */
+u32 transaction__flush();
 
 void *store_data(u32 kind);
+
+// TODO(undo): would be nice if the undo/redo implementation specifics could be hidden
+//             from the global namespace
+extern const event_contract_t event_undo__contract;
+extern const event_contract_t event_redo__contract;
 
 #endif // VIOLET_TRANSACTION_H
 
@@ -137,12 +145,12 @@ b32 event_redo__execute(const struct event_redo *event)
 	return false;
 }
 
-static const event_contract_t event_undo__contract = {
+const event_contract_t event_undo__contract = {
 	.destroy = event__destroy_noop,
 	.execute = (b32 (*)(const void *))event_undo__execute,
 };
 
-static const event_contract_t event_redo__contract = {
+const event_contract_t event_redo__contract = {
 	.destroy = event__destroy_noop,
 	.execute = (b32 (*)(const void *))event_redo__execute,
 };
@@ -192,13 +200,13 @@ void *transaction_spawn_event(const event_metadata_t *meta, u32 kind)
 	return event->instance;
 }
 
-static
-void transaction__flush()
+u32 transaction__flush()
 {
+	u32 result = EVENT_KIND_NOOP;
 	transaction_system_t *sys = g_active_transaction_system;
 
 	if (array_empty(sys->event_queue))
-		return;
+		return result;
 
 	// TODO(undo): handle multi-frame logic here?
 
@@ -215,6 +223,7 @@ void transaction__flush()
 		if (event_execute(priority_event)) {
 			array_append(sys->event_history, priority_event);
 			log_debug("        %s", priority_event->meta->description);
+			result = priority_event->kind;
 		}
 		else
 			event_destroy(priority_event, sys->alc);
@@ -242,6 +251,7 @@ void transaction__flush()
 				if (event_execute(event)) {
 					array_append(sys->event_history, event);
 					log_debug("        %s", event->meta->description);
+					result = event->kind;
 				} else {
 					event_destroy(event, sys->alc);
 				}
@@ -254,6 +264,7 @@ void transaction__flush()
 	}
 
 	array_clear(sys->event_queue);
+	return result;
 }
 
 void transaction_system_on_update()

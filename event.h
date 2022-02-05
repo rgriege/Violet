@@ -40,7 +40,7 @@ void event_undo(const event_t *event);
 	/* fast forward an event to another event - only used in multi-frame interactions */
 void event_update(event_t *dst, const event_t *src);
 
-static void event__destroy_noop(void *instance, allocator_t *alc);
+void event__destroy_noop(void *instance, allocator_t *alc);
 
 #define event_factory(type) \
 	(void *(*)(allocator_t *))event_##type##__create, \
@@ -120,7 +120,6 @@ void event_update(event_t *dst, const event_t *src)
 	(dst->meta->contract->update)(dst->instance, src->instance);
 }
 
-static
 void event__destroy_noop(void *instance, allocator_t *alc)
 {
 	afree(instance, alc);
