@@ -24,14 +24,6 @@ void         store_destroy(store_t *store, allocator_t *alc);
 store_kind_e store_get_kind(const store_t *store);
 void *       store_get_data(const store_t *store);
 
-#define store_offset_bytes(store, cmd, dst) \
-	unsigned char *(dst) = (unsigned char *)store_get_data(store) + (cmd)->offset;
-
-// TODO(luke): should we replace this with something that calls into
-//             store_instance_from_kind and/or store_get_data()?
-#define store_offsetof(store_type, member) \
-	offsetof(store_type, data.member) - offsetof(store_type, data)
-
 #endif // VIOLET_STORE_H
 
 /* Implementation */
