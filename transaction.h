@@ -114,11 +114,18 @@ const event_t *transaction__last_valid_event(b32 undoing)
 	return NULL;
 }
 
-struct event_undo { b8 _; };    // coerce into a struct with nonzero size
-struct event_redo { b8 _; };    // coerce into a struct with nonzero size
+typedef struct event_undo
+{
+	b8 _;    // coerce into a struct with nonzero size
+} event_undo_t;
+
+typedef struct event_redo
+{
+	b8 _;    // coerce into a struct with nonzero size
+} event_redo_t;
 
 static
-b32 event_undo__execute(const struct event_undo *event)
+b32 event_undo__execute(const event_undo_t *event)
 {
 	const event_t *last_valid_event = transaction__last_valid_event(true);
 
@@ -132,7 +139,7 @@ b32 event_undo__execute(const struct event_undo *event)
 }
 
 static
-b32 event_redo__execute(const struct event_redo *event)
+b32 event_redo__execute(const event_redo_t *event)
 {
 	const event_t *last_valid_event = transaction__last_valid_event(false);
 

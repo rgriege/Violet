@@ -182,20 +182,16 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 
 	store_gui_t *store = store_data(STORE_KIND_GUI);
 
-	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Undo");
-	gui_style_push_ptr(gui, btn.hint, "Undo");
-	if (pgui_btn_txt(gui, "Undo"))
-		event_spawn_from_kind(EVENT_KIND_UNDO);
-	gui_style_pop(gui);
 
-	pgui_row_empty(gui, hx);
-
+	/* toggles */
+	b32 checked_event_chk = store->chk;
 	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Redo");
-	gui_style_push_ptr(gui, btn.hint, "Redo");
-	if (pgui_btn_txt(gui, "Redo"))
-		event_spawn_from_kind(EVENT_KIND_REDO);
+	pgui_txt(gui, "Checkbox");
+	gui_style_push_ptr(gui, chk.hint, "Checkbox");
+	if (pgui_chk(gui, checked_event_chk ? "Checked" : "Unchecked", &checked_event_chk)) {
+		event_gui_toggle_chk_t *event_chk = event_spawn(EVENT_KIND_GUI_TOGGLE_CHK);
+		event_chk->value = checked_event_chk;
+	}
 	gui_style_pop(gui);
 
 	pgui_row_empty(gui, hx);
@@ -212,7 +208,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_push(gui, btn.hot.text.color, gui_style(gui)->btn.active.bg_color);
 
 	if (pgui_btn_txt(gui, "-")) {
-		struct event_gui_plus_minus *event = event_spawn_from_kind(EVENT_KIND_GUI_PLUS_MINUS);
+		event_gui_plus_minus_t *event = event_spawn(EVENT_KIND_GUI_PLUS_MINUS);
 		event->value = store->increment - 1;
 	}
 
@@ -221,7 +217,7 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	gui_style_pop(gui);
 
 	if (pgui_btn_txt(gui, "+")) {
-		struct event_gui_plus_minus *event = event_spawn_from_kind(EVENT_KIND_GUI_PLUS_MINUS);
+		event_gui_plus_minus_t *event = event_spawn(EVENT_KIND_GUI_PLUS_MINUS);
 		event->value = store->increment + 1;
 	}
 
@@ -233,41 +229,13 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	pgui_row_empty(gui, hx);
 
 
-	/* toggles */
-	b32 checked_event_chk = store->chk;
-	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Checkbox");
-	gui_style_push_ptr(gui, chk.hint, "Checkbox");
-	if (pgui_chk(gui, checked_event_chk ? "Checked" : "Unchecked", &checked_event_chk)) {
-		struct event_gui_toggle_chk *event_chk = event_spawn_from_kind(EVENT_KIND_GUI_TOGGLE_CHK);
-		event_chk->value = checked_event_chk;
-	}
-	gui_style_pop(gui);
-
-	pgui_row_empty(gui, hx);
-
-
-	/* button - array */
-	pgui_row_cellsv(gui, row_height, cols);
-	pgui_txt(gui, "Event - Array");
-	gui_style_push_ptr(gui, btn.hint, "Event - Array");
-	if (pgui_btn_txt(gui, "Event - Array")) {
-		struct event_gui_arr *event_arr = event_spawn_from_kind(EVENT_KIND_GUI_ARR);
-		event_arr->op = LIST_OP_APPEND;
-		*event_arr->value = 42;
-	}
-	gui_style_pop(gui);
-
-	pgui_row_empty(gui, hx);
-
-
 	/* slider */
 	r32 slider = store->slider;
 	pgui_row_cellsv(gui, row_height, cols);
 	pgui_txt(gui, "Slider");
 	gui_style_push_ptr(gui, slider.handle.hint, "Slider");
 	if (pgui_slider_x(gui, &slider)) {
-		struct event_gui_slider_change *event_slider = event_spawn_from_kind(EVENT_KIND_GUI_SLIDER_CHANGE);
+		event_gui_slider_change_t *event_slider = event_spawn(EVENT_KIND_GUI_SLIDER_CHANGE);
 		event_slider->value = slider;
 	}
 	gui_style_pop(gui);
@@ -288,13 +256,52 @@ void draw_widgets(gui_t *gui, r32 row_height, r32 hx)
 	pgui_npt_txt(gui, B2PS(npt_buf), "Your text here...", 0);
 
 	if (!buf_eq(npt_buf, B2PS(store->npt))) {
-		struct event_gui_npt_change *event_npt = event_spawn_from_kind(EVENT_KIND_GUI_NPT_CHANGE);
+		event_gui_npt_change_t *event_npt = event_spawn(EVENT_KIND_GUI_NPT_CHANGE);
 		memcpy(event_npt->value, B2PS(npt_buf));
 	}
 
 	gui_style_pop(gui);
 	gui_style_pop(gui);
 	gui_style_pop(gui);
+	gui_style_pop(gui);
+
+	pgui_row_empty(gui, hx);
+
+
+	/* buttons - operate on an array
+	   illustrates how we might compose more complex events */
+	pgui_row_cellsv(gui, row_height, cols);
+	pgui_txt(gui, "Array - Append");
+	gui_style_push_ptr(gui, btn.hint, "Array - Append");
+	if (pgui_btn_txt(gui, "Array - Append")) {
+		event_gui_arr_t *event_arr = event_spawn(EVENT_KIND_GUI_ARR);
+		event_arr->op = LIST_OP_APPEND;
+		*event_arr->value = 42;
+	}
+	gui_style_pop(gui);
+
+	pgui_row_empty(gui, hx);
+
+	pgui_row_cellsv(gui, row_height, cols);
+	pgui_txt(gui, "Array - Pop");
+	gui_style_push_ptr(gui, btn.hint, "Array - Pop");
+	if (pgui_btn_txt(gui, "Array - Pop")) {
+		event_gui_arr_t *event_arr = event_spawn(EVENT_KIND_GUI_ARR);
+		event_arr->op = LIST_OP_POP;
+	}
+	gui_style_pop(gui);
+
+	pgui_row_empty(gui, hx);
+
+	pgui_row_cellsv(gui, row_height, cols);
+	pgui_txt(gui, "Array - Update [0]");
+	gui_style_push_ptr(gui, btn.hint, "Array - Update [0]");
+	if (pgui_btn_txt(gui, "Array - Update [0]")) {
+		event_gui_arr_t *event_arr = event_spawn(EVENT_KIND_GUI_ARR);
+		event_arr->op = LIST_OP_UPDATE;
+		*event_arr->idx = 0;
+		*event_arr->value = 42;
+	}
 	gui_style_pop(gui);
 }
 
@@ -484,6 +491,13 @@ int main(int argc, char *const argv[])
 
 		if (key_pressed(gui, KB_Q) && !gui_any_widget_has_focus(gui))
 			quit = true;
+
+		if (key_mod(gui, KBM_CTRL)) {
+			if (key_pressed(gui, KB_Z))
+				event_spawn(EVENT_KIND_UNDO);
+			else if (key_pressed(gui, KB_Y))
+				event_spawn(EVENT_KIND_REDO);
+		}
 
 		transaction_system_on_update();
 

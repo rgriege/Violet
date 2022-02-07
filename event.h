@@ -5,6 +5,8 @@
 #define EVENT_KIND_UNDO 1
 #define EVENT_KIND_REDO 2
 
+#define EVENT_DESCRIPTION_SIZE 32
+
 typedef struct event_contract {
 	void (*destroy)(void *instance, allocator_t *alc);
 	b32  (*execute)(const void *instance);
@@ -23,7 +25,7 @@ typedef struct event_metadata {
 	   of creating a new undo point with every transaction, the previous
 	   transaction's undo point is modified. */
 	const b32 multi_frame;
-	const char *description;
+	const char description[EVENT_DESCRIPTION_SIZE];
 } event_metadata_t;
 
 typedef struct event {
@@ -81,7 +83,7 @@ void event__destroy_noop(void *instance, allocator_t *alc);
 	true
 
 #define event_alloc(type, event, alc) \
-	struct event_##type *event = acalloc(1, sizeof(struct event_##type), alc);
+	event_##type##_t *event = acalloc(1, sizeof(event_##type##_t), alc);
 
 #endif // VIOLET_EVENT_H
 

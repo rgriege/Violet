@@ -1,6 +1,6 @@
 CC = gcc
 CCFLAGS_D = -Darray_size_t=u32 -DLINUX -DVIOLET_NO_LIB
-CCFLAGS_W = -Wall -Werror -Wshadow -Wno-missing-braces -Wno-unused-local-typedefs
+CCFLAGS_W = -Wall -Werror -Wshadow -Wno-missing-braces -Wno-unused-local-typedefs -Wno-unknown-pragmas
 CCFLAGS_I = -I../../ -I/usr/include/ -I/usr/local/include/SDL2/
 CCFLAGS_DEBUG = -g -g3 -DDEBUG
 CCFLAGS_RELEASE = -O2 -DNDEBUG -DPROFILE
