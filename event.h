@@ -26,6 +26,8 @@ typedef struct event_metadata {
 	   transaction's undo point is modified. */
 	const b32 multi_frame;
 	const char description[EVENT_DESCRIPTION_SIZE];
+	/* a secondary event is one that will not be directly associated with an undo point */
+	const b32 secondary;
 } event_metadata_t;
 
 typedef struct event {
@@ -34,6 +36,12 @@ typedef struct event {
 	void *instance;
 	const event_metadata_t *meta;
 } event_t;
+
+typedef struct event_bundle {
+	array(event_t *) d;
+	/* all events in a bundle are either primary or secondary */
+	b32 secondary;
+} event_bundle_t;
 
 event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta, allocator_t *alc);
 void event_destroy(event_t *event, allocator_t *alc);
@@ -44,43 +52,46 @@ void event_update(event_t *dst, const event_t *src);
 
 void event__destroy_noop(void *instance, allocator_t *alc);
 
+event_bundle_t event_bundle_create(event_t *event, allocator_t *alc);
+void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc);
+
 #define event_factory(type) \
-	(void *(*)(allocator_t *))event_##type##__create, \
-	&(event_contract_t) { \
+	.spawner = (void *(*)(allocator_t *))event_##type##__create, \
+	.contract = &(event_contract_t) { \
 		.destroy = event__destroy_noop, \
 		.execute = (b32  (*)(const void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 	}, \
-	false
+	.multi_frame = false
 
 #define event_factory_multi_frame(type) \
-	(void *(*)(allocator_t *))event_##type##__create, \
-	&(event_contract_t) { \
+	.spawner = (void *(*)(allocator_t *))event_##type##__create, \
+	.contract = &(event_contract_t) { \
 		.destroy = event__destroy_noop, \
 		.execute = (b32  (*)(const void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
 	}, \
-	true
+	.multi_frame = true
 
 #define event_factory_explicit_destructor(type) \
-	(void *(*)(allocator_t *))event_##type##__create, \
-	&(event_contract_t) { \
+	.spawner = (void *(*)(allocator_t *))event_##type##__create, \
+	.contract = &(event_contract_t) { \
 		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
 		.execute = (b32  (*)(const void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 	}, \
-	false
+	.multi_frame = false
 
 #define event_factory_multi_frame_explicit_destructor(type) \
-	(void *(*)(allocator_t *))event_##type##__create, \
-	&(event_contract_t) { \
+	.spawner = (void *(*)(allocator_t *))event_##type##__create, \
+	.contract = &(event_contract_t) { \
 		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
 		.execute = (b32  (*)(const void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
 	}, \
-	true
+	.multi_frame = true
 
 #define event_alloc(type, event, alc) \
 	event_##type##_t *event = acalloc(1, sizeof(event_##type##_t), alc);
@@ -125,6 +136,23 @@ void event_update(event_t *dst, const event_t *src)
 void event__destroy_noop(void *instance, allocator_t *alc)
 {
 	afree(instance, alc);
+}
+
+event_bundle_t event_bundle_create(event_t *event, allocator_t *alc)
+{
+	event_bundle_t events = (event_bundle_t) {
+		.secondary = event->meta->secondary,
+		.d = array_create_ex(alc),
+	};
+	array_append(events.d, event);
+	return events;
+}
+
+void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc)
+{
+	array_foreach(bundle->d, event_t *, event_ptr)
+		event_destroy(*event_ptr, alc);
+	array_destroy(bundle->d);
 }
 
 #undef EVENT_IMPLEMENTATION

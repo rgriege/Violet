@@ -265,6 +265,7 @@ static const event_metadata_t g_event_registry[EVENT_KIND__COUNT] = {
 	[EVENT_KIND_GUI_ARR] = {
 		event_factory_explicit_destructor(gui_arr),
 		"GUI Array Operation",
+		.secondary = true,
 	},
 	[EVENT_KIND_GUI_NPT_CHANGE] = {
 		event_factory_multi_frame(gui_npt_change),
