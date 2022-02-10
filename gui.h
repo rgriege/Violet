@@ -168,6 +168,7 @@ b32  mouse_down_bg(const gui_t *gui, u32 mask);
 b32  mouse_released(const gui_t *gui, u32 mask);
 b32  mouse_released_bg(const gui_t *gui, u32 mask);
 b32  mouse_covered(const gui_t *gui);
+b32  mouse_over_box(const gui_t *gui, box2i box);
 b32  mouse_covered_by_any_popup(const gui_t *gui);
 void mouse_cover(gui_t *gui, u64 widget_id);
 b32  mouse_over_bg(const gui_t *gui);
@@ -2907,6 +2908,14 @@ b32 mouse_covered(const gui_t *gui)
 {
 	return gui->mouse_covered_by_widget_id != ~0
 	    && !mouse__covered_by_current_popup(gui);
+}
+
+b32 mouse_over_box(const gui_t *gui, box2i box)
+{
+	return box2i_contains_point(box, gui->mouse_pos)
+	    && !gui_locked(gui)
+	    && !mouse_covered(gui)
+	    &&  gui_point_visible(gui, gui->mouse_pos.x, gui->mouse_pos.y);
 }
 
 b32 mouse_covered_by_any_popup(const gui_t *gui)
