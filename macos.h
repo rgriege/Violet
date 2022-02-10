@@ -3,6 +3,7 @@
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/syslimits.h>
+#include <sys/utsname.h>
 #include <CoreFoundation/CFBundle.h>
 #include <CoreFoundation/CFURL.h>
 #include <dlfcn.h>
@@ -436,7 +437,7 @@ b32 open_file_external(const char *filename)
 
 /* System */
 
-b32 cpu_supports_sse41(void)
+s32 cpu_max_sse(void)
 {
 	unsigned int info[4] = {0};
 	unsigned int max_function_id = __get_cpuid_max(0, NULL);
@@ -445,5 +446,24 @@ b32 cpu_supports_sse41(void)
 		return false;
 	}
 	__get_cpuid(1, &info[0], &info[1], &info[2], &info[3]);
-	return info[2] & (1 << 19);
+	return cpu_max_sse_(info);
+}
+
+b32 cpu_supports_sse41(void)
+{
+	return cpu_max_sse() >= OS_SSE_VERSION_41;
+}
+
+b32 os_uname(os_utsname_t *os_utsname)
+{
+	struct utsname os;
+	if (uname(&os) == 0) {
+		strcpy(os_utsname->sysname, os.sysname);
+		strcpy(os_utsname->release, os.release);
+		strcpy(os_utsname->version, os.version);
+		strcpy(os_utsname->machine, os.machine);
+		return true;
+	} else {
+		return false;
+	}
 }

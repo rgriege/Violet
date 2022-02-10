@@ -102,7 +102,26 @@ b32  open_file_external(const char *filename);
 
 /* System */
 
+typedef enum sse_version
+{
+	OS_SSE_VERSION_1,
+	OS_SSE_VERSION_2,
+	OS_SSE_VERSION_3,
+	OS_SSE_VERSION_41,
+	OS_SSE_VERSION_42,
+	OS_SSE_VERSION__COUNT
+} sse_version_e;
+s32 cpu_max_sse(void);
 b32 cpu_supports_sse41(void);
+
+typedef struct os_utsname
+{
+	char sysname[65];
+	char release[65];
+	char version[65];
+	char machine[65];
+} os_utsname_t;
+b32 os_uname(os_utsname_t *os_utsname);
 
 #endif
 
@@ -111,6 +130,28 @@ b32 cpu_supports_sse41(void);
 
 #ifdef OS_IMPLEMENTATION
 #undef OS_IMPLEMENTATION
+
+/* https://docs.microsoft.com/en-us/cpp/intrinsics/cpuid-cpuidex?view=msvc-170 */
+static s32 cpu_max_sse_(unsigned int info[4])
+{
+	/* ECX 20 */
+	if (info[2] & (1 << 20))
+		return OS_SSE_VERSION_42;
+	/* ECX 19 */
+	else if (info[2] & (1 << 19))
+		return OS_SSE_VERSION_41;
+	/* ECX 0 */
+	else if (info[2] & (1 << 0))
+		return OS_SSE_VERSION_3;
+	/* EDX 26 */
+	else if (info[3] & (1 << 26))
+		return OS_SSE_VERSION_2;
+	/* EDX 25 */
+	else if (info[3] & (1 << 25))
+		return OS_SSE_VERSION_1;
+	else
+		return -1;
+}
 
 #ifdef VLT_USE_TINYDIR
 #if defined(__GNUC__) && (__GNUC__ >= 8)

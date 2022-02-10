@@ -327,9 +327,20 @@ b32 open_file_external(const char *filename)
 
 /* System */
 
+s32 cpu_max_sse(void)
+{
+	/* Based on the below comment, I guess this supports everything? */
+	return OS_SSE_VERSION__COUNT - 1;
+}
+
 b32 cpu_supports_sse41(void)
 {
 	/* Based on the documentation, I _think_ that emscripten will
 	 * provide a fallback for any SSE instructions it doesn't support. */
 	return true;
+}
+
+b32 os_uname(os_utsname_t *os_utsname)
+{
+	return false;
 }

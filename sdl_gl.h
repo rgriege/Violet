@@ -488,7 +488,7 @@ b32 shader_program_load_from_files(shader_prog_t *prog,
 
 	if (!shader_init_from_file(&prog->frag_shader, frag_fname, FRAGMENT_SHADER, name))
 		goto err_frag;
-	
+
 	if (shader_program_create(prog, prog->vertex_shader, prog->frag_shader, name)) {
 		retval = true;
 		goto out;

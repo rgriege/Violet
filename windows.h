@@ -615,7 +615,7 @@ b32 open_file_external(const char *filename)
 
 /* System */
 
-b32 cpu_supports_sse41(void)
+s32 cpu_max_sse(void)
 {
 	int info[4] = {0};
 	int max_function_id;
@@ -626,5 +626,16 @@ b32 cpu_supports_sse41(void)
 		return false;
 	}
 	__cpuid(info, 1);
-	return info[2] & (1 << 19);
+	return cpu_max_sse_(info);
+}
+
+b32 cpu_supports_sse41(void)
+{
+	return cpu_max_sse() >= OS_SSE_VERSION_41;
+}
+
+b32 os_uname(os_utsname_t *os_utsname)
+{
+	/* TODO(ben): implement this */
+	return false;
 }
