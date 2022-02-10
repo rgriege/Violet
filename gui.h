@@ -7327,7 +7327,7 @@ void gui__split_render_branch(gui_t *gui, gui_split_t *split, b32 *changed)
 				if (fabsf(child->size) > 1.f)
 					child->size += drag_x - orig_drag_x;
 				else
-					child->size = (r32)(drag_x + GUI_SPLIT_RESIZE_BORDER / 2 - cx) / w;
+					child->size += ((r32)(orig_drag_x - drag_x)) / w;
 				*changed = true;
 			}
 		} else {
@@ -7337,7 +7337,7 @@ void gui__split_render_branch(gui_t *gui, gui_split_t *split, b32 *changed)
 				if (fabsf(child->size) > 1.f)
 					child->size += orig_drag_y - drag_y;
 				else
-					child->size = (r32)(drag_y + GUI_SPLIT_RESIZE_BORDER / 2) / h;
+					child->size += ((r32)(orig_drag_y - drag_y)) / h;
 				*changed = true;
 			}
 		}
