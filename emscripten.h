@@ -344,3 +344,8 @@ b32 os_uname(os_utsname_t *os_utsname)
 {
 	return false;
 }
+
+u128 os_device_id(void)
+{
+	return (u128){0};
+}

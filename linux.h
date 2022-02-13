@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <systemd/sd-id128.h>  // in systemd-devel package
 #include <unistd.h>
 
 const char *g_file_path_separator = "/";
@@ -425,4 +426,19 @@ b32 os_uname(os_utsname_t *os_utsname)
 	} else {
 		return false;
 	}
+}
+
+u128 os_device_id(void)
+{
+	const sd_id128_t testfit_app_id = {0};
+	sd_id128_t device_uuid = {0};
+	u128 device_id = {0};
+
+	/* https://www.freedesktop.org/software/systemd/man/sd_id128_get_machine.html */
+	if (sd_id128_get_machine_app_specific(testfit_app_id, &device_uuid) == 0) {
+		device_id.qwords[0] = device_uuid.qwords[0];
+		device_id.qwords[1] = device_uuid.qwords[1];
+	}
+
+	return device_id;
 }

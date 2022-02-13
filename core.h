@@ -99,6 +99,11 @@ typedef int64_t s64;
 typedef float r32;
 typedef double r64;
 
+typedef union {
+        u8  bytes[16];
+        u64 qwords[2];
+} u128;
+
 typedef union uintptr
 {
 	uintptr_t i;
