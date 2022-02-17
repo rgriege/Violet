@@ -94,7 +94,8 @@ void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc);
 	.multi_frame = true
 
 #define event_alloc(type, event, alc) \
-	event_##type##_t *event = acalloc(1, sizeof(event_##type##_t), alc);
+	CONCAT(event_, CONCAT(type, _t)) *event = acalloc(1, sizeof(CONCAT(event_, \
+	CONCAT(type, _t))), alc)
 
 #endif // VIOLET_EVENT_H
 

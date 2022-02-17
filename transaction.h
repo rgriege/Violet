@@ -203,13 +203,13 @@ void *transaction_spawn_event(const event_metadata_t *meta, u32 kind)
 	break;
 	case EVENT_KIND_UNDO:
 	{
-		event_alloc(undo, undo_instance, sys->alc)
+		event_alloc(undo, undo_instance, sys->alc);
 		instance = undo_instance;
 	}
 	break;
 	case EVENT_KIND_REDO:
 	{
-		event_alloc(redo, redo_instance, sys->alc)
+		event_alloc(redo, redo_instance, sys->alc);
 		instance = redo_instance;
 	}
 	break;
