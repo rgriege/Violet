@@ -1056,6 +1056,13 @@ timepoint_t timepoint_create(void)
 	return t;
 }
 
+u32 timepoint_diff_seconds(timepoint_t start, timepoint_t end)
+{
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+	return (u32)((end.QuadPart - start.QuadPart) / frequency.QuadPart);
+}
+
 u32 timepoint_diff_milli(timepoint_t start, timepoint_t end)
 {
 	LARGE_INTEGER frequency;
