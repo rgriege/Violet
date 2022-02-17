@@ -343,6 +343,11 @@ u32         timepoint_diff_seconds(timepoint_t start, timepoint_t end);
 u32         timepoint_diff_milli(timepoint_t start, timepoint_t end);
 u32         timepoint_diff_micro(timepoint_t start, timepoint_t end);
 u32         timepoint_diff_nano(timepoint_t start, timepoint_t end);
+/* shortcuts for common timepoint_diff(start, timepoint_create()) pattern */
+u32         timepoint_expired_seconds(timepoint_t start);
+u32         timepoint_expired_milli(timepoint_t start);
+u32         timepoint_expired_micro(timepoint_t start);
+u32         timepoint_expired_nano(timepoint_t start);
 
 s64         time_seconds_since_epoch(void);
 void        time_sleep_milli(u32 milli);
@@ -1088,6 +1093,26 @@ void time_sleep_milli(u32 milli)
 }
 
 #endif
+
+u32 timepoint_expired_seconds(timepoint_t start)
+{
+	return timepoint_diff_seconds(start, timepoint_create());
+}
+
+u32 timepoint_expired_milli(timepoint_t start)
+{
+	return timepoint_diff_milli(start, timepoint_create());
+}
+
+u32 timepoint_expired_micro(timepoint_t start)
+{
+	return timepoint_diff_micro(start, timepoint_create());
+}
+
+u32 timepoint_expired_nano(timepoint_t start)
+{
+	return timepoint_diff_nano(start, timepoint_create());
+}
 
 /* Log */
 
