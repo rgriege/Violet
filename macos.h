@@ -454,18 +454,19 @@ b32 cpu_supports_sse41(void)
 	return cpu_max_sse() >= OS_SSE_VERSION_41;
 }
 
-b32 os_uname(os_utsname_t *os_utsname)
+os_utsname_t os_uname(void)
 {
-	struct utsname os;
+	os_utsname_t os_utsname = {0};
+	struct utsname os ={0};
 	if (uname(&os) == 0) {
-		strcpy(os_utsname->sysname, os.sysname);
-		strcpy(os_utsname->release, os.release);
-		strcpy(os_utsname->version, os.version);
-		strcpy(os_utsname->machine, os.machine);
-		return true;
+		strbcpy(os_utsname.sysname, os.sysname);
+		strbcpy(os_utsname.release, os.release);
+		strbcpy(os_utsname.version, os.version);
+		strbcpy(os_utsname.machine, os.machine);
 	} else {
-		return false;
+		strbcpy(os_utsname.sysname, "MacOS");
 	}
+	return os_utsname;
 }
 
 u128 os_device_id(void)

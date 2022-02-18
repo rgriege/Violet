@@ -340,9 +340,11 @@ b32 cpu_supports_sse41(void)
 	return true;
 }
 
-b32 os_uname(os_utsname_t *os_utsname)
+os_utsname_t os_uname(void)
 {
-	return false;
+	os_utsname_t os_utsname = {0};
+	strbcpy(os_utsname.sysname, "emscripten");
+	return os_utsname;
 }
 
 u128 os_device_id(void)

@@ -634,10 +634,11 @@ b32 cpu_supports_sse41(void)
 	return cpu_max_sse() >= OS_SSE_VERSION_41;
 }
 
-b32 os_uname(os_utsname_t *os_utsname)
+os_utsname_t os_uname(void)
 {
-	/* TODO(ben): implement this */
-	return false;
+	os_utsname_t os_utsname = {0};
+	strbcpy(os_utsname.sysname, "Windows");
+	return os_utsname;
 }
 
 u128 os_device_id(void)
