@@ -7,6 +7,9 @@ typedef struct transaction_system {
 	array(event_t *) event_queue;
 	/* append-only stack of event history */
 	array(event_bundle_t) event_history;
+	// TODO(undo): once old system is kaput, we will be able to store the undo point
+	//             description in the event_bundle
+	str_t last_event_desc;
 } transaction_system_t;
 
 transaction_system_t transaction_system_create(allocator_t *alc);
@@ -14,7 +17,7 @@ void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
 void transaction_system_on_update();
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
-void *transaction_spawn_event(const event_metadata_t *meta, u32 kind);
+void *transaction_spawn_event(const event_metadata_t *meta, char *nav_description, u32 kind);
 // TODO(undo): make static once old system is kaput; can also change return to void
 /* returns nonzero value corresponding to an event_kind_e that was accomplished */
 u32 transaction__flush();
@@ -57,9 +60,10 @@ transaction_system_t transaction_system_create(allocator_t *alc)
 {
 	return (transaction_system_t) {
 		.alc = alc,
-		.stores        = array_create_ex(alc),
-		.event_queue   = array_create_ex(alc),
-		.event_history = array_create_ex(alc),
+		.stores          = array_create_ex(alc),
+		.event_queue     = array_create_ex(alc),
+		.event_history   = array_create_ex(alc),
+		.last_event_desc = str_create(alc),
 	};
 }
 
@@ -76,6 +80,8 @@ void transaction_system_destroy(transaction_system_t *sys)
 	array_foreach(sys->event_history, event_bundle_t, bundle_ptr)
 		event_bundle_destroy(bundle_ptr, sys->alc);
 	array_destroy(sys->event_history);
+
+	str_destroy(&sys->last_event_desc);
 }
 
 void transaction_system_set_active(transaction_system_t *sys)
@@ -191,7 +197,7 @@ void transaction_spawn_store(const store_metadata_t *meta, u32 kind)
 	array_append(sys->stores, store);
 }
 
-void *transaction_spawn_event(const event_metadata_t *meta, u32 kind)
+void *transaction_spawn_event(const event_metadata_t *meta, char *nav_description, u32 kind)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 
@@ -217,7 +223,7 @@ void *transaction_spawn_event(const event_metadata_t *meta, u32 kind)
 		instance = meta->spawner(sys->alc);
 	}
 
-	event_t *event = event_create(kind, instance, meta, sys->alc);
+	event_t *event = event_create(kind, instance, meta, nav_description, sys->alc);
 	array_append(sys->event_queue, event);
 	return event->instance;
 }
@@ -272,10 +278,20 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 				/* Handle fresh event */;
 				if (   last_bundle
 				    && last_bundle->secondary
-				    && event->meta->secondary)
-						array_append(last_bundle->d, event);
-				else
-					array_append(sys->event_history, event_bundle_create(event, sys->alc));
+				    && event->meta->secondary) {
+					array_append(last_bundle->d, event);
+				}
+				else {
+					const event_bundle_t new_bundle = event_bundle_create(event, sys->alc);
+					array_append(sys->event_history, new_bundle);
+
+					str_clear(&sys->last_event_desc);
+					if (new_bundle.d[0]->nav_description[0]) {
+						str_cpy(&sys->last_event_desc, new_bundle.d[0]->nav_description);
+						str_cat(&sys->last_event_desc, " - ");
+					}
+					str_cat(&sys->last_event_desc, new_bundle.d[0]->meta->description);
+				}
 
 				result = event->kind;
 			}

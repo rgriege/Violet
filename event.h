@@ -5,7 +5,8 @@
 #define EVENT_KIND_UNDO 1
 #define EVENT_KIND_REDO 2
 
-#define EVENT_DESCRIPTION_SIZE 32
+#define EVENT_DESCRIPTION_SIZE 24
+#define NAV_DESCRIPTION_SIZE   16
 
 typedef struct event_contract {
 	void (*destroy)(void *instance, allocator_t *alc);
@@ -35,6 +36,7 @@ typedef struct event {
 	u32 kind;
 	void *instance;
 	const event_metadata_t *meta;
+	char nav_description[NAV_DESCRIPTION_SIZE];
 } event_t;
 
 typedef struct event_bundle {
@@ -43,7 +45,8 @@ typedef struct event_bundle {
 	b32 secondary;
 } event_bundle_t;
 
-event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta, allocator_t *alc);
+event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta,
+                      char *nav_description, allocator_t *alc);
 void event_destroy(event_t *event, allocator_t *alc);
 b32  event_execute(const event_t *event);
 void event_undo(const event_t *event);
@@ -104,12 +107,16 @@ void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc);
 #ifdef EVENT_IMPLEMENTATION
 
 event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta,
-                      allocator_t *alc)
+                      char *nav_description, allocator_t *alc)
 {
 	event_t *event = amalloc(sizeof(event_t), alc);
 	event->kind = kind;
 	event->instance = instance;
 	event->meta = meta;
+	if (nav_description)
+		strbcpy(event->nav_description, nav_description);
+	else
+		event->nav_description[0] = 0;
 	return event;
 }
 

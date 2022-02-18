@@ -19,7 +19,7 @@ static const event_metadata_t *event_metadata__from_kind(event_kind_e kind)
 static void *event_spawn(event_kind_e kind)
 {
 	const event_metadata_t *meta = event_metadata__from_kind(kind);
-	return transaction_spawn_event(meta, kind);
+	return transaction_spawn_event(meta, "Prototype", kind);
 }
 
 /* Concrete Event Implementations */
