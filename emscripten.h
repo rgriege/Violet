@@ -340,6 +340,14 @@ b32 cpu_supports_sse41(void)
 	return true;
 }
 
+/* NOTE(ben): one might argue it's incorrect to label the "cpu vendor" as
+   "empscripten" but I want to return something unique here to distinguish
+   this case from the case of another OS that failed to get cpu info. */
+void cpu_vendor(char vendor[32])
+{
+	strbcpy(vendor, "emscripten");
+}
+
 os_utsname_t os_uname(void)
 {
 	os_utsname_t os_utsname = {0};

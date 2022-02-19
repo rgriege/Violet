@@ -116,6 +116,8 @@ typedef enum sse_version
 s32 cpu_max_sse(void);
 b32 cpu_supports_sse41(void);
 
+void cpu_vendor(char vendor[32]);
+
 typedef struct os_utsname
 {
 	char sysname[65];
@@ -136,8 +138,11 @@ u128 os_device_id(void);
 #ifdef OS_IMPLEMENTATION
 #undef OS_IMPLEMENTATION
 
-/* https://docs.microsoft.com/en-us/cpp/intrinsics/cpuid-cpuidex?view=msvc-170 */
-static s32 cpu_max_sse_(unsigned int info[4])
+/** Reference for cpu_max_sse_ and cpu_vendor_:
+ * https://docs.microsoft.com/en-us/cpp/intrinsics/cpuid-cpuidex?view=msvc-170
+ */
+static
+s32 cpu_max_sse_(unsigned int info[4])
 {
 	/* ECX 20 */
 	if (info[2] & (1 << 20))
@@ -156,6 +161,18 @@ static s32 cpu_max_sse_(unsigned int info[4])
 		return OS_SSE_VERSION_1;
 	else
 		return OS_SSE_VERSION_NONE;
+}
+static
+void cpu_vendor_(unsigned int info[4], char vendor[32])
+{
+	union {
+		u32 info;
+		char name[8];
+	} data[3] = {0};
+	data[0].info = info[1];
+	data[1].info = info[2];
+	data[2].info = info[3];
+	snprintf(vendor, 25, "%s%s%s", data[0].name, data[2].name, data[1].name);
 }
 
 #ifdef VLT_USE_TINYDIR

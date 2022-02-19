@@ -634,6 +634,13 @@ b32 cpu_supports_sse41(void)
 	return cpu_max_sse() >= OS_SSE_VERSION_41;
 }
 
+void cpu_vendor(char vendor[32])
+{
+	int info[4] = {0};
+	__cpuid(info, 0);
+	cpu_vendor_(info, vendor);
+}
+
 os_utsname_t os_uname(void)
 {
 	os_utsname_t os_utsname = {0};
