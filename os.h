@@ -104,12 +104,14 @@ b32  open_file_external(const char *filename);
 
 typedef enum sse_version
 {
+	OS_SSE_VERSION_UNKNOWN,
+	OS_SSE_VERSION_NONE,
 	OS_SSE_VERSION_1,
 	OS_SSE_VERSION_2,
 	OS_SSE_VERSION_3,
 	OS_SSE_VERSION_41,
 	OS_SSE_VERSION_42,
-	OS_SSE_VERSION__COUNT
+	OS_SSE_VERSION__COUNT,
 } sse_version_e;
 s32 cpu_max_sse(void);
 b32 cpu_supports_sse41(void);
@@ -153,7 +155,7 @@ static s32 cpu_max_sse_(unsigned int info[4])
 	else if (info[3] & (1 << 25))
 		return OS_SSE_VERSION_1;
 	else
-		return -1;
+		return OS_SSE_VERSION_NONE;
 }
 
 #ifdef VLT_USE_TINYDIR

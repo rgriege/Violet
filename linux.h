@@ -403,7 +403,7 @@ s32 cpu_max_sse(void)
 	unsigned int max_function_id = __get_cpuid_max(0, NULL);
 	if (max_function_id < 1) {
 		log_error("failed to fetch highest cpuid functionid");
-		return false;
+		return OS_SSE_VERSION_UNKNOWN;
 	}
 	__get_cpuid(1, &info[0], &info[1], &info[2], &info[3]);
 	return cpu_max_sse_(info);
