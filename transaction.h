@@ -26,6 +26,11 @@ transaction_system_t *get_active_transaction_system();
 
 void *store_data(u32 kind);
 
+typedef struct event_undo_redo
+{
+	str_t label;
+} event_undo_redo_t;
+
 // TODO(undo): would be nice if the undo/redo implementation specifics could be hidden
 //             from the global namespace
 extern const event_contract_t event_undo__contract;
@@ -94,7 +99,7 @@ const event_bundle_t *transaction__last_valid_event_bundle(transaction_system_t 
 {
 	u32 undo_count = 0, redo_count = 0, real_event_count = 0;
 
-	for (s32 i = array_sz(sys->event_history)-1; i >= 0; --i) {
+	for (u32 i = array_sz(sys->event_history); i-- > 0; ) {
 		event_bundle_t *bundle = &sys->event_history[i];
 
 		if (bundle->secondary)
@@ -123,18 +128,24 @@ const event_bundle_t *transaction__last_valid_event_bundle(transaction_system_t 
 	return NULL;
 }
 
-typedef struct event_undo
+static
+void transaction__set_event_description(str_t *description, const event_t *event)
 {
-	b8 _;    // coerce into a struct with nonzero size
-} event_undo_t;
-
-typedef struct event_redo
-{
-	b8 _;    // coerce into a struct with nonzero size
-} event_redo_t;
+	if (event->nav_description[0]) {
+		str_cat(description, event->nav_description);
+		str_cat(description, " - ");
+	}
+	str_cat(description, event->meta->description);
+}
 
 static
-b32 event_undo__execute(const event_undo_t *event)
+void event_undo_redo__destroy(event_undo_redo_t *event)
+{
+	str_destroy(&event->label);
+}
+
+static
+b32 event_undo__execute(event_undo_redo_t *event)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 	const event_bundle_t *bundle = transaction__last_valid_event_bundle(sys, true);
@@ -146,16 +157,17 @@ b32 event_undo__execute(const event_undo_t *event)
 		/* there are secondary events to undo, in reverse insertion order */
 		const event_bundle_t *bundle_after = bundle+1;
 		if (bundle_after->secondary)
-			for (s32 i = array_sz(bundle_after->d)-1; i >= 0; --i)
+			for (u32 i = array_sz(bundle_after->d); i-- > 0; )
 				event_undo(bundle_after->d[i]);
 	}
 
 	event_undo(bundle->d[0]);
+	transaction__set_event_description(&event->label, bundle->d[0]);
 	return true;
 }
 
 static
-b32 event_redo__execute(const event_redo_t *event)
+b32 event_redo__execute(event_undo_redo_t *event)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 	const event_bundle_t *bundle = transaction__last_valid_event_bundle(sys, false);
@@ -171,16 +183,17 @@ b32 event_redo__execute(const event_redo_t *event)
 	}
 
 	event_execute(bundle->d[0]);
+	transaction__set_event_description(&event->label, bundle->d[0]);
 	return true;
 }
 
 const event_contract_t event_undo__contract = {
-	.destroy = event__destroy_noop,
+	.destroy = (void (*)(void *, allocator_t *))event_undo_redo__destroy,
 	.execute = (b32 (*)(const void *))event_undo__execute,
 };
 
 const event_contract_t event_redo__contract = {
-	.destroy = event__destroy_noop,
+	.destroy = (void (*)(void *, allocator_t *))event_undo_redo__destroy,
 	.execute = (b32 (*)(const void *))event_redo__execute,
 };
 
@@ -208,15 +221,11 @@ void *transaction_spawn_event(const event_metadata_t *meta, char *nav_descriptio
 		assert(false);
 	break;
 	case EVENT_KIND_UNDO:
-	{
-		event_alloc(undo, undo_instance, sys->alc);
-		instance = undo_instance;
-	}
-	break;
 	case EVENT_KIND_REDO:
 	{
-		event_alloc(redo, redo_instance, sys->alc);
-		instance = redo_instance;
+		event_alloc(undo_redo, undo_redo_instance, sys->alc);
+		undo_redo_instance->label = str_create(sys->alc);
+		instance = undo_redo_instance;
 	}
 	break;
 	default:
@@ -284,13 +293,8 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 				else {
 					const event_bundle_t new_bundle = event_bundle_create(event, sys->alc);
 					array_append(sys->event_history, new_bundle);
-
 					str_clear(&sys->last_event_desc);
-					if (new_bundle.d[0]->nav_description[0]) {
-						str_cpy(&sys->last_event_desc, new_bundle.d[0]->nav_description);
-						str_cat(&sys->last_event_desc, " - ");
-					}
-					str_cat(&sys->last_event_desc, new_bundle.d[0]->meta->description);
+					transaction__set_event_description(&sys->last_event_desc, new_bundle.d[0]);
 				}
 
 				result = event->kind;

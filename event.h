@@ -37,6 +37,7 @@ typedef struct event {
 	void *instance;
 	const event_metadata_t *meta;
 	char nav_description[NAV_DESCRIPTION_SIZE];
+	s64 time_since_epoch_ms;
 } event_t;
 
 typedef struct event_bundle {
@@ -117,6 +118,7 @@ event_t *event_create(u32 kind, void *instance, const event_metadata_t *meta,
 		strbcpy(event->nav_description, nav_description);
 	else
 		event->nav_description[0] = 0;
+	event->time_since_epoch_ms = time_milliseconds_since_epoch();
 	return event;
 }
 

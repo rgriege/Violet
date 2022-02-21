@@ -350,6 +350,7 @@ u32         timepoint_expired_micro(timepoint_t start);
 u32         timepoint_expired_nano(timepoint_t start);
 
 s64         time_seconds_since_epoch(void);
+s64         time_milliseconds_since_epoch(void);
 void        time_sleep_milli(u32 milli);
 
 /* Log */
@@ -1041,6 +1042,14 @@ s64 time_seconds_since_epoch(void)
 	return (s64)time(NULL);
 }
 
+s64 time_milliseconds_since_epoch(void)
+{
+	/* This is true for POSIX but isn't technically guaranted by C */
+	struct timespec spec;
+	clock_gettime(CLOCK_REALTIME, &spec);
+	return (s64)spec.tv_sec * 1000LL + (s64)spec.tv_nsec / 1000000LL;
+}
+
 void time_sleep_milli(u32 milli)
 {
 	timepoint_t t = { .tv_nsec = milli * 1000000 };
@@ -1084,14 +1093,27 @@ u32 timepoint_diff_nano(timepoint_t start, timepoint_t end)
 	return (u32)((end.QuadPart - start.QuadPart) * 1000000000 / frequency.QuadPart);
 }
 
-s64 time_seconds_since_epoch(void)
+static
+ULARGE_INTEGER time__since_epoch_as_ularge()
 {
 	FILETIME f;
 	ULARGE_INTEGER u;
 	GetSystemTimeAsFileTime(&f);
 	u.u.LowPart  = f.dwLowDateTime;
 	u.u.HighPart = f.dwHighDateTime;
+	return u;
+}
+
+s64 time_seconds_since_epoch(void)
+{
+	ULARGE_INTEGER u = time__since_epoch_as_ularge();
 	return (s64)(u.QuadPart / 10000000) - 11644473600;
+}
+
+s64 time_milliseconds_since_epoch(void)
+{
+	ULARGE_INTEGER u = time__since_epoch_as_ularge();
+	return (s64)(u.QuadPart / 10000)- 11644473600000;
 }
 
 void time_sleep_milli(u32 milli)
