@@ -5,7 +5,7 @@ CCFLAGS_I = -I../../ -I/usr/include/ -I/usr/local/include/SDL2/
 CCFLAGS_DEBUG = -g -g3 -DDEBUG
 CCFLAGS_RELEASE = -O2 -DNDEBUG -DPROFILE
 CCFLAGS = -std=gnu99 $(CCFLAGS_DEBUG) $(CCFLAGS_D) $(CCFLAGS_W) $(CCFLAGS_I)
-LFLAGS = -lGL -lGLEW -lm -lSDL2
+LFLAGS = -lGL -lGLEW -lm -lSDL2 -lsystemd
 
 gui: gui.c ../gui.h ../sdl_gl.h
 	$(CC) $(CCFLAGS) -o gui gui.c $(LFLAGS)
