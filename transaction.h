@@ -139,9 +139,10 @@ void transaction__set_event_description(str_t *description, const event_t *event
 }
 
 static
-void event_undo_redo__destroy(event_undo_redo_t *event)
+void event_undo_redo__destroy(event_undo_redo_t *event, allocator_t *alc)
 {
 	str_destroy(&event->label);
+	event__destroy_noop(event, alc);
 }
 
 static
