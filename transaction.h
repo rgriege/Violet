@@ -17,7 +17,7 @@ void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
 void transaction_system_on_update();
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
-void *transaction_spawn_event(const event_metadata_t *meta, char *nav_description, u32 kind);
+void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind);
 // TODO(undo): make static once old system is kaput; can also change return to void
 /* returns nonzero value corresponding to an event_kind_e that was accomplished */
 u32 transaction__flush();
@@ -210,7 +210,7 @@ void transaction_spawn_store(const store_metadata_t *meta, u32 kind)
 	array_append(sys->stores, store);
 }
 
-void *transaction_spawn_event(const event_metadata_t *meta, char *nav_description, u32 kind)
+void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 
