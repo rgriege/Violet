@@ -101,6 +101,8 @@ typedef double r64;
 
 typedef union {
         u8  bytes[16];
+        u16 words[8];
+        u32 dwords[4];
         u64 qwords[2];
 } u128;
 
