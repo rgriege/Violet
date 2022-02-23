@@ -127,9 +127,6 @@ typedef struct os_utsname
 } os_utsname_t;
 os_utsname_t os_uname(void);
 
-/* u128 representation of the UUID assigned to the caller's OS's installation */
-u128 os_device_id(void);
-
 #endif
 
 

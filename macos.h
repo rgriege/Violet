@@ -475,9 +475,3 @@ os_utsname_t os_uname(void)
 	}
 	return os_utsname;
 }
-
-u128 os_device_id(void)
-{
-	/* TODO(ben): implement this */
-	return (u128){0};
-}
