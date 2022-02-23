@@ -58,16 +58,22 @@ b32  rmdir_f(const char *path);
 
 char *impathcat(char *imstr, const char *path);
 char *impathcatprintf(char *imstr, const char *fmt, ...);
+/* path where the main executable lives */
 char *imappdir(void);
 char *imapppath(const char *resource);
+/* path where resources included in the installer live */
 char *imresdir(void);
 char *imrespath(const char *resource);
+/* path where logs live */
 char *imlogdir(void);
 char *imlogpath(const char *resource);
+/* path where cache files live. OS may purge this location */
 char *imcachedir(void);
 char *imcachepath(const char *resource);
+/* path where generic data files generated at runtime live */
 char *imdatadir(void);
 char *imdatapath(const char *resource);
+/* path where per-user data lives so it works on shared machines */
 char *imuserdatadir(void);
 char *imuserdatapath(const char *resource);
 
