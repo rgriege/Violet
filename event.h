@@ -58,6 +58,7 @@ void event__destroy_noop(void *instance, allocator_t *alc);
 
 event_bundle_t event_bundle_create(event_t *event, allocator_t *alc);
 void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc);
+void event_bundle_copy(event_bundle_t *dst, const event_bundle_t *src);
 
 #define event_factory(type) \
 	.spawner = (void *(*)(allocator_t *))event_##type##__create, \
@@ -163,6 +164,13 @@ void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc)
 	array_foreach(bundle->d, event_t *, event_ptr)
 		event_destroy(*event_ptr, alc);
 	array_destroy(bundle->d);
+}
+
+void event_bundle_copy(event_bundle_t *dst, const event_bundle_t *src)
+{
+	dst->secondary = src->secondary;
+	dst->d = array_create_ex(array__allocator(src->d));
+	array_copy(dst->d, src->d);
 }
 
 #undef EVENT_IMPLEMENTATION

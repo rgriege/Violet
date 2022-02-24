@@ -4,9 +4,11 @@
 typedef struct transaction_system {
 	allocator_t *alc;
 	array(store_t *) stores;
-	array(event_t *) event_queue;
+	event_t *queued_event;
 	/* append-only stack of event history */
 	array(event_bundle_t) event_history;
+	/* secondary events awaiting confirmation by a primary event */
+	event_bundle_t temp_secondary_events;
 	// TODO(undo): once old system is kaput, we will be able to store the undo point
 	//             description in the event_bundle
 	str_t last_event_desc;
@@ -19,7 +21,7 @@ void transaction_system_on_update();
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
 void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind);
 // TODO(undo): make static once old system is kaput; can also change return to void
-/* returns nonzero value corresponding to an event_kind_e that was accomplished */
+/* Returns a nonzero event kind for executed, non-secondary events */
 u32 transaction__flush();
 // TODO(undo): should not be required once old system is kaput
 transaction_system_t *get_active_transaction_system();
@@ -66,9 +68,12 @@ transaction_system_t transaction_system_create(allocator_t *alc)
 	return (transaction_system_t) {
 		.alc = alc,
 		.stores          = array_create_ex(alc),
-		.event_queue     = array_create_ex(alc),
 		.event_history   = array_create_ex(alc),
 		.last_event_desc = str_create(alc),
+		.temp_secondary_events = (event_bundle_t) {
+			.d = array_create_ex(alc),
+			.secondary = true,
+		},
 	};
 }
 
@@ -78,13 +83,14 @@ void transaction_system_destroy(transaction_system_t *sys)
 		store_destroy(*store_ptr, sys->alc);
 	array_destroy(sys->stores);
 
-	array_foreach(sys->event_queue, event_t *, event_ptr)
-		event_destroy(*event_ptr, sys->alc);
-	array_destroy(sys->event_queue);
+	if (sys->queued_event)
+		event_destroy(sys->queued_event, sys->alc);
 
-	array_foreach(sys->event_history, event_bundle_t, bundle_ptr)
-		event_bundle_destroy(bundle_ptr, sys->alc);
+	array_foreach(sys->event_history, event_bundle_t, bundle)
+		event_bundle_destroy(bundle, sys->alc);
 	array_destroy(sys->event_history);
+
+	event_bundle_destroy(&sys->temp_secondary_events, sys->alc);
 
 	str_destroy(&sys->last_event_desc);
 }
@@ -146,6 +152,16 @@ void event_undo_redo__destroy(event_undo_redo_t *event, allocator_t *alc)
 }
 
 static
+void transaction__unwind_event_bundle(event_bundle_t *bundle, allocator_t *alc)
+{
+	for (u32 i = array_sz(bundle->d); i-- > 0; ) {
+		event_undo(bundle->d[i]);
+		event_destroy(bundle->d[i], alc);
+	}
+	array_clear(bundle->d);
+}
+
+static
 b32 event_undo__execute(event_undo_redo_t *event)
 {
 	transaction_system_t *sys = g_active_transaction_system;
@@ -153,6 +169,8 @@ b32 event_undo__execute(event_undo_redo_t *event)
 
 	if (!bundle)
 		return false;
+
+	transaction__unwind_event_bundle(&sys->temp_secondary_events, sys->alc);
 
 	if (bundle != &array_last(sys->event_history)) {
 		/* there are secondary events to undo, in reverse insertion order */
@@ -176,9 +194,12 @@ b32 event_redo__execute(event_undo_redo_t *event)
 	if (!bundle)
 		return false;
 
+	transaction__unwind_event_bundle(&sys->temp_secondary_events, sys->alc);
+
 	if (bundle != &array_first(sys->event_history)) {
 		const event_bundle_t *bundle_before = bundle-1;
-		if (bundle_before->secondary)
+		if (   bundle_before->secondary
+		    && bundle_before != &array_first(sys->event_history))
 			for (u32 i = 0; i < array_sz(bundle_before->d); ++i)
 				event_execute(bundle_before->d[i]);
 	}
@@ -214,7 +235,7 @@ void transaction_spawn_store(const store_metadata_t *meta, u32 kind)
 void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind)
 {
 	transaction_system_t *sys = g_active_transaction_system;
-
+	assert(!sys->queued_event);
 	void *instance = NULL;
 
 	switch (kind) {
@@ -233,9 +254,8 @@ void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_desc
 		instance = meta->spawner(sys->alc);
 	}
 
-	event_t *event = event_create(kind, instance, meta, nav_description, sys->alc);
-	array_append(sys->event_queue, event);
-	return event->instance;
+	sys->queued_event = event_create(kind, instance, meta, nav_description, sys->alc);
+	return sys->queued_event->instance;
 }
 
 static
@@ -247,17 +267,10 @@ u32 transaction__handle_priority_event(transaction_system_t *sys, event_t *event
 		// NOTE(luke): priority events are never secondary
 		array_append(sys->event_history, event_bundle_create(event, sys->alc));
 		result = event->kind;
-		// CLEANUP(undo): remove
-		log_debug("        %s", event->meta->description);
 	}
 	else {
 		event_destroy(event, sys->alc);
 	}
-
-	/* need to destroy the others, since they will never be added to history */
-	array_foreach(sys->event_queue, event_t *, event_ptr)
-		if (*event_ptr != event)
-			event_destroy(*event_ptr, sys->alc);
 
 	return result;
 }
@@ -267,16 +280,12 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 {
 	u32 result = EVENT_KIND_NOOP;
 
-	/* ensure that only one event fires at a time */
-	if (array_sz(sys->event_queue) == 1) {
-		if (event_execute(event)) {
-			event_bundle_t *last_bundle = array_empty(sys->event_history)
-			                            ? NULL
-			                            : &array_last(sys->event_history);
-
-			event_t *last_event = last_bundle == NULL || array_empty(last_bundle->d)
-			                    ? NULL
-			                    : array_last(last_bundle->d);
+	if (event_execute(event)) {
+		if (event->meta->secondary) {
+			event_bundle_t *bundle = &sys->temp_secondary_events;
+			event_t *last_event = array_empty(bundle->d)
+		                        ? NULL
+		                        : array_last(bundle->d);
 
 			if (   event->meta->multi_frame
 			    && last_event
@@ -285,30 +294,39 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 				event_update(last_event, event);
 				event_destroy(event, sys->alc);
 			} else {
-				/* Handle fresh event */;
-				if (   last_bundle
-				    && last_bundle->secondary
-				    && event->meta->secondary) {
-					array_append(last_bundle->d, event);
-				}
-				else {
-					const event_bundle_t new_bundle = event_bundle_create(event, sys->alc);
-					array_append(sys->event_history, new_bundle);
-					str_clear(&sys->last_event_desc);
-					transaction__set_event_description(&sys->last_event_desc, new_bundle.d[0]);
-				}
-
+				/* Handle fresh secondary event */
+				array_append(bundle->d, event);
 				result = event->kind;
 			}
-			// CLEANUP(undo): remove
-			log_debug("        %s", event->meta->description);
 		} else {
-			event_destroy(event, sys->alc);
+			event_t *last_event = array_empty(sys->event_history)
+			                    ? NULL
+			                    : array_last(array_last(sys->event_history).d);
+
+			if (   event->meta->multi_frame
+			    && array_empty(sys->temp_secondary_events.d)
+			    && last_event
+			    && last_event->kind == event->kind) {
+				/* Handle continued multi-frame event */
+				event_update(last_event, event);
+				event_destroy(event, sys->alc);
+			} else {
+				/* Handle fresh primary event */
+				if (!array_empty(sys->temp_secondary_events.d)) {
+					event_bundle_t bundle_secondary;
+					event_bundle_copy(&bundle_secondary, &sys->temp_secondary_events);
+					array_append(sys->event_history, bundle_secondary);
+					array_clear(sys->temp_secondary_events.d);
+				}
+				const event_bundle_t bundle_primary = event_bundle_create(event, sys->alc);
+				array_append(sys->event_history, bundle_primary);
+				str_clear(&sys->last_event_desc);
+				transaction__set_event_description(&sys->last_event_desc, bundle_primary.d[0]);
+				result = event->kind;
+			}
 		}
 	} else {
-		assert(false);
-		array_foreach(sys->event_queue, event_t *, event_ptr)
-			event_destroy(*event_ptr, sys->alc);
+		event_destroy(event, sys->alc);
 	}
 
 	return result;
@@ -318,29 +336,20 @@ u32 transaction__flush()
 {
 	u32 result = EVENT_KIND_NOOP;
 	transaction_system_t *sys = g_active_transaction_system;
+	event_t *event = sys->queued_event;
 
-	if (array_empty(sys->event_queue))
+	if (!event)
 		return result;
 
-	event_t *priority_event = NULL;
-
-	/* check that an undo or redo event did not get queued */
-	array_foreach(sys->event_queue, event_t *, event_ptr)
-		if ((*event_ptr)->kind < 3) {
-			priority_event = *event_ptr;
-			break;
-		}
-
-	if (priority_event) {
-		result = transaction__handle_priority_event(sys, priority_event);
+	if (event->kind < 3) {
+		result = transaction__handle_priority_event(sys, event);
 	} else {
-		event_t *ordinary_event = array_first(sys->event_queue);
-		const u32 tmp = transaction__handle_ordinary_event(sys, ordinary_event);
-		if (!ordinary_event->meta->secondary)
+		const u32 tmp = transaction__handle_ordinary_event(sys, event);
+		if (!event->meta->secondary)
 			result = tmp;
 	}
 
-	array_clear(sys->event_queue);
+	sys->queued_event = NULL;
 	return result;
 }
 
