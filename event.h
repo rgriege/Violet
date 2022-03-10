@@ -5,7 +5,7 @@
 #define EVENT_KIND_UNDO 1
 #define EVENT_KIND_REDO 2
 
-#define EVENT_DESCRIPTION_SIZE 24
+#define EVENT_DESCRIPTION_SIZE 64
 #define NAV_DESCRIPTION_SIZE   16
 
 typedef struct event_contract {
