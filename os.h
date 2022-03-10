@@ -4,7 +4,7 @@
 #include "violet/core.h"
 
 #if   defined(_WIN32)
-#define PLATFORM_NAME "Win32"
+#define PLATFORM_NAME "Windows"
 #elif defined(__APPLE__)
 #define PLATFORM_NAME "MacOS"
 #elif defined(LINUX)
