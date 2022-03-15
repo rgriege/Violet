@@ -125,9 +125,12 @@ void base64__decode_quartet(const char data[4], char *pout)
 		table[(unsigned char)data[3]],
 	};
 
-	pout[0] = (s[0] << 2) | ((s[1] & 0x30) >> 4);
-	pout[1] = ((s[1] & 0x0f) << 4) | ((s[2] & 0x3c) >> 2);
-	pout[2] = ((s[2] & 0x03) << 6) | s[3];
+	if (data[1] != '=')
+		pout[0] = (s[0] << 2) | ((s[1] & 0x30) >> 4);
+	if (data[2] != '=')
+		pout[1] = ((s[1] & 0x0f) << 4) | ((s[2] & 0x3c) >> 2);
+	if (data[3] != '=')
+		pout[2] = ((s[2] & 0x03) << 6) | s[3];
 }
 
 void base64_decode(const char *data, size_t size, void *out)
