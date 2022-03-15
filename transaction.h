@@ -345,7 +345,7 @@ u32 transaction__flush()
 		result = transaction__handle_priority_event(sys, event);
 	} else {
 		const u32 tmp = transaction__handle_ordinary_event(sys, event);
-		if (!event->meta->secondary)
+		if (tmp != EVENT_KIND_NOOP && !event->meta->secondary)
 			result = tmp;
 	}
 
