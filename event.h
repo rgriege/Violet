@@ -141,6 +141,7 @@ void event_undo(const event_t *event)
 
 void event_update(event_t *dst, const event_t *src)
 {
+	dst->time_since_epoch_ms = src->time_since_epoch_ms;
 	(dst->meta->contract->update)(dst->instance, src->instance);
 }
 
