@@ -3791,6 +3791,7 @@ b32 gui__allow_new_interaction(const gui_t *gui)
 {
 	return (gui->hot_id == 0 || !gui->hot_id_found_this_frame)
 	    && gui->active_id == 0
+	    && !gui->lock
 	    && !mouse_covered(gui)
 	    && !mouse_down(gui, MB_LEFT | MB_MIDDLE | MB_RIGHT);
 }
