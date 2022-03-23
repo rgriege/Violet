@@ -252,6 +252,7 @@ gui_fonts_t gui_get_fonts(const gui_t *gui);
 void gui_mask_push(gui_t *gui, s32 x, s32 y, s32 w, s32 h);
 void gui_mask_pop(gui_t *gui);
 
+void gui_hint_render(gui_t *gui, u64 id, const char *hint);
 
 typedef struct gui_line_style gui_line_style_t;
 typedef struct gui_text_style gui_text_style_t;
@@ -4194,6 +4195,11 @@ void gui__hint_render(gui_t *gui, u64 id, const char *hint)
 		gui_widget_bounds_pop(gui, &bounds, false);
 		gui_mask_pop(gui);
 	}
+}
+
+void gui_hint_render(gui_t *gui, u64 id, const char *hint)
+{
+	gui__hint_render(gui, id, hint);
 }
 
 b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint)
