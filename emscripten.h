@@ -345,7 +345,7 @@ b32 cpu_supports_sse41(void)
    this case from the case of another OS that failed to get cpu info. */
 void cpu_vendor(char vendor[32])
 {
-	strbcpy(vendor, "emscripten");
+	strncpy_nt(vendor, "emscripten", 32);
 }
 
 os_utsname_t os_uname(void)
