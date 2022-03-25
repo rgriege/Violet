@@ -31,12 +31,6 @@ typedef struct event_gui_toggle_chk
 	b32 value_before;
 } event_gui_toggle_chk_t;
 
-static event_gui_toggle_chk_t *event_gui_toggle_chk__create(allocator_t *alc)
-{
-	event_alloc(gui_toggle_chk, event, alc);
-	return event;
-}
-
 static b32 event_gui_toggle_chk__execute(event_gui_toggle_chk_t *event)
 {
 	store_gui_t *data = store_data(STORE_KIND_GUI);
@@ -72,13 +66,11 @@ typedef struct event_gui_arr
 	optional(u32) value_before;
 } event_gui_arr_t;
 
-static event_gui_arr_t *event_gui_arr__create(allocator_t *alc)
+static void event_gui_arr__create(event_gui_arr_t *event, allocator_t *alc)
 {
-	event_alloc(gui_arr, event, alc);
 	event->value = acalloc(1, sizeof(u32), alc);
 	event->idx = acalloc(1, sizeof(u32), alc);
 	event->value_before = acalloc(1, sizeof(u32), alc);
-	return event;
 }
 
 static void event_gui_arr__destroy(event_gui_arr_t *event, allocator_t *alc)
@@ -86,7 +78,6 @@ static void event_gui_arr__destroy(event_gui_arr_t *event, allocator_t *alc)
 	afree(event->value, alc);
 	afree(event->idx, alc);
 	afree(event->value_before, alc);
-	event__destroy_noop(event, alc);
 }
 
 /* notice that 1. there may be conditions where the execution fails, so */
@@ -151,12 +142,6 @@ typedef struct event_gui_npt_change
 	char value_before[64];
 } event_gui_npt_change_t;
 
-static event_gui_npt_change_t *event_gui_npt_change__create(allocator_t *alc)
-{
-	event_alloc(gui_npt_change, event, alc);
-	return event;
-}
-
 static b32 event_gui_npt_change__execute(event_gui_npt_change_t *event)
 {
 	store_gui_t *data = store_data(STORE_KIND_GUI);
@@ -186,12 +171,6 @@ typedef struct event_gui_slider_change
 	r32 value;
 	r32 value_before;
 } event_gui_slider_change_t;
-
-static event_gui_slider_change_t *event_gui_slider_change__create(allocator_t *alc)
-{
-	event_alloc(gui_slider_change, event, alc);
-	return event;
-}
 
 static b32 event_gui_slider_change__execute(event_gui_slider_change_t *event)
 {
@@ -223,12 +202,6 @@ typedef struct event_gui_plus_minus_t
 	s32 value_before;
 } event_gui_plus_minus_t;
 
-static event_gui_plus_minus_t *event_gui_plus_minus__create(allocator_t *alc)
-{
-	event_alloc(gui_plus_minus, event, alc);
-	return event;
-}
-
 static b32 event_gui_plus_minus__execute(event_gui_plus_minus_t *event)
 {
 	store_gui_t *data = store_data(STORE_KIND_GUI);
@@ -253,19 +226,24 @@ static void event_gui_plus_minus__update(event_gui_plus_minus_t *dst, const even
 
 /* Event Registry */
 static const event_metadata_t g_event_registry[EVENT_KIND__COUNT] = {
-	[EVENT_KIND_NOOP] = {},
+	[EVENT_KIND_NOOP] = {0},
 	[EVENT_KIND_UNDO] = {
+		.spawner  = &event_undo_redo__create,
 		.contract = &event_undo__contract,
-		.description = "Undo"},
-	[EVENT_KIND_REDO] = {.contract = &event_redo__contract, .description = "Redo"},
+		.description = "Undo",
+	},
+	[EVENT_KIND_REDO] = {
+		.spawner  = &event_undo_redo__create,
+		.contract = &event_redo__contract,
+		.description = "Redo",
+	},
 	[EVENT_KIND_GUI_TOGGLE_CHK] = {
 		event_factory(gui_toggle_chk),
 		"Toggle GUI Checkbox #1",
 	},
 	[EVENT_KIND_GUI_ARR] = {
-		event_factory_explicit_destructor(gui_arr),
+		event_factory_dynamic(gui_arr),
 		"GUI Array Operation",
-		.secondary = true,
 	},
 	[EVENT_KIND_GUI_NPT_CHANGE] = {
 		event_factory_multi_frame(gui_npt_change),

@@ -39,6 +39,7 @@ typedef struct event_undo_redo
 //             from the global namespace
 extern const event_contract_t event_undo__contract;
 extern const event_contract_t event_redo__contract;
+extern void event_undo_redo__create(void *instance, allocator_t *alc);
 
 #endif // VIOLET_TRANSACTION_H
 
@@ -146,11 +147,16 @@ void transaction__set_event_description(str_t *description, const event_t *event
 	str_cat(description, event->meta->description);
 }
 
+void event_undo_redo__create(void *instance, allocator_t *alc)
+{
+	event_undo_redo_t *event = (event_undo_redo_t *)instance;
+	event->label = str_create(alc);
+}
+
 static
 void event_undo_redo__destroy(event_undo_redo_t *event, allocator_t *alc)
 {
 	str_destroy(&event->label);
-	event__destroy_noop(event, alc);
 }
 
 static
@@ -238,7 +244,7 @@ void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_desc
 {
 	transaction_system_t *sys = g_active_transaction_system;
 	assert(!sys->queued_event);
-	void *instance = NULL;
+	u32 instance_size = 0;
 
 	switch (kind) {
 	case EVENT_KIND_NOOP:
@@ -246,17 +252,13 @@ void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_desc
 	break;
 	case EVENT_KIND_UNDO:
 	case EVENT_KIND_REDO:
-	{
-		event_alloc(undo_redo, undo_redo_instance, sys->alc);
-		undo_redo_instance->label = str_create(sys->alc);
-		instance = undo_redo_instance;
-	}
+		instance_size = sizeof(event_undo_redo_t);
 	break;
 	default:
-		instance = meta->spawner(sys->alc);
+		instance_size = meta->size;
 	}
 
-	sys->queued_event = event_create(kind, instance, meta, nav_description, sys->alc);
+	sys->queued_event = event_create(kind, instance_size, meta, nav_description, sys->alc);
 	return sys->queued_event->instance;
 }
 
