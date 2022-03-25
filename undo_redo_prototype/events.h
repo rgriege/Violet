@@ -22,6 +22,11 @@ static void *event_spawn(event_kind_e kind)
 	return transaction_spawn_event(meta, "Prototype", kind);
 }
 
+static event_t *event_from_instance(void *instance)
+{
+	return ((event_t*)instance) - 1;
+}
+
 /* Concrete Event Implementations */
 
 #pragma region gui_toggle_chk

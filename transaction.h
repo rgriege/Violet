@@ -6,7 +6,6 @@
 typedef struct transaction_system {
 	allocator_t *alc;
 	array(store_t *) stores;
-	event_t *queued_event;
 	/* append-only stack of event history */
 	array(event_bundle_t) event_history;
 	/* secondary events awaiting confirmation by a primary event */
@@ -19,12 +18,11 @@ typedef struct transaction_system {
 transaction_system_t transaction_system_create(allocator_t *alc);
 void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
-void transaction_system_on_update();
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
 void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind);
 // TODO(undo): make static once old system is kaput; can also change return to void
 /* Returns a nonzero event kind for executed, non-secondary events */
-u32 transaction__flush();
+u32 transaction__flush(event_t *event);
 // TODO(undo): should not be required once old system is kaput
 transaction_system_t *get_active_transaction_system();
 
@@ -85,9 +83,6 @@ void transaction_system_destroy(transaction_system_t *sys)
 	array_foreach(sys->stores, store_t *, store_ptr)
 		store_destroy(*store_ptr, sys->alc);
 	array_destroy(sys->stores);
-
-	if (sys->queued_event)
-		event_destroy(sys->queued_event, sys->alc);
 
 	array_foreach(sys->event_history, event_bundle_t, bundle)
 		event_bundle_destroy(bundle, sys->alc);
@@ -243,7 +238,6 @@ void transaction_spawn_store(const store_metadata_t *meta, u32 kind)
 void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind)
 {
 	transaction_system_t *sys = g_active_transaction_system;
-	assert(!sys->queued_event);
 	u32 instance_size = 0;
 
 	switch (kind) {
@@ -258,8 +252,8 @@ void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_desc
 		instance_size = meta->size;
 	}
 
-	sys->queued_event = event_create(kind, instance_size, meta, nav_description, sys->alc);
-	return sys->queued_event->instance;
+	event_t *event = event_create(kind, instance_size, meta, nav_description, sys->alc);
+	return event->instance;
 }
 
 static
@@ -345,14 +339,10 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 	return result;
 }
 
-u32 transaction__flush()
+u32 transaction__flush(event_t *event)
 {
 	u32 result = EVENT_KIND_NOOP;
 	transaction_system_t *sys = g_active_transaction_system;
-	event_t *event = sys->queued_event;
-
-	if (!event)
-		return result;
 
 	if (event->kind < 3) {
 		result = transaction__handle_priority_event(sys, event);
@@ -362,18 +352,12 @@ u32 transaction__flush()
 			result = tmp;
 	}
 
-	sys->queued_event = NULL;
 	return result;
 }
 
 transaction_system_t *get_active_transaction_system()
 {
 	return g_active_transaction_system;
-}
-
-void transaction_system_on_update()
-{
-	transaction__flush();
 }
 
 #undef TRANSACTION_IMPLEMENTATION
