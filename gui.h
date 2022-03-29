@@ -3312,16 +3312,16 @@ void gui_polylinef(gui_t *gui, const v2f *v, u32 n, r32 w, color_t stroke)
 		const v2f perpn = v2f_lperp(dirn);
 		v2f *verts = &gui->verts[gui->vert_cnt];
 
-		verts[0] = v2f_sub(v2f_sub(v[0], dir0), perp0);
-		verts[1] = v2f_add(v2f_sub(v[0], dir0), perp0);
+		verts[0] = v2f_add(v2f_sub(v[0], dir0), perp0);
+		verts[1] = v2f_sub(v2f_sub(v[0], dir0), perp0);
 
 		for (u32 i = 1; i < n-1; ++i) {
 			gui__polyline_corner_offset(v[i-1], v[i], v[i+1], w2, &verts[2*i]);
 			verts[2*i+1] = v2f_add(v[i], v2f_sub(v[i], verts[2*i]));
 		}
 
-		verts[2*n-2] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
-		verts[2*n-1] = v2f_add(v2f_add(v[n-1], dirn), perpn);
+		verts[2*n-2] = v2f_add(v2f_add(v[n-1], dirn), perpn);
+		verts[2*n-1] = v2f_sub(v2f_add(v[n-1], dirn), perpn);
 
 		gui__poly(gui, verts, 2*n, GUI_DRAW_TRIANGLE_STRIP, stroke, g_nocolor, true);
 	}
