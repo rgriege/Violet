@@ -244,6 +244,9 @@ void *tracked_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS);
 void  tracked_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
 
 void vlt_mem_advance_gen(void);
+void vlt_mem_stats(size_t *global_bytes_used, size_t *global_bytes_peak,
+                   size_t *global_bytes_total, size_t *global_alloc_count,
+                   size_t *temp_bytes_used, size_t *temp_bytes_peak);
 void vlt_mem_log_usage(void);
 
 #ifdef VLT_TRACK_MEMORY
@@ -793,6 +796,28 @@ void vlt_mem_advance_gen(void)
 	alloc_tracker_advance_gen(&global_tracker->tracker);
 	SDL_UnlockMutex(global_tracker->mutex);
 #endif
+}
+
+void vlt_mem_stats(size_t *global_bytes_used, size_t *global_bytes_peak,
+                   size_t *global_bytes_total, size_t *global_alloc_count,
+                   size_t *temp_bytes_used, size_t *temp_bytes_peak)
+{
+	size_t temp_pages_used, temp_pages_available;
+#ifdef VLT_TRACK_MEMORY
+	global_alloc_tracker_t *global_tracker = g_allocator->udata;
+	SDL_LockMutex(global_tracker->mutex);
+	*global_bytes_used  = global_tracker->tracker.current_bytes;
+	*global_bytes_peak  = global_tracker->tracker.peak_bytes;
+	*global_bytes_total = global_tracker->tracker.total_bytes;
+	*global_alloc_count = global_tracker->tracker.total_allocs;
+	SDL_UnlockMutex(global_tracker->mutex);
+#else
+	*global_bytes_used  = 0;
+	*global_bytes_peak  = 0;
+	*global_bytes_total = 0;
+	*global_alloc_count = 0;
+#endif
+	pgb_stats(g_temp_allocator->udata, temp_bytes_used, &temp_pages_used, temp_bytes_peak, &temp_pages_available);
 }
 
 #ifdef __EMSCRIPTEN__
