@@ -12,7 +12,7 @@ const char *gl_get_err_str(GLenum err);
 #define GL_ERR_CHECK(label) \
 	do { \
 		GLenum gl_err; \
-		if ((gl_err = glGetError()) != GL_NO_ERROR) { \
+		while ((gl_err = glGetError()) != GL_NO_ERROR) { \
 			const char *gl_err_str = gl_get_err_str(gl_err); \
 			log_error("%s: %s(%x) @ %s:%d", label, gl_err_str, gl_err, \
 			          __FILE__, __LINE__); \
