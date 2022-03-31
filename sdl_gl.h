@@ -5,6 +5,9 @@
 
 const char *gl_get_err_str(GLenum err);
 
+/* Error checking can be expensive on some machines & configurations.
+ * I've seen it work fine on both OpenGL and WebGL, but I've also seen
+ * it be very slow in WebGL on a computer that had no problems in OpenGL. */
 #if defined(DEBUG) || defined(CHECK_GL)
 #define GL_ERR_CHECK(label) \
 	do { \
@@ -20,9 +23,12 @@ const char *gl_get_err_str(GLenum err);
 		func(__VA_ARGS__); \
 		GL_ERR_CHECK(#func); \
 	} while (0)
+#define GL_ERR_IGNORE() \
+	while (glGetError() != GL_NO_ERROR);
 #else
 #define GL_ERR_CHECK(label) NOOP
 #define GL_CHECK(func, ...) func(__VA_ARGS__)
+#define GL_ERR_IGNORE() NOOP
 #endif
 
 /* Mesh */
