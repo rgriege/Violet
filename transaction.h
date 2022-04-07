@@ -274,15 +274,6 @@ u32 transaction__handle_priority_event(transaction_system_t *sys, event_t *event
 }
 
 static
-b32 transaction__multi_frame_events_mergeable(const event_t *event,
-                                              const event_t *last_event)
-{
-	return last_event->kind == event->kind
-	    && (  event->time_since_epoch_ms - last_event->time_since_epoch_ms
-	        < TRANSACTION_MULTIFRAME_TIMEOUT);
-}
-
-static
 u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event)
 {
 	u32 result = EVENT_KIND_NOOP;
@@ -296,7 +287,7 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 
 			if (   event->meta->multi_frame
 			    && last_event
-			    && transaction__multi_frame_events_mergeable(event, last_event)) {
+			    && last_event->kind == event->kind) {
 				/* Handle continued multi-frame event */
 				event_update(last_event, event);
 				event_destroy(event, sys->alc);
@@ -313,7 +304,9 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 			if (   event->meta->multi_frame
 			    && array_empty(sys->temp_secondary_events.d)
 			    && last_event
-			    && transaction__multi_frame_events_mergeable(event, last_event)) {
+			    && last_event->kind == event->kind
+			    && (  event->time_since_epoch_ms - last_event->time_since_epoch_ms
+			        < TRANSACTION_MULTIFRAME_TIMEOUT)) {
 				/* Handle continued multi-frame event */
 				event_update(last_event, event);
 				event_destroy(event, sys->alc);
