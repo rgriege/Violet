@@ -10,14 +10,11 @@ typedef struct transaction_system {
 	array(event_bundle_t) event_history;
 	/* secondary events awaiting confirmation by a primary event */
 	event_bundle_t temp_secondary_events;
-	/* used whenever a primary event was the entry point, thus encapsulating a single undo point */
-	event_bundle_t temp_primary_events;
 	// TODO(undo): once old system is kaput, we will be able to store the undo point
 	//             description in the event_bundle
 	str_t last_event_desc;
 	b32 undoing;
-	event_bundle_t *redoing_bundle;
-	u8 current_nest_level;
+	event_t *active_parent;
 } transaction_system_t;
 
 transaction_system_t transaction_system_create(allocator_t *alc);
@@ -29,7 +26,7 @@ void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_desc
 /* Returns a nonzero event kind for executed, non-secondary events */
 u32 transaction__flush(event_t *event);
 // TODO(undo): should not be required once old system is kaput
-transaction_system_t *get_active_transaction_system();
+transaction_system_t *get_active_transaction_system(void);
 
 void *store_data(u32 kind);
 
@@ -83,13 +80,8 @@ transaction_system_t transaction_system_create(allocator_t *alc)
 			.d = array_create_ex(alc),
 			.secondary = true,
 		},
-		.temp_primary_events = (event_bundle_t) {
-			.d = array_create_ex(alc),
-			.secondary = false,
-		},
 		.undoing = false,
-		.redoing_bundle = NULL,
-		.current_nest_level = EVENT_NEST_LEVEL_INVALID,
+		.active_parent = NULL,
 	};
 }
 
@@ -104,7 +96,6 @@ void transaction_system_destroy(transaction_system_t *sys)
 	array_destroy(sys->event_history);
 
 	event_bundle_destroy(&sys->temp_secondary_events, sys->alc);
-	event_bundle_destroy(&sys->temp_primary_events,   sys->alc);
 
 	str_destroy(&sys->last_event_desc);
 }
@@ -174,38 +165,19 @@ static
 void transaction__undo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 {
 	sys->undoing = true;
-	for (u32 i = array_sz(bundle->d); i-- > 0; ) {
-		event_t *event_i = bundle->d[i];
-		event_undo(event_i);
-		/* Discriminately remove nested events */
-		if (event_i->nest_level != EVENT_NEST_LEVEL_NONE) {
-			array_remove(bundle->d, i);
-			event_destroy(event_i, sys->alc);
-		}
-	}
+	for (u32 i = array_sz(bundle->d); i-- > 0; )
+		event_undo(bundle->d[i], sys->alc);
 	sys->undoing = false;
 }
 
 static
 void transaction__redo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 {
-	sys->redoing_bundle = bundle;
-	/* Allowing a bundle with multiple non-nested events to redo in-place
-	 * would screw up the event ordering. Thus, we make a copy of the non-nested
-	 * events and process them one at a time, in the original sequence. */
-	event_bundle_t temp_bundle = {0};
-	event_bundle_copy(&temp_bundle, bundle);
-	array_clear(bundle->d);
-
-	for (u32 i = 0; i < array_sz(temp_bundle.d); ++i) {
-		assert(temp_bundle.d[i]->nest_level == EVENT_NEST_LEVEL_NONE);
-		transaction__handle_ordinary_event(sys, temp_bundle.d[i]);
+	array_foreach(bundle->d, event_t *, event) {
+		sys->active_parent = *event;
+		event_execute(*event);
+		sys->active_parent = NULL;
 	}
-
-	/* As tempting as it is, we dare not destroy the temp_bundle itself,
-	 * because it never owns the events stored in it. */
-	array_destroy(temp_bundle.d);
-	sys->redoing_bundle = NULL;
 }
 
 static
@@ -217,7 +189,7 @@ b32 event_undo__execute(event_undo_redo_t *event)
 	if (!bundle)
 		return false;
 
-	event_bundle_unwind(&sys->temp_secondary_events, true, sys->alc);
+	event_bundle_unwind(&sys->temp_secondary_events, sys->alc);
 
 	if (bundle != &array_last(sys->event_history)) {
 		event_bundle_t *bundle_after = bundle+1;
@@ -240,7 +212,7 @@ b32 event_redo__execute(event_undo_redo_t *event)
 	if (!bundle)
 		return false;
 
-	event_bundle_unwind(&sys->temp_secondary_events, true, sys->alc);
+	event_bundle_unwind(&sys->temp_secondary_events, sys->alc);
 
 	if (bundle != &array_first(sys->event_history)) {
 		event_bundle_t *bundle_before = bundle-1;
@@ -303,22 +275,37 @@ static
 u32 transaction__handle_priority_event(transaction_system_t *sys, event_t *event)
 {
 	u32 result = EVENT_KIND_NOOP;
-	assert(array_empty(sys->temp_primary_events.d));
-
 	if (event_execute(event)) {
-		// NOTE(luke): priority events are never secondary
+		/* Priority events are never secondary, nor are they ever nested */
 		array_append(sys->event_history, event_bundle_create(event, sys->alc));
 		result = event->kind;
 	}
 	else {
 		event_destroy(event, sys->alc);
 	}
-
 	return result;
 }
 
 static
-void transaction__push_event_bundle(transaction_system_t *sys, event_bundle_t *temp_bundle)
+u32 transaction__handle_child_event(transaction_system_t *sys, event_t *event, event_t *parent)
+{
+	u32 result = EVENT_KIND_NOOP;
+	sys->active_parent = event;
+
+	if (event_execute(event)) {
+		array_append(parent->children, event);
+		result = event->kind;
+	} else {
+		event_unwind_children(event, sys->alc);
+		event_destroy(event, sys->alc);
+	}
+
+	sys->active_parent = parent;
+	return result;
+}
+
+static
+void transaction__push_temp_bundle(transaction_system_t *sys, event_bundle_t *temp_bundle)
 {
 	if (array_empty(temp_bundle->d))
 		return;
@@ -333,55 +320,34 @@ static
 u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event)
 {
 	u32 result = EVENT_KIND_NOOP;
+	sys->active_parent = event;
 
-	if (event->nest_level != EVENT_NEST_LEVEL_NONE) {
-		/* Use the appropriate in-use bundle */
-		event_bundle_t *bundle = NULL;
-		if (sys->redoing_bundle)
-			bundle = sys->redoing_bundle;
-		else if (array_empty(sys->temp_primary_events.d))
-			bundle = &sys->temp_secondary_events;
-		else
-			bundle = &sys->temp_primary_events;
+	if (event_execute(event)) {
+		if (event->meta->secondary) {
+			event_bundle_t *bundle = &sys->temp_secondary_events;
+			event_t *last_event = array_empty(bundle->d)
+			                    ? NULL
+			                    : array_last(bundle->d);
 
-		array_append(bundle->d, event);
-
-		if (event_execute(event))
-			result = event->kind;
-		else
-			event_bundle_unwind_to(bundle, event, true, sys->alc);
-
-	} else if (event->meta->secondary) {
-		event_bundle_t *bundle = sys->redoing_bundle
-		                       ? sys->redoing_bundle
-		                       : &sys->temp_secondary_events;
-		event_t *last_event = event_bundle_last_non_nested_event(bundle);
-		array_append(bundle->d, event);
-
-		if (event_execute(event)) {
 			if (   event->meta->multi_frame
 			    && last_event
 			    && last_event->kind == event->kind) {
 				/* Handle continued multi-frame event */
+				// VERIFY(undo): we may not wish to allow merging multi-frame secondary events
+				//               since we're not updating all the children
 				event_update(last_event, event);
-				event_bundle_unwind_to(bundle, event, false, sys->alc);
+				event_unwind_children(event, sys->alc);
+				event_destroy(event, sys->alc);
 			} else {
 				/* Handle fresh secondary event */
+				array_append(bundle->d, event);
 				result = event->kind;
 			}
 		} else {
-			event_bundle_unwind_to(bundle, event, true, sys->alc);
-		}
-	} else {
-		event_bundle_t *bundle = sys->redoing_bundle
-		                       ? sys->redoing_bundle
-		                       : &sys->temp_primary_events;
-		event_t *last_event = array_empty(sys->event_history)
-		                    ? NULL
-		                    : event_bundle_last_non_nested_event(&array_last(sys->event_history));
-		array_append(bundle->d, event);
+			event_t *last_event = array_empty(sys->event_history)
+			                    ? NULL
+			                    : array_last(array_last(sys->event_history).d);
 
-		if (event_execute(event)) {
 			if (   event->meta->multi_frame
 			    && array_empty(sys->temp_secondary_events.d)
 			    && last_event
@@ -389,59 +355,46 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 			    && (  event->time_since_epoch_ms - last_event->time_since_epoch_ms
 			        < TRANSACTION_MULTIFRAME_TIMEOUT)) {
 				/* Handle continued multi-frame event */
-				// VERIFY(undo): is it sufficient to only update the "head" of the last bundle
-				//               and none of its nested events??
 				event_update(last_event, event);
-				event_bundle_unwind_to(bundle, event, false, sys->alc);
+				event_unwind_children(event, sys->alc);
+				event_destroy(event, sys->alc);
 			} else {
 				/* Handle fresh primary event; corresponds to an undo point */
-				transaction__push_event_bundle(sys, &sys->temp_secondary_events);
-				transaction__push_event_bundle(sys, bundle);
+				transaction__push_temp_bundle(sys, &sys->temp_secondary_events);
+				array_append(sys->event_history, event_bundle_create(event, sys->alc));
 				result = event->kind;
 
 				str_clear(&sys->last_event_desc);
 				transaction__set_event_description(&sys->last_event_desc,
 				                                   array_last(array_last(sys->event_history).d));
 			}
-		} else {
-			event_bundle_unwind_to(bundle, event, true, sys->alc);
 		}
-		assert(array_empty(bundle->d));
+	} else {
+		event_unwind_children(event, sys->alc);
+		event_destroy(event, sys->alc);
 	}
 
+	sys->active_parent = NULL;
 	return result;
 }
 
 u32 transaction__flush(event_t *event)
 {
-	u32 result = EVENT_KIND_NOOP;
 	transaction_system_t *sys = g_active_transaction_system;
 
 	if (sys->undoing)
-		/* While undoing, prevent nested events from executing, since they will be handled
-		 * by explicit calls to their undo handlers. */
-		goto out;
-
-	sys->current_nest_level += 1;
-	assert(sys->current_nest_level != EVENT_NEST_LEVEL_INVALID);
-
-	event->nest_level = sys->current_nest_level;
-
-	if (event->kind < 3) {
-		result = transaction__handle_priority_event(sys, event);
-	} else {
-		const u32 tmp = transaction__handle_ordinary_event(sys, event);
-		if (tmp != EVENT_KIND_NOOP && !event->meta->secondary)
-			result = tmp;
-	}
-
-	sys->current_nest_level -= 1;
-
-out:
-	return result;
+		/* While undoing, prevent nested events from executing, since they should have already
+		 * been handled by explicit calls to their undo handlers. */
+		return EVENT_KIND_NOOP;
+	else if (event->kind < 3)
+		return transaction__handle_priority_event(sys, event);
+	else if (sys->active_parent)
+		return transaction__handle_child_event(sys, event, sys->active_parent);
+	else
+		return transaction__handle_ordinary_event(sys, event);
 }
 
-transaction_system_t *get_active_transaction_system()
+transaction_system_t *get_active_transaction_system(void)
 {
 	return g_active_transaction_system;
 }
