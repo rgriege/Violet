@@ -8,6 +8,9 @@
 #define EVENT_DESCRIPTION_SIZE 64
 #define NAV_DESCRIPTION_SIZE   16
 
+#define EVENT_NEST_LEVEL_INVALID UINT8_MAX
+#define EVENT_NEST_LEVEL_NONE    0
+
 typedef struct event_contract {
 	void (*destroy)(void *instance, allocator_t *alc);
 	b32  (*execute)(const void *instance);
@@ -33,11 +36,13 @@ typedef struct event_metadata {
 } event_metadata_t;
 
 typedef struct event {
-    /* expect event_kind_e */
-	u32 kind;
 	const event_metadata_t *meta;
 	char nav_description[NAV_DESCRIPTION_SIZE];
 	s64 time_since_epoch_ms;
+    /* expect event_kind_e */
+	u32 kind;
+	u8 nest_level;
+	char _padding[3];
 	char instance[];
 } event_t;
 
@@ -57,14 +62,17 @@ void event_update(event_t *dst, const event_t *src);
 
 event_bundle_t event_bundle_create(event_t *event, allocator_t *alc);
 void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc);
+void event_bundle_clear(event_bundle_t *bundle, allocator_t *alc);
 void event_bundle_copy(event_bundle_t *dst, const event_bundle_t *src);
+void event_bundle_unwind(event_bundle_t *bundle, b32 undo, allocator_t *alc);
+void event_bundle_unwind_to(event_bundle_t *bundle, event_t *event, b32 undo, allocator_t *alc);
+event_t *event_bundle_last_non_nested_event(const event_bundle_t *bundle);
 
 #define event_factory(type) \
 	.contract = &(event_contract_t) { \
 		.execute = (b32  (*)(const void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 	}, \
-	.multi_frame = false, \
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_multi_frame(type) \
@@ -83,7 +91,6 @@ void event_bundle_copy(event_bundle_t *dst, const event_bundle_t *src);
 		.execute = (b32  (*)(const void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 	}, \
-	.multi_frame = false, \
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_multi_frame_dynamic(type) \
@@ -159,11 +166,53 @@ void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc)
 	array_destroy(bundle->d);
 }
 
+void event_bundle_clear(event_bundle_t *bundle, allocator_t *alc)
+{
+	array_foreach(bundle->d, event_t *, event_ptr)
+		event_destroy(*event_ptr, alc);
+	array_clear(bundle->d);
+}
+
 void event_bundle_copy(event_bundle_t *dst, const event_bundle_t *src)
 {
 	dst->secondary = src->secondary;
 	dst->d = array_create_ex(array__allocator(src->d));
 	array_copy(dst->d, src->d);
+}
+
+void event_bundle_unwind(event_bundle_t *bundle, b32 undo, allocator_t *alc)
+{
+	for (u32 i = array_sz(bundle->d); i-- > 0; ) {
+		event_undo(bundle->d[i]);
+		event_destroy(bundle->d[i], alc);
+	}
+	array_clear(bundle->d);
+}
+
+void event_bundle_unwind_to(event_bundle_t *bundle, event_t *event, b32 undo, allocator_t *alc)
+{
+	for (u32 i = array_sz(bundle->d); i-- > 0; ) {
+		const event_t *event_i = bundle->d[i];
+		if (event_i == event) {
+			array_pop(bundle->d);
+			event_destroy(event, alc);
+			return;
+		}
+		if (undo)
+			event_undo(bundle->d[i]);
+		event_destroy(bundle->d[i], alc);
+	}
+	assert(false);
+}
+
+event_t *event_bundle_last_non_nested_event(const event_bundle_t *bundle)
+{
+	for (u32 i = array_sz(bundle->d); i-- > 0; ) {
+		event_t *event = bundle->d[i];
+		if (event->nest_level == EVENT_NEST_LEVEL_NONE)
+			return event;
+	}
+	return NULL;
 }
 
 #undef EVENT_IMPLEMENTATION

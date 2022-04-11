@@ -10,9 +10,14 @@ typedef struct transaction_system {
 	array(event_bundle_t) event_history;
 	/* secondary events awaiting confirmation by a primary event */
 	event_bundle_t temp_secondary_events;
+	/* used whenever a primary event was the entry point, thus encapsulating a single undo point */
+	event_bundle_t temp_primary_events;
 	// TODO(undo): once old system is kaput, we will be able to store the undo point
 	//             description in the event_bundle
 	str_t last_event_desc;
+	b32 undoing;
+	event_bundle_t *redoing_bundle;
+	u8 current_nest_level;
 } transaction_system_t;
 
 transaction_system_t transaction_system_create(allocator_t *alc);
@@ -48,6 +53,9 @@ extern void event_undo_redo__create(void *instance, allocator_t *alc);
 transaction_system_t *g_active_transaction_system = NULL;
 
 static
+u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event);
+
+static
 store_t *store__from_kind(u32 kind)
 {
 	array_foreach(g_active_transaction_system->stores, store_t *, store_ptr) {
@@ -75,6 +83,13 @@ transaction_system_t transaction_system_create(allocator_t *alc)
 			.d = array_create_ex(alc),
 			.secondary = true,
 		},
+		.temp_primary_events = (event_bundle_t) {
+			.d = array_create_ex(alc),
+			.secondary = false,
+		},
+		.undoing = false,
+		.redoing_bundle = NULL,
+		.current_nest_level = EVENT_NEST_LEVEL_INVALID,
 	};
 }
 
@@ -89,6 +104,7 @@ void transaction_system_destroy(transaction_system_t *sys)
 	array_destroy(sys->event_history);
 
 	event_bundle_destroy(&sys->temp_secondary_events, sys->alc);
+	event_bundle_destroy(&sys->temp_primary_events,   sys->alc);
 
 	str_destroy(&sys->last_event_desc);
 }
@@ -99,7 +115,7 @@ void transaction_system_set_active(transaction_system_t *sys)
 }
 
 static
-const event_bundle_t *transaction__last_valid_event_bundle(transaction_system_t *sys, b32 undoing)
+event_bundle_t *transaction__last_valid_event_bundle(transaction_system_t *sys, b32 undoing)
 {
 	u32 undo_count = 0, redo_count = 0, real_event_count = 0;
 
@@ -155,35 +171,62 @@ void event_undo_redo__destroy(event_undo_redo_t *event, allocator_t *alc)
 }
 
 static
-void transaction__unwind_event_bundle(event_bundle_t *bundle, allocator_t *alc)
+void transaction__undo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 {
+	sys->undoing = true;
 	for (u32 i = array_sz(bundle->d); i-- > 0; ) {
-		event_undo(bundle->d[i]);
-		event_destroy(bundle->d[i], alc);
+		event_t *event_i = bundle->d[i];
+		event_undo(event_i);
+		/* Discriminately remove nested events */
+		if (event_i->nest_level != EVENT_NEST_LEVEL_NONE) {
+			array_remove(bundle->d, i);
+			event_destroy(event_i, sys->alc);
+		}
 	}
+	sys->undoing = false;
+}
+
+static
+void transaction__redo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
+{
+	sys->redoing_bundle = bundle;
+	/* Allowing a bundle with multiple non-nested events to redo in-place
+	 * would screw up the event ordering. Thus, we make a copy of the non-nested
+	 * events and process them one at a time, in the original sequence. */
+	event_bundle_t temp_bundle = {0};
+	event_bundle_copy(&temp_bundle, bundle);
 	array_clear(bundle->d);
+
+	for (u32 i = 0; i < array_sz(temp_bundle.d); ++i) {
+		assert(temp_bundle.d[i]->nest_level == EVENT_NEST_LEVEL_NONE);
+		transaction__handle_ordinary_event(sys, temp_bundle.d[i]);
+	}
+
+	/* As tempting as it is, we dare not destroy the temp_bundle itself,
+	 * because it never owns the events stored in it. */
+	array_destroy(temp_bundle.d);
+	sys->redoing_bundle = NULL;
 }
 
 static
 b32 event_undo__execute(event_undo_redo_t *event)
 {
 	transaction_system_t *sys = g_active_transaction_system;
-	const event_bundle_t *bundle = transaction__last_valid_event_bundle(sys, true);
+	event_bundle_t *bundle = transaction__last_valid_event_bundle(sys, true);
 
 	if (!bundle)
 		return false;
 
-	transaction__unwind_event_bundle(&sys->temp_secondary_events, sys->alc);
+	event_bundle_unwind(&sys->temp_secondary_events, true, sys->alc);
 
 	if (bundle != &array_last(sys->event_history)) {
-		/* there are secondary events to undo, in reverse insertion order */
-		const event_bundle_t *bundle_after = bundle+1;
+		event_bundle_t *bundle_after = bundle+1;
 		if (bundle_after->secondary)
-			for (u32 i = array_sz(bundle_after->d); i-- > 0; )
-				event_undo(bundle_after->d[i]);
+			transaction__undo_bundle(sys, bundle_after);
 	}
 
-	event_undo(bundle->d[0]);
+	/* Handle the undo point */
+	transaction__undo_bundle(sys, bundle);
 	transaction__set_event_description(&event->label, bundle->d[0]);
 	return true;
 }
@@ -192,22 +235,22 @@ static
 b32 event_redo__execute(event_undo_redo_t *event)
 {
 	transaction_system_t *sys = g_active_transaction_system;
-	const event_bundle_t *bundle = transaction__last_valid_event_bundle(sys, false);
+	event_bundle_t *bundle = transaction__last_valid_event_bundle(sys, false);
 
 	if (!bundle)
 		return false;
 
-	transaction__unwind_event_bundle(&sys->temp_secondary_events, sys->alc);
+	event_bundle_unwind(&sys->temp_secondary_events, true, sys->alc);
 
 	if (bundle != &array_first(sys->event_history)) {
-		const event_bundle_t *bundle_before = bundle-1;
+		event_bundle_t *bundle_before = bundle-1;
 		if (   bundle_before->secondary
 		    && bundle_before != &array_first(sys->event_history))
-			for (u32 i = 0; i < array_sz(bundle_before->d); ++i)
-				event_execute(bundle_before->d[i]);
+			transaction__redo_bundle(sys, bundle_before);
 	}
 
-	event_execute(bundle->d[0]);
+	/* Handle the undo point */
+	transaction__redo_bundle(sys, bundle);
 	transaction__set_event_description(&event->label, bundle->d[0]);
 	return true;
 }
@@ -260,6 +303,7 @@ static
 u32 transaction__handle_priority_event(transaction_system_t *sys, event_t *event)
 {
 	u32 result = EVENT_KIND_NOOP;
+	assert(array_empty(sys->temp_primary_events.d));
 
 	if (event_execute(event)) {
 		// NOTE(luke): priority events are never secondary
@@ -274,33 +318,70 @@ u32 transaction__handle_priority_event(transaction_system_t *sys, event_t *event
 }
 
 static
+void transaction__push_event_bundle(transaction_system_t *sys, event_bundle_t *temp_bundle)
+{
+	if (array_empty(temp_bundle->d))
+		return;
+
+	event_bundle_t bundle = {0};
+	event_bundle_copy(&bundle, temp_bundle);
+	array_append(sys->event_history, bundle);
+	array_clear(temp_bundle->d);
+}
+
+static
 u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event)
 {
 	u32 result = EVENT_KIND_NOOP;
 
-	if (event_execute(event)) {
-		if (event->meta->secondary) {
-			event_bundle_t *bundle = &sys->temp_secondary_events;
-			event_t *last_event = array_empty(bundle->d)
-		                        ? NULL
-		                        : array_last(bundle->d);
+	if (event->nest_level != EVENT_NEST_LEVEL_NONE) {
+		/* Use the appropriate in-use bundle */
+		event_bundle_t *bundle = NULL;
+		if (sys->redoing_bundle)
+			bundle = sys->redoing_bundle;
+		else if (array_empty(sys->temp_primary_events.d))
+			bundle = &sys->temp_secondary_events;
+		else
+			bundle = &sys->temp_primary_events;
 
+		array_append(bundle->d, event);
+
+		if (event_execute(event))
+			result = event->kind;
+		else
+			event_bundle_unwind_to(bundle, event, true, sys->alc);
+
+	} else if (event->meta->secondary) {
+		event_bundle_t *bundle = sys->redoing_bundle
+		                       ? sys->redoing_bundle
+		                       : &sys->temp_secondary_events;
+		event_t *last_event = event_bundle_last_non_nested_event(bundle);
+		array_append(bundle->d, event);
+
+		if (event_execute(event)) {
 			if (   event->meta->multi_frame
 			    && last_event
 			    && last_event->kind == event->kind) {
 				/* Handle continued multi-frame event */
 				event_update(last_event, event);
-				event_destroy(event, sys->alc);
+				event_bundle_unwind_to(bundle, event, false, sys->alc);
 			} else {
 				/* Handle fresh secondary event */
-				array_append(bundle->d, event);
 				result = event->kind;
 			}
 		} else {
-			event_t *last_event = array_empty(sys->event_history)
-			                    ? NULL
-			                    : array_last(array_last(sys->event_history).d);
+			event_bundle_unwind_to(bundle, event, true, sys->alc);
+		}
+	} else {
+		event_bundle_t *bundle = sys->redoing_bundle
+		                       ? sys->redoing_bundle
+		                       : &sys->temp_primary_events;
+		event_t *last_event = array_empty(sys->event_history)
+		                    ? NULL
+		                    : event_bundle_last_non_nested_event(&array_last(sys->event_history));
+		array_append(bundle->d, event);
 
+		if (event_execute(event)) {
 			if (   event->meta->multi_frame
 			    && array_empty(sys->temp_secondary_events.d)
 			    && last_event
@@ -308,25 +389,24 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 			    && (  event->time_since_epoch_ms - last_event->time_since_epoch_ms
 			        < TRANSACTION_MULTIFRAME_TIMEOUT)) {
 				/* Handle continued multi-frame event */
+				// VERIFY(undo): is it sufficient to only update the "head" of the last bundle
+				//               and none of its nested events??
 				event_update(last_event, event);
-				event_destroy(event, sys->alc);
+				event_bundle_unwind_to(bundle, event, false, sys->alc);
 			} else {
-				/* Handle fresh primary event */
-				if (!array_empty(sys->temp_secondary_events.d)) {
-					event_bundle_t bundle_secondary;
-					event_bundle_copy(&bundle_secondary, &sys->temp_secondary_events);
-					array_append(sys->event_history, bundle_secondary);
-					array_clear(sys->temp_secondary_events.d);
-				}
-				const event_bundle_t bundle_primary = event_bundle_create(event, sys->alc);
-				array_append(sys->event_history, bundle_primary);
-				str_clear(&sys->last_event_desc);
-				transaction__set_event_description(&sys->last_event_desc, bundle_primary.d[0]);
+				/* Handle fresh primary event; corresponds to an undo point */
+				transaction__push_event_bundle(sys, &sys->temp_secondary_events);
+				transaction__push_event_bundle(sys, bundle);
 				result = event->kind;
+
+				str_clear(&sys->last_event_desc);
+				transaction__set_event_description(&sys->last_event_desc,
+				                                   array_last(array_last(sys->event_history).d));
 			}
+		} else {
+			event_bundle_unwind_to(bundle, event, true, sys->alc);
 		}
-	} else {
-		event_destroy(event, sys->alc);
+		assert(array_empty(bundle->d));
 	}
 
 	return result;
@@ -337,6 +417,16 @@ u32 transaction__flush(event_t *event)
 	u32 result = EVENT_KIND_NOOP;
 	transaction_system_t *sys = g_active_transaction_system;
 
+	if (sys->undoing)
+		/* While undoing, prevent nested events from executing, since they will be handled
+		 * by explicit calls to their undo handlers. */
+		goto out;
+
+	sys->current_nest_level += 1;
+	assert(sys->current_nest_level != EVENT_NEST_LEVEL_INVALID);
+
+	event->nest_level = sys->current_nest_level;
+
 	if (event->kind < 3) {
 		result = transaction__handle_priority_event(sys, event);
 	} else {
@@ -345,6 +435,9 @@ u32 transaction__flush(event_t *event)
 			result = tmp;
 	}
 
+	sys->current_nest_level -= 1;
+
+out:
 	return result;
 }
 
