@@ -330,13 +330,11 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 			                    : array_last(bundle->d);
 
 			if (   event->meta->multi_frame
+			    && array_empty(event->children)
 			    && last_event
 			    && last_event->kind == event->kind) {
 				/* Handle continued multi-frame event */
-				// VERIFY(undo): we may not wish to allow merging multi-frame secondary events
-				//               since we're not updating all the children
 				event_update(last_event, event);
-				event_unwind_children(event, sys->alc);
 				event_destroy(event, sys->alc);
 			} else {
 				/* Handle fresh secondary event */
