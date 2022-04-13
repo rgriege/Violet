@@ -380,11 +380,14 @@ u32 transaction__flush(event_t *event)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 
-	if (sys->undoing)
+	if (sys->undoing) {
 		/* While undoing, prevent nested events from executing, since they should have already
 		 * been handled by explicit calls to their undo handlers. */
+		event_destroy(event, sys->alc);
 		return EVENT_KIND_NOOP;
-	else if (event->kind < 3)
+	}
+
+	if (event->kind < 3)
 		return transaction__handle_priority_event(sys, event);
 	else if (sys->active_parent)
 		return transaction__handle_child_event(sys, event, sys->active_parent);
