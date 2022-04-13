@@ -45,10 +45,10 @@ typedef struct event {
 
 /* top-level collection of event_t * */
 typedef struct event_bundle {
-	/* all items have a nesting level == EVENT_NEST_LEVEL_NONE, thus they each are the root node
-	 * of an event subtree */
+	/* all items are the root node of an event subtree */
 	array(event_t *) d;
-	/* all events in a bundle are either primary or secondary */
+	/* all items are either primary or secondary
+	 * (though children can be mixed primary and/or secondary) */
 	b32 secondary;
 } event_bundle_t;
 
@@ -176,8 +176,8 @@ void event_update(event_t *dst, const event_t *src)
 {
 	dst->time_since_epoch_ms = src->time_since_epoch_ms;
 	(dst->meta->contract->update)(dst->instance, src->instance);
-	/* NOTE(luke): no need to update children, since they will always be purged upon undoing
-	 *             and re-created upon redoing */
+	/* NOTE(luke): no need to update children, since they will always be pruned
+	 * upon undoing and re-created upon redoing */
 }
 
 event_bundle_t event_bundle_create(event_t *event, allocator_t *alc)
