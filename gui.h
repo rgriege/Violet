@@ -3983,7 +3983,23 @@ void gui__npt_move_cursor_left(gui_t *gui, const char *txt)
 	if (gui->npt.selection > 0) {
 		const char *cursor = &txt[gui->npt.selection];
 		char *prev;
-		utf8_prev_codepoint(cursor, &prev);
+		if (key_mod(gui, KBM_CTRL)) {
+			char *prevprev;
+			s32 cp = 0;
+
+			utf8_prev_codepoint(cursor, &prev);
+			prevprev = prev;
+
+			while (prevprev > txt && cp != ' ') {
+				prev = prevprev;
+				cp = utf8_prev_codepoint(prev, &prevprev);
+			}
+
+			if (prevprev == txt)
+				prev = (char*)txt;
+		} else {
+			utf8_prev_codepoint(cursor, &prev);
+		}
 		gui->npt.selection -= (cursor - prev);
 		gui__npt_selection_moved(gui);
 	}
@@ -3995,6 +4011,15 @@ void gui__npt_move_cursor_right(gui_t *gui, const char *txt)
 	const char *cursor = &txt[gui->npt.selection];
 	char *next;
 	if (utf8_next_codepoint(cursor, &next) != 0) {
+		if (key_mod(gui, KBM_CTRL)) {
+			char *nextnext = next;
+			s32 cp = ' ' + 1; // value doesn't matter as long as the loop iterates once
+
+			while (cp != 0 && cp != ' ') {
+				next = nextnext;
+				cp = utf8_next_codepoint(next, &nextnext);
+			}
+		}
 		gui->npt.selection += (next - cursor);
 		gui__npt_selection_moved(gui);
 	}
