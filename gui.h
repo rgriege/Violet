@@ -1887,21 +1887,17 @@ static
 void gui__repeat_update(gui__repeat_t *repeat, u32 val, u32 pop, u32 frame)
 {
 	repeat->triggered = false;
-	if (pop == 1) {
-		if (repeat->val == val) {
-			if (repeat->timer <= frame) {
-				repeat->timer = repeat->interval - (frame - repeat->timer);
-				repeat->triggered = true;
-			} else {
-				repeat->timer -= frame;
-			}
-		} else {
-			repeat->timer = repeat->delay;
-			repeat->val = val;
-			repeat->triggered = true;
-		}
-	} else {
+	if (pop != 1) {
 		repeat->val = 0;
+	} else if (repeat->val != val) {
+		repeat->timer = repeat->delay;
+		repeat->val = val;
+		repeat->triggered = true;
+	} else if (repeat->timer <= frame) {
+		repeat->timer = repeat->interval - (frame - repeat->timer);
+		repeat->triggered = true;
+	} else {
+		repeat->timer -= frame;
 	}
 }
 
