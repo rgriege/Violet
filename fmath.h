@@ -172,8 +172,6 @@ m4f  m4f_translate(m4f m, v3f diff);
 m4f  m4f_rotate(m4f m, v3f axis, r32 radians);
 m4f  m4f_transpose(m4f m);
 b32  m4f_equal(m4f lhs, m4f rhs);
-m4f  m4f_from_m3(m3f src);
-void m4f_to_m3(m4f src, m3f dst);
 
 
 /* Interval */
@@ -1004,31 +1002,6 @@ m4f m4f_transpose(m4f m)
 b32 m4f_equal(m4f lhs, m4f rhs)
 {
 	return memcmp(lhs.v, rhs.v, 16 * sizeof(r32)) == 0;
-}
-
-m4f m4f_from_m3(m3f src)
-{
-	return (m4f) {
-		src.v[0], src.v[1], 0, src.v[2],
-		src.v[3], src.v[4], 0, src.v[5],
-		0,        0,        1, 0,
-		src.v[6], src.v[7], 0, src.v[8],
-	};
-}
-
-void m4f_to_m3(m4f src, m3f dst)
-{
-	dst.v[0] = src.v[0];
-	dst.v[1] = src.v[1];
-	dst.v[2] = src.v[3];
-
-	dst.v[3] = src.v[4];
-	dst.v[4] = src.v[5];
-	dst.v[5] = src.v[7];
-
-	dst.v[6] = src.v[12];
-	dst.v[7] = src.v[13];
-	dst.v[8] = src.v[15];
 }
 
 /* Interval */
