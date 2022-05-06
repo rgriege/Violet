@@ -318,13 +318,14 @@ int  sort_r32_desc(const void *lhs, const void *rhs);
 int find_u32(const void *lhs, const void *rhs);
 int find_s32(const void *lhs, const void *rhs);
 
-void buf_insert_(void *p, size_t idx, size_t nmemb, size_t size);
-#define buf_insert(p, idx, val, nmemb) \
+void buf_insert_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
+#define buf_insert_n(p, idx, val, n, nmemb) \
 	do { \
 		const size_t buf_insert_idx_ = idx; \
-		buf_insert_(p, buf_insert_idx_, nmemb, sizeof(*(p))); \
-		(p)[buf_insert_idx_] = (val); \
+		buf_insert_(p, buf_insert_idx_, n, nmemb, sizeof(*(p))); \
+		memcpy(p+buf_insert_idx_, val, sizeof(*(p))*n); \
 	} while (0)
+#define buf_insert(p, idx, val, nmemb) buf_insert_n(p, idx, &val, 1, nmemb)
 
 void buf_remove_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
 #define buf_remove(p, idx, nmemb)      buf_remove_(p, idx, 1, nmemb, sizeof(*p))
@@ -965,21 +966,18 @@ int find_s32(const void *lhs_, const void *rhs_)
 	return lhs == rhs ? 0 : 1;
 }
 
-void buf_insert_(void *p_, size_t idx, size_t nmemb, size_t size)
+void buf_insert_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
 {
-	assert(nmemb > 0);
-	assert(idx < nmemb);
+	assert(idx + n <= nmemb);
 	char *p = p_;
-	for (char *pi = p+(nmemb-1)*size, *pn = p+idx*size; pi != pn; pi -= size)
-		memcpy(pi, pi-size, size);
+	memmove(p+(idx+n)*size, p+idx*size, (nmemb-n-idx)*size);
 }
 
 void buf_remove_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
 {
 	assert(idx + n <= nmemb);
 	char *p = p_;
-	for (char *pi = p+(idx+n)*size, *pn = p+nmemb*size; pi != pn; pi += size)
-		memcpy(pi-n*size, pi, size);
+	memmove(p+idx*size, p+(idx+n)*size, (nmemb-n-idx)*size);
 }
 
 
