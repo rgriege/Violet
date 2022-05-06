@@ -318,24 +318,24 @@ int  sort_r32_desc(const void *lhs, const void *rhs);
 int find_u32(const void *lhs, const void *rhs);
 int find_s32(const void *lhs, const void *rhs);
 
-void buf_insert_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
-#define buf_insert_n(p, idx, val, n, nmemb) \
+void buf_insert_(void *p, size_t idx, size_t n, size_t cap, size_t size);
+#define buf_insert_n(p, idx, val, n, cap) \
 	do { \
 		const size_t buf_insert_idx_ = idx; \
-		buf_insert_(p, buf_insert_idx_, n, nmemb, sizeof(*(p))); \
+		buf_insert_(p, buf_insert_idx_, n, cap, sizeof(*(p))); \
 		memcpy(p+buf_insert_idx_, val, sizeof(*(p))*n); \
 	} while (0)
-#define buf_insert(p, idx, val, nmemb) buf_insert_n(p, idx, &val, 1, nmemb)
+#define buf_insert(p, idx, val, cap) buf_insert_n(p, idx, &val, 1, cap)
 
-void buf_remove_(void *p, size_t idx, size_t n, size_t nmemb, size_t size);
-#define buf_remove(p, idx, nmemb)      buf_remove_(p, idx, 1, nmemb, sizeof(*p))
-#define buf_remove_n(p, idx, n, nmemb) buf_remove_(p, idx, n, nmemb, sizeof(*p))
+void buf_remove_(void *p, size_t idx, size_t n, size_t cap, size_t size);
+#define buf_remove(p, idx, cap)      buf_remove_(p, idx, 1, cap, sizeof(*p))
+#define buf_remove_n(p, idx, n, cap) buf_remove_(p, idx, n, cap, sizeof(*p))
 
-#define buf_rotate_left(p, nmemb, type) \
+#define buf_rotate_left(p, cap, type) \
 	do { \
 		const type buf_shift__p0 = p[0]; \
-		buf_remove(p, 0, nmemb); \
-		p[nmemb-1] = buf_shift__p0; \
+		buf_remove(p, 0, cap); \
+		p[cap-1] = buf_shift__p0; \
 	} while (0)
 
 /* Time */
@@ -966,18 +966,18 @@ int find_s32(const void *lhs_, const void *rhs_)
 	return lhs == rhs ? 0 : 1;
 }
 
-void buf_insert_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
+void buf_insert_(void *p_, size_t idx, size_t n, size_t cap, size_t size)
 {
-	assert(idx + n <= nmemb);
+	assert(idx + n <= cap);
 	char *p = p_;
-	memmove(p+(idx+n)*size, p+idx*size, (nmemb-n-idx)*size);
+	memmove(p+(idx+n)*size, p+idx*size, (cap-n-idx)*size);
 }
 
-void buf_remove_(void *p_, size_t idx, size_t n, size_t nmemb, size_t size)
+void buf_remove_(void *p_, size_t idx, size_t n, size_t cap, size_t size)
 {
-	assert(idx + n <= nmemb);
+	assert(idx + n <= cap);
 	char *p = p_;
-	memmove(p+idx*size, p+(idx+n)*size, (nmemb-n-idx)*size);
+	memmove(p+idx*size, p+(idx+n)*size, (cap-n-idx)*size);
 }
 
 
