@@ -317,6 +317,23 @@ void transaction__push_temp_bundle(transaction_system_t *sys, event_bundle_t *te
 }
 
 static
+event_t *transaction__mergeable_event(transaction_system_t *sys, const event_t *event)
+{
+	event_t *last_event = array_empty(sys->event_history)
+	                    ? NULL
+	                    : array_last(array_last(sys->event_history).d);
+	if (   !event->meta->secondary
+	    && event->meta->multi_frame
+	    && array_empty(sys->temp_secondary_events.d)
+	    && last_event
+	    && last_event->kind == event->kind
+	    && (  event->time_since_epoch_ms - last_event->time_since_epoch_ms
+	        < TRANSACTION_MULTIFRAME_TIMEOUT))
+		return last_event;
+	return NULL;
+}
+
+static
 u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event)
 {
 	u32 result = EVENT_KIND_NOOP;
@@ -342,16 +359,8 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 				result = event->kind;
 			}
 		} else {
-			event_t *last_event = array_empty(sys->event_history)
-			                    ? NULL
-			                    : array_last(array_last(sys->event_history).d);
-
-			if (   event->meta->multi_frame
-			    && array_empty(sys->temp_secondary_events.d)
-			    && last_event
-			    && last_event->kind == event->kind
-			    && (  event->time_since_epoch_ms - last_event->time_since_epoch_ms
-			        < TRANSACTION_MULTIFRAME_TIMEOUT)) {
+			event_t *last_event = transaction__mergeable_event(sys, event);
+			if (last_event) {
 				/* Handle continued multi-frame event */
 				event_update(last_event, event);
 				event_unwind_children(event, sys->alc);
@@ -368,6 +377,9 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 			}
 		}
 	} else {
+		event_t *last_event = transaction__mergeable_event(sys, event);
+		if (last_event)
+			last_event->time_since_epoch_ms = event->time_since_epoch_ms;
 		event_unwind_children(event, sys->alc);
 		event_destroy(event, sys->alc);
 	}
