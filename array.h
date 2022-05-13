@@ -87,7 +87,7 @@ typedef struct array__head
 
 #define array_array_destroy(a)     array__array_destroy(ENFORCE_ARRAY_OF_ARRAY(a))
 #define array_array_clear(a)       array__array_clear(ENFORCE_ARRAY_OF_ARRAY(a))
-	
+
 #define array_array_copy(dst, src) (array_set_sz(dst, array_sz(src)), \
                                     array__array_copy(ENFORCE_ARRAY_OF_ARRAY(dst), \
                                                       ENFORCE_ARRAY_OF_ARRAY(src), \
@@ -273,7 +273,7 @@ ARRDEF void array__array_copy(array(array(void)) dst, array(array(void)) src,
 {
 	array_iterate(src, i, n)
 		dst[i] = array__copy(array__create(array_sz(src[i]), sz,
-		                                   array__allocator(dst) MEMCALL_VARS),
+		                     array__allocator(dst) MEMCALL_VARS),
 		                     src[i], sz MEMCALL_VARS);
 }
 
