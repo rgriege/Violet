@@ -71,6 +71,11 @@ static void cycle(size_t width, unsigned char* ar[], int n)
 		}
 		width -= l;
 	}
+
+	/* Event though `ar` will not be read from outside this function,
+	 * GCC 12.1.0 warns `ar[n]` will contain a dangling pointer to `tmp`
+	 * which is destroyed at the end of this function */
+	ar[n] = NULL;
 }
 
 /* shl() and shr() need n > 0 */
