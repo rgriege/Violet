@@ -762,6 +762,8 @@ void pgui_panel_init_centered(gui_t *gui, gui_panel_t *panel, u32 id,
 void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
                               gui_split_t *split,
                               const char *title, gui_panel_flags_e flags);
+void pgui_panel_set_size(gui_t *gui, gui_panel_t *panel,
+                         s32 x, s32 y, s32 w, s32 h);
 void pgui_panel_add_tab(gui_panel_t *panel, gui_panel_t *tab);
 void pgui_panel_remove_tab(gui_t *gui, gui_panel_t *panel);
 void pgui_panel_select_tab(gui_panel_t *panel);
@@ -7666,6 +7668,17 @@ void pgui__panel_validate_flags(gui_panel_flags_e flags)
 }
 
 static
+void pgui__panel_set_size(gui_t *gui, gui_panel_t *panel,
+                          s32 x, s32 y, s32 w, s32 h)
+{
+	panel->unscaled.x = x;
+	panel->unscaled.y = y;
+	panel->unscaled.w = w;
+	panel->unscaled.h = h;
+	pgui__panel_compute_scaled_dimensions(gui, panel);
+}
+
+static
 void pgui__panel_init(gui_t *gui, gui_panel_t *panel, u32 id,
                       s32 x, s32 y, s32 w, s32 h,
                       const char *title, gui_panel_flags_e flags)
@@ -7726,6 +7739,13 @@ void pgui_panel_init_in_split(gui_t *gui, gui_panel_t *panel, u32 id,
 	pgui__panel_init(gui, panel, id, x, y, w, h, title, flags);
 	panel->split = split;
 	split->panel = panel;
+}
+
+void pgui_panel_set_size(gui_t *gui, gui_panel_t *panel,
+                         s32 x, s32 y, s32 w, s32 h)
+{
+	pgui__panel_set_size(gui, panel, x, y, w, h);
+	pgui_panel_to_front(gui, panel);
 }
 
 static
