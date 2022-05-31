@@ -70,7 +70,7 @@ typedef struct gui_char_quad
 	r32 advance;
 } gui_char_quad_t;
 
-typedef void*(*gui_font_f)(void *handle, s32 size);
+typedef void*(*gui_font_f)(void *handle, const char *path, s32 size);
 typedef b32(*gui_font_metrics_f)(void *font, gui_font_metrics_t *metrics);
 typedef b32(*gui_char_quad_f)(void *font, s32 codepoint, r32 x, r32 y, gui_char_quad_t *quad);
 
@@ -98,7 +98,7 @@ typedef enum gui_cursor
 } gui_cursor_e;
 
 gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
-                  gui_fonts_t fonts);
+                  gui_fonts_t fonts, const char *font_file_path);
 void   gui_destroy(gui_t *gui);
 void   gui_dim(const gui_t *gui, s32 *x, s32 *y);
 void   gui_begin_frame(gui_t *gui);
@@ -924,6 +924,7 @@ typedef struct gui_style
 	gui_panel_style_t        panel;
 	gui_line_style_t         split;
 	gui_widget_style_t       txt_info;
+	char font_path[PATH_MAX];
 } gui_style_t;
 
 extern const gui_style_t g_gui_style_default;
@@ -932,7 +933,12 @@ extern const gui_padding_style_t g_gui_padding_none;
 
 gui_style_t *gui_style(gui_t *gui);
 const gui_style_t *gui_style_c(const gui_t *gui);
-void         gui_style_set(gui_t *gui, const gui_style_t *style);
+/* Unlike the rest of the style data, the font path is challenging to hard-code an
+ * absolute path for.  We require it to be passed separately in an attempt to make
+ * this concern more apparent.  You can pass the new style's font path if this doesn't
+ * affect your use case, and you can pass the current style's font path if you want
+ * to keep it instead of applying the new style's font path. */
+void         gui_style_set(gui_t *gui, const gui_style_t *style, const char *path);
 #define gui_style_set_widget(gui, widget, loc, val) \
 	do { \
 		gui_style(gui)->widget.inactive.loc = (val); \
@@ -991,6 +997,7 @@ void gui_style_push_s32_(gui_t *gui, size_t offset, s32 val);
 void gui_style_push_r32_(gui_t *gui, size_t offset, r32 val);
 void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen);
 void gui_style_push_ptr_(gui_t *gui, size_t offset, const void *ptr);
+void gui_style_push_str_(gui_t *gui, size_t offset, size_t size, const char *val);
 void gui_style_pop(gui_t *gui);
 
 #define gui_style_push(gui, loc, val) \
@@ -1009,6 +1016,8 @@ void gui_style_pop(gui_t *gui);
 	gui_style_push_pen_(gui, offsetof(gui_style_t, loc), val)
 #define gui_style_push_ptr(gui, loc, val) \
 	gui_style_push_ptr_(gui, offsetof(gui_style_t, loc), val)
+#define gui_style_push_str(gui, loc, val) \
+	gui_style_push_str_(gui, offsetof(gui_style_t, loc), sizeof(gui_style(gui)->loc), val)
 
 #define gui_style_push_widget(gui, widget, loc, val) \
 	do { \
@@ -1833,7 +1842,7 @@ static
 s32 gui__txt_line_width(const gui_t *gui, const char *txt, s32 size_)
 {
 	const s32 size = gui_scale_val(gui, size_);
-	void *font = gui->fonts.get_font(gui->fonts.handle, size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	gui_char_quad_f get_char_quad = gui->fonts.get_char_quad;
 	return font ? font__line_width(font, txt, get_char_quad) : 0;
 }
@@ -1843,7 +1852,7 @@ s32 gui__txt_line_offset_x(const gui_t *gui, const char *txt,
                            const gui_text_style_t *style)
 {
 	const s32 size = gui_scale_val(gui, style->size);
-	void *font = gui->fonts.get_font(gui->fonts.handle, size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	const s32 align = style->align;
 	const s32 padding = gui_scale_val(gui, style->padding);
 	gui_char_quad_f get_char_quad = gui->fonts.get_char_quad;
@@ -1854,7 +1863,7 @@ static
 s32 gui__txt_offset_y(const gui_t *gui, const char *txt, const gui_text_style_t *style)
 {
 	const s32 size = gui_scale_val(gui, style->size);
-	void *font = gui->fonts.get_font(gui->fonts.handle, size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	gui_font_metrics_t metrics;
 	const s32 padding = gui_scale_val(gui, style->padding);
 
@@ -1913,7 +1922,7 @@ static void gui__layer_init(gui_t *gui, gui_layer_t *layer, s32 x, s32 y, s32 w,
 static void gui__layer_new(gui_t *gui);
 
 gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
-                  gui_fonts_t fonts)
+                  gui_fonts_t fonts, const char *font_file_path)
 {
 	gui_t *gui = acalloc(1, sizeof(gui_t), g_allocator);
 
@@ -1934,7 +1943,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	memset(gui->clipboard_in, 0, sizeof(gui->clipboard_in));
 	memset(gui->clipboard_out, 0, sizeof(gui->clipboard_out));
 
-	gui_style_set(gui, &g_gui_style_default);
+	gui_style_set(gui, &g_gui_style_default, font_file_path);
 
 	gui->style_stack_sz = 0;
 
@@ -3385,7 +3394,7 @@ u32 gui_wrap_txt(const gui_t *gui, char *txt, s32 padding_, s32 size_, r32 max_w
 	r32 line_width = padding;
 	u32 num_lines = 1;
 
-	void *font = gui->fonts.get_font(gui->fonts.handle, size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	if (!font)
 		return 0;
 
@@ -3442,7 +3451,7 @@ void gui__txt_get_cursor_pos(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	char *pnext;
 	s32 cp;
 
-	font = gui->fonts.get_font(gui->fonts.handle, size);
+	font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	if (!font)
 		return;
 
@@ -3494,7 +3503,7 @@ void gui__txt_sequence(gui_t *gui, s32 x_anchor, r32 x0, r32 y0,
 	char *pnext;
 	s32 cp;
 
-	font = gui->fonts.get_font(gui->fonts.handle, size);
+	font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	if (!font)
 		goto out;
 
@@ -3551,7 +3560,7 @@ u32 gui__txt_get_cursor_at_pos(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		display = wrapped;
 	}
 
-	font = gui->fonts.get_font(gui->fonts.handle, size);
+	font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	if (!font)
 		return 0;
 
@@ -3621,7 +3630,7 @@ void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size_, const char *txt,
 	};
 	gui_font_metrics_t font_metrics;
 
-	font = gui->fonts.get_font(gui->fonts.handle, size);
+	font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	if (!font) {
 		*px = 0;
 		*py = 0;
@@ -4258,7 +4267,7 @@ void gui__npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                   const gui_text_style_t *style, color_t bg)
 {
 	const s32 size = gui_scale_val(gui, style->size);
-	void *font = gui->fonts.get_font(gui->fonts.handle, size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 	const char *display = txt;
 	gui_font_metrics_t metrics;
 	gui_text_style_t style_inverse = *style;
@@ -4438,7 +4447,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	/* keyboard input */
 	if (gui_widget_focused(gui, id)) {
 		const s32 size = gui_scale_val(gui, style->active.text.size);
-		void *font = gui->fonts.get_font(gui->fonts.handle, size);
+		void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 		u32 len = (u32)strlen(txt);
 		gui->npt.cursor    = clamp(0, gui->npt.cursor,    len);
 		gui->npt.selection = clamp(0, gui->npt.selection, len);
@@ -4589,7 +4598,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		if (!gui__npt_has_selection(gui) && gui_run_time_milli(gui) % 1000 < 500) {
 			const color_t color = elem_style.text.color;
 			const s32 size = gui_scale_val(gui, elem_style.text.size);
-			void *font = gui->fonts.get_font(gui->fonts.handle, size);
+			void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
 			if (font) {
 				gui_font_metrics_t metrics;
 				gui->fonts.get_metrics(font, &metrics);
@@ -8580,9 +8589,19 @@ const gui_style_t *gui_style_c(const gui_t *gui)
 	return &gui->style;
 }
 
-void gui_style_set(gui_t *gui, const gui_style_t *style)
+void gui_style_set(gui_t *gui, const gui_style_t *style, const char *path)
 {
-	gui->style = *style;
+	if (path == gui->style.font_path) {
+		char font_path[PATH_MAX];
+		strbcpy(font_path, gui->style.font_path);
+		gui->style = *style;
+		strbcpy(gui->style.font_path, font_path);
+	} else if (path == style->font_path) {
+		gui->style = *style;
+	} else {
+		gui->style = *style;
+		strbcpy(gui->style.font_path, path);
+	}
 }
 
 typedef struct gui__style_stack_item
@@ -8670,6 +8689,11 @@ void gui_style_push_pen_(gui_t *gui, size_t offset, gui_pen_t pen)
 	void(*fn)(void) = (void(*)(void))pen;
 	assert(pen);
 	gui_style_push_(gui, &fn, offset, size);
+}
+
+void gui_style_push_str_(gui_t *gui, size_t offset, size_t size, const char *val)
+{
+	gui_style_push_(gui, val, offset, min(size, strlen(val) + 1));
 }
 
 #undef GUI_IMPLEMENTATION

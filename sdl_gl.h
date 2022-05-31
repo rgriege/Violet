@@ -115,6 +115,7 @@ void save_screenshot(box2i bounds, const char *filename);
 typedef struct font_t
 {
 	const char *filename;
+	u32 path_hash;
 	s32 size;
 	s32 num_glyphs;
 	gui_font_metrics_t metrics;
@@ -985,22 +986,29 @@ b32 font_load(font_t *f, const char *filename, s32 size)
 
 	f->char_info = NULL;
 
-	if (!(ttf = file_read_all(filename, "rb", NULL, g_temp_allocator)))
+	if (!(ttf = file_read_all(filename, "rb", NULL, g_temp_allocator))) {
+		log_error("failed to read font file '%s'", filename);
 		goto out;
+	}
 
-	if (!stbtt_InitFont(&info, ttf, stbtt_GetFontOffsetForIndex(ttf, 0)))
+	if (!stbtt_InitFont(&info, ttf, stbtt_GetFontOffsetForIndex(ttf, 0))) {
+		log_error("failed to initialize font file '%s'", filename);
 		goto err_ttf;
+	}
 
 	f->num_glyphs = info.numGlyphs;
 	log_debug("packing %d glyphs for %s:%d", f->num_glyphs, filename, size);
 	f->char_info = amalloc(f->num_glyphs * sizeof(stbtt_packedchar), g_allocator);
 
-	if (!vltt_PackFont(&info, size, f->char_info, &f->texture))
+	if (!vltt_PackFont(&info, size, f->char_info, &f->texture)) {
+		log_error("failed to pack font %s:%d", filename, size);
 		goto err_pack;
+	}
 
 	font__index_map_copy(f, &info, g_allocator);
 
 	f->filename = filename;
+	f->path_hash = hash_compute(filename);
 	f->size = size;
 	stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
 	scale = stbtt_ScaleForPixelHeight(&info, size);
@@ -1061,9 +1069,9 @@ typedef struct window
 
 	/* style */
 	SDL_Cursor *cursors[GUI_CURSOR_COUNT];
-	char font_file_path[256];
 	array(font_t) fonts;
 	font_t *last_font;
+	u32 last_font_path_hash;
 	s32 last_font_size;
 	array(cached_img_t) imgs;
 
@@ -1218,21 +1226,22 @@ void window_set_title(window_t *window, const char *title)
 }
 
 static
-font_t *window__find_font(window_t *window, s32 size)
+font_t *window__find_font(window_t *window, u32 path_hash, s32 size)
 {
 	array_iterate(window->fonts, i, n)
-		if (window->fonts[i].size == size)
+		if (window->fonts[i].path_hash == path_hash && window->fonts[i].size == size)
 			return &window->fonts[i];
 	return NULL;
 }
 
 static
-font_t *window__find_smaller_font(window_t *window, s32 size)
+font_t *window__find_smaller_font(window_t *window, u32 path_hash, s32 size)
 {
 	font_t *nearest = NULL;
 	s32 max_size = 0;
 	array_iterate(window->fonts, i, n) {
-		if (   window->fonts[i].char_info
+		if (   window->fonts[i].path_hash == path_hash
+		    && window->fonts[i].char_info
 		    && window->fonts[i].size < size
 		    && window->fonts[i].size > max_size) {
 			nearest = &window->fonts[i];
@@ -1243,32 +1252,38 @@ font_t *window__find_smaller_font(window_t *window, s32 size)
 }
 
 static
-void *window__get_font(void *handle, s32 size)
+void *window__get_font(void *handle, const char *path, s32 size)
 {
+	const u32 path_hash = hash_compute(path);
 	window_t *window = handle;
 	font_t *font;
 
-	if (window->last_font_size == size)
+	if (path[0] == 0)
 		return window->last_font;
 
+	if (window->last_font_path_hash == path_hash && window->last_font_size == size)
+		return window->last_font;
+
+	window->last_font_path_hash = path_hash;
 	window->last_font_size = size;
 
-	if ((font = window__find_font(window, size))) {
-		window->last_font = font->char_info ? font : window__find_smaller_font(window, size);
+	if ((font = window__find_font(window, path_hash, size))) {
+		window->last_font = font->char_info ? font : window__find_smaller_font(window, path_hash, size);
 		return window->last_font;
 	}
 
 	window->last_font = NULL;
 	font = array_append_null(window->fonts);
-	if (font_load(font, window->font_file_path, size)) {
+	if (font_load(font, path, size)) {
 		window->last_font = font;
 		return window->last_font;
 	} else {
 		/* keep empty entries around so we don't try to load them again */
 		memclr(*font);
-		font->filename = window->font_file_path;
+		font->filename = path;
+		font->path_hash = path_hash;
 		font->size = size;
-		window->last_font = window__find_smaller_font(window, size);
+		window->last_font = window__find_smaller_font(window, path_hash, size);
 		return window->last_font;
 	}
 }
@@ -1673,7 +1688,6 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	for (u32 i = 0; i < GUI_CURSOR_COUNT; ++i)
 		if (!window->cursors[i])
 			goto err_cursor;
-	strncpy(window->font_file_path, font_file_path, sizeof(window->font_file_path)-1);
 	window->fonts = array_create();
 	window->last_font = NULL;
 	window->last_font_size = 0;
@@ -1702,7 +1716,8 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		.get_char_quad = window__get_char_quad,
 	};
 
-	window->gui = gui_create(dim.x, dim.y, window->texture_white.handle, window->texture_white_dotted.handle, fonts);
+	window->gui = gui_create(dim.x, dim.y, window->texture_white.handle, window->texture_white_dotted.handle,
+	                         fonts, font_file_path);
 
 	gui_set_window(window->gui, window);
 
