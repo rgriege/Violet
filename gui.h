@@ -4193,8 +4193,7 @@ void gui__npt_remove_selected(gui_t *gui, char *txt, u32 *len)
 	}
 }
 
-static
-void gui__hint_render(gui_t *gui, u64 id, const char *hint)
+void gui_hint_render(gui_t *gui, u64 id, const char *hint)
 {
 	if (id == gui->hot_id && gui->hint_timer <= 0 && hint) {
 		const gui_element_style_t *style = &gui->style.hint;
@@ -4218,11 +4217,6 @@ void gui__hint_render(gui_t *gui, u64 id, const char *hint)
 		gui_widget_bounds_pop(gui, &bounds, false);
 		gui_mask_pop(gui);
 	}
-}
-
-void gui_hint_render(gui_t *gui, u64 id, const char *hint)
-{
-	gui__hint_render(gui, id, hint);
 }
 
 b32 gui_npt_filter(gui_npt_filter_p filter, s32 codepoint)
@@ -4610,7 +4604,7 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	}
 	if (contains_mouse)
 		gui->cursor = GUI_CURSOR_TEXT_INPUT;
-	gui__hint_render(gui, id, gui->style.npt.hint);
+	gui_hint_render(gui, id, gui->style.npt.hint);
 	if (gui_widget_tab_focus_enabled(gui))
 		gui->last_tab_focusable_widget_id = id;
 	return complete;
@@ -4756,7 +4750,7 @@ s32 gui_btn_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 	const gui_widget_render_state_e render_state
 		= gui__btn_render_state(gui, id, ret, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.btn);
-	gui__hint_render(gui, id, gui->style.btn.hint);
+	gui_hint_render(gui, id, gui->style.btn.hint);
 
 	return ret;
 }
@@ -4781,7 +4775,7 @@ s32 gui_btn_img(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
 	gui_img_boxed(gui, x, y, w, h, img, scale);
 	if (contains_mouse)
 		gui->cursor = GUI_CURSOR_BUTTON;
-	gui__hint_render(gui, id, gui->style.btn.hint);
+	gui_hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
 
@@ -4804,7 +4798,7 @@ s32 gui_btn_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen)
 	pen(gui, x, y, w, h, &style);
 	if (contains_mouse)
 		gui->cursor = GUI_CURSOR_BUTTON;
-	gui__hint_render(gui, id, gui->style.btn.hint);
+	gui_hint_render(gui, id, gui->style.btn.hint);
 	return ret;
 }
 
@@ -4847,7 +4841,7 @@ b32 gui_chk(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, b32 *val)
 
 	render_state = gui__widget_render_state(gui, id, toggled, *val, contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.chk);
-	gui__hint_render(gui, id, gui->style.chk.hint);
+	gui_hint_render(gui, id, gui->style.chk.hint);
 	return toggled;
 }
 
@@ -4876,7 +4870,7 @@ b32 gui_chk_pen(gui_t *gui, s32 x, s32 y, s32 w, s32 h, gui_pen_t pen, b32 *val)
 	pen(gui, x, y, w, h, &style);
 	if (contains_mouse)
 		gui->cursor = GUI_CURSOR_BUTTON;
-	gui__hint_render(gui, id, gui->style.chk.hint);
+	gui_hint_render(gui, id, gui->style.chk.hint);
 	return toggled;
 }
 
@@ -4991,7 +4985,7 @@ b32 gui__slider(gui_t *gui, s32 x, s32 y, s32 w, s32 h, r32 *val, s32 hnd_len,
 	gui->style.slider.handle.pen(gui, hx, hy, hw, hh, &style_handle);
 	if (contains_mouse)
 		gui->cursor = GUI_CURSOR_BUTTON;
-	gui__hint_render(gui, id, gui->style.slider.handle.hint);
+	gui_hint_render(gui, id, gui->style.slider.handle.hint);
 	return gui->active_id == id || triggered_by_key;
 }
 
@@ -5047,7 +5041,7 @@ b32 gui_select(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	render_state = gui__widget_render_state(gui, id, selected, *val == opt,
 	                                        contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.select);
-	gui__hint_render(gui, id, gui->style.select.hint);
+	gui_hint_render(gui, id, gui->style.select.hint);
 	return selected;
 }
 
@@ -5078,7 +5072,7 @@ b32 gui_mselect(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	render_state = gui__widget_render_state(gui, id, changed, *val & opt,
 	                                        contains_mouse);
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.select);
-	gui__hint_render(gui, id, gui->style.select.hint);
+	gui_hint_render(gui, id, gui->style.select.hint);
 	return changed;
 }
 
@@ -5312,7 +5306,7 @@ void gui_dropdown_end(gui_t *gui)
 		pgui_grid_end(gui, &gui->popup->grid);
 		gui__popup_end(gui);
 	} else {
-		gui__hint_render(gui, gui->dropdown.id, gui->style.dropdown.btn.hint);
+		gui_hint_render(gui, gui->dropdown.id, gui->style.dropdown.btn.hint);
 	}
 
 	gui__btn_render(gui, x, y, w, h, txt, render_state, contains_mouse, &gui->style.dropdown.btn);
@@ -5410,7 +5404,7 @@ void gui__drag_render(gui_t *gui, s32 x, s32 y, s32 w, s32 h, u64 id, b32 draggi
 	const s32 state = gui__widget_render_state(gui, id, dragging, false, true);
 	const gui_element_style_t style = gui_element_style(gui, state, widget_style);
 	widget_style->pen(gui, x, y, w, h, &style);
-	gui__hint_render(gui, id, widget_style->hint);
+	gui_hint_render(gui, id, widget_style->hint);
 }
 
 static
@@ -5538,7 +5532,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		pgui_col(gui, 0, num_items);
 		return true;
 	} else {
-		gui__hint_render(gui, id, gui->style.dropdown.btn.hint);
+		gui_hint_render(gui, id, gui->style.dropdown.btn.hint);
 		return false;
 	}
 }
@@ -6705,7 +6699,7 @@ void pgui_txt_info(gui_t *gui, const char *str)
 	/* Handle hover events by repurposing btn_logic.
 	   This is a dirty hack but adequate for the use case. */
 	gui__btn_logic(gui, id, MB_LEFT, contains_mouse);
-	gui__hint_render(gui, id, gui->style.txt_info.hint);
+	gui_hint_render(gui, id, gui->style.txt_info.hint);
 }
 
 void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
