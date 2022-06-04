@@ -168,6 +168,7 @@ void transaction__undo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 	for (u32 i = array_sz(bundle->d); i-- > 0; )
 		event_undo(bundle->d[i], sys->alc);
 	sys->undoing = false;
+	bundle->undone = true;
 }
 
 static
@@ -178,6 +179,7 @@ void transaction__redo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 		event_execute(*event);
 		sys->active_parent = NULL;
 	}
+	bundle->undone = false;
 }
 
 static
@@ -185,16 +187,24 @@ b32 event_undo__execute(event_undo_redo_t *event)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 	event_bundle_t *bundle = transaction__last_valid_event_bundle(sys, true);
+	event_bundle_t *last   = &array_last(sys->event_history);
 
 	if (!bundle)
 		return false;
 
 	event_bundle_unwind(&sys->temp_secondary_events, sys->alc);
 
-	if (bundle != &array_last(sys->event_history)) {
-		event_bundle_t *bundle_after = bundle+1;
-		if (bundle_after->secondary)
-			transaction__undo_bundle(sys, bundle_after);
+	/* There can potentially be several secondary bundles in sequence after the undo point */
+	event_bundle_t *tail = bundle;
+	while (tail != last) {
+		if ((tail+1)->secondary && !(tail+1)->undone)
+			tail++;
+		else
+			break;
+	}
+	while (tail != bundle) {
+		transaction__undo_bundle(sys, tail);
+		tail--;
 	}
 
 	/* Handle the undo point */
@@ -208,17 +218,24 @@ b32 event_redo__execute(event_undo_redo_t *event)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 	event_bundle_t *bundle = transaction__last_valid_event_bundle(sys, false);
+	event_bundle_t *first  = &array_first(sys->event_history);
 
 	if (!bundle)
 		return false;
 
 	event_bundle_unwind(&sys->temp_secondary_events, sys->alc);
 
-	if (bundle != &array_first(sys->event_history)) {
-		event_bundle_t *bundle_before = bundle-1;
-		if (   bundle_before->secondary
-		    && bundle_before != &array_first(sys->event_history))
-			transaction__redo_bundle(sys, bundle_before);
+	/* There can potentially be several secondary bundles in sequence before the undo point */
+	event_bundle_t *head = bundle;
+	while (head != first) {
+		if ((head-1)->secondary && (head-1)->undone)
+			head--;
+		else
+			break;
+	}
+	while (head != bundle) {
+		transaction__redo_bundle(sys, head);
+		head++;
 	}
 
 	/* Handle the undo point */

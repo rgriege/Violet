@@ -50,6 +50,7 @@ typedef struct event_bundle {
 	/* all items are either primary or secondary
 	 * (though children can be mixed primary and/or secondary) */
 	b32 secondary;
+	b32 undone;
 } event_bundle_t;
 
 event_t *event_create(u32 kind, u32 instance_size, const event_metadata_t *meta,
