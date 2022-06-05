@@ -271,12 +271,10 @@ ARRDEF void array__array_clear(array(array(void)) a)
 ARRDEF void array__array_copy(array(array(void)) dst, array(array(void)) src,
                               size_t sz MEMCALL_ARGS)
 {
-	array_iterate(src, i, n) {
-		array_destroy(dst[i]);
+	array_iterate(src, i, n)
 		dst[i] = array__copy(array__create(array_sz(src[i]), sz,
 		                     array__allocator(dst) MEMCALL_VARS),
 		                     src[i], sz MEMCALL_VARS);
-	}
 }
 
 #undef ARRAY_IMPLEMENTATION
