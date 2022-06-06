@@ -88,11 +88,10 @@ typedef struct array__head
 #define array_array_destroy(a)     array__array_destroy(ENFORCE_ARRAY_OF_ARRAY(a))
 #define array_array_clear(a)       array__array_clear(ENFORCE_ARRAY_OF_ARRAY(a))
 
-#define array_array_copy(dst, src) (array_set_sz(dst, array_sz(src)), \
-                                    array__array_copy(ENFORCE_ARRAY_OF_ARRAY(dst), \
-                                                      ENFORCE_ARRAY_OF_ARRAY(src), \
-                                                      array__esz(dst[0]) \
-                                    MEMCALL_LOCATION))
+#define array_array_copy(dst, src) ((dst)=array__array_copy(ENFORCE_ARRAY_OF_ARRAY(dst), \
+                                                            ENFORCE_ARRAY_OF_ARRAY(src), \
+                                                            array__esz(dst[0]) \
+                                                            MEMCALL_LOCATION))
 
 /* Array To Pointer + Number */
 #define A2PN(a)                    (a), array_sz(a)
@@ -119,7 +118,7 @@ ARRDEF void *array__upper(void *a, const void *elem, size_t sz,
                           int(*cmp)(const void *, const void*));
 ARRDEF void  array__array_destroy(array(array(void)) a);
 ARRDEF void  array__array_clear(array(array(void)) a);
-ARRDEF void  array__array_copy(array(array(void)) dst, array(array(void)) src,
+ARRDEF void *array__array_copy(array(array(void)) dst, array(array(void)) src,
                                size_t sz MEMCALL_ARGS);
 
 #endif
@@ -268,13 +267,16 @@ ARRDEF void array__array_clear(array(array(void)) a)
 	array_clear(a);
 }
 
-ARRDEF void array__array_copy(array(array(void)) dst, array(array(void)) src,
-                              size_t sz MEMCALL_ARGS)
+ARRDEF void *array__array_copy(array(array(void)) dst, array(array(void)) src,
+                               size_t sz MEMCALL_ARGS)
 {
+	assert(array_empty(dst));
+	array_set_sz(dst, array_sz(src));
 	array_iterate(src, i, n)
 		dst[i] = array__copy(array__create(array_sz(src[i]), sz,
 		                     array__allocator(dst) MEMCALL_VARS),
 		                     src[i], sz MEMCALL_VARS);
+	return dst;
 }
 
 #undef ARRAY_IMPLEMENTATION
