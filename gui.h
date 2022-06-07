@@ -1043,6 +1043,14 @@ void gui_style_pop(gui_t *gui);
 		gui_style_push_##suffix(gui, widget.disabled.loc, val); \
 	} while (0)
 
+#define gui_style_push_widget_element(gui, widget, val) \
+	do { \
+		gui_style_push(gui, widget.inactive, val); \
+		gui_style_push(gui, widget.hot, val); \
+		gui_style_push(gui, widget.active, val); \
+		gui_style_push(gui, widget.disabled, val); \
+	} while (0)
+
 #define gui_style_push_widget_color(gui, widget, loc, val) \
 	gui_style_push_widget_(color, gui, widget, loc, val)
 #define gui_style_push_widget_b32(gui, widget, loc, val) \
