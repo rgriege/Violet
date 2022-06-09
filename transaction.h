@@ -18,6 +18,7 @@ typedef struct transaction_system {
 } transaction_system_t;
 
 transaction_system_t transaction_system_create(allocator_t *alc);
+void transaction_system_reset(transaction_system_t *sys);
 void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
@@ -83,6 +84,18 @@ transaction_system_t transaction_system_create(allocator_t *alc)
 		.undoing = false,
 		.active_parent = NULL,
 	};
+}
+
+/* store data is NOT reset */
+void transaction_system_reset(transaction_system_t *sys)
+{
+	array_foreach(sys->event_history, event_bundle_t, bundle)
+		event_bundle_destroy(bundle, sys->alc);
+	array_clear(sys->event_history);
+
+	event_bundle_clear(&sys->temp_secondary_events, sys->alc);
+
+	str_clear(&sys->last_event_desc);
 }
 
 void transaction_system_destroy(transaction_system_t *sys)
