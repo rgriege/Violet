@@ -9,10 +9,11 @@
 #define NAV_DESCRIPTION_SIZE   16
 
 typedef struct event_contract {
-	void (*destroy)(void *instance, allocator_t *alc);
-	b32  (*execute)(const void *instance);
-	void (*undo   )(const void *instance);
-	void (*update )(void *dst, const void* src);    // both dst and src are instances
+	void (*destroy   )(void *instance, allocator_t *alc);
+	b32  (*execute   )(const void *instance);
+	void (*undo      )(const void *instance);
+	void (*update    )(void *dst, const void *src); // both dst and src are instances
+	void (*update_pre)(void *new, const optional(void) old); // both new and old are instances
 	// TODO(undo): if writing event stream to file, each event needs to be able
 	//             to serialize & deserialize itself
 } event_contract_t;
@@ -100,6 +101,18 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 		.execute = (b32  (*)(const void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
+	}, \
+	.multi_frame = true, \
+	.size = sizeof(event_##type##_t)
+
+#define event_factory_multi_frame_pre_dynamic(type) \
+	.spawner = (void (*)(void *, allocator_t *))event_##type##__create, \
+	.contract = &(event_contract_t) { \
+		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
+		.execute    = (b32  (*)(const void *))event_##type##__execute, \
+		.undo       = (void (*)(const void *))event_##type##__undo, \
+		.update     = (void (*)(void *, const void *))event_##type##__update, \
+		.update_pre = (void (*)(void *, const void *))event_##type##__update_pre, \
 	}, \
 	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)

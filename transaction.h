@@ -189,6 +189,8 @@ void transaction__redo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 {
 	array_foreach(bundle->d, event_t *, event) {
 		sys->active_parent = *event;
+		if ((*event)->meta->contract->update_pre)
+			(*event)->meta->contract->update_pre((*event)->instance, NULL);
 		event_execute(*event);
 		sys->active_parent = NULL;
 	}
@@ -305,6 +307,9 @@ static
 u32 transaction__handle_priority_event(transaction_system_t *sys, event_t *event)
 {
 	u32 result = EVENT_KIND_NOOP;
+
+	assert(!event->meta->contract->update_pre);
+
 	if (event_execute(event)) {
 		/* Priority events are never secondary, nor are they ever nested */
 		array_append(sys->event_history, event_bundle_create(event, sys->alc));
@@ -321,6 +326,8 @@ u32 transaction__handle_child_event(transaction_system_t *sys, event_t *event, e
 {
 	u32 result = EVENT_KIND_NOOP;
 	sys->active_parent = event;
+
+	assert(!event->meta->contract->update_pre);
 
 	if (event_execute(event)) {
 		array_append(parent->children, event);
@@ -347,20 +354,25 @@ void transaction__push_temp_bundle(transaction_system_t *sys, event_bundle_t *te
 }
 
 static
-event_t *transaction__mergeable_event(transaction_system_t *sys, const event_t *event)
+event_t *transaction__last_event(transaction_system_t *sys)
 {
-	event_t *last_event = array_empty(sys->event_history)
-	                    ? NULL
-	                    : array_last(array_last(sys->event_history).d);
-	if (   !event->meta->secondary
-	    && event->meta->multi_frame
-	    && array_empty(sys->temp_secondary_events.d)
-	    && last_event
-	    && last_event->kind == event->kind
-	    && (  event->time_since_epoch_ms - last_event->time_since_epoch_ms
-	        < TRANSACTION_MULTIFRAME_TIMEOUT))
-		return last_event;
+	if (!array_empty(sys->temp_secondary_events.d))
+		return array_last(sys->temp_secondary_events.d);
+	else if (!array_empty(sys->event_history))
+		return array_last(array_last(sys->event_history).d);
 	return NULL;
+}
+
+static
+b32 transaction__events_mergeable(const event_t *lhs, const optional(event_t) rhs)
+{
+	return rhs
+	    && lhs->meta->multi_frame
+	    && lhs->kind == rhs->kind
+	    && (  lhs->meta->secondary
+	        ? array_empty(lhs->children)
+	        :   lhs->time_since_epoch_ms - rhs->time_since_epoch_ms
+	          < TRANSACTION_MULTIFRAME_TIMEOUT);
 }
 
 static
@@ -369,28 +381,26 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 	u32 result = EVENT_KIND_NOOP;
 	sys->active_parent = event;
 
+	event_t *last_event = transaction__last_event(sys);
+	const b32 mergeable = transaction__events_mergeable(event, last_event);
+
+	if (event->meta->contract->update_pre)
+		event->meta->contract->update_pre(event->instance,
+		                                  mergeable ? last_event->instance : NULL);
+
 	if (event_execute(event)) {
 		if (event->meta->secondary) {
-			event_bundle_t *bundle = &sys->temp_secondary_events;
-			event_t *last_event = array_empty(bundle->d)
-			                    ? NULL
-			                    : array_last(bundle->d);
-
-			if (   event->meta->multi_frame
-			    && array_empty(event->children)
-			    && last_event
-			    && last_event->kind == event->kind) {
+			if (mergeable) {
 				/* Handle continued multi-frame event */
 				event_update(last_event, event);
 				event_destroy(event, sys->alc);
 			} else {
 				/* Handle fresh secondary event */
-				array_append(bundle->d, event);
+				array_append(sys->temp_secondary_events.d, event);
 				result = event->kind;
 			}
 		} else {
-			event_t *last_event = transaction__mergeable_event(sys, event);
-			if (last_event) {
+			if (mergeable) {
 				/* Handle continued multi-frame event */
 				event_update(last_event, event);
 				event_unwind_children(event, sys->alc);
@@ -407,8 +417,7 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 			}
 		}
 	} else {
-		event_t *last_event = transaction__mergeable_event(sys, event);
-		if (last_event)
+		if (mergeable)
 			last_event->time_since_epoch_ms = event->time_since_epoch_ms;
 		event_unwind_children(event, sys->alc);
 		event_destroy(event, sys->alc);
