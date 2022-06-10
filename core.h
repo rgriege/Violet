@@ -341,6 +341,15 @@ void buf_remove_(void *p, size_t idx, size_t n, size_t cap, size_t size);
 		p[cap-1] = buf_shift__p0; \
 	} while (0)
 
+typedef u128 uuid;
+
+uuid uuid_null(void);
+uuid uuid_create(void);
+b32  uuid_from_str(const char *in, uuid *out);
+void uuid_to_str(uuid in, char out[37]);
+b32  uuid_equal(uuid lhs, uuid rhs);
+b32  uuid_is_valid(uuid id);
+
 /* Time */
 
 /* This is only for intervals - a timepoint does not represent the unix epoch */
@@ -1005,6 +1014,82 @@ void buf_remove_(void *p_, size_t idx, size_t n, size_t cap, size_t size)
 	memmove(p+idx*size, p+(idx+n)*size, (cap-n-idx)*size);
 }
 
+#ifdef _WIN32
+uuid uuid_create(void)
+{
+	uuid id = {0};
+	check(CoCreateGuid((UUID*)&id) == S_OK);
+	return id;
+}
+
+b32 os_string_from_utf8(wchar_t *dst, size_t dstlen, const char *src);
+b32 uuid_from_str(const char *in, uuid *out)
+{
+	wchar_t win[39] = {0};
+	win[0] = L'{';
+	if (!os_string_from_utf8(&win[1], 37, in)) {
+		log_error("failed to convert uuid string to wide string");
+		assert(false);
+		return false;
+	}
+	win[37] = L'}';
+	return CLSIDFromString(win, (UUID*)out) == NOERROR;
+}
+
+b32 os_string_to_utf8(char *dst, size_t dstlen, const osstr_t src);
+void uuid_to_str(uuid in, char out[37])
+{
+	wchar_t wout[39];
+	if (StringFromGUID2((UUID*)&in, wout, 39) != 0) {
+		log_error("failed to convert uuid to string");
+		strcpy(out, "00000000-0000-0000-0000-000000000000");
+		assert(false);
+		return;
+	}
+	wbuf[37] = 0;
+	if (!os_string_to_utf8(out, 37, &wout[1])) {
+		log_error("failed to convert wide string to uuid string");
+		strcpy(out, "00000000-0000-0000-0000-000000000000");
+		assert(false);
+		return;
+	}
+	for (int i = 0; i < 36; ++i)
+		out[i] = tolower(out[i]);
+}
+#else
+#include <uuid/uuid.h>
+uuid uuid_create(void)
+{
+	uuid id = {0};
+	uuid_generate(id.bytes);
+	return id;
+}
+
+b32 uuid_from_str(const char *in, uuid *out)
+{
+	return uuid_parse((char*)in, out->bytes) == 0;
+}
+
+void uuid_to_str(uuid in, char out[37])
+{
+	uuid_unparse_lower(in.bytes, out);
+}
+#endif
+
+uuid uuid_null(void)
+{
+	return (uuid){0};
+}
+
+b32 uuid_equal(uuid lhs, uuid rhs)
+{
+	return memcmp(&lhs, &rhs, sizeof(lhs)) == 0;
+}
+
+b32 uuid_is_valid(uuid id)
+{
+	return !uuid_equal(id, uuid_null());
+}
 
 /* Time */
 
