@@ -1019,7 +1019,9 @@ void buf_remove_(void *p_, size_t idx, size_t n, size_t cap, size_t size)
 uuid uuid_create(void)
 {
 	uuid id = {0};
-	check(CoCreateGuid((UUID*)&id) == S_OK);
+	HRESULT result = CoCreateGuid((UUID*)&id);
+	assert(result == S_OK);
+	UNUSED(result);
 	return id;
 }
 
