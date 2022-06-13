@@ -1015,6 +1015,7 @@ void buf_remove_(void *p_, size_t idx, size_t n, size_t cap, size_t size)
 }
 
 #ifdef _WIN32
+#include <combaseapi.h>
 uuid uuid_create(void)
 {
 	uuid id = {0};
@@ -1046,7 +1047,7 @@ void uuid_to_str(uuid in, char out[37])
 		assert(false);
 		return;
 	}
-	wbuf[37] = 0;
+	wout[37] = 0;
 	if (!os_string_to_utf8(out, 37, &wout[1])) {
 		log_error("failed to convert wide string to uuid string");
 		strcpy(out, "00000000-0000-0000-0000-000000000000");
