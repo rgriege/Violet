@@ -351,11 +351,9 @@ typedef enum gui_npt_flags
 	GUI_NPT_COMPLETE_ON_TAB       = 1 << 4,
 	GUI_NPT_COMPLETE_ON_CLICK_OUT = 1 << 5,
 	GUI_NPT_COMPLETE_ON_ESCAPE    = 1 << 6,
-	GUI_NPT_COMPLETE_ON_UNCHANGED = 1 << 7,
 	GUI_NPT_COMPLETE_ON_DEFOCUS   = GUI_NPT_COMPLETE_ON_TAB
 	                              | GUI_NPT_COMPLETE_ON_CLICK_OUT
-	                              | GUI_NPT_COMPLETE_ON_ESCAPE
-	                              | GUI_NPT_COMPLETE_ON_UNCHANGED,
+	                              | GUI_NPT_COMPLETE_ON_ESCAPE,
 } gui_npt_flags_e;
 
 typedef struct gui_npt_filter
@@ -1802,7 +1800,6 @@ typedef struct gui
 		b32 active;
 		u32 cursor; /* byte, NOT GLYPH, offset */
 		u32 selection; /* byte, NOT GLYPH, offset */
-		u32 initial_txt_hash;
 		char val_buf[GUI_TXT_MAX_LENGTH];
 		char pw_buf[GUI_TXT_MAX_LENGTH];
 	} npt;
@@ -1994,7 +1991,6 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 	gui->npt.active = false;
 	gui->npt.cursor = 0;
 	gui->npt.selection = 0;
-	gui->npt.initial_txt_hash = 0;
 	gui->npt.pw_buf[0] = 0;
 	gui->npt.val_buf[0] = 0;
 	gui->drag_offset = g_v2i_zero;
@@ -4563,27 +4559,26 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 		}
 	}
 
-	if (gui_widget_focused(gui, id) && !was_focused)
-		gui->npt.initial_txt_hash = hashn_compute(txt, n);
 	if (gui_widget_focused(gui, id) != was_focused)
 		gui->npt.active = gui_widget_focused(gui, id);
 
 	/* completion state */
 	if (!gui_widget_focused(gui, id) && was_focused) {
-		if (complete || gui->lock) {
-		} else if (   (flags & GUI_NPT_COMPLETE_ON_TAB)
-		           && gui__key_triggered(gui, KB_TAB)) {
-			complete = GUI_NPT_COMPLETE_ON_TAB;
-		} else if (   (flags & GUI_NPT_COMPLETE_ON_CLICK_OUT)
-		           && mouse_pressed(gui, ~0)
-		           && !contains_mouse) {
-			complete = GUI_NPT_COMPLETE_ON_CLICK_OUT;
-		} else if (   (flags & GUI_NPT_COMPLETE_ON_ESCAPE)
-		           && gui__key_triggered(gui, KB_ESCAPE)) {
-			complete = GUI_NPT_COMPLETE_ON_ESCAPE;
-		} else if (   (flags & GUI_NPT_COMPLETE_ON_UNCHANGED)
-		           || gui->npt.initial_txt_hash != hashn_compute(txt, n)) {
-			complete = GUI_NPT_COMPLETE_ON_UNCHANGED;
+		if (complete) {
+			// nothing to do
+		} else if (gui->lock) {
+			assert(false); // this is a really bad way to defocus
+		} else if (gui__key_triggered(gui, KB_TAB)) {
+			if (flags & GUI_NPT_COMPLETE_ON_TAB)
+				complete = GUI_NPT_COMPLETE_ON_TAB;
+		} else if (mouse_pressed(gui, ~0) && !contains_mouse) {
+			if (flags & GUI_NPT_COMPLETE_ON_CLICK_OUT)
+				complete = GUI_NPT_COMPLETE_ON_CLICK_OUT;
+		} else if (gui__key_triggered(gui, KB_ESCAPE)) {
+			if (flags & GUI_NPT_COMPLETE_ON_ESCAPE)
+				complete = GUI_NPT_COMPLETE_ON_ESCAPE;
+		} else {
+			assert(false); // uh-oh, we don't have a code to return to the caller
 		}
 	}
 
