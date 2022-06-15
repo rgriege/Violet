@@ -599,6 +599,7 @@ void pgui_spacer_blank(gui_t *gui);
 void pgui_txt(gui_t *gui, const char *str);
 void pgui_txt_info(gui_t *gui, const char *str);
 void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
+void pgui_pen(gui_t *gui, gui_pen_t pen, const gui_element_style_t *style);
 s32  pgui_btn_txt(gui_t *gui, const char *lbl);
 s32  pgui_btn_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale);
 s32  pgui_btn_pen(gui_t *gui, gui_pen_t pen);
@@ -6732,6 +6733,13 @@ void pgui_img(gui_t *gui, const gui_img_t *img, gui_img_scale_e scale)
 	s32 x, y, w, h;
 	pgui_cell_consume(gui, &x, &y, &w, &h);
 	gui_img_boxed(gui, x, y, w, h, img, scale);
+}
+
+void pgui_pen(gui_t *gui, gui_pen_t pen, const gui_element_style_t *style)
+{
+	s32 x, y, w, h;
+	pgui_cell_consume(gui, &x, &y, &w, &h);
+	pen(gui, x, y, w, h, style);
 }
 
 s32 pgui_btn_txt(gui_t *gui, const char *lbl)
