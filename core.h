@@ -1043,7 +1043,7 @@ b32 os_string_to_utf8(char *dst, size_t dstlen, const osstr_t src);
 void uuid_to_str(uuid in, char out[37])
 {
 	wchar_t wout[39];
-	if (StringFromGUID2((UUID*)&in, wout, 39) != 0) {
+	if (StringFromGUID2((UUID*)&in, wout, 39) != 39) {
 		log_error("failed to convert uuid to string");
 		strcpy(out, "00000000-0000-0000-0000-000000000000");
 		assert(false);
