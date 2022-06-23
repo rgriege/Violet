@@ -10,8 +10,6 @@ typedef struct transaction_system {
 	array(event_bundle_t) event_history;
 	/* secondary events awaiting confirmation by a primary event */
 	event_bundle_t temp_secondary_events;
-	// TODO(undo): once old system is kaput, we will be able to store the undo point
-	//             description in the event_bundle
 	str_t last_event_desc;
 	b32 undoing;
 	event_t *active_parent;
@@ -23,10 +21,8 @@ void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
 void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind);
-// TODO(undo): make static once old system is kaput; can also change return to void
 /* Returns a nonzero event kind for executed, non-secondary events */
 u32 transaction__flush(event_t *event);
-// TODO(undo): should not be required once old system is kaput
 transaction_system_t *get_active_transaction_system(void);
 
 void *store_data(u32 kind);
@@ -36,8 +32,6 @@ typedef struct event_undo_redo
 	str_t label;
 } event_undo_redo_t;
 
-// TODO(undo): would be nice if the undo/redo implementation specifics could be hidden
-//             from the global namespace
 extern const event_contract_t event_undo__contract;
 extern const event_contract_t event_redo__contract;
 extern void event_undo_redo__create(void *instance, allocator_t *alc);

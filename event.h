@@ -14,8 +14,6 @@ typedef struct event_contract {
 	void (*undo      )(const void *instance);
 	void (*update    )(void *dst, const void *src); // both dst and src are instances
 	void (*update_pre)(void *new, const optional(void) old); // both new and old are instances
-	// TODO(undo): if writing event stream to file, each event needs to be able
-	//             to serialize & deserialize itself
 } event_contract_t;
 
 typedef struct event_metadata {
