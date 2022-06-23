@@ -46,7 +46,7 @@ typedef struct timespec timepoint_t;
 #define B2PC(x) (x), countof(x)
 
 #ifndef offsetof
-#define offsetof(s, m) (&(((s*)(NULL))->m))
+#define offsetof(s, m) ((size_t)&(((s*)(NULL))->m))
 #endif
 
 #define polarity(x) (((x) > 0) - ((x) < 0))
