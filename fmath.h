@@ -286,6 +286,7 @@ b32   polyf_is_concave(const v2f *v, u32 n);
 b32   polyf_contains(const v2f *v, u32 n, v2f point);
 b32   polyf_contains_fast(const v2f *v, u32 n, box2f *bbox, v2f pt);
 void  polyf_bounding_box(const v2f *v, u32 n, box2f *box);
+box2f polyf_bbox(const v2f *v, u32 n);
 v2f   polyf_extent(const v2f *v, u32 n);
 void  polyf_translate(v2f *v, u32 n, v2f delta);
 void  polyf_transform(v2f *v, u32 n, const m3f mat);
@@ -1620,6 +1621,13 @@ void polyf_bounding_box(const v2f *v, u32 n, box2f *box)
 	assert(n > 0);
 	box2f_from_point(box, v[0]);
 	box2f_extend_points(box, &v[1], n-1);
+}
+
+box2f polyf_bbox(const v2f *v, u32 n)
+{
+	box2f box;
+	polyf_bounding_box(v, n, &box);
+	return box;
 }
 
 v2f polyf_extent(const v2f *v, u32 n)
