@@ -99,8 +99,12 @@ void base64_encode(const void *data, size_t size, char *out)
 
 size_t base64_decode_size(const char *data, size_t data_size)
 {
-	const size_t raw_size = (data_size / 4) * 3;
-	return raw_size - (data[data_size-1] == '=') - (data[data_size-2] == '=');
+	size_t size = (data_size / 4) * 3;
+	if (data_size >= 1 && data[data_size-1] == '=')
+		--size;
+	if (data_size >= 2 && data[data_size-2] == '=')
+		--size;
+	return size;
 }
 
 static inline
