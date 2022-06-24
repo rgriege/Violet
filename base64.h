@@ -9,6 +9,12 @@ void   base64_encode(const void *data, size_t size, char *out);
 size_t base64_decode_size(const char *data, size_t data_size);
 void   base64_decode(const char *data, size_t size, void *out);
 
+size_t base64url_encode_size(size_t data_size);
+void   base64url_encode(const void *data, size_t size, char *out);
+
+size_t base64url_decode_size(const char *data, size_t data_size);
+void   base64url_decode(const char *data, size_t size, void *out);
+
 #if 0
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,22 +66,16 @@ void base64__copy_triplet(const char *data, size_t size, char buffer[3])
 }
 
 static inline
-void base64__encode_triplet(char *pout, const char buffer[3])
+void base64__encode_triplet(char *pout, const char buffer[3], const char table[64])
 {
-	static const char table[64] = {
-		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-		'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
-		'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-		'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/',
-	};
-
 	pout[0] = table[(buffer[0] & 0xfc) >> 2];
 	pout[1] = table[((buffer[0] & 0x03) << 4) | ((buffer[1] & 0xf0) >> 4)];
 	pout[2] = table[((buffer[1] & 0x0f) << 2) | ((buffer[2] & 0xc0) >> 6)];
 	pout[3] = table[(buffer[2] & 0x3f)];
 }
 
-void base64_encode(const void *data, size_t size, char *out)
+static
+void base64__encode(const void *data, size_t size, const char table[64], char *out)
 {
 	const char *pdata = data;
 	const char *end = pdata + size;
@@ -85,7 +85,7 @@ void base64_encode(const void *data, size_t size, char *out)
 
 	while (pdata < end) {
 		base64__copy_triplet(pdata, remaining, buffer);
-		base64__encode_triplet(pout, buffer);
+		base64__encode_triplet(pout, buffer, table);
 		pdata     += 3;
 		remaining -= 3;
 		pout      += 4;
@@ -95,6 +95,18 @@ void base64_encode(const void *data, size_t size, char *out)
 		pout[-2] = '=';
 	if (pdata > end)
 		pout[-1] = '=';
+}
+
+void base64_encode(const void *data, size_t size, char *out)
+{
+	static const char table[64] = {
+		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+		'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+		'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+		'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/',
+	};
+
+	base64__encode(data, size, table, out);
 }
 
 size_t base64_decode_size(const char *data, size_t data_size)
@@ -110,19 +122,8 @@ size_t base64_decode_size(const char *data, size_t data_size)
 }
 
 static inline
-void base64__decode_quartet(const char data[4], char *pout)
+void base64__decode_quartet(const char data[4], const char table[128], char *pout)
 {
-	static const char table[128] = {
-		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 62,  0,  0,  0, 63,
-		52, 53, 54, 55, 56, 57, 58, 59, 60, 61,  0,  0,  0,  0,  0,  0,
-		 0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-		15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,  0,  0,  0,  0,  0,
-		 0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-		41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,  0,  0,  0,  0,  0,
-	};
-
 	/* gcc warns about using char as an array subscript */
 	const char s[4] = {
 		table[(unsigned char)data[0]],
@@ -139,14 +140,15 @@ void base64__decode_quartet(const char data[4], char *pout)
 		pout[2] = ((s[2] & 0x03) << 6) | s[3];
 }
 
-void base64_decode(const char *data, size_t size, void *out)
+static
+void base64__decode(const char *data, size_t size, const char table[128], void *out)
 {
 	const char *pdata = data;
 	const char *end = pdata + size;
 	char       *pout = out;
 
 	while (pdata + 4 <= end) {
-		base64__decode_quartet(pdata, pout);
+		base64__decode_quartet(pdata, table, pout);
 		pdata += 4;
 		pout  += 3;
 	}
@@ -156,8 +158,60 @@ void base64_decode(const char *data, size_t size, void *out)
 		char *q = quartet;
 		while (pdata < end)
 			*q++ = *pdata++;
-		base64__decode_quartet(quartet, pout);
+		base64__decode_quartet(quartet, table, pout);
 	}
+}
+
+void base64_decode(const char *data, size_t size, void *out)
+{
+	static const char table[128] = {
+		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 62,  0,  0,  0, 63,
+		52, 53, 54, 55, 56, 57, 58, 59, 60, 61,  0,  0,  0,  0,  0,  0,
+		 0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+		15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,  0,  0,  0,  0,  0,
+		 0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+		41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,  0,  0,  0,  0,  0,
+	};
+	base64__decode(data, size, table, out);
+}
+
+size_t base64url_encode_size(size_t data_size)
+{
+	return base64_encode_size(data_size);
+}
+
+void base64url_encode(const void *data, size_t size, char *out)
+{
+	static const char table[64] = {
+		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+		'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+		'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+		'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_',
+	};
+
+	base64__encode(data, size, table, out);
+}
+
+size_t base64url_decode_size(const char *data, size_t data_size)
+{
+	return base64_decode_size(data, data_size);
+}
+
+void base64url_decode(const char *data, size_t size, void *out)
+{
+	static const char table[128] = {
+		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 62,  0,  0,
+		52, 53, 54, 55, 56, 57, 58, 59, 60, 61,  0,  0,  0,  0,  0,  0,
+		 0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+		15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,  0,  0,  0,  0, 63,
+		 0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+		41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,  0,  0,  0,  0,  0,
+	};
+	base64__decode(data, size, table, out);
 }
 
 #undef BASE64_IMPLEMENTATION
