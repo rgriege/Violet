@@ -100,6 +100,8 @@ void base64_encode(const void *data, size_t size, char *out)
 size_t base64_decode_size(const char *data, size_t data_size)
 {
 	size_t size = (data_size / 4) * 3;
+	if (data_size % 4 != 0)
+		size += data_size % 4 - 1;
 	if (data_size >= 1 && data[data_size-1] == '=')
 		--size;
 	if (data_size >= 2 && data[data_size-2] == '=')
@@ -143,10 +145,18 @@ void base64_decode(const char *data, size_t size, void *out)
 	const char *end = pdata + size;
 	char       *pout = out;
 
-	while (pdata < end) {
+	while (pdata + 4 <= end) {
 		base64__decode_quartet(pdata, pout);
 		pdata += 4;
 		pout  += 3;
+	}
+
+	if (pdata < end) {
+		char quartet[4] = { '=', '=', '=', '=' };
+		char *q = quartet;
+		while (pdata < end)
+			*q++ = *pdata++;
+		base64__decode_quartet(quartet, pout);
 	}
 }
 
