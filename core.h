@@ -82,6 +82,13 @@ typedef struct timespec timepoint_t;
 #define thread_local __declspec(thread)
 #endif
 
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+#define CHECK_RETURN __attribute__ ((warn_unused_result))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
+#define CHECK_RETURN _Check_return_
+#else
+#define CHECK_RETURN
+#endif
 
 /* Types */
 
