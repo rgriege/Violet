@@ -116,7 +116,7 @@ typedef struct array__head
 #define fixed_array(type, name, size) struct { \
                                           array__head head; \
                                           type fsa[size]; \
-                                      } name##__buffer; array(type) name;
+                                      } name##__buffer; array(type) name
 
 #define fixed_array_init(name)        ((name = name##__buffer.fsa), \
                                       (array__get_head(name)->allocator = g_null_allocator), \
