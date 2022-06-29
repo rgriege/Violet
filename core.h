@@ -199,14 +199,6 @@ void *default_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS);
 void *default_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS);
 void  default_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
 
-/* Null memory allocator */
-extern allocator_t *g_null_allocator;
-
-void *null_malloc(size_t size, allocator_t *a  MEMCALL_ARGS);
-void *null_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS);
-void *null_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS);
-void  null_free(void *ptr, allocator_t *a  MEMCALL_ARGS);
-
 /* Temporary memory allocator */
 extern thread_local allocator_t *g_temp_allocator;
 
@@ -267,26 +259,9 @@ void vlt_mem_log_usage(void);
 #ifdef VLT_TRACK_MEMORY
 
 /* ensure access to stdlib functions before overriding them */
-static inline void *std_malloc(size_t sz)
-{
-	void *mem = malloc(sz);
-	if (sz > 0 && !mem)
-		fatal("malloc: oom");
-	return mem;
-}
-static inline void *std_calloc(size_t nmemb, size_t sz)
-{
-	void *mem = calloc(nmemb, sz);
-	if (sz > 0 && !mem)
-		fatal("calloc: oom");
-	return mem;
-}
-static inline void *std_realloc(void *ptr, size_t sz) {
-	void *mem = realloc(ptr, sz);
-	if (sz > 0 && !mem)
-		fatal("realloc: oom");
-	return mem;
-}
+static inline void *std_malloc(size_t sz) { return malloc(sz); }
+static inline void *std_calloc(size_t nmemb, size_t sz) { return calloc(nmemb, sz); }
+static inline void *std_realloc(void *ptr, size_t sz) { return realloc(ptr, sz); }
 static inline void  std_free(void *ptr) { free(ptr); }
 
 #define malloc(sz)         amalloc(sz, g_allocator)
@@ -560,8 +535,6 @@ allocator_t *g_allocator = &allocator_create(global_tracked, &(global_alloc_trac
 allocator_t *g_allocator = &allocator_create(default, NULL);
 #endif
 
-allocator_t *g_null_allocator = &allocator_create(null, NULL);
-
 static
 void log_alloc(const char *prefix, size_t sz  MEMCALL_ARGS)
 {
@@ -637,52 +610,22 @@ void default_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
 
 void *temp_malloc(size_t size, allocator_t *a  MEMCALL_ARGS)
 {
-	void *mem = pgb_malloc(size, a->udata  MEMCALL_VARS);
-	if (size > 0 && !mem)
-		fatal("malloc: oom");
-	return mem;
+	return pgb_malloc(size, a->udata  MEMCALL_VARS);
 }
 
 void *temp_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS)
 {
-	void *mem = pgb_calloc(nmemb, size, a->udata  MEMCALL_VARS);
-	if (size > 0 && !mem)
-		fatal("calloc: oom");
-	return mem;
+	return pgb_calloc(nmemb, size, a->udata  MEMCALL_VARS);
 }
 
 void *temp_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS)
 {
-	void *mem = pgb_realloc(ptr, size, a->udata  MEMCALL_VARS);
-	if (size > 0 && !mem)
-		fatal("realloc: oom");
-	return mem;
+	return pgb_realloc(ptr, size, a->udata  MEMCALL_VARS);
 }
 
 void temp_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
 {
 	pgb_free(ptr, a->udata  MEMCALL_VARS);
-}
-
-/* Null allocator */
-
-void *null_malloc(size_t size, allocator_t *a  MEMCALL_ARGS)
-{
-	return NULL;
-}
-
-void *null_calloc(size_t nmemb, size_t size, allocator_t *a  MEMCALL_ARGS)
-{
-	return NULL;
-}
-
-void *null_realloc(void *ptr, size_t size, allocator_t *a  MEMCALL_ARGS)
-{
-	return NULL;
-}
-
-void null_free(void *ptr, allocator_t *a  MEMCALL_ARGS)
-{
 }
 
 
