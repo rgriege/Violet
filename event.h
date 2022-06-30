@@ -42,6 +42,12 @@ typedef struct event {
 	char instance[];
 } event_t;
 
+typedef enum event_status {
+	EVENT_STATUS_DONE,
+	EVENT_STATUS_UNDONE,
+	EVENT_STATUS_UNREACHABLE,
+} event_status_e;
+
 /* top-level collection of event_t * */
 typedef struct event_bundle {
 	/* all items are the root node of an event subtree */
@@ -49,7 +55,7 @@ typedef struct event_bundle {
 	/* all items are either primary or secondary
 	 * (though children can be mixed primary and/or secondary) */
 	b32 secondary;
-	b32 undone;
+	event_status_e status;
 } event_bundle_t;
 
 event_t *event_create(u32 kind, u32 instance_size, const event_metadata_t *meta,
