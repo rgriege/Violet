@@ -10,7 +10,7 @@
 
 typedef struct event_contract {
 	void (*destroy   )(void *instance, allocator_t *alc);
-	b32  (*execute   )(const void *instance);
+	b32  (*execute   )(void *instance);
 	void (*undo      )(const void *instance);
 	void (*update    )(void *dst, const void *src); // both dst and src are instances
 	void (*update_pre)(void *new, const optional(void) old); // both new and old are instances
@@ -61,7 +61,7 @@ typedef struct event_bundle {
 event_t *event_create(u32 kind, u32 instance_size, const event_metadata_t *meta,
                       const char *nav_description, allocator_t *alc);
 void event_destroy(event_t *event, allocator_t *alc);
-b32  event_execute(const event_t *event);
+b32  event_execute(event_t *event);
 void event_undo(event_t *event, allocator_t *alc);
 void event_unwind_children(event_t *event, allocator_t *alc);
 /* fast forward an event to another event - only used in multi-frame interactions */
@@ -75,14 +75,14 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 
 #define event_factory(type) \
 	.contract = &(event_contract_t) { \
-		.execute = (b32  (*)(const void *))event_##type##__execute, \
+		.execute = (b32  (*)(void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 	}, \
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_multi_frame(type) \
 	.contract = &(event_contract_t) { \
-		.execute = (b32  (*)(const void *))event_##type##__execute, \
+		.execute = (b32  (*)(void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
 	}, \
@@ -93,7 +93,7 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 	.spawner = (void (*)(void *, allocator_t *))event_##type##__create, \
 	.contract = &(event_contract_t) { \
 		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
-		.execute = (b32  (*)(const void *))event_##type##__execute, \
+		.execute = (b32  (*)(void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 	}, \
 	.size = sizeof(event_##type##_t)
@@ -102,7 +102,7 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 	.spawner = (void (*)(void *, allocator_t *))event_##type##__create, \
 	.contract = &(event_contract_t) { \
 		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
-		.execute = (b32  (*)(const void *))event_##type##__execute, \
+		.execute = (b32  (*)(void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
 	}, \
@@ -113,7 +113,7 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 	.spawner = (void (*)(void *, allocator_t *))event_##type##__create, \
 	.contract = &(event_contract_t) { \
 		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
-		.execute    = (b32  (*)(const void *))event_##type##__execute, \
+		.execute    = (b32  (*)(void *))event_##type##__execute, \
 		.undo       = (void (*)(const void *))event_##type##__undo, \
 		.update     = (void (*)(void *, const void *))event_##type##__update, \
 		.update_pre = (void (*)(void *, const void *))event_##type##__update_pre, \
@@ -156,7 +156,7 @@ void event_destroy(event_t *event, allocator_t *alc)
 	afree(event, alc);
 }
 
-b32 event_execute(const event_t *event)
+b32 event_execute(event_t *event)
 {
 	/* expect children to be created as nested events from this entry point forward */
 	assert(array_empty(event->children));

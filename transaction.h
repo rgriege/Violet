@@ -304,12 +304,12 @@ b32 event_redo__execute(event_undo_redo_t *event)
 
 const event_contract_t event_undo__contract = {
 	.destroy = (void (*)(void *, allocator_t *))event_undo_redo__destroy,
-	.execute = (b32 (*)(const void *))event_undo__execute,
+	.execute = (b32 (*)(void *))event_undo__execute,
 };
 
 const event_contract_t event_redo__contract = {
 	.destroy = (void (*)(void *, allocator_t *))event_undo_redo__destroy,
-	.execute = (b32 (*)(const void *))event_redo__execute,
+	.execute = (b32 (*)(void *))event_redo__execute,
 };
 
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind)
