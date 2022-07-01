@@ -461,6 +461,7 @@ void gui_color_picker_end(gui_t *gui);
 b32  gui_color_picker8_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                              s32 pw, s32 ph, color_t c);
 b32  gui_color_picker8_popup_default(gui_t *gui, color_t *c);
+void gui_color_picker8_update_color(gui_t *gui, color_t *c);
 void gui_color_picker8_end(gui_t *gui);
 b32  gui_color_picker(gui_t *gui, s32 s, s32 y, s32 w, s32 h,
                       s32 pw, s32 ph, colorf_t *c);
@@ -5917,6 +5918,11 @@ b32 gui_color_picker8_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		}
 	}
 	return false;
+}
+
+void gui_color_picker8_update_color(gui_t *gui, color_t *c)
+{
+	gui->color_picker8_color = color_to_colorf(*c);
 }
 
 b32 gui_color_picker8_popup_default(gui_t *gui, color_t *c)
