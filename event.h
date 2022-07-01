@@ -14,6 +14,8 @@ typedef struct event_contract {
 	void (*undo      )(const void *instance);
 	void (*update    )(void *dst, const void *src); // both dst and src are instances
 	void (*update_pre)(void *new, const optional(void) old); // both new and old are instances
+	b32  (*load)(void *instance, void *userp);
+	void (*save)(const void *instance, void *userp);
 } event_contract_t;
 
 typedef struct event_metadata {
@@ -27,8 +29,10 @@ typedef struct event_metadata {
 	const b32 multi_frame;
 	const u32 size;
 	const char description[EVENT_DESCRIPTION_SIZE];
+	const char *label;
 	/* a secondary event is one that will not be directly associated with an undo point */
 	const b32 secondary;
+	const u32 version;
 } event_metadata_t;
 
 typedef struct event {
@@ -55,7 +59,7 @@ typedef struct event_bundle {
 	/* all items are either primary or secondary
 	 * (though children can be mixed primary and/or secondary) */
 	b32 secondary;
-	event_status_e status;
+	s32 status; /* event_status_e */
 } event_bundle_t;
 
 event_t *event_create(u32 kind, u32 instance_size, const event_metadata_t *meta,
@@ -95,6 +99,8 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
 		.execute = (b32  (*)(void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
+		.load    = (b32  (*)(void *, void *))event_##type##__load, \
+		.save    = (void (*)(const void *, void *))event_##type##__save, \
 	}, \
 	.size = sizeof(event_##type##_t)
 
@@ -105,6 +111,8 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 		.execute = (b32  (*)(void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
+		.load    = (b32  (*)(void *, void *))event_##type##__load, \
+		.save    = (void (*)(const void *, void *))event_##type##__save, \
 	}, \
 	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)
@@ -117,6 +125,8 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 		.undo       = (void (*)(const void *))event_##type##__undo, \
 		.update     = (void (*)(void *, const void *))event_##type##__update, \
 		.update_pre = (void (*)(void *, const void *))event_##type##__update_pre, \
+		.load       = (b32  (*)(void *, void *))event_##type##__load, \
+		.save       = (void (*)(const void *, void *))event_##type##__save, \
 	}, \
 	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)

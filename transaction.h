@@ -31,11 +31,17 @@ transaction_system_t *get_active_transaction_system(void);
 
 void *store_data(u32 kind);
 
+typedef struct event_noop
+{
+	u8 dummy;
+} event_noop_t;
+
 typedef struct event_undo_redo
 {
 	str_t label;
 } event_undo_redo_t;
 
+extern const event_contract_t event_noop__contract;
 extern const event_contract_t event_undo__contract;
 extern const event_contract_t event_redo__contract;
 extern void event_undo_redo__create(void *instance, allocator_t *alc);
@@ -201,6 +207,25 @@ void event_undo_redo__destroy(event_undo_redo_t *event, allocator_t *alc)
 	str_destroy(&event->label);
 }
 
+/* If you actually want to serialize events, then the application must provide
+ * real definitions of these functions.  The stubs are provided to avoid
+ * the application needing to provide them if serialization isn't used. */
+#ifdef VIOLET_EVENT_SERIALIZATION
+b32 event_undo_redo__load(event_undo_redo_t *event, void *userp);
+void event_undo_redo__save(const event_undo_redo_t *event, void *userp);
+#else
+b32 event_undo_redo__load(event_undo_redo_t *event, void *userp)
+{
+	assert(false);
+	return false;
+}
+
+void event_undo_redo__save(const event_undo_redo_t *event, void *userp)
+{
+	assert(false);
+}
+#endif // VIOLET_EVENT_SERIALIZATION
+
 static
 void transaction__undo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 {
@@ -238,6 +263,12 @@ b32 transaction_system_can_redo(void)
 	transaction_system_t *sys = g_active_transaction_system;
 	event_bundle_t *bundle = transaction__last_doable_bundle(sys, false);
 	return bundle != NULL;
+}
+
+static
+b32 event_noop__execute(event_noop_t *event)
+{
+	return true;
 }
 
 static
@@ -302,14 +333,22 @@ b32 event_redo__execute(event_undo_redo_t *event)
 	return true;
 }
 
+const event_contract_t event_noop__contract = {
+	.execute = (b32 (*)(void *))event_noop__execute,
+};
+
 const event_contract_t event_undo__contract = {
 	.destroy = (void (*)(void *, allocator_t *))event_undo_redo__destroy,
 	.execute = (b32 (*)(void *))event_undo__execute,
+	.load    = (b32  (*)(void *, void *))event_undo_redo__load,
+	.save    = (void (*)(const void *, void *))event_undo_redo__save,
 };
 
 const event_contract_t event_redo__contract = {
 	.destroy = (void (*)(void *, allocator_t *))event_undo_redo__destroy,
 	.execute = (b32 (*)(void *))event_redo__execute,
+	.load    = (b32  (*)(void *, void *))event_undo_redo__load,
+	.save    = (void (*)(const void *, void *))event_undo_redo__save,
 };
 
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind)
@@ -332,7 +371,7 @@ void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_desc
 
 	switch (kind) {
 	case EVENT_KIND_NOOP:
-		assert(false);
+		instance_size = sizeof(event_noop_t);
 	break;
 	case EVENT_KIND_UNDO:
 	case EVENT_KIND_REDO:
