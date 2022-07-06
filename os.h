@@ -48,6 +48,7 @@ b32  file_open_dialog(char *fname, u32 fname_sz, const file_dialog_filter_t filt
 b32  file_save_dialog(char *fname, u32 fname_sz, const file_dialog_filter_t filters[], u32 num_filters);
 
 b32  file_exists(const char *path);
+s64  file_modified_time(const char *path);
 b32  dir_exists(const char *path);
 void path_append(char *lhs, const char *rhs);
 void path_appendn(char *lhs, const char *rhs, u32 sz);

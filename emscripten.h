@@ -59,6 +59,12 @@ b32 file_exists(const char *path)
 	return stat(path, &s) == 0 && !S_ISDIR(s.st_mode);
 }
 
+s64 file_modified_time(const char *path)
+{
+	struct stat s;
+	return stat(path, &s) == 0 ? s.st_mtime : 0;
+}
+
 b32 dir_exists(const char *path)
 {
 	struct stat s;

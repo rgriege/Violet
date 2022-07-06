@@ -155,6 +155,12 @@ b32 file_exists(const char *path)
 	    && !(attrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
+s64 file_modified_time(const char *path)
+{
+	struct _stat s;
+	return _tstat(path, &s) == 0 ? s.st_mtime : 0;
+}
+
 b32 dir_exists(const char *path)
 {
 	wchar_t path_w[PATH_MAX];
