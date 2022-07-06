@@ -510,11 +510,10 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 	sys->active_parent = event;
 
 	event_t *last_event = transaction__last_event(sys);
-	const b32 mergeable = transaction__events_mergeable(event, last_event);
+	b32 mergeable = transaction__events_mergeable(event, last_event);
 
 	if (event->meta->contract->update_pre)
-		event->meta->contract->update_pre(event->instance,
-		                                  mergeable ? last_event->instance : NULL);
+		mergeable &= event_update_pre(event, mergeable ? last_event : NULL);
 
 	if (event_execute(event)) {
 		if (event->meta->secondary) {

@@ -13,7 +13,7 @@ typedef struct event_contract {
 	b32  (*execute   )(void *instance);
 	void (*undo      )(const void *instance);
 	void (*update    )(void *dst, const void *src); // both dst and src are instances
-	void (*update_pre)(void *new, const optional(void) old); // both new and old are instances
+	b32  (*update_pre)(void *new, const optional(void) old); // both new and old are instances
 	b32  (*load)(void *instance, void *userp);
 	void (*save)(const void *instance, void *userp);
 } event_contract_t;
@@ -72,6 +72,8 @@ void event_undo(event_t *event, allocator_t *alc);
 void event_unwind_children(event_t *event, allocator_t *alc);
 /* fast forward an event to another event - only used in multi-frame interactions */
 void event_update(event_t *dst, const event_t *src);
+/* returns true if the events are mergeable, based on the event-specific implementation */
+b32 event_update_pre(event_t *dst, const event_t *src);
 
 event_bundle_t event_bundle_create(event_t *event, allocator_t *alc);
 event_bundle_t event_bundle_create_empty(b32 secondary, allocator_t *alc);
@@ -120,6 +122,16 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)
 
+#define event_factory_multi_frame_pre(type) \
+	.contract = &(event_contract_t) { \
+		.execute    = (b32  (*)(void *))event_##type##__execute, \
+		.undo       = (void (*)(const void *))event_##type##__undo, \
+		.update     = (void (*)(void *, const void *))event_##type##__update, \
+		.update_pre = (b32  (*)(void *, const void *))event_##type##__update_pre, \
+	}, \
+	.multi_frame = true, \
+	.size = sizeof(event_##type##_t)
+
 #define event_factory_multi_frame_pre_dynamic(type) \
 	.spawner = (void (*)(void *, allocator_t *))event_##type##__create, \
 	.contract = &(event_contract_t) { \
@@ -127,7 +139,7 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 		.execute    = (b32  (*)(void *))event_##type##__execute, \
 		.undo       = (void (*)(const void *))event_##type##__undo, \
 		.update     = (void (*)(void *, const void *))event_##type##__update, \
-		.update_pre = (void (*)(void *, const void *))event_##type##__update_pre, \
+		.update_pre = (b32  (*)(void *, const void *))event_##type##__update_pre, \
 		.load       = (b32  (*)(void *, void *))event_##type##__load, \
 		.save       = (void (*)(const void *, void *))event_##type##__save, \
 	}, \
@@ -216,6 +228,13 @@ void event_update(event_t *dst, const event_t *src)
 	(dst->meta->contract->update)(dst->instance, src->instance);
 	/* NOTE(luke): no need to update children, since they will always be pruned
 	 * upon undoing and re-created upon redoing */
+}
+
+b32 event_update_pre(event_t *dst, const event_t *src)
+{
+	b32 result = src != NULL;
+	result &= dst->meta->contract->update_pre(dst->instance, src ? src->instance : NULL);
+	return result;
 }
 
 event_bundle_t event_bundle_create(event_t *event, allocator_t *alc)
