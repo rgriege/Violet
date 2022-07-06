@@ -62,7 +62,7 @@ typedef struct event_bundle {
 	s32 status; /* event_status_e */
 } event_bundle_t;
 
-event_t *event_create(u32 kind, u32 instance_size, const event_metadata_t *meta,
+event_t *event_create(u32 kind, const event_metadata_t *meta,
                       const char *nav_description, allocator_t *alc);
 void event_destroy(event_t *event, allocator_t *alc);
 b32  event_execute(event_t *event);
@@ -138,10 +138,10 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 
 #ifdef EVENT_IMPLEMENTATION
 
-event_t *event_create(u32 kind, u32 instance_size, const event_metadata_t *meta,
+event_t *event_create(u32 kind, const event_metadata_t *meta,
                       const char *nav_description, allocator_t *alc)
 {
-	event_t *event = acalloc(1, sizeof(event_t) + instance_size, alc);
+	event_t *event = acalloc(1, sizeof(event_t) + meta->size, alc);
 	event->kind = kind;
 	event->meta = meta;
 	if (nav_description)

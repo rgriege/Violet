@@ -383,21 +383,7 @@ void transaction_spawn_store(const store_metadata_t *meta, u32 kind)
 void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind)
 {
 	transaction_system_t *sys = g_active_transaction_system;
-	u32 instance_size = 0;
-
-	switch (kind) {
-	case EVENT_KIND_NOOP:
-		instance_size = sizeof(event_noop_t);
-	break;
-	case EVENT_KIND_UNDO:
-	case EVENT_KIND_REDO:
-		instance_size = sizeof(event_undo_redo_t);
-	break;
-	default:
-		instance_size = meta->size;
-	}
-
-	event_t *event = event_create(kind, instance_size, meta, nav_description, sys->alc);
+	event_t *event = event_create(kind, meta, nav_description, sys->alc);
 	return event->instance;
 }
 
