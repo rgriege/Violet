@@ -72,6 +72,7 @@ void event_unwind_children(event_t *event, allocator_t *alc);
 void event_update(event_t *dst, const event_t *src);
 
 event_bundle_t event_bundle_create(event_t *event, allocator_t *alc);
+event_bundle_t event_bundle_create_empty(b32 secondary, allocator_t *alc);
 void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc);
 void event_bundle_clear(event_bundle_t *bundle, allocator_t *alc);
 void event_bundle_copy(event_bundle_t *dst, const event_bundle_t *src);
@@ -210,11 +211,17 @@ void event_update(event_t *dst, const event_t *src)
 
 event_bundle_t event_bundle_create(event_t *event, allocator_t *alc)
 {
-	event_bundle_t events = (event_bundle_t) {
-		.secondary = event->meta->secondary,
+	event_bundle_t events = event_bundle_create_empty(event->meta->secondary, alc);
+	array_append(events.d, event);
+	return events;
+}
+
+event_bundle_t event_bundle_create_empty(b32 secondary, allocator_t *alc)
+{
+	event_bundle_t events = {
+		.secondary = secondary,
 		.d = array_create_ex(alc),
 	};
-	array_append(events.d, event);
 	return events;
 }
 

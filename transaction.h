@@ -3,6 +3,11 @@
 
 #define TRANSACTION_MULTIFRAME_TIMEOUT 500
 
+typedef struct transaction_logger {
+	void (*log)(void *userp, u32 bundle_index);
+	void *userp;
+} transaction_logger_t;
+
 typedef struct transaction_system {
 	allocator_t *alc;
 	array(store_t *) stores;
@@ -13,9 +18,10 @@ typedef struct transaction_system {
 	str_t last_event_desc;
 	b32 undoing;
 	event_t *active_parent;
+	transaction_logger_t *logger; /* NULLable, unowned */
 } transaction_system_t;
 
-transaction_system_t transaction_system_create(allocator_t *alc);
+transaction_system_t transaction_system_create(transaction_logger_t *logger, allocator_t *alc);
 void transaction_system_reset(transaction_system_t *sys);
 void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
@@ -25,6 +31,7 @@ void transaction_get_undoables(array(event_bundle_t *) *undoables);
 void transaction_get_redoables(array(event_bundle_t *) *redoables);
 b32  transaction_system_can_undo(void);
 b32  transaction_system_can_redo(void);
+void transaction_system_redo_all(void);
 /* Returns a nonzero event kind for executed, non-secondary events */
 u32 transaction__flush(event_t *event);
 transaction_system_t *get_active_transaction_system(void);
@@ -74,19 +81,17 @@ void *store_data(u32 kind)
 	return store->instance;
 }
 
-transaction_system_t transaction_system_create(allocator_t *alc)
+transaction_system_t transaction_system_create(transaction_logger_t *logger, allocator_t *alc)
 {
 	return (transaction_system_t) {
 		.alc = alc,
 		.stores          = array_create_ex(alc),
 		.event_history   = array_create_ex(alc),
 		.last_event_desc = str_create(alc),
-		.temp_secondary_events = (event_bundle_t) {
-			.d = array_create_ex(alc),
-			.secondary = true,
-		},
+		.temp_secondary_events = event_bundle_create_empty(true, alc),
 		.undoing = false,
 		.active_parent = NULL,
+		.logger = logger,
 	};
 }
 
@@ -251,6 +256,13 @@ void transaction__redo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 	bundle->status = EVENT_STATUS_DONE;
 }
 
+void transaction_system_redo_all(void)
+{
+	transaction_system_t *sys = g_active_transaction_system;
+	array_iterate(sys->event_history, i, n)
+		transaction__redo_bundle(sys, &sys->event_history[i]);
+}
+
 b32 transaction_system_can_undo(void)
 {
 	transaction_system_t *sys = g_active_transaction_system;
@@ -395,6 +407,8 @@ u32 transaction__handle_priority_event(transaction_system_t *sys, event_t *event
 	if (event_execute(event)) {
 		/* Priority events are never secondary, nor are they ever nested */
 		array_append(sys->event_history, event_bundle_create(event, sys->alc));
+		if (sys->logger)
+			sys->logger->log(sys->logger->userp, array_sz(sys->event_history) - 1);
 		result = event->kind;
 	}
 	else {
@@ -513,13 +527,19 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 			if (mergeable) {
 				/* Handle continued multi-frame event */
 				event_update(last_event, event);
+				if (sys->logger)
+					sys->logger->log(sys->logger->userp, array_sz(sys->event_history) - 1);
 				event_unwind_children(event, sys->alc);
 				event_destroy(event, sys->alc);
 			} else {
 				/* Handle fresh primary event; corresponds to an undo point */
+				const u32 start = array_sz(sys->event_history);
 				transaction__mark_unreachables(sys);
 				transaction__push_temp_bundle(sys, &sys->temp_secondary_events);
 				array_append(sys->event_history, event_bundle_create(event, sys->alc));
+				if (sys->logger)
+					for (u32 i = start; i < array_sz(sys->event_history); ++i)
+						sys->logger->log(sys->logger->userp, i);
 				result = event->kind;
 
 				str_clear(&sys->last_event_desc);
