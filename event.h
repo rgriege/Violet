@@ -64,6 +64,8 @@ typedef struct event_bundle {
 
 event_t *event_create(u32 kind, const event_metadata_t *meta,
                       const char *nav_description, allocator_t *alc);
+event_t *event_create_empty(u32 kind, const event_metadata_t *meta,
+                            const char *nav_description, allocator_t *alc);
 void event_destroy(event_t *event, allocator_t *alc);
 b32  event_execute(event_t *event);
 void event_undo(event_t *event, allocator_t *alc);
@@ -141,6 +143,15 @@ void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 event_t *event_create(u32 kind, const event_metadata_t *meta,
                       const char *nav_description, allocator_t *alc)
 {
+	event_t *event = event_create_empty(kind, meta, nav_description, alc);
+	if (meta->spawner)
+		meta->spawner(event->instance, alc);
+	return event;
+}
+
+event_t *event_create_empty(u32 kind, const event_metadata_t *meta,
+                            const char *nav_description, allocator_t *alc)
+{
 	event_t *event = acalloc(1, sizeof(event_t) + meta->size, alc);
 	event->kind = kind;
 	event->meta = meta;
@@ -149,8 +160,6 @@ event_t *event_create(u32 kind, const event_metadata_t *meta,
 	else
 		event->nav_description[0] = 0;
 	event->time_since_epoch_ms = time_milliseconds_since_epoch();
-	if (meta->spawner)
-		meta->spawner(event->instance, alc);
 	event->children = array_create_ex(alc);
 	return event;
 }

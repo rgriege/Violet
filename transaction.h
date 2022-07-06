@@ -27,6 +27,7 @@ void transaction_system_destroy(transaction_system_t *sys);
 void transaction_system_set_active(transaction_system_t *sys);
 void transaction_spawn_store(const store_metadata_t *meta, u32 kind);
 void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_description, u32 kind);
+void *transaction_spawn_empty_event(const event_metadata_t *meta, const char *nav_description, u32 kind);
 void transaction_get_undoables(array(event_bundle_t *) *undoables);
 void transaction_get_redoables(array(event_bundle_t *) *redoables);
 b32  transaction_system_can_undo(void);
@@ -384,6 +385,13 @@ void *transaction_spawn_event(const event_metadata_t *meta, const char *nav_desc
 {
 	transaction_system_t *sys = g_active_transaction_system;
 	event_t *event = event_create(kind, meta, nav_description, sys->alc);
+	return event->instance;
+}
+
+void *transaction_spawn_empty_event(const event_metadata_t *meta, const char *nav_description, u32 kind)
+{
+	transaction_system_t *sys = g_active_transaction_system;
+	event_t *event = event_create_empty(kind, meta, nav_description, sys->alc);
 	return event->instance;
 }
 
