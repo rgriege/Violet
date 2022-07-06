@@ -157,8 +157,17 @@ b32 file_exists(const char *path)
 
 s64 file_modified_time(const char *path)
 {
+	wchar_t path_w[PATH_MAX];
 	struct _stat s;
-	return _tstat(path, &s) == 0 ? s.st_mtime : 0;
+
+	if (!os_string_from_utf8(B2PC(path_w), path)) {
+		log_error("%s(%s): os_string_from_utf8(%s) error %d",
+		          __FUNCTION__, path, path, GetLastError());
+		return 0;
+	}
+
+
+	return _tstat(path_w, &s) == 0 ? s.st_mtime : 0;
 }
 
 b32 dir_exists(const char *path)
