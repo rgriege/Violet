@@ -32,7 +32,7 @@ void transaction_get_undoables(array(event_bundle_t *) *undoables);
 void transaction_get_redoables(array(event_bundle_t *) *redoables);
 b32  transaction_system_can_undo(void);
 b32  transaction_system_can_redo(void);
-void transaction_system_restore(array(event_bundle_t) *bundles);
+b32  transaction_system_restore(array(event_bundle_t) *bundles);
 /* Returns a nonzero event kind for executed, non-secondary events */
 u32 transaction__flush(event_t *event);
 transaction_system_t *get_active_transaction_system(void);
@@ -244,28 +244,34 @@ void transaction__undo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 }
 
 static
-void transaction__redo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
+b32 transaction__redo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 {
 	assert(bundle->status != EVENT_STATUS_UNREACHABLE);
 	array_foreach(bundle->d, event_t *, event) {
 		sys->active_parent = *event;
 		if ((*event)->meta->contract->update_pre)
 			(*event)->meta->contract->update_pre((*event)->instance, NULL);
-		event_execute(*event);
+		if (!event_execute(*event))
+			return false;
 		sys->active_parent = NULL;
 	}
 	bundle->status = EVENT_STATUS_DONE;
+	return true;
 }
 
-void transaction_system_restore(array(event_bundle_t) *bundles)
+b32 transaction_system_restore(array(event_bundle_t) *bundles)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 	assert(array_empty(sys->event_history));
 	array_iterate(*bundles, i, n) {
-		transaction__redo_bundle(sys, &(*bundles)[i]);
+		if (!transaction__redo_bundle(sys, &(*bundles)[i])) {
+			array_clear(sys->event_history);
+			return false;
+		}
 		array_append(sys->event_history, (*bundles)[i]);
 	}
 	array_clear(*bundles);
+	return true;
 }
 
 b32 transaction_system_can_undo(void)
