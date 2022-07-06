@@ -31,7 +31,7 @@ void transaction_get_undoables(array(event_bundle_t *) *undoables);
 void transaction_get_redoables(array(event_bundle_t *) *redoables);
 b32  transaction_system_can_undo(void);
 b32  transaction_system_can_redo(void);
-void transaction_system_redo_all(void);
+void transaction_system_restore(array(event_bundle_t) *bundles);
 /* Returns a nonzero event kind for executed, non-secondary events */
 u32 transaction__flush(event_t *event);
 transaction_system_t *get_active_transaction_system(void);
@@ -256,11 +256,15 @@ void transaction__redo_bundle(transaction_system_t *sys, event_bundle_t *bundle)
 	bundle->status = EVENT_STATUS_DONE;
 }
 
-void transaction_system_redo_all(void)
+void transaction_system_restore(array(event_bundle_t) *bundles)
 {
 	transaction_system_t *sys = g_active_transaction_system;
-	array_iterate(sys->event_history, i, n)
-		transaction__redo_bundle(sys, &sys->event_history[i]);
+	assert(array_empty(sys->event_history));
+	array_iterate(*bundles, i, n) {
+		transaction__redo_bundle(sys, &(*bundles)[i]);
+		array_append(sys->event_history, (*bundles)[i]);
+	}
+	array_clear(*bundles);
 }
 
 b32 transaction_system_can_undo(void)
