@@ -532,7 +532,8 @@ u32 transaction__handle_ordinary_event(transaction_system_t *sys, event_t *event
 				event_update(last_event, event);
 				if (sys->logger)
 					sys->logger->log(sys->logger->userp, array_sz(sys->event_history) - 1);
-				event_unwind_children(event, sys->alc);
+				if (!event->meta->soft_merge)
+					event_unwind_children(event, sys->alc);
 				event_destroy(event, sys->alc);
 			} else {
 				/* Handle fresh primary event; corresponds to an undo point */

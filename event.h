@@ -32,6 +32,9 @@ typedef struct event_metadata {
 	const char *label;
 	/* a secondary event is one that will not be directly associated with an undo point */
 	const b32 secondary;
+	/* use VERY sparingly, i.e. when all side effects from nested events will be manually reverted
+	 * in the root event __undo handler */
+	const b32 soft_merge;
 	const u32 version;
 } event_metadata_t;
 
