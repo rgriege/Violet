@@ -45,7 +45,7 @@ typedef struct event {
 	s64 time_since_epoch_ms;
     /* expect event_kind_e */
 	u32 kind;
-	char _padding[4];
+	s32 status;
 	char instance[];
 } event_t;
 
@@ -54,16 +54,6 @@ typedef enum event_status {
 	EVENT_STATUS_UNDONE,
 	EVENT_STATUS_UNREACHABLE,
 } event_status_e;
-
-/* top-level collection of event_t * */
-typedef struct event_bundle {
-	/* all items are the root node of an event subtree */
-	array(event_t *) d;
-	/* all items are either primary or secondary
-	 * (though children can be mixed primary and/or secondary) */
-	b32 secondary;
-	s32 status; /* event_status_e */
-} event_bundle_t;
 
 event_t *event_create(u32 kind, const event_metadata_t *meta,
                       const char *nav_description, allocator_t *alc);
@@ -77,13 +67,6 @@ void event_unwind_children(event_t *event, allocator_t *alc);
 void event_update(event_t *dst, const event_t *src);
 /* returns true if the events are mergeable, based on the event-specific implementation */
 b32 event_update_pre(event_t *dst, const event_t *src);
-
-event_bundle_t event_bundle_create(event_t *event, allocator_t *alc);
-event_bundle_t event_bundle_create_empty(b32 secondary, allocator_t *alc);
-void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc);
-void event_bundle_clear(event_bundle_t *bundle, allocator_t *alc);
-void event_bundle_copy(event_bundle_t *dst, const event_bundle_t *src);
-void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc);
 
 #define event_factory(type) \
 	.contract = &(event_contract_t) { \
@@ -238,52 +221,6 @@ b32 event_update_pre(event_t *dst, const event_t *src)
 	b32 result = src != NULL;
 	result &= dst->meta->contract->update_pre(dst->instance, src ? src->instance : NULL);
 	return result;
-}
-
-event_bundle_t event_bundle_create(event_t *event, allocator_t *alc)
-{
-	event_bundle_t events = event_bundle_create_empty(event->meta->secondary, alc);
-	array_append(events.d, event);
-	return events;
-}
-
-event_bundle_t event_bundle_create_empty(b32 secondary, allocator_t *alc)
-{
-	event_bundle_t events = {
-		.secondary = secondary,
-		.d = array_create_ex(alc),
-	};
-	return events;
-}
-
-void event_bundle_destroy(event_bundle_t *bundle, allocator_t *alc)
-{
-	array_foreach(bundle->d, event_t *, event_ptr)
-		event_destroy(*event_ptr, alc);
-	array_destroy(bundle->d);
-}
-
-void event_bundle_clear(event_bundle_t *bundle, allocator_t *alc)
-{
-	array_foreach(bundle->d, event_t *, event_ptr)
-		event_destroy(*event_ptr, alc);
-	array_clear(bundle->d);
-}
-
-void event_bundle_copy(event_bundle_t *dst, const event_bundle_t *src)
-{
-	dst->secondary = src->secondary;
-	dst->d = array_create_ex(array__allocator(src->d));
-	array_copy(dst->d, src->d);
-}
-
-void event_bundle_unwind(event_bundle_t *bundle, allocator_t *alc)
-{
-	for (u32 i = array_sz(bundle->d); i-- > 0; ) {
-		event_undo(bundle->d[i], alc);
-		event_destroy(bundle->d[i], alc);
-	}
-	array_clear(bundle->d);
 }
 
 #undef EVENT_IMPLEMENTATION
