@@ -460,8 +460,6 @@ u32 transaction__handle_child_event(transaction_system_t *sys, event_t *event, e
 	u32 result = EVENT_KIND_NOOP;
 	sys->active_parent = event;
 
-	assert(!event->meta->contract->update_pre);
-
 	if (event_execute(event)) {
 		array_append(parent->children, event);
 		result = event->kind;
