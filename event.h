@@ -9,17 +9,17 @@
 #define NAV_DESCRIPTION_SIZE   16
 
 typedef struct event_contract {
+	void (*create    )(void *instance, allocator_t *alc);
 	void (*destroy   )(void *instance, allocator_t *alc);
+	b32  (*load      )(void *instance, void *userp);
+	void (*save      )(const void *instance, void *userp);
 	b32  (*execute   )(void *instance);
 	void (*undo      )(const void *instance);
 	void (*update    )(void *dst, const void *src); // both dst and src are instances
 	b32  (*update_pre)(void *new, const optional(void) old); // both new and old are instances
-	b32  (*load)(void *instance, void *userp);
-	void (*save)(const void *instance, void *userp);
 } event_contract_t;
 
 typedef struct event_metadata {
-	void (*spawner)(void *instance, allocator_t *alc);
 	const event_contract_t *contract;
 	/* Addresses the use case when some data mutation might be repeated with a
 	   different payload. If the desired undo behavior is such that it reverts
@@ -85,25 +85,25 @@ b32 event_update_pre(event_t *dst, const event_t *src);
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_dynamic(type) \
-	.spawner = (void (*)(void *, allocator_t *))event_##type##__create, \
 	.contract = &(event_contract_t) { \
+		.create  = (void (*)(void *, allocator_t *))event_##type##__create, \
 		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
-		.execute = (b32  (*)(void *))event_##type##__execute, \
-		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.load    = (b32  (*)(void *, void *))event_##type##__load, \
 		.save    = (void (*)(const void *, void *))event_##type##__save, \
+		.execute = (b32  (*)(void *))event_##type##__execute, \
+		.undo    = (void (*)(const void *))event_##type##__undo, \
 	}, \
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_multi_frame_dynamic(type) \
-	.spawner = (void (*)(void *, allocator_t *))event_##type##__create, \
 	.contract = &(event_contract_t) { \
+		.create  = (void (*)(void *, allocator_t *))event_##type##__create, \
 		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
+		.load    = (b32  (*)(void *, void *))event_##type##__load, \
+		.save    = (void (*)(const void *, void *))event_##type##__save, \
 		.execute = (b32  (*)(void *))event_##type##__execute, \
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
-		.load    = (b32  (*)(void *, void *))event_##type##__load, \
-		.save    = (void (*)(const void *, void *))event_##type##__save, \
 	}, \
 	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)
@@ -119,15 +119,15 @@ b32 event_update_pre(event_t *dst, const event_t *src);
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_multi_frame_pre_dynamic(type) \
-	.spawner = (void (*)(void *, allocator_t *))event_##type##__create, \
 	.contract = &(event_contract_t) { \
-		.destroy = (void (*)(void *, allocator_t *))event_##type##__destroy, \
+		.create     = (void (*)(void *, allocator_t *))event_##type##__create, \
+		.destroy    = (void (*)(void *, allocator_t *))event_##type##__destroy, \
+		.load       = (b32  (*)(void *, void *))event_##type##__load, \
+		.save       = (void (*)(const void *, void *))event_##type##__save, \
 		.execute    = (b32  (*)(void *))event_##type##__execute, \
 		.undo       = (void (*)(const void *))event_##type##__undo, \
 		.update     = (void (*)(void *, const void *))event_##type##__update, \
 		.update_pre = (b32  (*)(void *, const void *))event_##type##__update_pre, \
-		.load       = (b32  (*)(void *, void *))event_##type##__load, \
-		.save       = (void (*)(const void *, void *))event_##type##__save, \
 	}, \
 	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)
@@ -142,8 +142,8 @@ event_t *event_create(u32 kind, const event_metadata_t *meta,
                       const char *nav_description, allocator_t *alc)
 {
 	event_t *event = event_create_empty(kind, meta, nav_description, alc);
-	if (meta->spawner)
-		meta->spawner(event->instance, alc);
+	if (meta->contract->create)
+		meta->contract->create(event->instance, alc);
 	return event;
 }
 

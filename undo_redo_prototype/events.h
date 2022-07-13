@@ -233,12 +233,10 @@ static void event_gui_plus_minus__update(event_gui_plus_minus_t *dst, const even
 static const event_metadata_t g_event_registry[EVENT_KIND__COUNT] = {
 	[EVENT_KIND_NOOP] = {0},
 	[EVENT_KIND_UNDO] = {
-		.spawner  = &event_undo_redo__create,
 		.contract = &event_undo__contract,
 		.description = "Undo",
 	},
 	[EVENT_KIND_REDO] = {
-		.spawner  = &event_undo_redo__create,
 		.contract = &event_redo__contract,
 		.description = "Redo",
 	},

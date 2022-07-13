@@ -394,6 +394,7 @@ const event_contract_t event_noop__contract = {
 };
 
 const event_contract_t event_undo__contract = {
+	.create  = &event_undo_redo__create,
 	.destroy = (void (*)(void *, allocator_t *))event_undo_redo__destroy,
 	.execute = (b32 (*)(void *))event_undo__execute,
 	.load    = (b32  (*)(void *, void *))event_undo_redo__load,
@@ -401,6 +402,7 @@ const event_contract_t event_undo__contract = {
 };
 
 const event_contract_t event_redo__contract = {
+	.create  = &event_undo_redo__create,
 	.destroy = (void (*)(void *, allocator_t *))event_undo_redo__destroy,
 	.execute = (b32 (*)(void *))event_redo__execute,
 	.load    = (b32  (*)(void *, void *))event_undo_redo__load,
