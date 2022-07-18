@@ -5219,10 +5219,15 @@ void gui__shadow_box(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                        u32 *val, u32 num_items)
 {
+	b32 draw_items = false;
+
+	if (num_items == 0)
+		gui_lock(gui);
+
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
 		++gui->culled_widgets;
-		return false;
+		goto out;
 	}
 
 	const u64 id = gui_widget_id(gui, x, y);
@@ -5269,7 +5274,7 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		const s32 sw = gui_scale_val(gui, gui->style.dropdown.shadow.width);
 
 		if (!gui__popup_begin(gui, id, px - sw, py - sw, pw + 2 * sw, ph + sw))
-			return false;
+			goto out;
 
 		if (sw > 0) {
 			const color_t color = gui->style.dropdown.shadow.color;
@@ -5280,7 +5285,11 @@ b32 gui_dropdown_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		pgui_col(gui, 0, num_items);
 	}
 
-	return true;
+	draw_items = true;
+out:
+	if (num_items == 0)
+		gui_unlock(gui);
+	return draw_items;
 }
 
 b32 gui_dropdown_item(gui_t *gui, u32 id, const char *txt)
@@ -5322,7 +5331,8 @@ void gui_dropdown_end(gui_t *gui)
 	const s32 render_state = gui->dropdown.render_state;
 	const b32 contains_mouse = gui->dropdown.contains_mouse;
 
-	assert(strlen(txt) > 0);
+	if (gui->dropdown.num_items == 0)
+		gui_lock(gui);
 
 	if (gui_widget_focused(gui, gui->dropdown.id)) {
 		pgui_grid_end(gui, &gui->popup->grid);
@@ -5347,6 +5357,9 @@ void gui_dropdown_end(gui_t *gui)
 	};
 	const s32 px = (style.text.align & GUI_ALIGN_RIGHT) ? x : x + w - h;
 	gui_pen_panel_collapse(gui, px, y, h, h, &style_pen);
+
+	if (gui->dropdown.num_items == 0)
+		gui_unlock(gui);
 
 	memclr(gui->dropdown);
 }
@@ -5513,10 +5526,15 @@ b32 gui__resize_vert(gui_t *gui, s32 x, s32 *y, s32 w, s32 h)
 b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
                    const char *txt, s32 item_w, u32 num_items)
 {
+	b32 draw_items = false;
+
+	if (num_items == 0)
+		gui_lock(gui);
+
 	if (!gui_box_visible(gui, x, y, w, h)) {
 		gui_widget_bounds_extend(gui, x, y, w, h);
 		++gui->culled_widgets;
-		return false;
+		goto out;
 	}
 
 	const u64 id = gui_widget_id(gui, x, y);
@@ -5543,7 +5561,7 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 		const s32 sw = gui_scale_val(gui, gui->style.dropdown.shadow.width);
 
 		if (!gui__popup_begin(gui, id, px - sw, py - sw, pw + 2 * sw, ph + sw))
-			return false;
+			goto out;
 
 		if (sw > 0) {
 			const color_t color = gui->style.dropdown.shadow.color;
@@ -5552,11 +5570,15 @@ b32 gui_menu_begin(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 
 		pgui_grid_begin(gui, &gui->popup->grid, px, py, pw, ph);
 		pgui_col(gui, 0, num_items);
-		return true;
+		draw_items = true;
 	} else {
 		gui_hint_render(gui, id, gui->style.dropdown.btn.hint);
-		return false;
 	}
+
+out:
+	if (num_items == 0)
+		gui_unlock(gui);
+	return draw_items;
 }
 
 void gui_menu_end(gui_t *gui)
