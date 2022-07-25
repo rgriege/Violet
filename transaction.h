@@ -336,13 +336,18 @@ b32 event_undo__execute(event_undo_redo_t *event)
 	/* There can potentially be several secondary events in sequence after the undo point. */
 	event_t **tail = &sys->event_history[doable_idx];
 	while (tail != last) {
-		if ((*(tail+1))->meta->secondary && (*(tail+1))->status == EVENT_STATUS_DONE)
+		const event_t *next = *(tail+1);
+		if (   (   next->meta->secondary
+		        && next->status == EVENT_STATUS_DONE)
+			|| next->status == EVENT_STATUS_UNREACHABLE)
 			tail++;
 		else
 			break;
 	}
 	while (tail != &sys->event_history[doable_idx]) {
-		transaction__undo_event(sys, *tail);
+		if (    (*tail)->meta->secondary
+		     && (*tail)->status == EVENT_STATUS_DONE)
+			transaction__undo_event(sys, *tail);
 		tail--;
 	}
 
@@ -373,13 +378,18 @@ b32 event_redo__execute(event_undo_redo_t *event)
 	/* There can potentially be several secondary events in sequence before the undo point. */
 	event_t **head = &sys->event_history[doable_idx];
 	while (head != first) {
-		if ((*(head-1))->meta->secondary && (*(head-1))->status == EVENT_STATUS_UNDONE)
+		const event_t *prev = *(head-1);
+		if (   (   prev->meta->secondary
+		        && prev->status == EVENT_STATUS_UNDONE)
+		    || prev->status == EVENT_STATUS_UNREACHABLE)
 			head--;
 		else
 			break;
 	}
 	while (head != &sys->event_history[doable_idx]) {
-		transaction__redo_event(sys, *head);
+		if (    (*head)->meta->secondary
+		     && (*head)->status == EVENT_STATUS_UNDONE)
+			transaction__redo_event(sys, *head);
 		head++;
 	}
 
@@ -444,6 +454,8 @@ u32 transaction__handle_priority_event(transaction_system_t *sys, event_t *event
 	assert(!event->meta->contract->update_pre);
 
 	if (event_execute(event)) {
+		/* Priority events should be never accessible to other undos/redos */
+		event->status = EVENT_STATUS_UNREACHABLE;
 		/* Priority events are never secondary, nor are they ever nested */
 		array_append(sys->event_history, event);
 		if (sys->logger)
