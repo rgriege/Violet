@@ -264,12 +264,15 @@ b32 transaction_system_restore(array(event_t *) history)
 {
 	transaction_system_t *sys = g_active_transaction_system;
 	assert(array_empty(sys->event_history));
-	array_foreach(history, event_t *, event_ptr) {
-		if (!transaction__redo_event(sys, *event_ptr)) {
+	array_iterate(history, i, n) {
+		if (!transaction__redo_event(sys, history[i])) {
 			array_clear(sys->event_history);
+			log_error("failed to restore event %s", history[i]->meta->label);
+			for (; i-- > 0; )
+				log_error("after restoring event %s", history[i]->meta->label);
 			return false;
 		}
-		array_append(sys->event_history, *event_ptr);
+		array_append(sys->event_history, history[i]);
 	}
 	array_clear(history);
 	return true;
