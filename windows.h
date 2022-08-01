@@ -589,27 +589,6 @@ void exec(char *const argv[])
 	_execv(argv[0], argv);
 }
 
-int run(const char *command)
-{
-	FILE *fp = _popen(command, "r");
-	if (!fp) {
-		log_error("failed to execute %s", command);
-		return -1;
-	}
-	char *log_buf = NULL;
-	size_t log_buf_sz;
-	log_buf_sz = vgetline(&log_buf, &log_buf_sz, fp, g_temp_allocator);
-	while (log_buf_sz != 0 && log_buf_sz != -1) {
-		if (log_buf[log_buf_sz - 1] == '\n')
-			log_buf[log_buf_sz - 1] = '\0';
-		log_info("%s", log_buf);
-		log_buf_sz = vgetline(&log_buf, &log_buf_sz, fp, g_temp_allocator);
-	}
-	afree(log_buf, g_temp_allocator);
-	int status = _pclose(fp);
-	return status != -1 ? status : -1;
-}
-
 b32 open_file_external(const char *filename)
 {
 	wchar_t filename_w[PATH_MAX];

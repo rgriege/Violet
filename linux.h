@@ -366,38 +366,16 @@ void exec(char *const argv[])
 	execv(argv[0], argv);
 }
 
-int run(const char *command)
-{
-	FILE *fp = popen(command, "r");
-	if (!fp) {
-		char local_command[256] = "./";
-		strcpy(local_command+2, command);
-		fp = popen(local_command, "r");
-	}
-	if (!fp) {
-		log_error("failed to execute %s", command);
-		return -1;
-	}
-	char *log_buf = NULL;
-	size_t log_buf_sz;
-	log_buf_sz = vgetline(&log_buf, &log_buf_sz, fp, g_temp_allocator);
-	while (log_buf_sz != 0 && log_buf_sz != -1) {
-		if (log_buf[log_buf_sz - 1] == '\n')
-			log_buf[log_buf_sz - 1] = '\0';
-		log_info("%s", log_buf);
-		log_buf_sz = vgetline(&log_buf, &log_buf_sz, fp, g_temp_allocator);
-	}
-	afree(log_buf, g_temp_allocator);
-	int status = pclose(fp);
-	return status != -1 && WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
-
 b32 open_file_external(const char *filename)
 {
-	char command[256] = "xdg-open ";
-	const size_t sz = strlen(command);
-	strncpy(command + sz, filename, 256 - sz - 1);
-	return run(command) == 0;
+	b32 result;
+	str_t cmd = str_create(g_temp_allocator);
+    str_cpy(&cmd, "xdg-open ");
+    str_cat(&cmd, filename);
+    str_cat(&cmd, " &"); /* Ensure the command executes in its own process. */
+    result = (system(cmd) == 0);
+    str_destroy(&cmd);
+    return result;
 }
 
 /* System */

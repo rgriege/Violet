@@ -320,12 +320,6 @@ void exec(char *const argv[])
 	assert(false);
 }
 
-int run(const char *command)
-{
-	assert(false);
-	return -1;
-}
-
 b32 open_file_external(const char *filename)
 {
 	return EM_ASM_INT(return window.open(UTF8ToString($0)) != null, filename);
