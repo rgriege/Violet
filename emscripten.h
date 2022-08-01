@@ -331,12 +331,6 @@ b32 open_file_external(const char *filename)
 	return EM_ASM_INT(return window.open(UTF8ToString($0)) != null, filename);
 }
 
-s32 open_url_in_browser(const char *url)
-{
-	assert(false);
-	return -1;
-}
-
 /* System */
 
 s32 cpu_max_sse(void)

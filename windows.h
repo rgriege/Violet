@@ -628,22 +628,6 @@ b32 open_file_external(const char *filename)
 	return true;
 }
 
-s32 open_url_in_browser(const char *url)
-{
-	str_t url_w = str_create_ex(2048, g_temp_allocator);
-	INT_PTR ret;
-
-	if (!os_string_from_utf8(url_w, array_cap(url_w), url))
-		return -1;
-
-	ret = (INT_PTR)ShellExecute(NULL, "open", url_w, NULL, NULL, SW_SHOWNORMAL);
-	if (ret <= 32)
-		log_error("failed to open url %s in the browser with error %d", url, ret);
-
-	str_destroy(&url_w);
-	return ret;
-}
-
 /* System */
 
 s32 cpu_max_sse(void)

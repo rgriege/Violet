@@ -106,7 +106,6 @@ size_t vgetline(char **lineptr, size_t *n, FILE *stream, allocator_t *a);
 void exec(char *const argv[]);
 int  run(const char *command);
 b32  open_file_external(const char *filename);
-s32  open_url_in_browser(const char *url);
 
 /* System */
 

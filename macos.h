@@ -441,18 +441,6 @@ b32 open_file_external(const char *filename)
 	return run(command) == 0;
 }
 
-s32 open_url_in_browser(const char *url)
-{
-	s32 result;
-    str_t cmd = str_create(g_temp_allocator);
-    str_cat(&cmd, "open ");
-    str_cat(&cmd, url);
-    str_cat(&cmd, " O_NONBLOCK"); /* Ensure the command executes in its own process. */
-    result = system(cmd);
-    str_destroy(&cmd);
-    return result;
-}
-
 /* System */
 
 s32 cpu_max_sse(void)
