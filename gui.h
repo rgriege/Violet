@@ -1770,9 +1770,9 @@ typedef struct gui
 	u32 style_stack_sz;
 
 	/* general widget state
-	 * hot    = hover
-	 * active = mouse down
-	 * hot    = post-click activation, e.g. text input */
+	 * hot     = hover
+	 * active  = mouse down
+	 * focused = post-click activation, e.g. text input */
 	u32 base_id;
 	u32 lock;
 	u64 hot_id;
