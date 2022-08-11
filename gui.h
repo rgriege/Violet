@@ -4048,11 +4048,26 @@ void gui__npt_move_cursor_right(gui_t *gui, const char *txt)
 }
 
 static
+s32 gui__font_newline_dist(const gui_t *gui, void *font)
+{
+	if (font) {
+		gui_font_metrics_t metrics;
+		gui->fonts.get_metrics(font, &metrics);
+		return metrics.newline_dist;
+	} else {
+		return 0;
+	}
+}
+
+static
 void gui__npt_move_cursor_vertical(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
-                                   const char *txt, s32 diff, u32 fallback)
+                                   const char *txt, s32 dir, u32 fallback)
 {
 	const u32 orig_pos = gui->npt.selection;
 	const gui_text_style_t *style = &gui->style.npt.active.text;
+	const s32 size = gui_scale_val(gui, style->size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
+	const s32 diff = dir * gui__font_newline_dist(gui, font);
 	v2i cursor;
 
 	gui__txt_get_cursor_pos(gui, x, y, w, h, txt, orig_pos, style, &cursor.x, &cursor.y);
@@ -4257,18 +4272,6 @@ s32 gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 	                        ? &g_gui_npt_filter_print_multiline
 	                        : &g_gui_npt_filter_print;
 	return gui_npt_txt_ex(gui, x, y, w, h, txt, n, hint, flags, filter);
-}
-
-static
-s32 gui__font_newline_dist(const gui_t *gui, void *font)
-{
-	if (font) {
-		gui_font_metrics_t metrics;
-		gui->fonts.get_metrics(font, &metrics);
-		return metrics.newline_dist;
-	} else {
-		return 0;
-	}
 }
 
 static
@@ -4546,12 +4549,9 @@ void gui__npt_paste(gui_t *gui, char *txt, u32 n)
 static
 void gui__npt_move_up(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
-	const s32 size = gui_scale_val(gui, gui->style.npt.active.text.size);
-	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
-	const s32 dy = gui__font_newline_dist(gui, font);
 	u32 beg, end;
 	if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
-		gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
+		gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, 1, 0);
 	else
 		gui->npt.cursor = gui->npt.selection = beg;
 }
@@ -4559,13 +4559,10 @@ void gui__npt_move_up(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 static
 void gui__npt_move_down(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt)
 {
-	const s32 size = gui_scale_val(gui, gui->style.npt.active.text.size);
-	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
-	const s32 dy = -gui__font_newline_dist(gui, font);
 	u32 len = (u32)strlen(txt);
 	u32 beg, end;
 	if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
-		gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
+		gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, -1, len);
 	else
 		gui->npt.cursor = gui->npt.selection = end;
 }
