@@ -408,6 +408,7 @@ s32  gui_npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                  const char *hint, gui_npt_flags_e flags);
 s32  gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                     const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter);
+s32  gui_npt_txt_invis(gui_t *gui, s32 x, s32 y, char *txt, u32 n, gui_npt_filter_p filter);
 s32  gui_npt_val(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const char *txt, u32 n,
                  gui_npt_flags_e flags, gui_npt_filter_p filter);
 gui_btn_e gui_btn_logic(gui_t *gui, u64 id, gui_mouse_button_e mb, b32 contains_mouse);
@@ -4396,6 +4397,128 @@ void gui__npt_insert_txt(gui_t *gui, char *txt, u32 n, u32 *len, const char *ins
 	}
 }
 
+static
+s32 gui__npt_txt_invis(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
+                       b32 multiline, gui_npt_filter_p filter)
+{
+	const s32 size = gui_scale_val(gui, gui->style.npt.active.text.size);
+	void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
+	s32 complete = 0;
+	u32 len = (u32)strlen(txt);
+	gui->npt.cursor    = clamp(0, gui->npt.cursor,    len);
+	gui->npt.selection = clamp(0, gui->npt.selection, len);
+	if (strlen(gui->text_npt) > 0 && !key_mod(gui, GUI__KBM_CLIPBOARD)) {
+		gui__npt_insert_txt(gui, txt, n, &len, gui->text_npt, filter);
+	} else if (gui->key_repeat.triggered) {
+		const u32 key_idx = gui->key_repeat.val;
+		if (key_idx == KB_BACKSPACE) {
+			const b32 has_selection = gui__npt_has_selection(gui);
+			gui__npt_remove_selected(gui, txt, &len);
+			if (!has_selection && gui->npt.cursor > 0) {
+				char *cursor = &txt[gui->npt.cursor], *prev;
+				utf8_prev_codepoint(cursor, &prev);
+				gui->npt.cursor -= (cursor - prev);
+				gui->npt.selection = gui->npt.cursor;
+				buf_remove_n(txt, gui->npt.cursor, cursor - prev, len+1);
+			}
+		} else if (key_idx == KB_DELETE) {
+			const b32 has_selection = gui__npt_has_selection(gui);
+			gui__npt_remove_selected(gui, txt, &len);
+			char *cursor = &txt[gui->npt.cursor], *next;
+			if (!has_selection && utf8_next_codepoint(cursor, &next) != 0)
+				buf_remove_n(txt, gui->npt.cursor, next - cursor, len+1);
+		} else if ((key_idx == KB_RETURN || key_idx == KB_KP_ENTER)) {
+			if (multiline && key_mod(gui, KBM_SHIFT)) {
+				gui__npt_insert_txt(gui, txt, n, &len, "\n", filter);
+			} else {
+				gui->npt.selection = gui->npt.cursor;
+				gui__npt_remove_selected(gui, txt, &len);
+				complete = GUI_NPT_COMPLETE_ON_ENTER;
+			}
+		} else if (key_idx == KB_A && key_mod(gui, GUI__KBM_CLIPBOARD)) {
+			gui__npt_select_all(gui, txt);
+		} else if (key_idx == KB_C && key_mod(gui, GUI__KBM_CLIPBOARD)) {
+			u32 beg, end;
+			if (gui__npt_get_selection(gui, &beg, &end)) {
+				const u32 sz = min(end - beg, sizeof(gui->clipboard_out) - 1);
+				memcpy(gui->clipboard_out, &txt[beg], sz);
+				gui->clipboard_out[sz] = 0;
+			}
+		} else if (key_idx == KB_X && key_mod(gui, GUI__KBM_CLIPBOARD)) {
+			u32 beg, end;
+			if (gui__npt_get_selection(gui, &beg, &end)) {
+				const u32 sz = min(end - beg, sizeof(gui->clipboard_out) - 1);
+				memcpy(gui->clipboard_out, &txt[beg], sz);
+				gui->clipboard_out[sz] = 0;
+				gui__npt_remove_selected(gui, txt, &len);
+			}
+		} else if (key_idx == KB_V && key_mod(gui, GUI__KBM_CLIPBOARD)) {
+			u32 sz;
+			gui__npt_remove_selected(gui, txt, &len);
+			if ((sz = (u32)strlen(gui->clipboard_in)) > 0 && len + sz < n) {
+				if (gui->clipboard_input_exceeds_buffer_size)
+					log_warn("clipboard input exceeds buffer size");
+				memmove(&txt[gui->npt.cursor + sz],
+				        &txt[gui->npt.cursor],
+				        len - gui->npt.cursor + 1);
+				memcpy(&txt[gui->npt.cursor], gui->clipboard_in, sz);
+				gui->npt.cursor += sz;
+				gui->npt.selection = gui->npt.cursor;
+			}
+		} else if (gui__key_up(gui)) {
+			const s32 dy = gui__font_newline_dist(gui, font);
+			u32 beg, end;
+			if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
+				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
+			else
+				gui->npt.cursor = gui->npt.selection = beg;
+		} else if (gui__key_down(gui)) {
+			const s32 dy = -gui__font_newline_dist(gui, font);
+			u32 beg, end;
+			if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
+				gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
+			else
+				gui->npt.cursor = gui->npt.selection = end;
+		} else if (gui__key_left(gui)) {
+			u32 beg, end;
+			if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
+				gui__npt_move_cursor_left(gui, txt);
+			else
+				gui->npt.cursor = gui->npt.selection = beg;
+		} else if (gui__key_right(gui)) {
+			u32 beg, end;
+			if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
+				gui__npt_move_cursor_right(gui, txt);
+			else
+				gui->npt.cursor = gui->npt.selection = end;
+		} else if (gui__key_home(gui)) {
+			gui->npt.selection = 0;
+			gui__npt_selection_moved(gui);
+		} else if (gui__key_end(gui)) {
+			gui->npt.selection = len;
+			gui__npt_selection_moved(gui);
+		}
+	}
+	return complete;
+}
+
+static
+gui_btn_e gui__btn_logic_ex(gui_t *gui, u64 id, gui_mouse_button_e mb,
+                            b32 mouse_pos_can_focus, b32 mouse_pos_can_defocus);
+
+s32 gui_npt_txt_invis(gui_t *gui, s32 x, s32 y, char *txt, u32 n, gui_npt_filter_p filter)
+{
+	const u64 id = gui_widget_id(gui, x, y);
+	const b32 was_focused = gui_widget_focused(gui, id);
+
+	gui__btn_logic_ex(gui, id, 0, false, false);
+
+	if (gui_widget_focused(gui, id) != was_focused)
+		gui->npt.active = gui_widget_focused(gui, id);
+
+	return gui__npt_txt_invis(gui, x, y, 1, 1, txt, n, false, filter);
+}
+
 s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
                    const char *hint, gui_npt_flags_e flags, gui_npt_filter_p filter)
 {
@@ -4460,104 +4583,8 @@ s32 gui_npt_txt_ex(gui_t *gui, s32 x, s32 y, s32 w, s32 h, char *txt, u32 n,
 
 	/* keyboard input */
 	if (gui_widget_focused(gui, id)) {
-		const s32 size = gui_scale_val(gui, style->active.text.size);
-		void *font = gui->fonts.get_font(gui->fonts.handle, gui->style.font_path, size);
-		u32 len = (u32)strlen(txt);
-		gui->npt.cursor    = clamp(0, gui->npt.cursor,    len);
-		gui->npt.selection = clamp(0, gui->npt.selection, len);
-		if (strlen(gui->text_npt) > 0 && !key_mod(gui, GUI__KBM_CLIPBOARD)) {
-			gui__npt_insert_txt(gui, txt, n, &len, gui->text_npt, filter);
-		} else if (gui->key_repeat.triggered) {
-			const u32 key_idx = gui->key_repeat.val;
-			if (key_idx == KB_BACKSPACE) {
-				const b32 has_selection = gui__npt_has_selection(gui);
-				gui__npt_remove_selected(gui, txt, &len);
-				if (!has_selection && gui->npt.cursor > 0) {
-					char *cursor = &txt[gui->npt.cursor], *prev;
-					utf8_prev_codepoint(cursor, &prev);
-					gui->npt.cursor -= (cursor - prev);
-					gui->npt.selection = gui->npt.cursor;
-					buf_remove_n(txt, gui->npt.cursor, cursor - prev, len+1);
-				}
-			} else if (key_idx == KB_DELETE) {
-				const b32 has_selection = gui__npt_has_selection(gui);
-				gui__npt_remove_selected(gui, txt, &len);
-				char *cursor = &txt[gui->npt.cursor], *next;
-				if (!has_selection && utf8_next_codepoint(cursor, &next) != 0)
-					buf_remove_n(txt, gui->npt.cursor, next - cursor, len+1);
-			} else if ((key_idx == KB_RETURN || key_idx == KB_KP_ENTER)) {
-				if ((flags & GUI_NPT_MULTILINE) && key_mod(gui, KBM_SHIFT)) {
-					gui__npt_insert_txt(gui, txt, n, &len, "\n", filter);
-				} else {
-					gui->npt.selection = gui->npt.cursor;
-					gui__npt_remove_selected(gui, txt, &len);
-					gui__defocus_widget(gui, id);
-					complete = GUI_NPT_COMPLETE_ON_ENTER;
-				}
-			} else if (key_idx == KB_A && key_mod(gui, GUI__KBM_CLIPBOARD)) {
-				gui__npt_select_all(gui, txt);
-			} else if (key_idx == KB_C && key_mod(gui, GUI__KBM_CLIPBOARD)) {
-				u32 beg, end;
-				if (gui__npt_get_selection(gui, &beg, &end)) {
-					const u32 sz = min(end - beg, sizeof(gui->clipboard_out) - 1);
-					memcpy(gui->clipboard_out, &txt[beg], sz);
-					gui->clipboard_out[sz] = 0;
-				}
-			} else if (key_idx == KB_X && key_mod(gui, GUI__KBM_CLIPBOARD)) {
-				u32 beg, end;
-				if (gui__npt_get_selection(gui, &beg, &end)) {
-					const u32 sz = min(end - beg, sizeof(gui->clipboard_out) - 1);
-					memcpy(gui->clipboard_out, &txt[beg], sz);
-					gui->clipboard_out[sz] = 0;
-					gui__npt_remove_selected(gui, txt, &len);
-				}
-			} else if (key_idx == KB_V && key_mod(gui, GUI__KBM_CLIPBOARD)) {
-				u32 sz;
-				gui__npt_remove_selected(gui, txt, &len);
-				if ((sz = (u32)strlen(gui->clipboard_in)) > 0 && len + sz < n) {
-					if (gui->clipboard_input_exceeds_buffer_size)
-						log_warn("clipboard input exceeds buffer size");
-					memmove(&txt[gui->npt.cursor + sz],
-					        &txt[gui->npt.cursor],
-					        len - gui->npt.cursor + 1);
-					memcpy(&txt[gui->npt.cursor], gui->clipboard_in, sz);
-					gui->npt.cursor += sz;
-					gui->npt.selection = gui->npt.cursor;
-				}
-			} else if (gui__key_up(gui)) {
-				const s32 dy = gui__font_newline_dist(gui, font);
-				u32 beg, end;
-				if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
-					gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, 0);
-				else
-					gui->npt.cursor = gui->npt.selection = beg;
-			} else if (gui__key_down(gui)) {
-				const s32 dy = -gui__font_newline_dist(gui, font);
-				u32 beg, end;
-				if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
-					gui__npt_move_cursor_vertical(gui, x, y, w, h, txt, dy, len);
-				else
-					gui->npt.cursor = gui->npt.selection = end;
-			} else if (gui__key_left(gui)) {
-				u32 beg, end;
-				if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
-					gui__npt_move_cursor_left(gui, txt);
-				else
-					gui->npt.cursor = gui->npt.selection = beg;
-			} else if (gui__key_right(gui)) {
-				u32 beg, end;
-				if (key_mod(gui, KBM_SHIFT) || !gui__npt_get_selection(gui, &beg, &end))
-					gui__npt_move_cursor_right(gui, txt);
-				else
-					gui->npt.cursor = gui->npt.selection = end;
-			} else if (gui__key_home(gui)) {
-				gui->npt.selection = 0;
-				gui__npt_selection_moved(gui);
-			} else if (gui__key_end(gui)) {
-				gui->npt.selection = len;
-				gui__npt_selection_moved(gui);
-			}
-		}
+		if ((complete = gui__npt_txt_invis(gui, x, y, w, h, txt, n, (flags & GUI_NPT_MULTILINE), filter)))
+			gui__defocus_widget(gui, id);
 	}
 
 	if (gui_widget_focused(gui, id) != was_focused)
