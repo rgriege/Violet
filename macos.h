@@ -413,7 +413,6 @@ b32 open_file_external(const char *filename)
     str_t cmd = str_create(g_temp_allocator);
     str_cpy(&cmd, "open ");
     str_cat(&cmd, filename);
-    str_cat(&cmd, " O_NONBLOCK"); /* Ensure the command executes in its own process. */
     result = (system(cmd) == 0);
     str_destroy(&cmd);
     return result;
