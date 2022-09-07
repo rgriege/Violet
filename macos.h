@@ -410,12 +410,12 @@ void exec(char *const argv[])
 b32 open_file_external(const char *filename)
 {
 	b32 result;
-    str_t cmd = str_create(g_temp_allocator);
-    str_cpy(&cmd, "open ");
-    str_cat(&cmd, filename);
-    result = (system(cmd) == 0);
-    str_destroy(&cmd);
-    return result;
+	str_t cmd = str_create(g_temp_allocator);
+	str_cpy(&cmd, "open ");
+	str_cat(&cmd, filename);
+	result = (system(cmd) == 0);
+	str_destroy(&cmd);
+	return result;
 }
 
 /* System */
