@@ -308,6 +308,7 @@ u32 hashn_compute_seeded(const char *str, u32 n, u32 seed);
 #define arrcmp(x, y) memcmp((x), (y), sizeof(x))
 
 #define arrcpy(x, y) memcpy((x), (y), sizeof(x))
+#define arrcpyn(x, y, n) memcpy((x), (y), n * sizeof(*x))
 
 void swap(void *lhs, void *rhs, size_t size);
 
