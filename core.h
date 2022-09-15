@@ -480,7 +480,7 @@ void fatal(const char *msg)
 
 #ifdef VLT_TRACK_MEMORY
 
-#include <SDL_thread.h>
+#include <SDL2/SDL_thread.h>
 
 typedef struct global_alloc_tracker
 {

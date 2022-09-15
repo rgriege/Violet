@@ -175,7 +175,7 @@ void   mouse_pos_global(const window_t *window, s32 *x, s32 *y);
 #ifdef SDL_GL_IMPLEMENTATION
 
 #define SDL_MAIN_HANDLED
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_surface.h>
 #define STB_IMAGE_IMPLEMENTATION
 // #define STB_IMAGE_STATIC

@@ -37,7 +37,7 @@ void music_toggle(void);
 #ifdef AUDIO_IMPLEMENTATION
 
 #ifdef AUDIO_ENABLED
-#include <SDL_mixer.h>
+#include <SDL2/SDL_mixer.h>
 
 /*
  * sound handle: Mix_Chunk
