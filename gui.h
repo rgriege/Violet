@@ -545,6 +545,7 @@ typedef struct gui_grid
 	v2i pos; /* top left */
 	v2i dim;
 	v2i start; /* top left */
+	v2i content_dim;
 	gui_widget_bounds_t widget_bounds;
 	struct gui_grid *prev;
 } gui_grid_t;
@@ -553,6 +554,7 @@ void pgui_grid_begin(gui_t *gui, gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h);
 void pgui_grid_end(gui_t *gui, gui_grid_t *grid);
 u32  pgui_grid_depth(const gui_t *gui);
 void pgui_grid_dimensions(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
+void pgui_grid_content_dimensions(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h);
 
 /* Cell values are evaluated roughly as follows:
  * 1. Subtract pixel values from the total row/column dimension.
@@ -6567,6 +6569,8 @@ void gui__grid_init(gui_grid_t *grid, s32 x, s32 y, s32 w, s32 h, gui_grid_t *pr
 	grid->pos.y   = y + h; /* widgets are drawn from high to low */
 	grid->dim.x   = w;
 	grid->dim.y   = h;
+	grid->content_dim.x = 0;
+	grid->content_dim.y = 0;
 	grid->start.x = grid->pos.x;
 	grid->start.y = grid->pos.y;
 	box2i_from_xywh(&grid->widget_bounds.bbox, x, y, w, h);
@@ -6665,6 +6669,7 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	s32 flex_cell_cnt;
 	s32 flex_cell_dim;
 	gui_grid_strip_t *strip;
+	v2i corner;
 
 	assert(num_cells > 0);
 	assert(grid->depth < GUI_GRID_MAX_DEPTH);
@@ -6697,6 +6702,11 @@ void gui__grid_add_strip(gui_grid_t *grid, b32 vertical, s32 minor_dim,
 	strip->dim.d[!vertical] = (minor_dim == GUI_GRID_FLEX)
 	                        ? gui__grid_strip_parent_dimension(grid, !vertical)
 	                        : gui__scale_val(minor_dim, scale);
+
+	corner.x = strip->dim.x + grid->pos.x - grid->start.x;
+	corner.y = strip->dim.y + grid->start.y - grid->pos.y;
+	grid->content_dim.d[vertical] = max(grid->content_dim.d[vertical], corner.d[vertical]);
+	grid->content_dim.d[!vertical] = max(grid->content_dim.d[!vertical], corner.d[!vertical]);
 
 	/* compute flex/percent cell info */
 	remaining_dim = strip->dim.d[vertical] - fixed_dim;
@@ -8734,6 +8744,22 @@ void pgui_grid_dimensions(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
 		*w = gui->grid->dim.x;
 	if (h)
 		*h = gui->grid->dim.y;
+}
+
+void pgui_grid_content_dimensions(const gui_t *gui, s32 *x, s32 *y, s32 *w, s32 *h)
+{
+	/* This function and `pgui_grid_dimensions` could probably be the same but
+	 * because I haven't tested all other uses, I'm keeping the old behavior in
+	 * `pgui_grid_dimensions` as a precaution. */
+	assert(gui->grid);
+	if (x)
+		*x = gui->grid->start.x;
+	if (y)
+		*y = gui->grid->start.y - gui->grid->content_dim.y;
+	if (w)
+		*w = gui->grid->content_dim.x;
+	if (h)
+		*h = gui->grid->content_dim.y;
 }
 
 void gui_pen_window_minimize(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
