@@ -250,14 +250,11 @@ void box3f_clip_v3f(box3f b, v3f *p);
 
 v2f fmath_line_extrapolate(v2f a, v2f b, r32 t);
 r32 fmath_line_interpolate(v2f a, v2f b, v2f p);
-b32 fmath_ray_intersect_coords(v2f a, v2f adir, v2f b, v2f bdir,
-                                     r32 *t, r32 *u);
+b32 fmath_ray_intersect_coords(v2f a, v2f adir, v2f b, v2f bdir, r32 *t, r32 *u);
 b32 fmath_ray_intersect(v2f a, v2f adir, v2f b, v2f bdir, v2f *isec);
-b32 fmath_line_intersect_coords(v2f a0, v2f a1, v2f b0, v2f b1,
-                                      r32 *t, r32 *u);
+b32 fmath_line_intersect_coords(v2f a0, v2f a1, v2f b0, v2f b1, r32 *t, r32 *u);
 b32 fmath_line_intersect(v2f a0, v2f a1, v2f b0, v2f b1, v2f *isec);
-b32 fmath_segment_intersect_coords(v2f a0, v2f a1, v2f b0, v2f b1,
-                                         r32 *t, r32 *u);
+b32 fmath_segment_intersect_coords(v2f a0, v2f a1, v2f b0, v2f b1, r32 *t, r32 *u);
 b32 fmath_segment_intersect(v2f a0, v2f a1, v2f b0, v2f b1, v2f *isec);
 v2f fmath_nearest_point_on_segment(v2f a, v2f b, v2f p);
 v2f fmath_nearest_point_on_line(v2f a, v2f b, v2f p);
@@ -271,8 +268,7 @@ ivalf linef_project(v2f a, v2f b, v2f axis);
 ivalf linef_project_onto_ray(v2f a, v2f b, v2f start, v2f dir);
 
 /* NOTE(rgriege): returns a unix-style error code - see implementation for details */
-s32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir,
-                                        r32 *t, r32 *u);
+s32 fmath_ray_intersect_coords_3d(v3f a, v3f adir, v3f b, v3f bdir, r32 *t, r32 *u);
 v3f fmath_nearest_point_on_line_3d(v3f a, v3f b, v3f p);
 r32 fmath_point_to_line_dist_3d(v3f a, v3f b, v3f p);
 r32 fmath_point_to_line_dist_sq_3d(v3f a, v3f b, v3f p);
@@ -300,10 +296,8 @@ v2f   polyf_centroid(const v2f *v, u32 n);
 b32   polyf_is_cw(const v2f *v, u32 n);
 b32   polyf_is_ccw(const v2f *v, u32 n);
 b32   polyf_line_intersect(const v2f *v, u32 n, v2f v0, v2f v1);
-u32   polyf_line_intersections(const v2f *v, u32 n, v2f v0, v2f v1,
-                                     v2f *first, v2f *last);
-b32   polyf_intersect(const v2f *p1, u32 n1, const v2f *p2, u32 n2,
-                            v2f *isec);
+u32   polyf_line_intersections(const v2f *v, u32 n, v2f v0, v2f v1, v2f *first, v2f *last);
+b32   polyf_intersect(const v2f *p1, u32 n1, const v2f *p2, u32 n2, v2f *isec);
 r32   polyf_pt_dist(const v2f *v, u32 n, v2f p);
 r32   polyf_pt_dist_sq(const v2f *v, u32 n, v2f p);
 
@@ -1744,8 +1738,7 @@ b32 polyf_line_intersect(const v2f *v, u32 n, v2f v0, v2f v1)
 	return polyf_line_intersections(v, n, v0, v1, &first, &last) > 0;
 }
 
-u32 polyf_line_intersections(const v2f *v, u32 n, v2f v0, v2f v1,
-                                   v2f *first, v2f *last)
+u32 polyf_line_intersections(const v2f *v, u32 n, v2f v0, v2f v1, v2f *first, v2f *last)
 {
 	const v2f dir = v2f_dir(v0, v1);
 	u32 cnt = 0;
