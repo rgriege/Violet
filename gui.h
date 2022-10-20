@@ -245,6 +245,8 @@ void gui_img_boxed(gui_t *gui, s32 x, s32 y, s32 w, s32 h, const gui_img_t *img,
                    gui_img_scale_e scale);
 void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt, color_t c,
              gui_align_e align);
+void gui_txt_ex(gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
+                color_t c, gui_align_e align, r32 rotation);
 void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
                  gui_align_e align, s32 *px, s32 *py, s32 *pw, s32 *ph);
 s32  gui_txt_width(const gui_t *gui, const char *txt, s32 size);
@@ -825,6 +827,7 @@ typedef struct gui_text_style
 	s32 align;
 	s32 padding;
 	b32 wrap;
+	r32 rotation;
 } gui_text_style_t;
 
 typedef struct gui_element_style
@@ -1236,6 +1239,7 @@ s32 font__offset_y(void *font, const char *txt,
 	.align = GUI_ALIGN_MIDLEFT, \
 	.padding = 4, \
 	.wrap = false, \
+	.rotation = 0.f, \
 }
 
 #define gi__gui_text_style_dark { \
@@ -2536,6 +2540,15 @@ void gui__vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
 	}
 }
 
+static
+void gui__vertf_ex(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v,
+                   m3f transform)
+{
+	v2f p = { x, y };
+	p = m3f_mul_v2(transform, p);
+	gui__vertf(gui, p.x, p.y, c, u, v);
+}
+
 void gui_vertf(gui_t *gui, r32 x, r32 y, color_t c, r32 u, r32 v)
 {
 	box2i_extend_point(&gui->widget_bounds->children, (v2i){ (s32)x, (s32)y });
@@ -2711,7 +2724,7 @@ void gui__texture(gui_t *gui, const gui_texture_t *texture, s32 x, s32 y,
 }
 
 static
-void gui__char(gui_t *gui, const gui_char_quad_t *q, color_t color)
+void gui__char(gui_t *gui, const gui_char_quad_t *q, color_t color, m3f transform)
 {
 	const box2i bbox = {
 		.min = { (s32)q->x0, (s32)q->y0 },
@@ -2728,10 +2741,10 @@ void gui__char(gui_t *gui, const gui_char_quad_t *q, color_t color)
 
 	if (gui_begin_tex(gui, 4, GUI_DRAW_TRIANGLE_FAN,
 	                  q->texture.handle, q->texture.blend)) {
-		gui__vertf(gui, q->x0, q->y1, color, q->s0, q->t1);
-		gui__vertf(gui, q->x0, q->y0, color, q->s0, q->t0);
-		gui__vertf(gui, q->x1, q->y0, color, q->s1, q->t0);
-		gui__vertf(gui, q->x1, q->y1, color, q->s1, q->t1);
+		gui__vertf_ex(gui, q->x0, q->y1, color, q->s0, q->t1, transform);
+		gui__vertf_ex(gui, q->x0, q->y0, color, q->s0, q->t0, transform);
+		gui__vertf_ex(gui, q->x1, q->y0, color, q->s1, q->t0, transform);
+		gui__vertf_ex(gui, q->x1, q->y1, color, q->s1, q->t1, transform);
 		gui_end(gui);
 	}
 }
@@ -3507,7 +3520,7 @@ out:
 }
 
 static
-void gui__txt_sequence(gui_t *gui, s32 x_anchor, r32 x0, r32 y0,
+void gui__txt_sequence(gui_t *gui, v2i anchor, r32 x0, r32 y0,
                        const char *txt, u32 max_len,
                        const gui_text_style_t *style,
                        r32 *x1, r32 *y1)
@@ -3527,12 +3540,18 @@ void gui__txt_sequence(gui_t *gui, s32 x_anchor, r32 x0, r32 y0,
 
 	gui->fonts.get_metrics(font, &font_metrics);
 
+	m3f transform = g_m3f_identity;
+	v2f anchorf = v2i_to_v2f(anchor);
+	transform = m3f_mul_m3(transform, m3f_init_translation(anchorf));
+	transform = m3f_mul_m3(transform, m3f_init_rotation(style->rotation));
+	transform = m3f_mul_m3(transform, m3f_init_translation(v2f_inverse(anchorf)));
+
 	while (p - txt < max_len && (cp = utf8_next_codepoint(p, &pnext)) != 0) {
 		if (cp == '\n') {
 			y -= font_metrics.newline_dist;
-			x = x_anchor + gui__txt_line_offset_x(gui, pnext, style);
+			x = anchor.x + gui__txt_line_offset_x(gui, pnext, style);
 		} else if (gui->fonts.get_char_quad(font, cp, x, y, &q)) {
-			gui__char(gui, &q, style->color);
+			gui__char(gui, &q, style->color, transform);
 			x += q.advance;
 		}
 		p = pnext;
@@ -3549,7 +3568,7 @@ void gui__txt(gui_t *gui, s32 x0, s32 y0, const char *txt,
 	const v2i anchor = { x0, y0 };
 	const v2f pos = gui__txt_start_pos(gui, txt, anchor, style);
 	r32 x1, y1;
-	gui__txt_sequence(gui, anchor.x, pos.x, pos.y, txt, ~0, style, &x1, &y1);
+	gui__txt_sequence(gui, anchor, pos.x, pos.y, txt, ~0, style, &x1, &y1);
 }
 
 static
@@ -3614,8 +3633,8 @@ u32 gui__txt_get_cursor_at_pos(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	return closest_pos;
 }
 
-void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
-             color_t c, gui_align_e align)
+void gui_txt_ex(gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
+                color_t c, gui_align_e align, r32 rotation)
 {
 	const gui_text_style_t style = {
 		.size = size,
@@ -3623,8 +3642,15 @@ void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
 		.align = align,
 		.padding = 0,
 		.wrap = false,
+		.rotation = rotation,
 	};
 	gui__txt(gui, x, y, txt, &style);
+}
+
+void gui_txt(gui_t *gui, s32 x, s32 y, s32 size, const char *txt,
+             color_t c, gui_align_e align)
+{
+	gui_txt_ex(gui, x, y, size, txt, c, align, 0.f);
 }
 
 void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size_, const char *txt,
@@ -3645,6 +3671,7 @@ void gui_txt_dim(const gui_t *gui, s32 x, s32 y, s32 size_, const char *txt,
 		.align = align,
 		.padding = 0,
 		.wrap = false,
+		.rotation = 0.f,
 	};
 	gui_font_metrics_t font_metrics;
 
@@ -4361,9 +4388,9 @@ void gui__npt_txt(gui_t *gui, s32 x, s32 y, s32 w, s32 h,
 	len2 = (u32)strlen(display) - end;
 
 	pos = gui__txt_start_pos(gui, display, anchor, style);
-	gui__txt_sequence(gui, anchor.x, pos.x, pos.y, txt0, len0, style, &pos.x, &pos.y);
-	gui__txt_sequence(gui, anchor.x, pos.x, pos.y, txt1, len1, &style_inverse, &pos.x, &pos.y);
-	gui__txt_sequence(gui, anchor.x, pos.x, pos.y, txt2, len2, style, &pos.x, &pos.y);
+	gui__txt_sequence(gui, anchor, pos.x, pos.y, txt0, len0, style, &pos.x, &pos.y);
+	gui__txt_sequence(gui, anchor, pos.x, pos.y, txt1, len1, &style_inverse, &pos.x, &pos.y);
+	gui__txt_sequence(gui, anchor, pos.x, pos.y, txt2, len2, style, &pos.x, &pos.y);
 
 	if (wrapped)
 		str_destroy(&wrapped);
