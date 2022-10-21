@@ -36,6 +36,11 @@ typedef struct event_metadata {
 	 * in the root event __undo handler */
 	const b32 soft_merge;
 	const u32 version;
+	/* We chose to serialize most events by base64-encoding binary data in a `static_data` field
+	 * in order to implement it for a large quantity of events in a short time. Ideally,
+	 * we'd serialize (& version) event data at a finer-grained level. This toggle lets us migrate
+	 * events individually over time. */
+	const b32 skip_static_data_serialization;
 } event_metadata_t;
 
 typedef struct event {
