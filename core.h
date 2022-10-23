@@ -357,6 +357,7 @@ b32  uuid_from_str(const char *in, uuid *out);
 void uuid_to_str(uuid in, char out[37]);
 b32  uuid_equal(uuid lhs, uuid rhs);
 b32  uuid_is_valid(uuid id);
+int  find_uuid(const void *lhs, const void *rhs);
 
 /* Time */
 
@@ -1100,6 +1101,13 @@ b32 uuid_equal(uuid lhs, uuid rhs)
 b32 uuid_is_valid(uuid id)
 {
 	return !uuid_equal(id, uuid_null());
+}
+
+int find_uuid(const void *lhs_, const void *rhs_)
+{
+	const uuid lhs = *(const uuid*)lhs_;
+	const uuid rhs = *(const uuid*)rhs_;
+	return uuid_equal(lhs, rhs) ? 0 : 1;
 }
 
 /* Time */
