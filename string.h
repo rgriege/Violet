@@ -30,6 +30,7 @@ char *imstr(void);
 char *imprint_u32(u32 val);
 char *imprint_s32(s32 val);
 char *imprint_r32(r32 val, u32 dec);
+char *imprint_uuid(uuid val);
 char *imprintf(const char *fmt, ...);
 char *imstrcpy(const char *str);
 char *imstrncpy(const char *str, size_t n); /* copies n chacters, then NULL terminates */
@@ -267,6 +268,15 @@ char *imprint_s32(s32 val)
 char *imprint_r32(r32 val, u32 dec)
 {
 	return sprint_r32(B2PC(g_imprint_buf), val, dec);
+}
+
+char *imprint_uuid(uuid val)
+{
+	char *uuid_buf[37];
+	static_assert(sizeof(*uuid_buf) <= sizeof(g_imprint_buf));
+	*uuid_buf = g_imprint_buf;
+	uuid_to_str(val, *uuid_buf);
+	return *uuid_buf;
 }
 
 char *imprintf(const char *fmt, ...)
