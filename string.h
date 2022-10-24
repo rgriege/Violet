@@ -272,11 +272,9 @@ char *imprint_r32(r32 val, u32 dec)
 
 char *imprint_uuid(uuid val)
 {
-	char *uuid_buf[37];
-	static_assert(sizeof(*uuid_buf) <= sizeof(g_imprint_buf));
-	*uuid_buf = g_imprint_buf;
-	uuid_to_str(val, *uuid_buf);
-	return *uuid_buf;
+	static_assert(UUID_BUF_SZ <= sizeof(g_imprint_buf), "imprint buffer too small for uuid");
+	uuid_to_str(val, g_imprint_buf);
+	return g_imprint_buf;
 }
 
 char *imprintf(const char *fmt, ...)

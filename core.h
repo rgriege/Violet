@@ -350,11 +350,12 @@ void buf_remove_(void *p, size_t idx, size_t n, size_t cap, size_t size);
 	} while (0)
 
 typedef u128 uuid;
+#define UUID_BUF_SZ 37
 
 uuid uuid_null(void);
 uuid uuid_create(void);
 b32  uuid_from_str(const char *in, uuid *out);
-void uuid_to_str(uuid in, char out[37]);
+void uuid_to_str(uuid in, char out[UUID_BUF_SZ]);
 b32  uuid_equal(uuid lhs, uuid rhs);
 b32  uuid_is_valid(uuid id);
 int  find_uuid(const void *lhs, const void *rhs);
@@ -1044,12 +1045,12 @@ b32 uuid_from_str(const char *in, uuid *out)
 		assert(false);
 		return false;
 	}
-	win[37] = L'}';
+	win[UUID_BUF_SZ] = L'}';
 	return CLSIDFromString(win, (UUID*)out) == NOERROR;
 }
 
 b32 os_string_to_utf8(char *dst, size_t dstlen, const osstr_t src);
-void uuid_to_str(uuid in, char out[37])
+void uuid_to_str(uuid in, char out[UUID_BUF_SZ])
 {
 	wchar_t wout[39];
 	if (StringFromGUID2((UUID*)&in, wout, 39) != 39) {
@@ -1058,7 +1059,7 @@ void uuid_to_str(uuid in, char out[37])
 		assert(false);
 		return;
 	}
-	wout[37] = 0;
+	wout[UUID_BUF_SZ] = 0;
 	if (!os_string_to_utf8(out, 37, &wout[1])) {
 		log_error("failed to convert wide string to uuid string");
 		strcpy(out, "00000000-0000-0000-0000-000000000000");
@@ -1082,7 +1083,7 @@ b32 uuid_from_str(const char *in, uuid *out)
 	return uuid_parse((char*)in, out->bytes) == 0;
 }
 
-void uuid_to_str(uuid in, char out[37])
+void uuid_to_str(uuid in, char out[UUID_BUF_SZ])
 {
 	uuid_unparse_lower(in.bytes, out);
 }
