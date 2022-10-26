@@ -26,7 +26,6 @@ typedef struct event_metadata {
 	   to the state before any of the repeated actions happened, then instead
 	   of creating a new undo point with every transaction, the previous
 	   transaction's undo point is modified. */
-	const b32 multi_frame;
 	const u32 size;
 	const char description[EVENT_DESCRIPTION_SIZE];
 	const char *label;
@@ -72,6 +71,7 @@ void event_unwind_children(event_t *event, allocator_t *alc);
 void event_update(event_t *dst, const event_t *src);
 /* returns true if the events are mergeable, based on the event-specific implementation */
 b32 event_update_pre(event_t *dst, const event_t *src);
+b32 event_is_multi_frame(const event_t *event);
 
 #define event_factory(type) \
 	.contract = &(event_contract_t) { \
@@ -86,7 +86,6 @@ b32 event_update_pre(event_t *dst, const event_t *src);
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
 	}, \
-	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_dynamic(type) \
@@ -110,7 +109,6 @@ b32 event_update_pre(event_t *dst, const event_t *src);
 		.undo    = (void (*)(const void *))event_##type##__undo, \
 		.update  = (void (*)(void *, const void *))event_##type##__update, \
 	}, \
-	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_multi_frame_pre(type) \
@@ -120,7 +118,6 @@ b32 event_update_pre(event_t *dst, const event_t *src);
 		.update     = (void (*)(void *, const void *))event_##type##__update, \
 		.update_pre = (b32  (*)(void *, const void *))event_##type##__update_pre, \
 	}, \
-	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)
 
 #define event_factory_multi_frame_pre_dynamic(type) \
@@ -134,7 +131,6 @@ b32 event_update_pre(event_t *dst, const event_t *src);
 		.update     = (void (*)(void *, const void *))event_##type##__update, \
 		.update_pre = (b32  (*)(void *, const void *))event_##type##__update_pre, \
 	}, \
-	.multi_frame = true, \
 	.size = sizeof(event_##type##_t)
 
 #endif // VIOLET_EVENT_H
@@ -226,6 +222,11 @@ b32 event_update_pre(event_t *dst, const event_t *src)
 	b32 result = src != NULL;
 	result &= dst->meta->contract->update_pre(dst->instance, src ? src->instance : NULL);
 	return result;
+}
+
+b32 event_is_multi_frame(const event_t *event)
+{
+	return event->meta->contract->update != NULL;
 }
 
 #undef EVENT_IMPLEMENTATION

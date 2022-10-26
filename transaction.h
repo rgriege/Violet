@@ -514,7 +514,7 @@ static
 b32 transaction__events_mergeable(const event_t *lhs, const optional(event_t) rhs)
 {
 	return rhs
-	    && lhs->meta->multi_frame
+	    && event_is_multi_frame(lhs)
 	    && lhs->kind == rhs->kind
 	    && (  lhs->meta->secondary
 	        ? array_empty(lhs->children)
