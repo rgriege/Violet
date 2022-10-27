@@ -21,11 +21,6 @@ typedef struct event_contract {
 
 typedef struct event_metadata {
 	const event_contract_t *contract;
-	/* Addresses the use case when some data mutation might be repeated with a
-	   different payload. If the desired undo behavior is such that it reverts
-	   to the state before any of the repeated actions happened, then instead
-	   of creating a new undo point with every transaction, the previous
-	   transaction's undo point is modified. */
 	const u32 size;
 	const char description[EVENT_DESCRIPTION_SIZE];
 	const char *label;
@@ -71,6 +66,11 @@ void event_unwind_children(event_t *event, allocator_t *alc);
 void event_update(event_t *dst, const event_t *src);
 /* returns true if the events are mergeable, based on the event-specific implementation */
 b32 event_update_pre(event_t *dst, const event_t *src);
+/* Addresses the use case when some data mutation might be repeated with a
+   different payload. If the desired undo behavior is such that it reverts
+   to the state before any of the repeated actions happened, then instead
+   of creating a new undo point with every transaction, the previous
+   transaction's undo point is modified. */
 b32 event_is_multi_frame(const event_t *event);
 
 #define event_factory(type) \
