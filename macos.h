@@ -285,7 +285,11 @@ char *imdatapath(const char *resource)
 
 b32 is_data_dir_in_use_by_another_instance(void)
 {
-	log_warn("is_data_dir_in_use_by_another_instance is not implemented for this platform");
+	static b32 logged_once = false; // don't spam logs with this warning
+	if (!logged_once) {
+		log_warn("is_data_dir_in_use_by_another_instance is not implemented for this platform");
+		logged_once = true;
+	}
 	return false;
 }
 
