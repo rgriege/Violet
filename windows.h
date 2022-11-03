@@ -7,6 +7,7 @@
 #include <ShlObj.h>
 #include <shobjidl.h>
 #include <Shellapi.h>
+#include <TlHelp32.h>
 
 const char *g_file_path_separator = "\\";
 
@@ -640,4 +641,40 @@ os_utsname_t os_uname(void)
 	os_utsname_t os_utsname = {0};
 	strbcpy(os_utsname.sysname, "Windows");
 	return os_utsname;
+}
+
+// This is a "good enough" solution for finding out if there's another instance of this
+// application that might be using the same data directory. Release builds will always
+// choose their datadir based on WINDOWS_PACKAGE_NAME, regardless of where they are installed.
+b32 is_data_dir_in_use_by_another_instance(void)
+{
+#ifndef WINDOWS_PACKAGE_NAME
+	return false;
+#else
+	wchar_t app_name[64];
+	HANDLE snapshot;
+	if (!os_string_from_utf8(app_name, 64, WINDOWS_PACKAGE_NAME ".exe") ||
+	    (snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)) == INVALID_HANDLE_VALUE) {
+		assert(false);
+		return false;
+	}
+
+	u32 open_instances = 0;
+	PROCESSENTRY32 pe32 = (PROCESSENTRY32){ .dwSize = sizeof(PROCESSENTRY32) };
+	if (!Process32First(snapshot, &pe32)) {
+		assert(false);
+		goto out;
+	}
+
+	do {
+		if (0 == _wcsicmp(app_name, pe32.szExeFile)) {
+			if (++open_instances > 1)
+				goto out;
+		}
+	} while (Process32Next(snapshot, &pe32));
+
+out:
+	CloseHandle(snapshot);
+	return open_instances > 1;
+#endif
 }

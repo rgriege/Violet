@@ -74,6 +74,8 @@ char *imcachepath(const char *resource);
 /* path where generic data files generated at runtime live */
 char *imdatadir(void);
 char *imdatapath(const char *resource);
+/* is another instance of this application running and using the same data directory? */
+b32 is_data_dir_in_use_by_another_instance(void);
 /* path where per-user data lives so it works on shared machines */
 char *imuserdatadir(void);
 char *imuserdatapath(const char *resource);
