@@ -653,8 +653,8 @@ b32 is_data_dir_in_use_by_another_instance(void)
 #else
 	wchar_t app_name[64];
 	HANDLE snapshot;
-	if (!os_string_from_utf8(app_name, 64, WINDOWS_PACKAGE_NAME ".exe") ||
-	    (snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)) == INVALID_HANDLE_VALUE) {
+	if (    !os_string_from_utf8(app_name, 64, WINDOWS_PACKAGE_NAME ".exe")
+	    || (snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)) == INVALID_HANDLE_VALUE) {
 		assert(false);
 		return false;
 	}
@@ -667,11 +667,9 @@ b32 is_data_dir_in_use_by_another_instance(void)
 	}
 
 	do {
-		if (0 == _wcsicmp(app_name, pe32.szExeFile)) {
-			if (++open_instances > 1)
-				goto out;
-		}
-	} while (Process32Next(snapshot, &pe32));
+		if (_wcsicmp(app_name, pe32.szExeFile) == 0)
+			++open_instances;
+	} while (open_instances < 2 && Process32Next(snapshot, &pe32));
 
 out:
 	CloseHandle(snapshot);
