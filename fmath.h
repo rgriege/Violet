@@ -688,7 +688,10 @@ m3f m3f_inverse(m3f m)
 	const v3f c1 = { m.v[1], m.v[4], m.v[7] };
 	const v3f c2 = { m.v[2], m.v[5], m.v[8] };
 	const r32 det = v3f_dot(c0, v3f_cross(c1, c2));
-	assert(det != 0.f);
+	if (det == 0.f) {
+		ASSERT_FALSE_AND_LOG("uninvertible");
+		return m;
+	}
 	const r32 s = 1.f / det;
 	const v3f r0 = v3f_scale(v3f_cross(c1, c2), s);
 	const v3f r1 = v3f_scale(v3f_cross(c2, c0), s);
@@ -1512,10 +1515,13 @@ void polyf_from_box(v2f v[4], box2f box)
 
 b32 polyf_is_simple(const v2f *v, u32 n)
 {
+	if (n < 3) {
+		ASSERT_FALSE_AND_LOG("n = %u", n);
+		return false;
+	}
+
 	v2f isec, a0, a1, b0, b1;
 	u32 jend;
-
-	assert(n >= 3);
 
 	a0 = v[n-1];
 	jend = n-1;
@@ -1539,7 +1545,10 @@ b32 polyf_is_simple(const v2f *v, u32 n)
 
 b32 polyf_is_convex(const v2f *v, u32 n)
 {
-	assert(n >= 3);
+	if (n < 3) {
+		ASSERT_FALSE_AND_LOG("n = %u", n);
+		return false;
+	}
 
 	b32 ccw_determined = false, ccw = false;
 	for (u32 i = 0, last = n-1; i <= last; ++i) {
@@ -1612,7 +1621,11 @@ b32 polyf_contains_fast(const v2f *v, u32 n, box2f *box, v2f point)
 
 void polyf_bounding_box(const v2f *v, u32 n, box2f *box)
 {
-	assert(n > 0);
+	if (n == 0) {
+		ASSERT_FALSE_AND_LOG("n = %u", n);
+		box2f_from_point(box, g_v2f_zero);
+		return;
+	}
 	box2f_from_point(box, v[0]);
 	box2f_extend_points(box, &v[1], n-1);
 }
@@ -1679,10 +1692,13 @@ r32 polyf_area(const v2f *v, u32 n)
 // NOTE(rgriege): Green's theorem
 r32 polyf_area_signed(const v2f *v, u32 n)
 {
+	if (n < 3) {
+		ASSERT_FALSE_AND_LOG("n = %u", n);
+		return 0.f;
+	}
+
 	r32 area = 0;
 	v2f prev = v[n-1];
-
-	assert(n >= 3);
 
 	for (const v2f *vn = v+n; v != vn; ++v)
 	{
@@ -1721,7 +1737,10 @@ b32 polyf_is_cw(const v2f *v, u32 n)
 
 b32 polyf_is_ccw(const v2f *v, u32 n)
 {
-	assert(n >= 3);
+	if (n < 3) {
+		ASSERT_FALSE_AND_LOG("n = %u", n);
+		return false;
+	}
 
 	r32 twice_area = 0.f;
 	for (u32 i = 0, last = n-1; i <= last; ++i) {

@@ -178,7 +178,8 @@ void event_destroy(event_t *event, allocator_t *alc)
 b32 event_execute(event_t *event)
 {
 	/* expect children to be created as nested events from this entry point forward */
-	assert(array_empty(event->children));
+	if (!array_empty(event->children))
+		ASSERT_FALSE_AND_LOG("event already has children at entry point");
 
 	return (event->meta->contract->execute)(event->instance);
 }

@@ -73,9 +73,12 @@ LSTDEF void *list__append(list_t *list, const void *item_, size_t sz  MEMCALL_AR
 
 LSTDEF void list__pop(list_t *list  MEMCALL_ARGS)
 {
+	if (!list->tail) {
+		ASSERT_FALSE_AND_LOG("attempting to pop empty list");
+		return;
+	}
 	list__item_header_t *tail_header;
 	allocator_t *a = list__allocator(*list);
-	assert(list->tail);
 	tail_header = &list__item_header(list->tail);
 	list->tail = tail_header->prev;
 	if (list->tail)
