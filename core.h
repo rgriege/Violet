@@ -387,9 +387,10 @@ typedef enum log_level
 	LOG_WARNING = 0x4,
 	LOG_ERROR   = 0x8,
 	LOG_FATAL   = 0x10,
-	LOG_ALL     = (LOG_DEBUG | LOG_INFO | LOG_WARNING | LOG_ERROR | LOG_FATAL),
+	LOG_ASSERT  = 0x20,
+	LOG_ALL     = (LOG_DEBUG | LOG_INFO | LOG_WARNING | LOG_ERROR | LOG_FATAL | LOG_ASSERT),
 	LOG_STDOUT  = (LOG_DEBUG | LOG_INFO),
-	LOG_STDERR  = (LOG_WARNING | LOG_ERROR | LOG_FATAL),
+	LOG_STDERR  = (LOG_WARNING | LOG_ERROR | LOG_FATAL | LOG_ASSERT),
 } log_level_e;
 
 typedef void(*logger_t)(void *udata, log_level_e level,
@@ -417,7 +418,11 @@ void log_level_writev(log_level_e level, const char *format, va_list ap);
 #define log_warn(fmt, ...)  log_level_write(LOG_WARNING, fmt, ##__VA_ARGS__)
 #define log_error(fmt, ...) log_level_write(LOG_ERROR,   fmt, ##__VA_ARGS__)
 #define log_fatal(fmt, ...) log_level_write(LOG_FATAL,   fmt, ##__VA_ARGS__)
+#define log_assert(fmt, ...) log_level_write(LOG_ASSERT, fmt, ##__VA_ARGS__)
 #define log_write(fmt, ...) log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
+
+#define ASSERT_FALSE_AND_LOG(fmt, ...) \
+	do { assert(false); log_assert(LOCATION " " fmt, ##__VA_ARGS__); } while(0)
 
 void file_logger(void *udata, log_level_e level, const char *format, va_list ap);
 #if defined(_WIN32)
@@ -572,7 +577,10 @@ allocator_t temp_memory_fork_(pgb_t *pgb)
 
 void temp_memory_merge(allocator_t *fork)
 {
-	assert(fork != g_temp_allocator);
+	if (fork == g_temp_allocator) {
+		ASSERT_FALSE_AND_LOG("invalid memory merge");
+		return;
+	}
 	pgb_destroy(fork->udata);
 }
 
@@ -660,7 +668,12 @@ void alloc_tracker__record_realloc(alloc_tracker_t *tracker, size_t sz)
 static
 void alloc_tracker__record_free(alloc_tracker_t *tracker, size_t sz)
 {
-	assert(tracker->current_bytes >= sz);
+	if (sz > tracker->current_bytes) {
+		ASSERT_FALSE_AND_LOG("attempting to free more than allocated");
+		// Could argue this should free max legal amount, but erring on the side
+		// of it being an invalid operation we just ignore.
+		return;
+	}
 	tracker->current_bytes -= sz;
 }
 
@@ -1012,14 +1025,18 @@ int find_s32(const void *lhs_, const void *rhs_)
 
 void buf_insert_(void *p_, size_t idx, size_t n, size_t cap, size_t size)
 {
-	assert(idx + n <= cap);
+	if (idx + n > cap)
+		ASSERT_FALSE_AND_LOG("attempting to insert beyond capacity");
+	// No early return on assert since memmove statement takes capacity into account
 	char *p = p_;
 	memmove(p+(idx+n)*size, p+idx*size, (cap-n-idx)*size);
 }
 
 void buf_remove_(void *p_, size_t idx, size_t n, size_t cap, size_t size)
 {
-	assert(idx + n <= cap);
+	if (idx + n > cap)
+		ASSERT_FALSE_AND_LOG("attempting to remove beyond end of array");
+	// No early return on assert since memmove statement takes capacity into account
 	char *p = p_;
 	memmove(p+idx*size, p+(idx+n)*size, (cap-n-idx)*size);
 }
@@ -1030,8 +1047,8 @@ uuid uuid_create(void)
 {
 	uuid id = {0};
 	HRESULT result = CoCreateGuid((UUID*)&id);
-	assert(result == S_OK);
-	UNUSED(result);
+	if (result != S_OK)
+		ASSERT_FALSE_AND_LOG("HRESULT = %d", result);
 	return id;
 }
 
@@ -1041,8 +1058,7 @@ b32 uuid_from_str(const char *in, uuid *out)
 	wchar_t win[39] = {0};
 	win[0] = L'{';
 	if (!os_string_from_utf8(&win[1], 37, in)) {
-		log_error("failed to convert uuid string to wide string");
-		assert(false);
+		ASSERT_FALSE_AND_LOG("failed to convert uuid string to wide string");
 		return false;
 	}
 	win[UUID_BUF_SZ] = L'}';
@@ -1054,16 +1070,14 @@ void uuid_to_str(uuid in, char out[UUID_BUF_SZ])
 {
 	wchar_t wout[39];
 	if (StringFromGUID2((UUID*)&in, wout, 39) != 39) {
-		log_error("failed to convert uuid to string");
 		strcpy(out, "00000000-0000-0000-0000-000000000000");
-		assert(false);
+		ASSERT_FALSE_AND_LOG("failed to convert uuid to string");
 		return;
 	}
 	wout[UUID_BUF_SZ] = 0;
 	if (!os_string_to_utf8(out, 37, &wout[1])) {
-		log_error("failed to convert wide string to uuid string");
 		strcpy(out, "00000000-0000-0000-0000-000000000000");
-		assert(false);
+		ASSERT_FALSE_AND_LOG("failed to convert wide string to uuid string");
 		return;
 	}
 	for (int i = 0; i < 36; ++i)
@@ -1134,11 +1148,14 @@ timepoint_t time__diff(timepoint_t start, timepoint_t end)
 		++mod_start.tv_sec;
 	}
 
-	/* C standard states that tv_nsec should be [0, 999,999,999] */
-	assert(end.tv_nsec - mod_start.tv_nsec < 1000000000);
-	assert(end.tv_sec >= mod_start.tv_sec);
 	res.tv_sec = end.tv_sec - mod_start.tv_sec;
 	res.tv_nsec = end.tv_nsec - mod_start.tv_nsec;
+	/* C standard states that tv_nsec should be [0, 999,999,999] */
+	if (res.tv_nsec >= 1000000000)
+		ASSERT_FALSE_AND_LOG("tv_nsec = %d", res.tv_nsec);
+	if (end.tv_sec < mod_start.tv_sec)
+		ASSERT_FALSE_AND_LOG("end.tv_sec = %d, mod_start.tv_sec = %d", end.tv_sec, mod_start.tv_sec);
+
 	return res;
 }
 
@@ -1287,7 +1304,10 @@ u32 g_log_stream_cnt = 0;
 
 void log_add_stream(log_level_e level, logger_t logger, void *udata)
 {
-	assert(g_log_stream_cnt < LOG_STREAM_CAP);
+	if (g_log_stream_cnt >= LOG_STREAM_CAP) {
+		ASSERT_FALSE_AND_LOG("attempting to add too many loggers");
+		return;
+	}
 	g_log_streams[g_log_stream_cnt].logger = logger;
 	g_log_streams[g_log_stream_cnt].level = level;
 	g_log_streams[g_log_stream_cnt].udata = udata;
@@ -1303,7 +1323,7 @@ void log_remove_stream(logger_t logger, const void *udata)
 			return;
 		}
 	}
-	assert(false);
+	ASSERT_FALSE_AND_LOG("targeting invalid logger or logger with mismatched udata");
 }
 
 void log_set_stream_level(logger_t logger, const void *udata, log_level_e level)
@@ -1314,7 +1334,7 @@ void log_set_stream_level(logger_t logger, const void *udata, log_level_e level)
 			return;
 		}
 	}
-	assert(false);
+	ASSERT_FALSE_AND_LOG("targeting invalid logger or logger with mismatched udata");
 }
 
 void log_level_write(log_level_e level, const char *format, ...)
