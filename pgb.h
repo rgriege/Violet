@@ -167,11 +167,6 @@ typedef union pgb__max_align
 #define pgb_offsetof(s, m) ((size_t)&((s*)(NULL))->m)
 #endif
 
-#ifndef pgb_assert
-#include <assert.h>
-#define pgb_assert(cnd) assert(cnd)
-#endif
-
 #define pgb_static_assert(cnd, msg) typedef int msg[(cnd) ? 1 : -1]
 
 pgb_static_assert(sizeof(pgb__max_align_t) <= pgb__alignment(PGB_MIN_PAGE_SIZE),
@@ -351,19 +346,21 @@ struct pgb_page *pgb__heap_create_page(pgb_heap_t *heap, size_t size)
 
 struct pgb_page *pgb_heap_borrow_page(pgb_heap_t *heap, size_t min_size, size_t max_size)
 {
-	pgb_assert(min_size <= max_size);
+	if (min_size > max_size)
+		ASSERT_FALSE_AND_LOG("min_size > max_size"); // fall through; result is acceptable
+	
 	pgb_page_t *page = heap->first_page;
 	while (page && page->size < min_size)
 		page = page->next;
-	if (!page || page->size > max_size) {
+
+	if (!page || page->size > max_size)
 		return pgb__heap_create_page(heap, min_size);
-	} else {
-		if (page == heap->first_page)
-			heap->first_page = page->next;
-		pgb__page_remove(page);
-		pgb__page_clear(page);
-		return page;
-	}
+
+	if (page == heap->first_page)
+		heap->first_page = page->next;
+	pgb__page_remove(page);
+	pgb__page_clear(page);
+	return page;
 }
 
 void pgb_heap_return_page(pgb_heap_t *heap, struct pgb_page *page)
@@ -440,7 +437,10 @@ void pgb_init(pgb_t *pgb, pgb_heap_t *heap)
 static
 void pgb__pop_page(pgb_t *pgb)
 {
-	pgb_assert(pgb->current_page);
+	if (!pgb->current_page) {
+		ASSERT_FALSE_AND_LOG("current_page is NULL");
+		return;
+	}
 	pgb_page_t *prev = pgb->current_page->prev;
 	pgb_heap_return_page(pgb->heap, pgb->current_page);
 	pgb->current_page = prev;
@@ -448,19 +448,20 @@ void pgb__pop_page(pgb_t *pgb)
 		prev->next = NULL;
 }
 
-#ifndef NDEBUG
 static
 bool pgb__mark_valid(pgb_watermark_t mark)
 {
 	return mark.data.pgb && mark.data.page && mark.data.ptr;
 }
-#endif
 
 void pgb_destroy(pgb_t *pgb)
 {
-	pgb_assert(pgb->heap);
-	pgb_assert(!(pgb->current_page && pgb->current_page->next));
-	pgb_assert(!pgb__mark_valid(pgb->last_mark));
+	if (!pgb->heap)
+		ASSERT_FALSE_AND_LOG("heap is NULL");
+	if (pgb->current_page && pgb->current_page->next)
+		ASSERT_FALSE_AND_LOG("destroying with pages unfreed");
+	if (pgb__mark_valid(pgb->last_mark))
+		ASSERT_FALSE_AND_LOG("destroying with last mark still valid");
 
 	while (pgb->current_page)
 		pgb__pop_page(pgb);
@@ -541,7 +542,7 @@ void pgb__restore_current_page_ptr(pgb_t *pgb, size_t slot)
 			return;
 		}
 	}
-	pgb_assert(false); /* should have encountered header */
+	ASSERT_FALSE_AND_LOG("should have encountered header");
 	pgb->current_ptr = pgb__page_first_usable_slot(page);
 }
 
@@ -577,7 +578,7 @@ void *pgb__realloc(pgb_byte *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 	size_t old_size;
 
 	if (!pgb__find_page_for_ptr(pgb, ptr, &page)) {
-		pgb_assert(false);
+		ASSERT_FALSE_AND_LOG("memory leak");
 #ifdef PGB_TRACK_MEMORY
 		PGB_LOG("pgb_realloc: memory leak @ %s", loc);
 #endif
@@ -587,9 +588,12 @@ void *pgb__realloc(pgb_byte *ptr, size_t size, pgb_t *pgb  MEMCALL_ARGS)
 	old_size = pgb__alloc_get_sz(ptr, page);
 
 	/* Avoid the case where a pointer was not set to be freed by the last watermark,
-	 * but it will be after reallocation. */
-	pgb_assert(   !pgb__mark_valid(pgb->last_mark)
-	           || pgb__ptr_freed_by_mark(pgb->last_mark, page, ptr));
+	 * but it will be after reallocation.
+	 * Left as conventional assert since checking this in release would entail a pointer chase
+	 * and it doesn't seem worth doing that constantly given the potential harm seems low.
+	 */
+	assert(  !pgb__mark_valid(pgb->last_mark)
+	       || pgb__ptr_freed_by_mark(pgb->last_mark, page, ptr));
 
 	if ((old_size = pgb__alloc_get_sz(ptr, page)) >= size) {
 		return ptr;
@@ -637,7 +641,7 @@ void pgb_free(void *ptr_, pgb_t *pgb  MEMCALL_ARGS)
 		return;
 
 	if (!pgb__find_page_for_ptr(pgb, ptr, &page)) {
-		pgb_assert(false);
+		ASSERT_FALSE_AND_LOG("memory leak");
 #ifdef PGB_TRACK_MEMORY
 		PGB_LOG("pgb_free: memory leak @ %s", loc);
 #endif
@@ -646,7 +650,8 @@ void pgb_free(void *ptr_, pgb_t *pgb  MEMCALL_ARGS)
 
 	slot = pgb__alloc_get_slot_idx(ptr, page);
 	size = pgb__alloc_get_sz(ptr, page);
-	pgb_assert(size != 0);
+	if (size == 0)
+		ASSERT_FALSE_AND_LOG("freeing 0 size page");
 	pgb__alloc_set_sz(ptr, page, 0);
 
 	if (ptr + size == pgb->current_ptr) {
@@ -762,7 +767,7 @@ void pgb_watermark_stats(pgb_watermark_t mark, size_t *bytes_used, size_t *pages
 	if (page != mark.data.page) {
 		*bytes_used = 0;
 		*pages_used = 0;
-		pgb_assert(false);
+		ASSERT_FALSE_AND_LOG("mark page not found");
 	} else if (page) {
 		*bytes_used += pgb__page_end(page) - mark.data.ptr;
 		*pages_used += 1;
