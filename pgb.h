@@ -74,9 +74,7 @@ typedef struct pgb_watermark_data
 typedef struct pgb_watermark
 {
 	pgb_watermark_data_t data;
-#ifndef NDEBUG
-	pgb_watermark_data_t prev; /* stored in debug to validate reallocations */
-#endif
+	pgb_watermark_data_t prev; /* helps validate reallocations; not strictly necessary */
 } pgb_watermark_t;
 
 typedef struct pgb
@@ -683,9 +681,7 @@ pgb_watermark_t pgb_save(pgb_t *pgb)
 			.page = pgb->current_page,
 			.ptr  = pgb->current_ptr,
 		},
-#ifndef NDEBUG
 		.prev = pgb->last_mark.data,
-#endif
 	};
 	pgb->last_mark.data = mark.data;
 	return mark;
@@ -703,9 +699,7 @@ void pgb_restore(pgb_watermark_t watermark)
 		memset(&pgb->current_page->alloc_sizes[slot], 0, PGB__PAGE_SLOTS - slot);
 		pgb->current_page->next = NULL;
 	}
-#ifndef NDEBUG
 	pgb->last_mark.data = watermark.prev;
-#endif
 }
 
 size_t pgb_alloc_size(const pgb_t *pgb, const void *ptr)
