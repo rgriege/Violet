@@ -1380,6 +1380,9 @@ void file_logger(void *udata, log_level_e level, const char *format, va_list ap)
 	case LOG_FATAL:
 		fputs("[FATAL] ", fp);
 	break;
+	case LOG_ASSERT:
+		fputs("[ASSERT] ", fp);
+	break;
 	default:
 		fputs("[XXXXX] ", fp);
 	break;
