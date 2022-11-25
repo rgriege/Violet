@@ -117,6 +117,7 @@ u32   gui_cursor(const gui_t *gui);
 void  gui_set_cursor(gui_t *gui, gui_cursor_e cursor);
 void *gui_window(gui_t *gui);
 void  gui_set_window(gui_t *gui, void *window);
+void  gui_set_drag_height(gui_t *gui, s32 h);
 
 timepoint_t gui_frame_start(const gui_t *gui);
 u32         gui_frame_time_milli(const gui_t *gui);
@@ -1746,6 +1747,7 @@ typedef struct gui
 
 	void *window;
 	v2i window_dim;
+	s32 drag_height;
 
 	/* mouse */
 	v2i mouse_pos;
@@ -1967,6 +1969,7 @@ gui_t *gui_create(s32 w, s32 h, u32 texture_white, u32 texture_white_dotted,
 
 	gui->window_dim.x = w;
 	gui->window_dim.y = h;
+	gui->drag_height  = 0;  // not known yet, must be set later with gui_set_drag_height
 
 	gui->mouse_pos = g_v2i_zero;
 	gui->mouse_btn = 0;
@@ -2834,6 +2837,11 @@ void *gui_window(gui_t *gui)
 void gui_set_window(gui_t *gui, void *window)
 {
 	gui->window = window;
+}
+
+void gui_set_drag_height(gui_t *gui, s32 h)
+{
+	gui->drag_height = h;
 }
 
 timepoint_t gui_frame_start(const gui_t *gui)
@@ -7861,7 +7869,7 @@ void pgui__panel_compute_scaled_dimensions(const gui_t *gui, gui_panel_t *panel)
 	panel->w = sw;
 	panel->h = sh;
 
-	/* Ensure the panel is visible */
+	/* Ensure the panel is visible and interactable. */
 	if (panel->flags & GUI_PANEL_DRAGGABLE) {
 		/* We can be more forgiving when panels are draggable - as long as the
 		 * drag handle is visible & interactive, it's ok for the panel
@@ -7876,8 +7884,8 @@ void pgui__panel_compute_scaled_dimensions(const gui_t *gui, gui_panel_t *panel)
 		else
 			panel->x = gui->window_dim.x - handle_dim;
 
-		if (panel->y + panel->h > gui->window_dim.y)
-			panel->y = gui->window_dim.y - panel->h;
+		if (panel->y + panel->h > gui->window_dim.y - gui->drag_height)
+			panel->y = gui->window_dim.y - gui->drag_height - panel->h;
 		else if (panel->y + panel->h - handle_dim >= 0)
 			; /* fine */
 		else if (panel->h <= gui->window_dim.y)
