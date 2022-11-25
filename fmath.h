@@ -217,6 +217,7 @@ b32  box2f_contains_point(box2f b, v2f p);
 b32  box2f_contains_box(box2f lhs, box2f rhs);
 void box2f_clamp_point(box2f b, v2f *p);
 b32  box2f_overlaps(box2f lhs, box2f rhs);
+b32  box2f_overlaps_within(box2f lhs, box2f rhs, r32 error);
 b32  box2f_eq(box2f lhs, box2f rhs);
 void box2f_extend_point(box2f *b, v2f p);
 void box2f_extend_points(box2f *b, const v2f *p, u32 n);
@@ -1183,6 +1184,16 @@ b32 box2f_overlaps(box2f lhs, box2f rhs)
 	ivalf rhs_y = { rhs.min.y, rhs.max.y };
 	return    ivalf_overlaps(lhs_x, rhs_x)
 	       && ivalf_overlaps(lhs_y, rhs_y);
+}
+
+b32 box2f_overlaps_within(box2f lhs, box2f rhs, r32 error)
+{
+	ivalf lhs_x = { lhs.min.x, lhs.max.x };
+	ivalf rhs_x = { rhs.min.x, rhs.max.x };
+	ivalf lhs_y = { lhs.min.y, lhs.max.y };
+	ivalf rhs_y = { rhs.min.y, rhs.max.y };
+	return    ivalf_overlaps_within(lhs_x, rhs_x, error)
+	       && ivalf_overlaps_within(lhs_y, rhs_y, error);
 }
 
 b32 box2f_eq(box2f lhs, box2f rhs)
