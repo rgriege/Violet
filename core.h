@@ -1057,6 +1057,8 @@ b32 uuid_from_str(const char *in, uuid *out)
 {
 	wchar_t win[39] = {0};
 	win[0] = L'{';
+	if (strlen(in) != 36)
+		return false;
 	if (!os_string_from_utf8(&win[1], 37, in)) {
 		ASSERT_FALSE_AND_LOG("failed to convert uuid string to wide string");
 		return false;
