@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <tchar.h>
 #include <process.h>
 #include <ShlObj.h>
 #include <shobjidl.h>
