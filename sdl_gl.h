@@ -1496,6 +1496,7 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 		// no longer interact with the Windows window manager by default.
 		// This hint restores features like snapping.
 		SDL_SetHint("SDL_BORDERLESS_RESIZABLE_STYLE", "true");
+		SDL_SetHint("SDL_BORDERLESS_WINDOWED_STYLE", "true");
 		if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 			log_error("SDL_Init(VIDEO) failed: %s", SDL_GetError());
 			goto err_sdl;
