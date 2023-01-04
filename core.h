@@ -421,8 +421,17 @@ void log_level_writev(log_level_e level, const char *format, va_list ap);
 #define log_assert(fmt, ...) log_level_write(LOG_ASSERT, fmt, ##__VA_ARGS__)
 #define log_write(fmt, ...) log_level_write(LOG_INFO,    fmt, ##__VA_ARGS__)
 
-#define ASSERT_FALSE_AND_LOG(fmt, ...) \
-	do { assert(false); log_assert(LOCATION " " fmt, ##__VA_ARGS__); } while(0)
+#define LOG_ASSERT_ONCE_(has_logged_once, fmt, ...) do { \
+		static b32 has_logged_once = false; \
+		if (!has_logged_once) { \
+			log_assert(LOCATION " " fmt, ##__VA_ARGS__); \
+			has_logged_once = true; \
+		} \
+	} while (0)
+#define ASSERT_FALSE_AND_LOG(fmt, ...) do { \
+	assert(false); \
+	LOG_ASSERT_ONCE_(CONCAT(__has_logged_once, __COUNTER__), fmt, ##__VA_ARGS__); \
+} while (0)
 
 void file_logger(void *udata, log_level_e level, const char *format, va_list ap);
 #if defined(_WIN32)
