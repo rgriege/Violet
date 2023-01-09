@@ -177,6 +177,9 @@ void   mouse_pos_global(const window_t *window, s32 *x, s32 *y);
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_surface.h>
+#ifdef _WIN32
+#include <SDL2/SDL_syswm.h>
+#endif
 #define STB_IMAGE_IMPLEMENTATION
 // #define STB_IMAGE_STATIC
 #include "stbi.h"
@@ -1480,6 +1483,53 @@ SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, v
 	return SDL_HITTEST_NORMAL;
 }
 
+#ifdef _WIN32
+WNDPROC g_sdl_wndproc = NULL;
+
+static
+LRESULT CALLBACK wndproc_hook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if (msg == WM_QUERYENDSESSION) {
+		// Returning FALSE blocks shutdown/restart until the application closes or the user manually
+		// overrides and picks "Restart/Shutdown Anyway".
+		// ShutdownBlockReasonCreate defines the message that's displayed on the shutdown/restart screen.
+		// Posting the WM_CLOSE message triggers the usual quitting logic; if the user doesn't have
+		// unsaved work, the application will close normally, this message will never be seen and shutdown
+		// will proceed cleanly.
+		ShutdownBlockReasonCreate(hwnd, L"You have unsaved changes.");
+		PostMessage(hwnd, WM_CLOSE, 0, 0);
+		return FALSE;
+	}
+
+	// TODO(mgooding) - propagate WM_ENDSESSION to handle the user picking "Restart/Shutdown Anyway"
+
+	return g_sdl_wndproc(hwnd, msg, wParam, lParam);
+}
+
+static
+void wndproc_hook_init(window_t *window)
+{
+	if (g_sdl_wndproc != NULL) {
+		ASSERT_FALSE_AND_LOG("g_sdl_wndproc is already defined");
+		return;
+	}
+
+	// When a Windows user restarts or shuts down their computer, the application does not
+	// receive WM_CLOSE, WM_QUIT, WM_DESTROY messages. Instead it receives WM_QUERYENDSESSION
+	// followed by WM_ENDSESSION, neither of which is handled by SDL. They can be propagated
+	// by enabling SysWM events, but they come too late via polling and without the opportunity
+	// to change the return value via event watching, so the only option for proper handling is
+	// to man-in-the-middle WndProc.
+	// If these events are not handled, every reboot/shutdown with the application open is
+	// effectively a hard crash.
+	SDL_SysWMinfo wm_info;
+	SDL_VERSION(&wm_info.version);
+	SDL_GetWindowWMInfo(window->window, &wm_info);
+    g_sdl_wndproc = (WNDPROC) GetWindowLongPtr(wm_info.info.win.window, GWLP_WNDPROC);
+	SetWindowLongPtr(wm_info.info.win.window, GWLP_WNDPROC, (LONG_PTR) wndproc_hook);
+}
+#endif
+
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         window_flags_e flags)
 {
@@ -1501,6 +1551,8 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 			log_error("SDL_Init(VIDEO) failed: %s", SDL_GetError());
 			goto err_sdl;
 		}
+		// SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+		// SDL_AddEventWatch(window_event_watch, NULL);
 		window->parent_window = NULL;
 	} else {
 		window->parent_window = SDL_GL_GetCurrentWindow();
@@ -1721,6 +1773,10 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	                         fonts, font_file_path);
 
 	gui_set_window(window->gui, window);
+
+#ifdef _WIN32
+	wndproc_hook_init(window);
+#endif
 
 	goto out;
 
