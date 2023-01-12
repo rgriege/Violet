@@ -1525,7 +1525,7 @@ void wndproc_hook_init(window_t *window)
 	SDL_SysWMinfo wm_info;
 	SDL_VERSION(&wm_info.version);
 	SDL_GetWindowWMInfo(window->window, &wm_info);
-    g_sdl_wndproc = (WNDPROC) GetWindowLongPtr(wm_info.info.win.window, GWLP_WNDPROC);
+	g_sdl_wndproc = (WNDPROC) GetWindowLongPtr(wm_info.info.win.window, GWLP_WNDPROC);
 	SetWindowLongPtr(wm_info.info.win.window, GWLP_WNDPROC, (LONG_PTR) wndproc_hook);
 }
 #endif
@@ -1551,8 +1551,6 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 			log_error("SDL_Init(VIDEO) failed: %s", SDL_GetError());
 			goto err_sdl;
 		}
-		// SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-		// SDL_AddEventWatch(window_event_watch, NULL);
 		window->parent_window = NULL;
 	} else {
 		window->parent_window = SDL_GL_GetCurrentWindow();
