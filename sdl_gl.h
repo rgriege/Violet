@@ -1486,6 +1486,8 @@ SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, v
 #ifdef _WIN32
 WNDPROC g_sdl_wndproc = NULL;
 
+void (*g_endsession_callback)(void) = NULL;
+
 static
 LRESULT CALLBACK wndproc_hook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -1501,7 +1503,17 @@ LRESULT CALLBACK wndproc_hook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return FALSE;
 	}
 
-	// TODO(mgooding) - propagate WM_ENDSESSION to handle the user picking "Restart/Shutdown Anyway"
+	// The system is shutting down immediately after we return from this function; we _must_ perform
+	// any cleanup now.
+	// Note that if wParam is FALSE, this message is a no-op informing us that shutdown was canceled
+	// due to WM_QUERYENDSESSION returning FALSE in an open application.
+	if (msg == WM_ENDSESSION && wParam) {
+		if (g_endsession_callback)
+			g_endsession_callback();
+		// Windows will kill us at some unpredictable point in immediate future - seems safest to exit
+		// here rather than continue to run in partially shutdown state.
+		exit(0);
+	}
 
 	return g_sdl_wndproc(hwnd, msg, wParam, lParam);
 }
