@@ -142,6 +142,7 @@ typedef enum window_flags
 } window_flags_e;
 
 typedef struct window window_t;
+typedef void (*window_endsession_callback_t)(void);
 
 window_t *window_create(s32 x, s32 y, s32 w, s32 h, const char *title,
                         window_flags_e flags);
@@ -161,6 +162,8 @@ void   window_restore(window_t *window);
 void   window_fullscreen(window_t *window);
 void   window_set_title(window_t *window, const char *title);
 void   window_run(window_t *window, u32 fps, b32(*ufunc)(window_t*, void*), void *udata);
+void   window_set_endsession_callback(window_t* window,
+                                      window_endsession_callback_t endsession_callback);
 
 gui_t *window_get_gui(window_t *window);
 const gui_img_t *window_get_img(window_t *window, const char *fname);
@@ -1484,9 +1487,8 @@ SDL_HitTestResult window__hit_test(SDL_Window *window, const SDL_Point *point, v
 }
 
 #ifdef _WIN32
+window_endsession_callback_t g_endsession_callback = NULL;
 WNDPROC g_sdl_wndproc = NULL;
-
-void (*g_endsession_callback)(void) = NULL;
 
 static
 LRESULT CALLBACK wndproc_hook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -1494,11 +1496,9 @@ LRESULT CALLBACK wndproc_hook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	if (msg == WM_QUERYENDSESSION) {
 		// Returning FALSE blocks shutdown/restart until the application closes or the user manually
 		// overrides and picks "Restart/Shutdown Anyway".
-		// ShutdownBlockReasonCreate defines the message that's displayed on the shutdown/restart screen.
 		// Posting the WM_CLOSE message triggers the usual quitting logic; if the user doesn't have
 		// unsaved work, the application will close normally, this message will never be seen and shutdown
 		// will proceed cleanly.
-		ShutdownBlockReasonCreate(hwnd, L"You have unsaved changes.");
 		PostMessage(hwnd, WM_CLOSE, 0, 0);
 		return FALSE;
 	}
@@ -1518,11 +1518,10 @@ LRESULT CALLBACK wndproc_hook(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return g_sdl_wndproc(hwnd, msg, wParam, lParam);
 }
 
-static
-void wndproc_hook_init(window_t *window)
+void window_set_endsession_callback(window_t* window, window_endsession_callback_t endsession_callback)
 {
-	if (g_sdl_wndproc != NULL) {
-		ASSERT_FALSE_AND_LOG("g_sdl_wndproc is already defined");
+	if (g_sdl_wndproc != NULL || g_endsession_callback != NULL) {
+		ASSERT_FALSE_AND_LOG("should only be called once and only for main window");
 		return;
 	}
 
@@ -1783,10 +1782,6 @@ window_t *window_create_ex(s32 x, s32 y, s32 w, s32 h, const char *title,
 	                         fonts, font_file_path);
 
 	gui_set_window(window->gui, window);
-
-#ifdef _WIN32
-	wndproc_hook_init(window);
-#endif
 
 	goto out;
 
