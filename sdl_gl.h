@@ -1525,6 +1525,8 @@ void window_set_endsession_callback(window_t* window, window_endsession_callback
 		return;
 	}
 
+	g_endsession_callback = endsession_callback;
+
 	// When a Windows user restarts or shuts down their computer, the application does not
 	// receive WM_CLOSE, WM_QUIT, WM_DESTROY messages. Instead it receives WM_QUERYENDSESSION
 	// followed by WM_ENDSESSION, neither of which is handled by SDL. They can be propagated
