@@ -137,6 +137,7 @@ typedef enum vlt_thread_type
 } vlt_thread_type_e;
 
 void vlt_init(vlt_thread_type_e thread_type);
+b32  vlt_is_init(void);
 void vlt_destroy(vlt_thread_type_e thread_type);
 
 /* Error handling */
@@ -1440,6 +1441,11 @@ void vlt_init(vlt_thread_type_e thread_type)
 #if defined(_WIN32) && defined(DEBUG_HEAP)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF);
 #endif
+}
+
+b32 vlt_is_init(void)
+{
+	return g_temp_allocator != NULL;
 }
 
 void vlt_destroy(vlt_thread_type_e thread_type)
