@@ -8273,7 +8273,10 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	y = panel->y + panel->h - dim;
 
 	if (panel->flags & GUI_PANEL_DRAGGABLE) {
-		const b32 contains_mouse = gui__widget_contains_mouse(gui, panel->x, y, dim, dim);
+		/* We want to make the whole titlebar grabbable for dragging,
+		   except for any collapsing or closing buttons. */
+		const s32 drag_w = panel->w - rw;
+		const b32 contains_mouse = gui__widget_contains_mouse(gui, panel->x, y, drag_w, dim);
 		*dragging = gui_drag(gui, &panel->x, &y, contains_mouse, MB_LEFT);
 		if (*dragging) {
 			panel->y = y - panel->h + dim;
