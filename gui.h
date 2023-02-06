@@ -8619,19 +8619,30 @@ void pgui_panel_restore(gui_panel_t *panel)
 		panel->collapsed = !panel->collapsed;
 }
 
+void pgui__panel_recenter(gui_t *gui, gui_panel_t *panel)
+{
+	assert(panel->flags & GUI_PANEL_DRAGGABLE);
+	v2i win_dim;
+	s32 x, y;
+	gui_dim(gui, &win_dim.x, &win_dim.y);
+	x = win_dim.x / 2 - panel->unscaled.w / 2;
+	y = win_dim.y / 2 - panel->unscaled.h / 2;
+	pgui__panel_set_size(gui, panel, x, y, panel->unscaled.w, panel->unscaled.h);
+}
+
 void pgui_panel_open(gui_t *gui, gui_panel_t *panel)
 {
 	assert(panel->closed);
 	panel->closed = false;
+	if (panel->flags & GUI_PANEL_DRAGGABLE)
+		pgui__panel_recenter(gui, panel);
 	pgui_panel_to_front(gui, panel);
 }
 
 void pgui_panel_open_if_closed(gui_t *gui, gui_panel_t *panel)
 {
-	if (panel->closed) {
-		panel->closed = false;
-		pgui_panel_to_front(gui, panel);
-	}
+	if (panel->closed)
+		pgui_panel_open(gui, panel);
 }
 
 void pgui_panel_close(gui_t *gui, gui_panel_t *panel)
