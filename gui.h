@@ -8296,12 +8296,6 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 	         dim, gui->style.panel.titlebar.bg_color,
 	         gui->style.panel.titlebar.outline_color);
 
-	if (panel->flags & GUI_PANEL_DRAGGABLE) {
-		gui_style_push(gui, drag, gui->style.panel.drag);
-		gui__drag_rect_render(gui, panel->x, y, dim, dim, *dragging);
-		gui_style_pop(gui);
-	}
-
 	if (tab_count > 1) {
 		const s32 max_tab_dim = gui_scale_val(gui, GUI_PANEL_MAX_TAB_WIDTH);
 		s32 tab_dim, tab_idx;
