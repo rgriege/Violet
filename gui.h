@@ -8337,7 +8337,7 @@ void pgui__panel_titlebar(gui_t *gui, gui_panel_t *panel, b32 *dragging)
 		}
 		gui_style_pop(gui);
 	} else {
-		gui_txt_styled(gui, panel->x + dim, y, panel->w, dim,
+		gui_txt_styled(gui, panel->x, y, panel->w, dim,
 		               panel->title, &gui->style.panel.titlebar.text);
 	}
 
