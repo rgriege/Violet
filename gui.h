@@ -7580,24 +7580,26 @@ s32 gui__split_division(const gui_split_t *split, v2i point)
 	dx = abs(point.x - xm);
 	dy = abs(point.y - ym);
 	s = min(w/4, h/4)/2;
-	if (dx < s && dy < s) {
+	if (dx < s && dy < s)
 		return GUI__SPLIT_DIVISION_CENTER;
-	} else if (dx > dy) {
+
+	if (dx > dy) {
 		if (dx > 2*s)
 			return GUI__SPLIT_DIVISION_NONE;
-		else if (point.x <= xm)
+
+		if (point.x <= xm)
 			return GUI__SPLIT_DIVISION_LEFT;
-		else
-			return GUI__SPLIT_DIVISION_RIGHT;
-	} else {
-		if (dy > 2*s)
-			return GUI__SPLIT_DIVISION_NONE;
-		else if (point.y > ym)
-			return GUI__SPLIT_DIVISION_TOP;
-		else
-			return GUI__SPLIT_DIVISION_BOTTOM;
+
+		return GUI__SPLIT_DIVISION_RIGHT;
 	}
-	return GUI__SPLIT_DIVISION_NONE;
+
+	if (dy > 2 * s)
+		return GUI__SPLIT_DIVISION_NONE;
+
+	if (point.y > ym)
+		return GUI__SPLIT_DIVISION_TOP;
+
+	return GUI__SPLIT_DIVISION_BOTTOM;
 }
 
 static
