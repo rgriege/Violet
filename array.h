@@ -131,7 +131,7 @@ ARRDEF void *array__create(array_size_t cap, size_t sz, allocator_t *a
                            MEMCALL_ARGS)
 {
 	array__head *head = a->malloc_(sizeof(array__head) + cap * sz, a  MEMCALL_VARS);
-	if (!head) { fatal("array__create: oom"); return NULL; }
+	if (!head) { fatal("array__create: oom"); }
 	head->sz = 0;
 	head->cap = cap;
 	head->allocator = a;
@@ -145,7 +145,7 @@ ARRDEF void *array__reserve(void *array, array_size_t nmemb, size_t sz
 	if (nmemb > head->cap) {
 		head = head->allocator->realloc_(head, sizeof(array__head) + nmemb * sz,
 		                                 head->allocator  MEMCALL_VARS);
-		if (!head) { fatal("array__reserve: oom"); return NULL; }
+		if (!head) { fatal("array__reserve: oom"); }
 		head->cap = nmemb;
 		return head + 1;
 	}

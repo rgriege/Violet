@@ -485,11 +485,8 @@ int main(int argc, char *const argv[])
 void fatal(const char *msg)
 {
 	log_fatal(msg);
-#ifndef NDEBUG
 	assert(false);
-#else
 	exit(1);
-#endif
 }
 
 
